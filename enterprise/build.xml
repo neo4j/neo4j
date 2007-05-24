@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+
+<project name="Neo" default="jar" basedir=".">
+
+	<property file="${user.home}/build.properties"/>
+
+	<property name="name" value="neo"/>
+	<property name="Name" value="Neo"/>
+	<property name="version" value="1.0"/>
+	<property name="final.name" value="${name}-${version}"/>
+	<property name="year" value="2007"/>	
+	
+	<property name="debug" value="on"/>
+	<property name="optimize" value="off"/>
+	<property name="deprecation" value="on"/>
+	
+	<property name="bin.dir" value="bin"/>
+	<property name="build.dir" value="build"/>
+	<property name="build.classes.dir" value="${build.dir}/classes"/>
+	<property name="dist.dir" value="dist"/>
+	<property name="etc.dir" value="etc"/>
+	<property name="lib.dir" value="lib"/>
+	<property name="src.dir" value="src/java"/>
+	<property name="test.dir" value="src/test"/>
+	<property name="dist.jar.dir" value="${dist.dir}/jar"/>
+	<property name="dist.javadoc.dir" value="${dist.dir}/javadoc"/>
+	
+	<path id="class.path">
+		<fileset dir="${lib.dir}">
+			<include name="**/*.jar"/>
+		</fileset>
+		<pathelement path="${build.classes.dir}"/>
+		<pathelement path="${java.class.path}"/>
+	</path>
+
+	<target name="compile">
+		<mkdir dir="${build.classes.dir}"/>
+		<javac destdir="${build.classes.dir}" debug="${debug}" 
+			deprecation="${deprecation}" optimize="${optimize}"
+			srcdir="${src.dir}"	> 
+			<classpath refid="class.path"/>
+		</javac>
+	</target>
+
+	<target name="compile-test" depends="compile">
+		<mkdir dir="${build.classes.dir}"/>
+		<javac destdir="${build.classes.dir}" debug="${debug}" 
+			deprecation="${deprecation}" optimize="${optimize}"
+			srcdir="${test.dir}">
+			<classpath refid="class.path"/>
+		</javac>
+	</target>
+
+	<target name="clean"
+			description="Clean up the result of the build process">
+		<delete dir="${build.dir}"/>
+	</target>
+
+	<target name="jar" depends="compile"
+			description="Generate a full jarfile distribution">
+		<mkdir dir="${dist.jar.dir}"/>
+		<jar	jarfile="${dist.jar.dir}/neo.jar"
+				basedir="${build.classes.dir}">
+			<exclude name="**/Test*.*"/>
+			<exclude name="**/test*.*"/>
+		</jar>
+	</target>
+
+	<target name="javadoc" depends="compile"
+			description="Generate javadocumentation from the source code">
+		<mkdir dir="${dist.javadoc.dir}"/>
+		<javadoc
+			sourcepath="${src.dir}"
+			packagenames="org.neo4j.*"
+			classpathref="class.path"
+			defaultexcludes="yes"
+			destdir="${dist.javadoc.dir}"
+			use="yes"
+			windowtitle="${project.fullname} ${project.version} Documentation"
+			package="no"
+			link="http://java.sun.com/j2se/1.5.0/docs/api/">
+			<bottom>
+<![CDATA[<i>Copyright &#169; ${year} Neo Persistence AB.</i>]]>
+			</bottom>
+		</javadoc>
+	</target>
+
+	<target name="test" depends="compile-test"
+			description="Run the automated unit tests">
+		<java	classname="unit.neo.TestAll"
+				classpathref="class.path"
+				fork="yes"
+				failonerror="yes">
+				<jvmarg value="-ea"/>
+		</java>
+	</target>
+</project>

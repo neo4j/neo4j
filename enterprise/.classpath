@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding=".svn/" kind="src" path="src/java"/>
+	<classpathentry excluding=".svn/" kind="src" path="src/test"/>
+	<classpathentry kind="lib" path="lib/jta-spec1_0_1.jar"/>
+	<classpathentry kind="lib" path="lib/junit.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="eclipse-output"/>
+</classpath>
