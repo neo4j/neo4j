@@ -1,0 +1,8 @@
+This software is copyright (c) Network Engine in Lund AB (neopersistence.com).
+All rights are reservered. Basically, you are not allowed to do anything with
+this software without an explicit license.
+
+This is an interim solution, while we're waiting for GPLv3 to be finalised.
+See http://neo4j.org/community/code/ for more information about the status on
+the community license. For more licensing information, please contact
+info@neopersistence.com.
