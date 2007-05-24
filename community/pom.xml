@@ -1,0 +1,57 @@
+<project>
+	<parent>
+		<groupId>windh</groupId>
+		<artifactId>parent-pom</artifactId>
+		<version>1</version>
+	</parent>
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.neo4j</groupId>
+	<artifactId>neo</artifactId>
+	<version>1.0-b3-SNAPSHOT</version>
+
+	<name>Neo</name>
+	<url>http://neo4j.org</url>
+	<description>
+Neo is a lightweight, embedded Java database designed to store data structured
+as networks rather than tables. For more information, please see neo4j.org.
+	</description>
+	<organization>
+		<name>Neo4j</name>
+		<url>http://neo4j.org</url>
+	</organization>
+
+	<build>
+		<testSourceDirectory>src/test</testSourceDirectory>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<skip>false</skip>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>external</groupId>
+			<artifactId>jta</artifactId>
+			<version>1.0.1</version>
+		</dependency>
+	</dependencies>
+
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<subpackages>org.neo4j.api</subpackages>
+				</configuration>
+			</plugin>
+		</plugins>
+	</reporting>
+
+</project>
