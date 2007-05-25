@@ -24,20 +24,23 @@ import org.neo4j.impl.core.NodeManager;
  */
 public class EmbeddedNeo
 {
+    private Class<? extends RelationshipType> validRelationshipTypes;
+	
 	/**
 	 * Creates an embedded neo instance with a given set of relationship types
 	 * and that reads data from a given store.
-	 * @param clazz an enum class containing your relationship types
+	 * @param validRelationshipTypes an enum class containing your relationship types
 	 * @param storeDir the store directory for the neo db files
 	 * @param create whether a new store directory will be created if it doesn't
 	 * already exist
  	 * @throws NullPointerException if clazz is <code>null</code>
  	 * @throws IllegalArgumentException if clazz is not an enum
 	 */
-	public EmbeddedNeo( Class<? extends RelationshipType> clazz,
+	public EmbeddedNeo( Class<? extends RelationshipType> validRelationshipTypes,
 		String storeDir, boolean create )
-	{
-		NeoJvmInstance.start( clazz, storeDir, create );
+	{	    
+		this.validRelationshipTypes = validRelationshipTypes;
+		NeoJvmInstance.start( validRelationshipTypes, storeDir, create );
 	}
 	
 	/**
@@ -45,15 +48,15 @@ public class EmbeddedNeo
 	 * that reads data from a given store which will be created if it doesn't
 	 * already exist. Invoking this constructor is equivalent to invoke
 	 * <code>new EmbeddedNeo( clazz, storeDir, true )</code>.
-	 * @param clazz an enum class containing your relationship types
+	 * @param validRelationshipTypes an enum class containing your relationship types
 	 * @param storeDir the store directory for the neo db files
  	 * @throws NullPointerException if clazz is <code>null</code>
  	 * @throws IllegalArgumentException if clazz not an enum
 	 */
-	public EmbeddedNeo( Class<? extends RelationshipType> clazz,
+	public EmbeddedNeo( Class<? extends RelationshipType> validRelationshipTypes,
 		String storeDir )
 	{
-		this( clazz, storeDir, true );
+		this( validRelationshipTypes, storeDir, true );
 	}
 	
 	/**
@@ -86,6 +89,7 @@ public class EmbeddedNeo
 	{
 		return NodeManager.getManager().getReferenceNode();
 	}
+	
 	/**
 	 * Shuts down Neo. After this method has been invoked, it's invalid to
 	 * invoke any methods in the Neo API.
@@ -93,5 +97,16 @@ public class EmbeddedNeo
 	public void shutdown()
 	{
 		NeoJvmInstance.shutdown();
+	}
+	
+	/**
+	 * Returns the valid relationship types for this Neo instance invocation.
+	 * This is the exact same class instance that was passed to the constructor
+	 * of this EmbeddedNeo.
+	 * @return the valid relationship types for this Neo instance invocation
+	 */
+	public Class<? extends RelationshipType> getRelationshipTypes()
+	{
+	    return this.validRelationshipTypes;
 	}
 }
