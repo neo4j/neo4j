@@ -1,0 +1,31 @@
+<project>
+	<parent>
+		<groupId>org.neo4j</groupId>
+		<artifactId>parent-pom</artifactId>
+		<version>1</version>
+		<relativePath>../../pom.xml</relativePath>    		
+	</parent>
+
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.neo4j</groupId>
+	<artifactId>shell</artifactId>
+	<version>trunk-SNAPSHOT</version>
+	<name>Generic shell</name>
+	<description>
+A generic command shell with a client and server part
+	</description>
+
+	<build>
+		<sourceDirectory>src/java</sourceDirectory>
+		<testSourceDirectory>src/test</testSourceDirectory>
+	</build>
+	
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.1</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+</project>
