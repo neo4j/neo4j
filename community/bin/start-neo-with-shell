@@ -2,7 +2,7 @@
 # Simple script for running a maven project from the terminal
 
 echo Compiling and gathering dependencies...
-mvn compile dependency:copy-dependencies 
+mvn compile dependency:copy-dependencies || exit 1
 
 LIB_FILES=`find target/dependency -follow -iname "*.jar"`
 LIB_FILES=`echo $LIB_FILES | sed -e 's/ /:/g'`
