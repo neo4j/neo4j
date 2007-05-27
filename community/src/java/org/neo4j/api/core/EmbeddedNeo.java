@@ -175,7 +175,7 @@ public class EmbeddedNeo
 				Object name = initialProperties.get( "name" );
 				this.shellServer.makeRemotelyAvailable( 
 					port != null ? ( Integer ) port : 1337,
-					name != null ? ( String ) name : "neoshell" );
+					name != null ? ( String ) name : "shell" );
 				return true;
 			}
 			else
