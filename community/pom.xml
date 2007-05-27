@@ -18,6 +18,22 @@ A generic command shell with a client and server part
 	<build>
 		<sourceDirectory>src/java</sourceDirectory>
 		<testSourceDirectory>src/test</testSourceDirectory>
+		<plugins>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>org.neo4j.util.shell.StartRemoteClient</mainClass>
+							<packageName>org.neo4j.util.shell</packageName>
+						</manifest>
+						<manifestEntries>
+							<url>http://neo4j.org</url>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
 	</build>
 	
 	<dependencies>
@@ -28,4 +44,5 @@ A generic command shell with a client and server part
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	
 </project>
