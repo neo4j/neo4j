@@ -44,6 +44,11 @@ as networks rather than tables. For more information, please see neo4j.org.
 			<artifactId>jta</artifactId>
 			<version>1.0.1</version>
 		</dependency>
+		<dependency> 
+			<groupId>org.neo4j</groupId>
+			<artifactId>shell</artifactId>
+			<version>trunk-SNAPSHOT</version>
+		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -63,5 +68,5 @@ as networks rather than tables. For more information, please see neo4j.org.
 			</plugin>
 		</plugins>
 	</reporting>
-	
+                        
 </project>
