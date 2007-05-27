@@ -1,0 +1,13 @@
+#!/bin/sh
+# Simple script for running a maven project from the terminal
+
+echo Compiling and gathering dependencies...
+mvn compile dependency:copy-dependencies 
+
+LIB_FILES=`find target/dependency -follow -iname "*.jar"`
+LIB_FILES=`echo $LIB_FILES | sed -e 's/ /:/g'`
+THE_CLASSPATH=$LIB_FILES:target/classes
+THE_MAIN_CLASS=org.neo4j.impl.StandaloneWithShell
+
+# printf "CLASSPATH=%s\n" $THE_CLASSPATH
+java -ea -server -Xms128M -Xmx128M -cp $THE_CLASSPATH $THE_MAIN_CLASS $@
