@@ -4,10 +4,14 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.neo4j.api.core.*;
+import java.util.logging.Logger;
+import org.neo4j.api.core.EmbeddedNeo;
+import org.neo4j.api.core.RelationshipType;
 
 public class StandaloneWithShell
 {
+	private static Logger log = Logger.getLogger(
+		StandaloneWithShell.class.getName() );	
 	private EmbeddedNeo embeddedNeo;
 	private AtomicBoolean shutdownInitiated = new AtomicBoolean( false );
 	
@@ -38,7 +42,7 @@ public class StandaloneWithShell
 		this.embeddedNeo = new EmbeddedNeo( RelTypes.class, "var" );
 		Map<String, Serializable> shellProperties = Collections.emptyMap();
 		getNeo().enableRemoteShell( shellProperties );
-		System.out.println( "Neo started" );
+		log.info( "Neo started" );
 	}
 	
 	private void blockUntilShutdown()
@@ -60,7 +64,7 @@ public class StandaloneWithShell
 	{
 		if ( shutdownInitiated.compareAndSet( false, true ) )
 		{
-			System.out.println( "Shutting down..." );
+			log.info( "Shutting down..." );
 			try
 			{
 				if ( getNeo() != null )
@@ -71,7 +75,7 @@ public class StandaloneWithShell
 			}
 			catch ( Throwable t )
 			{
-				System.err.println( "Error shutting down Neo: " +  t );
+				log.warning( "Error shutting down Neo: " +  t );
 			}
 		}		
 	}
