@@ -261,8 +261,8 @@ public interface Node
 	 * according to the given order and evaluators along the two specified
 	 * relationship type and direction pairs. If the traverser should traverse
 	 * more than two  <code>RelationshipType</code>/<code>Direction</code>
-	 * pairs, use the overloaded {@link #traverse(org.neo4j.api.Traverser.Order,
-	 * StopEvaluator, ReturnableEvaluator, Object[]) varargs variant} of this
+	 * pairs, use the overloaded {@link #traverse(Traverser.Order,
+	 * StopEvaluator, ReturnableEvaluator, Object...) varargs variant} of this
 	 * method. For more information about traversal, see the {@link Traverser}
 	 * documentation.
 	 * @param traversalOrder the traversal order
