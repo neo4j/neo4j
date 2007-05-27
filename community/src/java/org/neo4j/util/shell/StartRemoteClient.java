@@ -2,11 +2,29 @@ package org.neo4j.util.shell;
 
 public class StartRemoteClient
 {
-	public static void main( String[] args ) throws Exception
+	public static void main( String[] args )
 	{
-		ShellServer server = ShellLobby.getInstance().findRemoteServer(
-			getPort( args ), getShellName( args ) );
-		ShellLobby.getInstance().startClient( server );
+		try
+		{
+			printGreeting( args );
+			ShellServer server = ShellLobby.getInstance().findRemoteServer(
+				getPort( args ), getShellName( args ) );
+			ShellLobby.getInstance().startClient( server );
+		}
+		catch ( Exception e )
+		{
+			System.err.println( "Can't start client shell: " + e );
+		}
+	}
+	
+	private static void printGreeting( String[] args )
+	{
+		if ( args.length == 0 )
+		{
+			System.out.println( "NOTE: No port or RMI name specified, using " +
+				"default port " + AbstractServer.DEFAULT_PORT + " and name '" +
+				AbstractServer.DEFAULT_NAME + "'." );
+		}
 	}
 	
 	private static int getPort( String[] args )
