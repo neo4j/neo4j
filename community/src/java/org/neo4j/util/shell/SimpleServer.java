@@ -13,7 +13,7 @@ public class SimpleServer extends AbstractServer
 	
 	private App findBuiltInApp( String command )
 	{
-		if ( command.equals( "exit" ) )
+		if ( command.equals( "exit" ) || command.equals( "quit" ) )
 		{
 			return new ExitApp();
 		}
@@ -48,7 +48,7 @@ public class SimpleServer extends AbstractServer
 		@Override
 		public String getDescription()
 		{
-			return "Built-in command. Exists the client";
+			return "Built-in command. Exits the client";
 		}
 	}
 }
