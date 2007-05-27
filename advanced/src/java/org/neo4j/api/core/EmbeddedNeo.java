@@ -3,6 +3,7 @@ package org.neo4j.api.core;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Map;
+import java.util.logging.Logger;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoShellServer;
 
@@ -28,6 +29,7 @@ import org.neo4j.impl.shell.NeoShellServer;
  */
 public class EmbeddedNeo
 {
+	private static Logger log = Logger.getLogger( EmbeddedNeo.class.getName() );
     private Class<? extends RelationshipType> validRelationshipTypes;
 	private NeoShellServer shellServer;
 	
@@ -116,7 +118,7 @@ public class EmbeddedNeo
 			}
 			catch ( Throwable t )
 			{
-				System.err.println( "Error shutting down shell server: " + t );
+				log.warning( "Error shutting down shell server: " + t );
 			}
 		}
 		NeoJvmInstance.shutdown();
@@ -134,8 +136,9 @@ public class EmbeddedNeo
 	}
 
 	/**
-	 * Enables remote shell access to this Neo instance. This will publish
-	 * a shell access interface on an RMI registry on localhost (with
+	 * Enables remote shell access to this Neo instance, if the Neo4j
+	 * <code>shell</code> project is available on the classpath. This will
+	 * publish a shell access interface on an RMI registry on localhost (with
 	 * configurable port and RMI binding name). It can be accessed by a
 	 * client that implements <code>org.neo4j.util.shell.ShellClient</code>
 	 * from the Neo4J <code>shell</code> project. Typically, the
@@ -145,32 +148,61 @@ public class EmbeddedNeo
 	 * The shell is parameterized by a map of properties passed in to this
 	 * method. Currently, two properties are used:
 	 * <ul>
-	 *	<li><code>port</code>, an {@Integer} describing the port of the RMI
+	 *	<li><code>port</code>, an {@link Integer} describing the port of the RMI
 	 * registry where the Neo shell will be bound, defaults to <code>1337</code>
-	 *	<li><code>name</code>, the {@String} under which the Neo shell will
+	 *	<li><code>name</code>, the {@link String} under which the Neo shell will
 	 * be bound in the RMI registry, defaults to <code>neoshell</code>
 	 * </ul>
 	 * @param initialProperties a set of properties that will be used to
 	 * configure the remote shell
-	 * @throws ClassCastException if any of the properties are not of a valid
-	 * type
-	 * @throws IllegalStateException if the remote shell can't be enabled
+	 * @return <code>true</code> if the shell has been enabled,
+	 * <code>false</code> otherwise (<code>false</code> usually indicates that
+	 * the <code>shell</code> jar dependency is not on the classpath)
+	 * @throws ClassCastException if the shell library is available, but one
+	 * (or more) of the configuration properties have an unexpected type
+	 * @throws IllegalStateException if the shell library is available, but
+	 * the remote shell can't be enabled anyway
 	 */
-	public void enableRemoteShell( Map<String, Serializable> initialProperties )
+	public boolean enableRemoteShell( Map<String, Serializable>
+		initialProperties )
 	{
 		try
 		{
-			this.shellServer = new NeoShellServer( this );
-			Object port = initialProperties.get( "port" );
-			Object name = initialProperties.get( "name" );
-			this.shellServer.makeRemotelyAvailable( 
-				port != null ? ( Integer ) port : 1337,
-				name != null ? ( String ) name : "neoshell" );
+			if ( shellDependencyAvailable() )
+			{
+				this.shellServer = new NeoShellServer( this );
+				Object port = initialProperties.get( "port" );
+				Object name = initialProperties.get( "name" );
+				this.shellServer.makeRemotelyAvailable( 
+					port != null ? ( Integer ) port : 1337,
+					name != null ? ( String ) name : "neoshell" );
+				return true;
+			}
+			else
+			{
+				log.info( "Shell library not available. Neo shell not " +
+					"started. Please add the Neo4j shell jar to the " +
+					"classpath." );
+				return false;
+			}
 		}
 		catch ( RemoteException e )
 		{
 			throw new IllegalStateException( "Can't start remote neo shell: " +
 				e );
+		}
+	}
+	
+	private boolean shellDependencyAvailable()
+	{
+		try
+		{
+			Class.forName( "org.neo4j.util.shell.ShellServer" );
+			return true;
+		}
+		catch ( Throwable t )
+		{
+			return false;
 		}
 	}
 }

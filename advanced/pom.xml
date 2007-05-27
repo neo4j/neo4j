@@ -52,6 +52,7 @@ as networks rather than tables. For more information, please see neo4j.org.
 			<groupId>org.neo4j</groupId>
 			<artifactId>shell</artifactId>
 			<version>trunk-SNAPSHOT</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
@@ -68,6 +69,10 @@ as networks rather than tables. For more information, please see neo4j.org.
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<configuration>
 					<subpackages>org.neo4j.api</subpackages>
+					<links>
+						<link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
+					</links>
+					<quiet>true</quiet>
 				</configuration>
 			</plugin>
 		</plugins>

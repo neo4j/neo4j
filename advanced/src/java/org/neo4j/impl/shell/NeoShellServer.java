@@ -30,7 +30,11 @@ public class NeoShellServer extends SimpleServer
 	@Override
 	public String welcome()
 	{
-		return "Welcome to NeoShell";
+		return
+			"Welcome to NeoShell\n" +
+			"Available commands: " +
+			"cd env exit export gsh ls man mkrel mv pwd rm rmel set quit\n" +
+			"Use man <command> for info about each command.";
 	}
 	
 	public EmbeddedNeo getNeo()
