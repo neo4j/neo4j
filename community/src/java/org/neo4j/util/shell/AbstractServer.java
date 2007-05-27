@@ -13,7 +13,7 @@ public abstract class AbstractServer extends UnicastRemoteObject
 	implements ShellServer
 {
 	public static final String DEFAULT_NAME = "shell";
-	public static final int DEFAULT_PORT = 8080;
+	public static final int DEFAULT_PORT = 1337;
 
 	private Map<String, Serializable> properties =
 		new HashMap<String, Serializable>();
