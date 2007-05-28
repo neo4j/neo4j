@@ -28,8 +28,11 @@
 			<directory>lib</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
-				<exclude>junit*.jar</exclude>
+				<include>*.jar</include>
 			</includes>
+			<excludes>
+				<exclude>junit*.jar</exclude>
+			</excludes>
 		</fileSet>
 		<!-- source:*.txt -> assembly:/ -->
 		<fileSet>
@@ -42,7 +45,7 @@
 		<!-- source:target/site/apidocs -> assembly:/doc/apidocs -->
 		<fileSet>
 			<directory>target/site/apidocs</directory>
-			<outputDirectory>doc/api</outputDirectory>
+			<outputDirectory>javadoc</outputDirectory>
 		</fileSet>
 	</fileSets>
 </assembly>
