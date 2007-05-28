@@ -49,7 +49,18 @@ public class Ls extends NeoApp
 			displayProperties = true;
 			displayRelationships = true;
 		}
-		Node node = this.getCurrentNode( session );
+		
+		Node node = null;
+		if ( parser.arguments().isEmpty() )
+		{
+			node = this.getCurrentNode( session );
+		}
+		else
+		{
+			node = this.getNodeById(
+				Long.parseLong( parser.arguments().get( 0 ) ) );
+		}
+		
 		this.displayProperties( node, out, displayProperties, displayValues,
 			verbose );
 		this.displayRelationships( parser, node, out, displayRelationships );
