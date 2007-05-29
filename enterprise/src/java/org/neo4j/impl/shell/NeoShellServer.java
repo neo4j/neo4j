@@ -33,7 +33,7 @@ public class NeoShellServer extends SimpleServer
 		return
 			"Welcome to NeoShell\n" +
 			"Available commands: " +
-			"cd env exit export gsh ls man mkrel mv pwd rm rmel set quit\n" +
+			"cd env exit export gsh ls man mkrel mv pwd rm rmrel set quit\n" +
 			"Use man <command> for info about each command.";
 	}
 	

@@ -62,7 +62,8 @@ public class Rmrel extends NeoApp
 				parser.options().containsKey( "d" );
 			if ( !deleteOtherNodeWhenEmpty )
 			{
-				throw new ShellException( "Since the node " + otherNode +
+				throw new ShellException( "Since the node " + 
+					getDisplayNameForNode( otherNode ) +
 					" would be decoupled after this, you must supply the" +
 					" -d (for delete-when-decoupled) so that it may be " +
 					"removed" ); 
