@@ -114,7 +114,7 @@ public class Ls extends NeoApp
 			{
 				out.println(
 					getDisplayNameForCurrentNode() +
-					" --[" + rel.getType() + "]--> " +
+					" --[" + rel.getType() + ", " + rel.getId() + "]--> " +
 					getDisplayNameForNode( rel.getEndNode() ) );
 			}
 		}
@@ -125,7 +125,7 @@ public class Ls extends NeoApp
 			{
 				out.println(
 					getDisplayNameForNode( rel.getStartNode() ) +
-					" <--[" + rel.getType() + "]-- " +
+					" <--[" + rel.getType() + ", " + rel.getId() + "]-- " +
 					getDisplayNameForCurrentNode() );
 			}
 		}
