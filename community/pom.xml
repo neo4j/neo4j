@@ -9,7 +9,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j</groupId>
 	<artifactId>shell</artifactId>
-	<version>trunk-SNAPSHOT</version>
+	<version>1.0-b6-SNAPSHOT</version>
 	<name>Generic shell</name>
 	<description>
 A generic command shell with a client and server part
