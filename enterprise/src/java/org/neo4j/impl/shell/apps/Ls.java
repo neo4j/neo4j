@@ -124,9 +124,9 @@ public class Ls extends NeoApp
 				node.getRelationships( Direction.INCOMING ) )
 			{
 				out.println(
-					getDisplayNameForNode( rel.getStartNode() ) +
+					getDisplayNameForCurrentNode() +
 					" <--[" + rel.getType() + ", " + rel.getId() + "]-- " +
-					getDisplayNameForCurrentNode() );
+					getDisplayNameForNode( rel.getStartNode() ) );
 			}
 		}
 	}
