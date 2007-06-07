@@ -3,7 +3,7 @@ package org.neo4j.impl.shell.apps;
 import java.rmi.RemoteException;
 import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.App;
-import org.neo4j.util.shell.CommandParser;
+import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
@@ -30,7 +30,7 @@ public class Gsh extends NeoApp
 	}
 
 	@Override
-	protected String exec( CommandParser parser, Session session, Output out )
+	protected String exec( AppCommandParser parser, Session session, Output out )
 		throws ShellException, RemoteException
 	{
 		return sh.execute( parser, session, out );
