@@ -1,7 +1,7 @@
 package org.neo4j.impl.shell.apps;
 
 import org.neo4j.impl.shell.NeoApp;
-import org.neo4j.util.shell.CommandParser;
+import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
@@ -22,7 +22,7 @@ public class Set extends NeoApp
 	}
 
 	@Override
-	protected String exec( CommandParser parser, Session session, Output out )
+	protected String exec( AppCommandParser parser, Session session, Output out )
 		throws ShellException
 	{
 		String key = parser.arguments().get( 0 );
@@ -43,7 +43,7 @@ public class Set extends NeoApp
 		return null;
 	}
 	
-	private Class getValueType( CommandParser parser ) throws ShellException
+	private Class getValueType( AppCommandParser parser ) throws ShellException
 	{
 		String type = parser.options().containsKey( "t" ) ?
 			parser.options().get( "t" ) : String.class.getName();

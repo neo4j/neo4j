@@ -9,7 +9,7 @@ import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.util.shell.AbstractApp;
-import org.neo4j.util.shell.CommandParser;
+import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
@@ -125,7 +125,7 @@ public abstract class NeoApp extends AbstractApp
 		return this.getNeoServer().getNeo().getNodeById( id );
 	}
 
-	public final String execute( CommandParser parser, Session session,
+	public final String execute( AppCommandParser parser, Session session,
 		Output out ) throws ShellException
 	{
 		Transaction tx = Transaction.begin();
@@ -150,7 +150,7 @@ public abstract class NeoApp extends AbstractApp
 		return "[OUTGOING], INCOMING, o, i";
 	}
 	
-	protected abstract String exec( CommandParser parser, Session session,
+	protected abstract String exec( AppCommandParser parser, Session session,
 		Output out ) throws ShellException, RemoteException;
 	
 	

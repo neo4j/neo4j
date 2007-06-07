@@ -5,7 +5,7 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoApp;
-import org.neo4j.util.shell.CommandParser;
+import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
@@ -32,7 +32,7 @@ public class Mkrel extends NeoApp
 	}
 
 	@Override
-	protected String exec( CommandParser parser, Session session, Output out )
+	protected String exec( AppCommandParser parser, Session session, Output out )
 		throws ShellException
 	{
 		boolean createNode = parser.options().containsKey( "c" );
