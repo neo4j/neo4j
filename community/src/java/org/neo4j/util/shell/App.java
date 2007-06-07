@@ -11,10 +11,10 @@ public interface App
 	
 	String[] getAvailableOptions();
 	
-	String execute( CommandParser parser, Session session, Output out )
+	String execute( AppCommandParser parser, Session session, Output out )
 		throws ShellException;
 	
-	void setServer( ShellServer server );
+	void setServer( AppShellServer server );
 	
 	String getDescription();
 	

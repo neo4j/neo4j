@@ -9,13 +9,11 @@ public interface ShellServer extends Remote
 	String getName() throws RemoteException;
 	
 	/**
-	 * @return a String with some result, "e" means exit
+	 * @return a String with some result, if it contains "e" it means exit
 	 */
 	String interpretLine( String line, Session session, Output out )
 		throws ShellException, RemoteException;
  
-	App findApp( String command ) throws RemoteException;
-	
 	String welcome() throws RemoteException;
 	
 	void setProperty( String key, Serializable value ) throws RemoteException;

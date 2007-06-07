@@ -3,7 +3,7 @@ package org.neo4j.util.shell.apps;
 import java.rmi.RemoteException;
 import org.neo4j.util.shell.AbstractApp;
 import org.neo4j.util.shell.App;
-import org.neo4j.util.shell.CommandParser;
+import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
@@ -11,7 +11,7 @@ import org.neo4j.util.shell.ShellException;
 
 public class Man extends AbstractApp
 {
-	public String execute( CommandParser parser, Session session, Output out )
+	public String execute( AppCommandParser parser, Session session, Output out )
 		throws ShellException
 	{
 		if ( parser.arguments().size() == 0 )
@@ -58,7 +58,7 @@ public class Man extends AbstractApp
 		out.println( "\t" + string );
 	}
 
-	private App getApp( CommandParser parser ) throws ShellException
+	private App getApp( AppCommandParser parser ) throws ShellException
 	{
 		String appName = parser.arguments().get( 0 );
 		try

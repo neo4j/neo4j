@@ -10,7 +10,7 @@ public abstract class AbstractApp implements App
 {
 	private Map<String, OptionContext> typeExceptions =
 		new HashMap<String, OptionContext>();
-	private ShellServer server;
+	private AppShellServer server;
 	
 	public String getName()
 	{
@@ -36,12 +36,12 @@ public abstract class AbstractApp implements App
 		return result;
 	}
 
-	public void setServer( ShellServer server )
+	public void setServer( AppShellServer server )
 	{
 		this.server = server;
 	}
 	
-	protected ShellServer getServer()
+	protected AppShellServer getServer()
 	{
 		return this.server;
 	}

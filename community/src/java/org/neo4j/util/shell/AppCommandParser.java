@@ -9,16 +9,16 @@ import java.util.StringTokenizer;
 /**
  * Completely server-side
  */
-public class CommandParser
+public class AppCommandParser
 {
-	private ShellServer ui;
+	private AppShellServer ui;
 	private String line;
 	private String appName;
 	private App app;
 	private Map<String, String> options = new HashMap<String, String>();
 	private List<String> arguments = new ArrayList<String>();
 	
-	public CommandParser( ShellServer ui, String line ) throws ShellException
+	public AppCommandParser( AppShellServer ui, String line ) throws ShellException
 	{
 		this.ui = ui;
 		if ( line != null )

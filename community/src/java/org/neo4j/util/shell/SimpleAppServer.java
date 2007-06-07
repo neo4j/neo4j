@@ -3,9 +3,9 @@ package org.neo4j.util.shell;
 import java.rmi.RemoteException;
 import org.neo4j.util.shell.apps.Man;
 
-public class SimpleServer extends AbstractServer
+public class SimpleAppServer extends AbstractAppServer
 {
-	public SimpleServer() throws RemoteException
+	public SimpleAppServer() throws RemoteException
 	{
 		super();
 		this.addPackage( Man.class.getPackage().getName() );
@@ -39,7 +39,7 @@ public class SimpleServer extends AbstractServer
 			return "exit";
 		}
 		
-		public String execute( CommandParser parser, Session session,
+		public String execute( AppCommandParser parser, Session session,
 			Output out ) throws ShellException
 		{
 			return "e";

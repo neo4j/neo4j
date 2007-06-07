@@ -5,9 +5,7 @@ import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public abstract class AbstractServer extends UnicastRemoteObject
 	implements ShellServer
@@ -17,7 +15,6 @@ public abstract class AbstractServer extends UnicastRemoteObject
 
 	private Map<String, Serializable> properties =
 		new HashMap<String, Serializable>();
-	private Set<String> packages = new HashSet<String>();
 	
 	public AbstractServer()
 		throws RemoteException
@@ -28,43 +25,6 @@ public abstract class AbstractServer extends UnicastRemoteObject
 	public String getName()
 	{
 		return DEFAULT_NAME;
-	}
-
-	public void addPackage( String pkg )
-	{
-		this.packages.add( pkg );
-	}
-
-	public App findApp( String command ) throws RemoteException
-	{
-		for ( String pkg : this.packages )
-		{
-			String name = pkg + "." +
-				command.substring( 0, 1 ).toUpperCase() +
-				command.substring( 1, command.length() ).toLowerCase();
-			try
-			{
-				App theApp = ( App ) Class.forName( name ).newInstance();
-				theApp.setServer( this );
-				return theApp;
-			}
-			catch ( Exception e )
-			{
-			}
-		}
-		return null;
-	}
-
-	public String interpretLine( String line, Session session, Output out )
-		throws ShellException, RemoteException
-	{
-		if ( line == null || line.trim().length() == 0 )
-		{
-			return "";
-		}
-		
-		CommandParser parser = new CommandParser( this, line );
-		return parser.app().execute( parser, session, out );
 	}
 
 	public Serializable getProperty( String key ) throws RemoteException
@@ -80,7 +40,7 @@ public abstract class AbstractServer extends UnicastRemoteObject
 	
 	public String welcome()
 	{
-		return "Welcome to the windh-utils shell";
+		return "Welcome to the shell";
 	}
 	
 	public void shutdown()

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import org.neo4j.util.shell.AbstractApp;
-import org.neo4j.util.shell.CommandParser;
+import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
@@ -34,7 +34,7 @@ public class Gsh extends AbstractApp
 	public static final String ENGINE_CLASS = "groovy.util.GroovyScriptEngine";
 	public static final String PATH_STRING = "GSH_PATH";
 	
-	public String execute( CommandParser parser, Session session, Output out )
+	public String execute( AppCommandParser parser, Session session, Output out )
 		throws ShellException
 	{
 		this.ensureGroovyIsInClasspath();
@@ -54,11 +54,11 @@ public class Gsh extends AbstractApp
 	}
 	
 	private void runGroovyScripts( Object groovyScriptEngine,
-		Map<String, Object> properties, CommandParser parser )
+		Map<String, Object> properties, AppCommandParser parser )
 		throws ShellException
 	{
 		ArgReader reader = new ArgReader(
-			CommandParser.tokenizeStringWithQuotes(
+			AppCommandParser.tokenizeStringWithQuotes(
 				parser.getLineWithoutCommand() ) );
 		HashMap<String, Object> hashMap =
 			( HashMap<String, Object> ) properties;
