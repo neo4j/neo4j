@@ -5,9 +5,9 @@ import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.shell.apps.Ls;
 import org.neo4j.util.shell.AbstractClient;
-import org.neo4j.util.shell.SimpleServer;
+import org.neo4j.util.shell.SimpleAppServer;
 
-public class NeoShellServer extends SimpleServer
+public class NeoShellServer extends SimpleAppServer
 {
 	private EmbeddedNeo neo;
 	private Class<? extends RelationshipType> relTypeClass;

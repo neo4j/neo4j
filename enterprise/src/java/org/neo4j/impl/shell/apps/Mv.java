@@ -2,7 +2,7 @@ package org.neo4j.impl.shell.apps;
 
 import org.neo4j.api.core.Node;
 import org.neo4j.impl.shell.NeoApp;
-import org.neo4j.util.shell.CommandParser;
+import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
@@ -23,7 +23,7 @@ public class Mv extends NeoApp
 	}
 
 	@Override
-	protected String exec( CommandParser parser, Session session, Output out )
+	protected String exec( AppCommandParser parser, Session session, Output out )
 		throws ShellException
 	{
 		if ( parser.arguments().size() != 2 )

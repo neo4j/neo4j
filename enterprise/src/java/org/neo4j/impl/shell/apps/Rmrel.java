@@ -13,7 +13,7 @@ import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoApp;
-import org.neo4j.util.shell.CommandParser;
+import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
@@ -37,7 +37,7 @@ public class Rmrel extends NeoApp
 	}
 
 	@Override
-	protected String exec( CommandParser parser, Session session, Output out )
+	protected String exec( AppCommandParser parser, Session session, Output out )
 		throws ShellException, RemoteException
 	{
 		if ( parser.options().get( "r" ) == null )
