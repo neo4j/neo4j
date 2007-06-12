@@ -31,7 +31,8 @@ public class Ls extends NeoApp
 	@Override
 	public String getDescription()
 	{
-		return "Lists the current node";
+		return "Lists the current node. Optionally supply node id for " +
+			"listing a certain node: ls <node-id>";
 	}
 	
 	@Override
