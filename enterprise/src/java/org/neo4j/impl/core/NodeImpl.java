@@ -565,22 +565,17 @@ class NodeImpl implements Node, Comparable
 	
 	/**
 	 * Removes the property <CODE>key</CODE>. If null property <CODE>key</CODE> 
-	 * or the property doesn't exist a <CODE>NotFoundException</CODE> is 
-	 * thrown. 
-	 * <p>
-	 * If node is in first phase the cache is first checked and if the 
-	 * property isn't found the node enters full phase and the cache is 
-	 * checked again.
+	 * a <CODE>NotFoundException</CODE> is thrown. If property doesn't exist
+	 * <CODE>null</CODE> is returned. 
 	 *
 	 * @param key the property key
 	 * @return the removed property value
-	 * @throws NotFoundException
 	 */
-	public Object removeProperty( String key ) throws NotFoundException
+	public Object removeProperty( String key )
 	{
 		if ( key == null )
 		{
-			throw new NotFoundException( "Null parameter." );
+			throw new IllegalArgumentException( "Null parameter." );
 		}
 		acquireLock( this, LockType.WRITE );
 		NodeCommands nodeCommand = null;
@@ -588,7 +583,10 @@ class NodeImpl implements Node, Comparable
 		{
 			// if null or not found make sure full
 			ensureFullProperties();
-
+			if ( !propertyMap.containsKey( key ) )
+			{
+				return null;
+			}
 			nodeCommand = new NodeCommands(); 
 			nodeCommand.setNode( this );
 			
