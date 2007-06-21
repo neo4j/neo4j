@@ -165,46 +165,26 @@ class RelationshipImpl
 	 */
 	public Node getOtherNode( Node node )
 	{
-		try
+		if ( startNodeId == (int) node.getId() )
 		{
-			if ( startNodeId == (int) node.getId() )
-			{
-				return nodeManager.getNodeById( endNodeId );
-			}
-			if ( endNodeId == (int) node.getId() )
-			{
-				return nodeManager.getNodeById( startNodeId );
-			}
+			return nodeManager.getNodeById( endNodeId );
 		}
-		catch ( NotFoundException e )
+		if ( endNodeId == (int) node.getId() )
 		{
-			throw new RuntimeException( e );
+			return nodeManager.getNodeById( startNodeId );
 		}
-		return null;
+		throw new RuntimeException( "Node[" + node.getId() + 
+			"] not connected to this relationship[" + getId() + "]" );
 	}
 	
 	public Node getStartNode()
 	{
-		try
-		{
-			return nodeManager.getNodeById( startNodeId );
-		}
-		catch ( NotFoundException e )
-		{
-			throw new RuntimeException( e );
-		}
+		return nodeManager.getNodeById( startNodeId );
 	}
 	
 	public Node getEndNode()
 	{
-		try
-		{
-			return nodeManager.getNodeById( endNodeId );
-		}
-		catch ( NotFoundException e )
-		{
-			throw new RuntimeException( e );
-		}
+		return nodeManager.getNodeById( endNodeId );
 	}
 
 	/**
