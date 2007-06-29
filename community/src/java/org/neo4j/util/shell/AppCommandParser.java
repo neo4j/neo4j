@@ -18,7 +18,8 @@ public class AppCommandParser
 	private Map<String, String> options = new HashMap<String, String>();
 	private List<String> arguments = new ArrayList<String>();
 	
-	public AppCommandParser( AppShellServer ui, String line ) throws ShellException
+	public AppCommandParser( AppShellServer ui, String line )
+		throws ShellException
 	{
 		this.ui = ui;
 		if ( line != null )
@@ -178,7 +179,8 @@ public class AppCommandParser
 		return tokenizeStringWithQuotes( string, true );
 	}
 
-	public static String[] tokenizeStringWithQuotes( String string, boolean trim )
+	public static String[] tokenizeStringWithQuotes( String string,
+		boolean trim )
 	{
 		if ( trim )
 		{

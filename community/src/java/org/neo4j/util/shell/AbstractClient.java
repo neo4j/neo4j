@@ -50,7 +50,7 @@ public abstract class AbstractClient implements ShellClient
 	{
 		try
 		{
-			String value = ( String ) this.session().get( STACKTRACES_KEY );
+			Object value = this.session().get( STACKTRACES_KEY );
 			return this.getSafeBooleanValue( value, false );
 		}
 		catch ( RemoteException e )
@@ -59,13 +59,13 @@ public abstract class AbstractClient implements ShellClient
 		}
 	}
 	
-	private boolean getSafeBooleanValue( String string, boolean def )
+	private boolean getSafeBooleanValue( Object value, boolean def )
 	{
-		if ( string == null || string.trim().length() == 0 )
+		if ( value == null )
 		{
 			return def;
 		}
-		return Boolean.parseBoolean( string );
+		return Boolean.parseBoolean( value.toString() );
 	}
 	
 	private void init()
