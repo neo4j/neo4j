@@ -367,15 +367,8 @@ public class TestRelationship extends TestCase
 			
 			// test type change of exsisting property
 			// cannot test this for now because of exceptions in PL
-			try
-			{
-				rel2.setProperty( key1, int1 );
-				fail( "Changing type should throw exception." );
-			}
-			catch ( IllegalValueException e )
-			{
-//				ut.rollback();
-			}
+			rel2.setProperty( key1, int1 );
+			
 //			rel1.delete();
 //			rel2.delete();
 //			node2.delete();
