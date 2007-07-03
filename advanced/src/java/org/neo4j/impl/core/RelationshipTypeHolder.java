@@ -83,10 +83,10 @@ class RelationshipTypeHolder
 		boolean success = false;
 		int id = IdGenerator.getGenerator().nextId( 
 			RelationshipType.class );
-		CreateRelationshipTypeCommand command = null;
+		CreateRelationshipTypeCommand command = 
+			new CreateRelationshipTypeCommand();
 		try
 		{
-			command = new CreateRelationshipTypeCommand();
 			command.setId( id );
 			command.setName( name );
 			command.addToTransaction();
@@ -147,7 +147,7 @@ class RelationshipTypeHolder
 			addCommandToTransaction();
 		}
 
-		protected void onExecute() throws ExecuteFailedException
+		protected void onExecute()
 		{
 			RelationshipTypeHolder.getHolder().addRelType( 
 				name, id );

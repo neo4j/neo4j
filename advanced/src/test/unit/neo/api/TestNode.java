@@ -216,9 +216,11 @@ public class TestNode extends TestCase
 
 			try
 			{
-				node1.removeProperty( key1 );
-				fail( "Remove of non existing property should throw exception." 
-					);
+				if ( node1.removeProperty( key1 ) != null )
+				{
+					fail( "Remove of non existing property should return null" 
+						);
+				}
 			}
 			catch ( NotFoundException e )
 			{}
@@ -227,7 +229,7 @@ public class TestNode extends TestCase
 				node1.removeProperty( null );
 				fail( "Remove null property should throw exception." );
 			}
-			catch ( NotFoundException e ) 
+			catch ( IllegalArgumentException e ) 
 			{}
 			
 			node1.setProperty( key1, int1 );
@@ -239,7 +241,7 @@ public class TestNode extends TestCase
 				node1.removeProperty( null );
 				fail( "Null argument should result in exception." );
 			}
-			catch ( NotFoundException e )
+			catch ( IllegalArgumentException e )
 			{}
 			
 			// test remove property
@@ -248,8 +250,10 @@ public class TestNode extends TestCase
 			// test remove of non exsisting property
 			try
 			{
-				node2.removeProperty( key1 );
-				fail( "Remove of non existing property should fail." );
+				if ( node2.removeProperty( key1 ) != null )
+				{
+					fail( "Remove of non existing property return null." );
+				}
 			}
 			catch ( NotFoundException e )
 			{

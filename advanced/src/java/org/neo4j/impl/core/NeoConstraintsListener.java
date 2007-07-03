@@ -31,7 +31,7 @@ import org.neo4j.impl.transaction.TransactionFactory;
  */
 class NeoConstraintsListener implements ProActiveEventListener
 {
-	private static Logger log = Logger.getLogger( 
+	static Logger log = Logger.getLogger( 
 		NeoConstraintsListener.class.getName() );
 	private static NeoConstraintsListener listener = 
 		new NeoConstraintsListener();
@@ -289,20 +289,18 @@ class NeoConstraintsListener implements ProActiveEventListener
 			// remove this rel from deleted nodes in this tx
 			// have to do this since cache won't return correct node impl 
 			// if deletion is in wrong order (eg node.del then rel.del)
-			Integer nodeIds[] = ( ( RelationshipImpl ) rel ).getNodeIds();
+			Integer nodeIds[] = rel.getNodeIds();
 			if ( deletedNodes != null && 
 					deletedNodes.containsKey( nodeIds[0] ) )
 			{
-				( ( NodeImpl ) deletedNodes.get( 
-					nodeIds[0] ) ).removeRelationship( rel.getType(), 
-						new Integer( (int) rel.getId() ) );
+				deletedNodes.get( nodeIds[0] ).removeRelationship( 
+					rel.getType(), new Integer( (int) rel.getId() ) );
 			}
 			if ( deletedNodes != null &&
 					deletedNodes.containsKey( nodeIds[1] ) )
 			{
-				( ( NodeImpl ) deletedNodes.get( 
-					nodeIds[1] ) ).removeRelationship( rel.getType(), 
-						new Integer( (int) rel.getId() ) );
+				deletedNodes.get( nodeIds[1] ).removeRelationship( 
+					rel.getType(), new Integer( (int) rel.getId() ) );
 			}
 
 			if ( deletedRelationships == null )
@@ -363,11 +361,52 @@ class NeoConstraintsListener implements ProActiveEventListener
 			if ( prop instanceof String || prop instanceof Boolean || 
 				prop instanceof Byte || prop instanceof Integer || 
 				prop instanceof Long || prop instanceof Float || 
-				prop instanceof Double )
+				prop instanceof Double || prop instanceof Character )
 			{
 				return true;
 			}
+			if ( prop.getClass().isArray() )
+			{
+				return validateArrayType( prop );
+			}
 			log.severe( "Illegal property type added to[" + entity + "]" );
+			return false;
+		}
+		
+		private boolean validateArrayType( Object object )
+		{
+			if ( object instanceof int[] || object instanceof Integer[] )
+			{
+				return true;
+			}
+			if ( object instanceof String[] )
+			{
+				return true;
+			}
+			if ( object instanceof boolean[] || object instanceof Boolean[] )
+			{
+				return true; 
+			}
+			if ( object instanceof double[] || object instanceof Double[] )
+			{
+				return true;
+			}
+			if ( object instanceof float[] || object instanceof Float[] )
+			{
+				return true;
+			}
+			if ( object instanceof long[] || object instanceof Long[] )
+			{
+				return true;
+			}
+			if ( object instanceof byte[] || object instanceof Byte[] )
+			{
+				return true;
+			}
+			if ( object instanceof char[] || object instanceof Character[] )
+			{
+				return true;
+			}
 			return false;
 		}
 
@@ -385,7 +424,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 					deletedNodes.values().iterator();
 				while ( itr.hasNext() )
 				{
-					NodeImpl node = ( NodeImpl ) itr.next();
+					NodeImpl node = itr.next();
 					if ( node.hasRelationships() )
 					{
 						log.severe( "Deleted Node[" + node + 
@@ -409,7 +448,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 		}
 	}
 	
-	private void removeThisEvaluator()
+	void removeThisEvaluator()
 	{
 		evaluators.remove( Thread.currentThread() );
 	}
