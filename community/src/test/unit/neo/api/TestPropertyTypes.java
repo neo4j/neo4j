@@ -221,4 +221,428 @@ public class TestPropertyTypes extends TestCase
 			fail( "" + e );
 		}
 	}
+	
+	public void testCharType()
+	{
+		try
+		{
+			ut.begin();
+			char c = 'c';
+			Character cValue = new Character( c );
+			String key = "testchar";
+			node1.setProperty( key, cValue );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			Character propertyValue = null; 
+			propertyValue = ( Character ) node1.getProperty( key );
+			assertEquals( cValue, propertyValue );
+
+			cValue = new Character( 'd' ); 
+			node1.setProperty( key, cValue );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( Character ) node1.getProperty( key );
+			assertEquals( cValue, propertyValue );
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			fail( "" + e );
+		}
+	}
+	
+	public void testIntArray()
+	{
+		try
+		{
+			ut.begin();
+			int[] array1 = new int[] { 1, 2, 3, 4, 5 };
+			Integer[] array2 = new Integer[] { 6, 7, 8 };
+			String key = "testintarray";
+			node1.setProperty( key, array1 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			int propertyValue[] = null; 
+			propertyValue = ( int[] ) node1.getProperty( key );
+			assertEquals( array1.length, propertyValue.length );
+			for ( int i = 0; i < array1.length; i++ )
+			{
+				assertEquals( array1[i], propertyValue[i] );
+			}
+
+			node1.setProperty( key, array2 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( int[] ) node1.getProperty( key );
+			assertEquals( array2.length, propertyValue.length );
+			for ( int i = 0; i < array2.length; i++ )
+			{
+				assertEquals( array2[i], new Integer( propertyValue[i] ) );
+			}
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			fail( "" + e );
+		}
+	}
+
+	public void testStringArray()
+	{
+		try
+		{
+			ut.begin();
+			String[] array1 = new String[] { "a", "b", "c", "d", "e" };
+			String[] array2 = new String[] { "ff", "gg", "hh" };
+			String key = "teststringarray";
+			node1.setProperty( key, array1 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			String propertyValue[] = null; 
+			propertyValue = ( String[] ) node1.getProperty( key );
+			assertEquals( array1.length, propertyValue.length );
+			for ( int i = 0; i < array1.length; i++ )
+			{
+				assertEquals( array1[i], propertyValue[i] );
+			}
+
+			node1.setProperty( key, array2 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( String[] ) node1.getProperty( key );
+			assertEquals( array2.length, propertyValue.length );
+			for ( int i = 0; i < array2.length; i++ )
+			{
+				assertEquals( array2[i], propertyValue[i] );
+			}
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			fail( "" + e );
+		}
+	}
+	
+	public void testBooleanArray()
+	{
+		try
+		{
+			ut.begin();
+			boolean[] array1 = new boolean[] { true, false, true, false, true };
+			Boolean[] array2 = new Boolean[] { false, true, false };
+			String key = "testboolarray";
+			node1.setProperty( key, array1 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			boolean propertyValue[] = null; 
+			propertyValue = ( boolean[] ) node1.getProperty( key );
+			assertEquals( array1.length, propertyValue.length );
+			for ( int i = 0; i < array1.length; i++ )
+			{
+				assertEquals( array1[i], propertyValue[i] );
+			}
+
+			node1.setProperty( key, array2 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( boolean[] ) node1.getProperty( key );
+			assertEquals( array2.length, propertyValue.length );
+			for ( int i = 0; i < array2.length; i++ )
+			{
+				assertEquals( array2[i], new Boolean( propertyValue[i] ) );
+			}
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			fail( "" + e );
+		}
+	}
+
+	public void testDoubleArray()
+	{
+		try
+		{
+			ut.begin();
+			double[] array1 = new double[] { 1.0, 2.0, 3.0, 4.0, 5.0 };
+			Double[] array2 = new Double[] { 6.0, 7.0, 8.0 };
+			String key = "testdoublearray";
+			node1.setProperty( key, array1 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			double propertyValue[] = null; 
+			propertyValue = ( double[] ) node1.getProperty( key );
+			assertEquals( array1.length, propertyValue.length );
+			for ( int i = 0; i < array1.length; i++ )
+			{
+				assertEquals( array1[i], propertyValue[i] );
+			}
+
+			node1.setProperty( key, array2 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( double[] ) node1.getProperty( key );
+			assertEquals( array2.length, propertyValue.length );
+			for ( int i = 0; i < array2.length; i++ )
+			{
+				assertEquals( array2[i], new Double( propertyValue[i] ) );
+			}
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			fail( "" + e );
+		}
+	}	
+
+	public void testFloatArray()
+	{
+		try
+		{
+			ut.begin();
+			float[] array1 = new float[] { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
+			Float[] array2 = new Float[] { 6.0f, 7.0f, 8.0f };
+			String key = "testfloatarray";
+			node1.setProperty( key, array1 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			float propertyValue[] = null; 
+			propertyValue = ( float[] ) node1.getProperty( key );
+			assertEquals( array1.length, propertyValue.length );
+			for ( int i = 0; i < array1.length; i++ )
+			{
+				assertEquals( array1[i], propertyValue[i] );
+			}
+
+			node1.setProperty( key, array2 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( float[] ) node1.getProperty( key );
+			assertEquals( array2.length, propertyValue.length );
+			for ( int i = 0; i < array2.length; i++ )
+			{
+				assertEquals( array2[i], new Float( propertyValue[i] ) );
+			}
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			fail( "" + e );
+		}
+	}	
+
+	public void testLongArray()
+	{
+		try
+		{
+			ut.begin();
+			long[] array1 = new long[] { 1, 2, 3, 4, 5 };
+			Long[] array2 = new Long[] { 6l, 7l, 8l };
+			String key = "testlongarray";
+			node1.setProperty( key, array1 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			long[] propertyValue = null; 
+			propertyValue = ( long[] ) node1.getProperty( key );
+			assertEquals( array1.length, propertyValue.length );
+			for ( int i = 0; i < array1.length; i++ )
+			{
+				assertEquals( array1[i], propertyValue[i] );
+			}
+
+			node1.setProperty( key, array2 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( long[] ) node1.getProperty( key );
+			assertEquals( array2.length, propertyValue.length );
+			for ( int i = 0; i < array2.length; i++ )
+			{
+				assertEquals( array2[i], new Long( propertyValue[i] ) );
+			}
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			fail( "" + e );
+		}
+	}
+
+	public void testByteArray()
+	{
+		try
+		{
+			ut.begin();
+			byte[] array1 = new byte[] { 1, 2, 3, 4, 5 };
+			Byte[] array2 = new Byte[] { 6, 7, 8 };
+			String key = "testbytearray";
+			node1.setProperty( key, array1 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			byte[] propertyValue = null; 
+			propertyValue = ( byte[] ) node1.getProperty( key );
+			assertEquals( array1.length, propertyValue.length );
+			for ( int i = 0; i < array1.length; i++ )
+			{
+				assertEquals( array1[i], propertyValue[i] );
+			}
+
+			node1.setProperty( key, array2 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( byte[] ) node1.getProperty( key );
+			assertEquals( array2.length, propertyValue.length );
+			for ( int i = 0; i < array2.length; i++ )
+			{
+				assertEquals( array2[i], new Byte( propertyValue[i] ) );
+			}
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			fail( "" + e );
+		}
+	}
+
+	public void testCharArray()
+	{
+		try
+		{
+			ut.begin();
+			char[] array1 = new char[] { '1', '2', '3', '4', '5' };
+			Character[] array2 = new Character[] { '6', '7', '8' };
+			String key = "testchararray";
+			node1.setProperty( key, array1 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			char[] propertyValue = null; 
+			propertyValue = ( char[] ) node1.getProperty( key );
+			assertEquals( array1.length, propertyValue.length );
+			for ( int i = 0; i < array1.length; i++ )
+			{
+				assertEquals( array1[i], propertyValue[i] );
+			}
+
+			node1.setProperty( key, array2 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( char[] ) node1.getProperty( key );
+			assertEquals( array2.length, propertyValue.length );
+			for ( int i = 0; i < array2.length; i++ )
+			{
+				assertEquals( array2[i], new Character( propertyValue[i] ) );
+			}
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			fail( "" + e );
+		}
+	}
 }

@@ -12,7 +12,9 @@ public enum PropertyType
 	DOUBLE(4),
 	FLOAT(5), 
 	LONG(6), 	
-	BYTE(7);
+	BYTE(7),
+	CHAR(8),
+	ARRAY(9);
 	
 	private int type;
 	

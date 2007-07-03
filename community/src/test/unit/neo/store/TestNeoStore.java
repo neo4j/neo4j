@@ -138,6 +138,10 @@ public class TestNeoStore extends TestCase
 		file.delete();
 		file = new File( "neo.propertystore.db.strings.id" );
 		file.delete();
+		file = new File( "neo.propertystore.db.arrays" );
+		file.delete();
+		file = new File( "neo.propertystore.db.arrays.id" );
+		file.delete();
 		file = new File( "neo.relationshipstore.db" );
 		file.delete();
 		file = new File( "neo.relationshipstore.db.id" );

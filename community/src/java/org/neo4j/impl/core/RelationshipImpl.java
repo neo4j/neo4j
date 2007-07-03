@@ -729,15 +729,14 @@ class RelationshipImpl
 		if ( propertyMap.containsKey( key ) )
 		{
 			Property oldValue  = propertyMap.get( key );
-			// propertyMap.put( key, newValue );
-			if ( !oldValue.getValue().getClass().equals( 
-					newValue.getValue().getClass() ) )
-			{
-				throw new IllegalValueException( "New value[" + 
-					newValue.getValue() + 
-					" not same type as old value[" + 
-					oldValue.getValue() + "]" );
-			}
+//			if ( !oldValue.getValue().getClass().equals( 
+//					newValue.getValue().getClass() ) )
+//			{
+//				throw new IllegalValueException( "New value[" + 
+//					newValue.getValue() + 
+//					" not same type as old value[" + 
+//					oldValue.getValue() + "]" );
+//			}
 			propertyMap.put( key, newValue );
 			return oldValue;
 		}
