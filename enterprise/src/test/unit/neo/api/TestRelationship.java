@@ -271,9 +271,11 @@ public class TestRelationship extends TestCase
 			// verify that we can rely on PL to reomve non existing properties
 			try
 			{
-				rel1.removeProperty( key1 );
-				fail( "Remove of non existing property should throw exception." 
-					);
+				if ( rel1.removeProperty( key1 ) != null )
+				{
+					fail( "Remove of non existing property should return null" 
+						);
+				}
 			}
 			catch ( NotFoundException e )
 			{}
@@ -282,7 +284,7 @@ public class TestRelationship extends TestCase
 				rel1.removeProperty( null );
 				fail( "Remove null property should throw exception." );
 			}
-			catch ( NotFoundException e ) 
+			catch ( IllegalArgumentException e ) 
 			{}
 			
 			rel1.setProperty( key1, int1 );
@@ -294,7 +296,7 @@ public class TestRelationship extends TestCase
 				rel1.removeProperty( null );
 				fail( "Null argument should result in exception." );
 			}
-			catch ( NotFoundException e )
+			catch ( IllegalArgumentException e )
 			{}
 			
 			// test remove property
@@ -303,8 +305,11 @@ public class TestRelationship extends TestCase
 			// test remove of non exsisting property
 			try
 			{
-				rel2.removeProperty( key1 );
-				fail( "Remove of non existing property should fail." );
+				if ( rel2.removeProperty( key1 ) !=  null )
+				{
+					fail( "Remove of non existing property should return null" 
+						);
+				}
 			}
 			catch ( NotFoundException e )
 			{

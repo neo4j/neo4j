@@ -26,7 +26,8 @@ import org.neo4j.impl.transaction.xaframework.XaCommand;
  */
 abstract class Command extends XaCommand
 {
-	private static Logger logger = Logger.getLogger( Command.class.getName() );
+	static Logger logger = Logger.getLogger( Command.class.getName() );
+	
 	private Integer key;
 	private boolean isInRecovery = false;
 	
@@ -50,7 +51,7 @@ abstract class Command extends XaCommand
 		return key;
 	}
 	
-	private static void writeDynamicRecord( DynamicRecord record, 
+	static void writeDynamicRecord( DynamicRecord record, 
 			FileChannel fileChannel, ByteBuffer buffer ) throws IOException  
 	{
 		// id+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int) 
@@ -64,7 +65,7 @@ abstract class Command extends XaCommand
 		fileChannel.write( buffer );
 	}
 	
-	private static DynamicRecord readDynamicRecord( FileChannel fileChannel, 
+	static DynamicRecord readDynamicRecord( FileChannel fileChannel, 
 		ByteBuffer buffer) throws IOException
 	{
 		// id+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
@@ -445,6 +446,9 @@ abstract class Command extends XaCommand
 			case 4: return PropertyType.DOUBLE;
 			case 5: return PropertyType.FLOAT;
 			case 6: return PropertyType.LONG;
+			case 7: return PropertyType.BYTE;
+			case 8: return PropertyType.CHAR;
+			case 9: return PropertyType.ARRAY;
 			}
 			throw new RuntimeException( "Unkown property type:" + type );
 		}

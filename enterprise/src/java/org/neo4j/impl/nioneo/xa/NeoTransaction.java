@@ -337,8 +337,8 @@ class NeoTransaction extends XaTransaction
 						( MemCommand.NodeChangeProperty ) cmd;
 					if ( !deletedNodesMap.containsKey( command.getNodeId() ) )
 					{
-						nodeChangeProperty( command.getNodeId(), 
-							command.getPropertyId(), command.getValue() );
+						nodeChangeProperty( command.getPropertyId(), 
+							command.getValue() );
 					}
 				}
 				else
@@ -347,8 +347,8 @@ class NeoTransaction extends XaTransaction
 						( MemCommand.RelationshipChangeProperty ) cmd;
 					if ( !deletedRelsMap.containsKey( command.getRelId() ) )
 					{
-						relChangeProperty( command.getRelId(), 
-							command.getPropertyId(), command.getValue() );
+						relChangeProperty( command.getPropertyId(), 
+							command.getValue() );
 					}
 				}
 			}
@@ -951,7 +951,7 @@ class NeoTransaction extends XaTransaction
 		}
 	}
 
-	private void relChangeProperty( int relId, int propertyId, Object value )
+	private void relChangeProperty( int propertyId, Object value )
 		throws IOException
 	{
 		PropertyRecord propertyRecord = getPropertyRecord( propertyId );
@@ -960,6 +960,7 @@ class NeoTransaction extends XaTransaction
 			propertyRecord = getPropertyStore().getRecord( propertyId );
 			addPropertyRecord( propertyRecord );
 		}
+		// TODO:
 		if ( propertyRecord.getType() == PropertyType.STRING )
 		{
 			propertyRecord.clearValueRecords();
@@ -968,7 +969,7 @@ class NeoTransaction extends XaTransaction
 		addPropertyRecord( propertyRecord );
 	}
 	
-	private void nodeChangeProperty( int nodeId, int propertyId, Object value )
+	private void nodeChangeProperty( int propertyId, Object value )
 		throws IOException
 	{
 		PropertyRecord propertyRecord = getPropertyRecord( propertyId );
@@ -977,6 +978,7 @@ class NeoTransaction extends XaTransaction
 			propertyRecord = getPropertyStore().getRecord( propertyId );
 			addPropertyRecord( propertyRecord );
 		}
+		// TODO:
 		if ( propertyRecord.getType() == PropertyType.STRING )
 		{
 			propertyRecord.clearValueRecords();
@@ -1222,7 +1224,7 @@ class NeoTransaction extends XaTransaction
 			createdRelsMap.get( id ) ).getRelationshipData();
 	}
 	
-	private static class CommandSorter implements Comparator<Command>
+	static class CommandSorter implements Comparator<Command>
 	{
 		public int compare( Command o1, Command o2 )
 		{

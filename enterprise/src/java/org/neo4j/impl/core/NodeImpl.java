@@ -209,17 +209,14 @@ class NodeImpl implements Node, Comparable
 			{
 				return Collections.emptyList();
 			}
-			else
+			List<Relationship> rels = new LinkedList<Relationship>(); 
+			Iterator<Integer> values = relationshipSet.iterator();
+			while ( values.hasNext() )
 			{
-				List<Relationship> rels = new LinkedList<Relationship>(); 
-				Iterator<Integer> values = relationshipSet.iterator();
-				while ( values.hasNext() )
-				{
-					rels.add( nodeManager.getRelationshipById( 
-						values.next() ) ); 
-				}
-				return rels;
+				rels.add( nodeManager.getRelationshipById( 
+					values.next() ) ); 
 			}
+			return rels;
 		}
 		finally
 		{
@@ -278,27 +275,24 @@ class NodeImpl implements Node, Comparable
 			{
 				return Collections.emptyList();
 			}
-			else
+			List<Relationship> rels = new LinkedList<Relationship>(); 
+			Iterator<Integer> values = relationshipSet.iterator();
+			while ( values.hasNext() )
 			{
-				List<Relationship> rels = new LinkedList<Relationship>(); 
-				Iterator<Integer> values = relationshipSet.iterator();
-				while ( values.hasNext() )
+				Relationship rel = nodeManager.getRelationshipById( 
+					values.next() ); 
+				if ( dir == Direction.OUTGOING &&
+					rel.getStartNode().equals( this ) )
 				{
-					Relationship rel = nodeManager.getRelationshipById( 
-						values.next() ); 
-					if ( dir == Direction.OUTGOING &&
-						rel.getStartNode().equals( this ) )
-					{
-						rels.add( rel );
-					}
-					else if ( dir == Direction.INCOMING &&
-						rel.getEndNode().equals( this ) )
-					{
-						rels.add( rel );
-					}
+					rels.add( rel );
 				}
-				return rels;
+				else if ( dir == Direction.INCOMING &&
+					rel.getEndNode().equals( this ) )
+				{
+					rels.add( rel );
+				}
 			}
+			return rels;
 		}
 		finally
 		{
@@ -802,14 +796,14 @@ class NodeImpl implements Node, Comparable
 		if ( propertyMap.containsKey( key ) )
 		{
 			Property oldValue  = propertyMap.get( key );
-			if ( !oldValue.getValue().getClass().equals( 
-					newValue.getValue().getClass() ) )
-			{
-				throw new IllegalValueException( "New value[" + 
-					newValue.getValue() + 
-					" not same type as old value[" + 
-					oldValue.getValue() + "]" );
-			}
+//			if ( !oldValue.getValue().getClass().equals( 
+//					newValue.getValue().getClass() ) )
+//			{
+//				throw new IllegalValueException( "New value[" + 
+//					newValue.getValue() + 
+//					" not same type as old value[" + 
+//					oldValue.getValue() + "]" );
+//			}
 			propertyMap.put( key, newValue );
 			return oldValue;
 		}
