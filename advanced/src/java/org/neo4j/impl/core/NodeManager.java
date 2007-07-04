@@ -755,4 +755,17 @@ public class NodeManager
 			return false;
 		}
 	}
+	
+	public boolean isValidRelationshipType( RelationshipType type )
+	{
+		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
+		return rth.isValidRelationshipType( type );
+	}
+
+	public void addEnumRelationshipTypes( 
+		Class<? extends RelationshipType> relationshipTypes )
+    {
+		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
+		rth.addValidRelationshipTypes( relationshipTypes );
+    }
 }

@@ -27,7 +27,7 @@ public class NeoShellLobby
 		final EmbeddedNeo neo = new EmbeddedNeo( relTypes, neoPath );
 		try
 		{
-			final ShellServer server = new NeoShellServer( neo, relTypes );
+			final ShellServer server = new NeoShellServer( neo ); //, relTypes );
 			Runtime.getRuntime().addShutdownHook( new Thread()
 			{
 				@Override
