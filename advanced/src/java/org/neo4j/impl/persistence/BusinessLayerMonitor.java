@@ -1,6 +1,5 @@
 package org.neo4j.impl.persistence;
 
-// Kernel imports
 import java.util.logging.Logger;
 
 import org.neo4j.impl.event.Event;
@@ -14,14 +13,9 @@ import org.neo4j.impl.transaction.NotInTransactionException;
 
 
 /**
- * The BusinessLayerMonitor is responsible for monitoring the kernel
+ * The BusinessLayerMonitor is responsible for monitoring the 
  * business layer for changes that should be reflected in persistent state.
  * It contains much of the macro-level program flow for persistence.
- * <P>
- * The BusinessLayerMonitor listens to the events that are generated when
- * clients or other components affects the kernel business layer, analyzes
- * the events and generates the appropriate persistence commands
- * (i.e SQL code) for making them persistent.
  * <P>
  * Implementation notes:
  * <UL>
@@ -30,12 +24,11 @@ import org.neo4j.impl.transaction.NotInTransactionException;
  *		proactive events) for business layer state changes. It returns
  *		<CODE>false</CODE> if it fails to persist the state change.
  *	<LI>The monitor listens to <I>reactive events</I> for monitoring the
- *		addition and removal of persistence source available to the kernel.
+ *		addition and removal of persistence source available.
  *	<LI>Most of the logic resides in
  *		<CODE>performPersistenceOperationForEvent()</CODE>. This method is
  *		invoked whenever an object has changed state in the business layer.
- *		It translates the event to SQL code, requests a connection for the
- *		transaction and writes the SQL to the connection.
+ *		It forwards the event to the persistence sources in use.
  *	<LI>All the private register/unregister* methods at the end of this class
  *		are used only to register/unregister the BusinessLayerMonitor on events
  *		whenever the persistence module starts up and shuts down. Adding batch
@@ -131,10 +124,9 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 	// javadoc: see ReActiveEventListener.reActiveEventReceived()
 	// on DATA_SOURCE_ADDED		->	notify PersistenceSourceDispatcher that
 	//								a new persistence source has been hooked
-	//								up to the kernel
+	//								up
 	// on DATA_SOURCE_REMOVED	->	notify PersistenceSourceDispatcher that
-	//								a persistence source has been removed from
-	//								the kernel
+	//								a persistence source has been removed
 	// everything else			->	report error
 	public void reActiveEventReceived( Event event, EventData data )
 	{
@@ -167,9 +159,6 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 
 	// -- Persistence-related operations
 
-	// Execute the sql required to make the operation represented by
-	// 'event' persistent. If we don't know how to persist 'event,'
-	// or 'data' is malformed, an IllegalArgumentException is raised.
 	private void performPersistenceOperationForEvent( Event event,
 													  EventData data )
 		throws	UnsupportedPersistenceTypeException,

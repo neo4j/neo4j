@@ -175,11 +175,11 @@ public class TestJtaCompliance extends TestCase
 		tm.begin();
 		Transaction tx = tm.getTransaction();
 		FakeXAResource res = new FakeXAResource( "XAResource1" );
-		tx.enlistResource( (XAResource) res );
+		tx.enlistResource( res );
 		
 		// suspend
 		assertTrue( tm.suspend() == tx );
-		tx.delistResource( (XAResource) res, XAResource.TMSUSPEND );
+		tx.delistResource( res, XAResource.TMSUSPEND );
 		MethodCall calls[] = res.getAndRemoveMethodCalls();
 		assertEquals( 2, calls.length );
 		assertEquals( "start", calls[0].getMethodName() );
@@ -191,14 +191,14 @@ public class TestJtaCompliance extends TestCase
 		
 		// resume
 		tm.resume( tx );
-		tx.enlistResource( (XAResource) res );
+		tx.enlistResource( res );
 		calls = res.getAndRemoveMethodCalls();
 		assertEquals( 1, calls.length );
 		assertEquals( "start", calls[0].getMethodName() );
 		args = calls[0].getArgs();
 		assertEquals( XAResource.TMRESUME, ( (Integer) args[1]).intValue() );
 		assertTrue( tm.getTransaction() == tx );
-		tx.delistResource( (XAResource) res, XAResource.TMSUCCESS );
+		tx.delistResource( res, XAResource.TMSUCCESS );
 		
 		tm.commit();
 		
@@ -224,12 +224,12 @@ public class TestJtaCompliance extends TestCase
 		// enlist two different resources and verify that the start method
 		// is invoked with correct flags
 		// res1
-		tm.getTransaction().enlistResource( (XAResource) res1 );
+		tm.getTransaction().enlistResource( res1 );
 		MethodCall calls1[] = res1.getAndRemoveMethodCalls();
 		assertEquals( 1, calls1.length );
 		assertEquals( "start", calls1[0].getMethodName() );
 		// res2
-		tm.getTransaction().enlistResource( (XAResource) res2 );
+		tm.getTransaction().enlistResource( res2 );
 		MethodCall calls2[] = res2.getAndRemoveMethodCalls();
 		assertEquals( 1, calls2.length );
 		assertEquals( "start", calls2[0].getMethodName() );
@@ -267,11 +267,11 @@ public class TestJtaCompliance extends TestCase
 		}
 		
 		// verify delist of resource
-		tm.getTransaction().delistResource( (XAResource) res2, 
+		tm.getTransaction().delistResource( res2, 
 			XAResource.TMSUCCESS );
 		calls2 = res2.getAndRemoveMethodCalls();
 		assertEquals( 1, calls2.length );
-		tm.getTransaction().delistResource( (XAResource) res1, 
+		tm.getTransaction().delistResource( res1, 
 			XAResource.TMSUCCESS );
 		calls1 = res1.getAndRemoveMethodCalls();
 		// res1
@@ -323,19 +323,19 @@ public class TestJtaCompliance extends TestCase
 		// enlist two (same) resources and verify that the start method
 		// is invoked with correct flags
 		// res1
-		tm.getTransaction().enlistResource( (XAResource) res1 );
+		tm.getTransaction().enlistResource( res1 );
 		MethodCall calls1[] = res1.getAndRemoveMethodCalls();
 		assertEquals( 1, calls1.length );
 		assertEquals( "start", calls1[0].getMethodName() );
 		// res2
-		tm.getTransaction().enlistResource( (XAResource) res2 );
+		tm.getTransaction().enlistResource( res2 );
 		MethodCall calls2[] = res2.getAndRemoveMethodCalls();
 		assertEquals( 1, calls2.length );
 		assertEquals( "start", calls2[0].getMethodName() );
 		
 		// make sure we get a two-phase commit
 		FakeXAResource res3 = new FakeXAResource( "XAResource2" );
-		tm.getTransaction().enlistResource( (XAResource) res3 );
+		tm.getTransaction().enlistResource( res3 );
 		
 		// verify Xid and flags
 		Object args[] = calls1[0].getArgs();
@@ -348,14 +348,11 @@ public class TestJtaCompliance extends TestCase
 		assertTrue( xid2.equals( xid1 ) );
 		
 		// verify delist of resource
-		tm.getTransaction().delistResource( (XAResource) res3, 
-			XAResource.TMSUCCESS );
-		tm.getTransaction().delistResource( (XAResource) res2, 
-			XAResource.TMSUCCESS );
+		tm.getTransaction().delistResource( res3, XAResource.TMSUCCESS );
+		tm.getTransaction().delistResource( res2, XAResource.TMSUCCESS );
 		calls2 = res2.getAndRemoveMethodCalls();
 		assertEquals( 1, calls2.length );
-		tm.getTransaction().delistResource( (XAResource) res1, 
-			XAResource.TMSUCCESS );
+		tm.getTransaction().delistResource( res1, XAResource.TMSUCCESS );
 		calls1 = res1.getAndRemoveMethodCalls();
 		// res1
 		assertEquals( 1, calls1.length );
@@ -398,12 +395,12 @@ public class TestJtaCompliance extends TestCase
 		// enlist two different resources and verify that the start method
 		// is invoked with correct flags
 		// res1
-		tm.getTransaction().enlistResource( (XAResource) res1 );
+		tm.getTransaction().enlistResource( res1 );
 		MethodCall calls1[] = res1.getAndRemoveMethodCalls();
 		assertEquals( 1, calls1.length );
 		assertEquals( "start", calls1[0].getMethodName() );
 		// res2
-		tm.getTransaction().enlistResource( (XAResource) res2 );
+		tm.getTransaction().enlistResource( res2 );
 		MethodCall calls2[] = res2.getAndRemoveMethodCalls();
 		assertEquals( 1, calls2.length );
 		assertEquals( "start", calls2[0].getMethodName() );
@@ -441,11 +438,11 @@ public class TestJtaCompliance extends TestCase
 		}
 		
 		// verify delist of resource
-		tm.getTransaction().delistResource( (XAResource) res2, 
+		tm.getTransaction().delistResource( res2, 
 			XAResource.TMSUCCESS );
 		calls2 = res2.getAndRemoveMethodCalls();
 		assertEquals( 1, calls2.length );
-		tm.getTransaction().delistResource( (XAResource) res1, 
+		tm.getTransaction().delistResource( res1, 
 			XAResource.TMSUCCESS );
 		calls1 = res1.getAndRemoveMethodCalls();
 		// res1
@@ -489,12 +486,12 @@ public class TestJtaCompliance extends TestCase
 		// enlist two (same) resources and verify that the start method
 		// is invoked with correct flags
 		// res1
-		tm.getTransaction().enlistResource( (XAResource) res1 );
+		tm.getTransaction().enlistResource( res1 );
 		MethodCall calls1[] = res1.getAndRemoveMethodCalls();
 		assertEquals( 1, calls1.length );
 		assertEquals( "start", calls1[0].getMethodName() );
 		// res2
-		tm.getTransaction().enlistResource( (XAResource) res2 );
+		tm.getTransaction().enlistResource( res2 );
 		MethodCall calls2[] = res2.getAndRemoveMethodCalls();
 		assertEquals( 1, calls2.length );
 		assertEquals( "start", calls2[0].getMethodName() );
@@ -510,12 +507,10 @@ public class TestJtaCompliance extends TestCase
 		assertTrue( xid2.equals( xid1 ) );
 		
 		// verify delist of resource
-		tm.getTransaction().delistResource( (XAResource) res2, 
-			XAResource.TMSUCCESS );
+		tm.getTransaction().delistResource( res2, XAResource.TMSUCCESS );
 		calls2 = res2.getAndRemoveMethodCalls();
 		assertEquals( 1, calls2.length );
-		tm.getTransaction().delistResource( (XAResource) res1, 
-			XAResource.TMSUCCESS );
+		tm.getTransaction().delistResource( res1, XAResource.TMSUCCESS );
 		calls1 = res1.getAndRemoveMethodCalls();
 		// res1
 		assertEquals( 1, calls1.length );
@@ -575,12 +570,12 @@ public class TestJtaCompliance extends TestCase
 	private static class TxHook 
 		implements javax.transaction.Synchronization
 	{
-		private boolean gotBefore = false;
-		private boolean gotAfter = false;
-		private int statusBefore = -1;
-		private int statusAfter = -1;
-		private Transaction txBefore = null;
-		private Transaction txAfter = null;
+		boolean gotBefore = false;
+		boolean gotAfter = false;
+		int statusBefore = -1;
+		int statusAfter = -1;
+		Transaction txBefore = null;
+		Transaction txAfter = null;
 		
 		public void beforeCompletion()
 		{

@@ -31,7 +31,7 @@ public class XaContainer
 	 * @param tf The transaction factory implementation
 	 */
 	public static XaContainer create( String logicalLog, XaCommandFactory cf, 
-		XaTransactionFactory tf ) throws IOException
+		XaTransactionFactory tf ) // throws IOException
 	{
 		if ( logicalLog == null || cf == null || tf == null )
 		{

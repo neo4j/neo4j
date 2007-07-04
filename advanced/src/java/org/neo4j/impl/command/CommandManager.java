@@ -54,11 +54,11 @@ public class CommandManager
 	
 	private static class CommandStackElement
 	{
-		private TransactionIsolationLevel isolationLevel;
-		private Stack<Command> commands;
-		private Stack<LockElement> locks;
+		TransactionIsolationLevel isolationLevel;
+		Stack<Command> commands;
+		Stack<LockElement> locks;
 		
-		private CommandStackElement( TransactionIsolationLevel level, 
+		CommandStackElement( TransactionIsolationLevel level, 
 			Stack<Command> stack )
 		{
 			this.isolationLevel = level;
@@ -84,10 +84,10 @@ public class CommandManager
 	
 	private static class LockElement
 	{
-		private Object resource;
-		private LockType lockType;
+		Object resource;
+		LockType lockType;
 		
-		private LockElement( Object resource, LockType type )
+		LockElement( Object resource, LockType type )
 		{
 			this.resource = resource;
 			this.lockType = type;
@@ -289,7 +289,7 @@ public class CommandManager
 	 * @throws InvalidTransactionException if this method is invoked when 
 	 * transaction state is invalid.
 	 */
-	public void releaseCommands() throws InvalidTransactionException
+	public void releaseCommands()
 	{
 		Thread currentThread = Thread.currentThread();
 		if ( commandStack.containsKey( currentThread ) )
@@ -339,7 +339,7 @@ public class CommandManager
 	 * @throws InvalidTransactionException if this method is invoked when
 	 * transactionstate is invalid
 	 */
-	public void undoAndReleaseCommands() throws InvalidTransactionException
+	public void undoAndReleaseCommands()
 	{
 		Thread currentThread = Thread.currentThread();
 		if ( commandStack.containsKey( currentThread ) )
@@ -368,7 +368,7 @@ public class CommandManager
 			Stack<LockElement> lStack = cse.locks;
 			while ( lStack != null && !lStack.isEmpty() )
 			{
-				LockElement lockElement = (LockElement) lStack.pop();
+				LockElement lockElement = lStack.pop();
 				try
 				{
 					if ( lockElement.lockType == LockType.READ )

@@ -1,6 +1,5 @@
 package org.neo4j.impl.transaction;
 
-// Java imports
 import java.io.IOException;
 import java.util.Map;
 
@@ -173,8 +172,7 @@ public class TxModule
 		
 		private byte[] getBranchId( String branchId )
 		{
-			byte resourceId[] = new byte[ branchId.length() ];
-			resourceId = branchId.getBytes();
+			byte resourceId[] = branchId.getBytes();
 			return resourceId;
 		}
 	}

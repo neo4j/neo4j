@@ -155,11 +155,11 @@ public class TestStore extends TestCase
 			super( fileName );
 		}
 		
-		protected void initStorage() throws IOException
+		protected void initStorage()
 		{
 		}
 		
-		protected void closeImpl() throws IOException
+		protected void closeImpl()
 		{
 		}
 		

@@ -19,7 +19,7 @@ import org.neo4j.impl.nioneo.xa.TxInfoManager;
  */
 public abstract class CommonAbstractStore
 {
-	protected static Logger logger = 
+	protected static final Logger logger = 
 		Logger.getLogger( CommonAbstractStore.class.getName() ); 
 	/**
 	 * Returns the type and version that identifies this store.

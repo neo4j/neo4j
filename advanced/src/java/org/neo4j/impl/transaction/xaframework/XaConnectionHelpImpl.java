@@ -46,8 +46,7 @@ public abstract class XaConnectionHelpImpl implements XaConnection
 	{
 		if ( xaRm == null )
 		{
-			throw new IllegalArgumentException( "XaResourceManager[" + xaRm + 
-				"]" );
+			throw new IllegalArgumentException( "XaResourceManager is null" );
 		}
 		this.xaRm = xaRm;
 	}
@@ -70,7 +69,7 @@ public abstract class XaConnectionHelpImpl implements XaConnection
 	 *
 	 * @throws XAException If resource not enlisted or suspended
 	 */
-	protected void validate() throws XAException
+	public void validate() throws XAException
 	{
 		xaRm.validate( getXaResource() );
 	}

@@ -1,7 +1,5 @@
 package org.neo4j.impl.traversal;
 
-// Kernel imports
-
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.RelationshipType;
@@ -53,7 +51,7 @@ class BreadthFirstTraverser extends AbstractTraverser
 	
 	TraversalPositionImpl getNextPositionFromList()
 	{
-		return (TraversalPositionImpl) this.nodeQueue.removeFirst();
+		return this.nodeQueue.removeFirst();
 	}
 	
 	boolean listIsEmpty()

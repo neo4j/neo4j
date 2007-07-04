@@ -131,11 +131,6 @@ public class TestNeo extends TestCase
 	
 	public void testNodePropertyPerformance()
 	{
-/*		if ( !unit.kernel.TestAll.runSlowTests() )
-		{
-			return;
-		}*/
-
 		try
 		{
 			TransactionFactory.getTransactionManager().setTransactionTimeout( 

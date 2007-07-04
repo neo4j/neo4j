@@ -44,7 +44,7 @@ import org.neo4j.impl.transaction.TransactionIsolationLevel;
  * Methods that uses commands will first create a command and verify that
  * we're in a transaction context. To persist operations a pro-active event 
  * is generated and will cause the 
- * {@link com.windh.kernel.persistence.BusinessLayerMonitor} to persist the 
+ * {@link org.neo4j.impl.persistence.BusinessLayerMonitor} to persist the 
  * then operation. 
  * If the event fails (false is returned)  the transaction is marked as 
  * rollback only and if the command will be undone.
@@ -64,6 +64,7 @@ class RelationshipImpl
 	private int	id = -1;
 	private int startNodeId = -1;
 	private int endNodeId = -1;
+	private Integer[] nodeIds = new Integer[2];
 	private RelationshipPhase phase = RelationshipPhase.NORMAL;
 	private RelationshipType type = null;
 	private Map<String,Property> propertyMap = new HashMap<String,Property>();
@@ -109,7 +110,9 @@ class RelationshipImpl
 		this.id = id;
 		this.startNodeId = startNodeId;
 		this.endNodeId = endNodeId;
-		if ( newRel )
+		this.nodeIds[0] = startNodeId;
+		this.nodeIds[1] = endNodeId;
+ 		if ( newRel )
 		{
 			this.phase = RelationshipPhase.FULL;
 		}
@@ -383,7 +386,10 @@ class RelationshipImpl
 		}
 		catch ( ExecuteFailedException e )
 		{
-			relationshipCommand.undo();
+			if ( relationshipCommand != null )
+			{
+				relationshipCommand.undo();
+			}
 			throw new IllegalValueException( "Failed executing command.", e );
 		}
 		finally
@@ -440,7 +446,10 @@ class RelationshipImpl
 		}
 		catch ( ExecuteFailedException e )
 		{
-			relationshipCommand.undo();
+			if ( relationshipCommand != null )
+			{
+				relationshipCommand.undo();
+			}
 			throw new NotFoundException( "Failed executing command.", e );
 		}
 		finally
@@ -489,7 +498,10 @@ class RelationshipImpl
 		catch ( ExecuteFailedException e )
 		{
 			setRollbackOnly();
-			relationshipCommand.undo();
+			if ( relationshipCommand != null )
+			{
+				relationshipCommand.undo();
+			}
 			throw new IllegalValueException( "Failed executing command.", e );
 		}
 		finally
@@ -550,7 +562,10 @@ class RelationshipImpl
 		catch ( ExecuteFailedException e )
 		{
 			setRollbackOnly();
-			relationshipCommand.undo();
+			if ( relationshipCommand != null )
+			{
+				relationshipCommand.undo();
+			}
 			throw new DeleteException( "Failed executing command.", e );
 		}
 		finally
@@ -643,13 +658,6 @@ class RelationshipImpl
 	 */
 	public boolean equals( Object o )
 	{
-		// the id check bellow isn't very expensive so this performance 
-		// optimization isn't worth it
-		// if ( this == o )
-		// {
-		// 	return true;
-		// }
-
 		// verify type and not null, should use Node inteface
 		if ( !(o instanceof Relationship) )
 		{
@@ -693,11 +701,7 @@ class RelationshipImpl
 
 	Integer[] getNodeIds()
 	{
-		return new Integer[] 
-		{ 
-			new Integer( startNodeId ), 
-			new Integer( endNodeId ) 
-		};
+		return nodeIds;
 	}
 
 	// caller responsible for acquiring lock
@@ -729,14 +733,6 @@ class RelationshipImpl
 		if ( propertyMap.containsKey( key ) )
 		{
 			Property oldValue  = propertyMap.get( key );
-//			if ( !oldValue.getValue().getClass().equals( 
-//					newValue.getValue().getClass() ) )
-//			{
-//				throw new IllegalValueException( "New value[" + 
-//					newValue.getValue() + 
-//					" not same type as old value[" + 
-//					oldValue.getValue() + "]" );
-//			}
 			propertyMap.put( key, newValue );
 			return oldValue;
 		}
@@ -898,15 +894,5 @@ class RelationshipImpl
 	void setIsDeleted( boolean flag )
 	{
 		isDeleted = flag;
-	}
-
-	// TODO: remove this method once we have non corupt persistence
-	boolean propertyAlreadyInCache( String key )
-	{
-		if ( propertyMap.containsKey( key ) )
-		{
-			return true;
-		}
-		return false;
 	}
 }

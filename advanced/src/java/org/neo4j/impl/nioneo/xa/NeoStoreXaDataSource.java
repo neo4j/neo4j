@@ -18,6 +18,7 @@ import org.neo4j.api.core.RelationshipType;
 
 import java.nio.channels.FileChannel;
 import java.nio.ByteBuffer;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.File;
 import java.util.HashMap;
@@ -71,7 +72,16 @@ public class NeoStoreXaDataSource extends XaDataSource
 		Properties config = new Properties();
 		if ( configFileName != null )
 		{
-			config.load( new java.io.FileInputStream( configFileName ) );
+			FileInputStream inputStream = new FileInputStream( 
+				configFileName );
+			try
+			{
+				config.load( inputStream );
+			}
+			finally
+			{
+				inputStream.close();
+			}
 		}
 		Iterator itr = params.entrySet().iterator();
 		while ( itr.hasNext() )

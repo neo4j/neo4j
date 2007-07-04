@@ -134,10 +134,13 @@ public class TxLog
 	public synchronized void addBranch( byte globalId[], byte branchId[] )
 		throws IOException
 	{
-		if ( globalId == null || branchId == null )
+		if ( globalId == null )
 		{
-			throw new IllegalArgumentException( "Null parameter, globalId=" + 
-				globalId + ", branchId= " + branchId );
+			throw new IllegalArgumentException( "Null global id" );
+		}
+		if ( branchId == null )
+		{
+			throw new IllegalArgumentException( "Null branch id" );
 		}
 		buffer.clear();
 		buffer.put( BRANCH_ADD ).put( ( byte ) globalId.length ).put( 
@@ -392,11 +395,6 @@ public class TxLog
 				public int compare( Record r1, Record r2 )
 				{
 					return r1.getSequenceNumber() - r2.getSequenceNumber();
-				}
-				
-				public boolean equals( Object o )
-				{
-					return this == o;
 				}
 			} );
 		Iterator<Record> recordItr = records.iterator();

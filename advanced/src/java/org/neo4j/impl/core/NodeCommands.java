@@ -9,7 +9,7 @@ import org.neo4j.impl.persistence.PersistenceMetadata;
 /**
  * This class has all the node commands encapsulated and also implements
  * the {@link NodeOperationEventData} and {@link PersistenceMetadata} 
- * interfaces that is used by the the {@link com.windh.kernel.persistence}
+ * interfaces that is used by the the {@link org.neo4j.impl.persistence}
  * package. The reason for having all this in the same class is to hold down 
  * the number of objects and make better use of object pooling. 
  * <p>
@@ -17,7 +17,7 @@ import org.neo4j.impl.persistence.PersistenceMetadata;
  * that is needed to perform the operation and all data that is needed
  * by the persistence layer when making changes persistent. When the
  * command has been initialized it can be executed and undone via the
- * {@link com.windh.kernel.command.Command command framework}.
+ * {@link org.neo4j.impl.command.Command command framework}.
  * <p>
  * A command can only be used once, keeping reference to an already 
  * initialized command is useless because a second init request on any

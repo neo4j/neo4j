@@ -150,8 +150,8 @@ class NeoTransaction extends XaTransaction
 		}
 		else if ( command instanceof MemCommand.NodeRemoveProperty )
 		{
-			Integer nodeId = new Integer( ( ( MemCommand.NodeRemoveProperty ) 
-				command ).getNodeId() );
+			int nodeId = ( ( MemCommand.NodeRemoveProperty ) 
+				command ).getNodeId();
 
 			if ( addedPropsMap.containsKey( key ) || 
 				changedPropsMap.containsKey( key ) )
@@ -211,8 +211,8 @@ class NeoTransaction extends XaTransaction
 		}
 		else if ( command instanceof MemCommand.RelationshipRemoveProperty )
 		{
-			Integer relId = new Integer( ( ( 
-				MemCommand.RelationshipRemoveProperty ) command ).getRelId() );
+			int relId = ( ( MemCommand.RelationshipRemoveProperty ) 
+				command ).getRelId();
 			if ( addedPropsMap.containsKey( key ) || 
 				changedPropsMap.containsKey( key ) )
 			{
@@ -370,8 +370,7 @@ class NeoTransaction extends XaTransaction
 				{
 					MemCommand.RelationshipRemoveProperty command = 
 						( MemCommand.RelationshipRemoveProperty ) cmd;
-					Integer key = new Integer( command.getRelId() );
-					if ( !deletedRelsMap.containsKey( key ) )
+					if ( !deletedRelsMap.containsKey( command.getRelId() ) )
 					{
 						relRemoveProperty( command.getRelId(), 
 							command.getPropertyId() );
@@ -397,8 +396,7 @@ class NeoTransaction extends XaTransaction
 				{
 					MemCommand.RelationshipRemoveProperty command = 
 						( MemCommand.RelationshipRemoveProperty ) cmd;
-					Integer key = new Integer( command.getRelId() );
-					if ( !deletedRelsMap.containsKey( key ) )
+					if ( !deletedRelsMap.containsKey( command.getRelId() ) )
 					{
 						relRemoveProperty( command.getRelId(), 
 							command.getPropertyId() );
@@ -1184,9 +1182,8 @@ class NeoTransaction extends XaTransaction
 
 	public boolean propertyDeleted( int propertyId )
 	{
-		Integer key = new Integer( propertyId );
-		if ( removedPropsMap.containsKey( key ) || 
-			strayPropMap.containsKey( key ) )
+		if ( removedPropsMap.containsKey( propertyId ) || 
+			strayPropMap.containsKey( propertyId ) )
 		{
 			return true;
 		}

@@ -6,13 +6,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
 import org.neo4j.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -55,8 +51,16 @@ public class AdminStore
 			else if ( args[i].equals( "--open" ) )
 			{
 				Properties properties = new Properties();
-				properties.load( new FileInputStream( args[++i] ) );
-				new NeoStoreXaDataSource( properties ).close();
+				FileInputStream inputStream = new FileInputStream( args[++i] );
+				try
+				{
+					properties.load( inputStream );
+					new NeoStoreXaDataSource( properties ).close();
+				}
+				finally
+				{
+					inputStream.close();
+				}
 			}
 			else if ( args[i].equals( "--dump-rel-types" ) )
 			{
@@ -66,12 +70,6 @@ public class AdminStore
 			{
 				fsckStore( args[++i] );
 			}
-			else if ( args[i].equals(  "--test" ) )
-			{
-				// dumpTxLog( args[++i] );
-				testLists();
-			}
-			
 			else
 			{
 				usage();
@@ -80,37 +78,6 @@ public class AdminStore
 		}
 	}
 	
-	private static void testLists()
-	{
-		List<Integer> arrayList = new ArrayList<Integer>();
-		List<Integer> linkedList = new LinkedList<Integer>();
-		long start = System.currentTimeMillis();
-		for ( int i = 0; i < 1000000; i++ )
-		{
-			arrayList.add( i );
-		}
-		System.out.println( "Array poulation: " + (System.currentTimeMillis() - 
-			start) );
-		start = System.currentTimeMillis();
-		for ( int i = 0; i < 1000000; i++ )
-		{
-			linkedList.add( i );
-		}
-		System.out.println( "Linked poulation: " + (System.currentTimeMillis() - 
-			start) );
-		Integer[] array = new Integer[1000000];
-		start = System.currentTimeMillis();
-		Integer[] at = arrayList.toArray( array );
-		System.out.println( "Array toArray: " + (System.currentTimeMillis() - 
-			start) );
-		start = System.currentTimeMillis();
-		Integer[] lt = linkedList.toArray( array );
-		System.out.println( "Linked toArray: " + (System.currentTimeMillis() - 
-			start) );
-		at = lt;
-		lt = at;
-	}
-
 	private static class DynamicStringStore extends AbstractDynamicStore
 	{
 		private static final String VERSION = "StringPropertyStore v0.9";
@@ -257,12 +224,12 @@ public class AdminStore
 			{
 				int block = buffer.getInt();
 				if ( block != RESERVED && 
-					!startBlocks.remove( new Integer( block ) ) )
+					!startBlocks.remove( block ) )
 				{
 					throw new IOException( "start block[" + block + 
 						"] not found for record " + i );
 				}
-				relTypeSet.add( new Integer( i ) );
+				relTypeSet.add( i );
 			}
 			else if ( inUse != RECORD_NOT_IN_USE )
 			{
@@ -358,7 +325,7 @@ public class AdminStore
 				}
 				if ( previous == NO_PREV_BLOCK )
 				{
-					startBlocks.add( new Integer( i ) );
+					startBlocks.add( i );
 				}
 				else 
 				{
@@ -391,13 +358,12 @@ public class AdminStore
 					throw new IOException( "Bad property type[" + type + 
 						"] at record " + i );
 				}
-				if ( !keyStartBlocks.remove( new Integer( key ) ) )
+				if ( !keyStartBlocks.remove( key ) )
 				{
 					throw new IOException( "key start block[" + key + 
 						"] not found for record " + i );
 				}
-				if ( type == 2 && !stringStartBlocks.remove( 
-					new Integer( (int) prop ) ) )
+				if ( type == 2 && !stringStartBlocks.remove( (int) prop ) )
 				{
 					throw new IOException( "string start block[" + prop + 
 						"] not found for record " + i );
@@ -471,10 +437,10 @@ public class AdminStore
 				int nextProp = buffer.getInt();
 				if ( nextRel != NO_NEXT_RELATIONSHIP )
 				{
-					nodeSet.add( new Integer( i ) );
+					nodeSet.add( i );
 				}
 				if ( nextProp != NO_NEXT_PROPERTY && 
-					!propertySet.remove( new Integer( nextProp ) ) )
+					!propertySet.remove( nextProp ) )
 				{
 					throw new IOException( "Bad property start block[" + 
 						nextProp + "] on record " + i );
@@ -553,14 +519,14 @@ public class AdminStore
 				int secondNext = buffer.getInt();
 				int prop = buffer.getInt();
 				if ( firstPrev == NO_PREVIOUS_RELATIONSHIP && 
-					!nodeSet.remove( new Integer( firstNode ) ) )
+					!nodeSet.remove( firstNode ) )
 				{
 					throw new IOException( "Bad start node[" + firstNode + 
 						"](node don't exist or don't have relationships) " +
 						"at record " + i );
 				}
 				if ( secondPrev == NO_PREVIOUS_RELATIONSHIP && 
-					!nodeSet.remove( new Integer( secondNode ) ) )
+					!nodeSet.remove( secondNode ) )
 				{
 					throw new IOException( "Bad start node[" + secondNode + 
 						"](node don't exist or don't have relationships) " +
@@ -571,12 +537,12 @@ public class AdminStore
 				checkRelationshipList( i, secondNode, secondPrev, secondNext, 
 					fileChannel, buffer );
 				if ( prop != NO_NEXT_PROPERTY && 
-					!propertySet.remove( new Integer( prop ) ) )
+					!propertySet.remove( prop ) )
 				{
 					throw new IOException( "Bad property start block[" + 
 						prop + "] on record " + i );
 				}
-				if ( !relTypeSet.contains( new Integer( type ) ) )
+				if ( !relTypeSet.contains( type ) )
 				{
 					throw new IOException( "Bad rel type[" + type + 
 						"] on record " + i );
@@ -772,7 +738,7 @@ public class AdminStore
 				}
 				if ( previous == NO_PREV_BLOCK )
 				{
-					startBlocks.add( new Integer( i ) );
+					startBlocks.add( i );
 				}
 				else 
 				{

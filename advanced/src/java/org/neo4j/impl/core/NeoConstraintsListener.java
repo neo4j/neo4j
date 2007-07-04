@@ -261,11 +261,6 @@ class NeoConstraintsListener implements ProActiveEventListener
 					"] illegal since it has already been deleted (in this tx)" );
 				return false;
 			}
-//			if ( node.getRelationships().iterator().hasNext() )
-//			{
-//				log.severe( "Delete of node[" + node + "] illegal since it " +
-//					"still has relationships" );
-//			}
 				
 			if ( deletedNodes == null )
 			{
@@ -294,13 +289,13 @@ class NeoConstraintsListener implements ProActiveEventListener
 					deletedNodes.containsKey( nodeIds[0] ) )
 			{
 				deletedNodes.get( nodeIds[0] ).removeRelationship( 
-					rel.getType(), new Integer( (int) rel.getId() ) );
+					rel.getType(), (int) rel.getId() );
 			}
 			if ( deletedNodes != null &&
 					deletedNodes.containsKey( nodeIds[1] ) )
 			{
 				deletedNodes.get( nodeIds[1] ).removeRelationship( 
-					rel.getType(), new Integer( (int) rel.getId() ) );
+					rel.getType(), (int) rel.getId() );
 			}
 
 			if ( deletedRelationships == null )

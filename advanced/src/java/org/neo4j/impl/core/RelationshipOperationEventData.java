@@ -1,7 +1,5 @@
 package org.neo4j.impl.core;
 
-// import org.neo4j.api.RelationshipType;
-
 /**
  * This interface defines methods needed for persistence layer when 
  * incremental changes to a relationship are made persistent. Relationships 

@@ -1,10 +1,7 @@
 package org.neo4j.impl.nioneo.xa;
 
-// Kernel imports
 import java.io.IOException;
-
 import javax.transaction.xa.XAResource;
-
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.core.NodeOperationEventData;
@@ -21,7 +18,6 @@ import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
-import org.neo4j.impl.persistence.ConnectionCreationFailedException;
 import org.neo4j.impl.persistence.PersistenceException;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.persistence.PersistenceSource;
@@ -89,7 +85,6 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 	}
 	
 	public synchronized ResourceConnection createResourceConnection()
-		throws ConnectionCreationFailedException
 	{
 		return new NioNeoDbResourceConnection( this.xaDs ); 
 	}
