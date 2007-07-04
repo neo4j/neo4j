@@ -1,8 +1,8 @@
 package org.neo4j.impl.shell;
 
 import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Map;
+// import java.util.HashMap;
+// import java.util.Map;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.RelationshipType;
@@ -21,7 +21,7 @@ public abstract class NeoApp extends AbstractApp
 {
 	private static final String NODE_KEY = "CURRENT_NODE";
 	
-	private static Map<String, RelationshipType> relTypes;
+	//private static Map<String, RelationshipType> relTypes;
 	
 	protected Node getCurrentNode( Session session )
 	{
@@ -44,36 +44,37 @@ public abstract class NeoApp extends AbstractApp
 		this.safeSet( session, NODE_KEY, node.getId() );
 	}
 	
-	protected RelationshipType[] getAllRelationshipTypes()
-	{
-		this.ensureRelTypesInitialized();
-		return relTypes.values().toArray(
-			new RelationshipType[ relTypes.size() ] );
-	}
+//	protected RelationshipType[] getAllRelationshipTypes()
+//	{
+//		this.ensureRelTypesInitialized();
+//		return relTypes.values().toArray(
+//			new RelationshipType[ relTypes.size() ] );
+//	}
 	
 	private NeoShellServer getNeoServer()
 	{
 		return ( NeoShellServer ) this.getServer();
 	}
 	
-	private void ensureRelTypesInitialized()
-	{
-		if ( relTypes == null )
-		{
-			relTypes = new HashMap<String, RelationshipType>();
-			Class<? extends RelationshipType> cls =
-				this.getNeoServer().getRelationshipTypeClass();
-			for ( RelationshipType type : cls.getEnumConstants() )
-			{
-				relTypes.put( type.toString().toLowerCase(), type );
-			}
-		}
-	}
+//	private void ensureRelTypesInitialized()
+//	{
+//		if ( relTypes == null )
+//		{
+//			relTypes = new HashMap<String, RelationshipType>();
+//			Class<? extends RelationshipType> cls =
+//				this.getNeoServer().getRelationshipTypeClass();
+//			for ( RelationshipType type : cls.getEnumConstants() )
+//			{
+//				relTypes.put( type.toString().toLowerCase(), type );
+//			}
+//		}
+//	}
 	
 	protected RelationshipType getRelationshipType( String name )
 	{
-		this.ensureRelTypesInitialized();
-		RelationshipType result = relTypes.get( name.toLowerCase() );
+		// this.ensureRelTypesInitialized();
+		RelationshipType result = this.getNeoServer().getNeo().
+			getRelationshipTypeByName( name );
 		if ( result == null )
 		{
 			throw new RuntimeException( "No relationship type '" + name +

@@ -1,17 +1,17 @@
 package org.neo4j.impl.shell.apps;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.List;
-import org.neo4j.api.core.Direction;
+// import java.util.ArrayList;
+// import java.util.List;
+// import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.ReturnableEvaluator;
-import org.neo4j.api.core.StopEvaluator;
-import org.neo4j.api.core.Traverser;
-import org.neo4j.api.core.Traverser.Order;
-import org.neo4j.impl.core.NodeManager;
+//import org.neo4j.api.core.RelationshipType;
+//import org.neo4j.api.core.ReturnableEvaluator;
+//import org.neo4j.api.core.StopEvaluator;
+//import org.neo4j.api.core.Traverser;
+//import org.neo4j.api.core.Traverser.Order;
+//import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
@@ -70,19 +70,19 @@ public class Rmrel extends NeoApp
 			}
 			otherNode.delete();
 		}
-		else
-		{
-			 if ( !this.hasPathToRefNode( otherNode ) )
-			 {
-				 throw new ShellException( "It would result in " + otherNode +
-					 " to be recursively decoupled with the reference node" );
-			 }
-			 if ( !this.hasPathToRefNode( currentNode ) )
-			 {
-				 throw new ShellException( "It would result in " + currentNode +
-					 " to be recursively decoupled with the reference node" );
-			 }
-		}
+//		else
+//		{
+//			 if ( !this.hasPathToRefNode( otherNode ) )
+//			 {
+//				 throw new ShellException( "It would result in " + otherNode +
+//					 " to be recursively decoupled with the reference node" );
+//			 }
+//			 if ( !this.hasPathToRefNode( currentNode ) )
+//			 {
+//				 throw new ShellException( "It would result in " + currentNode +
+//					 " to be recursively decoupled with the reference node" );
+//			 }
+//		}
 		return null;
 	}
 
@@ -100,26 +100,26 @@ public class Rmrel extends NeoApp
 			" connected to " + currentNode );
 	}
 	
-	private boolean hasPathToRefNode( Node node )
-	{
-		List<Object> filterList = new ArrayList<Object>(); 
-		for ( RelationshipType rel : this.getAllRelationshipTypes() )
-		{
-			filterList.add( rel );
-			filterList.add( Direction.BOTH );
-		}
-		
-		Node refNode = NodeManager.getManager().getReferenceNode();
-		Traverser traverser = node.traverse( Order.DEPTH_FIRST,
-			StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL,
-			filterList.toArray() );
-		for ( Node testNode : traverser )
-		{
-			if ( refNode.equals( testNode ) )
-			{
-				return true;
-			}
-		}
-		return false;
-	}
+//	private boolean hasPathToRefNode( Node node )
+//	{
+//		List<Object> filterList = new ArrayList<Object>(); 
+//		for ( RelationshipType rel : this.getAllRelationshipTypes() )
+//		{
+//			filterList.add( rel );
+//			filterList.add( Direction.BOTH );
+//		}
+//		
+//		Node refNode = NodeManager.getManager().getReferenceNode();
+//		Traverser traverser = node.traverse( Order.DEPTH_FIRST,
+//			StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL,
+//			filterList.toArray() );
+//		for ( Node testNode : traverser )
+//		{
+//			if ( refNode.equals( testNode ) )
+//			{
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
 }

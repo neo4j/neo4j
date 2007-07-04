@@ -43,11 +43,11 @@ class NeoJvmInstance
 		{
 			throw new RuntimeException( "A Neo instance already started" );
 		}
-		if ( clazz.getEnumConstants() == null )
-		{
-			throw new IllegalArgumentException( "No enum constants found in " + 
-				clazz );
-		}
+//		if ( clazz.getEnumConstants() == null )
+//		{
+//			throw new IllegalArgumentException( "No enum constants found in " + 
+//				clazz );
+//		}
 		
 		config = new Config();
 		config.getTxModule().setTxLogDirectory( storeDir );
@@ -185,4 +185,15 @@ class NeoJvmInstance
 			return idGeneratorModule;
 		}
 	}
+
+	public static RelationshipType getRelationshipTypeByName( String name )
+    {
+	    return config.getNeoModule().getRelationshipTypeByName( name );
+    }
+
+	public static void addEnumRelationshipTypes( 
+		Class<? extends RelationshipType> relationshipTypes )
+    {
+	    config.getNeoModule().addEnumRelationshipTypes( relationshipTypes );
+    }
 }
