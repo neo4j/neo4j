@@ -19,15 +19,15 @@ import java.util.logging.Logger;
  * <p>
  * Pro-active events are synchronous, generating a pro-active event
  * will tell all the pro-active event listeners registered on that event to 
- * negotiate and return an answer. This is a very useful way to ask the kernel
+ * negotiate and return an answer. This is a very useful way to ask
  * about something but the caller don't have to know who needs to be asked. 
  * Generate a pro-active event and continue depending on what answer you get.
  * <p>
  * The other type of events, re-active events, are asynchronous. Generating a 
  * re-active event will just place the event in a queue. The re-active events
  * are removed from the queue in the near future and sent to the re-active 
- * event listeners registered on that event. This is a good way to tell the
- * kernel that something has been done without knowing who you have to tell.
+ * event listeners registered on that event. This is a good way to tell 
+ * someone that something has been done without knowing who you have to tell.
  */
 public class EventManager
 {
@@ -46,7 +46,6 @@ public class EventManager
 	private boolean destroyed = true;	
 
 	private EventQueue eventQueue		= new EventQueue();
-	//private EventQueue oldEventQueue	= new EventQueue();
 	
 	private EventManager()
 	{
@@ -379,9 +378,7 @@ public class EventManager
 		{
 			startIsOk = true;
 			eventQueue.shutdown();
-//			oldEventQueue = eventQueue;
 			eventQueue = new EventQueue();
-			
 		}
 		else
 		{

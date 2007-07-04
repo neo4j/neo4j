@@ -210,7 +210,6 @@ public class RelationshipStore extends AbstractStore implements Store
 	{
 		int offset = ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
-		// byte inUseAndDirected = buffer.get();
 		byte inUse = buffer.get();
 		boolean inUseFlag = ( ( inUse & Record.IN_USE.byteValue() ) == 
 			Record.IN_USE.byteValue() );
@@ -226,7 +225,6 @@ public class RelationshipStore extends AbstractStore implements Store
 	}
 	
 	private int getNextPropertyId( int relId, Buffer buffer ) 
-		throws IOException
 	{
 		int offset = ( relId - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset + 29 );

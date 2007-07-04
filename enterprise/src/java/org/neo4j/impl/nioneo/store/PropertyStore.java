@@ -139,21 +139,6 @@ public class PropertyStore extends AbstractStore implements Store
 		return arrayPropertyStore.nextBlockId();
 	}
 	
-//	public void freeKeyBlockId( int blockId ) throws IOException
-//	{
-//		keyPropertyStore.freeBlockId( blockId );
-//	}
-	
-//	public void freeStringBlockId( int blockId ) throws IOException
-//	{
-//		stringPropertyStore.freeBlockId( blockId );
-//	}
-//
-//	public void freeArrayBlockId( int blockId ) throws IOException
-//	{
-//		arrayPropertyStore.freeBlockId( blockId );
-//	}
-	
 	public Object getPropertyValue( int id ) throws IOException
 	{
 		// update statistics
@@ -172,16 +157,16 @@ public class PropertyStore extends AbstractStore implements Store
 		switch ( propertyType )
 		{
 			case INT:
-				return new Integer( ( int ) storeData.propertyStoreBlockId() );
+				return ( int ) storeData.propertyStoreBlockId();
 			case STRING:
 				return stringPropertyStore.getString(  
 				 	( int ) storeData.propertyStoreBlockId() );
 			case BOOL:
 				if ( storeData.propertyStoreBlockId() == 1 )
 				{
-					return new Boolean( true );
+					return Boolean.valueOf( true );
 				}
-				return new Boolean( false );
+				return Boolean.valueOf( false );
 			case DOUBLE:
 				return new Double( Double.longBitsToDouble( 
 						storeData.propertyStoreBlockId() ) );
@@ -189,12 +174,11 @@ public class PropertyStore extends AbstractStore implements Store
 				return new Float( Float.intBitsToFloat( 
 						( int ) storeData.propertyStoreBlockId() ) );
 			case LONG:
-				return new Long( storeData.propertyStoreBlockId() );
+				return storeData.propertyStoreBlockId();
 			case BYTE:
-				return new Byte( (byte) storeData.propertyStoreBlockId() );
+				return (byte) storeData.propertyStoreBlockId();
 			case CHAR:
-				return new Character( 
-					(char) storeData.propertyStoreBlockId() );
+				return (char) storeData.propertyStoreBlockId();
 			case ARRAY:
 				return arrayPropertyStore.getArray( 
 					(int) storeData.propertyStoreBlockId() );
@@ -618,58 +602,5 @@ public class PropertyStore extends AbstractStore implements Store
 			default:
 				throw new RuntimeException( "Unkown property type: " + type );
 		}
-	}
-	
-//	public Collection<Integer> encodeValue( PropertyRecord record, 
-//		Object value ) throws IOException
-//	{
-//		List<Integer> ids = new LinkedList<Integer>();
-//		PropertyType type = record.getType();
-//		if ( type == PropertyType.STRING )
-//		{
-//			int valueBlockId = nextValueBlockId();
-//			record.setPropBlock( valueBlockId );
-//			Collection<DynamicRecord> valueRecords = 
-//				allocateValueRecords( valueBlockId, ( ( String ) 
-//					value ).getBytes() );
-//			for ( DynamicRecord valueRecord : valueRecords )
-//			{
-//				record.addValueRecord( valueRecord );
-//				ids.add( valueRecord.getId() );
-//			}
-//		}
-//		else if ( type == PropertyType.INT )
-//		{
-//			// store int value in the propertyStoreBlockId instead
-//			record.setPropBlock( ( ( Integer ) value ).intValue() );
-//		}
-//		else if ( type == PropertyType.BOOL )
-//		{
-//			record.setPropBlock(  
-//				( ( ( Boolean ) value ).booleanValue() ? 1 : 0 ) );
-//		}
-//		else if ( type == PropertyType.DOUBLE )
-//		{
-//			record.setPropBlock( Double.doubleToRawLongBits( 
-//				( ( Double ) value ).doubleValue() ) );
-//		}
-//		else if ( type == PropertyType.FLOAT )
-//		{
-//			record.setPropBlock(  Float.floatToRawIntBits( 
-//				( ( Float ) value ).floatValue() ) );
-//		}
-//		else if ( type == PropertyType.LONG )
-//		{
-//			record.setPropBlock( ( ( Long ) value ).longValue() );
-//		}
-//		else if ( type == PropertyType.BYTE )
-//		{
-//			record.setPropBlock( (( Byte) value ).byteValue() );
-//		}
-//		else
-//		{
-//			throw new RuntimeException( "Unkown property type: " + type );
-//		}
-//		return ids;
-//	}
+	}	
 }

@@ -459,7 +459,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 			nextBlockId();
 			if ( inUse == Record.NOT_IN_USE.byteValue() )
 			{
-				freeIdList.add( new Integer( i ) );
+				freeIdList.add( i );
 			}
 			else
 			{

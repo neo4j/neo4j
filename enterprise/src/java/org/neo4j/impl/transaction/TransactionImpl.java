@@ -48,7 +48,7 @@ class TransactionImpl implements Transaction
 	TransactionImpl()
 	{
 		globalId = XidImpl.getNewGlobalId();
-		eventIdentifier = new Integer( getNextEventIdentifier() );
+		eventIdentifier = getNextEventIdentifier();
 	}
 	
 	Integer getEventIdentifier()
@@ -259,6 +259,7 @@ class TransactionImpl implements Transaction
 			TxManager.getManager().getTxStatusAsString( status ) );
 	}
 
+	// TODO: figure out if this needs syncrhonization or make status volatile
 	public int getStatus() // throws SystemException
 	{
 		return status;

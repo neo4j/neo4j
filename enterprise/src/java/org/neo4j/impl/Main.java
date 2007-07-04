@@ -13,7 +13,7 @@ public class Main
 	
 	private static EmbeddedNeo neo;
 	
-	private static void startupKernel()
+	private static void startupNeo()
 	{
 		neo = new EmbeddedNeo( MyRelTypes.class, "var/nioneo", true );
 	}
@@ -21,7 +21,7 @@ public class Main
 	
 	public static void main( String[] args )
 	{
-		startupKernel();
+		startupNeo();
 		Runtime.getRuntime().addShutdownHook( new ShutdownHook() );	
 	}
 	

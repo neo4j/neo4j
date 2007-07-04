@@ -51,7 +51,7 @@ public class XaDataSourceManager
 	}
 	
 	XaDataSource create( String className, Map<String,String> params ) 
-		throws ClassNotFoundException, NoSuchMethodException, 
+		throws ClassNotFoundException, //NoSuchMethodException, 
 		InstantiationException, IllegalAccessException, 
 		InvocationTargetException  
 	{
@@ -145,7 +145,7 @@ public class XaDataSourceManager
 				if ( resource.isSameRM( xaResource ) )
 				{
 					String name = entry.getKey();
-					return ( byte[] ) sourceIdMapping.get( name );
+					return sourceIdMapping.get( name );
 				}
 			}
 			catch ( XAException e )

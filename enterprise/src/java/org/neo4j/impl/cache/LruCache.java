@@ -12,27 +12,27 @@ import java.util.Map;
 public class LruCache<K,E> extends Cache<K,E> 
 {
 	private String name = null;
-	private int maxSize = 1000;
+	int maxSize = 1000;
 	private boolean resizing = false;
 
 	private Map<K,E> cache = new LinkedHashMap<K,E>( 500, 0.75f, true )
 	{
 		protected boolean removeEldestEntry( Map.Entry<K,E> eldest )
 		{
-			if ( this.size() > maxSize )
+			if ( super.size() > maxSize )
 			{	
 				if ( isAdaptive() && !isResizing()  )
 				{
 					adaptCache();
 				}
-				remove( eldest.getKey() );
+				super.remove( eldest.getKey() );
 				elementCleaned( eldest.getValue() );
 			}
 			return false;
 		}
 	};
 	
-	private void adaptCache()
+	void adaptCache()
 	{
 		AdaptiveCacheManager.getManager().adaptCache( this );
 	}
@@ -154,7 +154,7 @@ public class LruCache<K,E> extends Cache<K,E>
 		}
 	}
 	
-	private boolean isResizing()
+	boolean isResizing()
 	{
 		return resizing;
 	}

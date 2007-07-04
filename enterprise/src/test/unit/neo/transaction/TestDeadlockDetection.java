@@ -430,11 +430,6 @@ public class TestDeadlockDetection extends TestCase
 	
 	public void testStressMultipleThreads()
 	{
-/*		if ( !unit.kernel.TestAll.runSlowTests() )
-		{
-		 	return;
-		}*/
-
 		for ( int i = 0; i < StressThread.resources.length; i++ )
 		{
 			StressThread.resources[i] = new ResourceObject( "RX" + i );

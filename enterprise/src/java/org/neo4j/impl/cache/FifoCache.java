@@ -12,15 +12,15 @@ import java.util.Map;
 public class FifoCache<K,E> extends Cache<K,E> 
 {
 	private String name = null;
-	private int maxSize = 1000;
+	int maxSize = 1000;
 
 	private Map<K,E> cache = new LinkedHashMap<K,E>()
 	{
 		protected boolean removeEldestEntry( Map.Entry<K,E> eldest )
 		{
-			if ( this.size() > maxSize )
+			if ( super.size() > maxSize )
 			{	
-				remove( eldest.getKey() );
+				super.remove( eldest.getKey() );
 				elementCleaned( eldest.getValue() );
 			}
 			return false;
@@ -112,9 +112,9 @@ public class FifoCache<K,E> extends Cache<K,E>
 			{
 				protected boolean removeEldestEntry( Map.Entry<K,E> eldest )
 				{
-					if ( this.size() > maxSize )
+					if ( super.size() > maxSize )
 					{	
-						remove( eldest.getKey() );
+						super.remove( eldest.getKey() );
 						elementCleaned( eldest.getValue() );
 					}
 					return false;

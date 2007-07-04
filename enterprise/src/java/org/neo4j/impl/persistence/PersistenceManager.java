@@ -1,6 +1,5 @@
 package org.neo4j.impl.persistence;
 
-// Kernel imports
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.core.NotFoundException;
@@ -17,7 +16,7 @@ import javax.transaction.xa.XAResource;
 /**
  * The PersistenceManager is the front-end for all persistence related
  * operations. In reality, only <B>load</B> operations are accessible via the
- * PersistenceManager due to the kernel's incremental persistence architecture
+ * PersistenceManager due to Neo's incremental persistence architecture
  * -- updates, additions and deletions are handled via the event framework and
  * the {@link BusinessLayerMonitor}.
  */
@@ -87,14 +86,13 @@ public class PersistenceManager
 	public RawNodeData loadLightNode( int id ) throws PersistenceException
 	{
 		return (RawNodeData) getResource().performOperation( LOAD_LIGHT_NODE, 
-			new Integer( id ) );
+			id );
 	}
 	
 	public Object loadPropertyValue( int id )
 		throws PersistenceException
 	{
-		return getResource().performOperation( LOAD_PROPERTY_VALUE, 
-			new Integer( id ) );
+		return getResource().performOperation( LOAD_PROPERTY_VALUE, id );
 	}
 	
 	public RawRelationshipData[] loadRelationships( Node node )
@@ -122,7 +120,7 @@ public class PersistenceManager
 		throws NotFoundException, PersistenceException
 	{
 		return (RawRelationshipData) getResource().performOperation( 
-			LOAD_LIGHT_REL, new Integer( id ) );
+			LOAD_LIGHT_REL, id );
 	}
 	
 	public RawRelationshipTypeData[] loadAllRelationshipTypes()
@@ -186,7 +184,7 @@ public class PersistenceManager
 	public static final class Operation
 	{
 		private String name = null;
-		private Operation( String name ) { this.name = name; }
+		Operation( String name ) { this.name = name; }
 		public String toString() { return this.name; }
 	} // end inner class operation
 	

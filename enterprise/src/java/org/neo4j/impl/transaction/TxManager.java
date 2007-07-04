@@ -15,10 +15,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
-import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
@@ -230,11 +228,6 @@ public class TxManager implements TransactionManager
 					{
 						return r1.getSequenceNumber() - r2.getSequenceNumber();
 					}
-					
-					public boolean equals( Object o )
-					{
-						return this == o;
-					}
 				} );
 			// go through and commit
 			Iterator<NonCompletedTransaction> commitItr = 
@@ -394,12 +387,11 @@ public class TxManager implements TransactionManager
 	{
 		private byte resourceId[] = null;
 		
-		private Resource( byte resourceId[] )
+		Resource( byte resourceId[] )
 		{
 			if ( resourceId == null || resourceId.length == 0 )
 			{
-				throw new IllegalArgumentException( 
-					"Illegal resourceId: " + resourceId );
+				throw new IllegalArgumentException( "Illegal resourceId" );
 			}
 			this.resourceId = resourceId;
 		}
@@ -453,7 +445,7 @@ public class TxManager implements TransactionManager
 		if ( !tmOk )
 		{
 			throw new SystemException( "TM has encountered some problem, " + 
-				"please perform neccesary action (tx recovery/kernel restart)" 
+				"please perform neccesary action (tx recovery/restart)" 
 				);
 		}
 				
@@ -485,7 +477,7 @@ public class TxManager implements TransactionManager
 		if ( !tmOk )
 		{
 			throw new SystemException( "TM has encountered some problem, " + 
-				"please perform neccesary action (tx recovery/kernel restart)" 
+				"please perform neccesary action (tx recovery/restart)" 
 				);
 		}
 		Thread thread = Thread.currentThread();
@@ -561,7 +553,7 @@ public class TxManager implements TransactionManager
 				e.printStackTrace();
 				log.severe( "Unable to rollback transaction. " +
 					"Some resources may be commited others not. " + 
-					"Kernel should be SHUTDOWN or FREEZED for " +
+					"Neo should be SHUTDOWN or FREEZED for " +
 					"resource maintance and transaction recovery ---->" );
 				tmOk = false;
 				throw new HeuristicMixedException( 
@@ -617,7 +609,7 @@ public class TxManager implements TransactionManager
 			e.printStackTrace();
 			log.severe( "Unable to rollback marked transaction. " +
 				"Some resources may be commited others not. " + 
-				"Kernel should be SHUTDOWN or FREEZED for " +
+				"Neo should be SHUTDOWN or FREEZED for " +
 				"resource maintance and transaction recovery ---->" );
 			tmOk = false;
 			throw new HeuristicMixedException( 
@@ -649,7 +641,7 @@ public class TxManager implements TransactionManager
 		if ( !tmOk )
 		{
 			throw new SystemException( "TM has encountered some problem, " + 
-				"please perform neccesary action (tx recovery/kernel restart)" 
+				"please perform neccesary action (tx recovery/restart)" 
 				);
 		}
 		Thread thread = Thread.currentThread();
@@ -673,7 +665,7 @@ public class TxManager implements TransactionManager
 				log.severe( 
 					"Unable to rollback marked or active transaction. " +
 					"Some resources may be commited others not. " + 
-					"Kernel should be SHUTDOWN or FREEZED for " +
+					"Neo should be SHUTDOWN or FREEZED for " +
 					"resource maintance and transaction recovery ---->" );
 				tmOk = false;
 				throw new SystemException( 
@@ -710,7 +702,7 @@ public class TxManager implements TransactionManager
 		}
 	}
 
-	public int getStatus() throws SystemException
+	public int getStatus() // throws SystemException
 	{
 		Thread thread = Thread.currentThread();
 		if ( txThreadMap.containsKey( thread ) )
@@ -722,18 +714,18 @@ public class TxManager implements TransactionManager
 		return Status.STATUS_NO_TRANSACTION;
 	}
 
-	public Transaction getTransaction() throws SystemException
+	public Transaction getTransaction() // throws SystemException
 	{
 		return txThreadMap.get( Thread.currentThread() );
 	}
 
-	public void resume( Transaction tx ) throws InvalidTransactionException, 
+	public void resume( Transaction tx ) throws //InvalidTransactionException, 
 		IllegalStateException, SystemException
 	{
 		if ( !tmOk )
 		{
 			throw new SystemException( "TM has encountered some problem, " + 
-				"please perform neccesary action (tx recovery/kernel restart)" 
+				"please perform neccesary action (tx recovery/restart)" 
 				);
 		}
 		Thread thread = Thread.currentThread();
@@ -754,7 +746,7 @@ public class TxManager implements TransactionManager
 		if ( !tmOk )
 		{
 			throw new SystemException( "TM has encountered some problem, " + 
-				"please perform neccesary action (tx recovery/kernel restart)" 
+				"please perform neccesary action (tx recovery/restart)" 
 				);
 		}
 		// check for ACTIVE/MARKED_ROLLBACK?
@@ -772,7 +764,7 @@ public class TxManager implements TransactionManager
 		if ( !tmOk )
 		{
 			throw new SystemException( "TM has encountered some problem, " + 
-				"please perform neccesary action (tx recovery/kernel restart)" 
+				"please perform neccesary action (tx recovery/restart)" 
 				);
 		}
 		Thread thread = Thread.currentThread();
@@ -788,7 +780,7 @@ public class TxManager implements TransactionManager
 		if ( !tmOk )
 		{
 			throw new SystemException( "TM has encountered some problem, " + 
-				"please perform neccesary action (tx recovery/kernel restart)" 
+				"please perform neccesary action (tx recovery/restart)" 
 				);
 		}
 		// ...

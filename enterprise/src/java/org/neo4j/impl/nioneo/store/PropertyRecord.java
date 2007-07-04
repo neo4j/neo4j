@@ -128,7 +128,7 @@ public class PropertyRecord
 
 	public void clearKeyRecords()
 	{
-		int nextBlockId = ( int ) keyBlock;
+		int nextBlockId = keyBlock;
 		while ( nextBlockId != Record.NO_NEXT_BLOCK.intValue() ) 
 		{
 			DynamicRecord record = keyRecords.get( nextBlockId );

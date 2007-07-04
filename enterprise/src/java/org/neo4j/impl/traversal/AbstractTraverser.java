@@ -1,6 +1,5 @@
 package org.neo4j.impl.traversal;
 
-// Kernel imports
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
@@ -10,7 +9,6 @@ import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.TraversalPosition;
 import org.neo4j.api.core.Traverser;
 
-// Java imports
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

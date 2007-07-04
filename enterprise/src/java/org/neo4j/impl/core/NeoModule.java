@@ -71,20 +71,10 @@ public class NeoModule
 		this.relTypeClass = clazz;
 	}
 
-//	public void setNodeCacheSize( int size )
-//	{
-//		NodeManager.getManager().resizeNodeCache( size );
-//	}
-	
 	public int getNodeCacheSize()
 	{
 		return NodeManager.getManager().getNodeMaxCacheSize();
 	}
-	
-//	public void setRelationshipCacheSize( int size )
-//	{
-//		NodeManager.getManager().resizeRelationshipCache( size );
-//	}
 	
 	public int getRelationshipCacheSize()
 	{
@@ -108,12 +98,11 @@ public class NeoModule
 	{
 		try
 		{
-			return new Integer( 
-				(int) NodeManager.getManager().getReferenceNode().getId() );
+			return (int) NodeManager.getManager().getReferenceNode().getId();
 		}
 		catch ( NotFoundException e )
 		{
-			return new Integer( -1 );
+			return -1;
 		}
 	}
 	

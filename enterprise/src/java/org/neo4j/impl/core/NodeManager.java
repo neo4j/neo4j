@@ -47,7 +47,7 @@ import org.neo4j.impl.transaction.TransactionIsolationLevel;
  * Methods that uses commands will first create a command and verify that
  * we're in a transaction context. To persist operations a pro-active event 
  * is generated and will cause the 
- * {@link com.windh.kernel.persistence.BusinessLayerMonitor} to persist the 
+ * {@link org.neo4j.impl.persistence.BusinessLayerMonitor} to persist the 
  * then operation. 
  * If the event fails (false is returned)  the transaction is marked as 
  * rollback only and if the command will be undone.
@@ -117,7 +117,10 @@ public class NodeManager
 		catch ( ExecuteFailedException e )
 		{
 			setRollbackOnly();
-			nodeCommand.undo();
+			if ( nodeCommand != null )
+			{
+				nodeCommand.undo();
+			}
 			throw new CreateException( "Failed executing command", e );
 		}
 		finally
@@ -187,8 +190,6 @@ public class NodeManager
 				throw new CreateException( "" + endNode + 
 					" has been deleted in other transaction" );
 			}
-//			firstNode.ensureFullRelationships();
-//			secondNode.ensureFullRelationships();
 			relationshipCommand = new RelationshipCommands();
 			relationshipCommand.setRelationship( rel );
 			relationshipCommand.initCreate();
@@ -207,14 +208,13 @@ public class NodeManager
 			em.generateReActiveEvent( Event.RELATIONSHIP_CREATE, eventData );
 			return new RelationshipProxy( id );
 		}
-/*		catch ( NotInTransactionException e )
-		{
-			throw new CreateException( "Failed creating command.", e );
-		}*/
 		catch ( ExecuteFailedException e )
 		{
 			setRollbackOnly();
-			relationshipCommand.undo();
+			if ( relationshipCommand != null )
+			{
+				relationshipCommand.undo();
+			}
 			throw new CreateException( "Failed executing command", e );
 		}
 		finally
@@ -266,83 +266,80 @@ public class NodeManager
 	 * @return the node with node id <CODE>id</CODE>
 	 * @throws NotFoundException
 	 */
-	public Node getNodeById( int id ) throws NotFoundException
+	public Node getNodeById( int nodeId ) throws NotFoundException
 	{
-		Integer nodeId = new Integer( id );
 		Node node = getTransactionCache().getNode( nodeId ); 
 		if ( node != null )
 		{
 			if ( ( ( NodeImpl ) node ).isDeleted() )
 			{
 				throw new NotFoundException( 
-					"Node[" + id + "] has been deleted (in this tx)" );
+					"Node[" + nodeId + "] has been deleted (in this tx)" );
 			}
-			return new NodeProxy( id );
+			return new NodeProxy( nodeId );
 		}
-		node = ( Node ) nodeCache.get( nodeId );
+		node = nodeCache.get( nodeId );
 		if ( node != null )
 		{
-			return new NodeProxy( id );
+			return new NodeProxy( nodeId );
 		}
-		node = new NodeImpl( id );
-		// acquireLock( node, LockType.WRITE );
+		node = new NodeImpl( nodeId );
 		acquireLock( node, LockType.READ );
 		try
 		{
 			if ( nodeCache.get( nodeId ) != null )
 			{
-				node = ( Node ) nodeCache.get( nodeId );
-				return new NodeProxy( id );
+				node = nodeCache.get( nodeId );
+				return new NodeProxy( nodeId );
 			}
-			if ( PersistenceManager.getManager().loadLightNode( id ) == null )
+			if ( PersistenceManager.getManager().loadLightNode( nodeId ) == 
+				null )
 			{
-				throw new NotFoundException( "Node[" + id + "]" );
+				throw new NotFoundException( "Node[" + nodeId + "]" );
 			}
 			
 			// If we get here, loadLightNode didn't throw exception and
 			// a node with the given id does exist... good.
 			nodeCache.add( nodeId, node );
-			return new NodeProxy( id );
+			return new NodeProxy( nodeId );
 		}
 		catch ( PersistenceException pe )
 		{
 			log.severe( "Persistence error while trying to get node #" +
-					   id + " by id. " + pe );
+					   nodeId + " by id. " + pe );
 			throw new NotFoundException( pe );
 		}
 		finally
 		{
-			// forceReleaseWriteLock( node );
 			forceReleaseReadLock( node );
 		}
 	}
 	
-	Node getNodeForProxy( int id )
+	Node getNodeForProxy( int nodeId )
 	{
-		Integer nodeId = new Integer( id );
 		Node node = getTransactionCache().getNode( nodeId ); 
 		if ( node != null )
 		{
 			return node;
 		}
-		node = ( Node ) nodeCache.get( nodeId );
+		node = nodeCache.get( nodeId );
 		if ( node != null )
 		{
 			return node;
 		}
-		node = new NodeImpl( id );
-		// acquireLock( node, LockType.WRITE );
+		node = new NodeImpl( nodeId );
 		acquireLock( node, LockType.READ );
 		try
 		{
 			if ( nodeCache.get( nodeId ) != null )
 			{
-				node = ( Node ) nodeCache.get( nodeId );
+				node = nodeCache.get( nodeId );
 				return node;
 			}
-			if ( PersistenceManager.getManager().loadLightNode( id ) == null )
+			if ( PersistenceManager.getManager().loadLightNode( nodeId ) == 
+				null )
 			{
-				throw new RuntimeException( "Node[" + id + "] deleted?" );
+				throw new RuntimeException( "Node[" + nodeId + "] deleted?" );
 			}
 			nodeCache.add( nodeId, node );
 			return node;
@@ -350,12 +347,11 @@ public class NodeManager
 		catch ( PersistenceException pe )
 		{
 			log.severe( "Persistence error while trying to get node #" +
-					   id + " by id. " + pe );
+					   nodeId + " by id. " + pe );
 			throw new RuntimeException( "Node deleted?", pe );
 		}
 		finally
 		{
-			// forceReleaseWriteLock( node );
 			forceReleaseReadLock( node );
 		}
 	}
@@ -384,38 +380,36 @@ public class NodeManager
 	}
 	
 	// checks the cache first, if not in cache load it using PM
-	Relationship getRelationshipById( int id ) 
+	Relationship getRelationshipById( int relId ) 
 		throws NotFoundException
 	{
-		Integer relId = new Integer( id );
 		Relationship relationship = getTransactionCache().getRelationship( 
 			relId ); 
 		if ( relationship != null )
 		{
-			return new RelationshipProxy( id );
+			return new RelationshipProxy( relId );
 		}
-		relationship = ( Relationship ) relCache.get( relId );
+		relationship = relCache.get( relId );
 		if ( relationship != null )
 		{
-			return new RelationshipProxy( id );
+			return new RelationshipProxy( relId );
 		}
-		Relationship dummyRel = new RelationshipImpl( id );
-//		acquireLock( dummyRel, LockType.WRITE );
+		Relationship dummyRel = new RelationshipImpl( relId );
 		acquireLock( dummyRel, LockType.READ );
 		try
 		{
 			if ( relCache.get( relId ) != null )
 			{
-				relationship = ( Relationship ) relCache.get( relId );
-				return new RelationshipProxy( id );
+				relationship = relCache.get( relId );
+				return new RelationshipProxy( relId );
 			}
 
 			RawRelationshipData data = 
-				PersistenceManager.getManager().loadLightRelationship( id );
+				PersistenceManager.getManager().loadLightRelationship( relId );
 			if ( data == null )
 			{
-				throw new NotFoundException( "Relationship[" + id + 
-					"] for node" );
+				throw new NotFoundException( "Relationship[" + relId + 
+					"] not found" );
 			}
 			RelationshipType type = getRelationshipTypeById( data.getType() );
 			if ( type == null )
@@ -424,15 +418,15 @@ public class NodeManager
 					"] exist but relationship type[" + data.getType() +
 					"] not registered." );
 			}
-			relationship = new RelationshipImpl( id, data.getFirstNode(), 
+			relationship = new RelationshipImpl( relId, data.getFirstNode(), 
 				data.getSecondNode(), type, false );
 			relCache.add( relId, relationship );
-			return new RelationshipProxy( id );
+			return new RelationshipProxy( relId );
 		}
 		catch ( PersistenceException e )
 		{
 			throw new NotFoundException( "Could not get relationship[" + 
-				id + "].", e );
+				relId + "].", e );
 		}
 		finally
 		{
@@ -446,35 +440,33 @@ public class NodeManager
 		return RelationshipTypeHolder.getHolder().getRelationshipType( id );
 	}
 	
-	Relationship getRelForProxy( int id )
+	Relationship getRelForProxy( int relId )
 	{
-		Integer relId = new Integer( id );
 		Relationship relationship = getTransactionCache().getRelationship( 
 			relId ); 
 		if ( relationship != null )
 		{
 			return relationship;
 		}
-		relationship = ( Relationship ) relCache.get( relId );
+		relationship = relCache.get( relId );
 		if ( relationship != null )
 		{
 			return relationship;
 		}
-		Relationship dummyRel = new RelationshipImpl( id );
-//		acquireLock( dummyRel, LockType.WRITE );
+		Relationship dummyRel = new RelationshipImpl( relId );
 		acquireLock( dummyRel, LockType.READ );
 		try
 		{
 			if ( relCache.get( relId ) != null )
 			{
-				relationship = ( Relationship ) relCache.get( relId );
+				relationship = relCache.get( relId );
 				return relationship;
 			}
 			RawRelationshipData data = 
-				PersistenceManager.getManager().loadLightRelationship( id );
+				PersistenceManager.getManager().loadLightRelationship( relId );
 			if ( data == null )
 			{
-				throw new RuntimeException( "Relationship[" + id + 
+				throw new RuntimeException( "Relationship[" + relId + 
 					"] deleted?" );
 			}
 			RelationshipType type = getRelationshipTypeById( data.getType() );
@@ -484,7 +476,7 @@ public class NodeManager
 					"] exist but relationship type[" + data.getType() +
 					"] not registered." );
 			}
-			relationship = new RelationshipImpl( id, data.getFirstNode(), 
+			relationship = new RelationshipImpl( relId, data.getFirstNode(), 
 				data.getSecondNode(), type, false );
 			relCache.add( relId, relationship );
 			return relationship;
@@ -499,7 +491,6 @@ public class NodeManager
 		}
 		finally
 		{
-			// forceReleaseWriteLock( dummyRel );
 			forceReleaseReadLock( dummyRel );
 		}
 	}
@@ -516,7 +507,6 @@ public class NodeManager
 
 	// NOTE: caller responsible for acquiring lock on nodes
 	void doDeleteRelationship( RelationshipImpl relationship ) 
-		// throws DeleteException
 	{
 		Integer nodeIds[] = relationship.getNodeIds();
 		if ( getTransactionCache().getNode( nodeIds[0] ) != null || 
@@ -538,7 +528,6 @@ public class NodeManager
 
 	// NOTE: caller responsible for acquiring lock on nodes
 	void doCreateRelationship( RelationshipImpl relationship ) 
-		// throws CreateException
 	{
 		Integer nodeIds[] = relationship.getNodeIds();
 		( ( NodeImpl ) getNodeForProxy( nodeIds[0].intValue() ) ).
@@ -633,20 +622,10 @@ public class NodeManager
 		}
 	}
 	
-//	void resizeNodeCache( int newSize )
-//	{
-//		nodeCache.resize( newSize );
-//	}
-	
 	int getNodeMaxCacheSize()
 	{
 		return nodeCache.maxSize();
 	}
-	
-//	void resizeRelationshipCache( int newSize )
-//	{
-//		relCache.resize( newSize );
-//	}
 	
 	int getRelationshipMaxCacheSize()
 	{
@@ -744,25 +723,6 @@ public class NodeManager
 				"Unable to release locks.", e );
 		}
 	}
-	
-	// only used during creation/loading of nodes/rels
-//	private void forceReleaseWriteLock( Object resource )
-//	{
-//		try
-//		{
-//			LockManager.getManager().releaseWriteLock( resource );
-//		}
-//		catch ( LockNotFoundException e )
-//		{
-//			throw new RuntimeException( 
-//				"Unable to release lock.", e );
-//		}
-//		catch ( IllegalResourceException e )
-//		{
-//			throw new RuntimeException( 
-//				"Unable to release lock.", e );
-//		}
-//	}
 	
 	// only used during creation/loading of nodes/rels
 	private void forceReleaseReadLock( Object resource )

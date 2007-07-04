@@ -30,12 +30,12 @@ public class XidImpl implements Xid
 	
 	public byte[] getGlobalTransactionId()
 	{
-		return ( byte[] ) globalId.clone();
+		return globalId.clone();
 	}
 
 	public byte[] getBranchQualifier()
 	{
-		return ( byte[] ) branchId.clone();
+		return branchId.clone();
 	}
 	
 	public int getFormatId()

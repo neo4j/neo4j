@@ -53,7 +53,7 @@ import org.neo4j.impl.traversal.TraverserFactory;
  * Methods that uses commands will first create a command and verify that
  * we're in a transaction context. To persist operations a pro-active event 
  * is generated and will cause the 
- * {@link com.windh.kernel.persistence.BusinessLayerMonitor} to persist the 
+ * {@link org.neo4j.impl.persistence.BusinessLayerMonitor} to persist the 
  * then operation. 
  * If the event fails (false is returned)  the transaction is marked as 
  * rollback only and if the command will be undone.
@@ -349,7 +349,10 @@ class NodeImpl implements Node, Comparable
 		catch ( ExecuteFailedException e )
 		{
 			setRollbackOnly();
-			nodeCommand.undo();
+			if ( nodeCommand != null )
+			{
+				nodeCommand.undo();
+			}
 			throw new DeleteException( "Failed executing command deleting " +
 				this, e );
 		}
@@ -546,7 +549,10 @@ class NodeImpl implements Node, Comparable
 		}
 		catch ( ExecuteFailedException e )
 		{
-			nodeCommand.undo();
+			if ( nodeCommand != null )
+			{
+				nodeCommand.undo();
+			}
 			throw new IllegalValueException( "Failed executing command when " +
 				" adding property[" + key + "," + value + 
 				"] on " + this, e );
@@ -606,7 +612,10 @@ class NodeImpl implements Node, Comparable
 		}
 		catch ( ExecuteFailedException e )
 		{
-			nodeCommand.undo();
+			if ( nodeCommand != null )
+			{
+				nodeCommand.undo();
+			}
 			throw new NotFoundException( "Failed executing command " +
 				"while removing property[" + key + "] on " + this, e );
 		}
@@ -656,7 +665,10 @@ class NodeImpl implements Node, Comparable
 		}
 		catch ( ExecuteFailedException e )
 		{
-			nodeCommand.undo();
+			if ( nodeCommand != null )
+			{
+				nodeCommand.undo();
+			}
 			throw new IllegalValueException( "Failed executing command when " +
 				" changing property[" + key + "," + newValue + 
 				"] on " + this, e );
@@ -706,13 +718,6 @@ class NodeImpl implements Node, Comparable
 	 */
 	public boolean equals( Object o )
 	{
-		// the id check bellow isn't very expensive so this performance 
-		// optimization isn't worth it
-		// if ( this == o )
-		// {
-		// 	return true;
-		// }
-
 		// verify type and not null, should use Node inteface
 		if ( !(o instanceof Node) )
 		{
@@ -730,7 +735,7 @@ class NodeImpl implements Node, Comparable
 	}
 	
 	private volatile int hashCode = 0;
-	// must overide hashcode since equals is o
+	
 	public int hashCode()
 	{
 		// hashcode contract:
@@ -796,14 +801,6 @@ class NodeImpl implements Node, Comparable
 		if ( propertyMap.containsKey( key ) )
 		{
 			Property oldValue  = propertyMap.get( key );
-//			if ( !oldValue.getValue().getClass().equals( 
-//					newValue.getValue().getClass() ) )
-//			{
-//				throw new IllegalValueException( "New value[" + 
-//					newValue.getValue() + 
-//					" not same type as old value[" + 
-//					oldValue.getValue() + "]" );
-//			}
 			propertyMap.put( key, newValue );
 			return oldValue;
 		}

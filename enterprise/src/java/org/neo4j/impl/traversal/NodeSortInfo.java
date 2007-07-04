@@ -5,8 +5,6 @@ import org.neo4j.impl.core.NotFoundException;
 
 import java.util.Comparator;
 
-
-
 /**
  * A <CODE>NodeSortInfo</CODE> class represents a sort operation on a set of 
  * nodes. The client creates a <CODE>NodeSortInfo</CODE> object that can be 
@@ -145,7 +143,7 @@ public abstract class NodeSortInfo<T extends Node> implements Comparator<T>
 			}
 			if ( property2 == null )
 			{
-				return ( property1 == null ? 0 : 1 ) * direction;
+				return 1 * direction;
 			}
 			
 			// if property1 Integer or String, compare to property2 

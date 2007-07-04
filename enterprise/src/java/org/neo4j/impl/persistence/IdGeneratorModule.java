@@ -11,8 +11,7 @@ package org.neo4j.impl.persistence;
  * operations and there is no way to guarantee consistent behavior if
  * the IdGenerator is not halted during reconfiguration.
  * <P>
- * @see com.windh.kernel.module.framework.KernelModule
- * @see com.windh.kernel.persistence.IdGenerator
+ * @see org.neo4j.impl.persistence.IdGenerator
  */
 public class IdGeneratorModule
 {
@@ -23,40 +22,32 @@ public class IdGeneratorModule
 	private PersistenceSource	persistenceSource	= null;
 	
 	
-	// -- Kernel module operations
-	
-	// javadoc: see KernelModule
 	public synchronized void init()
 	{
 		// Do nothing
 	}
 	
-	// javadoc: see KernelModule
 	public synchronized void start()
 	{
 		// Configure the IdGenerator
 		IdGenerator.getGenerator().configure( this.getPersistenceSource() );
 	}
 	
-	// javadoc: see KernelModule
 	public synchronized void reload()
 	{
 		throw new RuntimeException( "IdGenerator does not support reload" );
 	}
 	
-	// javadoc: see KernelModule
 	public synchronized void stop()
 	{
 		// Do nothing
 	}
 	
-	// javadoc: see KernelModule
 	public synchronized void destroy()
 	{
 		// Do nothing
 	}
 	
-	// javadoc: see KernelModule
 	public String getModuleName()
 	{
 		return MODULE_NAME;
@@ -84,7 +75,7 @@ public class IdGeneratorModule
 //		try
 //		{
 			// ModuleManager mgr = ModuleManager.getManager();
-			// KernelModule source = mgr.getModuleByName( sourceName );
+			// KModule source = mgr.getModuleByName( sourceName );
 			throw new RuntimeException( "Implement this" );
 //			if ( source instanceof PersistenceSource )
 //			{
@@ -99,7 +90,8 @@ public class IdGeneratorModule
 //		}
 	}
 	
-	public void setPersistenceSourceInstance( PersistenceSource source )
+	public synchronized void setPersistenceSourceInstance( 
+		PersistenceSource source )
 	{
 		this.persistenceSource = source;
 	}

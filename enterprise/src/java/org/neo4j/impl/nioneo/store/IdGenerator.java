@@ -405,7 +405,6 @@ public class IdGenerator
 		{
 			readIdBatch();
 		}
-		// java.util.Collections.sort( defragedIdList );
 		java.util.Iterator itr = defragedIdList.iterator();
 		while ( itr.hasNext() )
 		{

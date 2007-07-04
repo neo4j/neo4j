@@ -138,7 +138,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		}		
 	};
 	
-	private void validateXaConnection()
+	void validateXaConnection()
 	{
 		try
 		{
@@ -482,21 +482,6 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		public int nextId() throws IOException
 		{
 			return relTypeStore.nextId();
-		}
-		
-		public int nextBlockId()
-		{
-			throw new RuntimeException( "Do not use" );
-		}
-		
-		public void freeBlockId( int dontUse )
-		{
-			throw new RuntimeException( "Do not use" );
-		}
-
-		public IdGenerator getIdGenerator()
-		{
-			throw new RuntimeException( "don't use" );
 		}
 	};
 }

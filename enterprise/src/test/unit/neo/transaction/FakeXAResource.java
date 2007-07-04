@@ -33,8 +33,7 @@ class FakeXAResource implements XAResource
 		{
 			MethodCall methodCallArray[] = 
 				new MethodCall[ methodCalls.size() ];
-			methodCallArray = 
-				(MethodCall[]) methodCalls.toArray( methodCallArray );
+			methodCallArray = methodCalls.toArray( methodCallArray );
 			methodCalls = new ArrayList<MethodCall>();
 			return methodCallArray;
 		}

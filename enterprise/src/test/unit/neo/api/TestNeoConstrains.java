@@ -296,7 +296,7 @@ public class TestNeoConstrains extends TestCase
 			}
 			catch ( NotFoundException e )
 			{
-				// ok so the persistance storage has constrains... kernel
+				// ok so the persistance storage has constrains... 
 				// would have detected it up on commit...
 			}
 			try
@@ -330,7 +330,7 @@ public class TestNeoConstrains extends TestCase
 			}
 			catch ( IllegalValueException e )
 			{
-				// ok so the persistance storage has constrains... kernel
+				// ok so the persistance storage has constrains... 
 				// would have detected it up on commit...
 			}
 			try
@@ -402,7 +402,7 @@ public class TestNeoConstrains extends TestCase
 			}
 			catch ( NotFoundException e )
 			{
-				// ok so the persistance storage has constrains... kernel
+				// ok so the persistance storage has constrains...
 				// would have detected it up on commit...
 			}
 				
@@ -440,7 +440,7 @@ public class TestNeoConstrains extends TestCase
 			}
 			catch ( IllegalValueException e )
 			{
-				// ok so the persistance storage has constrains... kernel
+				// ok so the persistance storage has constrains...
 				// would have detected it up on commit...
 			}
 			try

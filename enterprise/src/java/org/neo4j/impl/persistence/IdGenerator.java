@@ -2,12 +2,11 @@ package org.neo4j.impl.persistence;
 
 /**
  * The IdGenerator is responsible for generating unique ids for entities in
- * the kernel. The IdGenerator is configured via the {@link IdGeneratorModule}.
+ * the Neo. The IdGenerator is configured via the {@link IdGeneratorModule}.
  * <P>
  * The IdGenerator must be loaded after its designated
  * {@link IdGeneratorModule#setPersistenceSource persistence source} during
- * the kernel bootstrap. If the IdGenerator is not loaded and configured with 
- * a {@link PersistenceSource}, the kernel will be unable to function properly.
+ * startup.
  * <P>
  */
 public class IdGenerator

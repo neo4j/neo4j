@@ -1,6 +1,5 @@
 package org.neo4j.impl.traversal;
 
-// Kernel imports
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.RelationshipType;
@@ -19,9 +18,7 @@ import org.neo4j.api.core.Traverser.Order;
  * <UL>
  *	<LI><CODE>type</CODE> - which is either one of {@link Traverser#DEPTH_FIRST}
  *		and {@link Traverser#BREADTH_FIRST}. This parameter decides the
- *		strategy used when traversering the node space. For detailed
- *		information and tips about the choice of traverser type, see the
- *		NEO chapter of the Kernel Documentation.
+ *		strategy used when traversering the node space.
  *	<LI><CODE>startNode</CODE> - the starting node for the traverser.
  *	<LI><CODE>traversableRels</CODE> - a list of the relationship types that
  *		will be traversed.
