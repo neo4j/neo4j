@@ -37,6 +37,7 @@ public class TestNeo extends TestCase
 		// suite.addTest( new TestNeo( "testNodeIdxPerformance" ) );
 		suite.addTest( new TestNeo( "testBasicNodeRelationships" ) );
 		suite.addTest( new TestNeo( "testReferenceNode" ) );
+		suite.addTest( new TestNeo( "testAddMoreRelationshipTypes" ) );
 		// suite.addTest( new TestNeo( "testLotsAndLotsOfNodeRelationships" ) );
 		return suite;
 	}
@@ -513,5 +514,27 @@ public class TestNeo extends TestCase
 			}
 		}
 		return false;
+	}
+	
+	private static enum RelTypes implements RelationshipType
+	{
+		ONE_MORE_RELATIONSHIP;
+	}
+	
+	public void testAddMoreRelationshipTypes()
+	{
+		NodeManager nm = NodeManager.getManager();
+		assertFalse( nm.isValidRelationshipType( 
+			RelTypes.ONE_MORE_RELATIONSHIP ) );
+		nm.addEnumRelationshipTypes( RelTypes.class );
+		assertTrue( nm.isValidRelationshipType( 
+			RelTypes.ONE_MORE_RELATIONSHIP ) );
+		Node node1 = nm.createNode();
+		Node node2 = nm.createNode();
+		Relationship rel = node1.createRelationshipTo( node2, 
+			RelTypes.ONE_MORE_RELATIONSHIP );
+		rel.delete();
+		node2.delete();
+		node1.delete();
 	}
 }

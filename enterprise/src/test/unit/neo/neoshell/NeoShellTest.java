@@ -8,7 +8,7 @@ public class NeoShellTest extends TestCase
 {
 	private AppCommandParser parse( String line ) throws Exception
 	{
-		return new AppCommandParser( new NeoShellServer( null, null ), line );
+		return new AppCommandParser( new NeoShellServer( null ), line );
 	}
 	
 	public void testParserEasy() throws Exception

@@ -61,7 +61,10 @@ public class NeoModule
 		}
 		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
 		rth.addRawRelationshipTypes( relTypes );
-		rth.addValidRelationshipTypes( relTypeClass );
+		if ( relTypeClass != null )
+		{
+			rth.addValidRelationshipTypes( relTypeClass );
+		}
 		AdaptiveCacheManager.getManager().start();
 		startIsOk = false;
 	}
@@ -137,4 +140,17 @@ public class NeoModule
 	public void destroy()
 	{
 	}
+
+	public RelationshipType getRelationshipTypeByName( String name )
+    {
+		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
+		return rth.getRelationshipTypeByName( name );
+    }
+
+	public void addEnumRelationshipTypes( 
+		Class<? extends RelationshipType> relationshipTypes )
+    {
+		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
+		rth.addValidRelationshipTypes( relationshipTypes );
+    }
 }
