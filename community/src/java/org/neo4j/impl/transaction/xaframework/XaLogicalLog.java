@@ -182,11 +182,10 @@ public class XaLogicalLog
 		int formatId = buffer.getInt();
 		// re-create the transaction
 		Xid xid = new XidImpl( globalId, branchId, formatId ); 
-		Integer key = new Integer( identifier );
-		xidIdentMap.put( key, xid );
+		xidIdentMap.put( identifier, xid );
 		XaTransaction xaTx = xaTf.create( identifier );
 		xaTx.setRecovered();
-		recoveredTxMap.put( key, xaTx );
+		recoveredTxMap.put( identifier, xaTx );
 		xaRm.injectStart( xid, xaTx );
 		return true;
 	}
@@ -224,7 +223,7 @@ public class XaLogicalLog
 		if ( xaRm.injectPrepare( xid ) )
 		{
 			// read only we can remove
-			xidIdentMap.remove( xid );
+			xidIdentMap.remove( identifier );
 			recoveredTxMap.remove( identifier );
 		}
 		return true;
@@ -303,11 +302,10 @@ public class XaLogicalLog
 		}
 		buffer.flip();
 		int identifier = buffer.getInt();
-		Integer key = new Integer( identifier );
-		Xid xid = xidIdentMap.get( key );
+		Xid xid = xidIdentMap.get( identifier );
 		xaRm.pruneXid( xid );
-		xidIdentMap.remove( key );
-		recoveredTxMap.remove( key );
+		xidIdentMap.remove( identifier );
+		recoveredTxMap.remove( identifier );
 		return true;
 	}
 	
@@ -365,12 +363,7 @@ public class XaLogicalLog
 		{
 			throw new IOException( "Logical log[" + fileName + "] not found" );
 		}
-		/*if ( !file.renameTo( new File( fileName + logCreated + "_" + 
-			System.currentTimeMillis() + ".log" ) ) )
-		{
-			log.severe( "Failed to rename logical log[" + 
-				fileName + "]" );
-		}*/
+		// TODO: if store old logs save them here
 		file.delete();
 	}
 	

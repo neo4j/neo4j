@@ -201,7 +201,7 @@ public class TestTxEvents extends TestCase
 		}
 	}
 
-	public void testKernelMarkedRollback()
+	public void testMarkedRollback()
 	{
 		Logger log = Logger.getLogger(
 			"org.neo4j.impl.core.NeoConstraints" );

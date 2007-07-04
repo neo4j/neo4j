@@ -1,7 +1,5 @@
 package org.neo4j.impl.traversal;
 
-// Kernel imports
-
 import java.util.Collection;
 
 import org.neo4j.api.core.Node;
@@ -9,9 +7,7 @@ import org.neo4j.api.core.Node;
 /**
  * A utility class that represents an arbitrary traversal over a nodespace.
  * A Traverser is used as a tool for a NEO client programmer to easily
- * traverse the node space according a complex set of rules. For a
- * step-by-step introduction to the NEO traverser framework, see the NEO
- * chapter in the Kernel Documentation.
+ * traverse the node space according a complex set of rules.
  * <P>
  * A Traverser is created by invoking any of the factory methods in
  * {@link TraverserFactory}. Subsequent retrieval of the nodes from a Traverser

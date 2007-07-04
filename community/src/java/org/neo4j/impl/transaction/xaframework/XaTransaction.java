@@ -131,7 +131,7 @@ public abstract class XaTransaction
 	{
 		if ( log == null )
 		{
-			throw new IllegalArgumentException( "LogicalLog[" + log + "]" );
+			throw new IllegalArgumentException( "LogicalLog is null" );
 		}
 		this.identifier = identifier;
 		this.log = log;

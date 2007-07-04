@@ -54,9 +54,9 @@ class RWLock
 	// keeps track a threads read and write lock count on this RWLock
 	private static class ThreadLockElement
 	{
-		private Thread thread = null;
-		private int readCount = 0;
-		private int writeCount = 0;
+		Thread thread = null;
+		int readCount = 0;
+		int writeCount = 0;
 		
 		ThreadLockElement( Thread thread )
 		{
@@ -67,8 +67,8 @@ class RWLock
 	// keeps track of what type of lock a thread is waiting for
 	private static class WaitElement
 	{
-		private ThreadLockElement element = null;
-		private LockType lockType = null;
+		ThreadLockElement element = null;
+		LockType lockType = null;
 		
 		WaitElement( ThreadLockElement element, LockType lockType )
 		{
@@ -341,7 +341,7 @@ class RWLock
 			// empty
 			do
 			{
-				WaitElement we = (WaitElement) waitingThreadList.removeLast();
+				WaitElement we = waitingThreadList.removeLast();
 				we.element.thread.interrupt();
 				if ( we.lockType == LockType.WRITE )
 				{

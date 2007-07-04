@@ -208,12 +208,11 @@ public class TestDynamicStore extends TestCase
 				float rIndex = random.nextFloat();
 				if ( rIndex < deleteIndex && currentCount > 0 )
 				{
-					int blockId = ( ( Integer ) idsTaken.remove(  
-						random.nextInt( currentCount ) ) ).intValue();
+					int blockId = idsTaken.remove( random.nextInt( 
+						currentCount ) ).intValue();
 					store.getRecords( blockId );
-					validateData( store.getBytes( blockId ), 
-						( byte[] ) byteData.remove( 
-							new Integer( blockId ) ) );
+					validateData( store.getBytes( blockId ), byteData.remove( 
+						new Integer( blockId ) ) );
 					Collection<DynamicRecord> records = store.getRecords( 
 						blockId );
 					for ( DynamicRecord record : records )
@@ -295,7 +294,7 @@ public class TestDynamicStore extends TestCase
 			return get( blockId );
 		}
 		
-		public void flush() throws IOException
+		public void flush()
 		{
 		}
 	}

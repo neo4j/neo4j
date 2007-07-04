@@ -1,7 +1,7 @@
 package org.neo4j.impl.event;
 
 /**
- * This typesafe enum [Bloch02] represents an event in the kernel.
+ * This typesafe enum [Bloch02] represents an event in Neo.
  */
 public class Event
 {
@@ -11,16 +11,16 @@ public class Event
 	public static final Event TEST_EVENT = new Event( "TEST_EVENT" );
 	
 	// Lifecycle events
-	public static final Event KERNEL_SHUTDOWN_REQUEST =
-		new Event( "KERNEL_SHUTDOWN_REQUEST" );
-	public static final Event KERNEL_SHUTDOWN_STARTED = 
-		new Event( "KERNEL_SHUTDOWN_STARTED" ); // only sent proactively
-	public static final Event KERNEL_STARTUP_COMPLETED =
-		new Event( "KERNEL_STARTUP_COMPLETED" );
-	public static final Event KERNEL_FREEZE_REQUEST =
-		new Event( "KERNEL_FREEZE_REQUEST" );
-	public static final Event KERNEL_THAW_REQUEST =
-		new Event( "KERNEL_THAW_REQUEST" );
+	public static final Event NEO_SHUTDOWN_REQUEST =
+		new Event( "NEO_SHUTDOWN_REQUEST" );
+	public static final Event NEO_SHUTDOWN_STARTED = 
+		new Event( "NEO_SHUTDOWN_STARTED" ); // only sent proactively
+	public static final Event NEO_STARTUP_COMPLETED =
+		new Event( "NEO_STARTUP_COMPLETED" );
+	public static final Event NEO_FREEZE_REQUEST =
+		new Event( "NEO_FREEZE_REQUEST" );
+	public static final Event NEO_THAW_REQUEST =
+		new Event( "NEO_THAW_REQUEST" );
 	
 	// Neo related events
 	public static final Event NODE_CREATE = 
@@ -56,12 +56,6 @@ public class Event
 	public static final Event DATA_SOURCE_REMOVED =
 		new Event( "DATA_SOURCE_REMOVED" );
 
-	// kernel principal and user related events
-	public static final Event USER_CREATE = new Event( "USER_CREATE" );
-	public static final Event USER_DELETE = new Event( "USER_DELETE" );
-	public static final Event USER_SET_PASSWORD = 
-		new Event( "USER_SET_PASSWORD" );
-	
 	// Transaction related events
 	public static final Event TX_BEGIN = new Event( "TX_BEGIN" );
 	public static final Event TX_ROLLBACK = new Event( "TX_ROLLBACK" );

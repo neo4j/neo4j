@@ -496,11 +496,6 @@ public class TestRWLock extends TestCase
 			
 	public void testStressMultipleThreads()
 	{
-		/*if ( !unit.kernel.TestAll.runSlowTests() )
-		{
-		 	return;
-		}*/
-
 		ResourceObject r1 = new ResourceObject( "R1" );
 		Thread stressThreads[] = new Thread[100];
 		StressThread.go = false;

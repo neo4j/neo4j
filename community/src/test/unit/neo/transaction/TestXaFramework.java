@@ -110,8 +110,8 @@ public class TestXaFramework extends TestCase
 			
 		}
 		
-		public void doRollback() throws XAException {}
-		public void doCommit() throws XAException {}		
+		public void doRollback() {}
+		public void doCommit() {}		
 		public boolean isReadOnly() { return false; }
 	}
 	
@@ -199,13 +199,13 @@ public class TestXaFramework extends TestCase
 			return xaResource;
 		}
 		
-		public void doStuff1() throws XAException, IOException
+		public void doStuff1() throws XAException
 		{
 			validate();
 			getTransaction().addCommand( new DummyCommand(1) );
 		}
 		
-		public void doStuff2() throws XAException, IOException
+		public void doStuff2() throws XAException
 		{
 			validate();
 			getTransaction().addCommand( new DummyCommand(2) );
@@ -409,12 +409,12 @@ public class TestXaFramework extends TestCase
 		
 		public byte[] getGlobalTransactionId()
 		{
-			return ( byte[] ) globalId.clone();
+			return globalId.clone();
 		}
 	
 		public byte[] getBranchQualifier()
 		{
-			return ( byte[] ) branchId.clone();
+			return branchId.clone();
 		}
 		
 		public int getFormatId()

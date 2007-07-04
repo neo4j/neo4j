@@ -421,8 +421,8 @@ public class TestIdGenerator extends TestCase
 				float rIndex = random.nextFloat();
 				if ( rIndex < releaseIndex && currentIdCount > 0 )
 				{
-					idGenerator.freeId( ( ( Integer ) idsTaken.remove(  
-						random.nextInt( currentIdCount ) ) ).intValue() ); 
+					idGenerator.freeId( idsTaken.remove(  
+						random.nextInt( currentIdCount ) ).intValue() ); 
 					currentIdCount--;
 				}
 				else

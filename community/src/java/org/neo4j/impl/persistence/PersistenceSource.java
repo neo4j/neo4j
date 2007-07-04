@@ -1,21 +1,16 @@
 package org.neo4j.impl.persistence;
 
 /**
- * A data resource that the kernel uses to persist entities.
+ * A data resource that Neo uses to persist entities.
  * Examples of a <CODE>PersistenceSource</CODE> include a database server
  * or an LDAP server.
  * <P>
- * All persistence sources in the kernel should implement this interface.
- * Typically, a new persistence source is represented by one front-end class
- * that implements both <CODE>PersistenceSource</CODE> and
- * {@link com.windh.kernel.module.framework.KernelModule}. On bootstrap,
- * the persistence source generates a
+ * All persistence sources for Neo should implement this interface.
+ * On bootstrap, the persistence source generates a
  * {@link org.neo4j.impl.event.Event#DATA_SOURCE_ADDED DATA_SOURCE_ADDED}
  * event, which the persistence framework receives and uses to include the
  * persistence source in all future persistence operations.
  * <P>
- * For more information about implementing a kernel-compatible persistence
- * source, see the Persistence Layer chapter in the Kernel Documentation.
  */
 public interface PersistenceSource
 {

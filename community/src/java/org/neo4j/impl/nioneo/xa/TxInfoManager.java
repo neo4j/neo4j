@@ -29,7 +29,7 @@ public class TxInfoManager
 	
 	void registerMode( boolean mode )
 	{
-		txMode.put( Thread.currentThread(), new Boolean( mode ) );
+		txMode.put( Thread.currentThread(), Boolean.valueOf( mode ) );
 	}
 	
 	void unregisterMode()

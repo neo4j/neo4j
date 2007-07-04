@@ -1,13 +1,12 @@
 package org.neo4j.impl.command;
 
-
 /**
  * This indicates a very serious error. No matter what happens a command
  * should always be able to undo. Throwing this kind of exception should
- * result in kernel shutdown, and as you know... the kernel never ever shuts
- * down unless the user wants it to. Since the kernel is utterly perfect this 
- * exception is unnecessary but we keep it just for solidarity to other
- * kernel coders.
+ * result in shutdown, and as you know... Neo never ever shuts down unless 
+ * the user wants it to. Since the Neo is utterly perfect this 
+ * exception is unnecessary but we keep it just for solidarity with other
+ * coders.
  */
 public class UndoFailedException extends RuntimeException
 {
@@ -30,5 +29,4 @@ public class UndoFailedException extends RuntimeException
 	{
 		super( cause );
 	}
-	
 }

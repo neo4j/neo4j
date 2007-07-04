@@ -30,39 +30,30 @@ class TxEventGenerator implements Synchronization
 
 	public void afterCompletion( int param )
 	{
-		try
-		{
-			TransactionImpl tx = ( TransactionImpl ) 
-				TxManager.getManager().getTransaction();
-			if ( tx == null )
-			{
-				log.severe( "Unable to get transaction after " +
-				   "completion: [" + param + "]. No completion" +
-				   "event generated." );
-				return;
-			}
-			Integer eventIdentifier = tx.getEventIdentifier();
-			switch ( param )
-			{
-				case Status.STATUS_COMMITTED:
-					EventManager.getManager().generateReActiveEvent(
-						Event.TX_COMMIT, new EventData( eventIdentifier ) );
-					break;
-				case Status.STATUS_ROLLEDBACK:
-					EventManager.getManager().generateReActiveEvent(
-						Event.TX_ROLLBACK, new EventData( eventIdentifier ) );
-					break;
-				default:
-					log.severe( "Unexpected and unknown tx status after " +
-							   "completion: [" + param + "]. No completion" +
-							   "event generated." );
-			}
-		}
-		catch ( javax.transaction.SystemException e )
+		TransactionImpl tx = ( TransactionImpl ) 
+			TxManager.getManager().getTransaction();
+		if ( tx == null )
 		{
 			log.severe( "Unable to get transaction after " +
-					   "completion: [" + param + "]. No completion" +
-					   "event generated." );
+			   "completion: [" + param + "]. No completion" +
+			   "event generated." );
+			return;
+		}
+		Integer eventIdentifier = tx.getEventIdentifier();
+		switch ( param )
+		{
+			case Status.STATUS_COMMITTED:
+				EventManager.getManager().generateReActiveEvent(
+					Event.TX_COMMIT, new EventData( eventIdentifier ) );
+				break;
+			case Status.STATUS_ROLLEDBACK:
+				EventManager.getManager().generateReActiveEvent(
+					Event.TX_ROLLBACK, new EventData( eventIdentifier ) );
+				break;
+			default:
+				log.severe( "Unexpected and unknown tx status after " +
+						   "completion: [" + param + "]. No completion" +
+						   "event generated." );
 		}
 	}
 

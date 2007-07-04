@@ -82,11 +82,6 @@ class TxCommitHook implements Synchronization
 							   "completion: [" + param + "]." );
 			}
 		}
-		catch ( javax.transaction.InvalidTransactionException ite )
-		{
-			ite.printStackTrace();
-			log.severe( "Unable to release/undo commands." );
-		}
 		catch ( UndoFailedException e )
 		{
 			e.printStackTrace();
@@ -103,11 +98,6 @@ class TxCommitHook implements Synchronization
 			{
 				log.severe( "Forcing release of commands" );
 				CommandManager.getManager().undoAndReleaseCommands();
-			}
-			catch ( javax.transaction.InvalidTransactionException e )
-			{
-				e.printStackTrace();
-				log.severe( "Force release failed" );
 			}
 			finally
 			{

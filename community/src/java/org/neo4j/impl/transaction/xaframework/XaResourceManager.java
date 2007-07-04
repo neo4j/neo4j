@@ -307,9 +307,8 @@ public class XaResourceManager
 		{
 			throw new IOException( "Unkown xid[" + xid + "]" );
 		}
-		XidStatus status = ( XidStatus ) xidMap.get( xid );
+		XidStatus status = xidMap.get( xid );
 		TransactionStatus txStatus = status.getTransactionStatus();
-//		XaTransaction xaTransaction = txStatus.getTransaction();
 		txStatus.markCommitStarted();
 	}
 	
@@ -473,8 +472,6 @@ public class XaResourceManager
 				else if ( !txStatus.commit() )
 				{
 					log.doneInternal( xaTransaction.getIdentifier() );
-//					System.out.println( "Rollback non prepared tx " + 
-//						identifier );
 					xidMap.remove( xid );
 					recoveredTxCount--;
 				}

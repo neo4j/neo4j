@@ -240,8 +240,7 @@ class PersistenceWindowPool
 		{
 			if ( identifier != -1 )
 			{
-				Set windowSet = ( Set ) txIdentifiers.remove( 
-					new Integer( identifier ) );
+				Set windowSet = txIdentifiers.remove( identifier );
 				if ( windowSet != null )
 				{
 					Iterator itr = windowSet.iterator();
@@ -266,7 +265,7 @@ class PersistenceWindowPool
 		{
 			if ( identifier != -1 )
 			{
-				txIdentifiers.remove( new Integer( identifier ) );
+				txIdentifiers.remove( identifier );
 			}
 		}
 	}
@@ -437,8 +436,8 @@ class PersistenceWindowPool
 		// fill up unused memory
 		while ( memUsed + brickSize <= mappedMem && nonMappedIndex >= 0 )
 		{
-			BrickElement nonMappedBrick = 
-				( BrickElement ) nonMappedBricks.get( nonMappedIndex-- );
+			BrickElement nonMappedBrick = nonMappedBricks.get( 
+				nonMappedIndex-- );
 			try
 			{
 				nonMappedBrick.setWindow( new MappedPersistenceWindow( 
@@ -455,10 +454,9 @@ class PersistenceWindowPool
 		// switch bad mappings
 		while ( nonMappedIndex >= 0 && mappedIndex < mappedBricks.size() )
 		{
-			BrickElement mappedBrick = 
-				( BrickElement ) mappedBricks.get( mappedIndex++ );
-			BrickElement nonMappedBrick = 
-				( BrickElement ) nonMappedBricks.get( nonMappedIndex-- );
+			BrickElement mappedBrick = mappedBricks.get( mappedIndex++ );
+			BrickElement nonMappedBrick = nonMappedBricks.get( 
+				nonMappedIndex-- );
 			if ( mappedBrick.getHit() >= nonMappedBrick.getHit() )
 			{
 				break;
@@ -537,7 +535,7 @@ class PersistenceWindowPool
 		}
 	}
 	
-	private static class BrickSorter implements Comparator<BrickElement>
+	static class BrickSorter implements Comparator<BrickElement>
 	{
 		public int compare( BrickElement o1, BrickElement o2 )
 		{

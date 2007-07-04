@@ -29,28 +29,24 @@ public class TestAll extends TestSuite
 	
 	private static EmbeddedNeo neo;
 	
-	// Starts up the kernel
-	private static void startupKernel()
+	private static void startupNeo()
 	{
 		neo = new EmbeddedNeo( MyRelTypes.class, "var/nioneo", true );
 	}
 	
-	// Shuts down the kernel
-	private static void shutdownKernel()
+	private static void shutdownNeo()
 	{
 		neo.shutdown();
 	}
 	
 	public static void main( String args[] )
 	{
-		startupKernel();
+		startupNeo();
 		junit.textui.TestRunner.run( suite() );
-		shutdownKernel();
+		shutdownNeo();
 		org.neo4j.impl.command.CommandManager.getManager().dumpStack();		
 		org.neo4j.impl.transaction.LockManager.getManager().dumpRagStack();
 		org.neo4j.impl.transaction.LockManager.getManager().dumpAllLocks();
-		( ( org.neo4j.impl.transaction.TxManager ) 
-			org.neo4j.impl.transaction.TxManager.getManager() 
-			).dumpTransactions();
+		org.neo4j.impl.transaction.TxManager.getManager().dumpTransactions();
 	}
 }

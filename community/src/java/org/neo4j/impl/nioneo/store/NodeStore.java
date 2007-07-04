@@ -233,7 +233,7 @@ public class NodeStore extends AbstractStore implements Store
 		}
 	}
 	
-	private boolean checkNode( int nodeId, Buffer buffer ) throws IOException
+	private boolean checkNode( int nodeId, Buffer buffer )
 	{
 		int offset = ( nodeId - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );

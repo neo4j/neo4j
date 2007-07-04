@@ -81,9 +81,14 @@ class ResourceBroker
 	{
 		if ( meta == null || meta.getEntity() == null )
 		{
+			Object entity = null;
+			if ( meta != null )
+			{
+				entity = meta.getEntity();
+			}
 			throw new IllegalArgumentException( "meta =" + meta + ", " +
 												"meta.getEntity = " +
-												meta.getEntity() );
+												entity );
 		}
 		
 		ResourceConnection con		= null;
