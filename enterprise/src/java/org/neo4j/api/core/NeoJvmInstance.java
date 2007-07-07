@@ -196,4 +196,20 @@ class NeoJvmInstance
     {
 	    config.getNeoModule().addEnumRelationshipTypes( relationshipTypes );
     }
+
+	public static Iterable<RelationshipType> getRelationshipTypes()
+    {
+	    return config.getNeoModule().getRelationshipTypes();
+    }
+
+	public static boolean hasRelationshipType( String name )
+    {
+	    return config.getNeoModule().hasRelationshipType( name );
+    }
+
+	public static RelationshipType registerRelationshipType( String name, 
+		boolean create )
+    {
+	    return config.getNeoModule().registerRelationshipType( name, create );
+    }
 }

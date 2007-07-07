@@ -67,7 +67,18 @@ public class EmbeddedNeo
 		this( validRelationshipTypes, storeDir, true );
 	}
 	
-	// Private accessor for the remote shell (started with enableRemoteShell())
+	public EmbeddedNeo( String dir, RelationshipType[] relationshipTypes )
+	{
+		this( null, dir, true );
+		// TODO
+	}
+
+	public EmbeddedNeo( String dir, Iterable<RelationshipType> relationshipTypes )
+	{
+		this( null, dir, true );
+	}
+	    
+	 	// Private accessor for the remote shell (started with enableRemoteShell())
 	private NeoShellServer getShellServer()
 	{
 		return this.shellServer;
@@ -206,14 +217,52 @@ public class EmbeddedNeo
 		}
 	}
 
-	public RelationshipType getRelationshipTypeByName( String name )
-	{
-		return NeoJvmInstance.getRelationshipTypeByName( name );
-	}
-
 	public void registerEnumRelationshipTypes( 
 		Class<? extends RelationshipType> relationshipTypes )
 	{
 		NeoJvmInstance.addEnumRelationshipTypes( relationshipTypes );
 	}
+
+    public Iterable<RelationshipType> getRelationshipTypes()
+    {
+    	return NeoJvmInstance.getRelationshipTypes();
+    }
+    
+    public RelationshipType getRelationshipType( String name )
+    {
+		return NeoJvmInstance.getRelationshipTypeByName( name );
+    }
+    
+    public boolean hasRelationshipType( String name )
+    {
+    	return NeoJvmInstance.hasRelationshipType( name );
+    	
+    }
+     
+    public RelationshipType createAndRegisterRelationshipType( String name )
+    {
+    	return NeoJvmInstance.registerRelationshipType( name, true );
+    }
+    
+    // must exist in store
+    public RelationshipType registerRelationshipType( String name )
+    {
+    	return NeoJvmInstance.registerRelationshipType( name, false );
+    }
+    
+    public void registerRelationshipTypes( Iterable<RelationshipType> types )
+    {
+    	for ( RelationshipType type : types )
+    	{
+    		NeoJvmInstance.registerRelationshipType( type.name(), true );
+    	}
+    }
+    
+    public void registerRelationshipTypes( RelationshipType[] types )
+    {
+       	for ( RelationshipType type : types )
+    	{
+    		NeoJvmInstance.registerRelationshipType( type.name(), true );
+    	}
+    }
 }
