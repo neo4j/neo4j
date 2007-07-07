@@ -74,7 +74,7 @@ public abstract class NeoApp extends AbstractApp
 	{
 		// this.ensureRelTypesInitialized();
 		RelationshipType result = this.getNeoServer().getNeo().
-			getRelationshipTypeByName( name );
+			getRelationshipType( name );
 		if ( result == null )
 		{
 			throw new RuntimeException( "No relationship type '" + name +

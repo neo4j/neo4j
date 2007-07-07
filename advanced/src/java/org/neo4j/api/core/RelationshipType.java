@@ -6,4 +6,5 @@ package org.neo4j.api.core;
  */
 public interface RelationshipType
 {
+	public String name();
 }

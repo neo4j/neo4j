@@ -38,6 +38,7 @@ public class TestNeo extends TestCase
 		suite.addTest( new TestNeo( "testBasicNodeRelationships" ) );
 		suite.addTest( new TestNeo( "testReferenceNode" ) );
 		suite.addTest( new TestNeo( "testAddMoreRelationshipTypes" ) );
+		suite.addTest( new TestNeo( "testAddMoreRelationshipTypes2" ) );
 		// suite.addTest( new TestNeo( "testLotsAndLotsOfNodeRelationships" ) );
 		return suite;
 	}
@@ -533,6 +534,29 @@ public class TestNeo extends TestCase
 		Node node2 = nm.createNode();
 		Relationship rel = node1.createRelationshipTo( node2, 
 			RelTypes.ONE_MORE_RELATIONSHIP );
+		rel.delete();
+		node2.delete();
+		node1.delete();
+	}
+
+	public void testAddMoreRelationshipTypes2()
+	{
+		RelationshipType newRelType = new RelationshipType()
+		{
+			public String name()
+			{
+				return "ONE_MORE_RELTYPE_AGAIN";
+			}
+		};
+		NodeManager nm = NodeManager.getManager();
+		assertFalse( nm.isValidRelationshipType( 
+			newRelType ) );
+		nm.registerRelationshipType( newRelType.name(), true );
+		assertTrue( nm.isValidRelationshipType( newRelType ) );
+		Node node1 = nm.createNode();
+		Node node2 = nm.createNode();
+		Relationship rel = node1.createRelationshipTo( node2, 
+			newRelType );
 		rel.delete();
 		node2.delete();
 		node1.delete();
