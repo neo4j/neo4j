@@ -1,8 +1,5 @@
 package unit.neo.api;
 
-//import java.util.ArrayList;
-//import java.util.Iterator;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -227,7 +224,7 @@ public class TestNeoCacheAndPersistence extends TestCase
 		{
 			fail( "" + e );
 		}
-	}
+	} 
 
 	private Relationship[] getRelationshipArray( 
 		Iterable<Relationship> relsIterable )

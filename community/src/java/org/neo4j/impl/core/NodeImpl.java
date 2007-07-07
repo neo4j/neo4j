@@ -76,8 +76,8 @@ class NodeImpl implements Node, Comparable
 	private boolean isDeleted = false;
 	private NodePhase nodePropPhase;
 	private NodePhase nodeRelPhase;
-	private Map<RelationshipType,Set<Integer>> relationshipMap = 
-		new HashMap<RelationshipType,Set<Integer>>();
+	private Map<String,Set<Integer>> relationshipMap = 
+		new HashMap<String,Set<Integer>>();
 	private Map<String,Property> propertyMap = 
 		new HashMap<String,Property>();
 	
@@ -204,7 +204,7 @@ class NodeImpl implements Node, Comparable
 				return Collections.emptyList();
 			}
 			// TODO: rewrite with iterator wrapper
-			Set<Integer> relationshipSet = relationshipMap.get( type );
+			Set<Integer> relationshipSet = relationshipMap.get( type.name() );
 			if ( relationshipSet == null )
 			{
 				return Collections.emptyList();
@@ -270,7 +270,7 @@ class NodeImpl implements Node, Comparable
 				return Collections.emptyList();
 			}
 			// TODO: rewrite with iterator wrapper
-			Set<Integer> relationshipSet = relationshipMap.get( type );
+			Set<Integer> relationshipSet = relationshipMap.get( type.name() );
 			if ( relationshipSet == null )
 			{
 				return Collections.emptyList();
@@ -822,11 +822,11 @@ class NodeImpl implements Node, Comparable
 	 // a relationship delete is undone or when the full node is loaded
 	void addRelationship( RelationshipType type, Integer relId ) 
 	{
-		Set<Integer> relationshipSet = relationshipMap.get( type );
+		Set<Integer> relationshipSet = relationshipMap.get( type.name() );
 		if ( relationshipSet == null )
 		{
 			relationshipSet = new LinkedHashSet<Integer>();
-			relationshipMap.put( type, relationshipSet );
+			relationshipMap.put( type.name(), relationshipSet );
 		}
 		relationshipSet.add( relId );
 	}
@@ -836,13 +836,13 @@ class NodeImpl implements Node, Comparable
 	 // a relationship delete is invoked.
 	void removeRelationship( RelationshipType type, Integer relId )
 	{
-		Set<Integer> relationshipSet = relationshipMap.get( type );
+		Set<Integer> relationshipSet = relationshipMap.get( type.name() );
 		if ( relationshipSet != null )
 		{
 			relationshipSet.remove( relId );
 			if ( relationshipSet.size() == 0 )
 			{
-				relationshipMap.remove( type );
+				relationshipMap.remove( type.name() );
 			}
 		}
 	}
@@ -903,8 +903,8 @@ class NodeImpl implements Node, Comparable
 			List<Relationship> fullRelationshipList = 
 				NodeManager.getManager().loadRelationships( this );
 			Set<Integer> addedRels = new HashSet<Integer>();
-			Map<RelationshipType,Set<Integer>> newRelationshipMap = 
-				new HashMap<RelationshipType,Set<Integer>>();
+			Map<String,Set<Integer>> newRelationshipMap = 
+				new HashMap<String,Set<Integer>>();
 			for ( Relationship rel : fullRelationshipList )
 			{
 				int relId = (int) rel.getId();
@@ -915,24 +915,24 @@ class NodeImpl implements Node, Comparable
 				if ( relationshipSet == null )
 				{
 					relationshipSet = new LinkedHashSet<Integer>();
-					newRelationshipMap.put( type, relationshipSet );
+					newRelationshipMap.put( type.name(), relationshipSet );
 				}
 				relationshipSet.add( relId );
 			}
-			for ( RelationshipType type : this.relationshipMap.keySet() )
+			for ( String typeName : this.relationshipMap.keySet() )
 			{
 				Set<Integer> relationshipSet = 
-					this.relationshipMap.get( type );
+					this.relationshipMap.get( typeName );
 				for ( Integer relId : relationshipSet )
 				{
 					if ( !addedRels.contains( relId ) )
 					{
 						Set<Integer> newRelationshipSet = 
-							newRelationshipMap.get( type );
+							newRelationshipMap.get( typeName );
 						if ( newRelationshipSet == null )
 						{
 							newRelationshipSet = new LinkedHashSet<Integer>();
-							newRelationshipMap.put( type, 
+							newRelationshipMap.put( typeName, 
 								newRelationshipSet );
 						}
 						newRelationshipSet.add( relId );

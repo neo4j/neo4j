@@ -1,7 +1,9 @@
 package org.neo4j.impl.core;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -24,13 +26,12 @@ class RelationshipTypeHolder
 	private static Logger log = 
 		Logger.getLogger( RelationshipTypeHolder.class.getName() );
 	
-	private Set<Class<? extends RelationshipType>> enumClasses = 
-		new HashSet<Class<? extends RelationshipType>>();
+//	private Set<Class<? extends RelationshipType>> enumClasses = 
+//		new HashSet<Class<? extends RelationshipType>>();
 	private Map<String,Integer> relTypes = new HashMap<String,Integer>();
-	private Map<Integer,RelationshipType> relTranslation =
-		new HashMap<Integer,RelationshipType>();
-	private Map<RelationshipType,String> validTypes = 
-		new HashMap<RelationshipType,String>();
+	private Map<Integer,String> relTranslation =
+		new HashMap<Integer,String>();
+	private Set<String> validTypes = new HashSet<String>();
 	
 	private RelationshipTypeHolder()
 	{
@@ -52,38 +53,95 @@ class RelationshipTypeHolder
 	public void addValidRelationshipTypes( 
 		Class<? extends RelationshipType> relTypeClass )
 	{
-		enumClasses.add( relTypeClass );
+		// enumClasses.add( relTypeClass );
 		for ( RelationshipType enumConstant : relTypeClass.getEnumConstants() )
 		{
 			String name = Enum.class.cast( enumConstant ).name();
 			if ( !relTypes.containsKey( name ) )
 			{
 				int id = createRelationshipType( name );
-				relTranslation.put( id, enumConstant );
+				relTranslation.put( id, name );
 			}
 			else
 			{
-				relTranslation.put( relTypes.get( name ), enumConstant );
+				relTranslation.put( relTypes.get( name ), name );
 			}
-			validTypes.put( enumConstant, name );
+//			validTypes.put( enumConstant, name );
+			validTypes.add( name );
 		}
 	}
 
+	public RelationshipType addValidRelationshipType( String name, 
+		boolean create ) 
+	{
+		if ( !relTypes.containsKey( name ) )
+		{
+			if ( !create )
+			{
+				return null;
+			}
+			int id = createRelationshipType( name );
+			relTranslation.put( id, name );
+		}
+		else
+		{
+			relTranslation.put( relTypes.get( name ), name );
+		}
+		validTypes.add( name );
+		return new RelationshipTypeImpl( name );
+	}
+	
 	boolean isValidRelationshipType( RelationshipType type )
 	{
-		if ( type == null || !enumClasses.contains( type.getClass() ) )
-			//type.getClass().equals( this.enumClass ) )
-		{
-			return false;
-		}
-		String name = Enum.class.cast( type ).name();
-		return relTypes.containsKey( name );
+		return validTypes.contains( type.name() );
+//		if ( type == null || !enumClasses.contains( type.getClass() ) )
+//			//type.getClass().equals( this.enumClass ) )
+//		{
+//			return false;
+//		}
+//		String name = Enum.class.cast( type ).name();
+//		return relTypes.containsKey( name );
 		// .contains( name );
 	}
 	
 	RelationshipType getRelationshipTypeByName( String name )
 	{
-		return relTranslation.get( relTypes.get( name ) );
+		if ( validTypes.contains( name ) )
+		{
+			return new RelationshipTypeImpl( name );
+		}
+		return null;
+		// return relTranslation.get( relTypes.get( name ) );
+	}
+	
+	private static class RelationshipTypeImpl implements RelationshipType
+	{
+		private String name;
+		
+		RelationshipTypeImpl( String name )
+		{
+			assert name != null;
+			this.name = name;
+		}
+		
+		public String name()
+		{
+			return name;
+		}
+		
+		public boolean equals( Object o )
+		{
+			if ( !(o instanceof RelationshipType) )
+			{
+				return false;
+			}
+			return name.equals( ((RelationshipType) o ).name() );
+		}
+		
+		public int hashCode()
+		{
+			return name.hashCode();
+		}
 	}
 
 	private int createRelationshipType( String name )
@@ -211,12 +269,28 @@ class RelationshipTypeHolder
 
 	int getIdFor( RelationshipType type )
 	{
-		String name = Enum.class.cast( type ).name();
-		return relTypes.get( name ); 
+//		String name = Enum.class.cast( type ).name();
+//		return relTypes.get( name );
+		return relTypes.get( type.name() );
 	}
 	
 	RelationshipType getRelationshipType( int id )
 	{
-		return relTranslation.get( id );
+		return new RelationshipTypeImpl( relTranslation.get( id ) );
 	}
+
+	public Iterable<RelationshipType> getRelationshipTypes()
+    {
+		List<RelationshipType> relTypeList = new ArrayList<RelationshipType>(); 
+	    for ( String name : validTypes )
+	    {
+	    	relTypeList.add( new RelationshipTypeImpl( name ) );
+	    }
+		return relTypeList;
+    }
+
+	public boolean hasRelationshipType( String name )
+    {
+		return validTypes.contains( name );
+    }
 }

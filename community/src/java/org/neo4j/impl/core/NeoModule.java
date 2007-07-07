@@ -153,4 +153,23 @@ public class NeoModule
 		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
 		rth.addValidRelationshipTypes( relationshipTypes );
     }
+
+	public Iterable<RelationshipType> getRelationshipTypes()
+    {
+		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
+		return rth.getRelationshipTypes();
+    }
+
+	public boolean hasRelationshipType( String name )
+    {
+		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
+		return rth.hasRelationshipType( name );
+    }
+
+	public RelationshipType registerRelationshipType( String name, 
+		boolean create )
+    {
+		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
+		return rth.addValidRelationshipType( name, create );
+    }
 }
