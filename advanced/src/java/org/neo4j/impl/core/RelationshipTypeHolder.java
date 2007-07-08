@@ -276,7 +276,12 @@ class RelationshipTypeHolder
 	
 	RelationshipType getRelationshipType( int id )
 	{
-		return new RelationshipTypeImpl( relTranslation.get( id ) );
+		String name = relTranslation.get( id );
+		if ( name != null )
+		{
+			return new RelationshipTypeImpl( name );
+		}
+		return null;
 	}
 
 	public Iterable<RelationshipType> getRelationshipTypes()
