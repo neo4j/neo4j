@@ -129,6 +129,11 @@ class RelationshipTypeHolder
 			return name;
 		}
 		
+		public String toString()
+		{
+			return name;
+		}
+		
 		public boolean equals( Object o )
 		{
 			if ( !(o instanceof RelationshipType) )
