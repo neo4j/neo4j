@@ -911,7 +911,7 @@ class NodeImpl implements Node, Comparable
 				assert !addedRels.contains( relId );
 				addedRels.add( relId );
 				RelationshipType type = rel.getType();
-				Set<Integer> relationshipSet = newRelationshipMap.get( type );
+				Set<Integer> relationshipSet = newRelationshipMap.get( type.name() );
 				if ( relationshipSet == null )
 				{
 					relationshipSet = new LinkedHashSet<Integer>();
