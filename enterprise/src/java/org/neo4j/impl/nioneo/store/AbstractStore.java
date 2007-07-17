@@ -219,5 +219,5 @@ public abstract class AbstractStore extends CommonAbstractStore
 			" (defraged=" + defragedCount + ")" );  
 		closeIdGenerator();
 		openIdGenerator();
-	}
+	}	
 }

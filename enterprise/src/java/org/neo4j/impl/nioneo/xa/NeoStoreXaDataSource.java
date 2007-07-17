@@ -275,4 +275,26 @@ public class NeoStoreXaDataSource extends XaDataSource
 			throw new IdGenerationFailedException( e );
 		}
 	}
+
+	public int getHighestPossibleIdInUse( Class clazz )
+    {
+		Store store = idGenerators.get( clazz );
+		if ( store == null )
+		{
+			throw new IdGenerationFailedException( "No IdGenerator for: " + 
+				clazz );
+		}
+		return store.getHighestPossibleIdInUse();
+    }
+
+	public int getNumberOfIdsInUse( Class clazz )
+    {
+		Store store = idGenerators.get( clazz );
+		if ( store == null )
+		{
+			throw new IdGenerationFailedException( "No IdGenerator for: " + 
+				clazz );
+		}
+		return store.getNumberOfIdsInUse();
+    }
 }

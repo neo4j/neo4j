@@ -33,4 +33,8 @@ public interface PersistenceSource
 	 * @return the next free unique id for <CODE>clazz</CODE>
 	 */
 	public int nextId( Class clazz );
+	
+	public int getHighestPossibleIdInUse( Class clazz );
+	
+	public int getNumberOfIdsInUse( Class clazz );
 }

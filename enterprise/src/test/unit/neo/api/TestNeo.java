@@ -39,6 +39,7 @@ public class TestNeo extends TestCase
 		suite.addTest( new TestNeo( "testReferenceNode" ) );
 		suite.addTest( new TestNeo( "testAddMoreRelationshipTypes" ) );
 		suite.addTest( new TestNeo( "testAddMoreRelationshipTypes2" ) );
+		suite.addTest( new TestNeo( "testIdUsageInfo" ) );
 		// suite.addTest( new TestNeo( "testLotsAndLotsOfNodeRelationships" ) );
 		return suite;
 	}
@@ -560,5 +561,36 @@ public class TestNeo extends TestCase
 		rel.delete();
 		node2.delete();
 		node1.delete();
+	}
+	
+	public void testIdUsageInfo()
+	{
+		NodeManager nm = NodeManager.getManager();
+		int nodeCount = nm.getNumberOfIdsInUse( Node.class );
+		int relCount = nm.getNumberOfIdsInUse( Relationship.class );
+		assertTrue( nodeCount <= nm.getHighestPossibleIdInUse( Node.class ) );
+		assertTrue( relCount <= nm.getHighestPossibleIdInUse( 
+			Relationship.class ) );
+		Node n1 = nm.createNode();
+		Node n2 = nm.createNode();
+		Relationship r1 = n1.createRelationshipTo( n2, MyRelTypes.TEST );
+		assertEquals( nodeCount + 2, nm.getNumberOfIdsInUse( Node.class ) );
+		assertEquals( relCount + 1, nm.getNumberOfIdsInUse( 
+			Relationship.class ) );
+		r1.delete();
+		n1.delete();
+		n2.delete();
+		UserTransaction ut = TransactionFactory.getUserTransaction();
+		// must commit so ids are put a resuable
+		try
+		{
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			fail( "" + e );
+		}
+		assertEquals( nodeCount, nm.getNumberOfIdsInUse( Node.class ) );
+		assertEquals( relCount, nm.getNumberOfIdsInUse( Relationship.class ) );
 	}
 }

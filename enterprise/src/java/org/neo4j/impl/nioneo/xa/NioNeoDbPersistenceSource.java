@@ -424,4 +424,14 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 	{
 		return this.dataSourceName;
 	}
+
+	public int getHighestPossibleIdInUse( Class clazz )
+	{
+		return xaDs.getHighestPossibleIdInUse( clazz );
+    }
+
+	public int getNumberOfIdsInUse( Class clazz )
+    {
+		return xaDs.getNumberOfIdsInUse( clazz );
+    }
 }

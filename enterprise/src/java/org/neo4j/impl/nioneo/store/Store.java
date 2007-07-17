@@ -21,4 +21,8 @@ public interface Store
 	 * an IOException if something wrong with current transaction. 
 	 */
 	public void validate() throws IOException;
+
+	public int getHighestPossibleIdInUse();
+	
+	public int getNumberOfIdsInUse();
 }
