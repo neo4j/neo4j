@@ -775,4 +775,14 @@ public class NodeManager
 		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
 		return rth.addValidRelationshipType( name, create );
     }
+	
+	public int getHighestPossibleIdInUse( Class clazz )
+	{
+		return IdGenerator.getGenerator().getHighestPossibleIdInUse( clazz );
+	}
+	
+	public int getNumberOfIdsInUse( Class clazz )
+	{
+		return IdGenerator.getGenerator().getNumberOfIdsInUse( clazz );
+	}
 }
