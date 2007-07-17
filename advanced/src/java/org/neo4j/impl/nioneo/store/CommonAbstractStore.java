@@ -459,4 +459,22 @@ public abstract class CommonAbstractStore
 			throw new RuntimeException( "Store not valid" );
 		}
 	}
+	
+	/**
+	 * 
+	 * @return The highest possible id in use, -1 if no id in use.
+	 */
+	public int getHighestPossibleIdInUse()
+	{
+		return idGenerator.getHighId() - 1;
+	}
+	
+	/**
+	 * @return The total number of ids in use.
+	 */
+	public int getNumberOfIdsInUse()
+	{
+		return idGenerator.getNumberOfIdsInUse();
+	}
+
 }

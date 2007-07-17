@@ -57,7 +57,9 @@ public class IdGenerator
 	// true if more defragged ids can be read from file
 	private boolean haveMore 			= true;
 	// marks where this sessions released ids will be written 
-	private long readBlocksTo 			= HEADER_SIZE;
+	private long readBlocksTo 			= HEADER_SIZE;	
+	// used to calculate number of ids actually in use
+	private int defragedIdCount = -1;
 
 	private String fileName 			= null;
 	private FileChannel fileChannel 	= null; 
@@ -127,6 +129,7 @@ public class IdGenerator
 			{
 				readIdBatch();
 			}
+			defragedIdCount--;
 			return id;
 		}
 		if ( nextFreeId < 0 )
@@ -178,6 +181,7 @@ public class IdGenerator
 			throw new IOException( "Illegal id[" + id +	"]" );
 		}
 		releasedIdList.add( id  );
+		defragedIdCount++;
 		if ( releasedIdList.size() >= grabSize )
 		{
 			writeIdBatch();
@@ -328,6 +332,7 @@ public class IdGenerator
 		fileChannel.write( buffer );
 		fileChannel.position( HEADER_SIZE );
 		readBlocksTo = fileChannel.size();
+		defragedIdCount = (int) ( readBlocksTo - HEADER_SIZE ) / 4;
 		readIdBatch();
 	}
 	
@@ -412,5 +417,10 @@ public class IdGenerator
 		}
 		System.out.println( "\nNext free id: " + nextFreeId );
 		close();
+	}
+	
+	public int getNumberOfIdsInUse()
+	{
+		return nextFreeId - defragedIdCount;
 	}
 }

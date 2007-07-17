@@ -40,6 +40,16 @@ public class IdGenerator
 		return getPersistenceSource().nextId( clazz );
 	}
 	
+	public int getHighestPossibleIdInUse( Class clazz )
+	{
+		return getPersistenceSource().getHighestPossibleIdInUse( clazz );
+	}
+	
+	public int getNumberOfIdsInUse( Class clazz )
+	{
+		return getPersistenceSource().getNumberOfIdsInUse( clazz );
+	}
+	
 	
 	// -- Configuration and attribute accessors
 	
