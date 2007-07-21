@@ -103,11 +103,8 @@ class ResourceBroker
 		Transaction tx			= this.getCurrentTransaction();
 
 		// Get the bundle for this tx or create new one if one does not exist
-		if ( txConnectionMap.containsKey(tx) )
-		{
-			bundle = txConnectionMap.get( tx );
-		}
-		else
+		bundle = txConnectionMap.get( tx );
+		if ( bundle == null )
 		{
 			try
 			{
@@ -284,7 +281,7 @@ class ResourceBroker
 	// A bundle of connections for a transaction. Basically, the
 	// <CODE>ConnectionBundle</CODE> is a wrapped hash table that
 	// maps PersistenceSources to ResourceConnections.
-	private static class ConnectionBundle
+	static class ConnectionBundle
 	{
 		private Map<PersistenceSource,ResourceConnection> sourceConnectionMap = 
 			new HashMap<PersistenceSource,ResourceConnection>();
