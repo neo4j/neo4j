@@ -705,11 +705,10 @@ public class TxManager implements TransactionManager
 	public int getStatus() // throws SystemException
 	{
 		Thread thread = Thread.currentThread();
-		if ( txThreadMap.containsKey( thread ) )
+                TransactionImpl tx = (TransactionImpl) txThreadMap.get( thread );
+		if ( tx != null )
 		{
-			int status = ( ( TransactionImpl ) 
-				txThreadMap.get( thread ) ).getStatus();
-			return status;
+			return tx.getStatus();
 		}
 		return Status.STATUS_NO_TRANSACTION;
 	}

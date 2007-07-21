@@ -61,11 +61,8 @@ public class LockManager
 		RWLock lock = null;
 		synchronized ( resourceLockMap )
 		{
-			if ( resourceLockMap.containsKey( resource ) )
-			{
-				lock = resourceLockMap.get( resource );
-			}
-			else
+			lock = resourceLockMap.get( resource );
+			if ( lock == null )
 			{
 				lock = new RWLock( resource );
 				resourceLockMap.put( resource, lock );
@@ -96,11 +93,8 @@ public class LockManager
 		RWLock lock = null;
 		synchronized ( resourceLockMap )
 		{
-			if ( resourceLockMap.containsKey( resource ) )
-			{
-				lock = resourceLockMap.get( resource );
-			}
-			else
+			lock = resourceLockMap.get( resource );
+			if ( lock == null )
 			{
 				lock = new RWLock( resource );
 				resourceLockMap.put( resource, lock );
@@ -130,12 +124,12 @@ public class LockManager
 		RWLock lock = null;
 		synchronized ( resourceLockMap )
 		{
-			if ( !resourceLockMap.containsKey( resource ) )
+			lock = resourceLockMap.get( resource );
+			if ( lock == null )
 			{
 				throw new LockNotFoundException( "Lock not found for: " + 
 					resource );
 			}
-			lock = resourceLockMap.get( resource );
 			if ( !lock.isMarked() && lock.getReadCount() == 1 && 
 				lock.getWriteCount() == 0 && 
 				lock.getWaitingThreadsCount() == 0 )
@@ -167,12 +161,12 @@ public class LockManager
 		RWLock lock = null;
 		synchronized ( resourceLockMap )
 		{
-			if ( !resourceLockMap.containsKey( resource ) )
+			lock = resourceLockMap.get( resource );
+			if ( lock == null )
 			{
 				throw new LockNotFoundException( "Lock not found for: " +
 					resource );
 			}
-			lock = resourceLockMap.get( resource );
 			if ( !lock.isMarked() && lock.getReadCount() == 0 && 
 				lock.getWriteCount() == 1 && 
 				lock.getWaitingThreadsCount() == 0 )
