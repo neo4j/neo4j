@@ -38,11 +38,11 @@ public class XaResourceManager
 	synchronized XaTransaction getXaTransaction( XAResource xaRes )
 		throws XAException
 	{
-		if ( !xaResourceMap.containsKey( xaRes ) )
+		XidStatus status = xidMap.get( xaResourceMap.get( xaRes ) );
+		if ( status == null )
 		{
 			throw new XAException( "Resource[" + xaRes + "] not enlisted" );
 		}
-		XidStatus status = xidMap.get( xaResourceMap.get( xaRes ) );
 		return status.getTransactionStatus().getTransaction();
 	}
 	
@@ -147,12 +147,12 @@ public class XaResourceManager
 
 	synchronized void validate( XAResource xaResource ) throws XAException
 	{
-		if ( !xaResourceMap.containsKey( xaResource ) )
+		XidStatus status = xidMap.get( xaResourceMap.get( xaResource ) );
+		if ( status == null )
 		{
 			throw new XAException( "Resource[" + xaResource + 
 				"] not enlisted" );
 		}
-		XidStatus status = xidMap.get( xaResourceMap.get( xaResource ) );
 		if ( !status.getActive() )
 		{
 			throw new XAException( "Resource[" + xaResource + 

@@ -65,20 +65,15 @@ class RagManager
 	synchronized void lockAcquired( Object resource )
 	{
 		Thread currentThread = Thread.currentThread();
-		if ( resourceMap.containsKey( resource ) )
+		List<Thread> lockingThreadList = resourceMap.get( resource );
+		if ( lockingThreadList != null )
 		{
-			List<Thread> lockingThreadList = resourceMap.get( resource );
-			
-			if ( lockingThreadList.contains( currentThread ) )
-			{
-				throw new RuntimeException( "Thread already in locking list" );
-			}
-			
+			assert !lockingThreadList.contains( currentThread );
 			lockingThreadList.add( currentThread );
 		}
 		else
 		{
-			List<Thread> lockingThreadList = new LinkedList<Thread>();
+			lockingThreadList = new LinkedList<Thread>();
 			lockingThreadList.add( currentThread );
 			resourceMap.put( resource, lockingThreadList );
 		}
@@ -86,13 +81,13 @@ class RagManager
 	
 	synchronized void lockReleased( Object resource )
 	{
-		if ( !resourceMap.containsKey( resource ) )
+		List<Thread> lockingThreadList = resourceMap.get( resource );
+		if ( lockingThreadList == null )
 		{
 			throw new RuntimeException( "Resource not found in resource map" );
 		}
 		
 		Thread currentThread = Thread.currentThread();
-		List<Thread> lockingThreadList = resourceMap.get( resource );
 		if ( !lockingThreadList.remove( currentThread ) )
 		{
 			throw new RuntimeException( "Thread not found in locking thread list" );
@@ -106,18 +101,18 @@ class RagManager
 	synchronized void stopWaitOn( Object resource )
 	{
 		Thread currentThread = Thread.currentThread();
-		if ( !waitingThreadMap.containsKey( currentThread ) )
+		if ( waitingThreadMap.remove( currentThread ) == null )
 		{
 			throw new RuntimeException( "Thread not waiting on resource" );
-		}
-		waitingThreadMap.remove( currentThread );
+		}	
 	}
 
 	// after invoke the thread must wait on the resource
 	synchronized void checkWaitOn( Object resource ) 
 		throws DeadlockDetectedException
 	{
-		if ( !resourceMap.containsKey( resource ) )
+		List<Thread> lockingThreadList = resourceMap.get( resource );
+		if ( lockingThreadList == null )
 		{
 			throw new RuntimeException( "Illegal resource, not found in map" );
 		}
@@ -128,7 +123,6 @@ class RagManager
 			throw new RuntimeException( "Thread already waiting for resource" );
 		}
 
-		List<Thread> lockingThreadList = resourceMap.get( resource );
 		Iterator<Thread> itr = lockingThreadList.iterator();
 		List<Thread> checkedThreads = new LinkedList<Thread>();
 		Stack<Object> graphStack = new Stack<Object>();
@@ -196,9 +190,9 @@ class RagManager
 				" since => " + circle );
 		}
 		checkedThreads.add( lockingThread );
-		if ( waitingThreadMap.containsKey( lockingThread ) )
+		Object resource = waitingThreadMap.get( lockingThread );
+		if ( resource != null )
 		{
-			Object resource = waitingThreadMap.get( lockingThread );
 			graphStack.push( resource );
 			// if the resource doesn't exist in resorceMap that means all the
 			// locks on the resource has been released

@@ -101,12 +101,8 @@ class RWLock
 	synchronized void acquireReadLock() throws DeadlockDetectedException
 	{
 		Thread currentThread = Thread.currentThread();
-		ThreadLockElement tle = null;
-		if ( threadLockElementMap.containsKey( currentThread ) )
-		{
-			tle = threadLockElementMap.get( currentThread );
-		}
-		else
+		ThreadLockElement tle = threadLockElementMap.get( currentThread );
+		if ( tle == null )
 		{
 			tle = new ThreadLockElement( currentThread );
 		}
@@ -153,14 +149,13 @@ class RWLock
 		throws LockNotFoundException
 	{
 		Thread currentThread = Thread.currentThread();
-		
-		if ( !threadLockElementMap.containsKey( currentThread ) )
+		ThreadLockElement tle = threadLockElementMap.get( currentThread );
+		if ( tle == null )
 		{
 			throw new LockNotFoundException( 
 				"No thread lock element found for " + currentThread );
 		}
 		
-		ThreadLockElement tle = threadLockElementMap.get( currentThread );
 		
 		if ( tle.readCount == 0 )
 		{
@@ -253,12 +248,8 @@ class RWLock
 	synchronized void acquireWriteLock() throws DeadlockDetectedException
 	{
 		Thread currentThread = Thread.currentThread();
-		ThreadLockElement tle = null;
-		if ( threadLockElementMap.containsKey( currentThread ) )
-		{
-			tle = threadLockElementMap.get( currentThread );
-		}
-		else
+		ThreadLockElement tle = threadLockElementMap.get( currentThread );
+		if ( tle == null )
 		{
 			tle = new ThreadLockElement( currentThread );
 		}
@@ -304,14 +295,12 @@ class RWLock
 	synchronized void releaseWriteLock() throws LockNotFoundException
 	{
 		Thread currentThread = Thread.currentThread();
-		
-		if ( !threadLockElementMap.containsKey( currentThread ) )
+		ThreadLockElement tle = threadLockElementMap.get( currentThread );		
+		if ( tle == null )
 		{
 			throw new LockNotFoundException( 
 				"No thread lock element found for " + currentThread );
 		}
-		
-		ThreadLockElement tle = threadLockElementMap.get( currentThread );
 		
 		if ( tle.writeCount == 0 )
 		{

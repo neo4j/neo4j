@@ -112,9 +112,9 @@ public class CommandManager
 			throw new NotInTransactionException( e );
 		}
 		Thread currentThread = Thread.currentThread();
-		if ( commandStack.containsKey( currentThread ) )
+		CommandStackElement cse = commandStack.get( currentThread );
+		if ( cse != null )
 		{
-			CommandStackElement cse = commandStack.get( currentThread );
 			cse.commands.push( command );
 		}
 		else
@@ -127,8 +127,7 @@ public class CommandManager
 			{
 				throw new NotInTransactionException( e );
 			}
-			CommandStackElement cse = 
-				new CommandStackElement( DEFAULT_ISOLATION_LEVEL, 
+			cse = new CommandStackElement( DEFAULT_ISOLATION_LEVEL, 
 				new Stack<Command>() );
 			cse.commands.push( command );
 			commandStack.put( currentThread, cse );
@@ -168,9 +167,9 @@ public class CommandManager
 			throw new NotInTransactionException( e );
 		}
 		Thread currentThread = Thread.currentThread();
-		if ( commandStack.containsKey( currentThread ) )
+                CommandStackElement cse = commandStack.get( currentThread );
+		if ( cse != null )
 		{
-			CommandStackElement cse = commandStack.get( currentThread );
 			if ( cse.locks == null )
 			{
 				cse.locks = new Stack<LockElement>();
@@ -187,8 +186,7 @@ public class CommandManager
 			{
 				throw new NotInTransactionException( e );
 			}
-			CommandStackElement cse = 
-				new CommandStackElement( DEFAULT_ISOLATION_LEVEL, 
+			cse = new CommandStackElement( DEFAULT_ISOLATION_LEVEL, 
 				new Stack<Command>() );
 			commandStack.put( currentThread, cse );
 			if ( cse.locks == null )
@@ -272,9 +270,10 @@ public class CommandManager
 		}
 		
 		Thread currentThread = Thread.currentThread();
-		if ( commandStack.containsKey( currentThread ) )
+		CommandStackElement cse = commandStack.get( currentThread );
+		if ( cse != null )
 		{
-			return commandStack.get( currentThread ).isolationLevel;
+			return cse.isolationLevel;
 		}
 		else
 		{
@@ -292,10 +291,9 @@ public class CommandManager
 	public void releaseCommands()
 	{
 		Thread currentThread = Thread.currentThread();
-		if ( commandStack.containsKey( currentThread ) )
+		CommandStackElement cse = commandStack.remove( currentThread );
+		if ( cse != null )
 		{
-			CommandStackElement cse = commandStack.remove( currentThread );
-
 			Stack<LockElement> lStack = cse.locks;
 			while ( lStack != null && !lStack.isEmpty() )
 			{
