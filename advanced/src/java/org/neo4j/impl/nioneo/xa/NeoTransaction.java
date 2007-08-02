@@ -1099,7 +1099,7 @@ class NeoTransaction extends XaTransaction
 			addNodeRecord( secondNode );
 		}
 		assert firstNode.getNextRel() != rel.getId();
-		assert secondNode.getNextProp() != rel.getId();
+		assert secondNode.getNextRel() != rel.getId();
 		rel.setFirstNextRel( firstNode.getNextRel() );
 		rel.setSecondNextRel( secondNode.getNextRel() );
 		if ( firstNode.getNextRel()  != 
