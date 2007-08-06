@@ -51,18 +51,26 @@ abstract class Command extends XaCommand
 		return key;
 	}
 	
-	static void writeDynamicRecord( DynamicRecord record, 
-			FileChannel fileChannel, ByteBuffer buffer ) throws IOException  
+	static void writeDynamicRecord( DynamicRecord record, ByteBuffer buffer ) 
 	{
 		// id+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int) 
-		buffer.clear();
-		byte inUse = record.inUse() ? 
-			Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-		buffer.putInt( record.getId() ).put( inUse ).putInt( 
+		// buffer.clear();
+		if ( record.inUse() )
+		{
+			// byte inUse = record.inUse() ? 
+			// Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+			byte inUse = Record.IN_USE.byteValue();
+			buffer.putInt( record.getId() ).put( inUse ).putInt( 
 			record.getPrevBlock() ).putInt( record.getLength() 
 			).putInt( record.getNextBlock() ).put( record.getData() );
-		buffer.flip();
-		fileChannel.write( buffer );
+		}
+		else
+		{
+			byte inUse = Record.NOT_IN_USE.byteValue();
+			buffer.putInt( record.getId() ).put( inUse );
+		}
+		// buffer.flip();
+		// fileChannel.write( buffer );
 	}
 	
 	static DynamicRecord readDynamicRecord( FileChannel fileChannel, 
@@ -88,18 +96,21 @@ abstract class Command extends XaCommand
 		}
 		DynamicRecord record = new DynamicRecord( id );
 		record.setInUse( inUse );
-		record.setPrevBlock( buffer.getInt() );
-		int nrOfBytes = buffer.getInt();
-		record.setNextBlock( buffer.getInt() );
-		buffer.clear(); buffer.limit( nrOfBytes );
-		if ( fileChannel.read( buffer ) != buffer.limit() )
+		if ( inUse )
 		{
-			return null;
+			record.setPrevBlock( buffer.getInt() );
+			int nrOfBytes = buffer.getInt();
+			record.setNextBlock( buffer.getInt() );
+			buffer.clear(); buffer.limit( nrOfBytes );
+			if ( fileChannel.read( buffer ) != buffer.limit() )
+			{
+				return null;
+			}
+			buffer.flip();
+			byte data[] = new byte[ nrOfBytes ];
+			buffer.get( data );
+			record.setData( data );
 		}
-		buffer.flip();
-		byte data[] = new byte[ nrOfBytes ];
-		buffer.get( data );
-		record.setData( data );
 		return record;
 	}
 
@@ -369,16 +380,32 @@ abstract class Command extends XaCommand
 			buffer.putInt( keyRecords.size() );
 			Collection<DynamicRecord> valueRecords = record.getValueRecords();
 			buffer.putInt( valueRecords.size() );
-			buffer.flip();
-			fileChannel.write( buffer );
+//			buffer.flip();
+//			fileChannel.write( buffer );
 			for ( DynamicRecord keyRecord : keyRecords )
 			{
-				writeDynamicRecord( keyRecord, fileChannel, buffer );
+				if ( ( buffer.capacity() - buffer.position() ) < 
+					keyRecord.getLength() )
+				{
+					buffer.flip();
+					fileChannel.write( buffer );
+					buffer.flip();
+				}
+				writeDynamicRecord( keyRecord, buffer );
 			}
 			for ( DynamicRecord valueRecord : valueRecords )
 			{
-				writeDynamicRecord( valueRecord, fileChannel, buffer );
+				if ( ( buffer.capacity() - buffer.position() ) < 
+					valueRecord.getLength() )
+				{
+					buffer.flip();
+					fileChannel.write( buffer );
+					buffer.flip();
+				}
+				writeDynamicRecord( valueRecord, buffer );
 			}
+			buffer.flip();
+			fileChannel.write( buffer );
 		}
 		
 		static Command readCommand( NeoStore neoStore, FileChannel fileChannel, 
@@ -525,12 +552,21 @@ abstract class Command extends XaCommand
 				record.getTypeBlock() );
 			Collection<DynamicRecord> typeRecords = record.getTypeRecords();
 			buffer.putInt( typeRecords.size() );
-			buffer.flip();
-			fileChannel.write( buffer );
+//			buffer.flip();
+//			fileChannel.write( buffer );
 			for ( DynamicRecord typeRecord : typeRecords )
 			{
-				writeDynamicRecord( typeRecord, fileChannel, buffer );
+				if ( ( buffer.capacity() - buffer.position() ) < 
+					typeRecord.getLength() )
+				{
+					buffer.flip();
+					fileChannel.write( buffer );
+					buffer.flip();
+				}
+				writeDynamicRecord( typeRecord, buffer );
 			}
+			buffer.flip();
+			fileChannel.write( buffer );
 		}
 		
 		static Command readCommand( NeoStore neoStore, FileChannel fileChannel, 

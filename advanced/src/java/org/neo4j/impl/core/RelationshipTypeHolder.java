@@ -23,12 +23,9 @@ class RelationshipTypeHolder
 	private static Logger log = 
 		Logger.getLogger( RelationshipTypeHolder.class.getName() );
 	
-//	private Set<Class<? extends RelationshipType>> enumClasses = 
-//		new HashSet<Class<? extends RelationshipType>>();
 	private Map<String,Integer> relTypes = new HashMap<String,Integer>();
 	private Map<Integer,String> relTranslation =
 		new HashMap<Integer,String>();
-//	private Set<String> validTypes = new HashSet<String>();
 	
 	private RelationshipTypeHolder()
 	{
@@ -311,4 +308,10 @@ class RelationshipTypeHolder
 		return relTypes.containsKey( name );
 		// return validTypes.contains( name );
     }
+	
+	void clear()
+	{
+		relTypes = new HashMap<String,Integer>();
+		relTranslation = new HashMap<Integer,String>();
+	}
 }

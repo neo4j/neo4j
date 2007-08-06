@@ -37,9 +37,7 @@ public class TxManager implements TransactionManager
 	private static Logger log = Logger.getLogger( TxManager.class.getName() );
 	private static TxManager manager = new TxManager();
 	
-	private Map<Thread,Transaction> txThreadMap = 
-		java.util.Collections.synchronizedMap( 
-			new HashMap<Thread,Transaction>() );
+	private Map<Thread,Transaction> txThreadMap; 
 	
 	private String logSwitcherFileName = "var/tm/active_tx_log";
 	private String txLog1FileName = "var/tm/tm_tx_log.1"; 
@@ -52,7 +50,12 @@ public class TxManager implements TransactionManager
 	
 	private TxManager()
 	{
-		
+	}
+	
+	void init()
+	{
+		txThreadMap = java.util.Collections.synchronizedMap( 
+			new HashMap<Thread,Transaction>() );
 		String txLogDir = System.getProperty( "neo.tx_log_directory" );
 		if ( txLogDir == null )
 		{
