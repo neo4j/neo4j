@@ -412,7 +412,15 @@ class NeoConstraintsListener implements ProActiveEventListener
 
 		public void beforeCompletion()
 		{
+			// TODO: if we get called when status active
+			// and transaction is beeing rolled back this may not evaluate
+			// no harm done but will get the "severe" log message
 			getListener().removeThisEvaluator();
+			if ( getTransactionStatus() == Status.STATUS_MARKED_ROLLBACK )
+			{
+				// no need to evaluate
+				return;
+			}
 			if ( deletedNodes != null )
 			{
 				Iterator<NodeImpl> itr = 
@@ -424,6 +432,19 @@ class NeoConstraintsListener implements ProActiveEventListener
 					{
 						log.severe( "Deleted Node[" + node + 
 							"] still has relationship." );
+						StringBuffer buf = new StringBuffer( 
+							"Found relationships: " );
+						int count = 0;
+						for ( Relationship rel : node.getRelationships() )
+						{
+							if ( count == 10 )
+							{
+								buf.append( " and more..." );
+								break;
+							}
+							buf.append(  rel.getType() ).append( " " ); 
+						}
+						log.severe( buf.toString() );
 						setRollbackOnly();
 					}
 				}
@@ -441,6 +462,20 @@ class NeoConstraintsListener implements ProActiveEventListener
 				log.severe( "Failed to set transaction rollback only" );
 			}
 		}
+
+		private int getTransactionStatus()
+		{
+			try
+			{
+				return TransactionFactory.getTransactionManager().getStatus();
+			}
+			catch ( javax.transaction.SystemException se )
+			{
+				log.severe( "Failed to set transaction rollback only" );
+			}
+			return -1;
+		}
+		
 	}
 	
 	void removeThisEvaluator()
