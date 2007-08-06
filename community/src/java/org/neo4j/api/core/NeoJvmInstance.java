@@ -60,6 +60,7 @@ class NeoJvmInstance
 		params.put( "neostore.propertystore.db.mapped_memory", "1M" );
 		params.put( "neostore.propertystore.db.keys.mapped_memory", "1M" );
 		params.put( "neostore.propertystore.db.strings.mapped_memory", "1M" );
+		params.put( "neostore.propertystore.db.arrays.mapped_memory", "1M" );
 		params.put( "neostore.relationshipstore.db.mapped_memory", "1M" );
 		byte resourceId[] = "414141".getBytes();
 		config.getTxModule().registerDataSource( DEFAULT_DATA_SOURCE_NAME,

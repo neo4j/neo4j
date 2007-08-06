@@ -77,7 +77,7 @@ public class XaLogicalLog
 	{
 		fileChannel = new RandomAccessFile( fileName, "rw" ).getChannel();
  		buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + 
-			Xid.MAXBQUALSIZE );
+			Xid.MAXBQUALSIZE * 10 );
 		if ( fileChannel.size() != 0 )
 		{
 			doInternalRecovery();
@@ -369,7 +369,7 @@ public class XaLogicalLog
 	
 	void force() throws IOException
 	{
- 		fileChannel.force( true );
+ 		fileChannel.force( false );
 	}
 
 	private void validate( int identifier ) throws XAException
