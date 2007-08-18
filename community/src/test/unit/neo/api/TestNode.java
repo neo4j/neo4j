@@ -403,10 +403,10 @@ public class TestNode extends TestCase
 				node1.getProperty( null );
 				fail( "get of null key din't throw exception" );
 			}
-			catch ( NotFoundException e )
+			catch ( IllegalArgumentException e )
 			{}
 			assertTrue( !node1.hasProperty( key1 ) );
-			assertTrue( !node1.hasProperty( null ) );
+ 			assertTrue( !node1.hasProperty( null ) );
 			node1.setProperty( key1, int1 );
 			node1.setProperty( key2, int2 );
 			node1.setProperty( key3, string );
@@ -444,7 +444,7 @@ public class TestNode extends TestCase
 			node.setProperty( "test", "test" );
 			ut.commit();
 			ut.begin();
-			node.setProperty( "test2", "test2" );
+ 			node.setProperty( "test2", "test2" );
 			node.delete();
 			ut.commit();
 			ut.begin();

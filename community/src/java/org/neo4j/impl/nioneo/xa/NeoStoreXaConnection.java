@@ -1,12 +1,9 @@
 package org.neo4j.impl.nioneo.xa;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
-
+import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.IdGenerator;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeStore;
@@ -39,6 +36,9 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	private NodeEventConsumer nodeConsumer = null;
 	private RelationshipEventConsumer relConsumer = null;
 	private RelationshipTypeEventConsumer relTypeConsumer = null;
+	private PropertyIndexEventConsumer propIndexConsumer = null;
+	
+	private NeoTransaction neoTransaction = null;
 	
 	NeoStoreXaConnection( NeoStore neoStore, XaResourceManager xaRm )
 	{
@@ -47,7 +47,8 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		
 		this.nodeConsumer = new NodeEventConsumerImpl( this ); 
 		this.relConsumer = new RelationshipEventConsumerImpl( this ); 
-		this.relTypeConsumer = new RelationshipTypeEventConsumerImpl( this ); 
+		this.relTypeConsumer = new RelationshipTypeEventConsumerImpl( this );
+		this.propIndexConsumer = new PropertyIndexEventConsumerImpl( this );
 		this.xaResource = new NeoStoreXaResource( xaRm );
 	}
 
@@ -69,6 +70,11 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	public RelationshipEventConsumer getRelationshipConsumer()
 	{
 		return relConsumer;
+	}
+	
+	public PropertyIndexEventConsumer getPropertyIndexConsumer()
+	{
+		return propIndexConsumer;
 	}
 	
 	/**
@@ -110,9 +116,14 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	
 	NeoTransaction getNeoTransaction() throws IOException
 	{
+		if ( neoTransaction != null )
+		{
+			return neoTransaction;
+		}
 		try
 		{
-			return ( NeoTransaction ) getTransaction();
+			neoTransaction = ( NeoTransaction ) getTransaction();
+			return neoTransaction;
 		}
 		catch ( XAException e )
 		{
@@ -138,17 +149,17 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		}		
 	};
 	
-	void validateXaConnection()
-	{
-		try
-		{
-			super.validate();
-		}
-		catch ( XAException e )
-		{
-			throw new RuntimeException( "Unable to validate " + e );
-		}
-	}
+//	void validateXaConnection()
+//	{
+//		try
+//		{
+//			super.validate();
+//		}
+//		catch ( XAException e )
+//		{
+//			throw new RuntimeException( "Unable to validate " + e );
+//		}
+//	}
 	
 	private class NodeEventConsumerImpl implements NodeEventConsumer
 	{
@@ -161,137 +172,158 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 			nodeStore = getNodeStore();
 		}
 		
-		public void validate()
-		{
-			getNodeStore().validate();
-			getPropertyStore().validate();
-			validateXaConnection();
-		}
+//		public void validate()
+//		{
+//			getNodeStore().validate();
+//			getPropertyStore().validate();
+//			validateXaConnection();
+//		}
 		
 		public void createNode( int nodeId ) throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.NodeCreate( nodeId ) );
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.NodeCreate( nodeId ) );
+			xaCon.getNeoTransaction().nodeCreate( nodeId );
 		}
 		
 		public void deleteNode( int nodeId ) throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.NodeDelete( nodeId ) );
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.NodeDelete( nodeId ) );
+			xaCon.getNeoTransaction().nodeDelete( nodeId );
 		}
 		
 		// checks for created in tx else get from store
 		public boolean loadLightNode( int nodeId ) throws IOException 
 		{
-			validate();
-			if ( xaCon.getNeoTransaction().nodeCreated( nodeId )  )
-			{
-				return true;
-			}
-			return nodeStore.loadLightNode( nodeId );
+//			validate();
+			// if created in this tx should be in tx cache set as FULL
+			// and then this should never be called
+//			if ( xaCon.getNeoTransaction().nodeCreated( nodeId )  )
+//			{
+//				return true;
+//			}
+			// return nodeStore.loadLightNode( nodeId );
+			return xaCon.getNeoTransaction().nodeLoadLight( nodeId );
 		}
 		
 		// checks for created/deleted in tx else from store
-		public boolean checkNode( int nodeId ) throws IOException
-		{
-			validate();
-			if ( xaCon.getNeoTransaction().nodeCreated( nodeId ) && 
-				 !xaCon.getNeoTransaction().nodeDeleted( nodeId ) )
-			{
-				return true;
-			}
-			if ( xaCon.getNeoTransaction().nodeDeleted( nodeId ) )
-			{
-				return false;
-			}
-			return nodeStore.loadLightNode( nodeId );
-		}
+//		public boolean checkNode( int nodeId ) throws IOException
+//		{
+////			validate();
+//			if ( xaCon.getNeoTransaction().nodeCreated( nodeId ) && 
+//				 !xaCon.getNeoTransaction().nodeDeleted( nodeId ) )
+//			{
+//				return true;
+//			}
+//			if ( xaCon.getNeoTransaction().nodeDeleted( nodeId ) )
+//			{
+//				return false;
+//			}
+//			return nodeStore.loadLightNode( nodeId );
+//		}
 		
-		public void addProperty( int nodeId, int propertyId, String key, 
-			Object value ) throws IOException
+		public void addProperty( int nodeId, int propertyId, 
+			PropertyIndex index, Object value ) throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.NodeAddProperty( nodeId, propertyId, key, 
-					value ) );
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.NodeAddProperty( nodeId, propertyId, key, 
+//					value ) );
+			xaCon.getNeoTransaction().nodeAddProperty( nodeId, propertyId, 
+				index, value ); 
 		}
 	
 		public void changeProperty( int nodeId, int propertyId, Object value ) 
 			throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.NodeChangeProperty( nodeId, propertyId, 
-					value ) );
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.NodeChangeProperty( nodeId, propertyId, 
+//					value ) );
+			xaCon.getNeoTransaction().nodeChangeProperty( propertyId, value );
 		}
 		
 		public void removeProperty( int nodeId, int propertyId ) 
 			throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.NodeRemoveProperty( nodeId, propertyId ) );
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.NodeRemoveProperty( nodeId, propertyId ) );
+			xaCon.getNeoTransaction().nodeRemoveProperty( nodeId, propertyId ); 
 		}
 		
 		public PropertyData[] getProperties( int nodeId ) throws IOException
 		{
-			validate();
-			if ( xaCon.getNeoTransaction().nodeDeleted( nodeId ) ||
-				 xaCon.getNeoTransaction().nodeCreated( nodeId ) )
-			{
-				// created in this tx
-				// for now asume everything in memory
-				return new PropertyData[0];
-			}
-			PropertyData[] propertyData = nodeStore.getProperties( nodeId );
-			List<PropertyData> propertyDataList = 
-				new ArrayList<PropertyData>();
-			for ( int i = 0; i < propertyData.length; i++ )
-			{
-				int propertyId = propertyData[i].getId();
-				if ( !xaCon.getNeoTransaction().propertyDeleted( propertyId ) )
-				{
-					propertyDataList.add( propertyData[i] );
-				}
-			}
-			if ( propertyDataList.size() == propertyData.length )
-			{
-				return propertyData;
-			}
-			return propertyDataList.toArray( 
-				new PropertyData[ propertyDataList.size() ] );
+//			validate();
+			// if created in this tx should be in tx cache set as FULL
+			// and then this should never be called
+//			if ( xaCon.getNeoTransaction().nodeDeleted( nodeId ) ||
+//				 xaCon.getNeoTransaction().nodeCreated( nodeId ) )
+//			{
+//				// created in this tx
+//				// for now asume everything in memory
+//				return new PropertyData[0];
+//			}
+			
+//			PropertyData[] propertyData = nodeStore.getProperties( nodeId );
+//			List<PropertyData> propertyDataList = 
+//				new ArrayList<PropertyData>();
+//			for ( int i = 0; i < propertyData.length; i++ )
+//			{
+////				int propertyId = propertyData[i].getId();
+//				// if deleted in this tx should be in tx cache set as FULL
+//				// and then this should never be called
+////				if ( !xaCon.getNeoTransaction().propertyDeleted( propertyId ) )
+////				{
+//					propertyDataList.add( propertyData[i] );
+////				}
+//			}
+//			if ( propertyDataList.size() == propertyData.length )
+//			{
+//				return propertyData;
+//			}
+//			return propertyDataList.toArray( 
+//				new PropertyData[ propertyDataList.size() ] );
+			return xaCon.getNeoTransaction().nodeGetProperties( nodeId );			
 		}
 		
 		public RelationshipData[] getRelationships( int nodeId ) 
 			throws IOException
 		{
-			validate();
-			if ( xaCon.getNeoTransaction().nodeDeleted( nodeId ) ||
-				 xaCon.getNeoTransaction().nodeCreated( nodeId ) )
-			{
-				// created in this tx
-				// for now asume everything in memory
-				return new RelationshipData[0];
-			}
-			RelationshipData relData[] = nodeStore.getRelationships( nodeId );
-			List<RelationshipData> relList = new ArrayList<RelationshipData>();
-			for ( int i = 0; i < relData.length; i++ )
-			{
-				if ( !xaCon.getNeoTransaction().relationshipDeleted( 
-						relData[i].getId() ) )
-				{
-					relList.add( relData[i] );
-				}
-			}
-			// rels.addAll( xaCon.getNeoTransaction().getCreatedRelsForNode( 
-			//	new Integer( nodeId ) ) );
-			if ( relList.size() == relData.length  )
-			{
-				return relData;
-			}
-			return relList.toArray( new RelationshipData[ relList.size() ] );
+//			validate();
+			// if created in this tx should be in tx cache set as FULL
+			// and then this should never be called
+//			if ( xaCon.getNeoTransaction().nodeDeleted( nodeId ) ||
+//				 xaCon.getNeoTransaction().nodeCreated( nodeId ) )
+//			{
+//				// created in this tx
+//				// for now asume everything in memory
+//				return new RelationshipData[0];
+//			}
+			
+//			RelationshipData relData[] = nodeStore.getRelationships( nodeId );
+//			List<RelationshipData> relList = new ArrayList<RelationshipData>();
+//			for ( int i = 0; i < relData.length; i++ )
+//			{
+//				// if created in this tx should be in tx cache set as FULL
+//				// and then this should never be called
+////				if ( !xaCon.getNeoTransaction().relationshipDeleted( 
+////						relData[i].getId() ) )
+////				{
+//					relList.add( relData[i] );
+////				}
+//			}
+//			// rels.addAll( xaCon.getNeoTransaction().getCreatedRelsForNode( 
+//			//	new Integer( nodeId ) ) );
+//			if ( relList.size() == relData.length  )
+//			{
+//				return relData;
+//			}
+//			return relList.toArray( new RelationshipData[ relList.size() ] );
+			return xaCon.getNeoTransaction().nodeGetRelationships( nodeId );
 		}
 		
 		public int nextId() throws IOException
@@ -310,111 +342,128 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	{
 		private NeoStoreXaConnection xaCon;
 		private RelationshipStore relStore;
-		private PropertyStore propStore;
+//		private PropertyStore propStore;
 		
 		public RelationshipEventConsumerImpl( NeoStoreXaConnection xaCon )
 		{
 			this.xaCon = xaCon;
 			this.relStore = getRelationshipStore();
-			this.propStore = getPropertyStore();
+//			this.propStore = getPropertyStore();
 		}
 		
-		public void validate() throws IOException
-		{
-			relStore.validate();
-			propStore.validate();
-			try
-			{
-				xaCon.validate();
-			}
-			catch ( XAException e )
-			{
-				throw new IOException( "Unable to validate " + e );
-			}
-		}
+//		public void validate() throws IOException
+//		{
+//			relStore.validate();
+//			propStore.validate();
+//			try
+//			{
+//				xaCon.validate();
+//			}
+//			catch ( XAException e )
+//			{
+//				throw new IOException( "Unable to validate " + e );
+//			}
+//		}
 
 		public void createRelationship( int id, int firstNode, int secondNode, 
 			int type ) throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.RelationshipCreate( id, firstNode, secondNode, 
-					type ) );
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.RelationshipCreate( id, firstNode, secondNode, 
+//					type ) );
+			xaCon.getNeoTransaction().relationshipCreate( id, firstNode, 
+				secondNode, type );		
 		}
 		
 		public void deleteRelationship( int id ) throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.RelationshipDelete( id ) );
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.RelationshipDelete( id ) );
+			xaCon.getNeoTransaction().relDelete( id );		
 		}
 	
-		public void addProperty( int relId, int propertyId, String key, 
+		public void addProperty( int relId, int propertyId, PropertyIndex index, 
 			Object value ) throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.RelationshipAddProperty( relId, propertyId, 
-					key, value ) );
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.RelationshipAddProperty( relId, propertyId, 
+//					key, value ) );
+			xaCon.getNeoTransaction().relAddProperty( relId, propertyId, index, 
+				value );		
 		}
 	
 		public void changeProperty( int relId, int propertyId, Object value ) 
 			throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.RelationshipChangeProperty( relId, propertyId, 
-					value ) );
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.RelationshipChangeProperty( relId, propertyId, 
+//					value ) );
+			xaCon.getNeoTransaction().relChangeProperty( propertyId, value );		
 		}
 		
 		public void removeProperty( int relId, int propertyId ) 
 			throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.RelationshipRemoveProperty( relId, 
-					propertyId ) );
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.RelationshipRemoveProperty( relId, 
+//					propertyId ) );
+			xaCon.getNeoTransaction().relRemoveProperty( relId, propertyId );		
 		}
 		
 		public PropertyData[] getProperties( int relId )
 			throws IOException
 		{
-			validate();
-			if ( xaCon.getNeoTransaction().relationshipDeleted( relId ) ||
-				 xaCon.getNeoTransaction().relationshipCreated( relId ) )
-			{
-				// created in this tx
-				// for now asume everything in memory
-				return new PropertyData[0];
-			}
-			PropertyData[] propertyData = relStore.getProperties( relId );
-			List<PropertyData> propertyDataList = 
-				new ArrayList<PropertyData>();
-			for ( int i = 0; i < propertyData.length; i++ )
-			{
-				int propertyId = propertyData[i].getId();
-				if ( !xaCon.getNeoTransaction().propertyDeleted( propertyId ) )
-				{
-					propertyDataList.add( propertyData[i] );
-				}
-			}
-			if ( propertyDataList.size() == propertyData.length )
-			{
-				return propertyData;
-			}
-			return propertyDataList.toArray( 
-				new PropertyData[ propertyDataList.size() ] );
+//			validate();
 			
+			// if created in this tx should be in tx cache set as FULL
+			// and then this should never be called
+//			if ( xaCon.getNeoTransaction().relationshipDeleted( relId ) ||
+//				 xaCon.getNeoTransaction().relationshipCreated( relId ) )
+//			{
+//				// created in this tx
+//				// for now asume everything in memory
+//				return new PropertyData[0];
+//			}
+			
+//			PropertyData[] propertyData = relStore.getProperties( relId );
+//			List<PropertyData> propertyDataList = 
+//				new ArrayList<PropertyData>();
+//			for ( int i = 0; i < propertyData.length; i++ )
+//			{
+//				// if created in this tx should be in tx cache set as FULL
+//				// and then this should never be called
+////				int propertyId = propertyData[i].getId();
+////				if ( !xaCon.getNeoTransaction().propertyDeleted( propertyId ) )
+////				{
+//					propertyDataList.add( propertyData[i] );
+////				}
+//			}
+//			if ( propertyDataList.size() == propertyData.length )
+//			{
+//				return propertyData;
+//			}
+//			return propertyDataList.toArray( 
+//				new PropertyData[ propertyDataList.size() ] );
+			return xaCon.getNeoTransaction().relGetProperties( relId );
 		}
 	
 		public RelationshipData getRelationship( int id ) throws IOException
 		{
-			validate();
-			if ( xaCon.getNeoTransaction().relationshipCreated( id ) )
-			{
-				return xaCon.getNeoTransaction().getCreatedRelationship( id );
-			}
-			return relStore.getRelationship( id );
+//			validate();
+			// if created in this tx should be in tx cache set as FULL
+			// and then this should never be called
+//			if ( xaCon.getNeoTransaction().relationshipCreated( id ) )
+//			{
+//				return xaCon.getNeoTransaction().getCreatedRelationship( id );
+//			}
+			
+			// return relStore.getRelationship( id );
+			return xaCon.getNeoTransaction().relationshipLoad( id );
 		}
 		
 		public int nextId() throws IOException
@@ -440,42 +489,43 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 			this.relTypeStore = getRelationshipTypeStore();
 		}
 		
-		public void validate() throws IOException
-		{
-			relTypeStore.validate();
-			try
-			{
-				xaCon.validate();
-			}
-			catch ( XAException e )
-			{
-				throw new IOException( "Unable to validate " + e );
-			}
-		}
+//		public void validate() throws IOException
+//		{
+//			relTypeStore.validate();
+//			try
+//			{
+//				xaCon.validate();
+//			}
+//			catch ( XAException e )
+//			{
+//				throw new IOException( "Unable to validate " + e );
+//			}
+//		}
 
 		public void addRelationshipType( int id, String name ) 
 			throws IOException
 		{
-			validate();
-			xaCon.getNeoTransaction().addMemoryCommand( 
-				new MemCommand.RelationshipTypeAdd( id, name ) ); 
+//			validate();
+//			xaCon.getNeoTransaction().addMemoryCommand( 
+//				new MemCommand.RelationshipTypeAdd( id, name ) ); 
+			xaCon.getNeoTransaction().relationshipTypeAdd( id, name );		
 		}
 
 		public RelationshipTypeData getRelationshipType( int id ) 
 			throws IOException
 		{
-			validate();
-			if ( xaCon.getNeoTransaction().relationshipTypeAdded( id ) )
-			{
-				throw new RuntimeException( "Uhm should be cached" );
-			}
+//			validate();
+//			if ( xaCon.getNeoTransaction().relationshipTypeAdded( id ) )
+//			{
+//				throw new RuntimeException( "Uhm should be cached" );
+//			}
 			return relTypeStore.getRelationshipType( id );
 		}
 	
 		public RelationshipTypeData[] getRelationshipTypes()
 			throws IOException
 		{
-			validate();
+//			validate();
 			return relTypeStore.getRelationshipTypes();
 		}
 		
@@ -483,5 +533,34 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		{
 			return relTypeStore.nextId();
 		}
+	};
+
+	private class PropertyIndexEventConsumerImpl 
+		implements PropertyIndexEventConsumer
+	{
+		private NeoStoreXaConnection xaCon = null;
+//		private PropertyStore propStore = null;
+		
+		PropertyIndexEventConsumerImpl( NeoStoreXaConnection xaCon )
+		{
+			this.xaCon = xaCon;
+//			this.propStore = getPropertyStore();
+		}
+		
+		public void createPropertyIndex( int id, String key ) 
+			throws IOException
+		{
+			xaCon.getNeoTransaction().createPropertyIndex( id, key );		
+		}
+
+		public String getKeyFor( int id ) throws IOException
+		{
+			return xaCon.getNeoTransaction().getPropertyIndex( id );
+		}
+	
+//		public int nextId() throws IOException
+//		{
+//			return p
+//		}
 	};
 }

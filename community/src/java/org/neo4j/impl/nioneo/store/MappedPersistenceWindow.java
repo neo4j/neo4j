@@ -1,8 +1,11 @@
 package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 
 /**
  * Persistence window using a {@link MappedByteBuffer} as underlying buffer.
@@ -73,6 +76,32 @@ class MappedPersistenceWindow extends LockableWindow
 			return false;
 		}
 		return position() == ( ( MappedPersistenceWindow ) o ).position();
+	}
+	
+	void unmap()
+	{
+		AccessController.doPrivileged( new PrivilegedAction() 
+			{
+				public Object run() 
+				{
+					try 
+					{
+						Class[] argument = new Class[1];
+						argument[0] = MappedByteBuffer.class;
+						Method unmapMethod = 
+							getFileChannel().getClass().getMethod( "unmap", 
+								argument );
+						unmapMethod.setAccessible( true );
+						unmapMethod.invoke( getFileChannel(), 
+							(MappedByteBuffer) buffer.getBuffer() );
+					} 
+					catch( Exception e )
+					{
+						e.printStackTrace();
+					}
+					return null;
+				}
+			} );
 	}
 	
 	private volatile int hashCode = 0;

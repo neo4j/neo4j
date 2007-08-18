@@ -8,8 +8,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.Map;
 import java.util.logging.Logger;
-
-import org.neo4j.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.impl.nioneo.xa.TxInfoManager;
 
 
@@ -309,13 +307,32 @@ public abstract class CommonAbstractStore
 	protected PersistenceWindow acquireWindow( int position, 
 		OperationType type ) throws IOException
 	{
-		if ( !isInRecoveryMode() && position > idGenerator.getHighId() )
+		if ( !isInRecoveryMode() && ( position > idGenerator.getHighId() || 
+			!storeOk ) )
 		{
-			throw new IOException( "Illegal position[" + position + 
-				"] high id[" + idGenerator.getHighId() + "]" );
+			throw new IOException( "Position[" + position + 
+				"] high id[" + idGenerator.getHighId() + "] storeOk=" + 
+				storeOk );
 		}	
 		return windowPool.acquire( position, type );
 	}
+	
+	protected boolean hasWindow( int position ) throws IOException
+	{
+		if ( !isInRecoveryMode() && ( position > idGenerator.getHighId() || 
+			!storeOk ) )
+		{
+			throw new IOException( "Position[" + position + 
+				"] high id[" + idGenerator.getHighId() + "] storeOk=" + 
+				storeOk );
+		}	
+		return windowPool.hasWindow( position );
+	}
+	
+//	protected void addMiss()
+//	{
+//		windowPool.addMiss();
+//	}
 	
 	/**
 	 * Releases the window and writes the data (async) if the 
@@ -424,12 +441,22 @@ public abstract class CommonAbstractStore
 			windowPool.close();
 			windowPool = null;
 		}
+		int highId = idGenerator.getHighId();
+		int recordSize = -1;
+		if ( this instanceof AbstractDynamicStore )
+		{
+			recordSize = ( ( AbstractDynamicStore ) this ).getBlockSize();
+		}
+		else if ( this instanceof AbstractStore )
+        {
+			recordSize = ( ( AbstractStore ) this ).getRecordSize();
+        }
 		closeIdGenerator();
-		fileChannel.position( fileChannel.size() );
-		ByteBuffer buffer = ByteBuffer.allocate(
-			getTypeAndVersionDescriptor().length() );
-		buffer.put( getTypeAndVersionDescriptor().getBytes() ).flip();
-		fileChannel.write( buffer );
+		fileChannel.position( highId * recordSize );
+		ByteBuffer buffer = ByteBuffer.wrap(
+			getTypeAndVersionDescriptor().getBytes() );
+		int bytes = fileChannel.write( buffer );
+		fileChannel.truncate( fileChannel.position() );
 		fileChannel.force( false );
 		fileLock.release();
 		fileChannel.close();
@@ -476,5 +503,4 @@ public abstract class CommonAbstractStore
 	{
 		return idGenerator.getNumberOfIdsInUse();
 	}
-
 }

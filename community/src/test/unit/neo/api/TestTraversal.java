@@ -1023,7 +1023,6 @@ public class TestTraversal extends TestCase
 			Node endNode = rel.getEndNode();
 			try
 			{
-				//System.out.println( "Deleting " + rels[i] );
 				rel.delete();
 			}
 			catch ( DeleteException de )

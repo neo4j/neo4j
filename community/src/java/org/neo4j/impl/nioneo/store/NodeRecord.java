@@ -1,30 +1,14 @@
 package org.neo4j.impl.nioneo.store;
 
-public class NodeRecord
+
+public class NodeRecord extends AbstractRecord
 {
-	private int id;
-	private boolean inUse = false;
 	private int nextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
 	private int nextProp = Record.NO_NEXT_PROPERTY.intValue();
 	
 	public NodeRecord( int id )
 	{
-		this.id = id;
-	}
-	
-	public int getId()
-	{
-		return id;
-	}
-	
-	public boolean inUse()
-	{
-		return inUse;
-	}
-	
-	public void setInUse( boolean inUse )
-	{
-		this.inUse = inUse;
+		super( id );
 	}
 	
 	public int getNextRel()
@@ -50,9 +34,10 @@ public class NodeRecord
 	public String toString()
 	{
 		StringBuffer buf = new StringBuffer();
-		buf.append( "NodeRecord[" ).append( id ).append( "," ).append( 
-			inUse ).append( "," ).append( nextRel ).append( "," ).append(
+		buf.append( "NodeRecord[" ).append( getId() ).append( "," ).append( 
+			inUse() ).append( "," ).append( nextRel ).append( "," ).append(
 			nextProp ).append( "]" );
 		return buf.toString();
 	}
+
 }

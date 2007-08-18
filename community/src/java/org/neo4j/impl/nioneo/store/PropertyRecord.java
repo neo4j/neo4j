@@ -1,88 +1,71 @@
 package org.neo4j.impl.nioneo.store;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 
-public class PropertyRecord
+public class PropertyRecord extends AbstractRecord
 {
-	private int id;
 	private PropertyType type;
-	private boolean inUse = false;
-	private int keyBlock = Record.NO_NEXT_BLOCK.intValue();
+	private int keyIndexId = Record.NO_NEXT_BLOCK.intValue();
 	private long propBlock = Record.NO_NEXT_BLOCK.intValue();
 	private int prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
 	private int nextProp = Record.NO_NEXT_PROPERTY.intValue();
-	private Map<Integer,DynamicRecord> keyRecords = 
-		new HashMap<Integer,DynamicRecord>();
-	private Map<Integer,DynamicRecord> valueRecords = 
-		new HashMap<Integer,DynamicRecord>();
+	private List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
+	private boolean isLight = false;
 	
-	public PropertyRecord( int id, PropertyType type )
+	public PropertyRecord( int id )
 	{
-		this.id = id;
+		super( id );
+	}
+	
+	public void setType( PropertyType type )
+	{
 		this.type = type;
 	}
 	
-	public DynamicRecord getKeyRecord( int blockId )
+	void setIsLight( boolean status )
 	{
-		return keyRecords.get( blockId ); 
+		isLight = status;
 	}
 	
-	public Collection<DynamicRecord> getKeyRecords()
+	public boolean isLight()
 	{
-		return keyRecords.values();
-	}
-	
-	public DynamicRecord getValueRecord( int blockId )
-	{
-		return valueRecords.get( blockId );
+		return isLight;
 	}
 	
 	public Collection<DynamicRecord> getValueRecords()
 	{
-		return valueRecords.values();
-	}
-	
-	public void addKeyRecord( DynamicRecord record )
-	{
-		keyRecords.put( record.getId(), record );
+		if ( isLight )
+		{
+			throw new RuntimeException( "light property" );
+		}
+		return valueRecords;
 	}
 	
 	public void addValueRecord( DynamicRecord record )
 	{
-		valueRecords.put( record.getId(), record );
+		if ( isLight )
+		{
+			throw new RuntimeException( "light property" );
+		}
+		valueRecords.add( record );
 	}
 	
-	public int getId()
-	{
-		return id;
-	}
-	
-	public boolean inUse()
-	{
-		return inUse;
-	}
-	
-	public void setInUse( boolean inUse )
-	{
-		this.inUse = inUse;
-	}
-
 	public PropertyType getType()
 	{
 		return type;
 	}
 	
-	public int getKeyBlock()
+	public int getKeyIndexId()
 	{
-		return keyBlock;
+		return keyIndexId;
 	}
 	
-	public void setKeyBlock( int keyBlock )
+	public void setKeyIndexId( int keyId )
 	{
-		this.keyBlock = keyBlock;
+		this.keyIndexId = keyId;
 	}
 	
 	public long getPropBlock()
@@ -115,43 +98,21 @@ public class PropertyRecord
 		this.nextProp = nextProp;
 	}
 
-	public void clearValueRecords()
-	{
-		int nextValueId = ( int ) propBlock;
-		while ( nextValueId != Record.NO_NEXT_BLOCK.intValue() ) 
-		{
-			DynamicRecord record = valueRecords.get( nextValueId );
-			record.setInUse( false );
-			nextValueId = record.getNextBlock();
-		}
-	}
-
-	public void clearKeyRecords()
-	{
-		int nextBlockId = keyBlock;
-		while ( nextBlockId != Record.NO_NEXT_BLOCK.intValue() ) 
-		{
-			DynamicRecord record = keyRecords.get( nextBlockId );
-			record.setInUse( false );
-			nextBlockId = record.getNextBlock();
-		}
-	}
-	
 	@Override
 	public String toString()
 	{ 
 		StringBuffer buf = new StringBuffer();
-		buf.append( "PropertyRecord[" ).append( id ).append( 
-			"," ).append( inUse ).append( "," ).append( type ).append( 
-			"," ).append( keyBlock ).append( "," ).append( propBlock ).append( 
+		buf.append( "PropertyRecord[" ).append( getId() ).append( 
+			"," ).append( inUse() ).append( "," ).append( type ).append( 
+			"," ).append( keyIndexId ).append( "," ).append( propBlock ).append( 
 			"," ).append( prevProp ).append( "," ).append( nextProp );
-		buf.append( ", Key[" );
-		for ( DynamicRecord record : keyRecords.values() )
-		{
-			buf.append( record );
-		}
-		buf.append( "] Value[" );
-		for ( DynamicRecord record : valueRecords.values() )
+//		buf.append( ", Key[" );
+//		for ( DynamicRecord record : keyRecords )
+//		{
+//			buf.append( record );
+//		}
+		buf.append( ", Value[" );
+		for ( DynamicRecord record : valueRecords )
 		{
 			buf.append( record );
 		}

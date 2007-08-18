@@ -2,11 +2,9 @@ package unit.neo.api;
 
 import javax.transaction.Status;
 import javax.transaction.UserTransaction;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
@@ -14,7 +12,6 @@ import org.neo4j.impl.core.IllegalValueException;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.core.NotFoundException;
 import org.neo4j.impl.transaction.TransactionFactory;
-
 import unit.neo.MyRelTypes;
 
 public class TestNeo extends TestCase
@@ -568,6 +565,14 @@ public class TestNeo extends TestCase
 		NodeManager nm = NodeManager.getManager();
 		int nodeCount = nm.getNumberOfIdsInUse( Node.class );
 		int relCount = nm.getNumberOfIdsInUse( Relationship.class );
+		if ( nodeCount > nm.getHighestPossibleIdInUse( Node.class ) )
+		{
+			fail( "Node count greater than highest id " + nodeCount );
+		}
+		if ( relCount > nm.getHighestPossibleIdInUse( Relationship.class ) )
+		{
+			fail( "Rel count greater than highest id " + relCount );
+		}
 		assertTrue( nodeCount <= nm.getHighestPossibleIdInUse( Node.class ) );
 		assertTrue( relCount <= nm.getHighestPossibleIdInUse( 
 			Relationship.class ) );

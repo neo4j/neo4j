@@ -56,11 +56,13 @@ class NeoJvmInstance
 		params.put( "neo_store", storeDir + "/neostore" );
 		params.put( "create", String.valueOf( create ) );
 		params.put( "logical_log", storeDir + "/nioneo_logical.log" );
-		params.put( "neostore.nodestore.db.mapped_memory", "500k" );
-		params.put( "neostore.propertystore.db.mapped_memory", "1M" );
-		params.put( "neostore.propertystore.db.keys.mapped_memory", "1M" );
-		params.put( "neostore.propertystore.db.strings.mapped_memory", "1M" );
-		params.put( "neostore.relationshipstore.db.mapped_memory", "1M" );
+		params.put( "neostore.nodestore.db.mapped_memory", "9M" );
+		params.put( "neostore.propertystore.db.mapped_memory", "30M" );
+//		params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
+//		params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
+		params.put( "neostore.propertystore.db.strings.mapped_memory", "45M" );
+		params.put( "neostore.propertystore.db.arrays.mapped_memory", "1M" );
+		params.put( "neostore.relationshipstore.db.mapped_memory", "7M" );
 		byte resourceId[] = "414141".getBytes();
 		config.getTxModule().registerDataSource( DEFAULT_DATA_SOURCE_NAME,
 			NIO_NEO_DB_CLASS, resourceId, params );

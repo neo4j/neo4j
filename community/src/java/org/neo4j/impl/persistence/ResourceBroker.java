@@ -1,18 +1,15 @@
 package org.neo4j.impl.persistence;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.logging.Logger;
-
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
-
 import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.transaction.TransactionFactory;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * The ResourceBroker is the access point for {@link ResourceConnection}s to
@@ -37,8 +34,8 @@ class ResourceBroker
 	private static Logger log = Logger.getLogger( 
 		ResourceBroker.class.getName() );
 
-	private Map<Transaction,ConnectionBundle> txConnectionMap = 
-		new HashMap<Transaction,ConnectionBundle>();
+	private ArrayMap<Transaction,ConnectionBundle> txConnectionMap = 
+		new ArrayMap<Transaction,ConnectionBundle>( 9, false, true );
 
 	// A hook that releases resources after tx.commit
 	private Synchronization txCommitHook = new TxCommitHook();
@@ -103,11 +100,8 @@ class ResourceBroker
 		Transaction tx			= this.getCurrentTransaction();
 
 		// Get the bundle for this tx or create new one if one does not exist
-		if ( txConnectionMap.containsKey(tx) )
-		{
-			bundle = txConnectionMap.get( tx );
-		}
-		else
+		bundle = txConnectionMap.get( tx );
+		if ( bundle == null )
 		{
 			try
 			{
@@ -122,12 +116,9 @@ class ResourceBroker
 			}
 		}
 		
-		// If we already have a connection for this guy, reuse it... 
-		if ( bundle.hasConnectionForPersistenceSource(source) )
-		{
-			con = bundle.getConnectionForPersistenceSource( source );
-		}
-		else // ... or else, create a new connection and enlist it in tx
+		// If we already have a connection for this guy, reuse it...
+		con = bundle.getConnectionForPersistenceSource( source );
+		if ( con == null )
 		{
 			try
 			{
@@ -284,36 +275,36 @@ class ResourceBroker
 	// A bundle of connections for a transaction. Basically, the
 	// <CODE>ConnectionBundle</CODE> is a wrapped hash table that
 	// maps PersistenceSources to ResourceConnections.
-	private static class ConnectionBundle
+	static class ConnectionBundle
 	{
-		private Map<PersistenceSource,ResourceConnection> sourceConnectionMap = 
-			new HashMap<PersistenceSource,ResourceConnection>();
+		private ArrayMap<PersistenceSource,ResourceConnection> scMap = 
+			new ArrayMap<PersistenceSource,ResourceConnection>( 9, false, true);
 		
-		boolean hasConnectionForPersistenceSource( PersistenceSource source )
-		{
-			return this.sourceConnectionMap.containsKey( source );
-		}
+//		boolean hasConnectionForPersistenceSource( PersistenceSource source )
+//		{
+//			return this.sourceConnectionMap.containsKey( source );
+//		}
 		
 		ResourceConnection getConnectionForPersistenceSource( PersistenceSource
 															  source )
 		{
-			return this.sourceConnectionMap.get( source );
+			return this.scMap.get( source );
 		}
 		
 		void setConnectionForPersistenceSource( PersistenceSource source,
 												ResourceConnection con )
 		{
-			if ( this.sourceConnectionMap.containsKey(source) )
-			{
-				throw new RuntimeException( "There's already a connection " +
-											"allocated for " + source );
-			}
-			this.sourceConnectionMap.put( source, con );
+//			if ( this.sourceConnectionMap.containsKey(source) )
+//			{
+//				throw new RuntimeException( "There's already a connection " +
+//											"allocated for " + source );
+//			}
+			this.scMap.put( source, con );
 		}
 		
 		Iterator getAllConnections()
 		{
-			return this.sourceConnectionMap.values().iterator();
+			return this.scMap.values().iterator();
 		}
 	}
 	
@@ -358,7 +349,6 @@ class ResourceBroker
 				log.severe( "Error while releasing resources for tx." );
 			}
 		}
-
 	}
 }
 

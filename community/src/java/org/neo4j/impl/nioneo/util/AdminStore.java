@@ -62,10 +62,10 @@ public class AdminStore
 					inputStream.close();
 				}
 			}
-			else if ( args[i].equals( "--dump-rel-types" ) )
-			{
-				dumpRelTypes( args[++i] );
-			}
+//			else if ( args[i].equals( "--dump-rel-types" ) )
+//			{
+//				dumpRelTypes( args[++i] );
+//			}
 			else if ( args[i].equals( "--fsck" ) )
 			{
 				fsckStore( args[++i] );
@@ -105,10 +105,10 @@ public class AdminStore
 			createEmptyStore( fileName, blockSize, VERSION );
 		}
 		
-		public String getString( int blockId ) throws IOException
-		{
-			return new String( get( blockId ) );
-		}
+//		public String getString( int blockId ) throws IOException
+//		{
+//			return new String( get( blockId ) );
+//		}
 		
 		void rebuildIdGenerators() throws IOException
 		{
@@ -116,44 +116,44 @@ public class AdminStore
 		}
 	}
 	
-	private static void dumpRelTypes( String fileName ) throws IOException
-	{
-		String storeName = fileName + ".relationshiptypestore.db";
-		File relTypeStore = new File( storeName );
-		if ( !relTypeStore.exists() )
-		{
-			throw new IOException( "Couldn't find relationship type store " + 
-				storeName );
-		}
-		DynamicStringStore typeNameStore = new DynamicStringStore( 
-			storeName + ".names" );
-		typeNameStore.rebuildIdGenerators();
-		// in_use(byte)+type_blockId(int)
-		System.out.println( storeName );
-		ByteBuffer buffer = ByteBuffer.allocate( 5 );
-		FileChannel fileChannel = 
-			new RandomAccessFile( storeName, "rw" ).getChannel();
-		fileChannel.position( 0 );
-		int i = 0;
-		while ( fileChannel.read( buffer ) == 5 )
-		{
-			buffer.flip();
-			byte inUse = buffer.get();
-			int block = buffer.getInt();
-			String name = "N/A";
-			try
-			{
-				name = typeNameStore.getString( block );
-			}
-			catch ( IOException e )
-			{}
-			System.out.println( "ID[" + i + "] use[" + inUse + 
-				"] blockId[" + block + "] name[" + name + "]" ); 
-			i++;
-			buffer.clear();
-		}
-		typeNameStore.close();
-	}
+//	private static void dumpRelTypes( String fileName ) throws IOException
+//	{
+//		String storeName = fileName + ".relationshiptypestore.db";
+//		File relTypeStore = new File( storeName );
+//		if ( !relTypeStore.exists() )
+//		{
+//			throw new IOException( "Couldn't find relationship type store " + 
+//				storeName );
+//		}
+//		DynamicStringStore typeNameStore = new DynamicStringStore( 
+//			storeName + ".names" );
+//		typeNameStore.rebuildIdGenerators();
+//		// in_use(byte)+type_blockId(int)
+//		System.out.println( storeName );
+//		ByteBuffer buffer = ByteBuffer.allocate( 5 );
+//		FileChannel fileChannel = 
+//			new RandomAccessFile( storeName, "rw" ).getChannel();
+//		fileChannel.position( 0 );
+//		int i = 0;
+//		while ( fileChannel.read( buffer ) == 5 )
+//		{
+//			buffer.flip();
+//			byte inUse = buffer.get();
+//			int block = buffer.getInt();
+//			String name = "N/A";
+//			try
+//			{
+//				name = typeNameStore.getString( block );
+//			}
+//			catch ( IOException e )
+//			{}
+//			System.out.println( "ID[" + i + "] use[" + inUse + 
+//				"] blockId[" + block + "] name[" + name + "]" ); 
+//			i++;
+//			buffer.clear();
+//		}
+//		typeNameStore.close();
+//	}
 	
 	public static void createStore( String fileName ) throws IOException
 	{

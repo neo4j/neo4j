@@ -452,10 +452,10 @@ public class TestRelationship extends TestCase
 				rel1.getProperty( null );
 				fail( "get of null key din't throw exception" );
 			}
-			catch ( NotFoundException e )
+			catch ( IllegalArgumentException e )
 			{}
 			assertTrue( !rel1.hasProperty( key1 ) );
-			assertTrue( !rel1.hasProperty( null ) );
+ 			assertTrue( !rel1.hasProperty( null ) );
 			rel1.setProperty( key1, int1 );
 			rel1.setProperty( key2, int2 );
 			rel1.setProperty( key3, string );
@@ -471,7 +471,7 @@ public class TestRelationship extends TestCase
 				fail( "Remove of property failed." );
 			}
 			assertTrue( !rel1.hasProperty( key3 ) );
-			assertTrue( !rel1.hasProperty( null ) );
+ 			assertTrue( !rel1.hasProperty( null ) );
 			rel1.delete();
 			node2.delete();
 			node1.delete();
@@ -549,6 +549,7 @@ public class TestRelationship extends TestCase
 		}
 		catch ( Exception e )
 		{
+			e.printStackTrace();
 			fail( "" + e );
 		}
 	}

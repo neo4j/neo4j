@@ -11,9 +11,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-
-import org.neo4j.impl.cache.LruCache;
 import org.neo4j.impl.nioneo.xa.TxInfoManager;
+import org.neo4j.impl.util.ArrayMap;
 
 
 /**
@@ -31,12 +30,12 @@ class PersistenceWindowPool
 	private String storeName;
 	private int blockSize;
 	private FileChannel fileChannel;
-	private LruCache<Integer,PersistenceWindow> rowWindowPool = 
-		new LruCache<Integer,PersistenceWindow>( "RowWindows", 100 );
+//	private LruCache<Integer,PersistenceWindow> rowWindowPool = 
+//		new LruCache<Integer,PersistenceWindow>( "RowWindows", 100 );
 	private Map<Integer,LockableWindow> activeRowWindows = 
 		new HashMap<Integer,LockableWindow>();
-	private Map<Integer,Set<LockableWindow>> txIdentifiers = 
-		new HashMap<Integer,Set<LockableWindow>>();
+	private ArrayMap<Integer,Set<LockableWindow>> txIdentifiers = 
+		new ArrayMap<Integer,Set<LockableWindow>>( 256, false, true );
 	private int mappedMem = 0;
 	private int memUsed = 0;
 	private int brickCount = 0;
@@ -72,6 +71,60 @@ class PersistenceWindowPool
 		setupBricks();
 		dumpStatus();
 	}
+	
+	public boolean hasWindow( int position ) throws IOException
+	{
+		synchronized ( activeRowWindows )
+		{
+			if ( brickSize > 0 )
+			{
+				int brickIndex = position * blockSize / brickSize;
+				if ( brickIndex < brickArray.length )
+				{
+					if ( brickArray[brickIndex].getWindow() == null )
+					{
+						brickMiss++;
+						if ( brickMiss >= REFRESH_BRICK_COUNT )
+						{
+							brickMiss = 0;
+							refreshBricks();
+							return brickArray[brickIndex].getWindow() != null;
+						}
+						return false;
+					}
+					return true;
+				}
+				else
+				{
+					expandBricks( brickIndex + 1 );
+					if ( brickArray[brickIndex].getWindow() == null )
+					{
+						brickMiss++;
+						if ( brickMiss >= REFRESH_BRICK_COUNT )
+						{
+							brickMiss = 0;
+							refreshBricks();
+							return brickArray[brickIndex].getWindow() != null;
+						}
+						return false;
+					}
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+//	public void addMiss()
+//	{
+//		miss++;
+//		brickMiss++;
+//		if ( brickMiss >= REFRESH_BRICK_COUNT )
+//		{
+//			brickMiss = 0;
+//			refreshBricks();
+//		}
+//	}
 	
 	/**
 	 * Acquires a windows for <CODE>position</CODE> and 
@@ -128,26 +181,30 @@ class PersistenceWindowPool
 				}
 				else
 				{
-					expandBricks();
+					expandBricks( brickIndex + 1 );
 				}
 			}
 			if ( window == null )
 			{
 				miss++;
 				brickMiss++;
-				window = activeRowWindows.get( position );
-				if ( window == null )
-				{
-					window = ( LockableWindow ) rowWindowPool.get( position );
-					if ( window == null )
-					{
+//				if ( operationType == OperationType.READ )
+//				{
+//					retur
+//				}
+//				window = activeRowWindows.get( position );
+//				if ( window == null )
+//				{
+//					window = ( LockableWindow ) rowWindowPool.get( position );
+//					if ( window == null )
+//					{
 						PersistenceRow dpw = new PersistenceRow( 
 							blockSize, fileChannel );
 						dpw.position( position );
 						window = dpw;
-					}
+//					}
 					activeRowWindows.put( position, window );
-				}
+//				}
 			}
 			else
 			{
@@ -184,11 +241,12 @@ class PersistenceWindowPool
 				if ( dpw.getWaitingThreadsCount() == 0 && !dpw.isMarked() )
 				{
 					int key = dpw.position();
-					if ( activeRowWindows.remove( key ) == null )
-					{
-						assert true;
-					}
-					rowWindowPool.add( key, window );
+					activeRowWindows.remove( key );
+//					if ( activeRowWindows.remove( key ) == null )
+//					{
+//						assert true;
+//					}
+//					rowWindowPool.add( key, window );
 				}
 			}
 			( ( LockableWindow ) window ).unLock();
@@ -444,13 +502,20 @@ class PersistenceWindowPool
 					nonMappedBrick.index() * brickSize / blockSize, 
 					blockSize, brickSize, fileChannel ) );
 				memUsed += brickSize;
+				// nonMappedBricks.remove( nonMappedIndex );
 			}
 			catch ( MappedMemException e )
 			{
+				e.printStackTrace();
 				ooe++;
 				logWarn( "Unable to memory map" );
 			}
+			//nonMappedIndex--;
 		}
+//		System.out.println( storeName + " memUsed=" + memUsed + " brickSize=" + 
+//			brickSize + " mappedMem=" + mappedMem + " brickCount=" + 
+//			brickCount + " nonMappedBrickCount=" + nonMappedBricks.size() + 
+//			" size=" + brickCount * brickSize + " fileSize=" + fileChannel.size() );
 		// switch bad mappings
 		while ( nonMappedIndex >= 0 && mappedIndex < mappedBricks.size() )
 		{
@@ -464,6 +529,10 @@ class PersistenceWindowPool
 			LockableWindow window = mappedBrick.getWindow();
 			if ( window.getWaitingThreadsCount() == 0 && !window.isMarked() )
 			{
+				if ( window instanceof MappedPersistenceWindow )
+				{
+					( ( MappedPersistenceWindow ) window ).unmap();
+				}
 				mappedBrick.setWindow( null );
 				memUsed -= brickSize;
 				try
@@ -483,17 +552,17 @@ class PersistenceWindowPool
 		}
 	}
 	
-	private void expandBricks() throws IOException
+	private void expandBricks( int newBrickCount ) throws IOException
 	{
-		int diff = (int) fileChannel.size() - ( brickCount * brickSize );
-		if ( diff > 0 && diff < brickSize )
-		{
-			byte zeroBuf[] = new byte[ brickSize - diff ];
-			java.util.Arrays.fill( zeroBuf, (byte) 0 );
-			fileChannel.write( java.nio.ByteBuffer.wrap( zeroBuf ), 
-				fileChannel.size() );
-		}
-		int newBrickCount = (int) fileChannel.size() / brickSize;
+//		int diff = (int) fileChannel.size() - ( brickCount * brickSize );
+//		if ( diff > 0 && diff < brickSize )
+//		{
+//			byte zeroBuf[] = new byte[ brickSize - diff ];
+//			java.util.Arrays.fill( zeroBuf, (byte) 0 );
+//			fileChannel.write( java.nio.ByteBuffer.wrap( zeroBuf ), 
+//				fileChannel.size() );
+//		}
+//		int newBrickCount = (int) fileChannel.size() / brickSize;
 		/*if ( newBrickCount > MAX_BRICK_COUNT )
 		{
 			logWarn( "Max brick count exceeded, need more memory then " + 
@@ -513,7 +582,7 @@ class PersistenceWindowPool
 			for ( int i = brickArray.length; i < tmpArray.length; i++ )
 			{
 				BrickElement be = new BrickElement( i );
-				tmpArray[i] = new BrickElement( i );
+				tmpArray[i] = be;
 				if ( memUsed + brickSize <= mappedMem )
 				{
 					try
