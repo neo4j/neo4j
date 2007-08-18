@@ -2,7 +2,6 @@ package org.neo4j.impl.core;
 
 import org.neo4j.impl.command.Command;
 import org.neo4j.impl.command.ExecuteFailedException;
-import org.neo4j.impl.command.TransactionCache;
 import org.neo4j.impl.command.UndoFailedException;
 import org.neo4j.impl.persistence.PersistenceMetadata;
 
@@ -36,7 +35,7 @@ class NodeCommands extends Command implements
 
 	private int propertyId = -1;
 	// for add/remove/change property
-	private String key = null;
+	private PropertyIndex index = null;
 	private Property value = null;
 	// for remove/change property
 	private Property oldProperty = null;
@@ -69,8 +68,8 @@ class NodeCommands extends Command implements
 	{
 		try
 		{
-			TransactionCache.getCache().addNode( node );
-			NodeManager.getManager().doDeleteNode( node );
+			getTransactionCache().addNode( node );
+			NodeManager.getManager().removeNodeFromCache( (int) node.getId() );
 			node.setIsDeleted( true );
 		}
 		catch ( DeleteException e )
@@ -83,8 +82,8 @@ class NodeCommands extends Command implements
 	{
 		try
 		{
-			NodeManager.getManager().doCreateNode( node );
 			node.setIsDeleted( false );
+			NodeManager.getManager().addNodeToCache( node );
 		}
 		catch ( CreateException e )
 		{
@@ -92,10 +91,10 @@ class NodeCommands extends Command implements
 		}
 	}
 	
-	void initAddProperty( String key, Property value )
+	void initAddProperty( PropertyIndex index, Property value )
 	{
 		checkResetAndNode( Type.ADD_PROPERTY );
-		this.key = key;
+		this.index = index;
 		this.value = value;
 	}
 	
@@ -103,8 +102,8 @@ class NodeCommands extends Command implements
 	{
 		try
 		{
-			TransactionCache.getCache().addNode( node );
-			node.doAddProperty( key, value );
+			getTransactionCache().addNode( node );
+			node.doAddProperty( index, value );
 		}
 		catch ( IllegalValueException e )
 		{
@@ -116,7 +115,7 @@ class NodeCommands extends Command implements
 	{
 		try
 		{
-			node.doRemoveProperty( key );
+			node.doRemoveProperty( index );
 		}
 		catch ( NotFoundException e )
 		{
@@ -124,10 +123,10 @@ class NodeCommands extends Command implements
 		}
 	}
 
-	void initRemoveProperty( int propertyId, String key )
+	void initRemoveProperty( int propertyId, PropertyIndex index )
 	{
 		checkResetAndNode( Type.REMOVE_PROPERTY );
-		this.key = key;
+		this.index = index;
 		this.propertyId = propertyId;
 	}
 	
@@ -135,8 +134,8 @@ class NodeCommands extends Command implements
 	{
 		try
 		{
-			TransactionCache.getCache().addNode( node );
-			oldProperty = node.doRemoveProperty( key );
+			getTransactionCache().addNode( node );
+			oldProperty = node.doRemoveProperty( index );
 		}
 		catch ( NotFoundException e )
 		{
@@ -148,7 +147,7 @@ class NodeCommands extends Command implements
 	{
 		try
 		{
-			node.doAddProperty( key, oldProperty );
+			node.doAddProperty( index, oldProperty );
 		}
 		catch ( IllegalValueException e )
 		{
@@ -156,12 +155,12 @@ class NodeCommands extends Command implements
 		}
 	}
 	
-	void initChangeProperty( int propertyId, String key, 
+	void initChangeProperty( int propertyId, PropertyIndex index, 
 		Property newValue )
 		
 	{
 		checkResetAndNode( Type.CHANGE_PROPERTY );
-		this.key = key;
+		this.index = index;
 		this.propertyId = propertyId;
 		this.value = newValue;
 	}
@@ -170,8 +169,8 @@ class NodeCommands extends Command implements
 	{
 		try
 		{
-			TransactionCache.getCache().addNode( node );
-			oldProperty = node.doChangeProperty( key, value );
+			getTransactionCache().addNode( node );
+			oldProperty = node.doChangeProperty( index, value );
 		}
 		catch ( IllegalValueException e )
 		{
@@ -187,7 +186,7 @@ class NodeCommands extends Command implements
 	{
 		try
 		{
-			node.doChangeProperty( key, oldProperty );
+			node.doChangeProperty( index, oldProperty );
 		}
 		catch ( IllegalValueException e )
 		{
@@ -208,8 +207,8 @@ class NodeCommands extends Command implements
 	{
 		try
 		{
-			TransactionCache.getCache().addNode( node );
-			NodeManager.getManager().doCreateNode( node );
+			getTransactionCache().addNode( node );
+			NodeManager.getManager().addNodeToCache( node );
 		}
 		catch ( CreateException e )
 		{
@@ -221,7 +220,7 @@ class NodeCommands extends Command implements
 	{
 		try
 		{
-			NodeManager.getManager().doDeleteNode( node );
+			NodeManager.getManager().removeNodeFromCache( (int) node.getId() );
 		}
 		catch ( DeleteException e )
 		{
@@ -288,11 +287,11 @@ class NodeCommands extends Command implements
 		return propertyId;
 	}
 	
-	public String getPropertyKey()
+	public PropertyIndex getPropertyIndex()
 	{
 		assert type == Type.ADD_PROPERTY || type == Type.REMOVE_PROPERTY ||
 			type == Type.CHANGE_PROPERTY;
-		return key;
+		return index;
 	}
 	
 	public Object getProperty()

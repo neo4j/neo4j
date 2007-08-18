@@ -1,17 +1,12 @@
 package org.neo4j.impl.core;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
-
+import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
-
 import org.neo4j.impl.command.CommandManager;
 import org.neo4j.impl.command.ExecuteFailedException;
 import org.neo4j.impl.event.Event;
@@ -24,6 +19,8 @@ import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.transaction.TransactionIsolationLevel;
+import org.neo4j.impl.util.ArrayIntSet;
+import org.neo4j.impl.util.ArrayMap;
 
 
 /**
@@ -64,10 +61,10 @@ class RelationshipImpl
 	private int	id = -1;
 	private int startNodeId = -1;
 	private int endNodeId = -1;
-	private Integer[] nodeIds = new Integer[2];
 	private RelationshipPhase phase = RelationshipPhase.NORMAL;
 	private RelationshipType type = null;
-	private Map<String,Property> propertyMap = new HashMap<String,Property>();
+	private ArrayMap<Integer,Property> propertyMap = 
+		new ArrayMap<Integer,Property>( 9, false, true );
 	private boolean isDeleted = false;
 	
 	/**
@@ -110,8 +107,6 @@ class RelationshipImpl
 		this.id = id;
 		this.startNodeId = startNodeId;
 		this.endNodeId = endNodeId;
-		this.nodeIds[0] = startNodeId;
-		this.nodeIds[1] = endNodeId;
  		if ( newRel )
 		{
 			this.phase = RelationshipPhase.FULL;
@@ -185,9 +180,19 @@ class RelationshipImpl
 		return nodeManager.getNodeById( startNodeId );
 	}
 	
+	int getStartNodeId()
+	{
+		return startNodeId;
+	}
+	
 	public Node getEndNode()
 	{
 		return nodeManager.getNodeById( endNodeId );
+	}
+	
+	int getEndNodeId()
+	{
+		return endNodeId;
 	}
 
 	/**
@@ -213,22 +218,46 @@ class RelationshipImpl
 	 */
 	public Object getProperty( String key ) throws NotFoundException
 	{
+		if ( key == null )
+		{
+			throw new IllegalArgumentException( "null key" );
+		}
+		// make sure we're in transaction
+		TransactionIsolationLevel level = 
+			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
-			if ( propertyMap.containsKey( key ) )
+			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
-				return propertyMap.get( key ).getValue();
+				Property property = propertyMap.get( index.getKeyId() );
+				if ( property != null )
+				{
+					return property.getValue();
+				}
+				
+				if ( ensureFullRelationship() )
+				{
+					property = propertyMap.get( index.getKeyId() );
+					if ( property != null )
+					{
+						return property.getValue();
+					}
+				}
 			}
 			ensureFullRelationship();
-			if ( propertyMap.containsKey( key ) )
+			for ( int keyId : propertyMap.keySet() )
 			{
-				return propertyMap.get( key ).getValue();
+				PropertyIndex indexToCheck = PropertyIndex.getIndexFor( keyId );
+				if ( indexToCheck.getKey().equals( key ) )
+				{
+					return propertyMap.get( indexToCheck.getKeyId() );
+				}
 			}
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ );
+			releaseLock( this, LockType.READ, level );
 		}			
 		throw new NotFoundException( "" + key + 
 			" property not found." );
@@ -236,10 +265,42 @@ class RelationshipImpl
 	
 	public Object getProperty( String key, Object defaultValue )
 	{
-		if ( hasProperty( key ) )
+		TransactionIsolationLevel level = 
+			TransactionFactory.getTransactionIsolationLevel();
+		acquireLock( this, LockType.READ );
+		try
 		{
-			return getProperty( key );
+			for ( PropertyIndex index : PropertyIndex.index( key ) )
+			{
+				Property property = propertyMap.get( index.getKeyId() );
+				if ( property != null )
+				{
+					return property.getValue();
+				}
+				
+				if ( ensureFullRelationship() )
+				{
+					property = propertyMap.get( index.getKeyId() );
+					if ( property != null )
+					{
+						return property.getValue();
+					}
+				}
+			}
+			ensureFullRelationship();
+			for ( int keyId : propertyMap.keySet() )
+			{
+				PropertyIndex indexToCheck = PropertyIndex.getIndexFor( keyId );
+				if ( indexToCheck.getKey().equals( key ) )
+				{
+					return propertyMap.get( indexToCheck.getKeyId() );
+				}
+			}
 		}
+		finally
+		{
+			releaseLock( this, LockType.READ, level );
+		}			
 		return defaultValue;	
 	}
 	
@@ -252,6 +313,8 @@ class RelationshipImpl
 	 */
 	public Iterable<Object> getPropertyValues()
 	{
+		TransactionIsolationLevel level = 
+			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -266,7 +329,7 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ );
+			releaseLock( this, LockType.READ, level );
 		}
 	}
 	
@@ -279,20 +342,22 @@ class RelationshipImpl
 	 */
 	public Iterable<String> getPropertyKeys()
 	{
+		TransactionIsolationLevel level = 
+			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
 			ensureFullRelationship();
 			List<String> propertyKeys = new ArrayList<String>();
-			for ( String key : propertyMap.keySet() )
+			for ( int index : propertyMap.keySet() )
 			{
-				propertyKeys.add( key );
+				propertyKeys.add( PropertyIndex.getIndexFor( index ).getKey() );
 			}
 			return propertyKeys;
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ );
+			releaseLock( this, LockType.READ, level );
 		}			
 	}
 
@@ -308,19 +373,40 @@ class RelationshipImpl
 	 */
 	public boolean hasProperty( String key )
 	{
+		TransactionIsolationLevel level = 
+			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
-			if ( propertyMap.containsKey( key ) )
+			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
-				return true;
+				Property property = propertyMap.get( index.getKeyId() );
+				if ( property != null )
+				{
+					return true;
+				}
+				if ( ensureFullRelationship() )
+				{
+					if ( propertyMap.get( index.getKeyId() ) != null )
+					{
+						return true;
+					}
+				}
 			}
 			ensureFullRelationship();
-			return propertyMap.containsKey( key );
+			for ( int keyId : propertyMap.keySet() )
+			{
+				PropertyIndex indexToCheck = PropertyIndex.getIndexFor( keyId );
+				if ( indexToCheck.getKey().equals( key ) )
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ );
+			releaseLock( this, LockType.READ, level );
 		}			
 	}
 	
@@ -338,19 +424,8 @@ class RelationshipImpl
 	public void setProperty( String key, Object value ) 
 		throws IllegalValueException
 	{
-		if ( !hasProperty( key ) )
-		{
-			addProperty( key, value );
-		}
-		else
-		{
-			changeProperty( key, value );
-		}
-	}
-	
-	void addProperty( String key, Object value ) 
-		throws IllegalValueException
-	{
+		TransactionIsolationLevel level = 
+			TransactionFactory.getTransactionIsolationLevel();
 		if ( key == null || value == null )
 		{
 			throw new IllegalValueException( "Null parameter, " +
@@ -364,16 +439,55 @@ class RelationshipImpl
 			ensureFullRelationship();
 			relationshipCommand = new RelationshipCommands();
 			relationshipCommand.setRelationship( this );
-			relationshipCommand.initAddProperty( key, 
-				new Property( -1, value ) );
-			// have to execute command here since full relationship will be 
-			// loaded and property already in cache
+			PropertyIndex index = null;
+			Property property = null;
+			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
+			{
+				property = propertyMap.get( cachedIndex.getKeyId() );
+				index = cachedIndex;
+				if ( property != null )
+				{
+					break;
+				}
+			}
+			if ( property == null )
+			{
+				for ( int keyId : propertyMap.keySet() )
+				{
+					PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+						keyId );
+					if ( indexToCheck.getKey().equals( key ) )
+					{
+						index = indexToCheck;
+						property = propertyMap.get( indexToCheck.getKeyId() );
+						break;
+					}
+				}
+				if ( index == null )
+				{
+					index = PropertyIndex.createPropertyIndex( key );
+				}
+			}
+			Event event = Event.RELATIONSHIP_ADD_PROPERTY;
+			if ( property != null )
+			{
+				int propertyId = property.getId();
+				relationshipCommand.initChangeProperty( propertyId, index,  
+					new Property( propertyId, value ) );
+				event = Event.RELATIONSHIP_CHANGE_PROPERTY;
+			}
+			else
+			{
+				relationshipCommand.initAddProperty( index, 
+					new Property( -1, value ) );
+			}
+			// have to execute command here since the full node is loaded
+			// and then the property would already be in cache
 			relationshipCommand.execute();
 			
 			EventManager em = EventManager.getManager();
 			EventData eventData = new EventData( relationshipCommand );
-			if ( !em.generateProActiveEvent( Event.RELATIONSHIP_ADD_PROPERTY, 
-				eventData ) )
+			if ( !em.generateProActiveEvent( event, eventData ) )
 			{
 				setRollbackOnly();
 				relationshipCommand.undo();
@@ -381,8 +495,7 @@ class RelationshipImpl
 					"Generate pro-active event failed." );
 			}
 
-			em.generateReActiveEvent( Event.RELATIONSHIP_ADD_PROPERTY, 
-				eventData );
+			em.generateReActiveEvent( event, eventData );
 		}
 		catch ( ExecuteFailedException e )
 		{
@@ -394,9 +507,59 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.WRITE );
+			releaseLock( this, LockType.WRITE, level );
 		}
 	}
+	
+//	void addProperty( String key, Object value ) 
+//		throws IllegalValueException
+//	{
+//		if ( key == null || value == null )
+//		{
+//			throw new IllegalValueException( "Null parameter, " +
+//				"key=" + key + ", " + "value=" + value );
+//		}
+//		acquireLock( this, LockType.WRITE );
+//		RelationshipCommands relationshipCommand = null;
+//		try
+//		{
+//			// must make sure we don't add already existing property
+//			ensureFullRelationship();
+//			relationshipCommand = new RelationshipCommands();
+//			relationshipCommand.setRelationship( this );
+//			relationshipCommand.initAddProperty( key, 
+//				new Property( -1, value ) );
+//			// have to execute command here since full relationship will be 
+//			// loaded and property already in cache
+//			relationshipCommand.execute();
+//			
+//			EventManager em = EventManager.getManager();
+//			EventData eventData = new EventData( relationshipCommand );
+//			if ( !em.generateProActiveEvent( Event.RELATIONSHIP_ADD_PROPERTY, 
+//				eventData ) )
+//			{
+//				setRollbackOnly();
+//				relationshipCommand.undo();
+//				throw new IllegalValueException( 
+//					"Generate pro-active event failed." );
+//			}
+//
+//			em.generateReActiveEvent( Event.RELATIONSHIP_ADD_PROPERTY, 
+//				eventData );
+//		}
+//		catch ( ExecuteFailedException e )
+//		{
+//			if ( relationshipCommand != null )
+//			{
+//				relationshipCommand.undo();
+//			}
+//			throw new IllegalValueException( "Failed executing command.", e );
+//		}
+//		finally
+//		{
+//			releaseLock( this, LockType.WRITE );
+//		}
+//	}
 	
 	/**
 	 * Removes the property <CODE>key</CODE>. If null property <CODE>key</CODE> 
@@ -412,19 +575,54 @@ class RelationshipImpl
 		{
 			throw new IllegalArgumentException( "Null parameter." );
 		}
+		TransactionIsolationLevel level = 
+			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.WRITE );
 		RelationshipCommands relationshipCommand = null;
 		try
 		{
-			ensureFullRelationship();
-			if ( !propertyMap.containsKey( key ) )
+			// if not found just return null
+			PropertyIndex index = null;
+			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
 			{
-				return null;
+				Property property = propertyMap.get( cachedIndex.getKeyId() );
+				if ( property == null )
+				{
+					if ( ensureFullRelationship() )
+					{
+						property = propertyMap.get( cachedIndex.getKeyId() );
+						if ( property != null )
+						{
+							index = cachedIndex;
+							break;
+						}
+					}
+				}
+			}
+			if ( index == null )
+			{
+				ensureFullRelationship();
+				Property property = null;
+				for ( int keyId : propertyMap.keySet() )
+				{
+					PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+						keyId );
+					if ( indexToCheck.getKey().equals( key ) )
+					{
+						property = propertyMap.get( indexToCheck.getKeyId() );
+						index = indexToCheck;
+						break;
+					}
+				}
+				if ( property == null )
+				{
+					return null;
+				}
 			}
 			relationshipCommand = new RelationshipCommands();
 			relationshipCommand.setRelationship( this );
 			relationshipCommand.initRemoveProperty( 
-				doGetProperty( key ).getId(), key );
+				doGetProperty( index ).getId(), index );
 			// have to execute here for RelationshipOperationEventData to be 
 			// command also checks that the property really exist
 			relationshipCommand.execute();
@@ -454,61 +652,65 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.WRITE );
+			releaseLock( this, LockType.WRITE, level );
 		}
 	}
 	
-	Object changeProperty( String key, Object newValue ) 
-		throws IllegalValueException, NotFoundException
-	{
-		if ( key == null || newValue == null )
-		{
-			throw new IllegalValueException( "Null parameter, " +
-				"key=" + key + ", " + "value=" + newValue );
-		}
-		acquireLock( this, LockType.WRITE );
-		RelationshipCommands relationshipCommand = null;
-		try
-		{
-			// if null or not found make sure full
-			ensureFullRelationship();
-			relationshipCommand = new RelationshipCommands();
-			relationshipCommand.setRelationship( this );
-			int propertyId = doGetProperty( key ).getId();
-			relationshipCommand.initChangeProperty( propertyId, key, new 
-				Property( propertyId, newValue )  );
-			// have to execute here for RelationshipOperationEventData to be 
-			// command also checks that the property really exist
-			relationshipCommand.execute();
-
-			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( relationshipCommand );
-			if ( !em.generateProActiveEvent( Event.RELATIONSHIP_CHANGE_PROPERTY, 
-				eventData ) )
-			{
-				setRollbackOnly();
-				relationshipCommand.undo();
-				throw new IllegalValueException( 
-					"Generate pro-active event failed." );
-			}
-
-			em.generateReActiveEvent( Event.RELATIONSHIP_CHANGE_PROPERTY, eventData );
-			return relationshipCommand.getOldProperty();
-		}
-		catch ( ExecuteFailedException e )
-		{
-			setRollbackOnly();
-			if ( relationshipCommand != null )
-			{
-				relationshipCommand.undo();
-			}
-			throw new IllegalValueException( "Failed executing command.", e );
-		}
-		finally
-		{
-			releaseLock( this, LockType.WRITE );
-		}
-	}
+//	Object changeProperty( String key, Object newValue ) 
+//		throws IllegalValueException, NotFoundException
+//	{
+//		if ( key == null || newValue == null )
+//		{
+//			throw new IllegalValueException( "Null parameter, " +
+//				"key=" + key + ", " + "value=" + newValue );
+//		}
+//		acquireLock( this, LockType.WRITE );
+//		RelationshipCommands relationshipCommand = null;
+//		try
+//		{
+//			// if null or not found make sure full
+//			Property property = propertyMap.get( key );
+//			if ( property == null )
+//			{
+//				ensureFullRelationship();
+//			}
+//			relationshipCommand = new RelationshipCommands();
+//			relationshipCommand.setRelationship( this );
+//			int propertyId = doGetProperty( key ).getId();
+//			relationshipCommand.initChangeProperty( propertyId, key, new 
+//				Property( propertyId, newValue )  );
+//			// have to execute here for RelationshipOperationEventData to be 
+//			// command also checks that the property really exist
+//			relationshipCommand.execute();
+//
+//			EventManager em = EventManager.getManager();
+//			EventData eventData = new EventData( relationshipCommand );
+//			if ( !em.generateProActiveEvent( Event.RELATIONSHIP_CHANGE_PROPERTY, 
+//				eventData ) )
+//			{
+//				setRollbackOnly();
+//				relationshipCommand.undo();
+//				throw new IllegalValueException( 
+//					"Generate pro-active event failed." );
+//			}
+//
+//			em.generateReActiveEvent( Event.RELATIONSHIP_CHANGE_PROPERTY, eventData );
+//			return relationshipCommand.getOldProperty();
+//		}
+//		catch ( ExecuteFailedException e )
+//		{
+//			setRollbackOnly();
+//			if ( relationshipCommand != null )
+//			{
+//				relationshipCommand.undo();
+//			}
+//			throw new IllegalValueException( "Failed executing command.", e );
+//		}
+//		finally
+//		{
+//			releaseLock( this, LockType.WRITE );
+//		}
+//	}
 
 	/**
 	 * Deletes this relationship removing it from cache and persistent storage. 
@@ -524,10 +726,13 @@ class RelationshipImpl
 	public void delete() //throws DeleteException
 	{
 		RelationshipCommands relationshipCommand = null;
-		Node startNode = null;
-		Node endNode = null;
+		NodeImpl startNode = null;
+		NodeImpl endNode = null;
 		boolean startNodeLocked = false;
 		boolean endNodeLocked = false;
+		// make sure we're in transaction
+		TransactionIsolationLevel level = 
+			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.WRITE );
 		try
 		{
@@ -541,6 +746,8 @@ class RelationshipImpl
 			// deleted when relationship is deleted 
 			relationshipCommand = new RelationshipCommands();
 			relationshipCommand.setRelationship( this );
+			relationshipCommand.setStartNode( startNode );
+			relationshipCommand.setEndNode( endNode );
 			relationshipCommand.initDelete();
 
 			EventManager em = EventManager.getManager();
@@ -575,7 +782,7 @@ class RelationshipImpl
 			{
 				if ( startNodeLocked )
 				{
-					releaseLock( startNode, LockType.WRITE );
+					releaseLock( startNode, LockType.WRITE, level );
 				}
 			}
 			catch ( Exception e )
@@ -588,7 +795,7 @@ class RelationshipImpl
 			{
 				if ( endNodeLocked )
 				{
-					releaseLock( endNode, LockType.WRITE );
+					releaseLock( endNode, LockType.WRITE, level );
 				}
 			}
 			catch ( Exception e )
@@ -597,7 +804,7 @@ class RelationshipImpl
 				e.printStackTrace();
 				log.severe( "Failed to release lock" );
 			}
-			releaseLock( this, LockType.WRITE );
+			releaseLock( this, LockType.WRITE, level );
 			if ( releaseFailed )
 			{
 				throw new RuntimeException( "Unable to release locks [" + 
@@ -699,53 +906,52 @@ class RelationshipImpl
 		// return this.id;
 	}
 
-	Integer[] getNodeIds()
-	{
-		return nodeIds;
-	}
-
 	// caller responsible for acquiring lock
-	void doAddProperty( String key, Property property ) 
+	void doAddProperty( PropertyIndex index, Property property ) 
 		throws IllegalValueException
 	{
-		if ( propertyMap.containsKey( key ) )
+		if ( propertyMap.get( index.getKeyId() ) != null )
 		{
-			throw new IllegalValueException( "Property[" + key + 
+			throw new IllegalValueException( "Property[" + index.getKey() + 
 				"] already added." );
 		}
-		propertyMap.put( key, property );
+		propertyMap.put( index.getKeyId(), property );
 	}
 	
 	// caller responsible for acquiring lock
-	Property doRemoveProperty( String key ) throws NotFoundException
+	Property doRemoveProperty( PropertyIndex index ) throws NotFoundException
 	{
-		if ( propertyMap.containsKey( key ) )
+		Property property = propertyMap.remove( index.getKeyId() );
+		if ( property != null )
 		{
-			return propertyMap.remove( key );
+			return property;
 		}
-		throw new NotFoundException( "Property not found: " +	key );
+		throw new NotFoundException( "Property not found: " + index.getKey() );
 	}
 
 	// caller responsible for acquiring lock
-	Property doChangeProperty( String key, Property newValue ) 
+	Property doChangeProperty( PropertyIndex index, Property newValue ) 
 		throws IllegalValueException, NotFoundException
 	{
-		if ( propertyMap.containsKey( key ) )
+		Property property = propertyMap.get( index.getKeyId() );
+		if ( property != null )
 		{
-			Property oldValue  = propertyMap.get( key );
-			propertyMap.put( key, newValue );
-			return oldValue;
+			Property oldProperty = new Property( property.getId(), 
+				property.getValue() );
+			property.setNewValue( newValue.getValue() );
+			return oldProperty;
 		}
-		throw new NotFoundException( "Property not found: " + key );
+		throw new NotFoundException( "Property not found: " + index.getKey() );
 	}
 
-	Property doGetProperty( String key ) throws NotFoundException
+	Property doGetProperty( PropertyIndex index ) throws NotFoundException
 	{
-		if ( propertyMap.containsKey( key ) )
+		Property property = propertyMap.get( index.getKeyId() );
+		if ( property != null )
 		{
-			return propertyMap.get( key );
+			return property;
 		}
-		throw new NotFoundException( "Property not found: " + key );
+		throw new NotFoundException( "Property not found: " + index.getKey() );
 	}
 	
 	private void setRollbackOnly()
@@ -760,15 +966,15 @@ class RelationshipImpl
 		}
 	}
 
-	private void ensureFullRelationship()
+	private boolean ensureFullRelationship()
 	{
 		if ( phase != RelationshipPhase.FULL )
 		{
 			RawPropertyData[] rawProperties = 
 				NodeManager.getManager().loadProperties( this );
-			Set<Integer> addedProps = new LinkedHashSet<Integer>();
-			Map<String,Property> newPropertyMap = 
-				new HashMap<String,Property>();
+			ArrayIntSet addedProps = new ArrayIntSet();
+			ArrayMap<Integer,Property> newPropertyMap = 
+				new ArrayMap<Integer,Property>(); 
 			for ( RawPropertyData propData : rawProperties )
 			{
 				int propId = propData.getId();
@@ -776,27 +982,27 @@ class RelationshipImpl
 				addedProps.add( propId );
 				Property property = new Property( propId, 
 					propData.getValue() );
-				newPropertyMap.put( propData.getKey(), property );
+				newPropertyMap.put( propData.getIndex(), property );
 			}
-			for ( String key : this.propertyMap.keySet() )
+			for ( int index : this.propertyMap.keySet() )
 			{
-				Property prop = propertyMap.get( key );
+				Property prop = propertyMap.get( index );
 				if ( !addedProps.contains( prop.getId() ) )
 				{
-					newPropertyMap.put( key, prop );
+					newPropertyMap.put( index, prop );
 				}
 			}
 			this.propertyMap = newPropertyMap;
 			this.phase = RelationshipPhase.FULL;
+			return true;
 		}
+		return false;
 	}		
 
 	private void acquireLock( Object resource, LockType lockType )
 	{
 		try
 		{
-			// make sure we're in transaction
-			TransactionFactory.getTransactionIsolationLevel();
 			if ( lockType == LockType.READ )
 			{
 				LockManager.getManager().getReadLock( resource );
@@ -821,18 +1027,11 @@ class RelationshipImpl
 		}
 	}
 	
-	private void releaseLock( Object resource, LockType lockType )
-	{
-		releaseLock( resource, lockType, false );
-	}
-
 	private void releaseLock( Object resource, LockType lockType, 
-		boolean forceRelease )
+		TransactionIsolationLevel level )
 	{
 		try
 		{
-			TransactionIsolationLevel level = 
-				TransactionFactory.getTransactionIsolationLevel();
 			if ( level == TransactionIsolationLevel.READ_COMMITTED )
 			{
 				if ( lockType == LockType.READ )
@@ -841,15 +1040,8 @@ class RelationshipImpl
 				}
 				else if ( lockType == LockType.WRITE )
 				{
-					if ( forceRelease ) 
-					{
-						LockManager.getManager().releaseWriteLock( resource );
-					}
-					else
-					{
-						CommandManager.getManager().addLockToTransaction( resource, 
-							lockType );
-					}
+					CommandManager.getManager().addLockToTransaction( resource, 
+						lockType );
 				}
 				else
 				{

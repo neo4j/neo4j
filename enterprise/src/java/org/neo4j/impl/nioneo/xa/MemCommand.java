@@ -312,8 +312,7 @@ abstract class MemCommand
 
 		public RelationshipData getRelationshipData()
 		{
-			return new RelationshipData( relId, firstNode, secondNode, 
-				type, -1, -1, -1, -1, -1 );
+			return new RelationshipData( relId, firstNode, secondNode, type );
 		}
 	}
 	

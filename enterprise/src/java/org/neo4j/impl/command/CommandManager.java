@@ -1,19 +1,16 @@
 package org.neo4j.impl.command;
 
+import java.util.Stack;
+import java.util.logging.Logger;
+import javax.transaction.InvalidTransactionException;
+import javax.transaction.Synchronization;
+import javax.transaction.Transaction;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.transaction.TransactionIsolationLevel;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Stack;
-import java.util.logging.Logger;
-
-import javax.transaction.Transaction;
-import javax.transaction.InvalidTransactionException;
-import javax.transaction.Synchronization;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * Manages commands and locks for each transaction. The public methods 
@@ -32,9 +29,8 @@ public class CommandManager
 	
 	private static CommandManager instance = new CommandManager();
 	
-	private Map<Thread,CommandStackElement> commandStack = 
-		java.util.Collections.synchronizedMap( 
-			new HashMap<Thread,CommandStackElement>() );
+	private ArrayMap<Thread,CommandStackElement> commandStack =  
+			new ArrayMap<Thread,CommandStackElement>( 9, true, true );
 
 	private Synchronization txCommitHook = new TxCommitHook();
 	
@@ -112,9 +108,9 @@ public class CommandManager
 			throw new NotInTransactionException( e );
 		}
 		Thread currentThread = Thread.currentThread();
-		if ( commandStack.containsKey( currentThread ) )
+		CommandStackElement cse = commandStack.get( currentThread );
+		if ( cse != null )
 		{
-			CommandStackElement cse = commandStack.get( currentThread );
 			cse.commands.push( command );
 		}
 		else
@@ -127,8 +123,7 @@ public class CommandManager
 			{
 				throw new NotInTransactionException( e );
 			}
-			CommandStackElement cse = 
-				new CommandStackElement( DEFAULT_ISOLATION_LEVEL, 
+			cse = new CommandStackElement( DEFAULT_ISOLATION_LEVEL, 
 				new Stack<Command>() );
 			cse.commands.push( command );
 			commandStack.put( currentThread, cse );
@@ -137,7 +132,35 @@ public class CommandManager
 	
 	boolean txCommitHookRegistered()
 	{
-		return commandStack.containsKey( Thread.currentThread() );
+		return commandStack.get( Thread.currentThread() ) != null;
+	}
+	
+	void registerTxCommitHook( Thread currentThread )
+	{
+		Transaction tx = null;
+		try
+		{
+			tx = TransactionFactory.getTransactionManager().getTransaction();
+			if ( tx == null )
+			{
+				throw new NotInTransactionException();
+			}
+		}
+		catch ( javax.transaction.SystemException e )
+		{
+			throw new NotInTransactionException( e );
+		}
+		try
+		{
+			tx.registerSynchronization( txCommitHook );
+		}
+		catch ( Exception e )
+		{
+			throw new NotInTransactionException( e );
+		}
+		CommandStackElement cse = new CommandStackElement( 
+			DEFAULT_ISOLATION_LEVEL, new Stack<Command>() );
+		commandStack.put( currentThread, cse );
 	}
 	
 	/**
@@ -154,49 +177,24 @@ public class CommandManager
 	public void addLockToTransaction( Object resource, LockType type ) 
 		throws NotInTransactionException
 	{
-		Transaction tx = null;
-		try
-		{
-			tx = TransactionFactory.getTransactionManager().getTransaction();
-			if ( tx == null )
-			{
-				throw new NotInTransactionException();
-			}
-		}
-		catch ( javax.transaction.SystemException e )
-		{
-			throw new NotInTransactionException( e );
-		}
 		Thread currentThread = Thread.currentThread();
-		if ( commandStack.containsKey( currentThread ) )
-		{
-			CommandStackElement cse = commandStack.get( currentThread );
+        CommandStackElement cse = commandStack.get( currentThread );
+//		if ( cse != null )
+//		{
 			if ( cse.locks == null )
 			{
 				cse.locks = new Stack<LockElement>();
 			}
 			cse.locks.push( new LockElement( resource, type ) );
-		}
-		else
-		{
-			try
-			{
-				tx.registerSynchronization( txCommitHook );
-			}
-			catch ( Exception e )
-			{
-				throw new NotInTransactionException( e );
-			}
-			CommandStackElement cse = 
-				new CommandStackElement( DEFAULT_ISOLATION_LEVEL, 
-				new Stack<Command>() );
-			commandStack.put( currentThread, cse );
-			if ( cse.locks == null )
-			{
-				cse.locks = new Stack<LockElement>();
-			}
-			cse.locks.push( new LockElement( resource, type ) );
-		}
+//		}
+//		else
+//		{
+//			if ( cse.locks == null )
+//			{
+//				cse.locks = new Stack<LockElement>();
+//			}
+//			cse.locks.push( new LockElement( resource, type ) );
+//		}
 	}
 
 	/**
@@ -229,7 +227,7 @@ public class CommandManager
 		}
 
 		Thread currentThread = Thread.currentThread();
-		if ( commandStack.containsKey( currentThread ) )
+		if ( commandStack.get( currentThread ) != null )
 		{
 			throw new InvalidTransactionException( 
 				"Transaction already in use." );
@@ -272,9 +270,10 @@ public class CommandManager
 		}
 		
 		Thread currentThread = Thread.currentThread();
-		if ( commandStack.containsKey( currentThread ) )
+		CommandStackElement cse = commandStack.get( currentThread );
+		if ( cse != null )
 		{
-			return commandStack.get( currentThread ).isolationLevel;
+			return cse.isolationLevel;
 		}
 		else
 		{
@@ -292,10 +291,9 @@ public class CommandManager
 	public void releaseCommands()
 	{
 		Thread currentThread = Thread.currentThread();
-		if ( commandStack.containsKey( currentThread ) )
+		CommandStackElement cse = commandStack.remove( currentThread );
+		if ( cse != null )
 		{
-			CommandStackElement cse = commandStack.remove( currentThread );
-
 			Stack<LockElement> lStack = cse.locks;
 			while ( lStack != null && !lStack.isEmpty() )
 			{
@@ -342,11 +340,11 @@ public class CommandManager
 	public void undoAndReleaseCommands()
 	{
 		Thread currentThread = Thread.currentThread();
-		if ( commandStack.containsKey( currentThread ) )
+		CommandStackElement cse = commandStack.remove( currentThread );
+		if ( cse != null )
 		{
 			UndoFailedException ufe = null;
 			int undoFailedCount = 0;
-			CommandStackElement cse = commandStack.remove( currentThread );
 			Stack<Command> cStack = cse.commands;
 			while ( !cStack.isEmpty() )
 			{
@@ -418,7 +416,7 @@ public class CommandManager
 				commandStack.get( thread ) );
 		}
 		System.out.println( "TransactionCache size: " + 
-			TransactionCache.getCache().size() );
+			TransactionCache.size() );
 	}
 }
 		

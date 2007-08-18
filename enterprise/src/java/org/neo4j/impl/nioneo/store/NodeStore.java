@@ -1,9 +1,8 @@
 package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Map;
 
 /**
@@ -18,11 +17,14 @@ public class NodeStore extends AbstractStore implements Store
 	// in_use(byte)+next_rel_id(int)+next_prop_id(int)
 	private static final int RECORD_SIZE = 9;
 	 
-	private Map<Integer,NodeRecord> cache = 
-		Collections.synchronizedMap( new HashMap<Integer,NodeRecord>() );
+//	private Map<Integer,NodeRecord> cache = 
+//		Collections.synchronizedMap( new HashMap<Integer,NodeRecord>() );
 
-	private PropertyStore propStore = null;
-	private RelationshipStore relStore = null;
+//	private LruCache<Integer,NodeRecord> cache = 
+//		new LruCache<Integer,NodeRecord>( "NodeRecordCache", 1000 );
+
+//	private PropertyStore propStore = null;
+//	private RelationshipStore relStore = null;
 	
 	/**
 	 * See {@link AbstractStore#AbstractStore(String, Map)}
@@ -42,15 +44,15 @@ public class NodeStore extends AbstractStore implements Store
 		super( fileName );
 	}
 
-	void setRelationshipStore( RelationshipStore relStore )
-	{
-		this.relStore = relStore;
-	}
-	
-	void setPropertyStore( PropertyStore propStore )
-	{
-		this.propStore = propStore;
-	}
+//	void setRelationshipStore( RelationshipStore relStore )
+//	{
+//		this.relStore = relStore;
+//	}
+//	
+//	void setPropertyStore( PropertyStore propStore )
+//	{
+//		this.propStore = propStore;
+//	}
 	
 	public String getTypeAndVersionDescriptor()
 	{
@@ -87,22 +89,36 @@ public class NodeStore extends AbstractStore implements Store
 		store.close();
 	}
 	
-	public NodeRecord getRecord( int id ) throws IOException
+	public NodeRecord getRecord( int id, ReadFromBuffer buffer ) 
+		throws IOException
 	{
-		NodeRecord record = cache.get( id );
-		if ( record != null )
+		NodeRecord record; // = cache.get( id );
+//		if ( record != null )
+//		{
+//			assert record.inUse();
+//			return record;
+//		}
+		if ( buffer != null && !hasWindow( id ) )
 		{
-			if ( !record.inUse() )
-			{
-				throw new IOException( "Record[" + id + "] not in use" );
-			}
+//			addMiss();
+			buffer.makeReadyForTransfer();
+			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
+				buffer.getFileChannel() );
+			ByteBuffer buf = buffer.getByteBuffer();
+			record = new NodeRecord( id );
+			byte inUse = buf.get();
+			assert inUse == Record.IN_USE.byteValue();
+			record.setInUse( true );
+			record.setNextRel( buf.getInt() );
+			record.setNextProp( buf.getInt() );
+//			cache.add( id, record );
 			return record;
 		}
 		PersistenceWindow window = acquireWindow( id, OperationType.READ );
 		try
 		{
 			record = getRecord( id, window.getBuffer(), false );
-			cache.put( id, record );
+//			cache.add( id, record );
 			return record;
 		}
 		finally 
@@ -113,12 +129,19 @@ public class NodeStore extends AbstractStore implements Store
 
 	public void updateRecord( NodeRecord record ) throws IOException
 	{
+		if ( record.isTransferable() && !hasWindow( record.getId() ) )
+		{
+//			addMiss();
+			transferRecord( record );
+			return;
+		}
 		PersistenceWindow window = acquireWindow( record.getId(), 
 			OperationType.WRITE );
 		try
 		{
 			updateRecord( record, window.getBuffer() );
-			cache.remove( record.getId() );
+			// maybe remove from cache if not in use anymore...
+//			cache.remove( record.getId() );
 		}
 		finally 
 		{
@@ -126,80 +149,111 @@ public class NodeStore extends AbstractStore implements Store
 		}
 	}
 	
-	public boolean loadLightNode( int nodeId ) throws IOException 
+	public boolean loadLightNode( int id, ReadFromBuffer buffer ) 
+		throws IOException 
 	{
-		PersistenceWindow window = acquireWindow( nodeId, OperationType.READ );
+		NodeRecord record; // = cache.get( id );
+//		if ( record != null )
+//		{
+//			return record.inUse();
+//		}
+		if ( buffer != null && !hasWindow( id ) )
+		{
+//			addMiss();
+			buffer.makeReadyForTransfer();
+			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
+				buffer.getFileChannel() );
+			ByteBuffer buf = buffer.getByteBuffer();
+			record = new NodeRecord( id );
+			byte inUse = buf.get();
+			if ( inUse != Record.IN_USE.byteValue() )
+			{
+				return false;
+			}
+			record.setInUse( true );
+			record.setNextRel( buf.getInt() );
+			record.setNextProp( buf.getInt() );
+			// cache.add( id, record );
+			return true;
+		}
+		PersistenceWindow window = acquireWindow( id, OperationType.READ );
 		try
 		{
-			return checkNode( nodeId, window.getBuffer() );
+			record = getRecord( id, window.getBuffer(), true );
+			if ( !record.inUse() )
+			{
+				return false;
+			}
+			// cache.add( id, record );
+			return true;
 		}
-		finally
+		finally 
 		{
 			releaseWindow( window );
 		}
 	}
 	
-	public PropertyData[] getProperties( int nodeId )
+//	public PropertyData[] getProperties( int nodeId )
+//		throws IOException
+//	{
+//		PersistenceWindow window = acquireWindow( nodeId, OperationType.READ );
+//		try
+//		{
+//			int nextPropertyId = getNextPropertyId( nodeId, 
+//				window.getBuffer() );
+//			if ( nextPropertyId != Record.NO_NEXT_PROPERTY.intValue() )
+//			{
+//				return propStore.getProperties( nextPropertyId );
+//			}
+//			return new PropertyData[0];
+//		}
+//		finally
+//		{
+//			releaseWindow( window );
+//		}
+//	}
+	
+//	public RelationshipData[] getRelationships( int nodeId )
+//		throws IOException
+//	{
+//		PersistenceWindow window = acquireWindow( nodeId, OperationType.READ );
+//		int nextRelId = Record.NO_NEXT_RELATIONSHIP.intValue();
+//		try
+//		{
+//			nextRelId = getNextRelationshipId( nodeId, window.getBuffer() );
+//		}
+//		finally
+//		{
+//			releaseWindow( window );
+//		}
+//		ArrayList<RelationshipData> rels = new ArrayList<RelationshipData>();
+//		while ( nextRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+//		{
+//			RelationshipData relData = relStore.getRelationship( nextRelId );  
+//			rels.add( relData );
+//			if ( relData.firstNode() == nodeId )
+//			{
+//				nextRelId = relData.firstNodeNextRelationshipId();
+//			}
+//			else if ( relData.secondNode() == nodeId )
+//			{
+//				nextRelId = relData.secondNodeNextRelationshipId();
+//			}
+//			else
+//			{
+//				throw new RuntimeException( "GAH" );
+//			}
+//		}
+//		return rels.toArray( new RelationshipData[ rels.size() ] );
+//	}
+	
+	private NodeRecord getRecord( int id, Buffer buffer, boolean check ) 
 		throws IOException
-	{
-		PersistenceWindow window = acquireWindow( nodeId, OperationType.READ );
-		try
-		{
-			int nextPropertyId = getNextPropertyId( nodeId, 
-				window.getBuffer() );
-			if ( nextPropertyId != Record.NO_NEXT_PROPERTY.intValue() )
-			{
-				return propStore.getProperties( nextPropertyId );
-			}
-			return new PropertyData[0];
-		}
-		finally
-		{
-			releaseWindow( window );
-		}
-	}
-	
-	public RelationshipData[] getRelationships( int nodeId )
-		throws IOException
-	{
-		PersistenceWindow window = acquireWindow( nodeId, OperationType.READ );
-		int nextRelId = Record.NO_NEXT_RELATIONSHIP.intValue();
-		try
-		{
-			nextRelId = getNextRelationshipId( nodeId, window.getBuffer() );
-		}
-		finally
-		{
-			releaseWindow( window );
-		}
-		ArrayList<RelationshipData> rels = new ArrayList<RelationshipData>();
-		while ( nextRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-		{
-			RelationshipData relData = relStore.getRelationship( nextRelId );  
-			rels.add( relData );
-			if ( relData.firstNode() == nodeId )
-			{
-				nextRelId = relData.firstNodeNextRelationshipId();
-			}
-			else if ( relData.secondNode() == nodeId )
-			{
-				nextRelId = relData.secondNodeNextRelationshipId();
-			}
-			else
-			{
-				throw new RuntimeException( "GAH" );
-			}
-		}
-		return rels.toArray( new RelationshipData[ rels.size() ] );
-	}
-	
-	private NodeRecord getRecord( int id, Buffer buffer, boolean 
-		checkOnly ) throws IOException
 	{
 		int offset = ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		boolean inUse = ( buffer.get() == Record.IN_USE.byteValue() );
-		if ( !inUse && !checkOnly )
+		if ( !inUse && !check )
 		{
 			throw new IOException( "Record[" + id + "] not in use" );
 		}
@@ -208,6 +262,23 @@ public class NodeStore extends AbstractStore implements Store
 		nodeRecord.setNextRel( buffer.getInt() );
 		nodeRecord.setNextProp( buffer.getInt() );
 		return nodeRecord;
+	}
+	
+	private void transferRecord( NodeRecord record ) throws IOException
+	{
+		int id = record.getId();
+		long count = record.getTransferCount();
+		FileChannel fileChannel = getFileChannel();
+		fileChannel.position( id * getRecordSize() );
+		if ( count != record.getFromChannel().transferTo( 
+			record.getTransferStartPosition(), count, fileChannel ) )
+		{
+			throw new RuntimeException( "expected " + count + 
+				" bytes transfered" );
+		}
+//		NodeRecord check = getRecord( record.getId() );
+//		assert check.getNextProp() == check.getNextProp();
+//		assert check.getNextRel() == check.getNextRel();
 	}
 	
 	private void updateRecord( NodeRecord record, Buffer buffer )
@@ -223,9 +294,9 @@ public class NodeStore extends AbstractStore implements Store
 		}
 		else
 		{
-			buffer.put( Record.NOT_IN_USE.byteValue() ).putInt( 
-				Record.NO_NEXT_RELATIONSHIP.intValue() ).putInt( 
-					Record.NO_NEXT_PROPERTY.intValue() );
+			buffer.put( Record.NOT_IN_USE.byteValue() );
+//			.putInt( Record.NO_NEXT_RELATIONSHIP.intValue() ).putInt( 
+//					Record.NO_NEXT_PROPERTY.intValue() );
 			if ( !isInRecoveryMode() )
 			{
 				freeId( id );
@@ -233,48 +304,53 @@ public class NodeStore extends AbstractStore implements Store
 		}
 	}
 	
-	private boolean checkNode( int nodeId, Buffer buffer )
-	{
-		int offset = ( nodeId - buffer.position() ) * getRecordSize();
-		buffer.setOffset( offset );
-		if ( buffer.get() != Record.IN_USE.byteValue() )
-		{
-			return false;
-		}
-		return true;
-	}
-	
-	private int getNextRelationshipId( int nodeId, Buffer buffer ) 
-		throws IOException
-	{
-		int offset = ( nodeId - buffer.position() ) * getRecordSize();
-		buffer.setOffset( offset );
-		byte inUse = buffer.get();
-		if ( inUse != Record.IN_USE.byteValue() )
-		{
-			throw new IOException( "Record[" + nodeId + "] not in use[" +
-				inUse + "]" );
-		}
-		return buffer.getInt();
-	}
-	
-	private int getNextPropertyId( int nodeId, Buffer buffer ) 
-		throws IOException
-	{
-		int offset = ( nodeId - buffer.position() ) * getRecordSize();
-		buffer.setOffset( offset );
-		byte inUse = buffer.get();
-		if ( inUse != Record.IN_USE.byteValue() )
-		{
-			throw new IOException( "Record[" + nodeId + "] not in use[" +
-				inUse + "]" );
-		}
-		buffer.setOffset( offset + 5 );
-		return buffer.getInt();
-	}
+//	private boolean checkNode( int nodeId, Buffer buffer )
+//	{
+//		int offset = ( nodeId - buffer.position() ) * getRecordSize();
+//		buffer.setOffset( offset );
+//		if ( buffer.get() != Record.IN_USE.byteValue() )
+//		{
+//			return false;
+//		}
+//		return true;
+//	}
+//	
+//	private int getNextRelationshipId( int nodeId, Buffer buffer ) 
+//		throws IOException
+//	{
+//		int offset = ( nodeId - buffer.position() ) * getRecordSize();
+//		buffer.setOffset( offset );
+//		byte inUse = buffer.get();
+//		if ( inUse != Record.IN_USE.byteValue() )
+//		{
+//			throw new IOException( "Record[" + nodeId + "] not in use[" +
+//				inUse + "]" );
+//		}
+//		return buffer.getInt();
+//	}
+//	
+//	private int getNextPropertyId( int nodeId, Buffer buffer ) 
+//		throws IOException
+//	{
+//		int offset = ( nodeId - buffer.position() ) * getRecordSize();
+//		buffer.setOffset( offset );
+//		byte inUse = buffer.get();
+//		if ( inUse != Record.IN_USE.byteValue() )
+//		{
+//			throw new IOException( "Record[" + nodeId + "] not in use[" +
+//				inUse + "]" );
+//		}
+//		buffer.setOffset( offset + 5 );
+//		return buffer.getInt();
+//	}
 	
 	public String toString()
 	{
 		return "NodeStore";
 	}
+
+//	public void purge( int id )
+//    {
+//		cache.remove( id );
+//    }
 }

@@ -45,6 +45,7 @@ public class TxModule
 		{
 			new XaDataSourceConfigFileParser().parse( dataSourceConfigFile );
 		}
+		TxManager.getManager().init();
 		startIsOk = false;
 	}
 	

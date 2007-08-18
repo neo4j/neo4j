@@ -6,11 +6,10 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
+import org.neo4j.impl.util.ArrayMap;
 
 
 
@@ -77,7 +76,7 @@ public class XaLogicalLog
 	{
 		fileChannel = new RandomAccessFile( fileName, "rw" ).getChannel();
  		buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + 
-			Xid.MAXBQUALSIZE );
+			Xid.MAXBQUALSIZE * 10 );
 		if ( fileChannel.size() != 0 )
 		{
 			doInternalRecovery();
@@ -193,7 +192,7 @@ public class XaLogicalLog
 	//[TX_PREPARE][identifier]
 	public synchronized void prepare( int identifier ) throws XAException
 	{
-		validate( identifier ); 
+		assert xidIdentMap.containsKey( identifier );
 		try
 		{
 			buffer.clear();
@@ -232,7 +231,8 @@ public class XaLogicalLog
 	//[TX_1P_COMMIT][identifier]
 	public synchronized void commitOnePhase( int identifier ) throws XAException
 	{
-		validate( identifier ); 
+//		validate( identifier ); 
+		assert xidIdentMap.containsKey( identifier );
 		try
 		{
 			buffer.clear();
@@ -266,7 +266,8 @@ public class XaLogicalLog
 	//[DONE][identifier]
 	public synchronized void done( int identifier ) throws XAException
 	{
-		validate( identifier );
+//		validate( identifier );
+		assert xidIdentMap.containsKey( identifier );
 		try
 		{
 			buffer.clear();
@@ -313,11 +314,7 @@ public class XaLogicalLog
 	public synchronized void writeCommand( XaCommand command, int identifier )
 		throws IOException
 	{
-		if ( !xidIdentMap.containsKey( identifier ) )
-		{
-			throw new IOException( "Unkown identifier[" + identifier + 
-				"] coulndn't find Xid" );
-		}
+		assert xidIdentMap.containsKey( identifier );
 		buffer.clear();
 		buffer.put( COMMAND ).putInt( identifier );
 		buffer.flip();
@@ -369,17 +366,17 @@ public class XaLogicalLog
 	
 	void force() throws IOException
 	{
- 		fileChannel.force( true );
+ 		fileChannel.force( false );
 	}
 
-	private void validate( int identifier ) throws XAException
-	{
-		if ( !xidIdentMap.containsKey( identifier ) )
-		{
-			throw new XAException( "Unkown identifier[" + identifier + 
-				"] coulndn't find Xid" );
-		}
-	}
+//	private void validate( int identifier ) throws XAException
+//	{
+//		if ( !xidIdentMap.containsKey( identifier ) )
+//		{
+//			throw new XAException( "Unkown identifier[" + identifier + 
+//				"] coulndn't find Xid" );
+//		}
+//	}
 	
 	private void doInternalRecovery() throws IOException
 	{
@@ -449,8 +446,8 @@ public class XaLogicalLog
 		}
 	}
 	
-	private Map<Thread,Integer> txIdentMap = 
-		java.util.Collections.synchronizedMap( new HashMap<Thread,Integer>() );
+	private ArrayMap<Thread,Integer> txIdentMap = 
+		new ArrayMap<Thread,Integer>( 9, true, true );
 	
 	void registerTxIdentifier( int identifier )
 	{

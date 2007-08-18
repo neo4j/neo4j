@@ -204,7 +204,7 @@ public class TestTxEvents extends TestCase
 	public void testMarkedRollback()
 	{
 		Logger log = Logger.getLogger(
-			"org.neo4j.impl.core.NeoConstraints" );
+			"org.neo4j.impl.core.NeoConstraintsListener" );
 		Level level = log.getLevel();
 		log.setLevel( Level.OFF );
 		EventConsumer eventHook = new EventConsumer( Event.TX_ROLLBACK );

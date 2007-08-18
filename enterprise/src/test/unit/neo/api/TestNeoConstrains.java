@@ -578,6 +578,7 @@ public class TestNeoConstrains extends TestCase
 			}
 			catch ( Exception e )
 			{ } // good
+			TransactionFactory.getUserTransaction().begin();
 			try
 			{
 				nm.getNodeById( (int) node1.getId() );
@@ -599,6 +600,7 @@ public class TestNeoConstrains extends TestCase
 		}
 		catch ( Exception e )
 		{
+			e.printStackTrace();
 			fail( "" + e );
 		}
 		finally

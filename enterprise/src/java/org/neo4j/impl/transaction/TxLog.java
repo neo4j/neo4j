@@ -54,8 +54,8 @@ public class TxLog
 		}
 		fileChannel = new RandomAccessFile( fileName, "rw" ).getChannel();
 		fileChannel.position( fileChannel.size() );
-		buffer = ByteBuffer.allocateDirect( 3 + Xid.MAXGTRIDSIZE + 
-			Xid.MAXBQUALSIZE );
+		buffer = ByteBuffer.allocateDirect( ( 3 + Xid.MAXGTRIDSIZE + 
+			Xid.MAXBQUALSIZE ) * 1000 );
 		this.name = fileName;
 	}
 	
@@ -358,10 +358,15 @@ public class TxLog
 			{
 				throw new IOException( "Unkown type: " + recordType );
 			}
-			buffer.clear();
-			fileChannel.position( nextPosition );
-			fileChannel.read( buffer );
-			buffer.flip();
+			if ( ( buffer.limit() - buffer.position() ) < 
+				( 3 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE ) )
+			{
+				// make sure we don't try to read non full entry
+				buffer.clear();
+				fileChannel.position( nextPosition );
+				fileChannel.read( buffer );
+				buffer.flip();
+			}
 		}
 		return recordMap.values().iterator();
 	}
@@ -400,8 +405,8 @@ public class TxLog
 		Iterator<Record> recordItr = records.iterator();
 		fileChannel = new RandomAccessFile( newFile, "rw" ).getChannel();
 		fileChannel.position( fileChannel.size() );
-		buffer = ByteBuffer.allocateDirect( 3 + Xid.MAXGTRIDSIZE + 
-			Xid.MAXBQUALSIZE );
+//		buffer = ByteBuffer.allocateDirect( 3 + Xid.MAXGTRIDSIZE + 
+//			Xid.MAXBQUALSIZE );
 		name = newFile;
 		truncate();
 		while ( recordItr.hasNext() )

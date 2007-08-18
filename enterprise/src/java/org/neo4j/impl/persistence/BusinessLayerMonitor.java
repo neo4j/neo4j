@@ -205,6 +205,7 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 		this.registerProActiveEvent( Event.RELATIONSHIP_REMOVE_PROPERTY );
 		this.registerProActiveEvent( Event.RELATIONSHIP_CHANGE_PROPERTY );
 		this.registerProActiveEvent( Event.RELATIONSHIPTYPE_CREATE );
+		this.registerProActiveEvent( Event.PROPERTY_INDEX_CREATE );
 		this.registerProActiveEvent( Event.DATA_SOURCE_ADDED );
 		
 		// this.registerReActiveEvent( Event.DATA_SOURCE_ADDED );
@@ -231,6 +232,7 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 		this.unregisterProActiveEvent( Event.RELATIONSHIP_REMOVE_PROPERTY );
 		this.unregisterProActiveEvent( Event.RELATIONSHIP_CHANGE_PROPERTY );
 		this.unregisterProActiveEvent( Event.RELATIONSHIPTYPE_CREATE );
+		this.unregisterProActiveEvent( Event.PROPERTY_INDEX_CREATE );
 		this.unregisterProActiveEvent( Event.DATA_SOURCE_ADDED );
 		
 		// this.unregisterReActiveEvent( Event.DATA_SOURCE_ADDED );

@@ -32,9 +32,16 @@ public abstract class Command
 {
 	private boolean isExecuted = false;
 	private boolean isUndone = false;
+	private TransactionCache txCache = null;
 	
 	protected Command()
 	{
+		txCache = TransactionCache.getCache();
+	}
+	
+	protected TransactionCache getTransactionCache()
+	{
+		return txCache;
 	}
 	
 	/**

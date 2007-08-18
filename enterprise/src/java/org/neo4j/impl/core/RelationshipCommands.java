@@ -4,7 +4,6 @@ import org.neo4j.api.core.RelationshipType;
 
 import org.neo4j.impl.command.Command;
 import org.neo4j.impl.command.ExecuteFailedException;
-import org.neo4j.impl.command.TransactionCache;
 import org.neo4j.impl.command.UndoFailedException;
 import org.neo4j.impl.persistence.PersistenceMetadata;
 
@@ -40,10 +39,13 @@ class RelationshipCommands extends Command implements
 	
 	private int propertyId = -1;
 	// for add/remove/change property
-	private String key = null;
+	private PropertyIndex index = null;
 	private Property value = null;
 	// for remove/change property
 	private Property oldProperty = null;
+	
+	private NodeImpl startNode;
+	private NodeImpl endNode;
 	
 	protected RelationshipCommands()
 	{
@@ -56,6 +58,16 @@ class RelationshipCommands extends Command implements
 		assert newType != Type.RESET;
 		type = newType;
 		addCommandToTransaction();
+	}
+	
+	void setStartNode( NodeImpl node )
+	{
+		this.startNode = node;
+	}
+	
+	void setEndNode( NodeImpl node )
+	{
+		this.endNode = node;
 	}
 	
 	void setRelationship( RelationshipImpl rel )
@@ -72,8 +84,14 @@ class RelationshipCommands extends Command implements
 	{
 		try
 		{
-			TransactionCache.getCache().addRelationship( relationship );
-			NodeManager.getManager().doDeleteRelationship( relationship );
+			getTransactionCache().addRelationship( relationship );
+			getTransactionCache().addNode( startNode );
+			getTransactionCache().addNode( endNode );
+			int relId = (int) relationship.getId();
+			RelationshipType relType = relationship.getType();
+			startNode.removeRelationship( relType, relId );
+			endNode.removeRelationship( relType, relId );
+			NodeManager.getManager().removeRelationshipFromCache( relId );
 			relationship.setIsDeleted( true );
 		}
 		catch ( DeleteException e )
@@ -86,8 +104,12 @@ class RelationshipCommands extends Command implements
 	{
 		try
 		{
-			NodeManager.getManager().doCreateRelationship( relationship );
+			int relId = (int) relationship.getId();
+			RelationshipType relType = relationship.getType();
+			startNode.addRelationship( relType, relId );
+			endNode.addRelationship( relType, relId );
 			relationship.setIsDeleted( false );
+			NodeManager.getManager().addRelationshipToCache( relationship );
 		}
 		catch ( CreateException e )
 		{
@@ -95,10 +117,10 @@ class RelationshipCommands extends Command implements
 		}
 	}
 
-	void initAddProperty( String key, Property value )
+	void initAddProperty( PropertyIndex index, Property value )
 	{
 		checkResetAndRelationship( Type.ADD_PROPERTY );
-		this.key = key;
+		this.index = index;
 		this.value = value;
 	}
 	
@@ -106,8 +128,8 @@ class RelationshipCommands extends Command implements
 	{
 		try
 		{
-			TransactionCache.getCache().addRelationship( relationship );
-			relationship.doAddProperty( key, value );
+			getTransactionCache().addRelationship( relationship );
+			relationship.doAddProperty( index, value );
 		}
 		catch ( IllegalValueException e )
 		{
@@ -119,7 +141,7 @@ class RelationshipCommands extends Command implements
 	{
 		try
 		{
-			relationship.doRemoveProperty( key );
+			relationship.doRemoveProperty( index );
 		}
 		catch ( NotFoundException e )
 		{
@@ -127,19 +149,19 @@ class RelationshipCommands extends Command implements
 		}
 	}
 
-	void initRemoveProperty( int propertyId, String key )
+	void initRemoveProperty( int propertyId, PropertyIndex index )
 	{
 		checkResetAndRelationship( Type.REMOVE_PROPERTY );
 		this.propertyId = propertyId; 
-		this.key = key;
+		this.index = index;
 	}
 	
 	private void executeRemoveProperty() throws ExecuteFailedException
 	{
 		try
 		{
-			TransactionCache.getCache().addRelationship( relationship );
-			oldProperty = relationship.doRemoveProperty( key );
+			getTransactionCache().addRelationship( relationship );
+			oldProperty = relationship.doRemoveProperty( index );
 		}
 		catch ( NotFoundException e )
 		{
@@ -151,7 +173,7 @@ class RelationshipCommands extends Command implements
 	{
 		try
 		{
-			relationship.doAddProperty( key, oldProperty );
+			relationship.doAddProperty( index, oldProperty );
 		}
 		catch ( IllegalValueException e )
 		{
@@ -159,12 +181,12 @@ class RelationshipCommands extends Command implements
 		}
 	}
 	
-	void initChangeProperty( int propertyId, String key, 
+	void initChangeProperty( int propertyId, PropertyIndex index, 
 		Property newValue )
 	{
 		checkResetAndRelationship( Type.CHANGE_PROPERTY );
 		this.propertyId = propertyId;
-		this.key = key;
+		this.index = index;
 		this.value = newValue;
 	}
 	
@@ -172,8 +194,8 @@ class RelationshipCommands extends Command implements
 	{
 		try
 		{
-			TransactionCache.getCache().addRelationship( relationship );
-			oldProperty = relationship.doChangeProperty( key, value );
+			getTransactionCache().addRelationship( relationship );
+			oldProperty = relationship.doChangeProperty( index, value );
 		}
 		catch ( IllegalValueException e )
 		{
@@ -189,7 +211,7 @@ class RelationshipCommands extends Command implements
 	{
 		try
 		{
-			relationship.doChangeProperty( key, oldProperty );
+			relationship.doChangeProperty( index, oldProperty );
 		}
 		catch ( IllegalValueException e )
 		{
@@ -210,8 +232,14 @@ class RelationshipCommands extends Command implements
 	{
 		try
 		{
-			TransactionCache.getCache().addRelationship( relationship );
-			NodeManager.getManager().doCreateRelationship( relationship );
+			getTransactionCache().addNode( startNode );
+			getTransactionCache().addNode( endNode );
+			getTransactionCache().addRelationship( relationship );
+			int relId = (int) relationship.getId();
+			RelationshipType relType = relationship.getType();
+			startNode.addRelationship( relType, relId );
+			endNode.addRelationship( relType, relId );
+			NodeManager.getManager().addRelationshipToCache( relationship );
 		}
 		catch ( CreateException e )
 		{
@@ -223,7 +251,11 @@ class RelationshipCommands extends Command implements
 	{
 		try
 		{
-			NodeManager.getManager().doDeleteRelationship( relationship );
+			int relId = (int) relationship.getId();
+			RelationshipType relType = relationship.getType();
+			startNode.removeRelationship( relType, relId );
+			endNode.removeRelationship( relType, relId );
+			NodeManager.getManager().removeRelationshipFromCache( relId );
 		}
 		catch ( DeleteException e )
 		{
@@ -278,11 +310,11 @@ class RelationshipCommands extends Command implements
 		return (int) this.relationship.getId();
 	} 
 	
-	public String getPropertyKey()
+	public PropertyIndex getPropertyIndex()
 	{
 		assert type == Type.ADD_PROPERTY || type == Type.REMOVE_PROPERTY ||
 			type == Type.CHANGE_PROPERTY;
-		return key;
+		return index;
 	}
 	
 	public Object getProperty()
@@ -314,9 +346,14 @@ class RelationshipCommands extends Command implements
 		this.propertyId = propertyId; 
 	}
 
-	public Integer[] getNodeIds()
+	public int getStartNodeId()
 	{
-		return relationship.getNodeIds();
+		return relationship.getStartNodeId();
+	}
+	
+	public int getEndNodeId()
+	{
+		return relationship.getEndNodeId();
 	}
 	
 	public RelationshipType getType()

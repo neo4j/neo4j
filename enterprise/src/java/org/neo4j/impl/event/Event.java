@@ -49,6 +49,8 @@ public class Event
 		new Event( "RELATIONSHIP_GET_PROPERTY" );
 	public static final Event RELATIONSHIPTYPE_CREATE = 
 		new Event( "RELATIONSHIPTYPE_CREATE" );
+	public static final Event PROPERTY_INDEX_CREATE = 
+		new Event( "PROPERTY_INDEX_CREATE" );
 	
 	// Persistence related events
 	public static final Event DATA_SOURCE_ADDED =

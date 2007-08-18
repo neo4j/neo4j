@@ -1,5 +1,6 @@
 package org.neo4j.impl.persistence;
 
+import javax.transaction.xa.XAResource;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.core.NotFoundException;
@@ -8,10 +9,6 @@ import org.neo4j.impl.core.RawPropertyData;
 import org.neo4j.impl.core.RawRelationshipData;
 import org.neo4j.impl.core.RawRelationshipTypeData;
 import org.neo4j.impl.transaction.NotInTransactionException;
-
-
-// JTA imports
-import javax.transaction.xa.XAResource;
 
 /**
  * The PersistenceManager is the front-end for all persistence related
@@ -31,7 +28,7 @@ public class PersistenceManager
 	/** A constant representing a persistence operation that loads a node
 	 * into {@link #loadLightNode phase I}. */
 	public static final Operation LOAD_LIGHT_NODE = 
-											new Operation( "LOAD_LIGHT_NODE");
+		new Operation( "LOAD_LIGHT_NODE");
 
 	public static final Operation LOAD_NODE_PROPERTIES = 
 		new Operation( "LOAD_NODE_PROPERTIES" );
@@ -44,6 +41,9 @@ public class PersistenceManager
 		
 	public static final Operation LOAD_PROPERTY_VALUE = 
 		new Operation( "LOAD_PROPERTY_VALUE" );
+	
+	public static final Operation LOAD_PROPERTY_INDEX = 
+		new Operation( "LOAD_PROPERTY_INDEX" );
 	
 	/** A constant representing a persistence operation that loads a
 	 * {@link #loadLightRelationship shallow relationship}. */
@@ -93,6 +93,13 @@ public class PersistenceManager
 		throws PersistenceException
 	{
 		return getResource().performOperation( LOAD_PROPERTY_VALUE, id );
+	}
+	
+	public String loadIndex( int id )
+		throws PersistenceException
+	{
+		return (String) getResource().performOperation( LOAD_PROPERTY_INDEX, 
+			id );
 	}
 	
 	public RawRelationshipData[] loadRelationships( Node node )

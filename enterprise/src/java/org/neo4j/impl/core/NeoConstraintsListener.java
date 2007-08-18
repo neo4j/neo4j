@@ -1,17 +1,14 @@
 package org.neo4j.impl.core;
 
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
-
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.event.Event;
@@ -21,6 +18,8 @@ import org.neo4j.impl.event.EventListenerNotRegisteredException;
 import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.event.ProActiveEventListener;
 import org.neo4j.impl.transaction.TransactionFactory;
+import org.neo4j.impl.transaction.TxManager;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * o Check so the nodes connected to a created relationship are valid
@@ -37,9 +36,8 @@ class NeoConstraintsListener implements ProActiveEventListener
 		new NeoConstraintsListener();
 	
 	// evaluator for each running transaction
-	private Map<Thread,NeoConstraintsEvaluator> evaluators = 
-		java.util.Collections.synchronizedMap( 
-			new HashMap<Thread,NeoConstraintsEvaluator>() );
+	private ArrayMap<Thread,NeoConstraintsEvaluator> evaluators = 
+		new ArrayMap<Thread,NeoConstraintsEvaluator>( 9, true, true );
 
 	private NeoConstraintsListener()
 	{
@@ -126,7 +124,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 		Transaction tx = null;
 		try
 		{
-			int status = TransactionFactory.getUserTransaction().getStatus();
+			int status = TxManager.getManager().getStatus();
 			if ( status == Status.STATUS_NO_TRANSACTION || 
 				status == Status.STATUS_MARKED_ROLLBACK )
 			{
@@ -216,19 +214,18 @@ class NeoConstraintsListener implements ProActiveEventListener
 		private boolean evaluateCreateRelationship( RelationshipImpl rel )
 		{
 			// verify nodes not deleted
-			Integer nodeIds[] = rel.getNodeIds();
 			if ( deletedNodes != null )
 			{
-				if ( deletedNodes.containsKey( nodeIds[0] ) )
+				if ( deletedNodes.containsKey( rel.getStartNodeId() ) )
 				{
-					log.severe( "Node[0] : " + nodeIds[0] + 
+					log.severe( "Node[0] : " + rel.getStartNodeId() + 
 						", on created relationship[" + rel + "]" + 
 						" does not exist (deleted in same tx)" );
 					return false;
 				}
-				if ( deletedNodes.containsKey( nodeIds[1] ) )
+				if ( deletedNodes.containsKey( rel.getEndNodeId() ) )
 				{
-					log.severe( "Node[1] : " + nodeIds[1] + 
+					log.severe( "Node[1] : " + rel.getEndNodeId() + 
 						", on created relationship[" + rel + "]" + 
 						" does not exist (deleted in same tx)" );
 					return false;
@@ -284,25 +281,27 @@ class NeoConstraintsListener implements ProActiveEventListener
 			// remove this rel from deleted nodes in this tx
 			// have to do this since cache won't return correct node impl 
 			// if deletion is in wrong order (eg node.del then rel.del)
-			Integer nodeIds[] = rel.getNodeIds();
-			if ( deletedNodes != null && 
-					deletedNodes.containsKey( nodeIds[0] ) )
-			{
-				deletedNodes.get( nodeIds[0] ).removeRelationship( 
-					rel.getType(), (int) rel.getId() );
-			}
-			if ( deletedNodes != null &&
-					deletedNodes.containsKey( nodeIds[1] ) )
-			{
-				deletedNodes.get( nodeIds[1] ).removeRelationship( 
-					rel.getType(), (int) rel.getId() );
-			}
+//			int startNodeId = rel.getStartNodeId();
+//			if ( deletedNodes != null && 
+//					deletedNodes.containsKey( startNodeId ) )
+//			{
+//				deletedNodes.get( startNodeId ).removeRelationship( 
+//					rel.getType(), (int) rel.getId() );
+//			}
+//			int endNodeId = rel.getEndNodeId();
+//			if ( deletedNodes != null &&
+//					deletedNodes.containsKey( endNodeId ) )
+//			{
+//				deletedNodes.get( endNodeId ).removeRelationship( 
+//					rel.getType(), (int) rel.getId() );
+//			}
 
 			if ( deletedRelationships == null )
 			{
 				deletedRelationships = 
 					new java.util.HashSet<RelationshipImpl>();
 			}
+//			System.out.println( " evaluated delete of: " + rel.getId() );
 			deletedRelationships.add( rel );
 			return true;
 		}
@@ -412,7 +411,15 @@ class NeoConstraintsListener implements ProActiveEventListener
 
 		public void beforeCompletion()
 		{
+			// TODO: if we get called when status active
+			// and transaction is beeing rolled back this may not evaluate
+			// no harm done but will get the "severe" log message
 			getListener().removeThisEvaluator();
+			if ( getTransactionStatus() == Status.STATUS_MARKED_ROLLBACK )
+			{
+				// no need to evaluate
+				return;
+			}
 			if ( deletedNodes != null )
 			{
 				Iterator<NodeImpl> itr = 
@@ -424,6 +431,19 @@ class NeoConstraintsListener implements ProActiveEventListener
 					{
 						log.severe( "Deleted Node[" + node + 
 							"] still has relationship." );
+						StringBuffer buf = new StringBuffer( 
+							"Found relationships: " );
+						int count = 0;
+						for ( Relationship rel : node.getRelationships() )
+						{
+							if ( count == 10 )
+							{
+								buf.append( " and more..." );
+								break;
+							}
+							buf.append(  rel.getType() ).append( " " ); 
+						}
+						log.severe( buf.toString() );
 						setRollbackOnly();
 					}
 				}
@@ -441,6 +461,20 @@ class NeoConstraintsListener implements ProActiveEventListener
 				log.severe( "Failed to set transaction rollback only" );
 			}
 		}
+
+		private int getTransactionStatus()
+		{
+			try
+			{
+				return TransactionFactory.getTransactionManager().getStatus();
+			}
+			catch ( javax.transaction.SystemException se )
+			{
+				log.severe( "Failed to set transaction rollback only" );
+			}
+			return -1;
+		}
+		
 	}
 	
 	void removeThisEvaluator()

@@ -15,6 +15,7 @@ import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceMetadata;
 import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.transaction.TransactionUtil;
+import org.neo4j.impl.util.ArrayMap;
 
 class RelationshipTypeHolder
 {
@@ -23,12 +24,9 @@ class RelationshipTypeHolder
 	private static Logger log = 
 		Logger.getLogger( RelationshipTypeHolder.class.getName() );
 	
-//	private Set<Class<? extends RelationshipType>> enumClasses = 
-//		new HashSet<Class<? extends RelationshipType>>();
-	private Map<String,Integer> relTypes = new HashMap<String,Integer>();
+	private ArrayMap<String,Integer> relTypes = new ArrayMap<String,Integer>();
 	private Map<Integer,String> relTranslation =
 		new HashMap<Integer,String>();
-//	private Set<String> validTypes = new HashSet<String>();
 	
 	private RelationshipTypeHolder()
 	{
@@ -55,7 +53,7 @@ class RelationshipTypeHolder
 		for ( RelationshipType enumConstant : relTypeClass.getEnumConstants() )
 		{
 			String name = Enum.class.cast( enumConstant ).name();
-			if ( !relTypes.containsKey( name ) )
+			if ( relTypes.get( name ) == null )
 			{
 				int id = createRelationshipType( name );
 				relTranslation.put( id, name );
@@ -72,7 +70,7 @@ class RelationshipTypeHolder
 	public RelationshipType addValidRelationshipType( String name, 
 		boolean create ) 
 	{
-		if ( !relTypes.containsKey( name ) )
+		if ( relTypes.get( name ) == null )
 		{
 			if ( !create )
 			{
@@ -91,7 +89,7 @@ class RelationshipTypeHolder
 	
 	boolean isValidRelationshipType( RelationshipType type )
 	{
-		return relTypes.containsKey( type.name() );
+		return relTypes.get( type.name() ) != null;
 		//return validTypes.contains( type.name() );
 //		if ( type == null || !enumClasses.contains( type.getClass() ) )
 //			//type.getClass().equals( this.enumClass ) )
@@ -105,7 +103,7 @@ class RelationshipTypeHolder
 	
 	RelationshipType getRelationshipTypeByName( String name )
 	{
-		if ( relTypes.containsKey( name  ) )
+		if ( relTypes.get( name  ) != null )
 		{
 			return new RelationshipTypeImpl( name );
 		}
@@ -308,7 +306,13 @@ class RelationshipTypeHolder
 
 	public boolean hasRelationshipType( String name )
     {
-		return relTypes.containsKey( name );
+		return relTypes.get( name ) != null;
 		// return validTypes.contains( name );
     }
+	
+	void clear()
+	{
+		relTypes = new ArrayMap<String,Integer>();
+		relTranslation = new HashMap<Integer,String>();
+	}
 }

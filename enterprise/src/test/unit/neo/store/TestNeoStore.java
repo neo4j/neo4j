@@ -2,6 +2,7 @@ package unit.neo.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -14,6 +15,7 @@ import junit.framework.TestSuite;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
+import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
@@ -130,9 +132,13 @@ public class TestNeoStore extends TestCase
 		file.delete();
 		file = new File( "neo.propertystore.db.id" );
 		file.delete();
-		file = new File( "neo.propertystore.db.keys" );
+		file = new File( "neo.propertystore.db.index" );
 		file.delete();
-		file = new File( "neo.propertystore.db.keys.id" );
+		file = new File( "neo.propertystore.db.index.id" );
+		file.delete();
+		file = new File( "neo.propertystore.db.index.keys" );
+		file.delete();
+		file = new File( "neo.propertystore.db.index.keys.id" );
 		file.delete();
 		file = new File( "neo.propertystore.db.strings" );
 		file.delete();
@@ -164,6 +170,20 @@ public class TestNeoStore extends TestCase
 		}
 	}
 	
+	private PropertyIndex index( String key ) throws IOException
+	{
+		Iterator<PropertyIndex> itr = PropertyIndex.index( key ).iterator();
+		if ( !itr.hasNext() )
+		{
+			int id = ds.nextId( PropertyIndex.class );
+			PropertyIndex index = PropertyIndex.createDummyIndex( id, key );
+			xaCon.getPropertyIndexConsumer().createPropertyIndex( id, key );
+			PropertyIndex.getIndexFor( id );
+			return index;
+		}
+		return itr.next();
+	}
+	
 	public void testCreateNeoStore()
 	{
 		try
@@ -178,16 +198,18 @@ public class TestNeoStore extends TestCase
 			int n1prop1 = pStore.nextId();
 			int n1prop2 = pStore.nextId();
 			int n1prop3 = pStore.nextId();
-			nStore.addProperty( node1, n1prop1, "prop1", "string1" );
-			nStore.addProperty( node1, n1prop2, "prop2", new Integer( 1 ) );
-			nStore.addProperty( node1, n1prop3, "prop3", 
+			nStore.addProperty( node1, n1prop1, index( "prop1" ), "string1" );
+			nStore.addProperty( node1, n1prop2, index( "prop2" ), 
+				new Integer( 1 ) );
+			nStore.addProperty( node1, n1prop3, index( "prop3" ), 
 				new Boolean( true ) );
 			int n2prop1 = pStore.nextId();
 			int n2prop2 = pStore.nextId();
 			int n2prop3 = pStore.nextId();
-			nStore.addProperty( node2, n2prop1, "prop1", "string2" );
-			nStore.addProperty( node2, n2prop2, "prop2", new Integer( 2 ) );
-			nStore.addProperty( node2, n2prop3, "prop3", 
+			nStore.addProperty( node2, n2prop1, index( "prop1" ), "string2" );
+			nStore.addProperty( node2, n2prop2, index( "prop2" ), 
+				new Integer( 2 ) );
+			nStore.addProperty( node2, n2prop3, index( "prop3" ), 
 				new Boolean ( false ) );
 
 			int relType1 = ds.nextId( RelationshipType.class ); 
@@ -201,16 +223,18 @@ public class TestNeoStore extends TestCase
 			int r1prop1 = pStore.nextId();
 			int r1prop2 = pStore.nextId();
 			int r1prop3 = pStore.nextId();
-			rStore.addProperty( rel1, r1prop1, "prop1", "string1" );
-			rStore.addProperty( rel1, r1prop2, "prop2", new Integer( 1 ) );
-			rStore.addProperty( rel1, r1prop3, "prop3", 
+			rStore.addProperty( rel1, r1prop1, index( "prop1" ), "string1" );
+			rStore.addProperty( rel1, r1prop2, index( "prop2" ), 
+				new Integer( 1 ) );
+			rStore.addProperty( rel1, r1prop3, index( "prop3" ), 
 				new Boolean( true ) );
 			int r2prop1 = pStore.nextId();
 			int r2prop2 = pStore.nextId();
 			int r2prop3 = pStore.nextId();
-			rStore.addProperty( rel2, r2prop1, "prop1", "string2" );
-			rStore.addProperty( rel2, r2prop2, "prop2", new Integer( 2 ) );
-			rStore.addProperty( rel2, r2prop3, "prop3", 
+			rStore.addProperty( rel2, r2prop1, index( "prop1" ), "string2" );
+			rStore.addProperty( rel2, r2prop2, index( "prop2" ), 
+				new Integer( 2 ) );
+			rStore.addProperty( rel2, r2prop3, index( "prop3" ), 
 				new Boolean ( false ) );
 			commitTx();
 			ds.close();
@@ -260,8 +284,8 @@ public class TestNeoStore extends TestCase
 			{
 				nodeIds[i] = ds.nextId( Node.class );
 				nStore.createNode( nodeIds[i] );
-				nStore.addProperty( nodeIds[i], pStore.nextId(), "nisse", 
-					new Integer( 10 - i ) );
+				nStore.addProperty( nodeIds[i], pStore.nextId(), 
+					index( "nisse" ), new Integer( 10 - i ) );
 			}
 			for ( int i = 0; i < 2; i++ )
 			{
@@ -295,28 +319,31 @@ public class TestNeoStore extends TestCase
 		PropertyData data[] = nStore.getProperties( node );
 		for ( int i = 0; i < data.length; i++ )
 		{
-			data[i] = new PropertyData( data[i].getId(), data[i].getKey(), 
-				pStore.getPropertyValue( data[i].getId() ),
-				data[i].nextPropertyId() );
+//			data[i] = new PropertyData( data[i].getId(), data[i].getIndex(), 
+//				pStore.getPropertyValue( data[i].getId() ),
+//				data[i].nextPropertyId() );
 		}
 		assertEquals( 3, data.length );
 		for ( int i = 0; i < 3; i++ )
 		{
 			if ( data[i].getId() == prop1 )
 			{
-				assertEquals( "prop1", data[i].getKey() );
+				assertEquals( "prop1", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( "string1", data[i].getValue() );
 				nStore.changeProperty( node, prop1, "-string1" );
 			}
 			else if ( data[i].getId() == prop2 )
 			{
-				assertEquals( "prop2", data[i].getKey() );
+				assertEquals( "prop2", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Integer( 1 ), data[i].getValue() );
 				nStore.changeProperty( node, prop2, new Integer( -1 ) );
 			}
 			else if ( data[i].getId() == prop3 )
 			{
-				assertEquals( "prop3", data[i].getKey() );
+				assertEquals( "prop3", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Boolean( true ), data[i].getValue() );
 				nStore.changeProperty( node, prop3, new Boolean( false ) );
 			}
@@ -355,28 +382,31 @@ public class TestNeoStore extends TestCase
 		PropertyData data[] = nStore.getProperties( node );
 		for ( int i = 0; i < data.length; i++ )
 		{
-			data[i] = new PropertyData( data[i].getId(), data[i].getKey(), 
-				pStore.getPropertyValue( data[i].getId() ),
-				data[i].nextPropertyId() );
+//			data[i] = new PropertyData( data[i].getId(), data[i].getIndex(), 
+//				pStore.getPropertyValue( data[i].getId() ),
+//				data[i].nextPropertyId() );
 		}
 		assertEquals( 3, data.length );
 		for ( int i = 0; i < 3; i++ )
 		{
 			if ( data[i].getId() == prop1 )
 			{
-				assertEquals( "prop1", data[i].getKey() );
+				assertEquals( "prop1", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( "string2", data[i].getValue() );
 				nStore.changeProperty( node, prop1, "-string2" );
 			}
 			else if ( data[i].getId() == prop2 )
 			{
-				assertEquals( "prop2", data[i].getKey() );
+				assertEquals( "prop2", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Integer( 2 ), data[i].getValue() );
 				nStore.changeProperty( node, prop2, new Integer( -2 ) );
 			}
 			else if ( data[i].getId() == prop3 )
 			{
-				assertEquals( "prop3", data[i].getKey() );
+				assertEquals( "prop3", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Boolean( false ), data[i].getValue() );
 				nStore.changeProperty( node, prop3, new Boolean( true ) );
 			}
@@ -414,28 +444,31 @@ public class TestNeoStore extends TestCase
 		PropertyData data[] = rStore.getProperties( rel );
 		for ( int i = 0; i < data.length; i++ )
 		{
-			data[i] = new PropertyData( data[i].getId(), data[i].getKey(), 
-				pStore.getPropertyValue( data[i].getId() ),
-				data[i].nextPropertyId() );
+//			data[i] = new PropertyData( data[i].getId(), data[i].getIndex(), 
+//				pStore.getPropertyValue( data[i].getId() ),
+//				data[i].nextPropertyId() );
 		}
 		assertEquals( 3, data.length );
 		for ( int i = 0; i < 3; i++ )
 		{
 			if ( data[i].getId() == prop1 )
 			{
-				assertEquals( "prop1", data[i].getKey() );
+				assertEquals( "prop1", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( "string1", data[i].getValue() );
 				rStore.changeProperty( rel, prop1, "-string1" );
 			}
 			else if ( data[i].getId() == prop2 )
 			{
-				assertEquals( "prop2", data[i].getKey() );
+				assertEquals( "prop2", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Integer( 1 ), data[i].getValue() );
 				rStore.changeProperty( rel, prop2, new Integer( -1 ) );
 			}
 			else if ( data[i].getId() == prop3 )
 			{
-				assertEquals( "prop3", data[i].getKey() );
+				assertEquals( "prop3", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Boolean( true ), data[i].getValue() );
 				rStore.changeProperty( rel, prop3, new Boolean( false ) );
 			}
@@ -456,28 +489,31 @@ public class TestNeoStore extends TestCase
 		PropertyData data[] = rStore.getProperties( rel );
 		for ( int i = 0; i < data.length; i++ )
 		{
-			data[i] = new PropertyData( data[i].getId(), data[i].getKey(), 
-				pStore.getPropertyValue( data[i].getId() ),
-				data[i].nextPropertyId() );
+//			data[i] = new PropertyData( data[i].getId(), data[i].getIndex(), 
+//				pStore.getPropertyValue( data[i].getId() ),
+//				data[i].nextPropertyId() );
 		}
 		assertEquals( 3, data.length );
 		for ( int i = 0; i < 3; i++ )
 		{
 			if ( data[i].getId() == prop1 )
 			{
-				assertEquals( "prop1", data[i].getKey() );
+				assertEquals( "prop1", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( "string2", data[i].getValue() );
 				rStore.changeProperty( rel, prop1, "-string2" );
 			}
 			else if ( data[i].getId() == prop2 )
 			{
-				assertEquals( "prop2", data[i].getKey() );
+				assertEquals( "prop2", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Integer( 2 ), data[i].getValue() );
 				rStore.changeProperty( rel, prop2, new Integer( -2 ) );
 			}
 			else if ( data[i].getId() == prop3 )
 			{
-				assertEquals( "prop3", data[i].getKey() );
+				assertEquals( "prop3", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Boolean( false ), data[i].getValue() );
 				rStore.changeProperty( rel, prop3, new Boolean( true ) );
 			}
@@ -529,27 +565,30 @@ public class TestNeoStore extends TestCase
 		PropertyData data[] = rStore.getProperties( rel );
 		for ( int i = 0; i < data.length; i++ )
 		{
-			data[i] = new PropertyData( data[i].getId(), data[i].getKey(), 
-				pStore.getPropertyValue( data[i].getId() ),
-				data[i].nextPropertyId() );
+//			data[i] = new PropertyData( data[i].getId(), data[i].getIndex(), 
+//				pStore.getPropertyValue( data[i].getId() ),
+//				data[i].nextPropertyId() );
 		}
 		assertEquals( 3, data.length );
 		for ( int i = 0; i < 3; i++ )
 		{
 			if ( data[i].getId() == prop1 )
 			{
-				assertEquals( "prop1", data[i].getKey() );
+				assertEquals( "prop1", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( "-string1", data[i].getValue() );
 				// rStore.removeProperty( rel, prop1, r1prop1kb, r1prop1vb );
 			}
 			else if ( data[i].getId() == prop2 )
 			{
-				assertEquals( "prop2", data[i].getKey() );
+				assertEquals( "prop2", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Integer( -1 ), data[i].getValue() );
 			}
 			else if ( data[i].getId() == prop3 )
 			{
-				assertEquals( "prop3", data[i].getKey() );
+				assertEquals( "prop3", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Boolean( false ), data[i].getValue() );
 				rStore.removeProperty( rel, prop3 );
 			}
@@ -575,27 +614,30 @@ public class TestNeoStore extends TestCase
 		PropertyData data[] = rStore.getProperties( rel );
 		for ( int i = 0; i < data.length; i++ )
 		{
-			data[i] = new PropertyData( data[i].getId(), data[i].getKey(), 
-				pStore.getPropertyValue( data[i].getId() ),
-				data[i].nextPropertyId() );
+//			data[i] = new PropertyData( data[i].getId(), data[i].getIndex(), 
+//				pStore.getPropertyValue( data[i].getId() ),
+//				data[i].nextPropertyId() );
 		}
 		assertEquals( 3, data.length );
 		for ( int i = 0; i < 3; i++ )
 		{
 			if ( data[i].getId() == prop1 )
 			{
-				assertEquals( "prop1", data[i].getKey() );
+				assertEquals( "prop1", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( "-string2", data[i].getValue() );
 				// rStore.removeProperty( rel, prop1, r2prop1kb, r2prop1vb );
 			}
 			else if ( data[i].getId() == prop2 )
 			{
-				assertEquals( "prop2", data[i].getKey() );
+				assertEquals( "prop2", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Integer( -2 ), data[i].getValue() );
 			}
 			else if ( data[i].getId() == prop3 )
 			{
-				assertEquals( "prop3", data[i].getKey() );
+				assertEquals( "prop3", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Boolean( true ), data[i].getValue() );
 				rStore.removeProperty( rel, prop3 );
 			}
@@ -620,27 +662,30 @@ public class TestNeoStore extends TestCase
 		PropertyData data[] = nStore.getProperties( node );
 		for ( int i = 0; i < data.length; i++ )
 		{
-			data[i] = new PropertyData( data[i].getId(), data[i].getKey(), 
-				pStore.getPropertyValue( data[i].getId() ),
-				data[i].nextPropertyId() );
+//			data[i] = new PropertyData( data[i].getId(), data[i].getIndex(), 
+//				pStore.getPropertyValue( data[i].getId() ),
+//				data[i].nextPropertyId() );
 		}
 		assertEquals( 3, data.length );
 		for ( int i = 0; i < 3; i++ )
 		{
 			if ( data[i].getId() == prop1 )
 			{
-				assertEquals( "prop1", data[i].getKey() );
+				assertEquals( "prop1", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( "-string1", data[i].getValue() );
 				// nStore.removeProperty( node, prop1, n1prop1kb, n1prop1vb );
 			}
 			else if ( data[i].getId() == prop2 )
 			{
-				assertEquals( "prop2", data[i].getKey() );
+				assertEquals( "prop2", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Integer( -1 ), data[i].getValue() );
 			}
 			else if ( data[i].getId() == prop3 )
 			{
-				assertEquals( "prop3", data[i].getKey() );
+				assertEquals( "prop3", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Boolean( false ), data[i].getValue() );
 				nStore.removeProperty( node, prop3 );
 			}
@@ -661,27 +706,30 @@ public class TestNeoStore extends TestCase
 		PropertyData data[] = nStore.getProperties( node );
 		for ( int i = 0; i < data.length; i++ )
 		{
-			data[i] = new PropertyData( data[i].getId(), data[i].getKey(), 
-				pStore.getPropertyValue( data[i].getId() ),
-				data[i].nextPropertyId() );
+//			data[i] = new PropertyData( data[i].getId(), data[i].getIndex(), 
+//				pStore.getPropertyValue( data[i].getId() ),
+//				data[i].nextPropertyId() );
 		}
 		assertEquals( 3, data.length );
 		for ( int i = 0; i < 3; i++ )
 		{
 			if ( data[i].getId() == prop1 )
 			{
-				assertEquals( "prop1", data[i].getKey() );
+				assertEquals( "prop1", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( "-string2", data[i].getValue() );
 				// nStore.removeProperty( node, prop1, n2prop1kb, n2prop1vb );
 			}
 			else if ( data[i].getId() == prop2 )
 			{
-				assertEquals( "prop2", data[i].getKey() );
+				assertEquals( "prop2", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Integer( -2 ), data[i].getValue() );
 			}
 			else if ( data[i].getId() == prop3 )
 			{
-				assertEquals( "prop3", data[i].getKey() );
+				assertEquals( "prop3", PropertyIndex.getIndexFor( 
+					data[i].getIndex() ).getKey() );
 				assertEquals( new Boolean( true ), data[i].getValue() );
 				nStore.removeProperty( node, prop3 );
 			}
@@ -724,8 +772,8 @@ public class TestNeoStore extends TestCase
 			{
 				nodeIds[i] = ds.nextId( Node.class );
 				nStore.createNode( nodeIds[i] );
-				nStore.addProperty( nodeIds[i], pStore.nextId(), "nisse", 
-					new Integer( 10 - i ) );
+				nStore.addProperty( nodeIds[i], pStore.nextId(), 
+					index( "nisse" ), new Integer( 10 - i ) );
 			}
 			for ( int i = 0; i < 2; i++ )
 			{
@@ -767,8 +815,8 @@ public class TestNeoStore extends TestCase
 			{
 				nodeIds[i] = ds.nextId( Node.class );
 				nStore.createNode( nodeIds[i] );
-				nStore.addProperty( nodeIds[i], pStore.nextId(), "nisse", 
-					new Integer( 10 - i ) );
+				nStore.addProperty( nodeIds[i], pStore.nextId(), 
+					index( "nisse" ), new Integer( 10 - i ) );
 			}
 			for ( int i = 0; i < 2; i++ )
 			{
@@ -873,7 +921,7 @@ public class TestNeoStore extends TestCase
 			int nodeId = ds.nextId( Node.class );
 			nStore.createNode( nodeId );
 			int propertyId = pStore.nextId();
-			nStore.addProperty( nodeId, propertyId, "nisse", 
+			nStore.addProperty( nodeId, propertyId, index( "nisse" ), 
 				new Integer( 10 ) );
 			commitTx();
 			ds.close();

@@ -1,5 +1,6 @@
 package org.neo4j.impl.nioneo.xa;
 
+import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.Store;
@@ -125,9 +126,10 @@ public class NeoStoreXaDataSource extends XaDataSource
 			neoStore.getRelationshipStore() );
 		this.idGenerators.put( RelationshipType.class, 
 			neoStore.getRelationshipTypeStore() );
-		// hack to get TestXa unit test to run
 		this.idGenerators.put( PropertyStore.class, 
-				neoStore.getPropertyStore() ); 
+				neoStore.getPropertyStore() );
+		this.idGenerators.put( PropertyIndex.class, 
+			neoStore.getPropertyStore().getIndexStore() );
 	}
 
 	private void autoCreatePath( String store ) throws IOException
@@ -179,6 +181,8 @@ public class NeoStoreXaDataSource extends XaDataSource
 		// hack to get TestXa unit test to run
 		this.idGenerators.put( PropertyStore.class, 
 				neoStore.getPropertyStore() ); 
+		this.idGenerators.put( PropertyIndex.class, 
+			neoStore.getPropertyStore().getIndexStore() );
 	}
 	
 	NeoStore getNeoStore()

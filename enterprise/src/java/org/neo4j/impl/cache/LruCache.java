@@ -25,8 +25,11 @@ public class LruCache<K,E> extends Cache<K,E>
 				{
 					adaptCache();
 				}
-				super.remove( eldest.getKey() );
-				elementCleaned( eldest.getValue() );
+				else
+				{
+					super.remove( eldest.getKey() );
+					elementCleaned( eldest.getValue() );
+				}
 			}
 			return false;
 		}
