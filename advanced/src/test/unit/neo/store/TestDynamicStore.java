@@ -160,12 +160,52 @@ public class TestDynamicStore extends TestCase
 			}
 			try
 			{
-				store.getRecords( 0 );
+				store.getLightRecords( 0, null );
 				fail( "Closed store should throw exception" );
 			}
 			catch ( IOException e )
 			{ // good
 			}
+		}
+		catch ( IOException e )
+		{
+			e.printStackTrace();
+			fail( "" + e );
+		}
+		finally
+		{
+			File file = new File( "testDynamicStore.db" );
+			if ( file.exists() )
+			{
+				file.delete();
+			}
+			file = new File( "testDynamicStore.db.id" );
+			if ( file.exists() )
+			{
+				file.delete();
+			}
+		}
+	}
+	
+	public void testStoreGetCharsFromString()
+	{
+		try
+		{
+			final String STR = 
+				"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+			ByteStore store = ByteStore.createStore( "testDynamicStore.db", 
+				30 );
+			int blockId = store.nextBlockId();
+			char[] chars = new char[ STR.length() ];
+			STR.getChars( 0, STR.length(), chars, 0 );
+			Collection<DynamicRecord> records = store.allocateRecords( blockId,
+				chars );
+			for ( DynamicRecord record : records )
+			{
+				store.updateRecord( record );
+			}
+//			assertEquals( STR, new String( store.getChars( blockId ) ) );
+			store.close();
 		}
 		catch ( IOException e )
 		{
@@ -210,11 +250,11 @@ public class TestDynamicStore extends TestCase
 				{
 					int blockId = idsTaken.remove( random.nextInt( 
 						currentCount ) ).intValue();
-					store.getRecords( blockId );
+					store.getLightRecords( blockId, null );
 					validateData( store.getBytes( blockId ), byteData.remove( 
 						new Integer( blockId ) ) );
-					Collection<DynamicRecord> records = store.getRecords( 
-						blockId );
+					Collection<DynamicRecord> records = store.getLightRecords( 
+						blockId, null );
 					for ( DynamicRecord record : records )
 					{
 						record.setInUse( false );
@@ -294,12 +334,16 @@ public class TestDynamicStore extends TestCase
 			return get( blockId );
 		}
 		
+//		public char[] getChars( int blockId ) throws IOException
+//		{
+//			return getAsChar( blockId );
+//		}
+		
 		public void flush()
 		{
 		}
 	}
 
-	
 	private byte[] createRandomBytes( Random r )
 	{
 		return new byte[ r.nextInt( 1024 ) ];

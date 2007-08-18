@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,6 +19,7 @@ import junit.framework.TestSuite;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
+import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaConnection;
@@ -93,9 +95,13 @@ public class TestXa extends TestCase
 		file.delete();
 		file = new File( "neo.propertystore.db.id" );
 		file.delete();
-		file = new File( "neo.propertystore.db.keys" );
+		file = new File( "neo.propertystore.db.index" );
 		file.delete();
-		file = new File( "neo.propertystore.db.keys.id" );
+		file = new File( "neo.propertystore.db.index.id" );
+		file.delete();
+		file = new File( "neo.propertystore.db.index.keys" );
+		file.delete();
+		file = new File( "neo.propertystore.db.index.keys.id" );
 		file.delete();
 		file = new File( "neo.propertystore.db.strings" );
 		file.delete();
@@ -156,6 +162,20 @@ public class TestXa extends TestCase
 		} while ( read == 1024 );
 	}
 	
+	private PropertyIndex index( String key ) throws IOException
+	{
+		Iterator<PropertyIndex> itr = PropertyIndex.index( key ).iterator();
+		if ( !itr.hasNext() )
+		{
+			int id = ds.nextId( PropertyIndex.class );
+			PropertyIndex index = PropertyIndex.createDummyIndex( id, key );
+			xaCon.getPropertyIndexConsumer().createPropertyIndex( id, key );
+			// PropertyIndex.getIndexFor( id );
+			return index;
+		}
+		return itr.next();
+	}
+	
 	public void testLogicalLog()
 	{
 		try
@@ -168,9 +188,9 @@ public class TestXa extends TestCase
 			int node2 = ds.nextId( Node.class );
 			xaCon.getNodeConsumer().createNode( node2 );
 			int n1prop1 = ds.nextId( PropertyStore.class );
-			xaCon.getNodeConsumer().addProperty( node1, n1prop1, "prop1", 
-				"string1" );
-			xaCon.getNodeConsumer().getProperties( node1 );
+			xaCon.getNodeConsumer().addProperty( node1, n1prop1, 
+				index( "prop1" ), "string1" );
+//			xaCon.getNodeConsumer().getProperties( node1 );
 			int relType1 = ds.nextId( RelationshipType.class ); 
 			xaCon.getRelationshipTypeConsumer().addRelationshipType(
 				relType1, "relationshiptype1" );
@@ -179,7 +199,7 @@ public class TestXa extends TestCase
 				rel1, node1, node2, relType1 );
 			int r1prop1 = ds.nextId( PropertyStore.class );
 			xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1, 
-				"prop1", "string1" );
+				index( "prop1" ), "string1" );
 			xaCon.getNodeConsumer().changeProperty( node1, n1prop1, 
 				"string2" );
 			xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1, 
@@ -219,8 +239,8 @@ public class TestXa extends TestCase
 			int node2 = ds.nextId( Node.class );
 			xaCon.getNodeConsumer().createNode( node2 );
 			int n1prop1 = ds.nextId( PropertyStore.class );
-			xaCon.getNodeConsumer().addProperty( node1, n1prop1, "prop1", 
-				"string1" );
+			xaCon.getNodeConsumer().addProperty( node1, n1prop1, 
+				index( "prop1" ), "string1" );
 			int relType1 = ds.nextId( RelationshipType.class ); 
 			xaCon.getRelationshipTypeConsumer().addRelationshipType(
 				relType1, "relationshiptype1" );
@@ -229,7 +249,7 @@ public class TestXa extends TestCase
 				rel1, node1, node2, relType1 );
 			int r1prop1 = ds.nextId( PropertyStore.class );
 			xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1, 
-				"prop1", "string1" );
+				index( "prop1" ), "string1" );
 			xaCon.getNodeConsumer().changeProperty( node1, n1prop1, 
 				"string2" );
 			xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1, 
@@ -264,8 +284,8 @@ public class TestXa extends TestCase
 			int node2 = ds.nextId( Node.class );
 			xaCon.getNodeConsumer().createNode( node2 );
 			int n1prop1 = ds.nextId( PropertyStore.class );
-			xaCon.getNodeConsumer().addProperty( node1, n1prop1, "prop1", 
-				"string1" );
+			xaCon.getNodeConsumer().addProperty( node1, n1prop1, 
+				index( "prop1" ), "string1" );
 			int relType1 = ds.nextId( RelationshipType.class ); 
 			xaCon.getRelationshipTypeConsumer().addRelationshipType(
 				relType1, "relationshiptype1" );
@@ -274,7 +294,7 @@ public class TestXa extends TestCase
 				rel1, node1, node2, relType1 );
 			int r1prop1 = ds.nextId( PropertyStore.class );
 			xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1, 
-				"prop1", "string1" );
+				index( "prop1" ), "string1" );
 			xaCon.getNodeConsumer().changeProperty( node1, n1prop1, 
 				"string2" );
 			xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1, 
@@ -335,8 +355,8 @@ public class TestXa extends TestCase
 			int node2 = ds.nextId( Node.class );
 			xaCon.getNodeConsumer().createNode( node2 );
 			int n1prop1 = ds.nextId( PropertyStore.class );
-			xaCon.getNodeConsumer().addProperty( node1, n1prop1, "prop1", 
-				"string1" );
+			xaCon.getNodeConsumer().addProperty( node1, n1prop1, 
+				index( "prop1" ), "string1" );
 			xaCon.clearAllTransactions();
 			java.nio.channels.FileChannel fileChannel = 
 				new java.io.RandomAccessFile( 
@@ -371,8 +391,8 @@ public class TestXa extends TestCase
 			int node2 = ds.nextId( Node.class );
 			xaCon.getNodeConsumer().createNode( node2 );
 			int n1prop1 = ds.nextId( PropertyStore.class );
-			xaCon.getNodeConsumer().addProperty( node1, n1prop1, "prop1", 
-				"string1" );
+			xaCon.getNodeConsumer().addProperty( node1, n1prop1, 
+				index( "prop1" ), "string1" );
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.prepare( xid );
 			xaCon.clearAllTransactions();
@@ -409,8 +429,8 @@ public class TestXa extends TestCase
 			int node2 = ds.nextId( Node.class );
 			xaCon.getNodeConsumer().createNode( node2 );
 			int n1prop1 = ds.nextId( PropertyStore.class );
-			xaCon.getNodeConsumer().addProperty( node1, n1prop1, "prop1", 
-				"string1" );
+			xaCon.getNodeConsumer().addProperty( node1, n1prop1, 
+				index( "prop1" ), "string1" );
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.prepare( xid );
 			xaRes.commit( xid, false );

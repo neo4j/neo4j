@@ -43,7 +43,7 @@ public interface NodeOperationEventData
 	 *
 	 * @return the property index
 	 */
-	public String getPropertyKey();
+	public PropertyIndex getPropertyIndex();
 	
 	/**
 	 * Returns the value of a added property or new value in case of change

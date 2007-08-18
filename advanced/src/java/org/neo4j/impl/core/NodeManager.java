@@ -80,7 +80,12 @@ public class NodeManager
 	
 	private TransactionCache getTransactionCache()
 	{
-		return TransactionCache.getCache();
+		TransactionCache cache = TransactionCache.getCache();
+		if ( cache == null )
+		{
+			throw new NotInTransactionException();
+		}
+		return cache;
 	}
 	
 	/**
@@ -91,6 +96,8 @@ public class NodeManager
 	 */
 	public Node createNode() // throws CreateException
 	{
+		TransactionIsolationLevel level = 
+			TransactionFactory.getTransactionIsolationLevel();
 		int id = IdGenerator.getGenerator().nextId( Node.class );
 		NodeImpl node = new NodeImpl( id, true );
 		NodeCommands nodeCommand = null;
@@ -125,7 +132,7 @@ public class NodeManager
 		}
 		finally
 		{
-			releaseLock( node, LockType.WRITE );
+			releaseLock( node, LockType.WRITE, level );
 		}
 	}
 	
@@ -152,6 +159,8 @@ public class NodeManager
 			throw new IllegalArgumentException( "Null parameter, startNode=" + 
 				startNode + ", endNode=" + endNode + ", type=" + type );
 		}
+		TransactionIsolationLevel level = 
+			TransactionFactory.getTransactionIsolationLevel();
 		if ( !RelationshipTypeHolder.getHolder().isValidRelationshipType( 
 			type ) )
 		{
@@ -160,10 +169,8 @@ public class NodeManager
 				+ " not valid" );
 		}
 		
-		NodeImpl firstNode = ( NodeImpl ) getNodeForProxy( 
-			(int) startNode.getId() );
-		NodeImpl secondNode = ( NodeImpl ) getNodeForProxy( 
-			(int) endNode.getId() );
+		NodeImpl firstNode = getNodeForProxy( (int) startNode.getId() );
+		NodeImpl secondNode = getNodeForProxy( (int) endNode.getId() );
 		
 		int id = IdGenerator.getGenerator().nextId( Relationship.class );
 		RelationshipImpl rel = new RelationshipImpl( id, 
@@ -192,6 +199,8 @@ public class NodeManager
 			}
 			relationshipCommand = new RelationshipCommands();
 			relationshipCommand.setRelationship( rel );
+			relationshipCommand.setStartNode( firstNode );
+			relationshipCommand.setEndNode( secondNode );
 			relationshipCommand.initCreate();
 
 			EventManager em = EventManager.getManager();
@@ -224,7 +233,7 @@ public class NodeManager
 			{
 				try
 				{
-					releaseLock( firstNode, LockType.WRITE );
+					releaseLock( firstNode, LockType.WRITE, level );
 				}
 				catch ( Exception e )
 				{
@@ -237,7 +246,7 @@ public class NodeManager
 			{
 				try
 				{
-					releaseLock( secondNode, LockType.WRITE );
+					releaseLock( secondNode, LockType.WRITE, level );
 				}
 				catch ( Exception e )
 				{
@@ -246,7 +255,7 @@ public class NodeManager
 					log.severe( "Failed to release lock" );
 				}
 			}
-			releaseLock( rel, LockType.WRITE );
+			releaseLock( rel, LockType.WRITE, level );
 			if ( releaseFailed )
 			{
 				throw new RuntimeException( "Unable to release locks [" + 
@@ -315,17 +324,17 @@ public class NodeManager
 		}
 	}
 	
-	Node getNodeForProxy( int nodeId )
+	NodeImpl getNodeForProxy( int nodeId )
 	{
 		Node node = getTransactionCache().getNode( nodeId ); 
 		if ( node != null )
 		{
-			return node;
+			return (NodeImpl) node;
 		}
 		node = nodeCache.get( nodeId );
 		if ( node != null )
 		{
-			return node;
+			return (NodeImpl) node;
 		}
 		node = new NodeImpl( nodeId );
 		acquireLock( node, LockType.READ );
@@ -334,7 +343,7 @@ public class NodeManager
 			if ( nodeCache.get( nodeId ) != null )
 			{
 				node = nodeCache.get( nodeId );
-				return node;
+				return (NodeImpl) node;
 			}
 			if ( PersistenceManager.getManager().loadLightNode( nodeId ) == 
 				null )
@@ -342,7 +351,7 @@ public class NodeManager
 				throw new RuntimeException( "Node[" + nodeId + "] deleted?" );
 			}
 			nodeCache.add( nodeId, node );
-			return node;
+			return (NodeImpl) node;
 		}
 		catch ( PersistenceException pe )
 		{
@@ -495,49 +504,57 @@ public class NodeManager
 		}
 	}
 	
-	void doDeleteNode( NodeImpl node ) // throws DeleteException
+	void removeNodeFromCache( int nodeId ) // throws DeleteException
 	{
-		nodeCache.remove( (int) node.getId() );
+		nodeCache.remove( nodeId );
 	}
 	
-	void doCreateNode( NodeImpl node )//  throws CreateException
+	void addNodeToCache( NodeImpl node )//  throws CreateException
 	{
 		nodeCache.add( (int) node.getId(), node );
 	}
 
 	// NOTE: caller responsible for acquiring lock on nodes
-	void doDeleteRelationship( RelationshipImpl relationship ) 
+//	void doDeleteRelationship( RelationshipImpl relationship ) 
+//	{
+//		int startNodeId = relationship.getStartNodeId();
+//		int endNodeId = relationship.getEndNodeId();
+//		if ( getTransactionCache().getNode( startNodeId ) != null || 
+//			nodeCache.get( startNodeId ) != null )
+//		{
+//			( ( NodeImpl ) getNodeForProxy( startNodeId ) ).removeRelationship( 
+//				relationship.getType(), (int) relationship.getId() );
+//		}
+//		if ( getTransactionCache().getNode( endNodeId ) != null || 
+//			nodeCache.get( endNodeId ) != null )
+//		{
+//			( ( NodeImpl ) getNodeForProxy( endNodeId ) ).removeRelationship( 
+//				relationship.getType(), (int) relationship.getId() );
+//		}
+//		relCache.remove( (int) relationship.getId() );
+//	}
+	
+	void removeRelationshipFromCache( int id )
 	{
-		Integer nodeIds[] = relationship.getNodeIds();
-		if ( getTransactionCache().getNode( nodeIds[0] ) != null || 
-			nodeCache.get( nodeIds[0] ) != null )
-		{
-			( ( NodeImpl ) getNodeForProxy( nodeIds[0].intValue() ) ).
-				removeRelationship( relationship.getType(),
-					(int) relationship.getId() );
-		}
-		if ( getTransactionCache().getNode( nodeIds[1] ) != null || 
-			nodeCache.get( nodeIds[1] ) != null )
-		{
-			( ( NodeImpl ) getNodeForProxy( nodeIds[1].intValue() ) ).
-				removeRelationship( relationship.getType(), 
-					(int) relationship.getId() );
-		}
-		relCache.remove( (int) relationship.getId() );
+		relCache.remove( id );
 	}
 
-	// NOTE: caller responsible for acquiring lock on nodes
-	void doCreateRelationship( RelationshipImpl relationship ) 
+	void addRelationshipToCache( Relationship rel )
 	{
-		Integer nodeIds[] = relationship.getNodeIds();
-		( ( NodeImpl ) getNodeForProxy( nodeIds[0].intValue() ) ).
-			addRelationship( relationship.getType(), 
-				(int) relationship.getId() );
-		( ( NodeImpl ) getNodeForProxy( nodeIds[1].intValue() ) ).
-			addRelationship( relationship.getType(), 
-				(int) relationship.getId() );
-		relCache.add( (int) relationship.getId(), relationship );
+		relCache.add( (int) rel.getId(), rel );
 	}
+	
+	// NOTE: caller responsible for acquiring lock on nodes
+//	void doCreateRelationship( RelationshipImpl relationship ) 
+//	{
+//		int startNodeId = relationship.getStartNodeId();
+//		int endNodeId = relationship.getEndNodeId();
+//		( ( NodeImpl ) getNodeForProxy( startNodeId ) ).addRelationship( 
+//			relationship.getType(), (int) relationship.getId() );
+//		( ( NodeImpl ) getNodeForProxy( endNodeId ) ).addRelationship( 
+//			relationship.getType(), (int) relationship.getId() );
+//		relCache.add( (int) relationship.getId(), relationship );
+//	}
 	
 	Object loadPropertyValue( int id )
 	{
@@ -674,12 +691,26 @@ public class NodeManager
 		}
 	}
 	
-	private void releaseLock( Object resource, LockType lockType )
+//	private void releaseLock( Object resource, LockType type )
+//	{
+//		try
+//		{
+//			TransactionIsolationLevel level = 
+//				TransactionFactory.getTransactionIsolationLevel();
+//			releaseLock( resource,type, level );
+//		}
+//		catch ( NotInTransactionException e )
+//		{
+//			throw new RuntimeException( 
+//				"Unable to get transaction isolation level.", e );
+//		}
+//	}
+	
+	private void releaseLock( Object resource, LockType lockType, 
+		TransactionIsolationLevel level )
 	{
 		try
 		{
-			TransactionIsolationLevel level = 
-				TransactionFactory.getTransactionIsolationLevel();
 			if ( level == TransactionIsolationLevel.READ_COMMITTED )
 			{
 				if ( lockType == LockType.READ )

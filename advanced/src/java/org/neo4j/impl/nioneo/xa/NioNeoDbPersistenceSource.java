@@ -5,6 +5,7 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.core.NodeOperationEventData;
+import org.neo4j.impl.core.PropertyIndexOperationEventData;
 import org.neo4j.impl.core.RawNodeData;
 import org.neo4j.impl.core.RawPropertyData;
 import org.neo4j.impl.core.RawRelationshipData;
@@ -96,6 +97,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 		private NodeEventConsumer nodeConsumer = null;
 		private RelationshipEventConsumer relConsumer = null;
 		private RelationshipTypeEventConsumer relTypeConsumer = null;
+		private PropertyIndexEventConsumer propIndexConsumer = null;
 		private PropertyStore propStore = null;
 		
 		NioNeoDbResourceConnection( NeoStoreXaDataSource xaDs )
@@ -104,6 +106,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 			nodeConsumer = xaCon.getNodeConsumer();
 			relConsumer = xaCon.getRelationshipConsumer();
 			relTypeConsumer = xaCon.getRelationshipTypeConsumer();
+			propIndexConsumer = xaCon.getPropertyIndexConsumer();
 			propStore = xaCon.getPropertyStore();
 		}
 		
@@ -153,6 +156,10 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 						return null;
 					}
 				}
+				else if ( operation == PersistenceManager.LOAD_PROPERTY_INDEX )
+				{
+					return propIndexConsumer.getKeyFor( (Integer) param  );
+				}
 				else if ( operation == 
 					PersistenceManager.LOAD_NODE_PROPERTIES )
 				{
@@ -164,7 +171,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 					{
 						properties[i] = new RawPropertyData(
 							propData[i].getId(), 
-							propData[i].getKey(), 
+							propData[i].getIndex(), 
 							propData[i].getValue() );
 					}
 					return properties;
@@ -208,7 +215,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 					{
 						properties[i] = new RawPropertyData( 
 							propData[i].getId(), 
-							propData[i].getKey(), 
+							propData[i].getIndex(), 
 							propData[i].getValue() );
 					}
 					return properties;
@@ -216,7 +223,8 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 				else if ( operation == PersistenceManager.LOAD_PROPERTY_VALUE )
 				{
 					int id = ( ( Integer ) param ).intValue();
-					return propStore.getPropertyValue( id );
+					// return propStore.getPropertyValue( id );
+					return xaCon.getNeoTransaction().propertyGetValue( id );
 				}
 				else
 				{
@@ -243,6 +251,11 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 				performRelationshipUpdate( event, 
 					(RelationshipOperationEventData) data );
 			}
+			else if ( data instanceof PropertyIndexOperationEventData )
+			{
+				performPropertyIndexUpdate( event, 
+					(PropertyIndexOperationEventData) data );
+			}
 			else if ( data instanceof RelationshipTypeOperationEventData )
 			{
 				performRelationshipTypeUpdate( event, 
@@ -267,7 +280,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 					int propertyId = propStore.nextId();
 					nodeConsumer.addProperty( 
 						data.getNodeId(), propertyId, 
-						data.getPropertyKey(), 
+						data.getPropertyIndex(), 
 						data.getProperty() ); 
 					data.setNewPropertyId( propertyId );
 				}
@@ -284,16 +297,16 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 				else if ( event == Event.NODE_DELETE )
 				{
 					int nodeId = data.getNodeId();
-					PropertyData[] propData = 
-						nodeConsumer.getProperties( nodeId );
+//					PropertyData[] propData = 
+//						nodeConsumer.getProperties( nodeId );
 					// delete first so props are added in stray map
 					nodeConsumer.deleteNode( nodeId );
 					// backwards more efficient since it is a linked list
-					for ( int i = propData.length - 1; i >= 0; i-- )
-					{
-						nodeConsumer.removeProperty( nodeId, 
-							propData[i].getId() );
-					}
+//					for ( int i = propData.length - 1; i >= 0; i-- )
+//					{
+//						nodeConsumer.removeProperty( nodeId, 
+//							propData[i].getId() );
+//					}
 				}
 				else if ( event == Event.NODE_CREATE )
 				{
@@ -324,7 +337,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 					int propertyId = propStore.nextId();
 					relConsumer.addProperty( 
 						data.getRelationshipId(), propertyId, 
-						data.getPropertyKey(), 
+						data.getPropertyIndex(), 
 						data.getProperty() );
 					data.setNewPropertyId( propertyId ); 
 				}
@@ -341,22 +354,21 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 				else if ( event == Event.RELATIONSHIP_DELETE )
 				{
 					int relId = data.getRelationshipId();
-					PropertyData[] propData = 
-						relConsumer.getProperties( relId );
+//					PropertyData[] propData = 
+//						relConsumer.getProperties( relId );
 					// delete first so props are added in stray map
 					relConsumer.deleteRelationship( relId );
 					// backwards more efficient since it is a linked list
-					for ( int i = propData.length - 1; i >= 0; i-- )
-					{
-						relConsumer.removeProperty( relId, 
-							propData[i].getId() );
-					}
+//					for ( int i = propData.length - 1; i >= 0; i-- )
+//					{
+//						relConsumer.removeProperty( relId, 
+//							propData[i].getId() );
+//					}
 				}
 				else if ( event == Event.RELATIONSHIP_CREATE )
 				{
-					Integer nodeIds[] = data.getNodeIds();
-					int firstNodeId = nodeIds[0].intValue(); 
-					int secondNodeId = nodeIds[1].intValue();
+					int firstNodeId = data.getStartNodeId(); 
+					int secondNodeId = data.getEndNodeId();
 					relConsumer.createRelationship( data.getRelationshipId(), 
 						firstNodeId, secondNodeId, data.getTypeId() );
 				}
@@ -373,6 +385,30 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 			}
 		}
 	
+		private void performPropertyIndexUpdate( Event event, 
+			PropertyIndexOperationEventData data ) 
+			throws PersistenceUpdateFailedException
+		{
+			try
+			{
+				if ( event == Event.PROPERTY_INDEX_CREATE )
+				{
+					propIndexConsumer.createPropertyIndex( 
+						data.getIndex().getKeyId(), data.getIndex().getKey() );
+				}
+				else
+				{
+					throw new PersistenceUpdateFailedException( 
+						"Unkown event: " + event );
+				}
+			}
+			catch ( IOException e )
+			{
+				throw new PersistenceUpdateFailedException( "Event[" + 
+					event + "]", e );
+			}
+		}
+		
 		private void performRelationshipTypeUpdate( Event event, 
 				RelationshipTypeOperationEventData data ) 
 				throws PersistenceUpdateFailedException

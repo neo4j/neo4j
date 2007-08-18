@@ -42,7 +42,7 @@ public interface RelationshipOperationEventData
 	 *
 	 * @return the property key
 	 */
-	public String getPropertyKey();
+	public PropertyIndex getPropertyIndex();
 	
 	/**
 	 * Returns the value of a added property or new value in case of change
@@ -60,13 +60,9 @@ public interface RelationshipOperationEventData
 	 */
 	public Object getOldProperty();
 	
-	/**
-	 * Returns both node ids for the relationship. First element is the first 
-	 * node id, second element is the second node id.
-	 * 
-	 * @return the node ids 
-	 */
-	public Integer[] getNodeIds();
+	public int getStartNodeId();
+	
+	public int getEndNodeId();
 	
 	/**
 	 * Returns the the relationship type id.

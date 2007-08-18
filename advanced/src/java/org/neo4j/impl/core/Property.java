@@ -29,4 +29,9 @@ class Property
 	{
 		this.id = id;
 	}
+	
+	void setNewValue( Object newValue )
+	{
+		this.value = newValue;
+	}
 }

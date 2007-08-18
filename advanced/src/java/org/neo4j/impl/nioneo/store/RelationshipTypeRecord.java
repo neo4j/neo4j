@@ -4,17 +4,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RelationshipTypeRecord
+public class RelationshipTypeRecord extends AbstractRecord
 {
-	private int id;
-	private boolean inUse = false;
 	private int typeBlock = Record.NO_NEXT_BLOCK.intValue();
 	private Map<Integer,DynamicRecord> typeRecords = 
 		new HashMap<Integer,DynamicRecord>();
 	
 	public RelationshipTypeRecord( int id )
 	{
-		this.id = id;
+		super( id );
 	}
 	
 	public DynamicRecord getTypeRecord( int blockId )
@@ -27,21 +25,6 @@ public class RelationshipTypeRecord
 		typeRecords.put( record.getId(), record );
 	}
 	
-	public int getId()
-	{
-		return id;
-	}
-	
-	public boolean inUse()
-	{
-		return inUse;
-	}
-	
-	public void setInUse( boolean inUse )
-	{
-		this.inUse = inUse;
-	}
-
 	public int getTypeBlock()
 	{
 		return typeBlock;
@@ -61,8 +44,8 @@ public class RelationshipTypeRecord
 	public String toString()
 	{
 		StringBuffer buf = new StringBuffer();
-		buf.append( "RelationshipTypeRecord[" ).append( id ).append( 
-			"," ).append( inUse ).append( "," ).append( typeBlock );
+		buf.append( "RelationshipTypeRecord[" ).append( getId() ).append( 
+			"," ).append( inUse() ).append( "," ).append( typeBlock );
 		buf.append( ", blocks[" );
 		for ( DynamicRecord record : typeRecords.values() )
 		{

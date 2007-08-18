@@ -188,4 +188,10 @@ public class Buffer
 		buf.get( dst );
 		return this;
 	}
+	
+	public Buffer get( char dst[] )
+	{
+		buf.asCharBuffer().get( dst );
+		return this;
+	}
 }

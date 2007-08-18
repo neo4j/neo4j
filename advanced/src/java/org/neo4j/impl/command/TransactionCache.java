@@ -1,34 +1,52 @@
 package org.neo4j.impl.command;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * Holds nodes and relationships that participate in i transaction. 
  */
 public class TransactionCache
 {
-	private static TransactionCache instance = new TransactionCache();
-	
-	// currentThread = key, value = Map
-	private Map<Thread,Map<Integer,Node>> txToCacheMapNodes = 
-		java.util.Collections.synchronizedMap( 
-		new HashMap<Thread,Map<Integer,Node>>() );
-	private Map<Thread,Map<Integer,Relationship>> txToCacheMapRels = 
-		java.util.Collections.synchronizedMap( 
-			new HashMap<Thread,Map<Integer,Relationship>>() );
-	
-	private TransactionCache()
-	{}
+	private static ArrayMap<Thread,TransactionCache> threadToTxMap = 
+		new ArrayMap<Thread,TransactionCache>( 9, true, true );
 	
 	public static TransactionCache getCache()
 	{
-		return instance;
+		Thread currentThread = Thread.currentThread();
+		TransactionCache cache = threadToTxMap.get( currentThread );
+		if ( cache != null )
+		{
+			return cache;
+		}
+		CommandManager cMgr = CommandManager.getManager();
+		if ( !cMgr.txCommitHookRegistered() )
+		{
+			cMgr.registerTxCommitHook( currentThread );
+		}
+		cache = new TransactionCache();
+		threadToTxMap.put( currentThread, cache );
+		return cache;
 	}
 	
+	public static void cleanCurrentTransaction()
+	{
+		Thread currentThread = Thread.currentThread();
+		threadToTxMap.remove( currentThread );
+	}
+	
+	private Map<Integer,Node> nodeCache = 
+		new HashMap<Integer,Node>(); // 9, false, true );
+	private Map<Integer,Relationship> relCache = 
+		new HashMap<Integer,Relationship>(); // 9, false, true );
+	
+	private TransactionCache()
+	{}
+		
 	/**
 	 * Adds a node to the current transaction.
 	 * 
@@ -37,18 +55,7 @@ public class TransactionCache
 	public void addNode( Node node )
 	{
 		int id = (int) node.getId();
-		Thread currentThread = Thread.currentThread();
-		if ( txToCacheMapNodes.containsKey(  currentThread ) )
-		{
-			Map<Integer,Node> cache = txToCacheMapNodes.get( currentThread );
-			cache.put( id, node );
-		}
-		else if ( CommandManager.getManager().txCommitHookRegistered() )
-		{
-			Map<Integer,Node> cache = new HashMap<Integer,Node>();
-			cache.put( id, node );
-			txToCacheMapNodes.put( currentThread, cache );
-		}
+		nodeCache.put( id, node );
 	}
 	
 	/**
@@ -59,20 +66,7 @@ public class TransactionCache
 	public void addRelationship( Relationship rel )
 	{
 		int id = (int) rel.getId();
-		Thread currentThread = Thread.currentThread();
-		if ( txToCacheMapRels.containsKey( currentThread ) )
-		{
-			Map<Integer,Relationship> cache = 
-				txToCacheMapRels.get( currentThread );
-			cache.put( id, rel );
-		}
-		else if ( CommandManager.getManager().txCommitHookRegistered() )
-		{
-			Map<Integer,Relationship> cache = 
-				new HashMap<Integer,Relationship>();
-			cache.put( id, rel );
-			txToCacheMapRels.put( currentThread, cache );
-		}
+		relCache.put( id, rel );
 	}
 	
 	/**
@@ -81,15 +75,9 @@ public class TransactionCache
 	 * @param id The id of the node
 	 * @return The node if it exists or <CODE>null</CODE>
 	 */
-	public Node getNode( Integer id )
+	public Node getNode( int id )
 	{
-		Thread currentThread = Thread.currentThread();
-		Map<Integer,Node> nodeMap = txToCacheMapNodes.get( currentThread );
-		if ( nodeMap != null )
-		{
-			return nodeMap.get( id );
-		}
-		return null;
+		return nodeCache.get( id );
 	}
 	
 	/**
@@ -98,56 +86,33 @@ public class TransactionCache
 	 * @param id The id of the relationship
 	 * @return The relationship if it exists or <CODE>null</CODE>
 	 */
-	public Relationship getRelationship( Integer id )
+	public Relationship getRelationship( int id )
 	{
-		Thread currentThread = Thread.currentThread();
-		Map<Integer,Relationship> relMap = 
-			txToCacheMapRels.get( currentThread );
-		if ( relMap != null )
-		{
-			return relMap.get( id );
-		}
-		return null;
+		return relCache.get( id );
 	}
 	
-	/**
-	 * Removes all nodes and relationships added to the current transaction.
-	 */
-	public void cleanCurrentTransaction()
+	int nodeSize()
 	{
-		Thread currentThread = Thread.currentThread();
-		txToCacheMapNodes.remove( currentThread );
-		txToCacheMapRels.remove( currentThread );
+		return nodeCache.size();
 	}
 	
-	String size()
+	int relSize()
+	{
+		return relCache.size();
+	}
+		
+	static String size()
 	{
 		StringBuffer string = new StringBuffer();
-		string.append( "Node[" + txToCacheMapNodes.size() + "] Rels[" + 
-			txToCacheMapRels.size() + "]" );
-		java.util.Iterator itr = txToCacheMapNodes.keySet().iterator();
+		string.append( "TransactionCaches[" + threadToTxMap.size() + "]" );
+		Iterator<Thread> itr = threadToTxMap.keySet().iterator();
 		while ( itr.hasNext() )
 		{
-			Object key = itr.next();
+			Thread key = itr.next();
 			string.append( "\nThread=" + key );
-			java.util.Iterator innerItr = 
-				( ( Map ) txToCacheMapNodes.get( key ) ).values().iterator();
-			while ( innerItr.hasNext() ) 
-			{
-				string.append( "\n\t" + innerItr.next() );
-			}
-		}
-		itr = txToCacheMapRels.keySet().iterator();
-		while ( itr.hasNext() )
-		{
-			Object key = itr.next();
-			string.append( "\nThread=" + key );
-			java.util.Iterator innerItr = 
-				( ( Map ) txToCacheMapRels.get( key ) ).values().iterator();
-			while ( innerItr.hasNext() ) 
-			{
-				string.append( "\n\t" + innerItr.next() );
-			}
+			TransactionCache cache = threadToTxMap.get( key );
+			string.append( "\n\tNodes[" + cache.nodeSize() + " Relationships[" +
+				cache.relSize() + "]" );
 		}
 		return string.toString();
 	}

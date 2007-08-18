@@ -1,14 +1,15 @@
 package org.neo4j.impl.nioneo.store;
 
+
 /**
  * Wrapper class for the data contained in a property record.
  */
 public class PropertyData
 {
 	private int id;
-	private String key;
+	private int keyIndexId;
 	private Object value;
-	private int nextPropertyId;
+//	private int nextPropertyId;
 	
 	/**
 	 * @param id The id of the property
@@ -17,13 +18,12 @@ public class PropertyData
 	 * @param nextPropertyId The next property id in the property chain, 
 	 * -1 if last property
 	 */
-	public PropertyData( int id, String key, Object value, 
-		int nextPropertyId )
+	public PropertyData( int id, int keyIndexId, Object value )
 	{
 		this.id = id;
-		this.key = key;
+		this.keyIndexId = keyIndexId;
 		this.value = value;
-		this.nextPropertyId = nextPropertyId;
+//		this.nextPropertyId = nextPropertyId;
 	}
 	
 	public int getId()
@@ -31,9 +31,9 @@ public class PropertyData
 		return id;
 	}
 	
-	public String getKey()
+	public int getIndex()
 	{
-		return key;
+		return keyIndexId;
 	}
 	
 	public Object getValue()
@@ -41,9 +41,9 @@ public class PropertyData
 		return value;
 	}
 	
-	public int nextPropertyId()
-	{
-		return nextPropertyId;
-	}
+//	public int nextPropertyId()
+//	{
+//		return nextPropertyId;
+//	}
 }
 

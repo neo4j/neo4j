@@ -47,9 +47,9 @@ public class NeoStore extends AbstractStore
 			+ ".relationshipstore.db", getConfig() );
 		nodeStore = new NodeStore( 
 			getStorageFileName() + ".nodestore.db", getConfig() );
-		nodeStore.setRelationshipStore( relStore );
-		nodeStore.setPropertyStore( propStore );
-		relStore.setPropertyStore( propStore );
+//		nodeStore.setRelationshipStore( relStore );
+//		nodeStore.setPropertyStore( propStore );
+//		relStore.setPropertyStore( propStore );
 	}
 	
 	/**
@@ -175,4 +175,14 @@ public class NeoStore extends AbstractStore
 	// validation not needed on this store
 	@Override
 	public void validate() {}
+	
+	public ReadFromBuffer getNewReadFromBuffer()
+	{
+		return null;
+	}
+	
+	public void releaseReadFromBuffer( ReadFromBuffer buffer )
+	{
+		
+	}
 }

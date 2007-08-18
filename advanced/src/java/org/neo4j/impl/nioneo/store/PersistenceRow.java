@@ -57,7 +57,7 @@ class PersistenceRow extends LockableWindow
 		}
 		ByteBuffer byteBuffer = buffer.getBuffer();
 		position = id;
-		if ( id >= recordCount )
+		if ( id > recordCount )
 		{
 			// get a new buffer since it will contain only zeros
 			this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );

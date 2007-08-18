@@ -1,45 +1,58 @@
 package org.neo4j.impl.nioneo.store;
 
-public class DynamicRecord
+
+public class DynamicRecord extends AbstractRecord
 {
-	private int id;
-	private boolean inUse = false;
 	private byte[] data;
+	private int length;
 	private int prevBlock = Record.NO_PREV_BLOCK.intValue();
 	private int nextBlock = Record.NO_NEXT_BLOCK.intValue();
+	private boolean isLight = false;
 	
 	public DynamicRecord( int id )
 	{
-		this.id = id;
+		super( id );
 	}
 	
-	public int getId()
+	void setIsLight( boolean status )
 	{
-		return id;
+		this.isLight = status;
 	}
 	
-	public boolean inUse()
+	public boolean isLight()
 	{
-		return inUse;
+		return isLight;
+	}
+	
+	public void setLength( int length )
+	{
+		this.length = length;
 	}
 	
 	public void setInUse( boolean inUse )
 	{
-		this.inUse = inUse;
+		super.setInUse( inUse );
+		if ( !inUse )
+		{
+			data = null;
+		}
 	}
 	
 	public void setData( byte[] data )
 	{
+		isLight = false;
+		this.length = data.length;
 		this.data = data;
 	}
 	
 	public int getLength()
 	{
-		return data.length;
+		return length;
 	}
 	
 	public byte[] getData()
 	{
+		assert !isLight;
 		return data;
 	}
 	
@@ -67,9 +80,14 @@ public class DynamicRecord
 	public String toString()
 	{
 		StringBuffer buf = new StringBuffer();
-		buf.append( "DynamicRecord[" ).append( id ).append( "," ).append( 
-			inUse ).append( "," ).append( prevBlock ).append( "," ).append( 
-			data.length ).append( "," ).append( nextBlock ).append( "]" );
+		buf.append( "DynamicRecord[" ).append( getId() ).append( "," ).append( 
+			inUse() );
+		if ( inUse() )
+		{
+			buf.append( "," ).append( prevBlock ).append( "," ).append( 
+				isLight ? null : data.length ).append( "," ).append( 
+				nextBlock ).append( "]" );
+		}
 		return buf.toString();
 	}
 }

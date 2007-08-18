@@ -26,6 +26,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * Public for testing purpose only. Use {@link TransactionFactory} to get 
@@ -37,9 +38,7 @@ public class TxManager implements TransactionManager
 	private static Logger log = Logger.getLogger( TxManager.class.getName() );
 	private static TxManager manager = new TxManager();
 	
-	private Map<Thread,Transaction> txThreadMap = 
-		java.util.Collections.synchronizedMap( 
-			new HashMap<Thread,Transaction>() );
+	private ArrayMap<Thread,TransactionImpl> txThreadMap; 
 	
 	private String logSwitcherFileName = "var/tm/active_tx_log";
 	private String txLog1FileName = "var/tm/tm_tx_log.1"; 
@@ -52,7 +51,11 @@ public class TxManager implements TransactionManager
 	
 	private TxManager()
 	{
-		
+	}
+	
+	void init()
+	{
+		txThreadMap = new ArrayMap<Thread,TransactionImpl>( 9, true, true );
 		String txLogDir = System.getProperty( "neo.tx_log_directory" );
 		if ( txLogDir == null )
 		{
@@ -291,7 +294,7 @@ public class TxManager implements TransactionManager
 	
 	private void buildRecoveryInfo( List<NonCompletedTransaction> commitList, 
 		List<List<Xid>> rollbackList, Map<Resource,XAResource> resourceMap, 
-		Iterator<List<TxLog.Record>> danglingRecordList ) throws XAException
+		Iterator<List<TxLog.Record>> danglingRecordList )
 	{
 		while ( danglingRecordList.hasNext() )
 		{
@@ -450,12 +453,13 @@ public class TxManager implements TransactionManager
 		}
 				
 		Thread thread = Thread.currentThread();
-		if ( txThreadMap.containsKey( thread ) )
+		TransactionImpl tx = txThreadMap.get( thread );
+		if ( tx != null )
 		{
 			throw new NotSupportedException( 
 				"Nested transactions not supported" );
 		}
-		TransactionImpl tx = new TransactionImpl();
+		tx = new TransactionImpl();
 		txThreadMap.put( thread, tx );
 		try
 		{
@@ -481,11 +485,11 @@ public class TxManager implements TransactionManager
 				);
 		}
 		Thread thread = Thread.currentThread();
-		if ( !txThreadMap.containsKey( thread ) )
+		TransactionImpl tx = txThreadMap.get( thread );
+		if ( tx == null )
 		{
 			throw new IllegalStateException( "Not in transaction" );
 		}
-		TransactionImpl tx = ( TransactionImpl ) txThreadMap.get( thread );
 		if ( tx.getStatus() != Status.STATUS_ACTIVE && 
 			tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
 		{
@@ -645,11 +649,11 @@ public class TxManager implements TransactionManager
 				);
 		}
 		Thread thread = Thread.currentThread();
-		if ( !txThreadMap.containsKey( thread ) )
+		TransactionImpl tx = txThreadMap.get( thread );
+		if ( tx == null )
 		{
 			throw new IllegalStateException( "Not in transaction" );
 		}
-		TransactionImpl tx = ( TransactionImpl ) txThreadMap.get( thread );
 		if ( tx.getStatus() == Status.STATUS_ACTIVE || 
 			tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
 		{
@@ -705,11 +709,10 @@ public class TxManager implements TransactionManager
 	public int getStatus() // throws SystemException
 	{
 		Thread thread = Thread.currentThread();
-		if ( txThreadMap.containsKey( thread ) )
+		TransactionImpl tx = txThreadMap.get( thread );
+		if ( tx != null )
 		{
-			int status = ( ( TransactionImpl ) 
-				txThreadMap.get( thread ) ).getStatus();
-			return status;
+			return tx.getStatus();
 		}
 		return Status.STATUS_NO_TRANSACTION;
 	}
@@ -729,14 +732,14 @@ public class TxManager implements TransactionManager
 				);
 		}
 		Thread thread = Thread.currentThread();
-		if ( txThreadMap.containsKey( thread ) )
+		if ( txThreadMap.get( thread ) != null )
 		{
 			throw new IllegalStateException( "Transaction already associated" );
 		}
-		if ( ( ( TransactionImpl ) tx ).getStatus() != 
-			Status.STATUS_NO_TRANSACTION )
+		TransactionImpl txImpl = (TransactionImpl) tx;
+		if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
 		{
-			txThreadMap.put( thread, tx );
+			txThreadMap.put( thread, txImpl );
 		}
 		// generate pro-active event resume
 	}
@@ -750,8 +753,7 @@ public class TxManager implements TransactionManager
 				);
 		}
 		// check for ACTIVE/MARKED_ROLLBACK?
-		TransactionImpl tx = ( TransactionImpl ) 
-			txThreadMap.remove( Thread.currentThread() );
+		TransactionImpl tx = txThreadMap.remove( Thread.currentThread() );
 		if ( tx != null )
 		{
 			// generate pro-active event suspend
@@ -768,11 +770,12 @@ public class TxManager implements TransactionManager
 				);
 		}
 		Thread thread = Thread.currentThread();
-		if ( !txThreadMap.containsKey( thread ) )
+		TransactionImpl tx = txThreadMap.get( thread );
+		if ( tx == null )
 		{
 			throw new IllegalStateException( "Not in transaction" );
 		}
-		( ( TransactionImpl ) txThreadMap.get( thread ) ).setRollbackOnly(); 
+		tx.setRollbackOnly(); 
 	}
 
 	public void setTransactionTimeout( int seconds ) throws SystemException

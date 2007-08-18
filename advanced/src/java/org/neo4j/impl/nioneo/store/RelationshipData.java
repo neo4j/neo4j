@@ -9,11 +9,11 @@ public class RelationshipData
 	private int firstNode;
 	private int secondNode;
 	private int relType;
-	private int firstNodePreviousRelId;
-	private int firstNodeNextRelId;
-	private int secondNodePreviousRelId;
-	private int secondNodeNextRelId;
-	private int nextPropertyId;
+//	private int firstNodePreviousRelId;
+//	private int firstNodeNextRelId;
+//	private int secondNodePreviousRelId;
+//	private int secondNodeNextRelId;
+//	private int nextPropertyId;
 
 	/**
 	 * @param id The id of the relationship
@@ -33,20 +33,20 @@ public class RelationshipData
 	 * if no property
 	 */
 	public RelationshipData( int id, int firstNode, 
-		int secondNode, int relType, 
-		int firstNodePreviousRelId, int firstNodeNextRelId, 
-		int secondNodePreviousRelId, int secondNodeNextRelId, 
-		int nextPropertyId )
+		int secondNode, int relType )//, 
+//		int firstNodePreviousRelId, int firstNodeNextRelId, 
+//		int secondNodePreviousRelId, int secondNodeNextRelId, 
+//		int nextPropertyId )
 	{
 		this.id = id;
 		this.firstNode = firstNode;
 		this.secondNode = secondNode;
 		this.relType = relType;
-		this.firstNodePreviousRelId = firstNodePreviousRelId;
-		this.firstNodeNextRelId = firstNodeNextRelId;
-		this.secondNodePreviousRelId = secondNodePreviousRelId;
-		this.secondNodeNextRelId = secondNodeNextRelId;
-		this.nextPropertyId = nextPropertyId;
+//		this.firstNodePreviousRelId = firstNodePreviousRelId;
+//		this.firstNodeNextRelId = firstNodeNextRelId;
+//		this.secondNodePreviousRelId = secondNodePreviousRelId;
+//		this.secondNodeNextRelId = secondNodeNextRelId;
+//		this.nextPropertyId = nextPropertyId;
 	}
 	
 	public int getId()
@@ -69,38 +69,39 @@ public class RelationshipData
 		return relType;
 	}
 	
-	public int firstNodePreviousRelationshipId()
-	{
-		return firstNodePreviousRelId;
-	}
-
-	public int firstNodeNextRelationshipId()
-	{
-		return firstNodeNextRelId;
-	}
-	
-	public int secondNodePreviousRelationshipId()
-	{
-		return secondNodePreviousRelId;
-	}
-
-	public int secondNodeNextRelationshipId()
-	{
-		return secondNodeNextRelId;
-	}
-	
-	public int nextPropertyId()
-	{
-		return nextPropertyId;
-	}
+//	public int firstNodePreviousRelationshipId()
+//	{
+//		return firstNodePreviousRelId;
+//	}
+//
+//	public int firstNodeNextRelationshipId()
+//	{
+//		return firstNodeNextRelId;
+//	}
+//	
+//	public int secondNodePreviousRelationshipId()
+//	{
+//		return secondNodePreviousRelId;
+//	}
+//
+//	public int secondNodeNextRelationshipId()
+//	{
+//		return secondNodeNextRelId;
+//	}
+//	
+//	public int nextPropertyId()
+//	{
+//		return nextPropertyId;
+//	}
 	
 	public String toString()
 	{
 		return "R[" + firstNode + 
-			"," + secondNode + "] fN:" + firstNodeNextRelationshipId() + 
-			" fP:" + firstNodePreviousRelationshipId() + 
-			" sN:" + secondNodeNextRelationshipId() +
-			" sP:" + secondNodePreviousRelationshipId();
+			"," + secondNode + "," + relType + "] fN:";
+//			+ firstNodeNextRelationshipId() + 
+//			" fP:" + firstNodePreviousRelationshipId() + 
+//			" sN:" + secondNodeNextRelationshipId() +
+//			" sP:" + secondNodePreviousRelationshipId();
 	}
 }
 

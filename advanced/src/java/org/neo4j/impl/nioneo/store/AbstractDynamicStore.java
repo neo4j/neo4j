@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.Iterator;
@@ -32,6 +33,9 @@ import java.util.Map;
  */
 public abstract class AbstractDynamicStore extends CommonAbstractStore
 {
+//	private LruCache<Integer,DynamicRecord> cache = 
+//		new LruCache<Integer,DynamicRecord>( "DynamicRecordCache", 4000 );
+	
 	/**
 	 * Creates a new empty store. A facotry method returning an 
 	 * implementation should make use of this method to initialize an empty 
@@ -73,7 +77,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		blockSize += 13; // in_use(1)+length(4)+prev_block(4)+next_block(4)
 		// write the header
 		FileChannel channel = new FileOutputStream( fileName ).getChannel();
-		int endHeaderSize = blockSize + typeAndVersionDescriptor.length();
+		int endHeaderSize = blockSize + typeAndVersionDescriptor.getBytes().length;
 		ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
 		buffer.putInt( blockSize );
 		buffer.position( endHeaderSize - typeAndVersionDescriptor.length() );
@@ -109,9 +113,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	{
 		long fileSize = getFileChannel().size();
 		String expectedVersion = getTypeAndVersionDescriptor();
-		byte version[] = new byte[ expectedVersion.length() ];
+		byte version[] = new byte[ expectedVersion.getBytes().length ];
 		ByteBuffer buffer = ByteBuffer.wrap( version );
-		getFileChannel().position( fileSize - expectedVersion.length() ); 
+		getFileChannel().position( fileSize - version.length ); 
 		getFileChannel().read( buffer );
 		if ( !expectedVersion.equals( new String( version ) ) )
 		{
@@ -122,13 +126,13 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		getFileChannel().read( buffer );
 		buffer.flip();
 		blockSize = buffer.getInt();
-		if ( ( fileSize - expectedVersion.length() ) % blockSize != 0 )
+		if ( ( fileSize - version.length ) % blockSize != 0 )
 		{
 			setStoreNotOk();
 		}
 		if ( getStoreOk() )
 		{
-			getFileChannel().truncate( fileSize - expectedVersion.length() );
+			getFileChannel().truncate( fileSize - version.length );
 		}
 		try
 		{
@@ -180,6 +184,48 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	
 	public void updateRecord( DynamicRecord record ) throws IOException
 	{
+		if ( record.isTransferable() && !hasWindow( record.getId() ) )
+		{
+			int id = record.getId();
+			long count = record.getTransferCount();
+			FileChannel fileChannel = getFileChannel();
+			fileChannel.position( id * getBlockSize() );
+			if ( count != record.getFromChannel().transferTo( 
+				record.getTransferStartPosition(), count, fileChannel ) )
+			{
+				throw new RuntimeException( "expected " + count + 
+					" bytes transfered" );
+			}
+//			getFileChannel().force( false );
+//			ByteBuffer buf = ByteBuffer.allocate( 13 );
+//			long oldPos = record.getFromChannel().position();
+//			record.getFromChannel().position( record.getTransferStartPosition() );
+//			record.getFromChannel().read( buf );
+//			buf.flip();
+//			System.out.print( "id=" + record.getId() + " " );
+//			System.out.println( "inUse=" + buf.get() + " prev=" + buf.getInt() + 
+//				" size=" + buf.getInt() + " next=" + buf.getInt() );
+//			record.getFromChannel().position( oldPos );
+//			getFileChannel().position( record.getId() * getBlockSize() );
+//			buf.clear();
+//			getFileChannel().read( buf );
+//			buf.flip();
+//			System.out.println( "[inUse=" + buf.get() + " prev=" + buf.getInt() + 
+//				" size=" + buf.getInt() + " next=" + buf.getInt() );
+//			
+//			DynamicRecord check = getLightRecords( 
+//				record.getId() ).iterator().next();
+//			ByteBuffer buf = ByteBuffer.allocate( 13 );
+//			getFileChannel().position( record.getId() * getBlockSize() );
+//			getFileChannel().read( buf );
+//			buf.flip();
+//			assert buf.get() == ( record.inUse() ? Record.IN_USE.byteValue() : 
+//				Record.NOT_IN_USE.byteValue() );
+//			assert buf.getInt() == record.getPrevBlock();
+//			assert buf.getInt() == record.getLength();
+//			assert buf.getInt() == record.getNextBlock();
+			return;
+		}
 		int blockId = record.getId();
 		PersistenceWindow window = acquireWindow( blockId, 
 			OperationType.WRITE );
@@ -194,13 +240,17 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 				buffer.put( Record.IN_USE.byteValue() ).putInt( 
 					record.getPrevBlock() ).putInt( record.getLength() 
 						).putInt( record.getNextBlock() );
-				buffer.put( record.getData() );
+				if ( !record.isLight() )
+				{
+					buffer.put( record.getData() );
+				}
 			}
 			else
 			{
-				buffer.put( Record.NOT_IN_USE.byteValue() ).putInt( 
-					Record.NO_PREV_BLOCK.intValue() ).putInt( 0 ).putInt( 
-						Record.NO_NEXT_BLOCK.intValue() );
+				buffer.put( Record.NOT_IN_USE.byteValue() );
+//				.putInt( 
+//					Record.NO_PREV_BLOCK.intValue() ).putInt( 0 ).putInt( 
+//						Record.NO_NEXT_BLOCK.intValue() );
 				if ( !isInRecoveryMode() )
 				{
 					freeBlockId( blockId );
@@ -232,6 +282,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		do
 		{
 			DynamicRecord record = new DynamicRecord( nextBlock );
+			record.setCreated();
 			record.setInUse( true );
 			assert prevBlock != nextBlock;
 			record.setPrevBlock( prevBlock );
@@ -253,44 +304,92 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 				nextBlock = Record.NO_NEXT_BLOCK.intValue();
 				record.setNextBlock( nextBlock );
 			}
+//			cache.add( record.getId(), record );
 			recordList.add( record );
 		} 
 		while ( nextBlock != Record.NO_NEXT_BLOCK.intValue() );
 		return recordList;
 	}
 	
-	public Collection<DynamicRecord> getRecords( int startBlockId ) 
-		throws IOException
+	public Collection<DynamicRecord> allocateRecords( int startBlock, 
+		char src[] ) throws IOException
+	{
+		if ( getFileChannel() == null )
+		{
+			throw new IOException( "Store closed" );
+		}
+		List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
+		if ( src == null )
+		{
+			throw new IOException( "Null source" );
+		}
+		int nextBlock = startBlock;
+		int prevBlock = Record.NO_PREV_BLOCK.intValue();
+		int srcOffset = 0;
+		int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
+		do
+		{
+			DynamicRecord record = new DynamicRecord( nextBlock );
+			record.setCreated();
+			record.setInUse( true );
+			assert prevBlock != nextBlock;
+			record.setPrevBlock( prevBlock );
+			if ( ( src.length - srcOffset ) * 2 > dataSize )
+			{
+				byte data[] = new byte[ dataSize ];
+				CharBuffer charBuf = ByteBuffer.wrap( data ).asCharBuffer();
+				charBuf.put( src, srcOffset, dataSize / 2 );
+				// System.arraycopy( src, srcOffset, data, 0, dataSize );
+				record.setData( data );
+				prevBlock = nextBlock;
+				nextBlock = nextBlockId();
+				record.setNextBlock( nextBlock );
+				srcOffset += dataSize / 2;
+			}
+			else
+			{
+				byte data[] = new byte[( src.length - srcOffset ) * 2];
+				// System.arraycopy( src, srcOffset, data, 0, data.length );
+				CharBuffer charBuf = ByteBuffer.wrap( data ).asCharBuffer();
+				charBuf.put( src, srcOffset, src.length - srcOffset );
+				record.setData( data );
+				nextBlock = Record.NO_NEXT_BLOCK.intValue();
+				record.setNextBlock( nextBlock );
+			}
+//			cache.add( record.getId(), record );
+			recordList.add( record );
+		} 
+		while ( nextBlock != Record.NO_NEXT_BLOCK.intValue() );
+		return recordList;
+	}
+	
+	public Collection<DynamicRecord> getLightRecords( int startBlockId, 
+		ReadFromBuffer buffer ) throws IOException
 	{
 		List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
 		int blockId = startBlockId;
-		PersistenceWindow window = acquireWindow( blockId, OperationType.READ );
-		try
+		while ( blockId != Record.NO_NEXT_BLOCK.intValue() )
 		{
-			DynamicRecord record = new DynamicRecord( blockId );
-			Buffer buffer = window.getBuffer();
-			int offset = ( blockId - buffer.position() ) * getBlockSize();
-			buffer.setOffset( offset );
-			byte inUse = buffer.get();
-			if ( inUse != Record.IN_USE.byteValue() )
+			DynamicRecord record; // = cache.get( blockId );
+//			if ( record != null )
+//			{
+//				recordList.add( record );
+//				blockId = record.getNextBlock();
+//			}
+			/*else*/ if ( buffer != null && !hasWindow( blockId ) )
 			{
-				throw new IOException( "Not in use [" + inUse + 
-					"] blockId[" + blockId + "]" );
-			}
-			record.setInUse( true );
-			int prevBlock = buffer.getInt();
-			if ( prevBlock != Record.NO_PREV_BLOCK.intValue() )
-			{
-				throw new IOException( "Start block has previous block set" );
-			}
-			record.setPrevBlock( prevBlock );
-			int nextBlock = blockId;
-			int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
-			do
-			{
-				int nrOfBytes = buffer.getInt();
-				prevBlock = nextBlock;
-				nextBlock = buffer.getInt();
+				buffer.makeReadyForTransfer();
+				getFileChannel().transferTo( blockId * getBlockSize(), 
+					BLOCK_HEADER_SIZE, buffer.getFileChannel() );
+				ByteBuffer buf = buffer.getByteBuffer();
+				record = new DynamicRecord( blockId );
+				byte inUse = buf.get();
+				assert inUse == Record.IN_USE.byteValue();
+				record.setInUse( true );
+				record.setPrevBlock( buf.getInt() );
+				int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
+				int nrOfBytes = buf.getInt();
+				int nextBlock = buf.getInt();
 				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
 						nrOfBytes < dataSize || nrOfBytes > dataSize )
 				{
@@ -298,40 +397,270 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 						"] current block illegal size[" +
 						nrOfBytes + "/" + dataSize + "]" );
 				}
+				record.setLength( nrOfBytes );
 				record.setNextBlock( nextBlock );
-				byte byteArrayElement[] = new byte[ nrOfBytes ]; 
-				buffer.get( byteArrayElement );
-				record.setData( byteArrayElement );
+				record.setIsLight( true );
 				recordList.add( record );
-				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() ) 
+				// cache.add( blockId, record );
+				blockId = nextBlock;
+			}
+			else
+			{
+				PersistenceWindow window = acquireWindow( blockId, 
+					OperationType.READ );
+				try
+				{
+					record = getLightRecord( blockId, window.getBuffer() );
+					// cache.add( blockId, record );
+					recordList.add( record );
+					blockId = record.getNextBlock();
+				}
+				finally
 				{
 					releaseWindow( window );
-					window = acquireWindow( nextBlock, OperationType.READ );
-					record = new DynamicRecord( nextBlock );
-					buffer = window.getBuffer();
-					offset = ( nextBlock - buffer.position() ) * getBlockSize();
-					buffer.setOffset( offset );
-					inUse = buffer.get();
-					if ( inUse != Record.IN_USE.byteValue() )
-					{
-						throw new IOException( "Next block[" + nextBlock + 
-							"] not in use [" + inUse + "]" );
-					}
-					record.setInUse( true );
-					record.setPrevBlock( buffer.getInt() );
-					if ( record.getPrevBlock() != prevBlock )
-					{
-						throw new IOException( "Previous block don't match" );
-					}
 				}
-			} while ( nextBlock != Record.NO_NEXT_BLOCK.intValue() );
-		}
-		finally
-		{
-			releaseWindow( window );
+			}
 		}
 		return recordList;
 	}
+	
+	public void makeHeavy( DynamicRecord record, ReadFromBuffer buffer )
+		throws IOException
+	{
+		int blockId = record.getId();
+		if ( buffer != null && !hasWindow( blockId ) )
+		{
+			int nrOfBytes = record.getLength();
+			buffer.makeReadyForTransfer();
+			getFileChannel().transferTo( blockId * getBlockSize() + 
+				BLOCK_HEADER_SIZE, nrOfBytes, buffer.getFileChannel() );
+			ByteBuffer buf = buffer.getByteBuffer();
+			byte bytes[] = new byte[nrOfBytes];
+			buf.get( bytes );
+			record.setData( bytes );
+		}
+		else
+		{
+			PersistenceWindow window = acquireWindow( blockId, 
+				OperationType.READ );
+			try
+			{
+				Buffer buf = window.getBuffer();
+				int offset = ( blockId - buf.position() ) * getBlockSize() + 
+					BLOCK_HEADER_SIZE;
+				buf.setOffset( offset );
+				byte bytes[] = new byte[record.getLength()];
+				buf.get( bytes );
+				record.setData( bytes );
+			}
+			finally
+			{
+				releaseWindow( window );
+			}
+		}
+	}
+	
+	private DynamicRecord getLightRecord( int blockId, Buffer buffer )
+		throws IOException
+	{
+		DynamicRecord record = new DynamicRecord( blockId );
+		int offset = ( blockId - buffer.position() ) * getBlockSize();
+		buffer.setOffset( offset );
+		byte inUse = buffer.get();
+		if ( inUse != Record.IN_USE.byteValue() )
+		{
+			throw new IOException( "Not in use [" + inUse + 
+				"] blockId[" + blockId + "]" );
+		}
+		record.setInUse( true );
+		int prevBlock = buffer.getInt();
+		record.setPrevBlock( prevBlock );
+		int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
+		int nrOfBytes = buffer.getInt();
+		int nextBlock = buffer.getInt();
+		if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
+				nrOfBytes < dataSize || nrOfBytes > dataSize )
+		{
+			throw new IOException( "Next block set[" + nextBlock + 
+				"] current block illegal size[" +
+				nrOfBytes + "/" + dataSize + "]" );
+		}
+		record.setLength( nrOfBytes );
+		record.setNextBlock( nextBlock );
+		record.setIsLight( true );
+		return record;
+	}
+	
+	private DynamicRecord getRecord( int blockId, Buffer buffer )
+		throws IOException
+	{
+		DynamicRecord record = new DynamicRecord( blockId );
+		int offset = ( blockId - buffer.position() ) * getBlockSize();
+		buffer.setOffset( offset );
+		byte inUse = buffer.get();
+		if ( inUse != Record.IN_USE.byteValue() )
+		{
+			throw new IOException( "Not in use [" + inUse + 
+				"] blockId[" + blockId + "]" );
+		}
+		record.setInUse( true );
+		int prevBlock = buffer.getInt();
+		record.setPrevBlock( prevBlock );
+		int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
+		int nrOfBytes = buffer.getInt();
+		int nextBlock = buffer.getInt();
+		if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
+				nrOfBytes < dataSize || nrOfBytes > dataSize )
+		{
+			throw new IOException( "Next block set[" + nextBlock + 
+				"] current block illegal size[" +
+				nrOfBytes + "/" + dataSize + "]" );
+		}
+		record.setLength( nrOfBytes );
+		record.setNextBlock( nextBlock );
+		byte byteArrayElement[] = new byte[ nrOfBytes ]; 
+		buffer.get( byteArrayElement );
+		record.setData( byteArrayElement );
+		return record;
+	}
+	
+	public Collection<DynamicRecord> getRecords( int startBlockId, 
+		ReadFromBuffer buffer ) throws IOException
+	{
+		List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
+		int blockId = startBlockId;
+		while ( blockId != Record.NO_NEXT_BLOCK.intValue() )
+		{
+			DynamicRecord record; // = cache.get( blockId );
+//			if ( record != null )
+//			{
+//				recordList.add( record );
+//				blockId = record.getNextBlock();
+//			}
+			/*else*/ if ( buffer != null && !hasWindow( blockId ) )
+			{
+				buffer.makeReadyForTransfer();
+				getFileChannel().transferTo( blockId * getBlockSize(), 
+					getBlockSize(), buffer.getFileChannel() );
+				ByteBuffer buf = buffer.getByteBuffer();
+				record = new DynamicRecord( blockId );
+				byte inUse = buf.get();
+				assert inUse == Record.IN_USE.byteValue();
+				record.setInUse( true );
+				record.setPrevBlock( buf.getInt() );
+				int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
+				int nrOfBytes = buf.getInt();
+				int nextBlock = buf.getInt();
+				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
+						nrOfBytes < dataSize || nrOfBytes > dataSize )
+				{
+					throw new IOException( "Next block set[" + nextBlock + 
+						"] current block illegal size[" +
+						nrOfBytes + "/" + dataSize + "]" );
+				}
+				record.setLength( nrOfBytes );
+				record.setNextBlock( nextBlock );
+				byte byteArrayElement[] = new byte[ nrOfBytes ]; 
+				buf.get( byteArrayElement );
+				record.setData( byteArrayElement );
+				recordList.add( record );
+				// cache.add( blockId, record );
+				blockId = nextBlock;
+			}
+			else
+			{
+				PersistenceWindow window = acquireWindow( blockId, 
+					OperationType.READ );
+				try
+				{
+					record = getRecord( blockId, window.getBuffer() );
+					// cache.add( blockId, record );
+					recordList.add( record );
+					blockId = record.getNextBlock();
+				}
+				finally
+				{
+					releaseWindow( window );
+				}
+			}
+		}
+		return recordList;
+	}
+	
+//	public Collection<DynamicRecord> getRecords( int startBlockId ) 
+//		throws IOException
+//	{
+//		List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
+//		int blockId = startBlockId;
+//		PersistenceWindow window = acquireWindow( blockId, OperationType.READ );
+//		try
+//		{
+//			DynamicRecord record = new DynamicRecord( blockId );
+//			Buffer buffer = window.getBuffer();
+//			int offset = ( blockId - buffer.position() ) * getBlockSize();
+//			buffer.setOffset( offset );
+//			byte inUse = buffer.get();
+//			if ( inUse != Record.IN_USE.byteValue() )
+//			{
+//				throw new IOException( "Not in use [" + inUse + 
+//					"] blockId[" + blockId + "]" );
+//			}
+//			record.setInUse( true );
+//			int prevBlock = buffer.getInt();
+//			if ( prevBlock != Record.NO_PREV_BLOCK.intValue() )
+//			{
+//				throw new IOException( "Start block has previous block set" );
+//			}
+//			record.setPrevBlock( prevBlock );
+//			int nextBlock = blockId;
+//			int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
+//			do
+//			{
+//				int nrOfBytes = buffer.getInt();
+//				prevBlock = nextBlock;
+//				nextBlock = buffer.getInt();
+//				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
+//						nrOfBytes < dataSize || nrOfBytes > dataSize )
+//				{
+//					throw new IOException( "Next block set[" + nextBlock + 
+//						"] current block illegal size[" +
+//						nrOfBytes + "/" + dataSize + "]" );
+//				}
+//				record.setLength( nrOfBytes );
+//				record.setNextBlock( nextBlock );
+//				byte byteArrayElement[] = new byte[ nrOfBytes ]; 
+//				buffer.get( byteArrayElement );
+//				record.setData( byteArrayElement );
+//				recordList.add( record );
+//				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() ) 
+//				{
+//					releaseWindow( window );
+//					window = acquireWindow( nextBlock, OperationType.READ );
+//					record = new DynamicRecord( nextBlock );
+//					buffer = window.getBuffer();
+//					offset = ( nextBlock - buffer.position() ) * getBlockSize();
+//					buffer.setOffset( offset );
+//					inUse = buffer.get();
+//					if ( inUse != Record.IN_USE.byteValue() )
+//					{
+//						throw new IOException( "Next block[" + nextBlock + 
+//							"] not in use [" + inUse + "]" );
+//					}
+//					record.setInUse( true );
+//					record.setPrevBlock( buffer.getInt() );
+//					if ( record.getPrevBlock() != prevBlock )
+//					{
+//						throw new IOException( "Previous block don't match" );
+//					}
+//				}
+//			} while ( nextBlock != Record.NO_NEXT_BLOCK.intValue() );
+//		}
+//		finally
+//		{
+//			releaseWindow( window );
+//		}
+//		return recordList;
+//	}
 	
 	/**
 	 * Reads a <CODE>byte array</CODE> stored in this dynamic store using
@@ -422,6 +751,88 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		}
 		return allBytes;
 	}
+//	
+//	protected char[] getAsChar( int blockId ) throws IOException
+//	{
+//		ArrayList<char[]> charArrayList = new ArrayList<char[]>();
+//		PersistenceWindow window = acquireWindow( blockId, 
+//			OperationType.READ );
+//		try
+//		{
+//			Buffer buffer = window.getBuffer();
+//			int offset = ( blockId - buffer.position() ) * getBlockSize();
+//			buffer.setOffset( offset );
+//			byte inUse = buffer.get();
+//			if ( inUse != Record.IN_USE.byteValue() )
+//			{
+//				throw new IOException( "Not in use [" + inUse + 
+//					"] blockId[" + blockId + "]" );
+//			}
+//			int prevBlock = buffer.getInt();
+//			if ( prevBlock != Record.NO_PREV_BLOCK.intValue() )
+//			{
+//				throw new IOException( "Start block has previous block set" );
+//			}
+//			int nextBlock = blockId;
+//			int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
+//			do
+//			{
+//				int nrOfBytes = buffer.getInt();
+//				prevBlock = nextBlock;
+//				nextBlock = buffer.getInt();
+//				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
+//						nrOfBytes < dataSize || nrOfBytes > dataSize )
+//				{
+//					throw new IOException( "Next block set[" + nextBlock + 
+//						"] current block illegal size[" +
+//						nrOfBytes + "/" + dataSize + "]" );
+//				}
+//				char charArrayElement[] = new char[ nrOfBytes / 2 ]; 
+//				buffer.get( charArrayElement );
+//				charArrayList.add( charArrayElement );
+//				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() ) 
+//				{
+//					releaseWindow( window );
+//					window = acquireWindow( nextBlock, OperationType.READ );
+//					buffer = window.getBuffer();
+//					offset = ( nextBlock - buffer.position() ) * 
+//						getBlockSize();
+//					buffer.setOffset( offset );
+//					inUse = buffer.get();
+//					if ( inUse != Record.IN_USE.byteValue() )
+//					{
+//						throw new IOException( "Next block[" + nextBlock + 
+//							"] not in use [" + inUse + "]" );
+//					}
+//					if ( buffer.getInt() != prevBlock )
+//					{
+//						throw new IOException( "Previous block don't match" );
+//					}
+//				}
+//			} while ( nextBlock != Record.NO_NEXT_BLOCK.intValue() );
+//		}
+//		finally
+//		{
+//			releaseWindow( window );
+//		}
+//		int totalSize = 0;
+//		Iterator<char[]> itr = charArrayList.iterator();
+//		while ( itr.hasNext() )
+//		{
+//			totalSize += itr.next().length;
+//		}
+//		char allChars[] = new char[ totalSize ];
+//		itr = charArrayList.iterator();
+//		int index = 0;
+//		while ( itr.hasNext() )
+//		{
+//			char currentArray[] = itr.next();
+//			System.arraycopy( currentArray, 0, allChars, index, 
+//				currentArray.length );
+//			index += currentArray.length;
+//		}
+//		return allChars;
+//	}
 	
 	/**
 	 * Rebuilds the internal id generator keeping track of what blocks are 

@@ -90,7 +90,7 @@ class TxCommitHook implements Synchronization
 		}
 		finally
 		{
-			TransactionCache.getCache().cleanCurrentTransaction();
+			TransactionCache.cleanCurrentTransaction();
 		}
 		if ( !success )
 		{
@@ -101,7 +101,7 @@ class TxCommitHook implements Synchronization
 			}
 			finally
 			{
-				TransactionCache.getCache().cleanCurrentTransaction();
+				TransactionCache.cleanCurrentTransaction();
 			}
 		}
 	}
