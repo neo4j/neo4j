@@ -5,8 +5,8 @@ package org.neo4j.impl.nioneo.store;
  */
 public class RelationshipTypeData
 {
-	private int id;
-	private String name;
+	private final int id;
+	private final String name;
 	
 	/**
 	 * @param id The id of the relationship type

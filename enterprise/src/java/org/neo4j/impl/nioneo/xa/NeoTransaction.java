@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
+import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.NeoStore;
@@ -76,30 +77,30 @@ class NeoTransaction extends XaTransaction
 //		new ArrayList<MemCommand.RelationshipTypeAdd>();
 //	private List<MemCommand> strayPropMap = new ArrayList<MemCommand>();
 	
-	private Map<Integer,NodeRecord> nodeRecords = 
+	private final Map<Integer,NodeRecord> nodeRecords = 
 		new HashMap<Integer,NodeRecord>();
-	private Map<Integer,PropertyRecord> propertyRecords = 
+	private final Map<Integer,PropertyRecord> propertyRecords = 
 		new HashMap<Integer,PropertyRecord>();
-	private Map<Integer,RelationshipRecord> relRecords = 
+	private final Map<Integer,RelationshipRecord> relRecords = 
 		new HashMap<Integer,RelationshipRecord>();
-	private Map<Integer,RelationshipTypeRecord> relTypeRecords =
+	private final Map<Integer,RelationshipTypeRecord> relTypeRecords =
 		new HashMap<Integer,RelationshipTypeRecord>();
-	private Map<Integer,PropertyIndexRecord> propIndexRecords =
+	private final Map<Integer,PropertyIndexRecord> propIndexRecords =
 		new HashMap<Integer,PropertyIndexRecord>();
 	
-	private ArrayList<Command.NodeCommand> nodeCommands = 
+	private final ArrayList<Command.NodeCommand> nodeCommands = 
 		new ArrayList<Command.NodeCommand>();
-	private ArrayList<Command.PropertyCommand> propCommands = 
+	private final ArrayList<Command.PropertyCommand> propCommands = 
 		new ArrayList<Command.PropertyCommand>();
-	private ArrayList<Command.PropertyIndexCommand> propIndexCommands = 
+	private final ArrayList<Command.PropertyIndexCommand> propIndexCommands = 
 		new ArrayList<Command.PropertyIndexCommand>();
-	private ArrayList<Command.RelationshipCommand> relCommands = 
+	private final ArrayList<Command.RelationshipCommand> relCommands = 
 		new ArrayList<Command.RelationshipCommand>();
-	private ArrayList<Command.RelationshipTypeCommand> relTypeCommands = 
+	private final ArrayList<Command.RelationshipTypeCommand> relTypeCommands = 
 		new ArrayList<Command.RelationshipTypeCommand>();
 	
-	private NeoStore neoStore;
-	private ReadFromBuffer readFromBuffer;
+	private final NeoStore neoStore;
+	private final ReadFromBuffer readFromBuffer;
 	private boolean committed = false;
 	private boolean prepared = false;
 	
@@ -499,6 +500,11 @@ class NeoTransaction extends XaTransaction
 			}
 			for ( NodeRecord record : nodeRecords.values() )
 			{
+				if ( !record.inUse() )
+				{
+					assert record.getNextRel() == 
+						Record.NO_NEXT_RELATIONSHIP.intValue();
+				}
 				Command.NodeCommand command = new Command.NodeCommand( 
 					neoStore.getNodeStore(), record );
 				nodeCommands.add( command );
@@ -506,6 +512,11 @@ class NeoTransaction extends XaTransaction
 			}
 			for ( RelationshipRecord record : relRecords.values() )
 			{
+//				if ( !record.inUse() )
+//				{
+//					assert record.getNextProp() == 
+//						Record.NO_NEXT_PROPERTY.intValue();
+//				}
 				Command.RelationshipCommand command = 
 					new Command.RelationshipCommand( 
 						neoStore.getRelationshipStore(), record );
@@ -575,6 +586,7 @@ class NeoTransaction extends XaTransaction
 		}
 		try
 		{
+			NodeManager nm = NodeManager.getManager();
 			for ( RelationshipTypeRecord record : relTypeRecords.values() )
 			{
 				if ( record.isCreated() )
@@ -589,6 +601,7 @@ class NeoTransaction extends XaTransaction
 						}
 					}
 				}
+				nm.removeRelationshipTypeFromCache( record.getId() );
 			}
 			for ( NodeRecord record : nodeRecords.values() )
 			{
@@ -596,6 +609,7 @@ class NeoTransaction extends XaTransaction
 				{
 					getNodeStore().freeId( record.getId() );
 				}
+				nm.removeNodeFromCache( record.getId() );
 			}
 			for ( RelationshipRecord record : relRecords.values() )
 			{
@@ -603,6 +617,7 @@ class NeoTransaction extends XaTransaction
 				{
 					getRelationshipStore().freeId( record.getId() );
 				}
+				nm.removeRelationshipFromCache( record.getId() );
 			}
 			for ( PropertyIndexRecord record : propIndexRecords.values() )
 			{
@@ -618,6 +633,7 @@ class NeoTransaction extends XaTransaction
 						}
 					}
 				}
+				nm.removePropertyIndexFromCache( record.getId() );
 			}
 			for ( PropertyRecord record : propertyRecords.values() )
 			{
@@ -1654,8 +1670,8 @@ class NeoTransaction extends XaTransaction
 	{
 		public int compare( Command o1, Command o2 )
 		{
-			int id1 = o1.getKey().intValue();
-			int id2 = o2.getKey().intValue();
+			int id1 = o1.getKey();
+			int id2 = o2.getKey();
 			return id1 - id2;
 		}
 		

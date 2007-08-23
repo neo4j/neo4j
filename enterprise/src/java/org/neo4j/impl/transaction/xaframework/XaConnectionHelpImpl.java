@@ -40,7 +40,7 @@ import javax.transaction.xa.XAResource;
  */ 
 public abstract class XaConnectionHelpImpl implements XaConnection
 {
-	private XaResourceManager xaRm = null;
+	private final XaResourceManager xaRm;
 	
 	public XaConnectionHelpImpl( XaResourceManager xaRm )
 	{

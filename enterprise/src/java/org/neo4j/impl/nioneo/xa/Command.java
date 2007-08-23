@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.logging.Logger;
-
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeRecord;
@@ -20,6 +19,7 @@ import org.neo4j.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.impl.transaction.xaframework.XaCommand;
 
 /**
@@ -30,10 +30,10 @@ abstract class Command extends XaCommand
 {
 	static Logger logger = Logger.getLogger( Command.class.getName() );
 	
-	private Integer key;
+	private final int key;
 	private boolean isInRecovery = false;
 	
-	Command( Integer key )
+	Command( int key )
 	{
 		this.key = key;
 	}
@@ -48,26 +48,35 @@ abstract class Command extends XaCommand
 		isInRecovery = true;
 	}
 	
-	Integer getKey()
+	int getKey()
 	{
 		return key;
 	}
 	
-	static void writeDynamicRecord( FileChannel fileChannel, 
-		DynamicRecord record, ByteBuffer buffer ) throws IOException 
+//	private volatile int hashCode = 0;
+
+	public int hashCode()
 	{
-//		if ( ( buffer.capacity() - buffer.position() ) < 
-//			record.getLength() )
+		return key;
+//		if ( hashCode == 0 )
 //		{
-//			buffer.flip();
-//			fileChannel.write( buffer );
-//			buffer.flip();
+//			hashCode = 3217 * key;
 //		}
-		
+//		return hashCode;
+	}
+	
+	
+//	static void writeDynamicRecord( FileChannel fileChannel, 
+//		DynamicRecord record, ByteBuffer buffer ) throws IOException 
+	static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record ) 
+		throws IOException 
+	{
 		// id+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int) 
-		buffer.clear();
-		record.setTransferStartPosition( fileChannel, 
-			fileChannel.position() + 4 );
+//		buffer.clear();
+//		record.setTransferStartPosition( fileChannel, 
+//			fileChannel.position() + 4 );
+		record.setTransferStartPosition( buffer.getFileChannel(), 
+			buffer.getFileChannelPosition() + 4 );
 		if ( record.inUse() )
 		{
 			// byte inUse = record.inUse() ? 
@@ -78,9 +87,18 @@ abstract class Command extends XaCommand
 				record.getNextBlock() );
 			if ( !record.isLight() )
 			{
-				byte[] data = record.getData();
-				buffer.put( data );
-				record.setTransferCount( 13 + data.length );
+				if ( !record.isCharData() )
+				{
+					byte[] data = record.getData();
+					buffer.put( data );
+					record.setTransferCount( 13 + data.length );
+				}
+				else
+				{
+					char[] chars = record.getDataAsChar();
+					buffer.put( chars );
+					record.setTransferCount( 13 + chars.length * 2 );
+				}
 			}
 			else
 			{
@@ -93,8 +111,8 @@ abstract class Command extends XaCommand
 			buffer.putInt( record.getId() ).put( inUse );
 			record.setTransferCount( 1 );
 		}
-		buffer.flip();
-		fileChannel.write( buffer );
+//		buffer.flip();
+//		fileChannel.write( buffer );
 	}
 	
 	static DynamicRecord readDynamicRecord( FileChannel fileChannel, 
@@ -153,8 +171,8 @@ abstract class Command extends XaCommand
 	
 	static class NodeCommand extends Command
 	{
-		private NodeRecord record;
-		private NodeStore store;
+		private final NodeRecord record;
+		private final NodeStore store;
 		
 		NodeCommand( NodeStore store, NodeRecord record )
 		{
@@ -184,18 +202,22 @@ abstract class Command extends XaCommand
 		{
 			return "NodeCommand[" + record + "]";
 		}
+		
 
 		@Override
-		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
-			throws IOException
+//		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
+//			throws IOException
+		public void writeToFile( LogBuffer buffer ) throws IOException
 		{
-			buffer.clear();
+//			buffer.clear();
 			byte inUse = record.inUse() ? 
 					Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
 			buffer.put( NODE_COMMAND );
 			buffer.putInt( record.getId() ).put( inUse );
-			record.setTransferStartPosition( fileChannel, 
-				fileChannel.position() + 5 );
+//			record.setTransferStartPosition( fileChannel, 
+//				fileChannel.position() + 5 );
+			record.setTransferStartPosition( buffer.getFileChannel(), 
+				buffer.getFileChannelPosition() + 5 );
 			if ( record.inUse() )
 			{
 				buffer.putInt( record.getNextRel() ).putInt( 
@@ -206,8 +228,8 @@ abstract class Command extends XaCommand
 			{
 				record.setTransferCount( 1 );
 			}
-			buffer.flip();
-			fileChannel.write( buffer );
+//			buffer.flip();
+//			fileChannel.write( buffer );
 		}
 		
 		static Command readCommand( NeoStore neoStore, FileChannel fileChannel, 
@@ -246,25 +268,16 @@ abstract class Command extends XaCommand
 			{
 				return false;
 			}
-			return getKey().equals( ( ( NodeCommand ) o ).getKey() );
+			//return getKey().equals( ( ( NodeCommand ) o ).getKey() );
+			return getKey() == ((Command) o).getKey();
 		}
 	
-		private volatile int hashCode = 0;
-
-		public int hashCode()
-		{
-			if ( hashCode == 0 )
-			{
-				hashCode = 3217 * record.getId();
-			}
-			return hashCode;
-		}
 	}
 	
 	static class RelationshipCommand extends Command
 	{
-		private RelationshipRecord record;
-		private RelationshipStore store;
+		private final RelationshipRecord record;
+		private final RelationshipStore store;
 		
 		RelationshipCommand( RelationshipStore store, 
 			RelationshipRecord record )
@@ -298,17 +311,20 @@ abstract class Command extends XaCommand
 		}
 
 		@Override
-		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
-			throws IOException
+//		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
+//			throws IOException
+		public void writeToFile( LogBuffer buffer ) throws IOException
 		{
-			buffer.clear();
+//			buffer.clear();
 			byte inUse = record.inUse() ? 
 				Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
 			buffer.put( REL_COMMAND );
 			
 			buffer.putInt( record.getId() ).put( inUse );
-			record.setTransferStartPosition( fileChannel, 
-				fileChannel.position() + 5 );
+//			record.setTransferStartPosition( fileChannel, 
+//				fileChannel.position() + 5 );
+			record.setTransferStartPosition( buffer.getFileChannel(), 
+				buffer.getFileChannelPosition() + 5 );
 			if ( record.inUse() )
 			{
 				buffer.putInt( record.getFirstNode() ).putInt( 
@@ -323,8 +339,8 @@ abstract class Command extends XaCommand
 			{
 				record.setTransferCount( 1 );
 			}
-			buffer.flip();
-			fileChannel.write( buffer );
+//			buffer.flip();
+//			fileChannel.write( buffer );
 		}
 		
 		static Command readCommand( NeoStore neoStore, FileChannel fileChannel, 
@@ -377,26 +393,15 @@ abstract class Command extends XaCommand
 			{
 				return false;
 			}
-			return getKey().equals( ( ( RelationshipCommand ) o ).getKey() );
-		}
-	
-		private volatile int hashCode = 0;
-
-		@Override
-		public int hashCode()
-		{
-			if ( hashCode == 0 )
-			{
-				hashCode = 3217 * record.getId();
-			}
-			return hashCode;
-		}
+//			return getKey().equals( ( ( RelationshipCommand ) o ).getKey() );
+			return getKey() == ((Command) o).getKey();
+		}	
 	}	
 	
 	static class PropertyIndexCommand extends Command
 	{
-		private PropertyIndexRecord record;
-		private PropertyIndexStore store;
+		private final PropertyIndexRecord record;
+		private final PropertyIndexStore store;
 		
 		PropertyIndexCommand( PropertyIndexStore store, 
 			PropertyIndexRecord record )
@@ -430,11 +435,12 @@ abstract class Command extends XaCommand
 		}
 
 		@Override
-		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
-			throws IOException
+//		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
+//			throws IOException
+		public void writeToFile( LogBuffer buffer ) throws IOException
 		{
 			// id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
-			buffer.clear();
+// 			buffer.clear();
 			byte inUse = record.inUse() ? 
 				Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
 			buffer.put( PROP_INDEX_COMMAND );
@@ -444,30 +450,22 @@ abstract class Command extends XaCommand
 			if ( record.isLight() )
 			{
 				buffer.putInt( 0 );
-				buffer.flip();
-				fileChannel.write( buffer );
+//				buffer.flip();
+//				fileChannel.write( buffer );
 			}
 			else
 			{
 				Collection<DynamicRecord> keyRecords = 
 					record.getKeyRecords();
 				buffer.putInt( keyRecords.size() );
-				buffer.flip();
-				fileChannel.write( buffer );
+//				buffer.flip();
+//				fileChannel.write( buffer );
 				for ( DynamicRecord keyRecord : keyRecords )
 				{
-//					if ( ( buffer.capacity() - buffer.position() ) < 
-//						keyRecord.getLength() )
-//					{
-//						buffer.flip();
-//						fileChannel.write( buffer );
-//						buffer.flip();
-//					}
-					writeDynamicRecord( fileChannel, keyRecord, buffer );
+//					writeDynamicRecord( fileChannel, keyRecord, buffer );
+					writeDynamicRecord( buffer, keyRecord );
 				}
 			}
-//			buffer.flip();
-//			fileChannel.write( buffer );
 		}
 		
 		static Command readCommand( NeoStore neoStore, FileChannel fileChannel, 
@@ -509,12 +507,22 @@ abstract class Command extends XaCommand
 			return new PropertyIndexCommand( 
 				neoStore.getPropertyStore().getIndexStore(), record );
 		}
+
+		@Override
+		public boolean equals( Object o )
+		{
+			if ( !( o instanceof PropertyCommand ) )
+			{
+				return false;
+			}
+			return getKey() == ((Command) o).getKey();
+		}	
 	}
 
 	static class PropertyCommand extends Command
 	{
-		private PropertyRecord record;
-		private PropertyStore store;
+		private final PropertyRecord record;
+		private final PropertyStore store;
 		
 		PropertyCommand( PropertyStore store, PropertyRecord record )
 		{
@@ -545,20 +553,23 @@ abstract class Command extends XaCommand
 		{
 			return "PropertyCommand[" + record + "]";
 		}
-
+		
 		@Override
-		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
-			throws IOException
+//		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
+//			throws IOException
+		public void writeToFile( LogBuffer buffer ) throws IOException
 		{
 			// id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
 			// prev_prop_id(int)+next_prop_id(int)+nr_value_records(int)
-			buffer.clear();
+//			buffer.clear();
 			byte inUse = record.inUse() ? 
 				Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
 			buffer.put( PROP_COMMAND );
 			buffer.putInt( record.getId() ).put( inUse );
-			record.setTransferStartPosition( fileChannel, 
-				fileChannel.position() + 5 );
+//			record.setTransferStartPosition( fileChannel, 
+//				fileChannel.position() + 5 );
+			record.setTransferStartPosition( buffer.getFileChannel(), 
+				buffer.getFileChannelPosition() + 5 );
 			if ( record.inUse() )
 			{
 				buffer.putInt( record.getType().intValue() ).putInt( 
@@ -574,19 +585,20 @@ abstract class Command extends XaCommand
 			if ( record.isLight() )
 			{
 				buffer.putInt( 0 );
-				buffer.flip();
-				fileChannel.write( buffer );
+//				buffer.flip();
+//				fileChannel.write( buffer );
 			}
 			else
 			{
 				Collection<DynamicRecord> valueRecords = 
 					record.getValueRecords();
 				buffer.putInt( valueRecords.size() );
-				buffer.flip();
-				fileChannel.write( buffer );
+//				buffer.flip();
+//				fileChannel.write( buffer );
 				for ( DynamicRecord valueRecord : valueRecords )
 				{
-					writeDynamicRecord( fileChannel, valueRecord, buffer );
+//					writeDynamicRecord( fileChannel, valueRecord, buffer );
+					writeDynamicRecord( buffer, valueRecord );
 				}
 			}
 		}
@@ -663,26 +675,15 @@ abstract class Command extends XaCommand
 			{
 				return false;
 			}
-			return getKey().equals( ( ( PropertyCommand ) o ).getKey() );
-		}
-	
-		private volatile int hashCode = 0;
-
-		@Override
-		public int hashCode()
-		{
-			if ( hashCode == 0 )
-			{
-				hashCode = 3217 * record.getId();
-			}
-			return hashCode;
-		}
+			return getKey() == ((Command) o).getKey();
+//			return getKey().equals( ( ( PropertyCommand ) o ).getKey() );
+		}	
 	}	
 	
 	static class RelationshipTypeCommand extends Command
 	{
-		private RelationshipTypeRecord record;
-		private RelationshipTypeStore store;
+		private final RelationshipTypeRecord record;
+		private final RelationshipTypeStore store;
 		
 		RelationshipTypeCommand( RelationshipTypeStore store, 
 				RelationshipTypeRecord record )
@@ -716,11 +717,12 @@ abstract class Command extends XaCommand
 		}
 
 		@Override
-		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
-			throws IOException
+//		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
+//			throws IOException
+		public void writeToFile( LogBuffer buffer ) throws IOException
 		{
 			// id+in_use(byte)+type_blockId(int)+nr_type_records(int)
-			buffer.clear();
+//			buffer.clear();
 			byte inUse = record.inUse() ? 
 				Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
 			buffer.put( REL_TYPE_COMMAND );
@@ -729,21 +731,13 @@ abstract class Command extends XaCommand
 			
 			Collection<DynamicRecord> typeRecords = record.getTypeRecords();
 			buffer.putInt( typeRecords.size() );
-			buffer.flip();
-			fileChannel.write( buffer );
-			for ( DynamicRecord typeRecord : typeRecords )
-			{
-//				if ( ( buffer.capacity() - buffer.position() ) < 
-//					typeRecord.getLength() )
-//				{
-//					buffer.flip();
-//					fileChannel.write( buffer );
-//					buffer.flip();
-//				}
-				writeDynamicRecord( fileChannel, typeRecord, buffer );
-			}
 //			buffer.flip();
 //			fileChannel.write( buffer );
+			for ( DynamicRecord typeRecord : typeRecords )
+			{
+//				writeDynamicRecord( fileChannel, typeRecord, buffer );
+				writeDynamicRecord( buffer, typeRecord );
+			}
 		}
 		
 		static Command readCommand( NeoStore neoStore, FileChannel fileChannel, 
@@ -792,20 +786,9 @@ abstract class Command extends XaCommand
 			{
 				return false;
 			}
-			return getKey().equals( ( 
-				( RelationshipTypeCommand ) o ).getKey() );
-		}
-	
-		private volatile int hashCode = 0;
-
-		@Override
-		public int hashCode()
-		{
-			if ( hashCode == 0 )
-			{
-				hashCode = 3217 * record.getId();
-			}
-			return hashCode;
+			return getKey() == ((Command) o).getKey();
+//			return getKey().equals( ( 
+//				( RelationshipTypeCommand ) o ).getKey() );
 		}
 	}
 	

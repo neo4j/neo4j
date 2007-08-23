@@ -9,8 +9,8 @@ public class XidImpl implements Xid
 {
 	private static final int FORMAT_ID = 0x4E454E31; // NEO format identidier
 	
-	private byte globalId[] = null; 
-	private byte branchId[] = null;
+	private final byte globalId[]; 
+	private final byte branchId[];
 
 	public XidImpl( byte globalId[], byte branchId[] )
 	{

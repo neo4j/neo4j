@@ -76,7 +76,7 @@ public class XaContainer
 		{
 			if ( log != null )
 			{
-				log.force();
+				// log.force();
 				log.close();
 			}
 		}

@@ -185,7 +185,7 @@ public class TestRelationship extends TestCase
 			relationship.setProperty( "key1", new Integer(1) );
 			fail( "Adding property to deleted rel should throw exception." );
 		}
-		catch ( IllegalValueException e )
+		catch ( Exception e )
 		{ // good
 		}
 		log.setLevel( level );

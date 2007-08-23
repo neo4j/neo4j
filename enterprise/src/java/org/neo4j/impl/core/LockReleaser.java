@@ -1,0 +1,326 @@
+package org.neo4j.impl.core;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import javax.transaction.InvalidTransactionException;
+import javax.transaction.Synchronization;
+import javax.transaction.Transaction;
+import org.neo4j.impl.transaction.LockManager;
+import org.neo4j.impl.transaction.LockType;
+import org.neo4j.impl.transaction.NotInTransactionException;
+import org.neo4j.impl.transaction.TransactionFactory;
+import org.neo4j.impl.transaction.TransactionIsolationLevel;
+import org.neo4j.impl.util.ArrayMap;
+
+/**
+ * Manages commands and locks for each transaction. The public methods 
+ * <CODE>releaseCommands</CODE> and <CODE>undoAndReleaseCommands</CODE> should
+ * only be invoked right after a transaction commit or rollback. Depending
+ * on {@link TransactionIsolationLevel} locks will be added here to be 
+ * released upon commit/rollback. 
+ */
+public class LockReleaser
+{
+	private static Logger log = Logger.getLogger( 
+		LockReleaser.class.getName() );
+	
+//	private static final TransactionIsolationLevel DEFAULT_ISOLATION_LEVEL = 
+//		TransactionIsolationLevel.READ_COMMITTED;
+	
+	private static final LockReleaser instance = new LockReleaser();
+	private static final LockManager lockManager = LockManager.getManager();
+	
+	
+	private final ArrayMap<Thread,List<LockElement>> lockMap =  
+			new ArrayMap<Thread,List<LockElement>>( 9, true, true );
+
+	private final Synchronization txCommitHook = new TxCommitHook();
+	
+	private LockReleaser()
+	{
+	}
+	
+	/**
+	 * Returns the single instance of this class.
+	 * 
+	 * @return The command manager
+	 */
+	public static LockReleaser getManager()
+	{
+		return instance;
+	}
+	
+//	private static class CommandStackElement
+//	{
+//		TransactionIsolationLevel isolationLevel;
+//		Stack<Command> commands;
+//		Stack<LockElement> locks;
+//		
+//		CommandStackElement( TransactionIsolationLevel level, 
+//			Stack<Command> stack )
+//		{
+//			this.isolationLevel = level;
+//			this.commands = stack;
+//		}
+//		
+//		public String toString()
+//		{
+//			int commandCount = 0;
+//			if ( commands != null )
+//			{
+//				commandCount = commands.size();
+//			}
+//			int lockCount = 0;
+//			if ( locks != null )
+//			{
+//				lockCount = locks.size();
+//			}
+//			return "CommandCount[" + commandCount + "], LockCount[" + 
+//				lockCount + "]";
+//		}
+//	}
+	
+	private static class LockElement
+	{
+		Object resource;
+		LockType lockType;
+		
+		LockElement( Object resource, LockType type )
+		{
+			this.resource = resource;
+			this.lockType = type;
+		}
+	}
+	
+//	boolean txCommitHookRegistered()
+//	{
+//		return lockMap.get( Thread.currentThread() ) != null;
+//	}
+//	
+//	void registerTxCommitHook( Thread currentThread )
+//	{
+//		Transaction tx = null;
+//		try
+//		{
+//			tx = TransactionFactory.getTransactionManager().getTransaction();
+//			if ( tx == null )
+//			{
+//				throw new NotInTransactionException();
+//			}
+//		}
+//		catch ( javax.transaction.SystemException e )
+//		{
+//			throw new NotInTransactionException( e );
+//		}
+//		try
+//		{
+//			tx.registerSynchronization( txCommitHook );
+//		}
+//		catch ( Exception e )
+//		{
+//			throw new NotInTransactionException( e );
+//		}
+//		CommandStackElement cse = new CommandStackElement( 
+//			DEFAULT_ISOLATION_LEVEL, new Stack<Command>() );
+//		lockMap.put( currentThread, cse );
+//	}
+	
+	/**
+	 * Depending on transaction isolation level a lock may be released 
+	 * as soon as possible or it may be held throughout the whole transaction.
+	 * Invoking this method will trigger a release lock of {@link LockType} 
+	 * <CODE>type</CODE> on the <CODE>resource</CODE> when the transaction 
+	 * commits or rollbacks.
+	 * 
+	 * @param resource the resource on which the lock is taken
+	 * @param type type of lock (READ or WRITE)
+	 * @throws NotInTransactionException
+	 */
+	public void addLockToTransaction( Object resource, LockType type ) 
+		throws NotInTransactionException
+	{
+		Thread currentThread = Thread.currentThread();
+        List<LockElement> lockElements = lockMap.get( currentThread );
+		if ( lockElements != null )
+		{
+			lockElements.add( new LockElement( resource, type ) );
+		}
+		else
+		{
+			Transaction tx = null;
+			try
+			{
+				tx = TransactionFactory.getTransactionManager().getTransaction();
+				if ( tx == null )
+				{
+					// no transaction we release lock right away
+					if ( type == LockType.WRITE )
+					{
+						lockManager.releaseWriteLock( resource );
+					}
+					else if ( type == LockType.READ )
+					{
+						lockManager.releaseReadLock( resource );
+					}
+					throw new NotInTransactionException();
+				}
+				tx.registerSynchronization( txCommitHook );
+			}
+			catch ( javax.transaction.SystemException e )
+			{
+				throw new NotInTransactionException( e );
+			}
+			catch ( Exception e )
+			{
+				throw new NotInTransactionException( e );
+			}
+			lockElements = new ArrayList<LockElement>();
+			lockMap.put( currentThread, lockElements );
+			lockElements.add( new LockElement( resource, type ) );
+		}
+	}
+
+	/**
+	 * Changes the transaction isolation level for this transaction. This 
+	 * should be done right after <CODE>UserTransaction.begin()</CODE>. Trying 
+	 * to change isolation level after commands or locks has been added to the 
+	 * transaction will result in a {@link InvalidTransactionException} beeing 
+	 * thrown. 
+	 * 
+	 * @param level new transaction isolation level
+	 * @throws InvalidTransactionException if unable to change isolation 
+	 * level for this transaction
+	 * @throws NotInTransactionException
+	 */
+//	public void setTransactionIsolationLevel( TransactionIsolationLevel level )
+//		throws InvalidTransactionException, NotInTransactionException
+//	{
+//		Transaction tx = null;
+//		try
+//		{
+//			tx = TransactionFactory.getTransactionManager().getTransaction();
+//			if ( tx == null )
+//			{
+//				throw new NotInTransactionException();
+//			}
+//		}
+//		catch ( javax.transaction.SystemException e )
+//		{
+//			throw new NotInTransactionException( e );
+//		}
+//
+//		Thread currentThread = Thread.currentThread();
+//		if ( lockMap.get( currentThread ) != null )
+//		{
+//			throw new InvalidTransactionException( 
+//				"Transaction already in use." );
+//		}
+//		else
+//		{
+//			try
+//			{
+//				tx.registerSynchronization( txCommitHook );
+//			}
+//			catch ( Exception e )
+//			{
+//				throw new NotInTransactionException( e );
+//			}
+//			lockMap.put( currentThread, new ArrayList<LockElement>() );
+//		}
+//	}
+	
+	/**
+	 * Returns the transaction isolation level for the current transaction. 
+	 *
+	 * @return the transaction isolation level
+	 * @throws NotInTransactionException
+	 */
+//	public TransactionIsolationLevel getTransactionIsolationLevel()
+//		throws NotInTransactionException
+//	{
+//		try
+//		{
+//			if ( TransactionFactory.getTransactionManager().getTransaction() ==
+//						null )
+//			{
+//				throw new NotInTransactionException();
+//			}
+//		}
+//		catch ( javax.transaction.SystemException e )
+//		{
+//			throw new NotInTransactionException( e );
+//		}
+//		
+//		Thread currentThread = Thread.currentThread();
+//		CommandStackElement cse = lockMap.get( currentThread );
+//		if ( cse != null )
+//		{
+//			return cse.isolationLevel;
+//		}
+//		else
+//		{
+//			return DEFAULT_ISOLATION_LEVEL;
+//		}
+//	}
+	
+	/**
+	 * Releases all commands that participated in the successfully commited
+	 * transaction.
+	 *
+	 * @throws InvalidTransactionException if this method is invoked when 
+	 * transaction state is invalid.
+	 */
+	public void releaseLocks()
+	{
+		Thread currentThread = Thread.currentThread();
+		List<LockElement> lockElements = lockMap.remove( currentThread );
+		if ( lockElements != null )
+		{
+			for ( LockElement lockElement : lockElements )
+			{
+				try
+				{
+					if ( lockElement.lockType == LockType.READ )
+					{
+						lockManager.releaseReadLock( lockElement.resource );
+					}
+					else if ( lockElement.lockType == LockType.WRITE )
+					{
+						lockManager.releaseWriteLock( lockElement.resource );
+					}
+				}
+				catch ( Exception e )
+				{
+					e.printStackTrace();
+					log.severe( "Unable to release lock[" + 
+						lockElement.lockType + "] on resource[" + 
+						lockElement.resource + "]" );
+				}
+			}
+		}
+	}
+	
+	public synchronized void dumpLocks()
+	{
+		System.out.print( "Locks held: " );
+		java.util.Iterator itr = lockMap.keySet().iterator();
+		if ( !itr.hasNext() )
+		{
+			System.out.println( "NONE" );
+		}
+		else
+		{
+			System.out.println();
+		}
+		while ( itr.hasNext() )
+		{
+			Thread thread = (Thread) itr.next();
+			System.out.println( "" + thread + "->" +  
+				lockMap.get( thread ).size() );
+		}
+//		System.out.println( "TransactionCache size: " + 
+//			TransactionCache.size() );
+	}
+}
+		

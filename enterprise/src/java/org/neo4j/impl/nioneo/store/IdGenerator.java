@@ -61,12 +61,14 @@ public class IdGenerator
 	// used to calculate number of ids actually in use
 	private int defragedIdCount = -1;
 
-	private String fileName 			= null;
-	private FileChannel fileChannel 	= null; 
+	private final String fileName;
+	private FileChannel fileChannel = null; 
 	// in memory defraged ids read from file (and from freeId)
-	private LinkedList<Integer> defragedIdList = new LinkedList<Integer>();
+	private final LinkedList<Integer> defragedIdList = 
+		new LinkedList<Integer>();
 	// in memory newly free defraged ids that havn't been flushed to disk yet
-	private LinkedList<Integer> releasedIdList = new LinkedList<Integer>();
+	private final LinkedList<Integer> releasedIdList = 
+		new LinkedList<Integer>();
 	// buffer used in readIdBatch()
 	private ByteBuffer readBuffer = null;
 	// buffer used in writeIdBatch() and close()

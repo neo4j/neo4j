@@ -6,20 +6,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.impl.command.Command;
-import org.neo4j.impl.command.ExecuteFailedException;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.persistence.IdGenerator;
-import org.neo4j.impl.persistence.PersistenceMetadata;
 import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.transaction.TransactionUtil;
 import org.neo4j.impl.util.ArrayMap;
 
 class RelationshipTypeHolder
 {
-	private static RelationshipTypeHolder holder = 
+	private static final RelationshipTypeHolder holder = 
 		new RelationshipTypeHolder();
 	private static Logger log = 
 		Logger.getLogger( RelationshipTypeHolder.class.getName() );
@@ -156,21 +153,23 @@ class RelationshipTypeHolder
 		boolean success = false;
 		int id = IdGenerator.getGenerator().nextId( 
 			RelationshipType.class );
-		CreateRelationshipTypeCommand command = 
-			new CreateRelationshipTypeCommand();
+//		CreateRelationshipTypeCommand command = 
+//			new CreateRelationshipTypeCommand();
 		try
 		{
-			command.setId( id );
-			command.setName( name );
-			command.addToTransaction();
-			command.execute();
+//			command.setId( id );
+//			command.setName( name );
+//			command.addToTransaction();
+//			command.execute();
+			addRelType( name, id );
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( command );
+			EventData eventData = new EventData( new RelTypeOpData( id, 
+				name ) );
 			if ( !em.generateProActiveEvent( Event.RELATIONSHIPTYPE_CREATE, 
 				eventData ) )
 			{
 				setRollbackOnly();
-				command.undo();
+//				command.undo();
 				throw new RuntimeException( 
 					"Generate pro-active event failed." );
 			}
@@ -180,11 +179,11 @@ class RelationshipTypeHolder
 			success = true;
 			return id;
 		}
-		catch ( ExecuteFailedException e )
-		{
-			command.undo();
-			throw new RuntimeException( "Failed executing command.", e );
-		}
+//		catch ( ExecuteFailedException e )
+//		{
+//			command.undo();
+//			throw new RuntimeException( "Failed executing command.", e );
+//		}
 		finally
 		{
 			TransactionUtil.finishTx( success, txStarted );
@@ -204,52 +203,20 @@ class RelationshipTypeHolder
 		}
 	}
 
-	private static class CreateRelationshipTypeCommand extends Command
-		implements RelationshipTypeOperationEventData, PersistenceMetadata
+	static class RelTypeOpData implements RelationshipTypeOperationEventData
 	{
 		private int id = -1;
 		private String name = null;
 		
-		protected CreateRelationshipTypeCommand()
-		{
-			super();
-		}
-	
-		public void addToTransaction()
-		{
-			addCommandToTransaction();
-		}
-
-		protected void onExecute()
-		{
-			RelationshipTypeHolder.getHolder().addRelType( 
-				name, id );
-		}
-	
-		protected void onUndo()
-		{
-			RelationshipTypeHolder.getHolder().removeRelType( name );
-		}
-	
-		protected synchronized void onReset()
-		{
-			id = -1;
-			name = null;
-		}
-		
-		void  setId( int id )
+		RelTypeOpData( int id, String name )
 		{
 			this.id = id;
+			this.name = name;
 		}
-		
+	
 		public int getId()
 		{
 			return this.id;
-		}
-		
-		void setName( String name )
-		{
-			this.name = name;
 		}
 		
 		public String getName()
@@ -273,6 +240,15 @@ class RelationshipTypeHolder
 		relTypes.remove( name  );
 	}
 
+	void removeRelType( int id )
+	{
+		String name = relTranslation.remove( id );
+		if ( name != null )
+		{
+			relTypes.remove( name  );
+		}
+	}
+	
 	int getIdFor( RelationshipType type )
 	{
 //		String name = Enum.class.cast( type ).name();

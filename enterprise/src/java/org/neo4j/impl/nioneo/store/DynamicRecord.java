@@ -3,7 +3,8 @@ package org.neo4j.impl.nioneo.store;
 
 public class DynamicRecord extends AbstractRecord
 {
-	private byte[] data;
+	private byte[] data = null;
+	private char[] charData = null;
 	private int length;
 	private int prevBlock = Record.NO_PREV_BLOCK.intValue();
 	private int nextBlock = Record.NO_NEXT_BLOCK.intValue();
@@ -45,6 +46,13 @@ public class DynamicRecord extends AbstractRecord
 		this.data = data;
 	}
 	
+	public void setCharData( char[] data )
+	{
+		isLight = false;
+		this.length = data.length * 2;
+		this.charData = data;
+	}
+	
 	public int getLength()
 	{
 		return length;
@@ -53,7 +61,20 @@ public class DynamicRecord extends AbstractRecord
 	public byte[] getData()
 	{
 		assert !isLight;
+		assert charData == null;
 		return data;
+	}
+	
+	public boolean isCharData()
+	{
+		return charData != null;
+	}
+	
+	public char[] getDataAsChar()
+	{
+		assert !isLight;
+		assert data == null;
+		return charData;
 	}
 	
 	public int getPrevBlock()

@@ -67,7 +67,7 @@ public abstract class CommonAbstractStore
 	// default node store id generator grab size
 	protected static final int DEFAULT_ID_GRAB_SIZE = 1024;
 
-	private String storageFileName = null;
+	private final String storageFileName;
 	private IdGenerator idGenerator = null;
 	private FileChannel fileChannel = null;
 	private PersistenceWindowPool windowPool;

@@ -3,9 +3,9 @@ package org.neo4j.impl.nioneo.store;
 
 public class RelationshipRecord extends AbstractRecord
 {
-	private int firstNode;
-	private int secondNode;
-	private int type;
+	private final int firstNode;
+	private final int secondNode;
+	private final int type;
 	private int firstPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
 	private int firstNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
 	private int secondPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();

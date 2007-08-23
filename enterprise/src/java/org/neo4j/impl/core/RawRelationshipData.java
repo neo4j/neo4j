@@ -2,10 +2,10 @@ package org.neo4j.impl.core;
 
 public class RawRelationshipData
 {
-	private int id = -1;
-	private int firstNode = -1;
-	private int secondNode = -1;
-	private int type = -1;
+	private final int id;
+	private final int firstNode;
+	private final int secondNode;
+	private final int type;
 	
 	public RawRelationshipData( int id, int firstNode, int secondNode,
 								int type )

@@ -18,10 +18,10 @@ abstract class LockableWindow implements PersistenceWindow
 	public abstract int size();
 	
 	private OperationType type = null;
-	private FileChannel fileChannel = null;
+	private final FileChannel fileChannel;
 
 	private Thread lockingThread = null;
-	private LinkedList<Thread> waitingThreadList = new LinkedList<Thread>();
+	private final LinkedList<Thread> waitingThreadList = new LinkedList<Thread>();
 	private int lockCount = 0;
 	private int marked = 0;
 	

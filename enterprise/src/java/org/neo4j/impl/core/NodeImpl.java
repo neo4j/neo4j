@@ -15,8 +15,6 @@ import org.neo4j.api.core.ReturnableEvaluator;
 import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
-import org.neo4j.impl.command.CommandManager;
-import org.neo4j.impl.command.ExecuteFailedException;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
@@ -26,7 +24,6 @@ import org.neo4j.impl.transaction.LockNotFoundException;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.transaction.TransactionFactory;
-import org.neo4j.impl.transaction.TransactionIsolationLevel;
 import org.neo4j.impl.traversal.TraverserFactory;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
@@ -67,8 +64,13 @@ class NodeImpl implements Node, Comparable
 		FULL_REL }
 	
 	private static Logger log = Logger.getLogger( NodeImpl.class.getName() );
+	private static final LockManager lockManager = LockManager.getManager();
+	private static final LockReleaser lockReleaser = LockReleaser.getManager();
+	private static final NodeManager nodeManager = NodeManager.getManager();
+	private static final TraverserFactory travFactory = 
+		TraverserFactory.getFactory();
 	
-	private int id = -1;
+	private final int id;
 	private boolean isDeleted = false;
 	private NodePhase nodePropPhase;
 	private NodePhase nodeRelPhase;
@@ -77,10 +79,6 @@ class NodeImpl implements Node, Comparable
 	private ArrayMap<Integer,Property> propertyMap = 
 		new ArrayMap<Integer,Property>( 9, false, true );
 	
-	private static NodeManager nodeManager = 
-		NodeManager.getManager();
-	private static TraverserFactory travFactory = 
-		TraverserFactory.getFactory();
 
 	NodeImpl( int id )
 	{
@@ -315,18 +313,18 @@ class NodeImpl implements Node, Comparable
 	public void delete() // throws DeleteException
 	{
 		acquireLock( this, LockType.WRITE );
-		NodeCommands nodeCommand = null;
+//		NodeCommands nodeCommand = null;
 		try
 		{
 			// neo constraints need to validate all rels deleted so we 
 			// must have full node
-			ensureFullRelationships();
-			nodeCommand = new NodeCommands();
-			nodeCommand.setNode( this );
-			nodeCommand.initDelete();
+//			ensureFullRelationships();
+//			nodeCommand = new NodeCommands();
+//			nodeCommand.setNode( this );
+//			nodeCommand.initDelete();
 		
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( nodeCommand );
+			EventData eventData = new EventData( new NodeOpData( this, id ) );
 			if ( !em.generateProActiveEvent( Event.NODE_DELETE, 
 				eventData ) )
 			{
@@ -338,19 +336,25 @@ class NodeImpl implements Node, Comparable
 			// normal node phase here isn't necessary, if something breaks we 
 			// still have the node as it was in memory and the transaction will 
 			// rollback so the full node will still be persistent
-			nodeCommand.execute();
+			nodeRelPhase = NodePhase.EMPTY_REL;
+			nodePropPhase = NodePhase.EMPTY_PROPERTY;
+			relationshipMap = new ArrayMap<String,ArrayIntSet>(); 
+			propertyMap = new ArrayMap<Integer,Property>( 9, false, true );
+			
+			nodeManager.removeNodeFromCache( id );
+			// nodeCommand.execute();
 			em.generateReActiveEvent( Event.NODE_DELETE, eventData );
 		}
-		catch ( ExecuteFailedException e )
-		{
-			setRollbackOnly();
-			if ( nodeCommand != null )
-			{
-				nodeCommand.undo();
-			}
-			throw new DeleteException( "Failed executing command deleting " +
-				this, e );
-		}
+//		catch ( ExecuteFailedException e )
+//		{
+//			setRollbackOnly();
+//			if ( nodeCommand != null )
+//			{
+//				nodeCommand.undo();
+//			}
+//			throw new DeleteException( "Failed executing command deleting " +
+//				this, e );
+//		}
 		finally
 		{
 			releaseLock( this, LockType.WRITE );
@@ -432,7 +436,6 @@ class NodeImpl implements Node, Comparable
 		acquireLock( this, LockType.READ );
 		try
 		{
-			//if ( index != null )
 			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
 				Property property = propertyMap.get( index.getKeyId() );
@@ -450,13 +453,20 @@ class NodeImpl implements Node, Comparable
 					}
 				}
 			}
-			ensureFullProperties();
-			for ( int keyId : propertyMap.keySet() )
+			if ( !PropertyIndex.hasAll() )
 			{
-				PropertyIndex indexToCheck = PropertyIndex.getIndexFor( keyId );
-				if ( indexToCheck.getKey().equals( key ) )
+				ensureFullProperties();
+				for ( int keyId : propertyMap.keySet() )
 				{
-					return propertyMap.get( indexToCheck.getKeyId() );
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
+					{
+						PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+							keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							return propertyMap.get( indexToCheck.getKeyId() );
+						}
+					}
 				}
 			}
 		}
@@ -476,8 +486,6 @@ class NodeImpl implements Node, Comparable
 		acquireLock( this, LockType.READ );
 		try
 		{
-//			PropertyIndex index = PropertyIndex.index( key );
-//			if ( index != null )
 			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
 				Property property = propertyMap.get( index.getKeyId() );
@@ -495,13 +503,20 @@ class NodeImpl implements Node, Comparable
 					}
 				}
 			}
-			ensureFullProperties();
-			for ( int keyId : propertyMap.keySet() )
+			if ( !PropertyIndex.hasAll() )
 			{
-				PropertyIndex indexToCheck = PropertyIndex.getIndexFor( keyId );
-				if ( indexToCheck.getKey().equals( key ) )
+				ensureFullProperties();
+				for ( int keyId : propertyMap.keySet() )
 				{
-					return propertyMap.get( indexToCheck.getKeyId() );
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
+					{
+						PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+							keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							return propertyMap.get( indexToCheck.getKeyId() );
+						}
+					}
 				}
 			}
 		}
@@ -580,13 +595,13 @@ class NodeImpl implements Node, Comparable
 				"key=" + key + ", " + "value=" + value );
 		}
 		acquireLock( this, LockType.WRITE );
-		NodeCommands nodeCommand = null;
+//		NodeCommands nodeCommand = null;
 		try
 		{
 			// must make sure we don't add already existing property
 			ensureFullProperties();
-			nodeCommand = new NodeCommands(); 
-			nodeCommand.setNode( this );
+//			nodeCommand = new NodeCommands(); 
+//			nodeCommand.setNode( this );
 //			PropertyIndex index = PropertyIndex.index( key );
 //			if ( index == null )
 			PropertyIndex index = null;
@@ -600,64 +615,79 @@ class NodeImpl implements Node, Comparable
 					break;
 				}
 			}
-			if ( property == null )
+			if ( property == null && !PropertyIndex.hasAll() )
 			{
 				for ( int keyId : propertyMap.keySet() )
 				{
-					PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
-						keyId );
-					if ( indexToCheck.getKey().equals( key ) )
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
 					{
-						index = indexToCheck;
-						property = propertyMap.get( indexToCheck.getKeyId() );
-						break;
+						PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+							keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							index = indexToCheck;
+							property = propertyMap.get( indexToCheck.getKeyId() );
+							break;
+						}
 					}
 				}
-				if ( index == null )
-				{
-					index = PropertyIndex.createPropertyIndex( key );
-				}
+			}
+			if ( index == null )
+			{
+				index = PropertyIndex.createPropertyIndex( key );
 			}
 			Event event = Event.NODE_ADD_PROPERTY;
+			NodeOpData data;
 			if ( property != null )
 			{
 				int propertyId = property.getId();
-				nodeCommand.initChangeProperty( propertyId, index,  
-					new Property( propertyId, value ) );
+				data = new NodeOpData( this, id, propertyId, index, value );
+//				nodeCommand.initChangeProperty( propertyId, index,  
+//					new Property( propertyId, value ) );
 				event = Event.NODE_CHANGE_PROPERTY;
 			}
 			else
 			{
-				nodeCommand.initAddProperty( index, new Property( -1, value ) );
+				data = new NodeOpData( this, id, -1, index, value );
+//				nodeCommand.initAddProperty( index, new Property( -1, value ) );
 			}
 			// have to execute command here since the full node is loaded
 			// and then the property would already be in cache
-			nodeCommand.execute();
+//			nodeCommand.execute();
 
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( nodeCommand );
+			EventData eventData = new EventData( data );
 			if ( !em.generateProActiveEvent( event, eventData ) )
 			{
 				setRollbackOnly();
-				nodeCommand.undo();
+//				nodeCommand.undo();
 				throw new IllegalValueException( 
 					"Generate pro-active event failed, " +
 					" unable to add property[" + key + "," + value + 
 					"] on " + this );
 			}
-
+			if ( event == Event.NODE_ADD_PROPERTY )
+			{
+				doAddProperty( index, new Property( data.getPropertyId(), 
+					value ) );
+			}
+			else
+			{
+				doChangeProperty( index, new Property( data.getPropertyId(), 
+					value ) );
+			}
 			em.generateReActiveEvent( event, eventData );
 		}
-		catch ( ExecuteFailedException e )
-		{
-			if ( nodeCommand != null )
-			{
-				nodeCommand.undo();
-			}
-			throw new IllegalValueException( "Failed executing command when " +
-				" adding property[" + key + "," + value + 
-				"] on " + this, e );
-		}
+//		catch ( ExecuteFailedException e )
+//		{
+//			if ( nodeCommand != null )
+//			{
+//				nodeCommand.undo();
+//			}
+//			throw new IllegalValueException( "Failed executing command when " +
+//				" adding property[" + key + "," + value + 
+//				"] on " + this, e );
+//		}
 		finally
 		{
 			releaseLock( this, LockType.WRITE );
@@ -732,79 +762,86 @@ class NodeImpl implements Node, Comparable
 			throw new IllegalArgumentException( "Null parameter." );
 		}
 		acquireLock( this, LockType.WRITE );
-		NodeCommands nodeCommand = null;
+//		NodeCommands nodeCommand = null;
 		try
 		{
 			// if not found just return null
-			PropertyIndex index = null;
+//			PropertyIndex index = null;
+			Property property = null;
 			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
 			{
-				Property property = propertyMap.get( cachedIndex.getKeyId() );
+				property = propertyMap.remove( cachedIndex.getKeyId() );
 				if ( property == null )
 				{
 					if ( ensureFullProperties() )
 					{
-						property = propertyMap.get( cachedIndex.getKeyId() );
+						property = propertyMap.remove( cachedIndex.getKeyId() );
 						if ( property != null )
 						{
-							index = cachedIndex;
+//							index = cachedIndex;
+							break;
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+			if ( property == null && !PropertyIndex.hasAll() )
+			{
+				ensureFullProperties();
+				for ( int keyId : propertyMap.keySet() )
+				{
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
+					{
+						PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+							keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							property = propertyMap.remove( indexToCheck.getKeyId() );
 							break;
 						}
 					}
 				}
 			}
-			if ( index == null )
+			if ( property == null )
 			{
-				ensureFullProperties();
-				Property property = null;
-				for ( int keyId : propertyMap.keySet() )
-				{
-					PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
-						keyId );
-					if ( indexToCheck.getKey().equals( key ) )
-					{
-						property = propertyMap.get( indexToCheck.getKeyId() );
-						index = indexToCheck;
-						break;
-					}
-				}
-				if ( property == null )
-				{
-					return null;
-				}
+				return null;
 			}
-			nodeCommand = new NodeCommands(); 
-			nodeCommand.setNode( this );
-			
-			nodeCommand.initRemoveProperty( doGetProperty( index ).getId(), 
-				index );
+//			nodeCommand = new NodeCommands(); 
+//			nodeCommand.setNode( this );		
+//			nodeCommand.initRemoveProperty( doGetProperty( index ).getId(), 
+//				index );
 			// have to execute here for NodeOperationEventData to be correct
 			// nodeCommand also checks that the property really exist
-			nodeCommand.execute();
+//			nodeCommand.execute();
+			NodeOpData data = new NodeOpData( this, id, property.getId() );
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( nodeCommand );
+			EventData eventData = new EventData( data );
 			if ( !em.generateProActiveEvent( Event.NODE_REMOVE_PROPERTY, 
 				eventData ) )
 			{
 				setRollbackOnly();
-				nodeCommand.undo();
+//				nodeCommand.undo();
 				throw new NotFoundException( 
 					"Generate pro-active event failed, " +
 					"unable to remove property[" + key + "] from " + this );
 			}
 
 			em.generateReActiveEvent( Event.NODE_REMOVE_PROPERTY, eventData );
-			return nodeCommand.getOldProperty();
+			return property.getValue();
+			// return nodeCommand.getOldProperty();
 		}
-		catch ( ExecuteFailedException e )
-		{
-			if ( nodeCommand != null )
-			{
-				nodeCommand.undo();
-			}
-			throw new NotFoundException( "Failed executing command " +
-				"while removing property[" + key + "] on " + this, e );
-		}
+//		catch ( ExecuteFailedException e )
+//		{
+//			if ( nodeCommand != null )
+//			{
+//				nodeCommand.undo();
+//			}
+//			throw new NotFoundException( "Failed executing command " +
+//				"while removing property[" + key + "] on " + this, e );
+//		}
 		finally
 		{
 			releaseLock( this, LockType.WRITE );
@@ -1064,6 +1101,7 @@ class NodeImpl implements Node, Comparable
 	
 	boolean hasRelationships()
 	{
+		ensureFullRelationships();
 		return ( relationshipMap.size() > 0 );
 	}
 	
@@ -1085,7 +1123,7 @@ class NodeImpl implements Node, Comparable
 		if ( nodePropPhase != NodePhase.FULL_PROPERTY )
 		{
 			RawPropertyData[] rawProperties = 
-				NodeManager.getManager().loadProperties( this );
+				nodeManager.loadProperties( this );
 			ArrayIntSet addedProps = new ArrayIntSet();
 			ArrayMap<Integer,Property> newPropertyMap = 
 				new ArrayMap<Integer,Property>();
@@ -1117,7 +1155,7 @@ class NodeImpl implements Node, Comparable
 		if ( nodeRelPhase != NodePhase.FULL_REL )
 		{
 			List<Relationship> fullRelationshipList = 
-				NodeManager.getManager().loadRelationships( this );
+				nodeManager.loadRelationships( this );
 			ArrayIntSet addedRels = new ArrayIntSet();
 			ArrayMap<String,ArrayIntSet> newRelationshipMap = 
 				new ArrayMap<String,ArrayIntSet>(); 
@@ -1168,14 +1206,14 @@ class NodeImpl implements Node, Comparable
 		try
 		{
 			// make sure we're in transaction
-			TransactionFactory.getTransactionIsolationLevel();
+			// TransactionFactory.getTransactionIsolationLevel();
 			if ( lockType == LockType.READ )
 			{
-				LockManager.getManager().getReadLock( resource );
+				lockManager.getReadLock( resource );
 			}
 			else if ( lockType == LockType.WRITE )
 			{
-				LockManager.getManager().getWriteLock( resource );
+				lockManager.getWriteLock( resource );
 			}
 			else
 			{
@@ -1203,23 +1241,23 @@ class NodeImpl implements Node, Comparable
 	{
 		try
 		{
-			TransactionIsolationLevel level = 
-				TransactionFactory.getTransactionIsolationLevel();
-			if ( level == TransactionIsolationLevel.READ_COMMITTED )
-			{
+//			TransactionIsolationLevel level = 
+//				TransactionFactory.getTransactionIsolationLevel();
+//			if ( level == TransactionIsolationLevel.READ_COMMITTED )
+//			{
 				if ( lockType == LockType.READ )
 				{
-					LockManager.getManager().releaseReadLock( resource );
+					lockManager.releaseReadLock( resource );
 				}
 				else if ( lockType == LockType.WRITE )
 				{
 					if ( forceRelease ) 
 					{
-						LockManager.getManager().releaseWriteLock( resource );
+						lockManager.releaseWriteLock( resource );
 					}
 					else
 					{
-						CommandManager.getManager().addLockToTransaction( resource, 
+						lockReleaser.addLockToTransaction( resource, 
 							lockType );
 					}
 				}
@@ -1228,17 +1266,17 @@ class NodeImpl implements Node, Comparable
 					throw new RuntimeException( "Unkown lock type: " + 
 						lockType );
 				}
-			}
-			else if ( level == TransactionIsolationLevel.BAD )
-			{
-				CommandManager.getManager().addLockToTransaction( resource, 
-					lockType );
-			}
-			else
-			{
-				throw new RuntimeException( 
-					"Unkown transaction isolation level, " + level );
-			}
+//			}
+//			else if ( level == TransactionIsolationLevel.BAD )
+//			{
+//				LockReleaser.getManager().addLockToTransaction( resource, 
+//					lockType );
+//			}
+//			else
+//			{
+//				throw new RuntimeException( 
+//					"Unkown transaction isolation level, " + level );
+//			}
 		}
 		catch ( NotInTransactionException e )
 		{

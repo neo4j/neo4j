@@ -32,11 +32,11 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	
 	private NeoStoreXaResource xaResource = null;
 	 
-	private NeoStore neoStore;
-	private NodeEventConsumer nodeConsumer = null;
-	private RelationshipEventConsumer relConsumer = null;
-	private RelationshipTypeEventConsumer relTypeConsumer = null;
-	private PropertyIndexEventConsumer propIndexConsumer = null;
+	private final NeoStore neoStore;
+	private final NodeEventConsumer nodeConsumer;
+	private final RelationshipEventConsumer relConsumer;
+	private final RelationshipTypeEventConsumer relTypeConsumer;
+	private final PropertyIndexEventConsumer propIndexConsumer;
 	
 	private NeoTransaction neoTransaction = null;
 	
@@ -163,8 +163,8 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	
 	private class NodeEventConsumerImpl implements NodeEventConsumer
 	{
-		private NeoStoreXaConnection xaCon;
-		private NodeStore nodeStore;
+		private final NeoStoreXaConnection xaCon;
+		private final NodeStore nodeStore;
 		
 		public NodeEventConsumerImpl( NeoStoreXaConnection xaCon )
 		{
@@ -340,8 +340,8 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	private class RelationshipEventConsumerImpl implements 
 		RelationshipEventConsumer
 	{
-		private NeoStoreXaConnection xaCon;
-		private RelationshipStore relStore;
+		private final NeoStoreXaConnection xaCon;
+		private final RelationshipStore relStore;
 //		private PropertyStore propStore;
 		
 		public RelationshipEventConsumerImpl( NeoStoreXaConnection xaCon )
@@ -480,8 +480,8 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	private class RelationshipTypeEventConsumerImpl 
 		implements RelationshipTypeEventConsumer
 	{
-		private NeoStoreXaConnection xaCon = null;
-		private RelationshipTypeStore relTypeStore = null;
+		private final NeoStoreXaConnection xaCon;
+		private final RelationshipTypeStore relTypeStore;
 		
 		RelationshipTypeEventConsumerImpl( NeoStoreXaConnection xaCon )
 		{
@@ -538,7 +538,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	private class PropertyIndexEventConsumerImpl 
 		implements PropertyIndexEventConsumer
 	{
-		private NeoStoreXaConnection xaCon = null;
+		private final NeoStoreXaConnection xaCon;
 //		private PropertyStore propStore = null;
 		
 		PropertyIndexEventConsumerImpl( NeoStoreXaConnection xaCon )

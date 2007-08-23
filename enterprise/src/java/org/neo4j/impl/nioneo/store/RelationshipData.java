@@ -5,10 +5,10 @@ package org.neo4j.impl.nioneo.store;
  */
 public class RelationshipData
 {
-	private int id;
-	private int firstNode;
-	private int secondNode;
-	private int relType;
+	private final int id;
+	private final int firstNode;
+	private final int secondNode;
+	private final int relType;
 //	private int firstNodePreviousRelId;
 //	private int firstNodeNextRelId;
 //	private int secondNodePreviousRelId;

@@ -135,6 +135,7 @@ public class NeoModule
 	{
 		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
 		rth.clear();
+		PropertyIndex.clear();
 		NodeManager.getManager().clearCache();
 		NeoConstraintsListener.getListener().unregisterEventListeners();
 		AdaptiveCacheManager.getManager().stop();
