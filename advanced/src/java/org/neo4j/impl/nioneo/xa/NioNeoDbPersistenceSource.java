@@ -19,8 +19,8 @@ import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.impl.persistence.Operation;
 import org.neo4j.impl.persistence.PersistenceException;
-import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.persistence.PersistenceSource;
 import org.neo4j.impl.persistence.PersistenceUpdateFailedException;
 import org.neo4j.impl.persistence.ResourceConnection;
@@ -93,12 +93,12 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 	private static class NioNeoDbResourceConnection 
 		implements ResourceConnection 
 	{
-		private NeoStoreXaConnection xaCon = null;
-		private NodeEventConsumer nodeConsumer = null;
-		private RelationshipEventConsumer relConsumer = null;
-		private RelationshipTypeEventConsumer relTypeConsumer = null;
-		private PropertyIndexEventConsumer propIndexConsumer = null;
-		private PropertyStore propStore = null;
+		private NeoStoreXaConnection xaCon;
+		private NodeEventConsumer nodeConsumer;
+		private RelationshipEventConsumer relConsumer;
+		private RelationshipTypeEventConsumer relTypeConsumer;
+		private PropertyIndexEventConsumer propIndexConsumer;
+		private PropertyStore propStore;
 		
 		NioNeoDbResourceConnection( NeoStoreXaDataSource xaDs )
 		{
@@ -122,15 +122,15 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 			nodeConsumer = null;
 			relConsumer = null;
 			relTypeConsumer = null;
+			propIndexConsumer = null;
 		}
 		
-		public Object performOperation( PersistenceManager.Operation operation, 
+		public Object performOperation( Operation operation, 
 			Object param ) throws PersistenceException
 		{
 			try
 			{
-				if ( operation == 
-						PersistenceManager.LOAD_ALL_RELATIONSHIP_TYPES )
+				if ( operation == Operation.LOAD_ALL_RELATIONSHIP_TYPES )
 				{
 					RelationshipTypeData relTypeData[] = 
 						relTypeConsumer.getRelationshipTypes();
@@ -144,7 +144,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 					}
 					return rawRelTypeData;
 				}
-				else if ( operation == PersistenceManager.LOAD_LIGHT_NODE )
+				else if ( operation == Operation.LOAD_LIGHT_NODE )
 				{
 					if ( nodeConsumer.loadLightNode( 
 							( ( Integer ) param ).intValue() ) )
@@ -156,12 +156,11 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 						return null;
 					}
 				}
-				else if ( operation == PersistenceManager.LOAD_PROPERTY_INDEX )
+				else if ( operation == Operation.LOAD_PROPERTY_INDEX )
 				{
 					return propIndexConsumer.getKeyFor( (Integer) param  );
 				}
-				else if ( operation == 
-					PersistenceManager.LOAD_NODE_PROPERTIES )
+				else if ( operation == Operation.LOAD_NODE_PROPERTIES )
 				{
 					int id = (int) ( ( Node ) param ).getId();
 					PropertyData propData[] = nodeConsumer.getProperties( id );
@@ -177,7 +176,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 					return properties;
 					
 				}
-				else if ( operation == PersistenceManager.LOAD_RELATIONSHIPS )
+				else if ( operation == Operation.LOAD_RELATIONSHIPS )
 				{
 					int id = (int) ( ( Node ) param ).getId();
 					RelationshipData relData[] = 
@@ -194,18 +193,16 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 					}
 					return relationships;
 				}
-				else if ( operation == PersistenceManager.LOAD_LIGHT_REL )
+				else if ( operation == Operation.LOAD_LIGHT_REL )
 				{
 					int id = ( ( Integer ) param ).intValue();
 					RelationshipData relData = 
 						relConsumer.getRelationship( id );
 					
-					// catch not found exception here and return null later
-					
 					return new RawRelationshipData( id, relData.firstNode(), 
 						relData.secondNode(), relData.relationshipType() );
 				}
-				else if ( operation == PersistenceManager.LOAD_REL_PROPERTIES )
+				else if ( operation == Operation.LOAD_REL_PROPERTIES )
 				{
 					int id = (int) ( ( Relationship ) param ).getId();
 					PropertyData propData[] = relConsumer.getProperties( id );
@@ -220,7 +217,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 					}
 					return properties;
 				}
-				else if ( operation == PersistenceManager.LOAD_PROPERTY_VALUE )
+				else if ( operation == Operation.LOAD_PROPERTY_VALUE )
 				{
 					int id = ( ( Integer ) param ).intValue();
 					// return propStore.getPropertyValue( id );

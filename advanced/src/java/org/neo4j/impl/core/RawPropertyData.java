@@ -2,9 +2,9 @@ package org.neo4j.impl.core;
 
 public class RawPropertyData
 {
-	private int id = -1;
-	private int indexId = -1;
-	private Object value = null;
+	private final int id;
+	private final int indexId;
+	private final Object value;
 
 	public RawPropertyData( int id, int indexId, Object value )
 	{

@@ -2,7 +2,7 @@ package org.neo4j.impl;
 
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.impl.command.CommandManager;
+import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.transaction.LockManager;
 
 public class Main
@@ -36,7 +36,7 @@ public class Main
 				// Then dump lock information
 			try
 			{
-				CommandManager.getManager().dumpStack();
+				LockReleaser.getManager().dumpLocks();
 				LockManager.getManager().dumpRagStack();
 				LockManager.getManager().dumpAllLocks();
 			}

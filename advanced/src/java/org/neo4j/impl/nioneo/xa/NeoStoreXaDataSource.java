@@ -1,5 +1,18 @@
 package org.neo4j.impl.nioneo.xa;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.neo4j.api.core.Node;
+import org.neo4j.api.core.Relationship;
+import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.PropertyStore;
@@ -12,22 +25,7 @@ import org.neo4j.impl.transaction.xaframework.XaContainer;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.impl.transaction.xaframework.XaTransactionFactory;
-
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-
-import java.nio.channels.FileChannel;
-import java.nio.ByteBuffer;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.File;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a facotry for 
@@ -43,9 +41,9 @@ public class NeoStoreXaDataSource extends XaDataSource
 	private static Logger logger = 
 		Logger.getLogger( NeoStoreXaDataSource.class.getName() );
 	
-	private NeoStore neoStore = null;
-	private XaContainer xaContainer = null;
-	private HashMap<Class,Store> idGenerators = null;
+	private final NeoStore neoStore;
+	private final XaContainer xaContainer;
+	private final ArrayMap<Class,Store> idGenerators;
 	
 
 	/**
@@ -120,7 +118,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 			logger.info(  
 				"Waiting for TM to take care of recovered transactions." );
 		}
-		idGenerators = new HashMap<Class,Store>();
+		idGenerators = new ArrayMap<Class,Store>( 5, false, false );
 		this.idGenerators.put( Node.class, neoStore.getNodeStore() );
 		this.idGenerators.put( Relationship.class, 
 			neoStore.getRelationshipStore() );
@@ -172,7 +170,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 			logger.info( 
 				"Waiting for TM to take care of recovered transactions." );
 		}
-		idGenerators = new HashMap<Class,Store>();
+		idGenerators = new ArrayMap<Class,Store>( 5, false, false );
 		this.idGenerators.put( Node.class, neoStore.getNodeStore() );
 		this.idGenerators.put( Relationship.class, 
 			neoStore.getRelationshipStore() );
@@ -183,6 +181,12 @@ public class NeoStoreXaDataSource extends XaDataSource
 				neoStore.getPropertyStore() ); 
 		this.idGenerators.put( PropertyIndex.class, 
 			neoStore.getPropertyStore().getIndexStore() );
+	}
+
+	// used for testing
+	public void truncateLogicalLog() throws IOException
+	{
+		xaContainer.getLogicalLog().truncate();
 	}
 	
 	NeoStore getNeoStore()

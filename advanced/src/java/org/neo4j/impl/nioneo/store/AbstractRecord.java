@@ -5,7 +5,7 @@ import java.nio.channels.FileChannel;
 public abstract class AbstractRecord
 {
 	private boolean inUse = false;
-	private int id;
+	private final int id;
 	private boolean created = false;
 	private long startPosition = -1;
 	private long count = -1;

@@ -23,9 +23,9 @@ import java.util.Map;
  */
 public class LockManager
 {
-	private static LockManager instance = new LockManager();
+	private static final LockManager instance = new LockManager();
 	
-	private Map<Object,RWLock> resourceLockMap = 
+	private final Map<Object,RWLock> resourceLockMap = 
 		new HashMap<Object,RWLock>();
 	
 	private LockManager() {}

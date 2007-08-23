@@ -42,7 +42,8 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 	Logger log = Logger.getLogger( BusinessLayerMonitor.class.getName() );
 	
 	// -- Singleton stuff
-	private static BusinessLayerMonitor monitor = new BusinessLayerMonitor();
+	private static final BusinessLayerMonitor monitor = 
+		new BusinessLayerMonitor();
 	private BusinessLayerMonitor() {}
 	/**
 	 * Singleton accessor.
@@ -53,10 +54,6 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 		return monitor;
 	}
 	
-	
-	// -- Event hooks
-
-	// javadoc: see ProActiveEventListener.proActiveEventReceived
 	public boolean proActiveEventReceived( Event event, EventData data )
 	{
 		boolean success = false;
@@ -172,11 +169,8 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 						 ", which does not implement PersistenceMetadata.";
 			throw new IllegalArgumentException(	msg );
 		}
-		PersistenceMetadata	entityMetaData 	= 
-			(PersistenceMetadata) data.getData();
 		ResourceConnection resource = 
-			ResourceBroker.getBroker().acquireResourceConnection( 
-				entityMetaData );
+			ResourceBroker.getBroker().acquireResourceConnection(); 
 		resource.performUpdate( event, data );
 	}
 	

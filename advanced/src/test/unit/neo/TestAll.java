@@ -3,7 +3,6 @@ package unit.neo;
 import junit.extensions.TestSetup;
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
 import org.neo4j.api.core.EmbeddedNeo;
 
 public class TestAll extends TestSuite
@@ -45,7 +44,7 @@ public class TestAll extends TestSuite
 		startupNeo();
 		junit.textui.TestRunner.run( suite() );
 		shutdownNeo();
-		org.neo4j.impl.command.CommandManager.getManager().dumpStack();		
+		org.neo4j.impl.core.LockReleaser.getManager().dumpLocks();		
 		org.neo4j.impl.transaction.LockManager.getManager().dumpRagStack();
 		org.neo4j.impl.transaction.LockManager.getManager().dumpAllLocks();
 		org.neo4j.impl.transaction.TxManager.getManager().dumpTransactions();

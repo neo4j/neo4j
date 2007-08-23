@@ -13,7 +13,7 @@ public abstract class XaResourceHelpImpl implements XAResource
 {
 	private int transactionTimeout = 120;
 	private XaTransaction xaTx = null;
-	private XaResourceManager xaRm = null;
+	private final XaResourceManager xaRm;
 	
 	protected XaResourceHelpImpl( XaResourceManager xaRm )
 	{

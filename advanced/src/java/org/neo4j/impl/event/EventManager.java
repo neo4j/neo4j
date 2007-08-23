@@ -34,7 +34,7 @@ public class EventManager
 	private static Logger log =
 		Logger.getLogger( EventManager.class.getName() );
 	
-	private static EventManager instance = new EventManager();
+	private static final EventManager instance = new EventManager();
 	
 	private Map<Event,List<ProActiveEventListener>> proActiveEventListeners = 
 		new HashMap<Event,List<ProActiveEventListener>>();
@@ -45,7 +45,7 @@ public class EventManager
 	private boolean startIsOk = true;
 	private boolean destroyed = true;	
 
-	private EventQueue eventQueue		= new EventQueue();
+	private EventQueue eventQueue = new EventQueue();
 	
 	private EventManager()
 	{

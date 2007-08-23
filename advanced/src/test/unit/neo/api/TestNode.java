@@ -137,7 +137,7 @@ public class TestNode extends TestCase
 			node.setProperty( "key1", new Integer( 1 ) );
 			fail( "Adding stuff to deleted node should throw exception" );
 		}
-		catch ( IllegalValueException e )
+		catch ( Exception e )
 		{ // good
 		}
 		log.setLevel( level );

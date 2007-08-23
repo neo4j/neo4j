@@ -36,7 +36,7 @@ import org.neo4j.impl.util.ArrayMap;
 public class TxManager implements TransactionManager
 {
 	private static Logger log = Logger.getLogger( TxManager.class.getName() );
-	private static TxManager manager = new TxManager();
+	private static final TxManager manager = new TxManager();
 	
 	private ArrayMap<Thread,TransactionImpl> txThreadMap; 
 	

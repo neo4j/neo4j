@@ -434,6 +434,7 @@ public class TestXa extends TestCase
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.prepare( xid );
 			xaRes.commit( xid, false );
+			ds.truncateLogicalLog();
 			java.nio.channels.FileChannel fileChannel = 
 				new java.io.RandomAccessFile( 
 					"nioneo_logical.log", "rw" ).getChannel();

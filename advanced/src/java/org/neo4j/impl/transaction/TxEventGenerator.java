@@ -21,7 +21,7 @@ class TxEventGenerator implements Synchronization
 {
 	private static Logger log = 
 		Logger.getLogger( TxEventGenerator.class.getName() );
-	private static TxEventGenerator instance = new TxEventGenerator();
+	private static final TxEventGenerator instance = new TxEventGenerator();
 	
 	static TxEventGenerator getInstance()
 	{

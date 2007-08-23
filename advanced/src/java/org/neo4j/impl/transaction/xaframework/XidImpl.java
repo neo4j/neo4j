@@ -4,9 +4,9 @@ import javax.transaction.xa.Xid;
 
 class XidImpl implements Xid
 {
-	private int formatId = -1;
-	private byte globalId[] = null; 
-	private byte branchId[] = null;
+	private final int formatId;
+	private final byte globalId[]; 
+	private final byte branchId[];
 
 	public XidImpl( byte globalId[], byte branchId[], int formatId )
 	{

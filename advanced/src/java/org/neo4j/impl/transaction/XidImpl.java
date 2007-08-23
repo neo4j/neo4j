@@ -20,9 +20,9 @@ class XidImpl implements Xid
 	}
 	
 	// INSTANCE_ID + millitime(long) + seqnumber(long) 
-	private byte globalId[] = null; 
+	private final byte globalId[]; 
 	// branchId asumes Xid.MAXBQUALSIZE >= 4
-	private byte branchId[] = null;
+	private final byte branchId[];
 	
 	// resourceId.length = 4, unique for each XAResource
 	static byte[] getNewGlobalId()

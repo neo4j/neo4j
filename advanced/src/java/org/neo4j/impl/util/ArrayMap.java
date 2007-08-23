@@ -197,4 +197,16 @@ public class ArrayMap<K,V>
 		}
 		return propertyMap.size();
 	}
+	
+	public void clear()
+	{
+		if ( arrayCount != -1 )
+		{
+			arrayCount = 0;
+		}
+		else
+		{
+			propertyMap.clear();
+		}
+	}
 }

@@ -28,15 +28,15 @@ class TransactionImpl implements Transaction
 	private static final int RS_DELISTED = 2;
 	private static final int RS_READONLY = 3; // set in prepare
 	
-	private byte globalId[] = null;
+	private final byte globalId[];
 	private int status = Status.STATUS_ACTIVE;
 	
-	private LinkedList<ResourceElement> resourceList = 
+	private final LinkedList<ResourceElement> resourceList = 
 		new LinkedList<ResourceElement>();
 	private List<Synchronization> syncHooks = 
 		new ArrayList<Synchronization>();
 	
-	private Integer eventIdentifier = null;
+	private final int eventIdentifier;
 	
 	private static int eventIdentifierCounter = 0;
 	

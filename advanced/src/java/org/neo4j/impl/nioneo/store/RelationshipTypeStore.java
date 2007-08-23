@@ -400,11 +400,18 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 				{
 					typeNameStore.makeHeavy( record, buffer );
 				}
-				ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-				char[] chars = new char[ record.getData().length / 2 ];
-				totalSize += chars.length;
-				buf.asCharBuffer().get( chars );
-				charList.add( chars );
+				if ( !record.isCharData() )
+				{
+					ByteBuffer buf = ByteBuffer.wrap( record.getData() );
+					char[] chars = new char[ record.getData().length / 2 ];
+					totalSize += chars.length;
+					buf.asCharBuffer().get( chars );
+					charList.add( chars );
+				}
+				else
+				{
+					charList.add( record.getDataAsChar() );
+				}
 				recordToFind = record.getNextBlock();
 				// TODO: optimize here, high chance next is right one
 				records = relTypeRecord.getTypeRecords().iterator();
