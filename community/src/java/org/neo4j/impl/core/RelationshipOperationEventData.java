@@ -1,12 +1,14 @@
 package org.neo4j.impl.core;
 
+import org.neo4j.impl.persistence.PersistenceMetadata;
+
 /**
  * This interface defines methods needed for persistence layer when 
  * incremental changes to a relationship are made persistent. Relationships 
  * generates a pro-active event when changes are made to them and passes event 
  * data of this type.
  */
-public interface RelationshipOperationEventData
+public interface RelationshipOperationEventData extends PersistenceMetadata
 {
 	/**
 	 * Returns the relationship id that generated the event.
@@ -58,7 +60,7 @@ public interface RelationshipOperationEventData
 	 *
 	 * @return the property value
 	 */
-	public Object getOldProperty();
+//	public Object getOldProperty();
 	
 	public int getStartNodeId();
 	

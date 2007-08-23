@@ -27,8 +27,8 @@ class PersistenceWindowPool
 {
 	private static final int MAX_BRICK_COUNT = 10000;
 	
-	private String storeName;
-	private int blockSize;
+	private final String storeName;
+	private final int blockSize;
 	private FileChannel fileChannel;
 //	private LruCache<Integer,PersistenceWindow> rowWindowPool = 
 //		new LruCache<Integer,PersistenceWindow>( "RowWindows", 100 );

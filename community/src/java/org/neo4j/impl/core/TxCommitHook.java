@@ -1,4 +1,4 @@
-package org.neo4j.impl.command;
+package org.neo4j.impl.core;
 
 import java.util.logging.Logger;
 
@@ -32,19 +32,15 @@ class TxCommitHook implements Synchronization
 	// If param = rollback, undo and release commands
 	private void releaseCommands( int param )
 	{
-		boolean success = false;
-		try
+		if ( param == Status.STATUS_COMMITTED || 
+			param == Status.STATUS_ROLLEDBACK )
+		{
+			LockReleaser.getManager().releaseLocks();
+		}
+		else
 		{
 			switch ( param )
 			{
-				case Status.STATUS_COMMITTED:
-					CommandManager.getManager().releaseCommands();
-					success = true;
-					break;
-				case Status.STATUS_ROLLEDBACK:
-					CommandManager.getManager().undoAndReleaseCommands();
-					success = true;
-					break;
 				case Status.STATUS_ACTIVE:
 					log.severe( "Unexpected tx status after completion: " +
 							   "STATUS_ACTIVE" );
@@ -81,28 +77,7 @@ class TxCommitHook implements Synchronization
 					log.severe( "Unexpected and unknown tx status after " +
 							   "completion: [" + param + "]." );
 			}
-		}
-		catch ( UndoFailedException e )
-		{
-			e.printStackTrace();
-			log.severe( "Error undoing commands" );
-			throw e;
-		}
-		finally
-		{
-			TransactionCache.cleanCurrentTransaction();
-		}
-		if ( !success )
-		{
-			try
-			{
-				log.severe( "Forcing release of commands" );
-				CommandManager.getManager().undoAndReleaseCommands();
-			}
-			finally
-			{
-				TransactionCache.cleanCurrentTransaction();
-			}
+			throw new RuntimeException();
 		}
 	}
 }

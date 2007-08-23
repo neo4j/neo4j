@@ -3,8 +3,6 @@ package org.neo4j.impl.persistence;
 // JTA imports
 import java.util.logging.Logger;
 
-import javax.transaction.xa.XAResource;
-
 /**
  * The persistence layer component responsible for demarcating the
  * persistent entity space and dispatching persistent state to
@@ -22,17 +20,15 @@ import javax.transaction.xa.XAResource;
  */
 class PersistenceSourceDispatcher
 {
-	// -- Logging
 	private static Logger log = Logger.getLogger(
 		PersistenceSourceDispatcher.class.getName() );
 
-	// -- Attributes
 	private PersistenceSource ourOnlyPersistenceSource = null;
 	
 	
-	// -- Singleton stuff
-	private static PersistenceSourceDispatcher instance =
-											new PersistenceSourceDispatcher();
+	private static final PersistenceSourceDispatcher instance =
+		new PersistenceSourceDispatcher();
+	
 	private PersistenceSourceDispatcher() { }
 	
 	/**
@@ -44,33 +40,16 @@ class PersistenceSourceDispatcher
 		return instance;
 	}
 	
-	
-	// -- Business operations
-	
 	/**
 	 * Returns the persistence source that should be used to persist
 	 * <CODE>obj</CODE>.
 	 * @param obj the soon-to-be-persisted entity
 	 * @return the persistence source for <CODE>obj</CODE>
 	 */
-	PersistenceSource getPersistenceSource( Object obj )
+	PersistenceSource getPersistenceSource() // Object obj )
 	{
 		return this.ourOnlyPersistenceSource;
 	}
-	
-	XAResource getXaResource( byte resourceId[] )
-	{
-		if ( ourOnlyPersistenceSource instanceof 
-			org.neo4j.impl.nioneo.xa.NioNeoDbPersistenceSource )
-		{
-			return ( ( org.neo4j.impl.nioneo.xa.NioNeoDbPersistenceSource ) 
-				ourOnlyPersistenceSource ).getXaResource();
-		}
-		throw new RuntimeException( "Unkown resource id" );
-	}
-
-	
-	// -- Event operations
 	
 	/**
 	 * Adds a persistence source to the dispatcher's internal
@@ -81,15 +60,7 @@ class PersistenceSourceDispatcher
 	 */
 	void persistenceSourceAdded( PersistenceSource source )
 	{
-//		if ( this.ourOnlyPersistenceSource != null )
-//		{
-//			log.severe(	source + " was just added, but we can only handle " +
-//						"one persistence source at the moment." );
-//		}
-//		else
-//		{
-			this.ourOnlyPersistenceSource = source;
-//		}
+		this.ourOnlyPersistenceSource = source;
 	}
 	
 	/**

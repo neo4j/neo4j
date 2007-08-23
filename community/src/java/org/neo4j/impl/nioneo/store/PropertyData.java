@@ -6,9 +6,9 @@ package org.neo4j.impl.nioneo.store;
  */
 public class PropertyData
 {
-	private int id;
-	private int keyIndexId;
-	private Object value;
+	private final int id;
+	private final int keyIndexId;
+	private final Object value;
 //	private int nextPropertyId;
 	
 	/**

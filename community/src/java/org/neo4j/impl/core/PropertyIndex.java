@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import org.neo4j.impl.command.ExecuteFailedException;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
@@ -22,6 +21,12 @@ public class PropertyIndex
 	private static ArrayMap<Integer,PropertyIndex> idToIndexMap
 		= new ArrayMap<Integer,PropertyIndex>( 9, true, false );
 	
+	static void clear()
+	{
+		indexMap = new ArrayMap<String,List<PropertyIndex>>( 5, true, false );
+		idToIndexMap = new ArrayMap<Integer,PropertyIndex>( 9, true, false );
+	}
+	
 	public static Iterable<PropertyIndex> index( String key )
 	{
 //		if ( key == null )
@@ -36,9 +41,19 @@ public class PropertyIndex
 		return Collections.EMPTY_LIST;
 	}
 	
+	static boolean hasAll()
+	{
+		return true;
+	}
+	
 	public static PropertyIndex createDummyIndex( int id, String key )
 	{
 		return new PropertyIndex( key, id );
+	}
+	
+	public static boolean hasIndexFor( int keyId )
+	{
+		return idToIndexMap.get( keyId ) != null;
 	}
 	
 	public static PropertyIndex getIndexFor( int keyId )
@@ -110,15 +125,15 @@ public class PropertyIndex
 	{
 		int id = IdGenerator.getGenerator().nextId( PropertyIndex.class );
 		PropertyIndex index = new PropertyIndex( key, id );
-		PropertyIndexCommands propertyIndexCommand = null;
-		try
-		{
-			propertyIndexCommand = new PropertyIndexCommands();
-			propertyIndexCommand.setPropertyIndex( index );
-			propertyIndexCommand.initCreate();
+//		PropertyIndexCommands propertyIndexCommand = null;
+//		try
+//		{
+//			propertyIndexCommand = new PropertyIndexCommands();
+//			propertyIndexCommand.setPropertyIndex( index );
+//			propertyIndexCommand.initCreate();
 
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( propertyIndexCommand );
+			EventData eventData = new EventData( new PropIndexOpData( index ) );
 			if ( !em.generateProActiveEvent( Event.PROPERTY_INDEX_CREATE, 
 				eventData ) )
 			{
@@ -126,23 +141,24 @@ public class PropertyIndex
 				throw new CreateException( "Unable to create property index, " +
 					"pro-active event failed." );
 			}
-			propertyIndexCommand.execute();
+//			propertyIndexCommand.execute();
+			addPropertyIndex( index );
 			em.generateReActiveEvent( Event.PROPERTY_INDEX_CREATE, eventData );
 			return index;
-		}
-		catch ( ExecuteFailedException e )
-		{
-			setRollbackOnly();
-			if ( propertyIndexCommand != null )
-			{
-				propertyIndexCommand.undo();
-			}
-			throw new CreateException( "Failed executing command", e );
-		}
+//		}
+//		catch ( ExecuteFailedException e )
+//		{
+//			setRollbackOnly();
+//			if ( propertyIndexCommand != null )
+//			{
+//				propertyIndexCommand.undo();
+//			}
+//			throw new CreateException( "Failed executing command", e );
+//		}
 	}
 	
-	private String key;
-	private int keyId;
+	private final String key;
+	private final int keyId;
 	
 	PropertyIndex( String key, int keyId )
 	{
@@ -197,5 +213,34 @@ public class PropertyIndex
 		{
 			se.printStackTrace();
 		}
+	}
+
+	public static void removeIndex( int id )
+    {
+		PropertyIndex index = idToIndexMap.remove( id );
+		if ( index != null )
+		{
+			removePropertyIndex( index );
+		}
+    }
+	
+	static class PropIndexOpData implements PropertyIndexOperationEventData
+	{
+		private final PropertyIndex index;
+		
+		PropIndexOpData( PropertyIndex index )
+		{
+			this.index = index;
+		}
+		
+		public PropertyIndex getIndex()
+        {
+			return index;
+        }
+
+		public Object getEntity()
+        {
+			return index;
+        }
 	}
 }

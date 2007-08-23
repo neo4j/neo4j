@@ -5,7 +5,7 @@ package org.neo4j.impl.event;
  */
 public class Event
 {
-	private String name = null;
+	private final String name;
 	
 	// Test event for junit tests.
 	public static final Event TEST_EVENT = new Event( "TEST_EVENT" );

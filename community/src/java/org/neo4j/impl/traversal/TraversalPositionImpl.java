@@ -7,6 +7,8 @@ import org.neo4j.impl.core.NodeManager;
 
 class TraversalPositionImpl implements TraversalPosition
 {
+	private static NodeManager nodeManager = NodeManager.getManager();
+	
 	private Node				currentNode			= null;
 	private Node				previousNode		= null;
 	private Relationship		lastRelTraversed	= null;
@@ -62,7 +64,6 @@ class TraversalPositionImpl implements TraversalPosition
 		{
 			return true;
 		}
-		return NodeManager.getManager().isValidRelationship( 
-			lastRelTraversed );
+		return nodeManager.isValidRelationship( lastRelTraversed );
 	}
 }

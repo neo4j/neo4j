@@ -242,7 +242,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 						).putInt( record.getNextBlock() );
 				if ( !record.isLight() )
 				{
-					buffer.put( record.getData() );
+					if ( !record.isCharData() )
+					{
+						buffer.put( record.getData() );
+					}
+					else
+					{
+						buffer.put( record.getDataAsChar() );
+					}
 				}
 			}
 			else
@@ -348,11 +355,17 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 			}
 			else
 			{
-				byte data[] = new byte[( src.length - srcOffset ) * 2];
-				// System.arraycopy( src, srcOffset, data, 0, data.length );
-				CharBuffer charBuf = ByteBuffer.wrap( data ).asCharBuffer();
-				charBuf.put( src, srcOffset, src.length - srcOffset );
-				record.setData( data );
+				if ( srcOffset == 0 )
+				{
+					record.setCharData( src );
+				}
+				else
+				{
+					byte data[] = new byte[( src.length - srcOffset ) * 2];
+					CharBuffer charBuf = ByteBuffer.wrap( data ).asCharBuffer();
+					charBuf.put( src, srcOffset, src.length - srcOffset );
+					record.setData( data );
+				}
 				nextBlock = Record.NO_NEXT_BLOCK.intValue();
 				record.setNextBlock( nextBlock );
 			}

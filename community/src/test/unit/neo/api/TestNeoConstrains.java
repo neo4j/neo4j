@@ -274,7 +274,7 @@ public class TestNeoConstrains extends TestCase
 			node.setProperty( key, new Integer( 1 ) );
 			fail( "Add property on deleted node should not validate" );
 		}
-		catch ( IllegalValueException e )
+		catch ( Exception e )
 		{
 			// good
 		}
@@ -294,7 +294,7 @@ public class TestNeoConstrains extends TestCase
 			{
 				node.removeProperty( key );
 			}
-			catch ( NotFoundException e )
+			catch ( Exception e )
 			{
 				// ok so the persistance storage has constrains... 
 				// would have detected it up on commit...
@@ -328,7 +328,7 @@ public class TestNeoConstrains extends TestCase
 			{
 				node.setProperty( key, new Integer( 2 ) );
 			}
-			catch ( IllegalValueException e )
+			catch ( Exception e )
 			{
 				// ok so the persistance storage has constrains... 
 				// would have detected it up on commit...
@@ -364,7 +364,7 @@ public class TestNeoConstrains extends TestCase
 				rel.setProperty( key, new Integer( 1 ) );
 				fail( "Add property on deleted rel should not validate" );
 			}
-			catch ( IllegalValueException e )
+			catch ( Exception e )
 			{ // good
 			}
 			try
@@ -400,7 +400,7 @@ public class TestNeoConstrains extends TestCase
 			{
 				rel.removeProperty( key );
 			}
-			catch ( NotFoundException e )
+			catch ( Exception e )
 			{
 				// ok so the persistance storage has constrains...
 				// would have detected it up on commit...
@@ -438,7 +438,7 @@ public class TestNeoConstrains extends TestCase
 			{
 				rel.setProperty( key, new Integer( 2 ) );
 			}
-			catch ( IllegalValueException e )
+			catch ( Exception e )
 			{
 				// ok so the persistance storage has constrains...
 				// would have detected it up on commit...

@@ -1,29 +1,26 @@
 package org.neo4j.impl.transaction.xaframework;
 
-import javax.transaction.xa.XAException;
-import javax.transaction.xa.XAResource;
-import javax.transaction.xa.Xid;
-
-
 import java.io.IOException;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import javax.transaction.xa.XAException;
+import javax.transaction.xa.XAResource;
+import javax.transaction.xa.Xid;
+import org.neo4j.impl.util.ArrayMap;
 
 // make package access?
 public class XaResourceManager
 {
-	private Map<XAResource,Xid> xaResourceMap = 
-		new HashMap<XAResource,Xid>();
-	private Map<Xid,XidStatus> xidMap = new HashMap<Xid,XidStatus>();
+	private final ArrayMap<XAResource,Xid> xaResourceMap = 
+		new ArrayMap<XAResource,Xid>();
+	private final ArrayMap<Xid,XidStatus> xidMap = 
+		new ArrayMap<Xid,XidStatus>();
 	private int recoveredTxCount = 0;
 	
 	private XaLogicalLog log = null;
-	private XaTransactionFactory tf = null;
+	private final XaTransactionFactory tf;
 	
 	XaResourceManager( XaTransactionFactory tf )
 	{
@@ -49,13 +46,15 @@ public class XaResourceManager
 	synchronized void start( XAResource xaResource, Xid xid ) 
 		throws XAException
 	{
-		if ( xaResourceMap.containsKey( xaResource ) )
+		// if ( xaResourceMap.containsKey( xaResource ) )
+		if ( xaResourceMap.get( xaResource ) != null )
 		{
 			throw new XAException( "Resource[" + xaResource + 
 				"] already enlisted or suspended" );
 		}
 		xaResourceMap.put( xaResource, xid );
-		if ( !xidMap.containsKey( xid ) )
+//		if ( !xidMap.containsKey( xid ) )
+		if ( xidMap.get( xid ) == null )
 		{
 			int identifier = log.start( xid );
 			XaTransaction xaTx = tf.create( identifier );
@@ -66,7 +65,8 @@ public class XaResourceManager
 	synchronized void injectStart( Xid xid, XaTransaction tx )
 		throws IOException
 	{
-		if ( xidMap.containsKey( xid ) )
+		// if ( xidMap.containsKey( xid ) )
+		if ( xidMap.get( xid ) != null )
 		{
 			throw new IOException( "Inject start failed, xid: " + xid + 
 				" already injected" );
@@ -77,12 +77,14 @@ public class XaResourceManager
 	
 	synchronized void resume( Xid xid ) throws XAException
 	{
-		if ( !xidMap.containsKey( xid ) )
+		XidStatus status = xidMap.get( xid );
+		// if ( !xidMap.containsKey( xid ) )
+		
+		if ( status == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
 		}
 	
-		XidStatus status = xidMap.get( xid );
 		if ( status.getActive() )
 		{
 			throw new XAException( "Xid [" + xid + "] not suspended" );
@@ -93,11 +95,13 @@ public class XaResourceManager
 
 	synchronized void join( XAResource xaResource, Xid xid ) throws XAException
 	{
-		if ( !xidMap.containsKey( xid ) )
+		// if ( !xidMap.containsKey( xid ) )
+		if ( xidMap.get( xid ) == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
 		}
-		if ( xaResourceMap.containsKey( xaResource ) )
+//		if ( xaResourceMap.containsKey( xaResource ) )
+		if ( xaResourceMap.get( xaResource ) != null )
 		{
 			throw new XAException( "Resource[" + xaResource + 
 				"] already enlisted" );
@@ -107,21 +111,24 @@ public class XaResourceManager
 
 	synchronized void end( XAResource xaResource, Xid xid ) throws XAException
 	{
-		if ( !xaResourceMap.containsKey( xaResource ) )
+		Xid xidEntry = xaResourceMap.remove( xaResource );
+//		if ( !xaResourceMap.containsKey( xaResource ) )
+		if ( xidEntry == null )
 		{
 			throw new XAException( "Resource[" + xaResource + 
 				"] not enlisted" );
 		}
-		xaResourceMap.remove( xaResource );
+//		xaResourceMap.remove( xaResource );
 	}
 
 	synchronized void suspend( Xid xid ) throws XAException
 	{
-		if ( !xidMap.containsKey( xid ) )
+		XidStatus status = xidMap.get( xid );
+		// if ( !xidMap.containsKey( xid ) )
+		if ( status == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
 		}
-		XidStatus status = xidMap.get( xid );
 		if ( !status.getActive() )
 		{
 			throw new XAException( "Xid[" + xid + "] already suspended" );
@@ -131,16 +138,19 @@ public class XaResourceManager
 	
 	synchronized void fail( XAResource xaResource, Xid xid ) throws XAException
 	{
-		if ( !xidMap.containsKey( xid ) )
+//		if ( !xidMap.containsKey( xid ) )
+		if ( xidMap.get( xid ) == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
 		}
-		if ( !xaResourceMap.containsKey( xaResource ) )
+		Xid xidEntry = xaResourceMap.remove( xaResource );
+		// if ( !xaResourceMap.containsKey( xaResource ) )
+		if ( xidEntry == null )
 		{
 			throw new XAException( "Resource[" + xaResource + 
 				"] not enlisted" );
 		}
-		xaResourceMap.remove( xaResource );
+//		xaResourceMap.remove( xaResource );
 		XidStatus status = xidMap.get( xid );
 		status.getTransactionStatus().markAsRollback();
 	}
@@ -197,7 +207,7 @@ public class XaResourceManager
 		private boolean commit = false;
 		private boolean commitStarted = false;
 		private boolean rollback = false;
-		private XaTransaction xaTransaction = null;
+		private final XaTransaction xaTransaction;
 		
 		TransactionStatus( XaTransaction xaTransaction )
 		{
@@ -244,11 +254,12 @@ public class XaResourceManager
 	
 	synchronized int prepare( Xid xid ) throws XAException
 	{
-		if ( !xidMap.containsKey( xid ) )
+		XidStatus status = xidMap.get( xid );
+		// if ( !xidMap.containsKey( xid ) )
+		if ( status == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
 		}
-		XidStatus status = xidMap.get( xid );
 		TransactionStatus txStatus = status.getTransactionStatus();
 		XaTransaction xaTransaction = txStatus.getTransaction();
 		if ( xaTransaction.isReadOnly() )
@@ -275,11 +286,12 @@ public class XaResourceManager
 	// returns true if read only and should be removed...
 	synchronized boolean injectPrepare( Xid xid ) throws IOException
 	{
-		if ( !xidMap.containsKey( xid ) )
+		XidStatus status = xidMap.get( xid );
+		// if ( !xidMap.containsKey( xid ) )
+		if ( status == null )
 		{
 			throw new IOException( "Unkown xid[" + xid + "]" );
 		}
-		XidStatus status = xidMap.get( xid );
 		TransactionStatus txStatus = status.getTransactionStatus();
 		XaTransaction xaTransaction = txStatus.getTransaction();
 		if ( xaTransaction.isReadOnly() )
@@ -303,11 +315,12 @@ public class XaResourceManager
 	// if not read only transaction will be commited.
 	synchronized void injectOnePhaseCommit( Xid xid ) throws IOException
 	{
-		if ( !xidMap.containsKey( xid ) )
+		XidStatus status = xidMap.get( xid );
+		// if ( !xidMap.containsKey( xid ) )
+		if ( status == null )
 		{
 			throw new IOException( "Unkown xid[" + xid + "]" );
 		}
-		XidStatus status = xidMap.get( xid );
 		TransactionStatus txStatus = status.getTransactionStatus();
 		txStatus.markCommitStarted();
 	}
@@ -315,11 +328,12 @@ public class XaResourceManager
 	synchronized XaTransaction commit( Xid xid, boolean onePhase ) 
 		throws XAException 
 	{
-		if ( !xidMap.containsKey( xid ) )
+		XidStatus status = xidMap.get( xid );
+		// if ( !xidMap.containsKey( xid ) )
+		if ( status == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
 		}
-		XidStatus status = xidMap.get( xid );
 		TransactionStatus txStatus = status.getTransactionStatus();
 		XaTransaction xaTransaction = txStatus.getTransaction();
 		if ( onePhase )
@@ -356,11 +370,11 @@ public class XaResourceManager
 	
 	synchronized XaTransaction rollback( Xid xid ) throws XAException 
 	{
-		if ( !xidMap.containsKey( xid ) )
+		XidStatus status = xidMap.get( xid );
+		if ( status == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
 		}
-		XidStatus status = xidMap.get( xid );
 		TransactionStatus txStatus = status.getTransactionStatus();
 		XaTransaction xaTransaction = txStatus.getTransaction();
 		if ( txStatus.commitStarted() )
@@ -396,11 +410,11 @@ public class XaResourceManager
 	
 	synchronized void markAsRollbackOnly( Xid xid ) throws XAException
 	{
-		if ( !xidMap.containsKey( xid ) )
+		XidStatus status = xidMap.get( xid );
+		if ( status == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
 		}
-		XidStatus status = xidMap.get( xid );
 		TransactionStatus txStatus = status.getTransactionStatus(); 
 		txStatus.markAsRollback();
 	}
@@ -419,11 +433,11 @@ public class XaResourceManager
 	// called from neostore internal recovery
 	synchronized void pruneXid( Xid xid ) throws IOException
 	{
-		if ( !xidMap.containsKey( xid ) )
+		XidStatus status = xidMap.get( xid );
+		if ( status == null )
 		{
 			throw new IOException( "Unkown xid[" + xid + "]" );
 		}
-		XidStatus status = xidMap.get( xid );
 		TransactionStatus txStatus = status.getTransactionStatus();
 		XaTransaction xaTransaction = txStatus.getTransaction();
 		xidMap.remove( xid );

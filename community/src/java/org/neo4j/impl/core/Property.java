@@ -2,7 +2,9 @@ package org.neo4j.impl.core;
 
 class Property
 {
-	private int id = -1;
+	private static NodeManager nodeManager = NodeManager.getManager();
+	
+	private final int id;
 	private Object value = null;
 	
 	Property( int id, Object value )
@@ -20,15 +22,15 @@ class Property
 	{
 		if ( value == null )
 		{
-			value = NodeManager.getManager().loadPropertyValue( id );
+			value = nodeManager.loadPropertyValue( id );
 		}
 		return value;
 	}
 	
-	void setId( int id )
-	{
-		this.id = id;
-	}
+//	void setId( int id )
+//	{
+//		this.id = id;
+//	}
 	
 	void setNewValue( Object newValue )
 	{

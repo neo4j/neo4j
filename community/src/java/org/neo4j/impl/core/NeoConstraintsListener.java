@@ -17,6 +17,7 @@ import org.neo4j.impl.event.EventListenerAlreadyRegisteredException;
 import org.neo4j.impl.event.EventListenerNotRegisteredException;
 import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.event.ProActiveEventListener;
+import org.neo4j.impl.persistence.PersistenceMetadata;
 import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.transaction.TxManager;
 import org.neo4j.impl.util.ArrayMap;
@@ -32,11 +33,11 @@ class NeoConstraintsListener implements ProActiveEventListener
 {
 	static Logger log = Logger.getLogger( 
 		NeoConstraintsListener.class.getName() );
-	private static NeoConstraintsListener listener = 
+	private static final NeoConstraintsListener listener = 
 		new NeoConstraintsListener();
 	
 	// evaluator for each running transaction
-	private ArrayMap<Thread,NeoConstraintsEvaluator> evaluators = 
+	private final ArrayMap<Thread,NeoConstraintsEvaluator> evaluators = 
 		new ArrayMap<Thread,NeoConstraintsEvaluator>( 9, true, true );
 
 	private NeoConstraintsListener()
@@ -171,20 +172,20 @@ class NeoConstraintsListener implements ProActiveEventListener
 			else if ( event == Event.RELATIONSHIP_CREATE )
 			{
 				RelationshipImpl rel = ( RelationshipImpl ) 
-					( ( RelationshipCommands ) eventData.getData() 
+					( ( PersistenceMetadata ) eventData.getData() 
 						).getEntity();
 				return evaluateCreateRelationship( rel );
 			}
 			else if ( event == Event.NODE_DELETE )
 			{
-				NodeImpl node = ( NodeImpl ) (( NodeCommands ) 
+				NodeImpl node = ( NodeImpl ) (( PersistenceMetadata ) 
 					eventData.getData()).getEntity();
 				return evaluateDeleteNode( node );
 			}
 			else if ( event == Event.RELATIONSHIP_DELETE )
 			{
 				RelationshipImpl rel = ( RelationshipImpl ) 
-					( ( RelationshipCommands ) eventData.
+					( ( PersistenceMetadata ) eventData.
 						getData()).getEntity();
 				return evaluateDeleteRelationship( rel );
 			}
@@ -193,7 +194,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 						event == Event.NODE_REMOVE_PROPERTY )
 			{
 				// check if node deleted
-				Node node = ( Node ) (( NodeCommands ) 
+				Node node = ( Node ) (( PersistenceMetadata ) 
 					eventData.getData()).getEntity();
 				return evaluateNodePropertyOperation( node, event, eventData );
 			}
@@ -203,7 +204,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 			{
 				// check if rel deleted
 				Relationship rel = ( Relationship ) 
-					( ( RelationshipCommands ) eventData.
+					( ( PersistenceMetadata ) eventData.
 						getData()).getEntity();
 				return evaluateRelationshipPropertyOperation( rel, event, 
 					eventData );
@@ -318,12 +319,12 @@ class NeoConstraintsListener implements ProActiveEventListener
 				return false;
 			}
 			// make sure it exist and that is done in Add/Change/Remove
-			if ( event == Event.NODE_ADD_PROPERTY ) 
-			{
-				Object property = (( NodeCommands )	eventData.getData() 
-					).getProperty();
-				return validatePropertyType( node, property );
-			}
+//			if ( event == Event.NODE_ADD_PROPERTY ) 
+//			{
+//				Object property = (( NodeCommands )	eventData.getData() 
+//					).getProperty();
+//				return validatePropertyType( node, property );
+//			}
 			return true;
 		}
 
@@ -341,12 +342,12 @@ class NeoConstraintsListener implements ProActiveEventListener
 				return false;
 			}
 			// make sure it exist and that is done in Add/Change/Remove 
-			if ( event == Event.RELATIONSHIP_ADD_PROPERTY ) 
-			{
-				Object property = (( RelationshipCommands ) eventData.getData()
-					).getProperty();
-				return validatePropertyType( rel, property );
-			}
+//			if ( event == Event.RELATIONSHIP_ADD_PROPERTY ) 
+//			{
+//				Object property = (( RelationshipCommands ) eventData.getData()
+//					).getProperty();
+//				return validatePropertyType( rel, property );
+//			}
 			return true;
 		}
 		
@@ -414,6 +415,8 @@ class NeoConstraintsListener implements ProActiveEventListener
 			// TODO: if we get called when status active
 			// and transaction is beeing rolled back this may not evaluate
 			// no harm done but will get the "severe" log message
+			try
+			{
 			getListener().removeThisEvaluator();
 			if ( getTransactionStatus() == Status.STATUS_MARKED_ROLLBACK )
 			{
@@ -447,6 +450,11 @@ class NeoConstraintsListener implements ProActiveEventListener
 						setRollbackOnly();
 					}
 				}
+			}
+			}
+			catch ( Throwable t )
+			{
+				t.printStackTrace();
 			}
 		}
 

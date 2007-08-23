@@ -12,7 +12,7 @@ package org.neo4j.impl.persistence;
 public class IdGenerator
 {
 	// -- Singleton stuff
-	private static IdGenerator instance = new IdGenerator();
+	private static final IdGenerator instance = new IdGenerator();
 	private IdGenerator() {}
 	
 	/**

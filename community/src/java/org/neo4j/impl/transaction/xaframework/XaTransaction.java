@@ -119,8 +119,8 @@ public abstract class XaTransaction
 	 */
 	protected abstract void doCommit() throws XAException;
 
-	private int identifier;
-	private XaLogicalLog log = null;
+	private final int identifier;
+	private final XaLogicalLog log;
 	private boolean isRecovered = false;
 	private boolean committed = false;
 	private boolean rolledback = false;

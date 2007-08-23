@@ -15,9 +15,11 @@ import org.neo4j.impl.event.EventManager;
 
 public class UserTransactionImpl implements UserTransaction
 {
-	private static UserTransactionImpl instance = new UserTransactionImpl();
+	private static final UserTransactionImpl instance = 
+		new UserTransactionImpl();
 
-	private final TransactionManager tm;
+	private final TransactionManager tm = 
+		TransactionFactory.getTransactionManager();
 	
 	public static UserTransactionImpl getInstance()
 	{
@@ -26,7 +28,7 @@ public class UserTransactionImpl implements UserTransaction
 
 	private UserTransactionImpl()
 	{
-		tm = TransactionFactory.getTransactionManager();
+//		tm = TransactionFactory.getTransactionManager();
 	}
 	
 	public void begin() throws NotSupportedException, SystemException

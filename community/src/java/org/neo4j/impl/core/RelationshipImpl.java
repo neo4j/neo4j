@@ -7,8 +7,6 @@ import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.impl.command.CommandManager;
-import org.neo4j.impl.command.ExecuteFailedException;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
@@ -18,7 +16,6 @@ import org.neo4j.impl.transaction.LockNotFoundException;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.transaction.TransactionFactory;
-import org.neo4j.impl.transaction.TransactionIsolationLevel;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -56,13 +53,15 @@ class RelationshipImpl
 	
 	private static Logger log = 
 		Logger.getLogger( RelationshipImpl.class.getName() );
-	private static NodeManager nodeManager = NodeManager.getManager(); 
+	private static final NodeManager nodeManager = NodeManager.getManager();
+	private static final LockManager lockManager = LockManager.getManager();
+	private static final LockReleaser lockReleaser = LockReleaser.getManager();
 	
-	private int	id = -1;
-	private int startNodeId = -1;
-	private int endNodeId = -1;
+	private final int id;
+	private final int startNodeId;
+	private final int endNodeId;
 	private RelationshipPhase phase = RelationshipPhase.NORMAL;
-	private RelationshipType type = null;
+	private final RelationshipType type;
 	private ArrayMap<Integer,Property> propertyMap = 
 		new ArrayMap<Integer,Property>( 9, false, true );
 	private boolean isDeleted = false;
@@ -76,6 +75,9 @@ class RelationshipImpl
 		// when using this constructor only equals and hashCode methods are 
 		// valid
 		this.id = id;
+		this.startNodeId = -1;
+		this.endNodeId = -1;
+		this.type = null;
 		isDeleted = true;
 	}
 	
@@ -223,8 +225,8 @@ class RelationshipImpl
 			throw new IllegalArgumentException( "null key" );
 		}
 		// make sure we're in transaction
-		TransactionIsolationLevel level = 
-			TransactionFactory.getTransactionIsolationLevel();
+//		TransactionIsolationLevel level = 
+//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -245,19 +247,26 @@ class RelationshipImpl
 					}
 				}
 			}
-			ensureFullRelationship();
-			for ( int keyId : propertyMap.keySet() )
+			if ( !PropertyIndex.hasAll() )
 			{
-				PropertyIndex indexToCheck = PropertyIndex.getIndexFor( keyId );
-				if ( indexToCheck.getKey().equals( key ) )
+				ensureFullRelationship();
+				for ( int keyId : propertyMap.keySet() )
 				{
-					return propertyMap.get( indexToCheck.getKeyId() );
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
+					{
+						PropertyIndex indexToCheck = 
+							PropertyIndex.getIndexFor( keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							return propertyMap.get( indexToCheck.getKeyId() );
+						}
+					}
 				}
 			}
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ, level );
+			releaseLock( this, LockType.READ ); //, level );
 		}			
 		throw new NotFoundException( "" + key + 
 			" property not found." );
@@ -265,8 +274,8 @@ class RelationshipImpl
 	
 	public Object getProperty( String key, Object defaultValue )
 	{
-		TransactionIsolationLevel level = 
-			TransactionFactory.getTransactionIsolationLevel();
+//		TransactionIsolationLevel level = 
+//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -287,19 +296,26 @@ class RelationshipImpl
 					}
 				}
 			}
-			ensureFullRelationship();
-			for ( int keyId : propertyMap.keySet() )
+			if ( !PropertyIndex.hasAll() )
 			{
-				PropertyIndex indexToCheck = PropertyIndex.getIndexFor( keyId );
-				if ( indexToCheck.getKey().equals( key ) )
+				ensureFullRelationship();
+				for ( int keyId : propertyMap.keySet() )
 				{
-					return propertyMap.get( indexToCheck.getKeyId() );
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
+					{
+						PropertyIndex indexToCheck = 
+							PropertyIndex.getIndexFor( keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							return propertyMap.get( indexToCheck.getKeyId() );
+						}
+					}
 				}
 			}
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ, level );
+			releaseLock( this, LockType.READ ); //, level );
 		}			
 		return defaultValue;	
 	}
@@ -313,8 +329,8 @@ class RelationshipImpl
 	 */
 	public Iterable<Object> getPropertyValues()
 	{
-		TransactionIsolationLevel level = 
-			TransactionFactory.getTransactionIsolationLevel();
+//		TransactionIsolationLevel level = 
+//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -329,7 +345,7 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ, level );
+			releaseLock( this, LockType.READ ); //, level );
 		}
 	}
 	
@@ -342,8 +358,8 @@ class RelationshipImpl
 	 */
 	public Iterable<String> getPropertyKeys()
 	{
-		TransactionIsolationLevel level = 
-			TransactionFactory.getTransactionIsolationLevel();
+//		TransactionIsolationLevel level = 
+//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -357,7 +373,7 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ, level );
+			releaseLock( this, LockType.READ ); // , level );
 		}			
 	}
 
@@ -373,8 +389,8 @@ class RelationshipImpl
 	 */
 	public boolean hasProperty( String key )
 	{
-		TransactionIsolationLevel level = 
-			TransactionFactory.getTransactionIsolationLevel();
+//		TransactionIsolationLevel level = 
+//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -406,7 +422,7 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ, level );
+			releaseLock( this, LockType.READ ); //, level );
 		}			
 	}
 	
@@ -424,21 +440,21 @@ class RelationshipImpl
 	public void setProperty( String key, Object value ) 
 		throws IllegalValueException
 	{
-		TransactionIsolationLevel level = 
-			TransactionFactory.getTransactionIsolationLevel();
+//		TransactionIsolationLevel level = 
+//			TransactionFactory.getTransactionIsolationLevel();
 		if ( key == null || value == null )
 		{
 			throw new IllegalValueException( "Null parameter, " +
 				"key=" + key + ", " + "value=" + value );
 		}
 		acquireLock( this, LockType.WRITE );
-		RelationshipCommands relationshipCommand = null;
+//		RelationshipCommands relationshipCommand = null;
 		try
 		{
 			// must make sure we don't add already existing property
 			ensureFullRelationship();
-			relationshipCommand = new RelationshipCommands();
-			relationshipCommand.setRelationship( this );
+//			relationshipCommand = new RelationshipCommands();
+//			relationshipCommand.setRelationship( this );
 			PropertyIndex index = null;
 			Property property = null;
 			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
@@ -450,64 +466,81 @@ class RelationshipImpl
 					break;
 				}
 			}
-			if ( property == null )
+			if ( property == null && !PropertyIndex.hasAll() )
 			{
 				for ( int keyId : propertyMap.keySet() )
 				{
-					PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
-						keyId );
-					if ( indexToCheck.getKey().equals( key ) )
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
 					{
-						index = indexToCheck;
-						property = propertyMap.get( indexToCheck.getKeyId() );
-						break;
+						PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+							keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							index = indexToCheck;
+							property = propertyMap.get( indexToCheck.getKeyId() );
+							break;
+						}
 					}
 				}
-				if ( index == null )
-				{
-					index = PropertyIndex.createPropertyIndex( key );
-				}
+			}
+			if ( index == null )
+			{
+				index = PropertyIndex.createPropertyIndex( key );
 			}
 			Event event = Event.RELATIONSHIP_ADD_PROPERTY;
+			RelationshipOpData data;
 			if ( property != null )
 			{
 				int propertyId = property.getId();
-				relationshipCommand.initChangeProperty( propertyId, index,  
-					new Property( propertyId, value ) );
+//				relationshipCommand.initChangeProperty( propertyId, index,  
+//					new Property( propertyId, value ) );
+				data = new RelationshipOpData( this, id, propertyId, index, 
+					value );
 				event = Event.RELATIONSHIP_CHANGE_PROPERTY;
 			}
 			else
 			{
-				relationshipCommand.initAddProperty( index, 
-					new Property( -1, value ) );
+				data = new RelationshipOpData( this, id, -1, index, value );
+//				relationshipCommand.initAddProperty( index, 
+//					new Property( -1, value ) );
 			}
 			// have to execute command here since the full node is loaded
 			// and then the property would already be in cache
-			relationshipCommand.execute();
+//			relationshipCommand.execute();
 			
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( relationshipCommand );
+			EventData eventData = new EventData( data );
 			if ( !em.generateProActiveEvent( event, eventData ) )
 			{
 				setRollbackOnly();
-				relationshipCommand.undo();
+//				relationshipCommand.undo();
 				throw new IllegalValueException( 
 					"Generate pro-active event failed." );
+			}
+			if ( event == Event.RELATIONSHIP_ADD_PROPERTY )
+			{
+				doAddProperty( index, new Property( data.getPropertyId(), 
+					value ) );
+			}
+			else
+			{
+				doChangeProperty( index, new Property( data.getPropertyId(), 
+					value ) );
 			}
 
 			em.generateReActiveEvent( event, eventData );
 		}
-		catch ( ExecuteFailedException e )
-		{
-			if ( relationshipCommand != null )
-			{
-				relationshipCommand.undo();
-			}
-			throw new IllegalValueException( "Failed executing command.", e );
-		}
+//		catch ( ExecuteFailedException e )
+//		{
+//			if ( relationshipCommand != null )
+//			{
+//				relationshipCommand.undo();
+//			}
+//			throw new IllegalValueException( "Failed executing command.", e );
+//		}
 		finally
 		{
-			releaseLock( this, LockType.WRITE, level );
+			releaseLock( this, LockType.WRITE ); //, level );
 		}
 	}
 	
@@ -575,84 +608,93 @@ class RelationshipImpl
 		{
 			throw new IllegalArgumentException( "Null parameter." );
 		}
-		TransactionIsolationLevel level = 
-			TransactionFactory.getTransactionIsolationLevel();
+//		TransactionIsolationLevel level = 
+//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.WRITE );
-		RelationshipCommands relationshipCommand = null;
+//		RelationshipCommands relationshipCommand = null;
 		try
 		{
 			// if not found just return null
-			PropertyIndex index = null;
+//			PropertyIndex index = null;
+			Property property = null;
 			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
 			{
-				Property property = propertyMap.get( cachedIndex.getKeyId() );
+				property = propertyMap.remove( cachedIndex.getKeyId() );
 				if ( property == null )
 				{
 					if ( ensureFullRelationship() )
 					{
-						property = propertyMap.get( cachedIndex.getKeyId() );
+						property = propertyMap.remove( cachedIndex.getKeyId() );
 						if ( property != null )
 						{
-							index = cachedIndex;
+//							index = cachedIndex;
+							break;
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+			if ( property == null && !PropertyIndex.hasAll() )
+			{
+				ensureFullRelationship();
+				for ( int keyId : propertyMap.keySet() )
+				{
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
+					{
+						PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+							keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							property = propertyMap.remove( indexToCheck.getKeyId() );
 							break;
 						}
 					}
 				}
 			}
-			if ( index == null )
+			if ( property == null )
 			{
-				ensureFullRelationship();
-				Property property = null;
-				for ( int keyId : propertyMap.keySet() )
-				{
-					PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
-						keyId );
-					if ( indexToCheck.getKey().equals( key ) )
-					{
-						property = propertyMap.get( indexToCheck.getKeyId() );
-						index = indexToCheck;
-						break;
-					}
-				}
-				if ( property == null )
-				{
-					return null;
-				}
+				return null;
 			}
-			relationshipCommand = new RelationshipCommands();
-			relationshipCommand.setRelationship( this );
-			relationshipCommand.initRemoveProperty( 
-				doGetProperty( index ).getId(), index );
+//			relationshipCommand = new RelationshipCommands();
+//			relationshipCommand.setRelationship( this );
+//			relationshipCommand.initRemoveProperty( 
+//				doGetProperty( index ).getId(), index );
 			// have to execute here for RelationshipOperationEventData to be 
 			// command also checks that the property really exist
-			relationshipCommand.execute();
+//			relationshipCommand.execute();
 
+			RelationshipOpData data = new RelationshipOpData( this, id, 
+				property.getId() );
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( relationshipCommand );
-			if ( !em.generateProActiveEvent( Event.RELATIONSHIP_REMOVE_PROPERTY, 
+			EventData eventData = new EventData( data );
+		if ( !em.generateProActiveEvent( Event.RELATIONSHIP_REMOVE_PROPERTY, 
 				eventData ) )
 			{
 				setRollbackOnly();
-				relationshipCommand.undo();
+//				relationshipCommand.undo();
 				throw new NotFoundException( 
 					"Generate pro-active event failed." );
 			}
 
 			em.generateReActiveEvent( Event.RELATIONSHIP_REMOVE_PROPERTY, 
 				eventData );
-			return relationshipCommand.getOldProperty();
+//			return relationshipCommand.getOldProperty();
+			return property.getValue();
 		}
-		catch ( ExecuteFailedException e )
-		{
-			if ( relationshipCommand != null )
-			{
-				relationshipCommand.undo();
-			}
-			throw new NotFoundException( "Failed executing command.", e );
-		}
+//		catch ( ExecuteFailedException e )
+//		{
+//			if ( relationshipCommand != null )
+//			{
+//				relationshipCommand.undo();
+//			}
+//			throw new NotFoundException( "Failed executing command.", e );
+//		}
 		finally
 		{
-			releaseLock( this, LockType.WRITE, level );
+			releaseLock( this, LockType.WRITE ); //, level );
 		}
 	}
 	
@@ -725,33 +767,42 @@ class RelationshipImpl
 	 */
 	public void delete() //throws DeleteException
 	{
-		RelationshipCommands relationshipCommand = null;
+//		RelationshipCommands relationshipCommand = null;
 		NodeImpl startNode = null;
 		NodeImpl endNode = null;
 		boolean startNodeLocked = false;
 		boolean endNodeLocked = false;
 		// make sure we're in transaction
-		TransactionIsolationLevel level = 
-			TransactionFactory.getTransactionIsolationLevel();
+//		TransactionIsolationLevel level = 
+//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.WRITE );
 		try
 		{
-			startNode = nodeManager.getNodeForProxy( startNodeId ); 
-			acquireLock( startNode, LockType.WRITE );
-			startNodeLocked = true;
-			endNode = nodeManager.getNodeForProxy( endNodeId );
-			acquireLock( endNode, LockType.WRITE );
-			endNodeLocked = true;
+			startNode = nodeManager.getLightNode( startNodeId ); 
+			if ( startNode != null )
+			{
+				acquireLock( startNode, LockType.WRITE );
+				startNodeLocked = true;
+			}
+			endNode = nodeManager.getLightNode( endNodeId );
+			if ( endNode != null )
+			{
+				acquireLock( endNode, LockType.WRITE );
+				endNodeLocked = true;
+			}
 			// no need to load full relationship, all properties will be 
-			// deleted when relationship is deleted 
-			relationshipCommand = new RelationshipCommands();
-			relationshipCommand.setRelationship( this );
-			relationshipCommand.setStartNode( startNode );
-			relationshipCommand.setEndNode( endNode );
-			relationshipCommand.initDelete();
-
+			// deleted when relationship is deleted
+			
+//			relationshipCommand = new RelationshipCommands();
+//			relationshipCommand.setRelationship( this );
+//			relationshipCommand.setStartNode( startNode );
+//			relationshipCommand.setEndNode( endNode );
+//			relationshipCommand.initDelete();
+			
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( relationshipCommand );
+			int typeId = RelationshipTypeHolder.getHolder().getIdFor( type ); 
+			EventData eventData = new EventData( new RelationshipOpData( this, 
+				id, typeId, startNodeId, endNodeId ) );
 			if ( !em.generateProActiveEvent( Event.RELATIONSHIP_DELETE, 
 					eventData ) )
 			{
@@ -763,18 +814,28 @@ class RelationshipImpl
 			// full phase here isn't necessary, if something breaks we still
 			// have the relationship as it was in memory and the transaction 
 			// will rollback so the full relationship will still be persistent
-			relationshipCommand.execute();
+//			relationshipCommand.execute();
+			if ( startNode != null )
+			{
+				startNode.removeRelationship( type, id );
+			}
+			if ( endNode != null )
+			{
+				endNode.removeRelationship( type, id );
+			}
+			nodeManager.removeRelationshipFromCache( id );
+			
 			em.generateReActiveEvent( Event.RELATIONSHIP_DELETE, eventData );
 		}
-		catch ( ExecuteFailedException e )
-		{
-			setRollbackOnly();
-			if ( relationshipCommand != null )
-			{
-				relationshipCommand.undo();
-			}
-			throw new DeleteException( "Failed executing command.", e );
-		}
+//		catch ( ExecuteFailedException e )
+//		{
+//			setRollbackOnly();
+//			if ( relationshipCommand != null )
+//			{
+//				relationshipCommand.undo();
+//			}
+//			throw new DeleteException( "Failed executing command.", e );
+//		}
 		finally
 		{
 			boolean releaseFailed = false;
@@ -782,7 +843,7 @@ class RelationshipImpl
 			{
 				if ( startNodeLocked )
 				{
-					releaseLock( startNode, LockType.WRITE, level );
+					releaseLock( startNode, LockType.WRITE ); //, level );
 				}
 			}
 			catch ( Exception e )
@@ -795,7 +856,7 @@ class RelationshipImpl
 			{
 				if ( endNodeLocked )
 				{
-					releaseLock( endNode, LockType.WRITE, level );
+					releaseLock( endNode, LockType.WRITE ); //, level );
 				}
 			}
 			catch ( Exception e )
@@ -804,7 +865,7 @@ class RelationshipImpl
 				e.printStackTrace();
 				log.severe( "Failed to release lock" );
 			}
-			releaseLock( this, LockType.WRITE, level );
+			releaseLock( this, LockType.WRITE ); //, level );
 			if ( releaseFailed )
 			{
 				throw new RuntimeException( "Unable to release locks [" + 
@@ -971,7 +1032,7 @@ class RelationshipImpl
 		if ( phase != RelationshipPhase.FULL )
 		{
 			RawPropertyData[] rawProperties = 
-				NodeManager.getManager().loadProperties( this );
+				nodeManager.loadProperties( this );
 			ArrayIntSet addedProps = new ArrayIntSet();
 			ArrayMap<Integer,Property> newPropertyMap = 
 				new ArrayMap<Integer,Property>(); 
@@ -1005,11 +1066,11 @@ class RelationshipImpl
 		{
 			if ( lockType == LockType.READ )
 			{
-				LockManager.getManager().getReadLock( resource );
+				lockManager.getReadLock( resource );
 			}
 			else if ( lockType == LockType.WRITE )
 			{
-				LockManager.getManager().getWriteLock( resource );
+				lockManager.getWriteLock( resource );
 			}
 			else
 			{
@@ -1027,38 +1088,37 @@ class RelationshipImpl
 		}
 	}
 	
-	private void releaseLock( Object resource, LockType lockType, 
-		TransactionIsolationLevel level )
+	private void releaseLock( Object resource, LockType lockType/*, 
+		TransactionIsolationLevel level*/ )
 	{
 		try
 		{
-			if ( level == TransactionIsolationLevel.READ_COMMITTED )
-			{
+//			if ( level == TransactionIsolationLevel.READ_COMMITTED )
+//			{
 				if ( lockType == LockType.READ )
 				{
-					LockManager.getManager().releaseReadLock( resource );
+					lockManager.releaseReadLock( resource );
 				}
 				else if ( lockType == LockType.WRITE )
 				{
-					CommandManager.getManager().addLockToTransaction( resource, 
-						lockType );
+					lockReleaser.addLockToTransaction( resource, lockType );
 				}
 				else
 				{
 					throw new RuntimeException( "Unkown lock type: " + 
 						lockType );
 				}
-			}
-			else if ( level == TransactionIsolationLevel.BAD )
-			{
-				CommandManager.getManager().addLockToTransaction( resource, 
-					lockType );
-			}
-			else
-			{
-				throw new RuntimeException( 
-					"Unkown transaction isolation level, " + level );
-			}
+//			}
+//			else if ( level == TransactionIsolationLevel.BAD )
+//			{
+//				LockReleaser.getManager().addLockToTransaction( resource, 
+//					lockType );
+//			}
+//			else
+//			{
+//				throw new RuntimeException( 
+//					"Unkown transaction isolation level, " + level );
+//			}
 		}
 		catch ( NotInTransactionException e )
 		{

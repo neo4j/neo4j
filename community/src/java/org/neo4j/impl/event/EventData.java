@@ -6,7 +6,7 @@ package org.neo4j.impl.event;
  */
 public class EventData
 {
-	private Object data = null;
+	private final Object data;
 	private Thread originatingThread = null;
 	
 	/**

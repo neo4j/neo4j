@@ -1,10 +1,7 @@
 package org.neo4j.impl.transaction;
 
-import org.neo4j.impl.command.CommandManager;
-
 import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
-import javax.transaction.InvalidTransactionException;
 
 /**
  * Use this factory to get hold of a {@link UserTransaction} or to set the
@@ -12,13 +9,11 @@ import javax.transaction.InvalidTransactionException;
  */
 public class TransactionFactory
 {
-	/**
-	 * Public only for testing purpouse. Use 
-	 * {@link #getUserTransaction()} instead.
-	 */
+	private static final TxManager txManager = TxManager.getManager();
+	
 	public static TransactionManager getTransactionManager()
 	{
-		return TxManager.getManager();
+		return txManager;
 	}
 	
 	/**
@@ -41,18 +36,18 @@ public class TransactionFactory
 	 * transaction
 	 * @throws InvalidTransactionException
 	 */
-	public static void setTransactionIsolationLevel( 
-		TransactionIsolationLevel level ) throws InvalidTransactionException
-	{
-		try
-		{
-			CommandManager.getManager().setTransactionIsolationLevel( level );
-		}
-		catch ( NotInTransactionException e )
-		{
-			throw new InvalidTransactionException( "" + e );
-		}
-	}
+//	public static void setTransactionIsolationLevel( 
+//		TransactionIsolationLevel level ) throws InvalidTransactionException
+//	{
+//		try
+//		{
+//			LockReleaser.getManager().setTransactionIsolationLevel( level );
+//		}
+//		catch ( NotInTransactionException e )
+//		{
+//			throw new InvalidTransactionException( "" + e );
+//		}
+//	}
 	
 	/**
 	 * Returns the current {@link TransactionIsolationLevel}. If no transaction
@@ -61,9 +56,9 @@ public class TransactionFactory
 	 * @return The transaction isolation level
 	 * @throws NotInTransactionException
 	 */
-	public static TransactionIsolationLevel getTransactionIsolationLevel()
-		throws NotInTransactionException
-	{
-		return CommandManager.getManager().getTransactionIsolationLevel();
-	}
+//	public static TransactionIsolationLevel getTransactionIsolationLevel()
+//		throws NotInTransactionException
+//	{
+//		return LockReleaser.getManager().getTransactionIsolationLevel();
+//	}
 }
