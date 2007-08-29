@@ -102,10 +102,10 @@ public class NeoStoreXaDataSource extends XaDataSource
 			autoCreatePath( store );
 			NeoStore.createStore( store );
 		}
-			
+		
 		neoStore = new NeoStore( config );
-		xaContainer = XaContainer.create( 
-			( String ) config.get( "logical_log" ), 
+		String logicalLog = ( String ) config.get( "logical_log" );
+		xaContainer = XaContainer.create( logicalLog, 
 			new CommandFactory( neoStore ), 
 			new TransactionFactory( neoStore ) );
 		TxInfoManager.getManager().setRealLog( xaContainer.getLogicalLog() );
@@ -129,16 +129,18 @@ public class NeoStoreXaDataSource extends XaDataSource
 		this.idGenerators.put( PropertyStore.class, 
 				neoStore.getPropertyStore() ); 
 	}
-
+	
 	private void autoCreatePath( String store ) throws IOException
 	{
-		String dirs = store.substring( 0, store.lastIndexOf( '/' ) );
+		String fileSeparator = System.getProperty( "file.separator" );
+		int index = store.lastIndexOf( fileSeparator );
+		String dirs = store.substring( 0, index );
 		File directories = new File( dirs );
 		if ( !directories.exists() )
 		{
 			if ( !directories.mkdirs() )
 			{
-				throw new IOException( "Unable to create directory paht[" + 
+				throw new IOException( "Unable to create directory path[" + 
 					dirs + "] for Neo store." );
 			}
 		}
