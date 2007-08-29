@@ -63,9 +63,10 @@ public class TxManager implements TransactionManager
 				"No neo.tx_log_directory system property set or " + 
 				"TxModule registered" );
 		}
-		logSwitcherFileName = txLogDir + "/active_tx_log";
-		txLog1FileName = txLogDir + "/tm_tx_log.1";
-		txLog2FileName = txLogDir + "/tm_tx_log.2";
+		String separator = System.getProperty( "file.separator" );
+		logSwitcherFileName = txLogDir + separator + "active_tx_log";
+		txLog1FileName = txLogDir + separator + "tm_tx_log.1";
+		txLog2FileName = txLogDir + separator + "tm_tx_log.2";
 		try
 		{
 			if ( new File( logSwitcherFileName ).exists() )
