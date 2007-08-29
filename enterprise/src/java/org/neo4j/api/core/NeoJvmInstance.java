@@ -53,9 +53,13 @@ class NeoJvmInstance
 		config.getTxModule().setTxLogDirectory( storeDir );
 		// create NioNeo DB persistence source
 		Map<String,String> params = new java.util.HashMap<String,String>();
-		params.put( "neo_store", storeDir + "/neostore" );
+		storeDir = convertFileSeparators( storeDir );
+		String separator = System.getProperty( "file.separator" );
+		String store = storeDir + separator + "neostore";
+		params.put( "neo_store", store );
 		params.put( "create", String.valueOf( create ) );
-		params.put( "logical_log", storeDir + "/nioneo_logical.log" );
+		String logicalLog = storeDir + separator + "nioneo_logical.log";
+		params.put( "logical_log", logicalLog );
 		params.put( "neostore.nodestore.db.mapped_memory", "500k" );
 		params.put( "neostore.propertystore.db.mapped_memory", "1M" );
 		params.put( "neostore.propertystore.db.keys.mapped_memory", "1M" );
@@ -86,6 +90,22 @@ class NeoJvmInstance
 		config.getNeoModule().start();
 		started = true;
 	}
+	
+	private static String convertFileSeparators( String fileName )
+	{
+		String fileSeparator = System.getProperty( "file.separator" );
+		if ( "\\".equals( fileSeparator ) )
+		{
+			return fileName.replace( '/', '\\' );
+		}
+		else if ( "/".equals( fileSeparator ) )
+		{
+			return fileName.replace( '\\', '/' );
+		}
+		// dont know what to do
+		return fileName;
+	}
+	
 
 	/**
 	 * Returns true if Neo is started.
