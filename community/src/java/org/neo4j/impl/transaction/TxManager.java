@@ -655,7 +655,8 @@ public class TxManager implements TransactionManager
 		}
 		TransactionImpl tx = ( TransactionImpl ) txThreadMap.get( thread );
 		if ( tx.getStatus() == Status.STATUS_ACTIVE || 
-			tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
+			tx.getStatus() == Status.STATUS_MARKED_ROLLBACK || 
+			tx.getStatus() == Status.STATUS_PREPARING )
 		{
 			tx.doBeforeCompletion();
 			// delist resources?
@@ -693,12 +694,12 @@ public class TxManager implements TransactionManager
 			tx.setStatus( Status.STATUS_NO_TRANSACTION );
 		}
 		// prepared is set in commit
-		else if ( tx.getStatus() == Status.STATUS_PREPARING )
-		{
-			// let commit take care of rollback
-			tx.setStatus( Status.STATUS_MARKED_ROLLBACK );
-			throw new RuntimeException( "Should never be, not yet" );
-		}
+//		else if ( tx.getStatus() == Status.STATUS_PREPARING )
+//		{
+//			// let commit take care of rollback
+//			tx.setStatus( Status.STATUS_MARKED_ROLLBACK );
+//			throw new RuntimeException( "Should never be, not yet" );
+//		}
 		else 
 		{
 			throw new IllegalStateException( "Tx status is: " + 
