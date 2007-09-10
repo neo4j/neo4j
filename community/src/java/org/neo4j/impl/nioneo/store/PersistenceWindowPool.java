@@ -35,7 +35,7 @@ class PersistenceWindowPool
 	private Map<Integer,LockableWindow> activeRowWindows = 
 		new HashMap<Integer,LockableWindow>();
 	private ArrayMap<Integer,Set<LockableWindow>> txIdentifiers = 
-		new ArrayMap<Integer,Set<LockableWindow>>( 256, false, true );
+		new ArrayMap<Integer,Set<LockableWindow>>( 4, false, true );
 	private int mappedMem = 0;
 	private int memUsed = 0;
 	private int brickCount = 0;
@@ -266,7 +266,7 @@ class PersistenceWindowPool
 		dumpStatistics();
 	}
 	
-	private void flushAll() throws IOException
+	void flushAll() throws IOException
 	{
 		synchronized ( activeRowWindows )
 		{
@@ -281,6 +281,7 @@ class PersistenceWindowPool
 					}
 				}
 			}
+			txIdentifiers.clear();
 		}
 		fileChannel.force( false );
 	}

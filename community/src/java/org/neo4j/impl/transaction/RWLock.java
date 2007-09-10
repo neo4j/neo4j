@@ -43,7 +43,7 @@ class RWLock
 		new LinkedList<WaitElement>();
 
 	private final ArrayMap<Thread,ThreadLockElement> threadLockElementMap = 
-		new ArrayMap<Thread,ThreadLockElement>( 9, false, true );
+		new ArrayMap<Thread,ThreadLockElement>( 5, false, true );
 	
 	RWLock( Object resource )
 	{

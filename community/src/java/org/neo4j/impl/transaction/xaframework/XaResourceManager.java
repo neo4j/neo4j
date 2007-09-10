@@ -2,9 +2,13 @@ package org.neo4j.impl.transaction.xaframework;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -21,10 +25,67 @@ public class XaResourceManager
 	
 	private XaLogicalLog log = null;
 	private final XaTransactionFactory tf;
+	private boolean lazyDone = false;
+	private List<Integer> lazyDoneRecords = null;
 	
 	XaResourceManager( XaTransactionFactory tf )
 	{
 		this.tf = tf;
+	}
+	
+	/**
+	 * If set to <CODE>true</CODE> done records will not be written at once.
+	 * Instead a few done records will be collected then written together after 
+	 * the {@link XaTransactionFactory.lazyDoneWrite} method has been called.
+	 *  
+	 * @param status <CODE>true</CODE> turns lazy write of done records on, 
+	 * <CODE>false</CODE> turns it off
+	 * 
+	 * @throws XAException if change of lazy done failed
+	 */
+	public synchronized void setLazyDoneRecords( boolean status ) 
+		throws XAException 
+	{
+		if ( status )
+		{
+			lazyDone = true;
+			lazyDoneRecords = new ArrayList<Integer>();
+		}
+		else
+		{
+			lazyDone = false;
+			if ( lazyDoneRecords != null )
+			{
+				tf.lazyDoneWrite( lazyDoneRecords );
+				for ( int identifier : lazyDoneRecords )
+				{
+					log.done( identifier );
+				}
+				lazyDoneRecords = null;
+			}
+		}
+	}
+	
+	synchronized void writeOutLazyDoneRecords() throws XAException
+	{
+		if ( lazyDone )
+		{
+			tf.lazyDoneWrite( lazyDoneRecords );
+			for ( int identifier : lazyDoneRecords )
+			{
+				log.done( identifier );
+			}
+			lazyDoneRecords = null;
+		}
+		lazyDone = false;
+	}
+	
+	/**
+	 * @return true if lazy done is set
+	 */
+	public boolean lazyDoneSet()
+	{
+		return lazyDone;
 	}
 	
 	void setLogicalLog( XaLogicalLog log )
@@ -306,11 +367,15 @@ public class XaResourceManager
 		}
 		else
 		{
+			txOrderMap.put( xid, nextTxOrder++ );
 			txStatus.markAsCommit();
 			return false;
 		}
 	}
 
+	private Map<Xid,Integer> txOrderMap = new HashMap<Xid,Integer>();
+	private int nextTxOrder = 0;
+	
 	// called during recovery
 	// if not read only transaction will be commited.
 	synchronized void injectOnePhaseCommit( Xid xid ) throws IOException
@@ -322,6 +387,7 @@ public class XaResourceManager
 			throw new IOException( "Unkown xid[" + xid + "]" );
 		}
 		TransactionStatus txStatus = status.getTransactionStatus();
+		txOrderMap.put( xid, nextTxOrder++ );
 		txStatus.markCommitStarted();
 	}
 	
@@ -329,7 +395,6 @@ public class XaResourceManager
 		throws XAException 
 	{
 		XidStatus status = xidMap.get( xid );
-		// if ( !xidMap.containsKey( xid ) )
 		if ( status == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
@@ -358,7 +423,27 @@ public class XaResourceManager
 			txStatus.markCommitStarted();
 			xaTransaction.commit();
 		}
-		log.done( xaTransaction.getIdentifier() );
+		if ( lazyDone )
+		{
+			lazyDoneRecords.add( xaTransaction.getIdentifier() );
+			if ( lazyDoneRecords.size() >= 100 )
+			{
+				tf.lazyDoneWrite( lazyDoneRecords );
+				for ( int identifier : lazyDoneRecords )
+				{
+					log.done( identifier );
+				}
+				lazyDoneRecords = new ArrayList<Integer>();
+			}
+//			List<Integer> list = new ArrayList<Integer>();
+//			list.add( xaTransaction.getIdentifier() );
+//			tf.lazyDoneWrite( list );
+//			log.done( xaTransaction.getIdentifier() );
+		}
+		else
+		{
+			log.done( xaTransaction.getIdentifier() );
+		}
 		xidMap.remove( xid );
 		if ( xaTransaction.isRecovered() )
 		{
@@ -456,6 +541,29 @@ public class XaResourceManager
 		{
 			xids.add( keyIterator.next() );
 		}
+		Collections.sort( xids, new Comparator<Xid>()
+			{
+				public int compare( Xid o1, Xid o2 )
+                {
+					
+					Integer id1 = txOrderMap.get( o1 );
+					Integer id2 = txOrderMap.get( o2 );
+					if ( id1 == null && id2 == null )
+					{
+						return 0;
+					}
+					if ( id1 == null )
+					{
+						return Integer.MAX_VALUE;
+					}
+					if ( id2 == null )
+					{
+						return Integer.MIN_VALUE;
+					}
+	                return id1 - id2;
+                }
+			} );
+		txOrderMap = null;
 		while ( !xids.isEmpty() )
 		{
 			Xid xid = xids.removeFirst();

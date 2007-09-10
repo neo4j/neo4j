@@ -173,15 +173,15 @@ public class NodeManager
 		if ( firstNode == null )
 		{
 			setRollbackOnly();
-			throw new RuntimeException( "Node[" + startNode.getId() + 
-				"] deleted?" );
+			throw new RuntimeException( "First node[" + startNode.getId() + 
+				"] deleted" );
 		}
 		NodeImpl secondNode = getLightNode( (int) endNode.getId() );
 		if ( secondNode == null )
 		{
 			setRollbackOnly();
-			throw new RuntimeException( "Node[" + endNode.getId() + 
-				"] deleted?" );
+			throw new RuntimeException( "Second node[" + endNode.getId() + 
+				"] deleted" );
 		}
 		int id = IdGenerator.getGenerator().nextId( Relationship.class );
 		int startNodeId = (int) startNode.getId();
@@ -410,7 +410,7 @@ public class NodeManager
 			if ( PersistenceManager.getManager().loadLightNode( nodeId ) == 
 				null )
 			{
-				throw new RuntimeException( "Node[" + nodeId + "] deleted?" );
+				throw new NotFoundException( "Node[" + nodeId + "] not found" );
 			}
 			nodeCache.add( nodeId, node );
 			return (NodeImpl) node;
@@ -894,10 +894,10 @@ public class NodeManager
 		return IdGenerator.getGenerator().getNumberOfIdsInUse( clazz );
 	}
 
-	public void removePropertyIndexFromCache( int id )
-    {
-		PropertyIndex.removeIndex( id );
-    }
+//	public void removePropertyIndexFromCache( int id )
+//    {
+//		PropertyIndex.removeIndex( id );
+//    }
 
 	public void removeRelationshipTypeFromCache( int id )
     {

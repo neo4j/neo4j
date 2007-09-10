@@ -36,7 +36,7 @@ class ResourceBroker
 		PersistenceSourceDispatcher.getDispatcher();
 
 	private ArrayMap<Transaction,ResourceConnection> txConnectionMap = 
-		new ArrayMap<Transaction,ResourceConnection>( 9, false, true );
+		new ArrayMap<Transaction,ResourceConnection>( 5, true, true );
 
 	// A hook that releases resources after tx.commit
 	private final Synchronization txCommitHook = new TxCommitHook();

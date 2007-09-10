@@ -360,6 +360,11 @@ public abstract class CommonAbstractStore
 		windowPool.flush( identifier );
 	}
 	
+	public void flushAll() throws IOException
+	{
+		windowPool.flushAll();
+	}
+	
 	/**
 	 * Forgets about all changes made by <CODE>identifier</CODE>. This does
 	 * not mean that the changes will be reverted. Instead the mapping between

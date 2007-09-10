@@ -38,7 +38,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 	
 	// evaluator for each running transaction
 	private final ArrayMap<Thread,NeoConstraintsEvaluator> evaluators = 
-		new ArrayMap<Thread,NeoConstraintsEvaluator>( 9, true, true );
+		new ArrayMap<Thread,NeoConstraintsEvaluator>( 5, true, true );
 
 	private NeoConstraintsListener()
 	{

@@ -3,14 +3,11 @@ package unit.neo.api;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.Status;
 import javax.transaction.UserTransaction;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
 import org.neo4j.api.core.Node;
 import org.neo4j.impl.core.IllegalValueException;
 import org.neo4j.impl.core.NodeManager;
@@ -180,10 +177,6 @@ public class TestNode extends TestCase
 			assertEquals( string2, node1.getProperty( key2 ) );
 			assertEquals( int2, node2.getProperty( key2 ) );
 			
-			// should also test add of already existing property on a node
-			// in phase I or phase II where the property isn't cached...
-			// how do we do that?
-			
 			TransactionFactory.getUserTransaction().setRollbackOnly();
 		}
 		catch ( NotFoundException e )
@@ -258,15 +251,8 @@ public class TestNode extends TestCase
 			catch ( NotFoundException e )
 			{
 				// must mark as rollback only
-				try
-				{
-					TransactionFactory.getUserTransaction().setRollbackOnly();
-				}
-				catch ( javax.transaction.SystemException se )
-				{
-					fail( "Mark as rollback only failed. " + se );
-				}
 			}
+			TransactionFactory.getUserTransaction().setRollbackOnly();
 		}
 		catch ( NotFoundException e )
 		{
@@ -275,6 +261,10 @@ public class TestNode extends TestCase
 		catch ( IllegalValueException e )
 		{
 			fail( "" + e );
+		}
+		catch ( javax.transaction.SystemException se )
+		{
+			fail( "Mark as rollback only failed. " + se );
 		}
 	}
 	
@@ -319,15 +309,15 @@ public class TestNode extends TestCase
 			node1.setProperty( key3, bool2 );
 			// test type change of exsisting property
 			// cannot test this for now because of exceptions in PL
-			/*try
-			{
-				node2.changeProperty( key1, int1 );
-				fail( "Changing type should throw exception." );
-			}
-			catch ( IllegalValueException e )
-			{
-				ut.rollback();
-			}*/
+//			try
+//			{
+//				node2.changeProperty( key1, int1 );
+//				fail( "Changing type should throw exception." );
+//			}
+//			catch ( IllegalValueException e )
+//			{
+//				ut.rollback();
+//			}
 			assertEquals( string2, node2.getProperty( key1 ) );
 			node1.delete();
 			node2.delete();

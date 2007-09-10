@@ -9,10 +9,21 @@ public class DynamicRecord extends AbstractRecord
 	private int prevBlock = Record.NO_PREV_BLOCK.intValue();
 	private int nextBlock = Record.NO_NEXT_BLOCK.intValue();
 	private boolean isLight = false;
+	private int type;
 	
 	public DynamicRecord( int id )
 	{
 		super( id );
+	}
+	
+	public int getType()
+	{
+		return type;
+	}
+	
+	void setType( int type )
+	{
+		this.type = type;
 	}
 	
 	void setIsLight( boolean status )
@@ -37,6 +48,12 @@ public class DynamicRecord extends AbstractRecord
 		{
 			data = null;
 		}
+	}
+	
+	public void setInUse( boolean inUse, int type )
+	{
+		this.type = type;
+		this.setInUse( inUse );
 	}
 	
 	public void setData( byte[] data )

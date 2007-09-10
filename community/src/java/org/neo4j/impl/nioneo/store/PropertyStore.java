@@ -90,6 +90,15 @@ public class PropertyStore extends AbstractStore implements Store
 	}
 	
 	@Override
+	public void flushAll() throws IOException
+	{
+		stringPropertyStore.flushAll();
+		propertyIndexStore.flushAll();
+		arrayPropertyStore.flushAll();
+		super.flushAll();
+	}
+	
+	@Override
 	public void forget( int txIdentifier )
 	{
 		stringPropertyStore.forget( txIdentifier );
@@ -137,9 +146,19 @@ public class PropertyStore extends AbstractStore implements Store
 		return stringPropertyStore.nextBlockId();
 	}
 	
+	public void freeStringBlockId( int blockId ) throws IOException
+	{
+		stringPropertyStore.freeBlockId( blockId );
+	}
+	
 	private int nextArrayBlockId() throws IOException
 	{
 		return arrayPropertyStore.nextBlockId();
+	}
+	
+	public void freeArrayBlockId( int blockId ) throws IOException
+	{
+		arrayPropertyStore.freeBlockId( blockId );
 	}
 	
 	public PropertyIndexStore getIndexStore()
@@ -266,24 +285,36 @@ public class PropertyStore extends AbstractStore implements Store
 		}
 		if ( !record.isLight() )
 		{
-//			for ( DynamicRecord keyRecord : record.getKeyRecords() )
-//			{
-//				keyPropertyStore.updateRecord( keyRecord );
-//			}
-			if ( record.getType() == PropertyType.STRING )
+			for ( DynamicRecord valueRecord : record.getValueRecords() )
 			{
-				for ( DynamicRecord valueRecord : record.getValueRecords() )
+				if ( valueRecord.getType() == PropertyType.STRING.intValue() )
 				{
 					stringPropertyStore.updateRecord( valueRecord );
 				}
-			}
-			else if ( record.getType() == PropertyType.ARRAY )
-			{
-				for ( DynamicRecord valueRecord : record.getValueRecords() )
+				else if ( valueRecord.getType() 
+					== PropertyType.ARRAY.intValue() )
 				{
 					arrayPropertyStore.updateRecord( valueRecord );
 				}
+				else
+				{
+					throw new RuntimeException( "Unkown dynamic record" );
+				}
 			}
+//			if ( record.getType() == PropertyType.STRING )
+//			{
+//				for ( DynamicRecord valueRecord : record.getValueRecords() )
+//				{
+//					stringPropertyStore.updateRecord( valueRecord );
+//				}
+//			}
+//			else if ( record.getType() == PropertyType.ARRAY )
+//			{
+//				for ( DynamicRecord valueRecord : record.getValueRecords() )
+//				{
+//					arrayPropertyStore.updateRecord( valueRecord );
+//				}
+//			}
 		}
 	}
 	
@@ -401,12 +432,6 @@ public class PropertyStore extends AbstractStore implements Store
 		throws IOException
 	{
 		record.setIsLight( false );
-//		Collection<DynamicRecord> keyRecords = 
-//			keyPropertyStore.getLightRecords( record.getKeyBlock() );
-//		for ( DynamicRecord keyRecord : keyRecords )
-//		{
-//			record.addKeyRecord( keyRecord );
-//		}
 		if ( record.getType() == PropertyType.STRING )
 		{
 			Collection<DynamicRecord> stringRecords = 
@@ -414,6 +439,7 @@ public class PropertyStore extends AbstractStore implements Store
 					( int ) record.getPropBlock(), buffer );
 			for ( DynamicRecord stringRecord : stringRecords )
 			{
+				stringRecord.setType( PropertyType.STRING.intValue() );
 				record.addValueRecord( stringRecord );
 			}
 		}
@@ -422,9 +448,10 @@ public class PropertyStore extends AbstractStore implements Store
 			Collection<DynamicRecord> arrayRecords = 
 				arrayPropertyStore.getLightRecords( 
 					( int ) record.getPropBlock(), buffer );
-			for ( DynamicRecord stringRecord : arrayRecords )
+			for ( DynamicRecord arrayRecord : arrayRecords )
 			{
-				record.addValueRecord( stringRecord );
+				arrayRecord.setType( PropertyType.ARRAY.intValue() );
+				record.addValueRecord( arrayRecord );
 			}
 		}
 	}
@@ -467,12 +494,6 @@ public class PropertyStore extends AbstractStore implements Store
 				releaseWindow( window );
 			}
 		}
-		//		Collection<DynamicRecord> keyRecords = 
-		//		keyPropertyStore.getLightRecords( record.getKeyBlock() );
-		//	for ( DynamicRecord keyRecord : keyRecords )
-		//	{
-		//		record.addKeyRecord( keyRecord );
-		//	}
 		if ( record.getType() == PropertyType.STRING )
 		{
 			Collection<DynamicRecord> stringRecords = 
@@ -481,6 +502,7 @@ public class PropertyStore extends AbstractStore implements Store
 			record.setIsLight( false );
 			for ( DynamicRecord stringRecord : stringRecords )
 			{
+				stringRecord.setType( PropertyType.STRING.intValue() );
 				record.addValueRecord( stringRecord );
 			}
 		}
@@ -490,57 +512,14 @@ public class PropertyStore extends AbstractStore implements Store
 				arrayPropertyStore.getLightRecords( 
 					(int) record.getPropBlock(), buffer );
 			record.setIsLight( false );
-			for ( DynamicRecord stringRecord : arrayRecords )
+			for ( DynamicRecord arrayRecord : arrayRecords )
 			{
-				record.addValueRecord( stringRecord );
+				arrayRecord.setType( PropertyType.ARRAY.intValue() );
+				record.addValueRecord( arrayRecord );
 			}
 		}
 		return record;
 	}
-	
-//	private static class PropertyStoreData
-//	{
-//		private int type;
-//		private int keyIndexId;
-//		private long propertyStoreBlockId;
-////		private int previousPropertyId;
-////		private int nextPropertyId;
-//		
-//		PropertyStoreData( int type, int keyIndexId, long prop )//, 
-//			//int previousPropertyId, int nextPropertyId )
-//		{
-//			this.type = type;
-//			this.keyIndexId = keyIndexId;
-//			this.propertyStoreBlockId = prop;
-////			this.previousPropertyId = previousPropertyId;
-////			this.nextPropertyId = nextPropertyId;
-//		}
-//		
-//		public int type()
-//		{
-//			return type;
-//		}
-//		
-//		public int keyIndexId()
-//		{
-//			return keyIndexId;
-//		}
-//		
-//		public long propertyStoreBlockId()
-//		{
-//			return propertyStoreBlockId;
-//		}
-//		
-////		public int previousPropertyId()
-////		{
-////			return previousPropertyId;
-////		}
-////
-////		public int nextPropertyId()
-////		{
-////			return nextPropertyId;
-////		}
-//	}
 	
 	private PropertyRecord getRecord( int id, Buffer buffer ) 
 		throws IOException
@@ -730,6 +709,7 @@ public class PropertyStore extends AbstractStore implements Store
 				allocateStringRecords( stringBlockId, chars );
 			for ( DynamicRecord valueRecord : valueRecords )
 			{
+				valueRecord.setType( PropertyType.STRING.intValue() );
 				record.addValueRecord( valueRecord );
 			}
 			record.setType( PropertyType.STRING );
@@ -780,6 +760,7 @@ public class PropertyStore extends AbstractStore implements Store
 				allocateArrayRecords( arrayBlockId, value );
 			for ( DynamicRecord valueRecord : arrayRecords )
 			{
+				valueRecord.setType( PropertyType.ARRAY.intValue() );
 				record.addValueRecord( valueRecord );
 			}
 			record.setType( PropertyType.ARRAY );
@@ -788,60 +769,6 @@ public class PropertyStore extends AbstractStore implements Store
 		{
 			throw new RuntimeException( "Unkown property type on: " + value );
 		}
-//		PropertyType type = record.getType();
-//		switch ( type )
-//		{
-//			case STRING:
-//				int stringBlockId = nextStringBlockId();
-//				record.setPropBlock( stringBlockId );
-//				String string = (String) value;
-//				int length = string.length();
-//				char[] chars = new char[length];
-//				string.getChars( 0, length, chars, 0 );
-//				Collection<DynamicRecord> valueRecords = 
-//					allocateStringRecords( stringBlockId, chars );
-//				for ( DynamicRecord valueRecord : valueRecords )
-//				{
-//					record.addValueRecord( valueRecord );
-//				}
-//				break;
-//			case INT:
-//				record.setPropBlock( ( ( Integer ) value ).intValue() );
-//				break;
-//			case BOOL:
-//				record.setPropBlock(  
-//					( ( ( Boolean ) value ).booleanValue() ? 1 : 0 ) );
-//				break;
-//			case DOUBLE:
-//				record.setPropBlock( Double.doubleToRawLongBits( 
-//					( ( Double ) value ).doubleValue() ) );
-//				break;
-//			case FLOAT:
-//				record.setPropBlock(  Float.floatToRawIntBits( 
-//					( ( Float ) value ).floatValue() ) );
-//				break;
-//			case LONG:
-//				record.setPropBlock( ( ( Long ) value ).longValue() );
-//				break;
-//			case BYTE:
-//				record.setPropBlock( (( Byte) value ).byteValue() );
-//				break;
-//			case CHAR:
-//				record.setPropBlock( (( Character) value ).charValue() );
-//				break;
-//			case ARRAY:
-//				int arrayBlockId = nextArrayBlockId();
-//				record.setPropBlock( arrayBlockId );
-//				Collection<DynamicRecord> arrayRecords = 
-//					allocateArrayRecords( arrayBlockId, value );
-//				for ( DynamicRecord valueRecord : arrayRecords )
-//				{
-//					record.addValueRecord( valueRecord );
-//				}
-//				break;
-//			default:
-//				throw new RuntimeException( "Unkown property type: " + type );
-//		}
 	}
 
 	public Object getStringFor( PropertyRecord propRecord, 
@@ -893,9 +820,4 @@ public class PropertyStore extends AbstractStore implements Store
 		return arrayPropertyStore.getArray( 
 			(int) propertyRecord.getPropBlock() );
     }
-
-//	public void purge( int id )
-//    {
-//		cache.remove( id );
-//    }
 }

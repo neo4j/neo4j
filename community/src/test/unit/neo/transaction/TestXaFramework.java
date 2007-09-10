@@ -5,6 +5,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.List;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -120,6 +121,11 @@ public class TestXaFramework extends TestCase
 		{
 			return new DummyTransaction( identifier, getLogicalLog() );
 		}
+
+		@Override
+        public void lazyDoneWrite( List<Integer> identifiers ) throws XAException
+        {
+        }
 	}
 	
 	public static class DummyXaDataSource extends XaDataSource

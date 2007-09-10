@@ -211,8 +211,8 @@ public class TestXa extends TestCase
 			xaCon.getNodeConsumer().deleteNode( node2 );
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.commit( xid, true );
-			xaCon.clearAllTransactions();
 			ds.close();
+			xaCon.clearAllTransactions();
 			renameLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
@@ -434,16 +434,16 @@ public class TestXa extends TestCase
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.prepare( xid );
 			xaRes.commit( xid, false );
-			ds.truncateLogicalLog();
-			java.nio.channels.FileChannel fileChannel = 
-				new java.io.RandomAccessFile( 
-					"nioneo_logical.log", "rw" ).getChannel();
-			fileChannel.truncate( fileChannel.size() - 3 );
-			fileChannel.force( false );
-			fileChannel.close();
-			copyLogicalLog();
-			ds.close();
-			renameLogicalLog();
+//			ds.truncateLogicalLog();
+//			java.nio.channels.FileChannel fileChannel = 
+//				new java.io.RandomAccessFile( 
+//					"nioneo_logical.log", "rw" ).getChannel();
+//			fileChannel.truncate( fileChannel.size() - 3 );
+//			fileChannel.force( false );
+//			fileChannel.close();
+//			copyLogicalLog();
+//			ds.close();
+//			renameLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
 			xaRes = xaCon.getXaResource();
