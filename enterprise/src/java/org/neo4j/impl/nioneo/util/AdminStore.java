@@ -169,7 +169,10 @@ public class AdminStore
 		}
 		Set relTypeSet = checkRelTypeStore( 
 			fileName + ".relationshiptypestore.db" );
-		Set propertySet = checkPropertyStore( fileName + ".propertystore.db" );
+		Set propertyIndexSet = checkPropertyIndexStore( fileName + 
+			".propertystore.db.index" );
+		Set propertySet = checkPropertyStore( fileName + ".propertystore.db", 
+			propertyIndexSet );
 		Set nodeSet = checkNodeStore( fileName + ".nodestore.db", propertySet );
 		checkRelationshipStore( fileName + ".relationshipstore.db", 
 			propertySet, relTypeSet, nodeSet );
@@ -210,11 +213,12 @@ public class AdminStore
 		System.out.print( storeName );
 		ByteBuffer buffer = ByteBuffer.allocate( 5 );
 		FileChannel fileChannel = 
-			new RandomAccessFile( storeName, "rw" ).getChannel();
+			new RandomAccessFile( storeName, "r" ).getChannel();
 		long fileSize = fileChannel.size();
 		fileChannel.position( 0 );
 		long dot = fileSize / 5 / 20;
 		int i = 0;
+		int inUseCount = 0;
 		Set<Integer> relTypeSet = new java.util.HashSet<Integer>();
 		while ( fileChannel.read( buffer ) == 5 )
 		{
@@ -222,6 +226,7 @@ public class AdminStore
 			byte inUse = buffer.get();
 			if ( inUse == RECORD_IN_USE )
 			{
+				inUseCount++;
 				int block = buffer.getInt();
 				if ( block != RESERVED && 
 					!startBlocks.remove( block ) )
@@ -233,8 +238,8 @@ public class AdminStore
 			}
 			else if ( inUse != RECORD_NOT_IN_USE )
 			{
-				fileChannel.truncate( fileChannel.position() );
 				break;
+				// fileChannel.truncate( fileChannel.position() );
 			}
 			i++;
 			if ( dot != 0 && i % dot == 0 )
@@ -243,6 +248,7 @@ public class AdminStore
 			}
 			buffer.clear();
 		}
+		System.out.print( " high id:" + i + " count:" + inUseCount );
 		if ( !startBlocks.isEmpty() )
 		{
 			// throw new IOException( "Stray type name blocks found " +
@@ -250,13 +256,13 @@ public class AdminStore
 			System.out.println( "Stray type name blocks found " +
 				startBlocks.size() );
 		}
-		fileChannel.truncate( i * 5 );
+//		fileChannel.truncate( i * 5 );
 		fileChannel.close();
 		System.out.println( ".ok" );
 		return relTypeSet;
 	}
 
-	private static Set checkPropertyStore( String storeName ) 
+	private static Set checkPropertyStore( String storeName, Set propertyIndex ) 
 		throws IOException
 	{
 		File relTypeStore = new File( storeName );
@@ -270,20 +276,21 @@ public class AdminStore
 		{
 			idGenerator.delete();
 		}
+		Set arrayStartBlocks = checkDynamicStore( storeName + ".arrays" );
 		Set stringStartBlocks = checkDynamicStore( storeName + ".strings" );
-		Set keyStartBlocks = checkDynamicStore( storeName + ".keys" );
-		// in_use(byte)+type(int)+key_blockId(int)+prop_blockId(long)+
+		// in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
 		// prev_prop_id(int)+next_prop_id(int)
 		int recordSize = 25;
 		System.out.print( storeName );
 		ByteBuffer buffer = ByteBuffer.allocate( recordSize );
 		FileChannel fileChannel = 
-			new RandomAccessFile( storeName, "rw" ).getChannel();
+			new RandomAccessFile( storeName, "r" ).getChannel();
 		long fileSize = fileChannel.size();
 		fileChannel.position( 0 );
 		long dot = fileSize / recordSize / 20;
 		Set<Integer> startBlocks = new java.util.HashSet<Integer>();
 		int i = 0;
+		int inUseCount = 0;
 		for ( i = 0; ( i + 1 ) * recordSize <= fileSize; i++ )
 		{
 			buffer.clear();
@@ -293,6 +300,7 @@ public class AdminStore
 			byte inUse = buffer.get();
 			if ( inUse == RECORD_IN_USE )
 			{
+				inUseCount++;
 				int type = buffer.getInt();
 				int key = buffer.getInt();
 				long prop = buffer.getLong();
@@ -353,14 +361,19 @@ public class AdminStore
 							previous + ",(next don't match)] at record " + i );
 					}
 				}
-				if ( type < 1 || type > 6 )
+				if ( type < 1 || type > 9 )
 				{
 					throw new IOException( "Bad property type[" + type + 
 						"] at record " + i );
 				}
-				if ( !keyStartBlocks.remove( key ) )
+				if ( !propertyIndex.contains( key ) )
 				{
-					throw new IOException( "key start block[" + key + 
+					throw new IOException( "key index[" + key + 
+						"] not found for record " + i );
+				}
+				if ( type == 9 && !arrayStartBlocks.remove( (int) prop ) )
+				{
+					throw new IOException( "array start block[" + prop + 
 						"] not found for record " + i );
 				}
 				if ( type == 2 && !stringStartBlocks.remove( (int) prop ) )
@@ -368,17 +381,18 @@ public class AdminStore
 					throw new IOException( "string start block[" + prop + 
 						"] not found for record " + i );
 				}
-				
 			}
 			else if ( inUse != RECORD_NOT_IN_USE )
 			{
-				throw new IOException( "Bad record at " + i );
+				break;
+				// throw new IOException( "Bad record at " + i );
 			}
 			if ( dot != 0 && i % dot == 0 )
 			{
 				System.out.print( "." );
 			}
 		}
+		System.out.print( " high id:" + i + " count:" + inUseCount );
 		if ( !stringStartBlocks.isEmpty() )
 		{
 			System.out.println( "Stray string blocks found " +
@@ -386,14 +400,81 @@ public class AdminStore
 			// throw new IOException( "Stray string blocks found " +
 			//	stringStartBlocks.size() );
 		}
+//		if ( !keyStartBlocks.isEmpty() )
+//		{
+//			System.out.println( "Stray key blocks found " +
+//				keyStartBlocks.size() );
+//		}
+//		fileChannel.truncate( i * recordSize );
+		fileChannel.close();
+		System.out.println( ".ok" );
+		return startBlocks;
+	}
+	
+	private static Set checkPropertyIndexStore( String storeName ) 
+		throws IOException
+	{
+		File relTypeStore = new File( storeName );
+		if ( !relTypeStore.exists() )
+		{
+			throw new IOException( "Couldn't find property store " + 
+				storeName );
+		}
+		File idGenerator = new File( storeName + ".id" );
+		if ( idGenerator.exists() )
+		{
+			idGenerator.delete();
+		}
+		Set keyStartBlocks = checkDynamicStore( storeName + ".keys" );
+		// in_use(byte)+prop_count(int)+key_block_id(int)
+		int recordSize = 9;
+		System.out.print( storeName );
+		ByteBuffer buffer = ByteBuffer.allocate( recordSize );
+		FileChannel fileChannel = 
+			new RandomAccessFile( storeName, "r" ).getChannel();
+		long fileSize = fileChannel.size();
+		fileChannel.position( 0 );
+		long dot = fileSize / recordSize / 20;
+		Set<Integer> startBlocks = new java.util.HashSet<Integer>();
+		int i = 0;
+		int inUseCount = 0;
+		for ( i = 0; ( i + 1 ) * recordSize <= fileSize; i++ )
+		{
+			buffer.clear();
+			fileChannel.position( i * recordSize );
+			fileChannel.read( buffer );
+			buffer.flip();
+			byte inUse = buffer.get();
+			if ( inUse == RECORD_IN_USE )
+			{
+				inUseCount++;
+				int count = buffer.getInt();
+				int key = buffer.getInt();
+				if ( !keyStartBlocks.remove( key ) )
+				{
+					throw new IOException( "key start block[" + key + 
+						"] not found for record " + i );
+				}
+				startBlocks.add( i );
+			}
+			else if ( inUse != RECORD_NOT_IN_USE )
+			{
+				break;
+//				throw new IOException( "Bad record at " + i + ", inUse=" + 
+//					inUse );
+			}
+			if ( dot != 0 && i % dot == 0 )
+			{
+				System.out.print( "." );
+			}
+		}
+		System.out.print( " high id:" + i + " count:" + inUseCount );
 		if ( !keyStartBlocks.isEmpty() )
 		{
 			System.out.println( "Stray key blocks found " +
 				keyStartBlocks.size() );
-			// throw new IOException( "Stray key blocks found " +
-			//	keyStartBlocks.size() );
 		}
-		fileChannel.truncate( i * recordSize );
+//		fileChannel.truncate( i * recordSize );
 		fileChannel.close();
 		System.out.println( ".ok" );
 		return startBlocks;
@@ -418,12 +499,13 @@ public class AdminStore
 		System.out.print( storeName );
 		ByteBuffer buffer = ByteBuffer.allocate( recordSize );
 		FileChannel fileChannel = 
-			new RandomAccessFile( storeName, "rw" ).getChannel();
+			new RandomAccessFile( storeName, "r" ).getChannel();
 		long fileSize = fileChannel.size();
 		fileChannel.position( 0 );
 		long dot = fileSize / recordSize / 20;
 		Set<Integer> nodeSet = new java.util.HashSet<Integer>();
 		int i = 0;
+		int inUseCount = 0;
 		for ( i = 0; ( i + 1 ) * recordSize <= fileSize; i++ )
 		{
 			buffer.clear();
@@ -433,6 +515,7 @@ public class AdminStore
 			byte inUse = buffer.get();
 			if ( inUse == RECORD_IN_USE )
 			{
+				inUseCount++;
 				int nextRel = buffer.getInt();
 				int nextProp = buffer.getInt();
 				if ( nextRel != NO_NEXT_RELATIONSHIP )
@@ -448,21 +531,23 @@ public class AdminStore
 			}
 			else if ( inUse != RECORD_NOT_IN_USE )
 			{
-				buffer.clear();
-				buffer.put( RECORD_NOT_IN_USE );
-				buffer.putInt( NO_NEXT_RELATIONSHIP );
-				buffer.putInt( NO_NEXT_PROPERTY );
-				buffer.flip();
-				fileChannel.position( i * recordSize );
-				fileChannel.write( buffer );
-				System.out.print( "o" );
+				break;
+//				buffer.clear();
+//				buffer.put( RECORD_NOT_IN_USE );
+//				buffer.putInt( NO_NEXT_RELATIONSHIP );
+//				buffer.putInt( NO_NEXT_PROPERTY );
+//				buffer.flip();
+//				fileChannel.position( i * recordSize );
+//				fileChannel.write( buffer );
+//				System.out.print( "o" );
 			}
 			if ( dot != 0 && i % dot == 0 )
 			{
 				System.out.print( "." );
 			}
 		}
-		fileChannel.truncate( i * recordSize );
+		System.out.print( " high id:" + i + " count:" + inUseCount );
+//		fileChannel.truncate( i * recordSize );
 		fileChannel.close();
 		System.out.println( ".ok" );
 		return nodeSet;
@@ -495,11 +580,12 @@ public class AdminStore
 		System.out.print( storeName );
 		ByteBuffer buffer = ByteBuffer.allocate( recordSize );
 		FileChannel fileChannel = 
-			new RandomAccessFile( relStore, "rw" ).getChannel();
+			new RandomAccessFile( relStore, "r" ).getChannel();
 		long fileSize = fileChannel.size();
 		fileChannel.position( 0 );
 		long dot = fileSize / recordSize / 20;
 		int i = 0;
+		int inUseCount = 0;		
 		for ( i = 0; ( i + 1 ) * recordSize <= fileSize; i++ )
 		{
 			buffer.clear();
@@ -510,6 +596,7 @@ public class AdminStore
 			if ( inUse == RECORD_IN_USE + NOT_DIRECTED || inUse == 
 				RECORD_IN_USE + DIRECTED )
 			{
+				inUseCount++;
 				int firstNode = buffer.getInt();
 				int secondNode = buffer.getInt();
 				int type = buffer.getInt();
@@ -550,14 +637,16 @@ public class AdminStore
 			}
 			else if ( inUse != RECORD_NOT_IN_USE )
 			{
-				throw new IOException( "Bad record at " + i );
+				break;
+				// throw new IOException( "Bad record at " + i );
 			}
 			if ( dot != 0 && i % dot == 0 )
 			{
 				System.out.print( "." );
 			}
 		}
-		fileChannel.truncate( i * recordSize );
+		System.out.print( " high id:" + i + " count:" + inUseCount );
+//		fileChannel.truncate( i * recordSize );
 		fileChannel.close();
 		System.out.println( ".ok" );
 	}
@@ -675,7 +764,7 @@ public class AdminStore
 		}
 		System.out.print( storeName );
 		FileChannel fileChannel = 
-			new RandomAccessFile( storeName, "rw" ).getChannel();
+			new RandomAccessFile( storeName, "r" ).getChannel();
 		ByteBuffer buffer = ByteBuffer.allocate( 4 );
 		fileChannel.position( 0 );
 		if ( fileChannel.read( buffer ) != 4 )
@@ -691,6 +780,7 @@ public class AdminStore
 		long dot = fileSize / blockSize / 20;
 		Set<Integer> startBlocks = new java.util.HashSet<Integer>();
 		int i = 0;
+		int inUseCount = 0;
 		for ( i = 1; ( i + 1 ) * blockSize <= fileSize; i++ )
 		{
 			inUseBuffer.clear();
@@ -700,6 +790,7 @@ public class AdminStore
 			byte inUse = inUseBuffer.get();
 			if ( inUse == BLOCK_IN_USE )
 			{
+				inUseCount++;
 				buffer.clear();
 				fileChannel.read( buffer );
 				buffer.flip();
@@ -769,14 +860,16 @@ public class AdminStore
 			}
 			else if ( inUse != BLOCK_NOT_IN_USE )
 			{
-				throw new IOException( "Bad block at " + i );
+				break;
+				// throw new IOException( "Bad block at " + i );
 			}
 			if ( dot != 0 && i % dot == 0 )
 			{
 				System.out.print( "." );
 			}
 		}
-		fileChannel.truncate( i * blockSize );
+		System.out.print( " high id:" + i + " count:" + inUseCount );
+//		fileChannel.truncate( i * blockSize );
 		fileChannel.close();
 		System.out.println( ".ok" );
 		return startBlocks;

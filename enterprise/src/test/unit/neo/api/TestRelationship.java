@@ -3,14 +3,11 @@ package unit.neo.api;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.Status;
 import javax.transaction.UserTransaction;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
@@ -19,7 +16,6 @@ import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.core.NotFoundException;
 import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.transaction.TransactionUtil;
-
 import unit.neo.MyRelTypes;
 
 public class TestRelationship extends TestCase
@@ -188,6 +184,8 @@ public class TestRelationship extends TestCase
 		catch ( Exception e )
 		{ // good
 		}
+		node1.delete();
+		node2.delete();
 		log.setLevel( level );
 	}
 	
@@ -316,6 +314,10 @@ public class TestRelationship extends TestCase
 				// have to set rollback only here
 				TransactionFactory.getUserTransaction().setRollbackOnly();
 			}
+			rel1.delete();
+			rel2.delete();
+			node1.delete();
+			node2.delete();
 		}
 		catch ( IllegalValueException e )
 		{
@@ -369,10 +371,10 @@ public class TestRelationship extends TestCase
 			// cannot test this for now because of exceptions in PL
 			rel2.setProperty( key1, int1 );
 			
-//			rel1.delete();
-//			rel2.delete();
-//			node2.delete();
-//			node1.delete();
+			rel1.delete();
+			rel2.delete();
+			node2.delete();
+			node1.delete();
 		}
 		catch ( IllegalValueException e )
 		{

@@ -1,11 +1,8 @@
 package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 
 /**
  * Persistence window using a {@link MappedByteBuffer} as underlying buffer.
@@ -80,7 +77,8 @@ class MappedPersistenceWindow extends LockableWindow
 	
 	void unmap()
 	{
-		AccessController.doPrivileged( new PrivilegedAction() 
+		// sadly we can't do this
+/*		AccessController.doPrivileged( new PrivilegedAction() 
 			{
 				public Object run() 
 				{
@@ -101,7 +99,7 @@ class MappedPersistenceWindow extends LockableWindow
 					}
 					return null;
 				}
-			} );
+			} );*/
 	}
 	
 	private volatile int hashCode = 0;

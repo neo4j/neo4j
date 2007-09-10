@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.NotInTransactionException;
@@ -30,10 +31,11 @@ public class LockReleaser
 	
 	private static final LockReleaser instance = new LockReleaser();
 	private static final LockManager lockManager = LockManager.getManager();
-	
+	private static final TransactionManager transactionManager = 
+		TransactionFactory.getTransactionManager();
 	
 	private final ArrayMap<Thread,List<LockElement>> lockMap =  
-			new ArrayMap<Thread,List<LockElement>>( 9, true, true );
+			new ArrayMap<Thread,List<LockElement>>( 5, true, true );
 
 	private final Synchronization txCommitHook = new TxCommitHook();
 	
@@ -151,7 +153,7 @@ public class LockReleaser
 			Transaction tx = null;
 			try
 			{
-				tx = TransactionFactory.getTransactionManager().getTransaction();
+				tx = transactionManager.getTransaction();
 				if ( tx == null )
 				{
 					// no transaction we release lock right away

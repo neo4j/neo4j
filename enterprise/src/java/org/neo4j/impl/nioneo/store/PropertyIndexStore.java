@@ -51,6 +51,13 @@ public class PropertyIndexStore extends AbstractStore implements Store
 		return RECORD_SIZE;
 	}
 	
+	@Override
+	public void makeStoreOk() throws IOException
+	{
+		keyPropertyStore.makeStoreOk();
+		super.makeStoreOk();
+	}
+	
 	public void freeBlockId( int id ) throws IOException
 	{
 		keyPropertyStore.freeBlockId( id );
@@ -68,6 +75,13 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	{
 		keyPropertyStore.flush( txIdentifier );
 		super.flush( txIdentifier );
+	}
+	
+	@Override
+	public void flushAll() throws IOException
+	{
+		keyPropertyStore.flushAll();
+		super.flushAll();
 	}
 	
 	public static void createStore( String fileName ) 

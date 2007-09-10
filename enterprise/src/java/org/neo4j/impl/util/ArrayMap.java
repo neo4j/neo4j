@@ -11,14 +11,15 @@ public class ArrayMap<K,V>
 {
 	private ArrayEntry<K,V>[] arrayEntries;
 	
-	private int arrayCount = 0;
+	private volatile int arrayCount = 0;
 	private int toMapThreshold = 5;
 	private Map<K,V> propertyMap = null;
-	private boolean useThreadSafeMap = false;
+	private final boolean useThreadSafeMap;
 	private boolean switchBackToArray = false;
 	
 	public ArrayMap()
 	{
+		useThreadSafeMap = false;
 		arrayEntries = new ArrayEntry[toMapThreshold];
 	}
 	
@@ -32,6 +33,47 @@ public class ArrayMap<K,V>
 	}
 	
 	public void put( K key, V value )
+	{
+		if ( useThreadSafeMap )
+		{
+			synchronizedPut( key, value );
+			return;
+		}
+		for ( int i = 0; i < arrayCount; i++ )
+		{
+			if ( arrayEntries[i].getKey().equals( key ) )
+			{
+				arrayEntries[i].setNewValue( value );
+				return;
+			}
+		}
+		if ( arrayCount != -1 )
+		{
+			if ( arrayCount < arrayEntries.length )
+			{
+				arrayEntries[ arrayCount++ ] = new ArrayEntry<K,V>( key, 
+					value );
+			}
+			else
+			{
+				propertyMap = new HashMap<K,V>();
+				for ( int i = 0; i < arrayCount; i++ )
+				{
+					propertyMap.put( arrayEntries[i].getKey(), 
+						arrayEntries[i].getValue() );
+				}
+				// arrayEntries = null;
+				arrayCount = -1;
+				propertyMap.put( key, value );
+			}
+		}
+		else
+		{
+			propertyMap.put( key, value );
+		}
+	}
+	
+	private synchronized void synchronizedPut( K key, V value )
 	{
 		for ( int i = 0; i < arrayCount; i++ )
 		{
@@ -50,14 +92,7 @@ public class ArrayMap<K,V>
 			}
 			else
 			{
-				if ( useThreadSafeMap )
-				{
-					propertyMap = new ConcurrentHashMap<K,V>();
-				}
-				else
-				{
-					propertyMap = new HashMap<K,V>();
-				}
+				propertyMap = new ConcurrentHashMap<K,V>();
 				for ( int i = 0; i < arrayCount; i++ )
 				{
 					propertyMap.put( arrayEntries[i].getKey(), 
@@ -76,9 +111,18 @@ public class ArrayMap<K,V>
 	
 	public V get( K key )
 	{
-		for ( int i = 0; i < arrayCount; i++ )
+		if ( key == null )
 		{
-			if ( arrayEntries[i].getKey().equals( key ) )
+			return null;
+		}
+		if ( useThreadSafeMap )
+		{
+			return synchronizedGet( key );
+		}
+		int count = arrayCount;
+		for ( int i = 0; i < count; i++ )
+		{
+			if ( key.equals( arrayEntries[i].getKey() ) )
 			{
 				return arrayEntries[i].getValue();
 			}
@@ -90,29 +134,32 @@ public class ArrayMap<K,V>
 		return null;
 	}
 	
-	public V remove( K key )
+	private synchronized V synchronizedGet( K key )
+	{
+		for ( int i = 0; i < arrayCount; i++ )
+		{
+			if ( key.equals( arrayEntries[i].getKey() ) )
+			{
+				return arrayEntries[i].getValue();
+			}
+		}
+		if ( arrayCount == -1 )
+		{
+			return propertyMap.get( key );
+		}
+		return null;
+	}
+	
+	private synchronized V synchronizedRemove( K key )
 	{
 		for ( int i = 0; i < arrayCount; i++ )
 		{
 			if ( arrayEntries[i].getKey().equals( key ) )
 			{
 				V removedProperty = arrayEntries[i].getValue();
-				if ( useThreadSafeMap )
-				{
-					ArrayEntry<K,V>[] newEntries = 
-						new ArrayEntry[toMapThreshold];
-					System.arraycopy( arrayEntries, 0, newEntries, 0, i );
-					arrayCount--;
-					System.arraycopy( arrayEntries, i+1, newEntries, i, 
-						arrayCount - i );
-					arrayEntries = newEntries;
-				}
-				else
-				{
-					arrayCount--;
-					System.arraycopy( arrayEntries, i+1, arrayEntries, i, 
-						arrayCount - i );
-				}
+				arrayCount--;
+				System.arraycopy( arrayEntries, i+1, arrayEntries, i, 
+					arrayCount - i );
 				return removedProperty;
 			}
 		}
@@ -121,13 +168,50 @@ public class ArrayMap<K,V>
 			V value = propertyMap.remove( key );
 			if ( switchBackToArray && propertyMap.size() < toMapThreshold )
 			{
-				arrayCount = 0;
 				arrayEntries = new ArrayEntry[toMapThreshold];
+				int tmpCount = 0;
 				for ( Entry<K,V> entry : propertyMap.entrySet() )
 				{
-					arrayEntries[arrayCount++] = 
+					arrayEntries[tmpCount++] = 
 						new ArrayEntry<K,V>( entry.getKey(), entry.getValue() );
 				}
+				arrayCount = tmpCount;
+			}
+			return value;
+		}
+		return null;
+	}
+	
+	public V remove( K key )
+	{
+		if ( useThreadSafeMap )
+		{
+			return synchronizedRemove( key );
+		}
+		for ( int i = 0; i < arrayCount; i++ )
+		{
+			if ( arrayEntries[i].getKey().equals( key ) )
+			{
+				V removedProperty = arrayEntries[i].getValue();
+				arrayCount--;
+				System.arraycopy( arrayEntries, i+1, arrayEntries, i, 
+					arrayCount - i );
+				return removedProperty;
+			}
+		}
+		if ( arrayCount == -1 )
+		{
+			V value = propertyMap.remove( key );
+			if ( switchBackToArray && propertyMap.size() < toMapThreshold )
+			{
+				arrayEntries = new ArrayEntry[toMapThreshold];
+				int tmpCount = 0;
+				for ( Entry<K,V> entry : propertyMap.entrySet() )
+				{
+					arrayEntries[tmpCount++] = 
+						new ArrayEntry<K,V>( entry.getKey(), entry.getValue() );
+				}
+				arrayCount = tmpCount;
 			}
 			return value;
 		}

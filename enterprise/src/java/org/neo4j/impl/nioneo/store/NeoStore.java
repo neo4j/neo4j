@@ -59,9 +59,13 @@ public class NeoStore extends AbstractStore
 	protected void closeStorage() throws IOException
 	{
 		relTypeStore.close();
+		relTypeStore = null;
 		propStore.close();
+		propStore = null;
 		relStore.close();
+		relStore = null;
 		nodeStore.close();
+		nodeStore = null;
 	}
 	
 	/**
@@ -75,6 +79,14 @@ public class NeoStore extends AbstractStore
 		propStore.flush( txIdentifier );
 		relStore.flush( txIdentifier );
 		nodeStore.flush( txIdentifier );
+	}
+	
+	public void flushAll() throws IOException
+	{
+		relTypeStore.flushAll();
+		propStore.flushAll();
+		relStore.flushAll();
+		nodeStore.flushAll();
 	}
 	
 	/**
@@ -159,17 +171,13 @@ public class NeoStore extends AbstractStore
 	}
 	
 	@Override
-	protected void rebuildIdGenerator()
-	{ // do nothing
-	}
-	
-	@Override
 	public void makeStoreOk() throws IOException
 	{
 		relTypeStore.makeStoreOk();
 		propStore.makeStoreOk();
 		relStore.makeStoreOk();
 		nodeStore.makeStoreOk();
+		super.makeStoreOk();
 	}
 	
 	// validation not needed on this store

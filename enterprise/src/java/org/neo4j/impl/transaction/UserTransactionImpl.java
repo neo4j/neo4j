@@ -48,6 +48,7 @@ public class UserTransactionImpl implements UserTransaction
 		}
 		catch ( Exception e )
 		{
+			e.printStackTrace();
 			throw new SystemException( "Unable to generate tx events:" + e );
 		}
 	}
