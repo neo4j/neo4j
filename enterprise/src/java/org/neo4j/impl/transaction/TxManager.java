@@ -91,7 +91,7 @@ public class TxManager implements TransactionManager
 					new File( txLog2FileName ).exists() )
 				{
 					throw new RuntimeException( "Unable to start TM, " +
-						"no active tx log file found but foung either " +
+						"no active tx log file found, but found either " +
 						txLog1FileName + " or " + txLog2FileName +
 						" file, please set one of them as active or " +
 						"remove them." );
