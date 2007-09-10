@@ -82,7 +82,7 @@ public abstract class XaTransaction
 	 * Returns <CODE>true</CODE> if read only transaction, that is no 
 	 * modifications will be made once the transaction commits.
 	 *
-	 * @return Yrue if read only transaction
+	 * @return true if read only transaction
 	 */
 	public abstract boolean isReadOnly();
 	

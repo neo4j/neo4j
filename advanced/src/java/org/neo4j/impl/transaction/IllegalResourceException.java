@@ -1,6 +1,6 @@
 package org.neo4j.impl.transaction;
 
-public class IllegalResourceException extends Exception
+public class IllegalResourceException extends RuntimeException
 {
 	public IllegalResourceException()
 	{

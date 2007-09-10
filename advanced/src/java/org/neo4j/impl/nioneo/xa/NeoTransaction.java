@@ -10,6 +10,10 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
+import org.neo4j.api.core.Node;
+import org.neo4j.api.core.Relationship;
+import org.neo4j.api.core.RelationshipType;
+import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
@@ -29,6 +33,8 @@ import org.neo4j.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.impl.transaction.LockManager;
+import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.xaframework.XaCommand;
 import org.neo4j.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.impl.transaction.xaframework.XaTransaction;
@@ -41,62 +47,29 @@ class NeoTransaction extends XaTransaction
 {
 	private static Logger logger = 
 		Logger.getLogger( NeoTransaction.class.getName() );
+	private static final LockManager lockManager = LockManager.getManager();
+	private static final LockReleaser lockReleaser = LockReleaser.getManager();
 	
-//	private Map<Integer,MemCommand> createdNodesMap = 
-//		new HashMap<Integer,MemCommand>();
-//	private Map<Integer,MemCommand> deletedNodesMap = 
-//		new HashMap<Integer,MemCommand>();
-//	private Map<Integer,MemCommand> createdRelsMap = 
-//		new HashMap<Integer,MemCommand>();
-//	private Map<Integer,MemCommand> deletedRelsMap = 
-//		new HashMap<Integer,MemCommand>();
-//	private Map<Integer,MemCommand> addedPropsMap = 
-//		new HashMap<Integer,MemCommand>();
-//	private Map<Integer,MemCommand> changedPropsMap = 
-//		new HashMap<Integer,MemCommand>();
-//	private Map<Integer,MemCommand> removedPropsMap = 
-//		new HashMap<Integer,MemCommand>();
-//	private Map<Integer,MemCommand> createdRelTypesMap = 
-//		new HashMap<Integer,MemCommand>();
-//	private Map<Integer,MemCommand> strayPropMap = 
-//		new HashMap<Integer,MemCommand>();
-
-//	private List<MemCommand.NodeCreate> createdNodesMap = 
-//		new ArrayList<MemCommand.NodeCreate>();
-//	private List<MemCommand.NodeDelete> deletedNodesMap = 
-//		new ArrayList<MemCommand.NodeDelete>();
-//	private List<MemCommand.RelationshipCreate> createdRelsMap = 
-//		new ArrayList<MemCommand.RelationshipCreate>();
-//	private List<MemCommand.RelationshipDelete> deletedRelsMap = 
-//		new ArrayList<MemCommand.RelationshipDelete>();
-	
-//	private List<MemCommand> addedPropsMap = new ArrayList<MemCommand>();
-//	private List<MemCommand> changedPropsMap = new ArrayList<MemCommand>();
-//	private List<MemCommand> removedPropsMap = new ArrayList<MemCommand>();
-//	private List<MemCommand.RelationshipTypeAdd> createdRelTypesMap = 
-//		new ArrayList<MemCommand.RelationshipTypeAdd>();
-//	private List<MemCommand> strayPropMap = new ArrayList<MemCommand>();
-	
-	private final Map<Integer,NodeRecord> nodeRecords = 
+	private Map<Integer,NodeRecord> nodeRecords = 
 		new HashMap<Integer,NodeRecord>();
-	private final Map<Integer,PropertyRecord> propertyRecords = 
+	private Map<Integer,PropertyRecord> propertyRecords = 
 		new HashMap<Integer,PropertyRecord>();
-	private final Map<Integer,RelationshipRecord> relRecords = 
+	private Map<Integer,RelationshipRecord> relRecords = 
 		new HashMap<Integer,RelationshipRecord>();
-	private final Map<Integer,RelationshipTypeRecord> relTypeRecords =
+	private Map<Integer,RelationshipTypeRecord> relTypeRecords =
 		new HashMap<Integer,RelationshipTypeRecord>();
-	private final Map<Integer,PropertyIndexRecord> propIndexRecords =
+	private Map<Integer,PropertyIndexRecord> propIndexRecords =
 		new HashMap<Integer,PropertyIndexRecord>();
 	
-	private final ArrayList<Command.NodeCommand> nodeCommands = 
+	private ArrayList<Command.NodeCommand> nodeCommands = 
 		new ArrayList<Command.NodeCommand>();
-	private final ArrayList<Command.PropertyCommand> propCommands = 
+	private ArrayList<Command.PropertyCommand> propCommands = 
 		new ArrayList<Command.PropertyCommand>();
-	private final ArrayList<Command.PropertyIndexCommand> propIndexCommands = 
+	private ArrayList<Command.PropertyIndexCommand> propIndexCommands = 
 		new ArrayList<Command.PropertyIndexCommand>();
-	private final ArrayList<Command.RelationshipCommand> relCommands = 
+	private ArrayList<Command.RelationshipCommand> relCommands = 
 		new ArrayList<Command.RelationshipCommand>();
-	private final ArrayList<Command.RelationshipTypeCommand> relTypeCommands = 
+	private ArrayList<Command.RelationshipTypeCommand> relTypeCommands = 
 		new ArrayList<Command.RelationshipTypeCommand>();
 	
 	private final NeoStore neoStore;
@@ -123,10 +96,6 @@ class NeoTransaction extends XaTransaction
 			}
 			return false;
 		}
-//		if ( createdNodesMap.size() == 0 && deletedNodesMap.size() == 0 &&
-//			createdRelsMap.size() == 0 && deletedRelsMap.size() == 0 &&
-//			addedPropsMap.size() == 0 && changedPropsMap.size() == 0 &&
-//			removedPropsMap.size() == 0 && createdRelTypesMap.size() == 0 )
 		if ( nodeRecords.size() == 0 && relRecords.size() == 0 && 
 			relTypeRecords.size() == 0 && propertyRecords.size() == 0 )
 		{
@@ -139,151 +108,6 @@ class NeoTransaction extends XaTransaction
 	{
 		// do nothing, commands are created and added in prepare
 	}
-	
-//	public void addmemorycommand( MemCommand command ) throws IOException
-//	{
-//		assert !committed;
-//		assert !prepared;
-//		int key = command.getId();
-//		if ( command instanceof MemCommand.NodeCreate )
-//		{
-//			// createdNodesMap.put( key, command );
-//			createdNodesMap.add( (MemCommand.NodeCreate) command );
-//		}
-//		else if ( command instanceof MemCommand.RelationshipCreate )
-//		{
-//			// createdRelsMap.put( key, command );
-//			createdRelsMap.add( (MemCommand.RelationshipCreate) command );
-//		}
-//		else if ( command instanceof MemCommand.NodeDelete )
-//		{
-////			deletedNodesMap.put( key, command );
-//			deletedNodesMap.add( (MemCommand.NodeDelete) command );
-//		}
-//		else if ( command instanceof MemCommand.RelationshipDelete )
-//		{
-////			deletedRelsMap.put( key, command );
-//			deletedRelsMap.add( (MemCommand.RelationshipDelete) command );
-//		}
-//		else if ( command instanceof MemCommand.NodeAddProperty )
-//		{
-////			addedPropsMap.put( key, command );
-//			addedPropsMap.add( command );
-//		}
-//		else if ( command instanceof MemCommand.NodeChangeProperty )
-//		{
-////			
-////			if ( addedPropsMap.containsKey( key ) )
-////			{
-////				MemCommand.NodeAddProperty propCommand = 
-////					( MemCommand.NodeAddProperty ) addedPropsMap.get( key );
-////				propCommand.setNewValue( ( ( MemCommand.NodeChangeProperty ) 
-////					command ).getValue() );
-////			}
-////			else if ( changedPropsMap.containsKey( key ) )
-////			{
-////				MemCommand.NodeChangeProperty propCommand = 
-////					( MemCommand.NodeChangeProperty ) changedPropsMap.get( 
-////						key );
-////				propCommand.setNewValue( ( ( MemCommand.NodeChangeProperty ) 
-////					command ).getValue() );
-////			}
-////			else
-////			{
-////				changedPropsMap.put( key, command );
-////			}
-//			changedPropsMap.add( command );
-//		}
-//		else if ( command instanceof MemCommand.NodeRemoveProperty )
-//		{
-////			int nodeId = ( ( MemCommand.NodeRemoveProperty ) 
-////				command ).getNodeId();
-////
-////			if ( addedPropsMap.containsKey( key ) || 
-////				changedPropsMap.containsKey( key ) )
-////			{
-////				MemCommand cmd = addedPropsMap.remove( key );
-////				if ( cmd != null )
-////				{
-////					getPropertyStore().freeId( cmd.getId() );
-////				}
-////				cmd = changedPropsMap.remove( key );
-////			}
-////			else if ( !deletedNodesMap.containsKey( nodeId ) ) 
-////			{
-////				removedPropsMap.put( key, command );
-////			}
-////			else
-////			{
-////				strayPropMap.put( key, command );
-////			}
-//			removedPropsMap.add( command );
-//		}
-//		else if ( command instanceof MemCommand.RelationshipAddProperty )
-//		{
-////			addedPropsMap.put( key, command );
-//			addedPropsMap.add( command );
-//		}
-//		else if ( command instanceof MemCommand.RelationshipChangeProperty )
-//		{
-////			if ( addedPropsMap.containsKey( key ) )
-////			{
-////				MemCommand.RelationshipAddProperty propCommand = 
-////					( MemCommand.RelationshipAddProperty ) 
-////						addedPropsMap.get( key );
-////				propCommand.setNewValue( 
-////					( ( MemCommand.RelationshipChangeProperty ) 
-////						command ).getValue() );
-////			}
-////			else if ( changedPropsMap.containsKey( key ) )
-////			{
-////				MemCommand.RelationshipChangeProperty propCommand = 
-////					( MemCommand.RelationshipChangeProperty ) 
-////						changedPropsMap.get( key );
-////				propCommand.setNewValue( 
-////					( ( MemCommand.RelationshipChangeProperty ) 
-////						command ).getValue() );
-////			}
-////			else
-////			{
-////				changedPropsMap.put( key, command );
-////			}
-//			changedPropsMap.add( command );
-//		}
-//		else if ( command instanceof MemCommand.RelationshipRemoveProperty )
-//		{
-////			int relId = ( ( MemCommand.RelationshipRemoveProperty ) 
-////				command ).getRelId();
-////			if ( addedPropsMap.containsKey( key ) || 
-////				changedPropsMap.containsKey( key ) )
-////			{
-////				MemCommand cmd = addedPropsMap.remove( key );
-////				if ( cmd != null )
-////				{
-////					getPropertyStore().freeId( cmd.getId() );
-////				}
-////				cmd = changedPropsMap.remove( key );
-////			}
-////			else if ( !deletedRelsMap.containsKey( relId ) ) 
-////			{
-////				removedPropsMap.put( key, command );
-////			}
-////			else
-////			{
-////				strayPropMap.put( key, command );
-////			}
-//			removedPropsMap.add( command );
-//		}
-//		else if ( command instanceof MemCommand.RelationshipTypeAdd )
-//		{
-////			createdRelTypesMap.put( key, command );
-//			createdRelTypesMap.add( (MemCommand.RelationshipTypeAdd) command );
-//		}
-//		else
-//		{
-//			throw new RuntimeException( "Unkown command " + command );
-//		}
-//	}
 	
 	@Override
 	protected void doPrepare() throws XAException
@@ -300,251 +124,54 @@ class NeoTransaction extends XaTransaction
 		}
 		// generate records then write to logical log via addCommand method
 		prepared = true;
-//		try
-//		{
-////			Iterator<MemCommand> itr = 
-////				createdRelTypesMap.values().iterator();
-////			while ( itr.hasNext() )
-////			{
-////				MemCommand.RelationshipTypeAdd command = 
-////					(MemCommand.RelationshipTypeAdd) itr.next();
-////				relationshipTypeAdd( command.getId(), command.getName() );
-////			}
-//			for ( MemCommand.RelationshipTypeAdd command : createdRelTypesMap )
-//			{
-//				relationshipTypeAdd( command.getId(), command.getName() );
-//			}
-//				
-////			itr = createdNodesMap.values().iterator();
-////			while ( itr.hasNext() )
-////			{
-////				MemCommand.NodeCreate command = 
-////					( MemCommand.NodeCreate ) itr.next();
-////				if ( !deletedNodesMap.containsKey( command.getId() ) )
-////				{
-////					nodeCreate( command.getId() );
-////				}
-////				else
-////				{
-////					getNodeStore().freeId( command.getId() );
-////				}
-////			}
-//			for ( MemCommand.NodeCreate command : createdNodesMap )
-//			{
-//				nodeCreate( command.getId() );
-//			}
-//			
-////			itr = createdRelsMap.values().iterator();
-////			while ( itr.hasNext() )
-////			{
-////				MemCommand.RelationshipCreate command = 
-////					( MemCommand.RelationshipCreate ) itr.next();
-////				if ( !deletedRelsMap.containsKey( command.getId() ) )
-////				{
-////					relationshipCreate( command.getId(), command.getFirstNode(), 
-////						command.getSecondNode(), command.getType() );
-////				}
-////				else
-////				{
-////					getRelationshipStore().freeId( command.getId() );
-////				}
-////			}
-//			for ( MemCommand.RelationshipCreate command : createdRelsMap )
-//			{
-//				relationshipCreate( command.getId(), command.getFirstNode(), 
-//					command.getSecondNode(), command.getType() );
-//			}
-//		
-//			// property add,change,remove
-//			Iterator<MemCommand> itr = addedPropsMap.iterator();
-//			while ( itr.hasNext() )
-//			{
-//				MemCommand cmd = itr.next();
-//				if ( cmd instanceof MemCommand.NodeAddProperty )
-//				{
-//					MemCommand.NodeAddProperty command = 
-//						( MemCommand.NodeAddProperty ) cmd;
-////					if ( !deletedNodesMap.containsKey( command.getNodeId() ) )
-////					{
-//						nodeAddProperty( command.getNodeId(), 
-//							command.getPropertyId(), command.getKey(), 
-//							command.getValue() );
-////					}
-//				}
-//				else
-//				{
-//					MemCommand.RelationshipAddProperty command = 
-//						( MemCommand.RelationshipAddProperty ) cmd;
-////					if ( !deletedRelsMap.containsKey( command.getRelId() ) )
-////					{
-//						relAddProperty( command.getRelId(), 
-//							command.getPropertyId(), command.getKey(), 
-//							command.getValue() );
-////					}
-//				}
-//			}
-//			itr = changedPropsMap.iterator();
-//			while ( itr.hasNext() )
-//			{
-//				MemCommand cmd = itr.next();
-//				if ( cmd instanceof MemCommand.NodeChangeProperty )
-//				{
-//					MemCommand.NodeChangeProperty command = 
-//						( MemCommand.NodeChangeProperty ) cmd;
-////					if ( !deletedNodesMap.containsKey( command.getNodeId() ) )
-////					{
-//						nodeChangeProperty( command.getPropertyId(), 
-//							command.getValue() );
-////					}
-//				}
-//				else
-//				{
-//					MemCommand.RelationshipChangeProperty command = 
-//						( MemCommand.RelationshipChangeProperty ) cmd;
-////					if ( !deletedRelsMap.containsKey( command.getRelId() ) )
-////					{
-//						relChangeProperty( command.getPropertyId(), 
-//							command.getValue() );
-////					}
-//				}
-//			}
-//			itr = removedPropsMap.iterator();
-//			while ( itr.hasNext() )
-//			{
-//				MemCommand cmd = itr.next();
-//				if ( cmd instanceof MemCommand.NodeRemoveProperty )
-//				{
-//					MemCommand.NodeRemoveProperty command = 
-//						( MemCommand.NodeRemoveProperty ) cmd;
-////					if ( !deletedNodesMap.containsKey( command.getNodeId() ) )
-////					{
-//						nodeRemoveProperty( command.getNodeId(), 
-//							command.getPropertyId() );
-////					}
-//				}
-//				else
-//				{
-//					MemCommand.RelationshipRemoveProperty command = 
-//						( MemCommand.RelationshipRemoveProperty ) cmd;
-////					if ( !deletedRelsMap.containsKey( command.getRelId() ) )
-////					{
-//						relRemoveProperty( command.getRelId(), 
-//							command.getPropertyId() );
-////					}
-//				}
-//			}
-//	
-////			itr = strayPropMap.values().iterator();
-////			while ( itr.hasNext() )
-////			{
-////				MemCommand cmd = itr.next();
-////				if ( cmd instanceof MemCommand.NodeRemoveProperty )
-////				{
-////					MemCommand.NodeRemoveProperty command = 
-////						( MemCommand.NodeRemoveProperty ) cmd;
-////					if ( !deletedNodesMap.containsKey( command.getNodeId() ) )
-////					{
-////						nodeRemoveProperty( command.getNodeId(), 
-////							command.getPropertyId() );
-////					}
-////				}
-////				else
-////				{
-////					MemCommand.RelationshipRemoveProperty command = 
-////						( MemCommand.RelationshipRemoveProperty ) cmd;
-////					if ( !deletedRelsMap.containsKey( command.getRelId() ) )
-////					{
-////						relRemoveProperty( command.getRelId(), 
-////							command.getPropertyId() );
-////					}
-////				}
-////			}
-//			
-////			itr = deletedRelsMap.values().iterator();
-////			while ( itr.hasNext() )
-////			{
-////				MemCommand.RelationshipDelete command = 
-////					(MemCommand.RelationshipDelete) itr.next();
-////				if ( !createdRelsMap.containsKey( command.getId() ) )
-////				{
-////					relDelete( command.getId() );
-////				}
-////			}
-//			for ( MemCommand.RelationshipDelete command : deletedRelsMap )
-//			{
-//				relDelete( command.getId() );
-//			}
-//			
-////			itr = deletedNodesMap.values().iterator();
-////			while ( itr.hasNext() )
-////			{
-////				MemCommand.NodeDelete command = 
-////					(MemCommand.NodeDelete) itr.next();
-////				if ( !createdNodesMap.containsKey( command.getId() ) )
-////				{
-////					nodeDelete( command.getId() );
-////				}
-////			}
-//			for ( MemCommand.NodeDelete command : deletedNodesMap )
-//			{
-//				nodeDelete( command.getId() );
-//			}
-			
-			for ( RelationshipTypeRecord record : relTypeRecords.values() )
+		for ( RelationshipTypeRecord record : relTypeRecords.values() )
+		{
+			Command.RelationshipTypeCommand command = 
+				new Command.RelationshipTypeCommand( 
+					neoStore.getRelationshipTypeStore(), record );
+			relTypeCommands.add( command );
+			addCommand( command );
+		}
+		for ( NodeRecord record : nodeRecords.values() )
+		{
+			if ( !record.inUse() )
 			{
-				Command.RelationshipTypeCommand command = 
-					new Command.RelationshipTypeCommand( 
-						neoStore.getRelationshipTypeStore(), record );
-				relTypeCommands.add( command );
-				addCommand( command );
+				assert record.getNextRel() == 
+					Record.NO_NEXT_RELATIONSHIP.intValue();
 			}
-			for ( NodeRecord record : nodeRecords.values() )
-			{
-				if ( !record.inUse() )
-				{
-					assert record.getNextRel() == 
-						Record.NO_NEXT_RELATIONSHIP.intValue();
-				}
-				Command.NodeCommand command = new Command.NodeCommand( 
-					neoStore.getNodeStore(), record );
-				nodeCommands.add( command );
-				addCommand( command );
-			}
-			for ( RelationshipRecord record : relRecords.values() )
-			{
+			Command.NodeCommand command = new Command.NodeCommand( 
+				neoStore.getNodeStore(), record );
+			nodeCommands.add( command );
+			addCommand( command );
+		}
+		for ( RelationshipRecord record : relRecords.values() )
+		{
 //				if ( !record.inUse() )
 //				{
 //					assert record.getNextProp() == 
 //						Record.NO_NEXT_PROPERTY.intValue();
 //				}
-				Command.RelationshipCommand command = 
-					new Command.RelationshipCommand( 
-						neoStore.getRelationshipStore(), record );
-				relCommands.add( command );
-				addCommand( command );
-			}
-			for ( PropertyIndexRecord record : propIndexRecords.values() )
-			{
-				Command.PropertyIndexCommand command = 
-					new Command.PropertyIndexCommand( 
-						neoStore.getPropertyStore().getIndexStore(), record );
-				propIndexCommands.add( command );
-				addCommand( command );
-			}
-			for ( PropertyRecord record : propertyRecords.values() )
-			{
-				Command.PropertyCommand command = new Command.PropertyCommand( 
-					neoStore.getPropertyStore(), record );
-				propCommands.add( command );
-				addCommand( command );
-			}
-//		}
-//		catch ( IOException e )
-//		{
-//			logger.log( Level.SEVERE, "Unable to prepare[" + getIdentifier() + 
-//				"]", e );
-//			throw new XAException( "" + e );
-//		}
+			Command.RelationshipCommand command = 
+				new Command.RelationshipCommand( 
+					neoStore.getRelationshipStore(), record );
+			relCommands.add( command );
+			addCommand( command );
+		}
+		for ( PropertyIndexRecord record : propIndexRecords.values() )
+		{
+			Command.PropertyIndexCommand command = 
+				new Command.PropertyIndexCommand( 
+					neoStore.getPropertyStore().getIndexStore(), record );
+			propIndexCommands.add( command );
+			addCommand( command );
+		}
+		for ( PropertyRecord record : propertyRecords.values() )
+		{
+			Command.PropertyCommand command = new Command.PropertyCommand( 
+				neoStore.getPropertyStore(), record );
+			propCommands.add( command );
+			addCommand( command );
+		}
 	}
 	
 	protected void injectCommand( XaCommand xaCommand ) 
@@ -633,38 +260,39 @@ class NeoTransaction extends XaTransaction
 						}
 					}
 				}
-				nm.removePropertyIndexFromCache( record.getId() );
+//				nm.removePropertyIndexFromCache( record.getId() );
 			}
 			for ( PropertyRecord record : propertyRecords.values() )
 			{
 				if ( record.isCreated() )
 				{
 					getPropertyStore().freeId( record.getId() );
-//					for ( DynamicRecord dynamicRecord: 
-//						record.getValueRecords() )
-//					{
-//						// this doesn't work yet with change of property value
-//						// and changing type
-//						if ( dynamicRecord.isCreated() )
-//						{
-//							if ( record.getType() == PropertyType.STRING )
-//							{
-//								getPropertyStore().freeStringId( 
-//									dynamicRecord.getId() );
-//							}
-//							else if ( record.getType() == PropertyType.ARRAY )
-//							{
-//								getPropertyStore().freeArrayId( 
-//									dynamicRecord.getId() );
-//							}
-//							else
-//							{
-//								....`
-//							}
-//						}
-//					}
+					for ( DynamicRecord dynamicRecord: 
+						record.getValueRecords() )
+					{
+						if ( dynamicRecord.isCreated() )
+						{
+							if ( dynamicRecord.getType() == 
+								PropertyType.STRING.intValue() )
+							{
+								getPropertyStore().freeStringBlockId(  
+									dynamicRecord.getId() );
+							}
+							else if ( dynamicRecord.getType() == 
+								PropertyType.ARRAY.intValue() )
+							{
+								getPropertyStore().freeArrayBlockId( 
+									dynamicRecord.getId() );
+							}
+							else
+							{
+								throw new RuntimeException( "Unkown type" );
+							}
+						}
+					}
 				}
 			}
+			// neoStore.forget( getIdentifier() );
 		}
 		catch ( IOException e )
 		{
@@ -672,88 +300,16 @@ class NeoTransaction extends XaTransaction
 			throw new XAException( "Unable to rollback transaction[" + 
 				getIdentifier() + "], " + e);
 		}
-		
-//		if ( !prepared )
-//		{
-//			try
-//			{
-////				Iterator<MemCommand> itr = 
-////					createdRelTypesMap.values().iterator();
-////				while ( itr.hasNext() )
-////				{
-////					MemCommand.RelationshipTypeAdd command = 
-////						(MemCommand.RelationshipTypeAdd) itr.next();
-////					getRelationshipTypeStore().freeId( command.getId() );
-////				}
-//				for ( MemCommand.RelationshipTypeAdd command : createdRelTypesMap )
-//				{
-//					getRelationshipTypeStore().freeId( command.getId() );
-//				}
-//					
-////				itr = createdNodesMap.values().iterator();
-////				while ( itr.hasNext() )
-////				{
-////					MemCommand.NodeCreate command = 
-////						( MemCommand.NodeCreate ) itr.next();
-////					if ( !deletedNodesMap.containsKey( command.getId() ) )
-////					{
-////						getNodeStore().freeId( command.getId() );
-////					}
-////				}
-//				for ( MemCommand.NodeCreate command : createdNodesMap )
-//				{
-//					getNodeStore().freeId( command.getId() );
-//				}
-//				
-////				itr = createdRelsMap.values().iterator();
-////				while ( itr.hasNext() )
-////				{
-////					MemCommand.RelationshipCreate command = 
-////						( MemCommand.RelationshipCreate ) itr.next();
-////					if ( !deletedRelsMap.containsKey( command.getId() ) )
-////					{
-////						getRelationshipStore().freeId( command.getId() );
-////					}
-////				}
-//				for ( MemCommand.RelationshipCreate command : createdRelsMap )
-//				{
-//					getRelationshipStore().freeId( command.getId() );
-//				}
-//				
-//				// property add
-//				Iterator<MemCommand> itr = addedPropsMap.iterator();
-//				while ( itr.hasNext() )
-//				{
-//					MemCommand cmd = itr.next();
-//					if ( cmd instanceof MemCommand.NodeAddProperty )
-//					{
-//						MemCommand.NodeAddProperty command = 
-//							( MemCommand.NodeAddProperty ) cmd;
-////						if ( !deletedNodesMap.containsKey( command.getNodeId() ) )
-////						{
-//							getPropertyStore().freeId( 
-//								command.getPropertyId() );
-////						}
-//					}
-//					else
-//					{
-//						MemCommand.RelationshipAddProperty command = 
-//							( MemCommand.RelationshipAddProperty ) cmd;
-////						if ( !deletedRelsMap.containsKey( command.getRelId() ) )
-////						{
-//							getPropertyStore().freeId( 
-//								command.getPropertyId() );
-////						}
-//					}
-//				}
-//			}
-//			catch ( IOException e )
-//			{
-//				logger.log( Level.SEVERE, "Unable to rollback", e ); 
-//				throw new XAException( "Unable to rollback transaction[" + 
-//					getIdentifier() + "], " + e);
-//			}
-//		}
+		nodeRecords = null;
+		propertyRecords = null;
+		relRecords = null;
+		relTypeRecords = null;
+		propIndexRecords = null;
+		nodeCommands = null; 
+		propCommands = null;
+		propIndexCommands = null;
+		relCommands = null;
+		relTypeCommands = null;
 	}
 	
 	public void doCommit() throws XAException
@@ -797,6 +353,7 @@ class NeoTransaction extends XaTransaction
 			{
 				command.execute();
 			}
+			// neoStore.flush( getIdentifier() );
 		}
 		catch ( Throwable t )
 		{
@@ -806,6 +363,16 @@ class NeoTransaction extends XaTransaction
 		}
 		finally
 		{
+			nodeRecords = null;
+			propertyRecords = null;
+			relRecords = null;
+			relTypeRecords = null;
+			propIndexRecords = null;
+			nodeCommands = null; 
+			propCommands = null;
+			propIndexCommands = null;
+			relCommands = null;
+			relTypeCommands = null;
 			TxInfoManager.getManager().unregisterMode();
 		}
 	}
@@ -884,10 +451,6 @@ class NeoTransaction extends XaTransaction
 			nextProp = propRecord.getNextProp();
 			propRecord.setInUse( false );
 			// TODO: update count on property index record
-//			for ( DynamicRecord keyRecord : propRecord.getKeyRecords() )
-//			{
-//				keyRecord.setInUse( false );
-//			}
 			for ( DynamicRecord valueRecord : propRecord.getValueRecords() )
 			{
 				valueRecord.setInUse( false );
@@ -920,10 +483,6 @@ class NeoTransaction extends XaTransaction
 			nextProp = propRecord.getNextProp();
 			propRecord.setInUse( false );
 			// TODO: update count on property index record
-//			for ( DynamicRecord keyRecord : propRecord.getKeyRecords() )
-//			{
-//				keyRecord.setInUse( false );
-//			}
 			for ( DynamicRecord valueRecord : propRecord.getValueRecords() )
 			{
 				valueRecord.setInUse( false );
@@ -940,6 +499,9 @@ class NeoTransaction extends XaTransaction
 		// update first node prev
 		if ( rel.getFirstPrevRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
 		{
+			Relationship lockableRel = new LockableRelationship( 
+				rel.getFirstPrevRel() );
+			lockManager.getWriteLock( lockableRel );
 			RelationshipRecord prevRel = getRelationshipRecord( 
 				rel.getFirstPrevRel() );
 			if ( prevRel == null )
@@ -961,10 +523,14 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( prevRel + 
 					" don't match " + rel );
 			}
+			addRelationshipLockToTransaction( lockableRel );
 		}
 		// update first node next
 		if ( rel.getFirstNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
 		{
+			Relationship lockableRel = new LockableRelationship( 
+				rel.getFirstNextRel() );
+			lockManager.getWriteLock( lockableRel );
 			RelationshipRecord nextRel = getRelationshipRecord( 
 				rel.getFirstNextRel() );
 			if ( nextRel == null )
@@ -986,10 +552,14 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( nextRel + 
 					" don't match " + rel );
 			}
+			addRelationshipLockToTransaction( lockableRel );
 		}
 		// update second node prev
 		if ( rel.getSecondPrevRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
 		{
+			Relationship lockableRel = new LockableRelationship( 
+				rel.getSecondPrevRel() );
+			lockManager.getWriteLock( lockableRel );
 			RelationshipRecord prevRel = getRelationshipRecord( 
 				rel.getSecondPrevRel() );
 			if ( prevRel == null )
@@ -1011,10 +581,14 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( prevRel + 
 					" don't match " + rel );
 			}
+			addRelationshipLockToTransaction( lockableRel );
 		}
 		// update second node next
 		if ( rel.getSecondNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
 		{
+			Relationship lockableRel = new LockableRelationship( 
+				rel.getSecondNextRel() );
+			lockManager.getWriteLock( lockableRel );
 			RelationshipRecord nextRel = getRelationshipRecord( 
 				rel.getSecondNextRel() );
 			if ( nextRel == null )
@@ -1036,9 +610,15 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( nextRel + 
 					" don't match " + rel );
 			}
+			addRelationshipLockToTransaction( lockableRel );
 		}
 	}
 	
+	private void addRelationshipLockToTransaction( Relationship lockableRel )
+    {
+		lockReleaser.addLockToTransaction( lockableRel, LockType.WRITE );
+    }
+
 	public RelationshipData[] nodeGetRelationships( int nodeId )
 		throws IOException
     {
@@ -1125,15 +705,13 @@ class NeoTransaction extends XaTransaction
 		
 		propRecord.setInUse( false );
 		// TODO: update count on property index record
-//		for ( DynamicRecord keyRecord : propRecord.getKeyRecords() )
-//		{
-//			keyRecord.setInUse( false );
-//		}
 		for ( DynamicRecord valueRecord : propRecord.getValueRecords() )
 		{
-			valueRecord.setInUse( false );
+			if ( valueRecord.inUse() )
+			{
+				valueRecord.setInUse( false, propRecord.getType().intValue() );
+			}
 		}
-		// get key and value block ids to clear out and set
 		int prevProp = propRecord.getPrevProp();
 		int nextProp = propRecord.getNextProp();
 		if ( relRecord.getNextProp() == propertyId )
@@ -1295,15 +873,13 @@ class NeoTransaction extends XaTransaction
 		
 		propRecord.setInUse( false );
 		// TODO: update count on property index record
-//		for ( DynamicRecord keyRecord : propRecord.getKeyRecords() )
-//		{
-//			keyRecord.setInUse( false );
-//		}
 		for ( DynamicRecord valueRecord : propRecord.getValueRecords() )
 		{
-			valueRecord.setInUse( false );
+			if ( valueRecord.inUse() )
+			{
+				valueRecord.setInUse( false, propRecord.getType().intValue() );
+			}
 		}
-		// get key and value block ids to clear out and set
 		int prevProp = propRecord.getPrevProp();
 		int nextProp = propRecord.getNextProp();
 		if ( nodeRecord.getNextProp() == propertyId )
@@ -1353,7 +929,20 @@ class NeoTransaction extends XaTransaction
 		{
 			for ( DynamicRecord record : propertyRecord.getValueRecords() )
 			{
-				record.setInUse( false );
+				if ( record.inUse() )
+				{
+					record.setInUse( false, PropertyType.STRING.intValue() );
+				}
+			}
+		}
+		else if ( propertyRecord.getType() == PropertyType.ARRAY )
+		{
+			for ( DynamicRecord record : propertyRecord.getValueRecords() )
+			{
+				if ( record.inUse() )
+				{
+					record.setInUse( false, PropertyType.ARRAY.intValue() );
+				}
 			}
 		}
 		getPropertyStore().encodeValue( propertyRecord, value );
@@ -1374,12 +963,24 @@ class NeoTransaction extends XaTransaction
 		{
 			getPropertyStore().makeHeavy( propertyRecord, readFromBuffer );
 		}
-		// TODO:
 		if ( propertyRecord.getType() == PropertyType.STRING )
 		{
 			for ( DynamicRecord record : propertyRecord.getValueRecords() )
 			{
-				record.setInUse( false );
+				if ( record.inUse() )
+				{
+					record.setInUse( false, PropertyType.STRING.intValue() );
+				}
+			}
+		}
+		else if ( propertyRecord.getType() == PropertyType.ARRAY )
+		{
+			for ( DynamicRecord record : propertyRecord.getValueRecords() )
+			{
+				if ( record.inUse() )
+				{
+					record.setInUse( false, PropertyType.ARRAY.intValue() );
+				}
 			}
 		}
 		getPropertyStore().encodeValue( propertyRecord, value );
@@ -1515,6 +1116,9 @@ class NeoTransaction extends XaTransaction
 		rel.setSecondNextRel( secondNode.getNextRel() );
 		if ( firstNode.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
 		{
+			Relationship lockableRel = new LockableRelationship( 
+				firstNode.getNextRel() );
+			lockManager.getWriteLock( lockableRel );
 			RelationshipRecord nextRel = getRelationshipRecord( 
 					firstNode.getNextRel() );
 			if ( nextRel == null )
@@ -1536,9 +1140,13 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( firstNode + " dont match " +
 					nextRel );
 			}
+			addRelationshipLockToTransaction( lockableRel );
 		}
 		if ( secondNode.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
 		{
+			Relationship lockableRel = new LockableRelationship( 
+				secondNode.getNextRel() );
+			lockManager.getWriteLock( lockableRel );
 			RelationshipRecord nextRel = getRelationshipRecord( 
 					secondNode.getNextRel() );
 			if ( nextRel == null )
@@ -1560,6 +1168,7 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( firstNode + " dont match " +
 					nextRel );
 			}
+			addRelationshipLockToTransaction( lockableRel );
 		}
 		firstNode.setNextRel( rel.getId() );
 		secondNode.setNextRel( rel.getId() );
@@ -1615,9 +1224,12 @@ class NeoTransaction extends XaTransaction
 		record.setCreated();
 		int blockId = getRelationshipTypeStore().nextBlockId();
 		record.setTypeBlock( blockId );
+		int length = name.length();
+		char[] chars = new char[length];
+		name.getChars( 0, length, chars, 0 );
 		Collection<DynamicRecord> typeNameRecords = 
 			getRelationshipTypeStore().allocateTypeNameRecords( blockId, 
-				name.getBytes() );
+				chars );
 		for ( DynamicRecord typeRecord : typeNameRecords )
 		{
 			record.addTypeRecord( typeRecord );
@@ -1733,5 +1345,105 @@ class NeoTransaction extends XaTransaction
 	PropertyIndexRecord getPropertyIndexRecord( int id )
 	{
 		return propIndexRecords.get( id );
+	}
+	
+	private static class LockableRelationship implements Relationship
+	{
+		private int id;
+		
+		LockableRelationship( int id )
+		{
+			this.id = id;
+		}
+		
+		public void delete()
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public Node getEndNode()
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public long getId()
+        {
+			return this.id;
+        }
+
+		public Node[] getNodes()
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public Node getOtherNode( Node node )
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public Object getProperty( String key )
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public Object getProperty( String key, Object defaultValue )
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public Iterable<String> getPropertyKeys()
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public Iterable<Object> getPropertyValues()
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public Node getStartNode()
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public RelationshipType getType()
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public boolean hasProperty( String key )
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public Object removeProperty( String key )
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public void setProperty( String key, Object value )
+        {
+			throw new UnsupportedOperationException( "Lockable rel" );
+        }
+
+		public boolean equals( Object o )
+		{
+			if ( !(o instanceof Relationship) )
+			{
+				return false;
+			}
+			return this.getId() == ((Relationship) o).getId();
+		}
+		
+		private volatile int hashCode = 0;
+		
+		public int hashCode()
+		{
+			if ( hashCode == 0 )
+			{
+				hashCode = 3217 * (int) this.getId();
+			}
+			return hashCode;
+		}
 	}
 }

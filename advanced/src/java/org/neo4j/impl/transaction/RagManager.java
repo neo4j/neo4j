@@ -54,7 +54,7 @@ class RagManager
 	// key = Thread
 	// value = resource that the Thread is waiting for
 	private final ArrayMap<Thread,Object> waitingThreadMap = 
-		new ArrayMap<Thread,Object>( 9, false, true );
+		new ArrayMap<Thread,Object>( 5, false, true );
 	
 	private RagManager() {}
 	

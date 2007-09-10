@@ -67,6 +67,12 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		super.flush( txIdentifier );
 	}
 	
+	public void flushAll() throws IOException
+	{
+		typeNameStore.flushAll();
+		super.flushAll();
+	}
+	
 	@Override
 	public void forget( int txIdentifier )
 	{
@@ -119,7 +125,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	}
 	
 	public Collection<DynamicRecord> allocateTypeNameRecords( int startBlock, 
-		byte src[] ) throws IOException
+		char src[] ) throws IOException
 	{
 		return typeNameStore.allocateRecords( startBlock, src );
 	}

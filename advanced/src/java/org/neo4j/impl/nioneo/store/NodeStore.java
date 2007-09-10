@@ -276,9 +276,21 @@ public class NodeStore extends AbstractStore implements Store
 			throw new RuntimeException( "expected " + count + 
 				" bytes transfered" );
 		}
-//		NodeRecord check = getRecord( record.getId() );
-//		assert check.getNextProp() == check.getNextProp();
-//		assert check.getNextRel() == check.getNextRel();
+/*		PersistenceWindow window = acquireWindow( id, OperationType.READ );
+		try
+		{
+			NodeRecord check = getRecord( id, window.getBuffer(), true );
+			assert check.inUse() == record.inUse();
+			if ( check.inUse() )
+			{
+				assert check.getNextProp() == record.getNextProp();
+				assert check.getNextRel() == record.getNextRel();
+			}
+		}
+		finally 
+		{
+			releaseWindow( window );
+		}*/
 	}
 	
 	private void updateRecord( NodeRecord record, Buffer buffer )

@@ -51,7 +51,7 @@ public class XaLogicalLog
 	private ByteBuffer buffer = null;
 	private LogBuffer writeBuffer = null;
 	private long logCreated = 0;
-	private ArrayMap<Integer,Xid> xidIdentMap = new ArrayMap<Integer,Xid>( 9, 
+	private ArrayMap<Integer,Xid> xidIdentMap = new ArrayMap<Integer,Xid>( 4, 
 		false, true );
 	private HashMap<Integer,XaTransaction> recoveredTxMap = 
 		new HashMap<Integer,XaTransaction>();
@@ -191,6 +191,7 @@ public class XaLogicalLog
 		XaTransaction xaTx = xaTf.create( identifier );
 		xaTx.setRecovered();
 		recoveredTxMap.put( identifier, xaTx );
+		System.out.println( "Start: " + identifier );
 		xaRm.injectStart( xid, xaTx );
 		return true;
 	}
@@ -226,6 +227,7 @@ public class XaLogicalLog
 		}
 		buffer.flip();
 		int identifier = buffer.getInt();
+		System.out.println( "Prepare: " + identifier );
 		Xid xid = xidIdentMap.get( identifier );
 		if ( xaRm.injectPrepare( xid ) )
 		{
@@ -269,6 +271,7 @@ public class XaLogicalLog
 		buffer.flip();
 		int identifier = buffer.getInt();
 		Xid xid = xidIdentMap.get( identifier );
+		System.out.println( "1PC: " + identifier );
 		xaRm.injectOnePhaseCommit( xid );
 		return true;
 	}
@@ -314,6 +317,7 @@ public class XaLogicalLog
 		}
 		buffer.flip();
 		int identifier = buffer.getInt();
+		System.out.println( "Done: " + identifier );
 		Xid xid = xidIdentMap.get( identifier );
 		xaRm.pruneXid( xid );
 		xidIdentMap.remove( identifier );
@@ -343,6 +347,7 @@ public class XaLogicalLog
 		}
 		buffer.flip();
 		int identifier = buffer.getInt();
+		System.out.print( "Command: " + identifier + " " );
 		XaCommand command = cf.readCommand( fileChannel, buffer );
 		if ( command == null ) 
 		{
@@ -474,7 +479,7 @@ public class XaLogicalLog
 	}
 	
 	private ArrayMap<Thread,Integer> txIdentMap = 
-		new ArrayMap<Thread,Integer>( 9, true, true );
+		new ArrayMap<Thread,Integer>( 5, true, true );
 	
 	void registerTxIdentifier( int identifier )
 	{

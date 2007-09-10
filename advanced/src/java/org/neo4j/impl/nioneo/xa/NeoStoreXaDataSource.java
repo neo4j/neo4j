@@ -6,10 +6,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.transaction.xa.XAException;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
@@ -107,6 +109,14 @@ public class NeoStoreXaDataSource extends XaDataSource
 			( String ) config.get( "logical_log" ), 
 			new CommandFactory( neoStore ), 
 			new TransactionFactory( neoStore ) );
+		try
+		{
+			xaContainer.setLazyDoneRecords();
+		}
+		catch ( XAException e )
+		{
+			throw new IOException( "Unable to set lazy done records, " + e );
+		}
 		TxInfoManager.getManager().setRealLog( xaContainer.getLogicalLog() );
 		xaContainer.openLogicalLog();
 		if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
@@ -159,6 +169,14 @@ public class NeoStoreXaDataSource extends XaDataSource
 		xaContainer = XaContainer.create( logicalLogPath, 
 			new CommandFactory( neoStore ), 
 			new TransactionFactory( neoStore ) );
+		try
+		{
+			xaContainer.setLazyDoneRecords();
+		}
+		catch ( XAException e )
+		{
+			throw new IOException( "Unable to set lazy done records, " + e );
+		}
 		TxInfoManager.getManager().setRealLog( xaContainer.getLogicalLog() );
 		xaContainer.openLogicalLog();
 		if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
@@ -230,7 +248,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 				buffer );
 			if ( command != null )
 			{
-				command.setIsInRecoveryMode();
+				command.setRecovered();
 			}
 			return command;
 		}
@@ -263,6 +281,20 @@ public class NeoStoreXaDataSource extends XaDataSource
 				throw new RuntimeException( "Unable to make stores ok", e );
 			}
 		}
+
+		@Override
+        public void lazyDoneWrite( List<Integer> identifiers ) throws XAException
+        {
+			try
+            {
+                neoStore.flushAll();
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+                throw new XAException( "Unable to flush neo store." );
+            }
+        }
 	}
 
 	public int nextId( Class clazz )

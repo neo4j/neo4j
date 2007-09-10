@@ -281,8 +281,9 @@ class TransactionImpl implements Transaction
 		{
 			throw new IllegalArgumentException( "Null parameter" );
 		}
-		if ( status == Status.STATUS_ACTIVE || 
-			status == Status.STATUS_PREPARING )
+		if ( status == Status.STATUS_ACTIVE ||  
+			status == Status.STATUS_PREPARING || 
+			status == Status.STATUS_MARKED_ROLLBACK )
 		{
 			if ( !beforeCompletionRunning )
 			{
@@ -295,8 +296,7 @@ class TransactionImpl implements Transaction
 			}
 		}
 		else if ( status == Status.STATUS_ROLLING_BACK || 
-			status == Status.STATUS_ROLLEDBACK || 
-			status == Status.STATUS_MARKED_ROLLBACK )
+			status == Status.STATUS_ROLLEDBACK )
 		{
             throw new RollbackException("Tx status is: " + 
 				TxManager.getManager().getTxStatusAsString( status ) );

@@ -55,7 +55,7 @@ public class TxManager implements TransactionManager
 	
 	void init()
 	{
-		txThreadMap = new ArrayMap<Thread,TransactionImpl>( 9, true, true );
+		txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
 		String txLogDir = System.getProperty( "neo.tx_log_directory" );
 		if ( txLogDir == null )
 		{
