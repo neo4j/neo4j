@@ -35,12 +35,6 @@ class DynamicStringStore extends AbstractDynamicStore
 		int blockSize ) throws IOException
 	{
 		createEmptyStore( fileName, blockSize, VERSION );
-	}
-	
-//	public String getString( int blockId ) throws IOException
-//	{
-//		char[] chars = getAsChar( blockId );
-//		return new String( chars );
-//	}
+	}	
 }
 

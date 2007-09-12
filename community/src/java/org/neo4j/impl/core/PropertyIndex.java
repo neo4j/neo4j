@@ -28,6 +28,8 @@ public class PropertyIndex
 	private static ArrayMap<Integer,PropertyIndex> idToIndexMap
 		= new ArrayMap<Integer,PropertyIndex>( 9, true, false );
 	
+	private static boolean hasAll = false;
+	
 	static void clear()
 	{
 		indexMap = new ArrayMap<String,List<PropertyIndex>>( 5, true, false );
@@ -48,9 +50,14 @@ public class PropertyIndex
 		return Collections.EMPTY_LIST;
 	}
 	
+	static void setHasAll( boolean status )
+	{
+		hasAll = status;
+	}
+	
 	static boolean hasAll()
 	{
-		return true;
+		return hasAll;
 	}
 	
 	public static PropertyIndex createDummyIndex( int id, String key )
@@ -61,6 +68,15 @@ public class PropertyIndex
 	public static boolean hasIndexFor( int keyId )
 	{
 		return idToIndexMap.get( keyId ) != null;
+	}
+	
+	static void addPropertyIndexes( RawPropertyIndex[] indexes )
+	{
+		for ( RawPropertyIndex rawIndex : indexes )
+		{
+			addPropertyIndex( new PropertyIndex( rawIndex.getValue(), 
+				rawIndex.getKeyId() ) );
+		}
 	}
 	
 	public static PropertyIndex getIndexFor( int keyId )
@@ -83,7 +99,6 @@ public class PropertyIndex
             }
             catch ( PersistenceException e )
             {
-	            // TODO Auto-generated catch block
 	            e.printStackTrace();
             }
 		}

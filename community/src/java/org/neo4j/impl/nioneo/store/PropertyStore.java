@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,9 +28,6 @@ public class PropertyStore extends AbstractStore implements Store
 	
 	private static final int STRING_STORE_BLOCK_SIZE = 30;
 	
-//	private LruCache<Integer,PropertyRecord> cache = 
-//		new LruCache<Integer,PropertyRecord>( "PropertyRecordCache", 4000 );
-
 	private DynamicStringStore stringPropertyStore;
 	private PropertyIndexStore propertyIndexStore;
 	private DynamicArrayStore arrayPropertyStore;
@@ -56,6 +54,11 @@ public class PropertyStore extends AbstractStore implements Store
 	{
 		stringPropertyStore = new DynamicStringStore( 
 			getStorageFileName() + ".strings", getConfig() );
+		File indexStoreFile = new File( getStorageFileName() + ".index" );
+		if ( !indexStoreFile.exists() )
+		{
+			convertKeyToIndexStore();
+		}
 		propertyIndexStore = new PropertyIndexStore( 
 			getStorageFileName() + ".index", getConfig() );
 		File arrayStoreFile = new File( getStorageFileName() + ".arrays" );
@@ -136,11 +139,6 @@ public class PropertyStore extends AbstractStore implements Store
 			STRING_STORE_BLOCK_SIZE );
 	}
 	
-//	public int nextKeyBlockId() throws IOException
-//	{
-//		return keyPropertyStore.nextBlockId();
-//	}
-
 	private int nextStringBlockId() throws IOException
 	{
 		return stringPropertyStore.nextBlockId();
@@ -165,104 +163,6 @@ public class PropertyStore extends AbstractStore implements Store
 	{
 		return propertyIndexStore;
 	}
-	
-//	public Object getPropertyValue( int id ) throws IOException
-//	{
-//		// update statistics
-//		PersistenceWindow window = acquireWindow( id, OperationType.READ );
-//		PropertyStoreData storeData = null;
-//		try
-//		{
-//			storeData = getProperty( id, window.getBuffer() );
-//		}
-//		finally
-//		{
-//			releaseWindow( window );
-//		}
-//		String key = null;
-//		PropertyType propertyType = getEnumType( storeData.type() );
-//		switch ( propertyType )
-//		{
-//			case INT:
-//				return ( int ) storeData.propertyStoreBlockId();
-//			case STRING:
-//				return stringPropertyStore.getString(  
-//				 	( int ) storeData.propertyStoreBlockId() );
-//			case BOOL:
-//				if ( storeData.propertyStoreBlockId() == 1 )
-//				{
-//					return Boolean.valueOf( true );
-//				}
-//				return Boolean.valueOf( false );
-//			case DOUBLE:
-//				return new Double( Double.longBitsToDouble( 
-//						storeData.propertyStoreBlockId() ) );
-//			case FLOAT:
-//				return new Float( Float.intBitsToFloat( 
-//						( int ) storeData.propertyStoreBlockId() ) );
-//			case LONG:
-//				return storeData.propertyStoreBlockId();
-//			case BYTE:
-//				return (byte) storeData.propertyStoreBlockId();
-//			case CHAR:
-//				return (char) storeData.propertyStoreBlockId();
-//			case ARRAY:
-//				return arrayPropertyStore.getArray( 
-//					(int) storeData.propertyStoreBlockId() );
-//			default:
-//				throw new IOException( "Unkown type[" + storeData.type() + 
-//					"] on property[" + id + "] key[" + key + "]" );
-//		}
-//	}
-	
-//	private PropertyData getLightProperty( int id ) throws IOException
-//	{
-//		PersistenceWindow window = acquireWindow( id, OperationType.READ );
-//		PropertyStoreData storeData = null;
-//		try
-//		{
-//			storeData = getProperty( id, window.getBuffer() );
-//		}
-//		finally
-//		{
-//			releaseWindow( window );
-//		}
-////		try
-////		{
-////			key = propertyIndexStore.getString( storeData.keyStoreBlockId() );
-////		}
-////		catch ( IOException e )
-////		{
-////			Logger.getLogger( PropertyStore.class.getName() ).severe( 
-////				"Failed to get key string on property[" + 
-////				id + "] type= " + storeData.type() + " keyStoreBlockId= " + 
-////				storeData.keyStoreBlockId() + " propertyStoreBlockId= " + 
-////				storeData.propertyStoreBlockId() + " previousPropertyId= " + 
-////				storeData.previousPropertyId() + " nextPropertyId= " + 
-////				storeData.nextPropertyId() );
-////			throw e;
-////		}
-//		// check statistics if low
-//		return new PropertyData( id, storeData.keyIndexId(), null, 
-//			storeData.nextPropertyId() );
-//		// if high load property
-//	}
-	
-//	public PropertyData[] getProperties( int startPropertyId )
-//		throws IOException
-//	{
-//		ArrayList<PropertyData> propertyDataList = 
-//			new ArrayList<PropertyData>();
-//		int nextPropertyId = startPropertyId;
-//		while ( nextPropertyId != Record.NO_NEXT_PROPERTY.intValue() ) 
-//		{
-//			PropertyData data = getLightProperty( nextPropertyId );
-//			propertyDataList.add( data );
-//			nextPropertyId = data.nextPropertyId();
-//		}
-//		return propertyDataList.toArray( 
-//			new PropertyData[ propertyDataList.size() ] );
-//	}
 	
 	public void updateRecord( PropertyRecord record ) throws IOException
 	{
@@ -301,20 +201,6 @@ public class PropertyStore extends AbstractStore implements Store
 					throw new RuntimeException( "Unkown dynamic record" );
 				}
 			}
-//			if ( record.getType() == PropertyType.STRING )
-//			{
-//				for ( DynamicRecord valueRecord : record.getValueRecords() )
-//				{
-//					stringPropertyStore.updateRecord( valueRecord );
-//				}
-//			}
-//			else if ( record.getType() == PropertyType.ARRAY )
-//			{
-//				for ( DynamicRecord valueRecord : record.getValueRecords() )
-//				{
-//					arrayPropertyStore.updateRecord( valueRecord );
-//				}
-//			}
 		}
 	}
 	
@@ -330,30 +216,6 @@ public class PropertyStore extends AbstractStore implements Store
 			throw new RuntimeException( "expected " + count + 
 				" bytes transfered" );
 		}
-//		getFileChannel().force( false );
-//		PropertyRecord check = getLightRecord( record.getId() );
-//		ByteBuffer buf = ByteBuffer.allocate( 25 );
-//		long oldPos = record.getFromChannel().position();
-//		record.getFromChannel().position( record.getTransferStartPosition() );
-//		record.getFromChannel().read( buf );
-//		buf.flip();
-//		System.out.print( "id=" + record.getId() + " " );
-//		System.out.println( "inUse=" + buf.get() + " type=" + buf.getInt() + 
-//			" key=" + buf.getInt() + " prop=" + buf.getLong() + " prev=" + 
-//			buf.getInt() + " next=" + buf.getInt() );
-//		record.getFromChannel().position( oldPos );
-//		getFileChannel().position( record.getId() * getRecordSize() );
-//		buf.clear();
-//		getFileChannel().read( buf );
-//		buf.flip();
-//		System.out.println( "[inUse=" + buf.get() + " type=" + buf.getInt() + 
-//			" key=" + buf.getInt() + " prop=" + buf.getLong() + " prev=" + 
-//			buf.getInt() + " next=" + buf.getInt() );
-//		assert check.getType() == record.getType();
-//		assert check.getKeyIndexId() == record.getKeyIndexId();
-//		assert check.getPropBlock() == record.getPropBlock();
-//		assert check.getPrevProp() == record.getPrevProp();
-//		assert check.getNextProp() == record.getNextProp();
 	}
 	
 	// in_use(byte)+type(int)+key_blockId(int)+prop_blockId(long)+
@@ -375,11 +237,6 @@ public class PropertyStore extends AbstractStore implements Store
 		else
 		{
 			buffer.put( Record.NOT_IN_USE.byteValue() );
-//				.putInt( 0 ).putInt( 
-//				Record.NO_NEXT_BLOCK.intValue() ).putLong( 
-//				Record.NO_NEXT_BLOCK.intValue() ).putInt( 
-//				Record.NO_PREVIOUS_PROPERTY.intValue() ).putInt( 
-//				Record.NO_NEXT_PROPERTY.intValue() );
 			if ( !isInRecoveryMode() )
 			{
 				freeId( id );
@@ -390,12 +247,7 @@ public class PropertyStore extends AbstractStore implements Store
 	public PropertyRecord getLightRecord( int id, ReadFromBuffer buffer ) 
 		throws IOException
 	{
-		PropertyRecord record; // = cache.get( id );
-//		if ( record != null )
-//		{
-//			assert record.inUse();
-//			return record;
-//		}
+		PropertyRecord record;
 		if ( buffer != null && !hasWindow( id ) )
 		{
 			buffer.makeReadyForTransfer();
@@ -411,7 +263,6 @@ public class PropertyStore extends AbstractStore implements Store
 			record.setPropBlock( buf.getLong() );
 			record.setPrevProp( buf.getInt() );
 			record.setNextProp( buf.getInt() );
-//			cache.add( id, record );
 			return record;
 		}
 		PersistenceWindow window = acquireWindow( id, OperationType.READ );
@@ -419,7 +270,6 @@ public class PropertyStore extends AbstractStore implements Store
 		{
 			record = getRecord( id, window.getBuffer() );
 			record.setIsLight( true );
-//			cache.add( id, record );
 			return record;
 		}
 		finally 
@@ -459,12 +309,8 @@ public class PropertyStore extends AbstractStore implements Store
 	public PropertyRecord getRecord( int id, ReadFromBuffer buffer ) 
 		throws IOException
 	{
-		PropertyRecord record; // = cache.get( id );
-//		if ( record != null )
-//		{
-//			assert record.inUse();
-//		}
-		/*else*/ if ( buffer != null && !hasWindow( id ) )
+		PropertyRecord record;
+		if ( buffer != null && !hasWindow( id ) )
 		{
 			buffer.makeReadyForTransfer();
 			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
@@ -479,7 +325,6 @@ public class PropertyStore extends AbstractStore implements Store
 			record.setPropBlock( buf.getLong() );
 			record.setPrevProp( buf.getInt() );
 			record.setNextProp( buf.getInt() );
-			// cache.add( id, record );
 		}
 		else
 		{
@@ -487,7 +332,6 @@ public class PropertyStore extends AbstractStore implements Store
 			try
 			{
 				record = getRecord( id, window.getBuffer() );
-				// cache.add( id, record );
 			}
 			finally 
 			{
@@ -530,8 +374,6 @@ public class PropertyStore extends AbstractStore implements Store
 		{
 			throw new IOException( "Record[" + id + "] not in use" );
 		}
-//		PropertyRecord record = new PropertyRecord( id, 
-//			getEnumType( buffer.getInt() ) );
 		PropertyRecord record = new PropertyRecord( id ); 
 		record.setType( getEnumType( buffer.getInt() ) );
 		record.setInUse( true );
@@ -560,19 +402,6 @@ public class PropertyStore extends AbstractStore implements Store
 		}
 	}
 
-//	private PropertyStoreData getProperty( int id, Buffer buffer ) 
-//		throws IOException 
-//	{
-//		int offset = ( id - buffer.position() ) * getRecordSize();
-//		buffer.setOffset( offset );
-//		if ( buffer.get() != Record.IN_USE.byteValue() )
-//		{
-//			throw new IOException( "Record[" + id + "] not in use" );
-//		}
-//		return new PropertyStoreData( buffer.getInt(), buffer.getInt(), 
-//			buffer.getLong(), buffer.getInt(), buffer.getInt() );
-//	}
-	
 	@Override
 	public void makeStoreOk() throws IOException
 	{
@@ -590,97 +419,6 @@ public class PropertyStore extends AbstractStore implements Store
 		arrayPropertyStore.validate();
 		super.validate();
 	}
-
-//	public PropertyType getType( Object value )
-//	{
-//		if ( value instanceof String )
-//		{
-//			return PropertyType.STRING;
-//		}
-//		else if ( value instanceof Integer )
-//		{
-//			return PropertyType.INT;
-//		}
-//		else if ( value instanceof Boolean )
-//		{
-//			return PropertyType.BOOL;
-//		}
-//		else if ( value instanceof Float )
-//		{
-//			return PropertyType.FLOAT;
-//		}
-//		else if ( value instanceof Long )
-//		{
-//			return PropertyType.LONG;
-//		}
-//		else if ( value instanceof Double )
-//		{
-//			return PropertyType.DOUBLE;
-//		}
-//		else if ( value instanceof Byte )
-//		{
-//			return PropertyType.BYTE;
-//		}
-//		else if ( value instanceof Character )
-//		{
-//			return PropertyType.CHAR;
-//		}
-//		else if ( value.getClass().isArray() )
-//		{
-//			validatePrimitiveArray( value );
-//			return PropertyType.ARRAY;
-//		}
-//		throw new RuntimeException( "Unkown property type on: " + value );
-//	}
-	
-//	private void validatePrimitiveArray( Object object )
-//	{
-//		if ( object instanceof int[] || object instanceof Integer[] )
-//		{
-//			return;
-//		}
-//		if ( object instanceof String[] )
-//		{
-//			return;
-//		}
-//		if ( object instanceof boolean[] || object instanceof Boolean[] )
-//		{
-//			return; 
-//		}
-//		if ( object instanceof double[] || object instanceof Double[] )
-//		{
-//			return;
-//		}
-//		if ( object instanceof float[] || object instanceof Float[] )
-//		{
-//			return;
-//		}
-//		if ( object instanceof long[] || object instanceof Long[] )
-//		{
-//			return;
-//		}
-//		if ( object instanceof byte[] || object instanceof Byte[] )
-//		{
-//			return;
-//		}
-//		if ( object instanceof char[] || object instanceof Character[] )
-//		{
-//			return;
-//		}
-//		throw new RuntimeException( object + " not a valid array type." );
-//	}
-
-//	public Collection<DynamicRecord> allocateKeyRecords( int keyBlockId, 
-//		byte[] bytes ) throws IOException
-//	{
-//		return keyPropertyStore.allocateRecords( keyBlockId, bytes );
-//	}
-	
-//	public Collection<DynamicRecord> allocateKeyRecords( int keyBlockId, 
-//		char[] chars ) throws IOException
-//	{
-//		return keyPropertyStore.allocateRecords( keyBlockId, chars );
-//	}
 
 	private Collection<DynamicRecord> allocateStringRecords( int valueBlockId, 
 		char[] chars ) throws IOException
@@ -819,5 +557,114 @@ public class PropertyStore extends AbstractStore implements Store
     {
 		return arrayPropertyStore.getArray( 
 			(int) propertyRecord.getPropBlock() );
+    }
+	
+	private void convertKeyToIndexStore() throws IOException
+	{
+		DynamicStringStore oldKeyStore = new DynamicStringStore( 
+			getStorageFileName() + ".keys" );
+		System.out.println( "Converting property keys to property indexes..." );
+		PropertyIndexStore.createStore( getStorageFileName() + ".index" );
+		propertyIndexStore = new PropertyIndexStore( getStorageFileName() + 
+			".index", getConfig() );
+		int maxId = getHighestPossibleIdInUse();
+		Map<String,Integer> keyToIndex = new HashMap<String, Integer>();
+		ByteBuffer buf = ByteBuffer.allocate( 9 );
+		for ( int i = 0; i <= maxId; i++ )
+		{
+			int position = i * RECORD_SIZE; 
+			getFileChannel().position( position );
+			buf.clear();
+			if ( getFileChannel().read( buf ) != 9 )
+			{
+				break; // we're done
+			}
+			buf.flip();
+			if ( buf.get() == Record.IN_USE.byteValue() )
+			{
+				// convert to index
+				buf.getInt();
+				int oldKeyId = buf.getInt();
+				String oldKey = getOldKeyStringFor( oldKeyId, oldKeyStore );
+				int newIndexKeyId = -1;
+				if ( !keyToIndex.containsKey( oldKey ) )
+				{
+					newIndexKeyId = createNewPropertyIndex( oldKey );
+					keyToIndex.put( oldKey, newIndexKeyId );
+				}
+				else
+				{
+					newIndexKeyId = keyToIndex.get( oldKey );
+				}
+				buf.clear();
+				buf.putInt( newIndexKeyId );
+				buf.flip();
+				getFileChannel().position( position + 5 );
+				if ( getFileChannel().write( buf ) != 4 )
+				{
+					throw new IOException( "did not write 4 bytes..." );
+				}
+			}
+		}
+	}
+	
+	private int createNewPropertyIndex( String oldKey ) throws IOException
+	{
+		PropertyIndexRecord record = new PropertyIndexRecord( 
+			propertyIndexStore.nextId() );
+		record.setInUse( true );
+		record.setCreated();
+		int keyBlockId = propertyIndexStore.nextKeyBlockId();
+		record.setKeyBlockId( keyBlockId );
+		int length = oldKey.length();
+		char[] chars = new char[length];
+		oldKey.getChars( 0, length, chars, 0 );
+		Collection<DynamicRecord> keyRecords = 
+			propertyIndexStore.allocateKeyRecords( keyBlockId, chars );
+		for ( DynamicRecord keyRecord : keyRecords )
+		{
+			record.addKeyRecord( keyRecord );
+		}
+		propertyIndexStore.updateRecord( record );
+		return record.getId();
+	}
+	
+	private String getOldKeyStringFor( int oldKeyId, DynamicStringStore 
+		oldKeyStore ) throws IOException
+    {
+		Collection<DynamicRecord> allRecords = oldKeyStore.getRecords( oldKeyId, 
+			null );
+		Iterator<DynamicRecord> records = allRecords.iterator();
+		List<byte[]> byteList = new LinkedList<byte[]>();
+		int totalSize = 0;
+		int recordToFind = oldKeyId;
+		while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
+			records.hasNext() )
+		{
+			DynamicRecord record = records.next();
+			if ( record.inUse() && record.getId() == recordToFind )
+			{
+				if ( record.isLight() )
+				{
+					oldKeyStore.makeHeavy( record, null );
+				}
+				byteList.add( record.getData() );
+				recordToFind = record.getNextBlock();
+				records = allRecords.iterator();
+			}
+		}
+		int totalLength = 0;
+		for ( byte[] array : byteList )
+		{
+			totalLength += array.length;
+		}
+		byte[] byteArrayStr = new byte[totalLength];
+		int position = 0;
+		for ( byte[] array : byteList )
+		{
+			System.arraycopy( array, 0, byteArrayStr, position, array.length );
+			position += array.length;
+		}
+		return new String( byteArrayStr );
     }
 }

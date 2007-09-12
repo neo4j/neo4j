@@ -1,6 +1,7 @@
 package org.neo4j.impl.nioneo.xa;
 
 import java.io.IOException;
+import org.neo4j.impl.core.RawPropertyIndex;
 
 public interface PropertyIndexEventConsumer
 {
@@ -8,4 +9,7 @@ public interface PropertyIndexEventConsumer
 		throws IOException;
 	
 	public String getKeyFor( int id ) throws IOException;
+
+	public RawPropertyIndex[] getPropertyIndexes( int count ) 
+		throws IOException;
 }
