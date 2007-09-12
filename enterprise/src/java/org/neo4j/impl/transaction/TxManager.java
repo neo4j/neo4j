@@ -63,9 +63,10 @@ public class TxManager implements TransactionManager
 				"No neo.tx_log_directory system property set or " + 
 				"TxModule registered" );
 		}
-		logSwitcherFileName = txLogDir + "/active_tx_log";
-		txLog1FileName = txLogDir + "/tm_tx_log.1";
-		txLog2FileName = txLogDir + "/tm_tx_log.2";
+		String separator = System.getProperty( "file.separator" );
+		logSwitcherFileName = txLogDir + separator + "active_tx_log";
+		txLog1FileName = txLogDir + separator + "tm_tx_log.1";
+		txLog2FileName = txLogDir + separator + "tm_tx_log.2";
 		try
 		{
 			if ( new File( logSwitcherFileName ).exists() )
@@ -90,7 +91,7 @@ public class TxManager implements TransactionManager
 					new File( txLog2FileName ).exists() )
 				{
 					throw new RuntimeException( "Unable to start TM, " +
-						"no active tx log file found but foung either " +
+						"no active tx log file found but found either " +
 						txLog1FileName + " or " + txLog2FileName +
 						" file, please set one of them as active or " +
 						"remove them." );
@@ -655,7 +656,8 @@ public class TxManager implements TransactionManager
 			throw new IllegalStateException( "Not in transaction" );
 		}
 		if ( tx.getStatus() == Status.STATUS_ACTIVE || 
-			tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
+			tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
+			tx.getStatus() == Status.STATUS_PREPARING )
 		{
 			tx.doBeforeCompletion();
 			// delist resources?
@@ -691,13 +693,6 @@ public class TxManager implements TransactionManager
 					" error writing transaction log," + e );
 			}
 			tx.setStatus( Status.STATUS_NO_TRANSACTION );
-		}
-		// prepared is set in commit
-		else if ( tx.getStatus() == Status.STATUS_PREPARING )
-		{
-			// let commit take care of rollback
-			tx.setStatus( Status.STATUS_MARKED_ROLLBACK );
-			throw new RuntimeException( "Should never be, not yet" );
 		}
 		else 
 		{

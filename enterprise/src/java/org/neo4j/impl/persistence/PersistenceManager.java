@@ -5,6 +5,7 @@ import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.core.NotFoundException;
 import org.neo4j.impl.core.RawNodeData;
 import org.neo4j.impl.core.RawPropertyData;
+import org.neo4j.impl.core.RawPropertyIndex;
 import org.neo4j.impl.core.RawRelationshipData;
 import org.neo4j.impl.core.RawRelationshipTypeData;
 import org.neo4j.impl.transaction.NotInTransactionException;
@@ -43,6 +44,13 @@ public class PersistenceManager
 			Operation.LOAD_PROPERTY_INDEX, id );
 	}
 	
+	public RawPropertyIndex[] loadPropertyIndexes( int maxCount )
+		throws PersistenceException
+	{
+		return (RawPropertyIndex[]) getResource().performOperation( 
+			Operation.LOAD_PROPERTY_INDEXES, maxCount );
+	}
+	
 	public RawRelationshipData[] loadRelationships( Node node )
 		throws PersistenceException
 	{
@@ -77,7 +85,7 @@ public class PersistenceManager
 		return (RawRelationshipTypeData[]) getResource().performOperation( 
 			Operation.LOAD_ALL_RELATIONSHIP_TYPES , null );
 	}
-
+	
 	private ResourceConnection getResource()
 		throws PersistenceException
 	{
