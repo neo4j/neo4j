@@ -16,6 +16,7 @@ import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.core.PropertyIndex;
+import org.neo4j.impl.core.RawPropertyIndex;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeRecord;
@@ -1169,6 +1170,12 @@ class NeoTransaction extends XaTransaction
 			indexStore.makeHeavy( index, readFromBuffer );
 		}
 		return indexStore.getStringFor( index, readFromBuffer );
+    }
+	
+	RawPropertyIndex[] getPropertyIndexes( int count ) throws IOException
+    {
+		PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
+		return indexStore.getPropertyIndexes( count );
     }
 	
 	void createPropertyIndex( int id, String key ) throws IOException

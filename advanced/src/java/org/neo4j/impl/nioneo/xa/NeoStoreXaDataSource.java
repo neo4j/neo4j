@@ -142,13 +142,15 @@ public class NeoStoreXaDataSource extends XaDataSource
 
 	private void autoCreatePath( String store ) throws IOException
 	{
-		String dirs = store.substring( 0, store.lastIndexOf( '/' ) );
+		String fileSeparator = System.getProperty( "file.separator" );
+		int index = store.lastIndexOf( fileSeparator );
+		String dirs = store.substring( 0, index );
 		File directories = new File( dirs );
 		if ( !directories.exists() )
 		{
 			if ( !directories.mkdirs() )
 			{
-				throw new IOException( "Unable to create directory paht[" + 
+				throw new IOException( "Unable to create directory path[" + 
 					dirs + "] for Neo store." );
 			}
 		}

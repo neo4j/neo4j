@@ -160,6 +160,11 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 				{
 					return propIndexConsumer.getKeyFor( (Integer) param  );
 				}
+				else if ( operation == Operation.LOAD_PROPERTY_INDEXES )
+				{
+					return propIndexConsumer.getPropertyIndexes( 
+						(Integer) param  );
+				}
 				else if ( operation == Operation.LOAD_NODE_PROPERTIES )
 				{
 					int id = (int) ( ( Node ) param ).getId();
@@ -294,16 +299,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 				else if ( event == Event.NODE_DELETE )
 				{
 					int nodeId = data.getNodeId();
-//					PropertyData[] propData = 
-//						nodeConsumer.getProperties( nodeId );
-					// delete first so props are added in stray map
 					nodeConsumer.deleteNode( nodeId );
-					// backwards more efficient since it is a linked list
-//					for ( int i = propData.length - 1; i >= 0; i-- )
-//					{
-//						nodeConsumer.removeProperty( nodeId, 
-//							propData[i].getId() );
-//					}
 				}
 				else if ( event == Event.NODE_CREATE )
 				{
@@ -351,16 +347,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 				else if ( event == Event.RELATIONSHIP_DELETE )
 				{
 					int relId = data.getRelationshipId();
-//					PropertyData[] propData = 
-//						relConsumer.getProperties( relId );
-					// delete first so props are added in stray map
 					relConsumer.deleteRelationship( relId );
-					// backwards more efficient since it is a linked list
-//					for ( int i = propData.length - 1; i >= 0; i-- )
-//					{
-//						relConsumer.removeProperty( relId, 
-//							propData[i].getId() );
-//					}
 				}
 				else if ( event == Event.RELATIONSHIP_CREATE )
 				{

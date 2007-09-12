@@ -94,15 +94,21 @@ class DynamicArrayStore extends AbstractDynamicStore
 		int size = 5; 
 		for ( String str : array )
 		{
-			size += 4 + str.getBytes().length;
+			size += 4 + str.length() * 2;
 		}
 		ByteBuffer buf = ByteBuffer.allocate( size );
 		buf.put( ArrayType.STRING.byteValue() );
 		buf.putInt( array.length );
 		for ( String str : array )
 		{
-			buf.putInt( str.getBytes().length );
-			buf.put( str.getBytes() );
+			int length = str.length();
+			char[] chars = new char[ length ];
+			str.getChars( 0, length, chars, 0 );
+			buf.putInt( length * 2 );
+			for ( char c : chars )
+			{
+				buf.putChar( c );
+			}
 		}
 		return allocateRecords( startBlock, buf.array() );
 	}
@@ -389,9 +395,15 @@ class DynamicArrayStore extends AbstractDynamicStore
 			String[] array = new String[ buf.getInt() ];
 			for ( int i = 0; i < array.length; i++ )
 			{
-				byte strBuffer[] = new byte[ buf.getInt() ];
-				buf.get( strBuffer );
-				array[i] = new String( strBuffer );
+//				byte strBuffer[] = new byte[ buf.getInt() ];
+//				buf.get( strBuffer );
+				int charLength = buf.getInt() / 2;
+				char charBuffer[] = new char[ charLength ];
+				for ( int j = 0; j < charLength; j++ )
+				{
+					charBuffer[j] = buf.getChar();
+				}
+				array[i] = new String( charBuffer );
 			}
 			return array;
 		}
@@ -466,4 +478,3 @@ class DynamicArrayStore extends AbstractDynamicStore
 		throw new RuntimeException( "Unkown array type[" + type + "]" );
 	}
 }
-

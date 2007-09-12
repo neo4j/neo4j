@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.neo4j.impl.core.RawPropertyIndex;
 
 /**
  * Implementation of the node store.
@@ -91,6 +92,33 @@ public class PropertyIndexStore extends AbstractStore implements Store
 		DynamicStringStore.createStore( fileName + ".keys", 
 			KEY_STORE_BLOCK_SIZE );
 	}
+	
+	public RawPropertyIndex[] getPropertyIndexes( int count )
+		throws IOException
+	{
+		LinkedList<RawPropertyIndex> indexList = 
+			new LinkedList<RawPropertyIndex>();
+		int maxIdInUse = getHighestPossibleIdInUse();
+		int found = 0;
+		for ( int i = 0; i <= maxIdInUse && found < count; i++ )
+		{
+			PropertyIndexRecord record;
+			try
+			{
+				record = getRecord( i, (ReadFromBuffer) null );
+			}
+			catch ( IOException e )
+			{
+				continue;
+			}
+			found++;
+			indexList.add( new RawPropertyIndex( record.getId(), getStringFor( 
+				record, null ) ) );
+		}
+		return indexList.toArray( 
+			new RawPropertyIndex[ indexList.size() ] );
+	}
+	
 			
 	public PropertyIndexRecord getRecord( int id, ReadFromBuffer buffer ) 
 		throws IOException
