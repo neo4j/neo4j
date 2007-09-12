@@ -3,7 +3,6 @@ package org.neo4j.impl.core;
 import java.util.logging.Logger;
 
 import javax.transaction.Synchronization;
-import javax.transaction.Status;
 
 class TxCommitHook implements Synchronization
 {
@@ -32,11 +31,11 @@ class TxCommitHook implements Synchronization
 	// If param = rollback, undo and release commands
 	private void releaseCommands( int param )
 	{
-		if ( param == Status.STATUS_COMMITTED || 
+/*		if ( param == Status.STATUS_COMMITTED || 
 			param == Status.STATUS_ROLLEDBACK )
-		{
+		{*/
 			LockReleaser.getManager().releaseLocks();
-		}
+/*		}
 		else
 		{
 			switch ( param )
@@ -78,7 +77,7 @@ class TxCommitHook implements Synchronization
 							   "completion: [" + param + "]." );
 			}
 			throw new RuntimeException();
-		}
+		}*/
 	}
 }
 

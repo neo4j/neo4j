@@ -357,7 +357,7 @@ class RWLock
 	synchronized void dumpStack()
 	{
 		System.out.println( "Total lock count: readCount=" + readCount + 
-			" writeCount=" + writeCount );
+			" writeCount=" + writeCount + " for " + resource );
 		
 		System.out.println( "Waiting list:" );
 		java.util.Iterator itr = waitingThreadList.iterator();
