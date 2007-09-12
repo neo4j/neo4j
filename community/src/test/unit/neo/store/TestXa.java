@@ -433,17 +433,18 @@ public class TestXa extends TestCase
 				index( "prop1" ), "string1" );
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.prepare( xid );
+			copyLogicalLog();
 			xaRes.commit( xid, false );
-//			ds.truncateLogicalLog();
+			ds.truncateLogicalLog();
+			copyLogicalLog();
+			ds.close();
+			renameLogicalLog();
 //			java.nio.channels.FileChannel fileChannel = 
 //				new java.io.RandomAccessFile( 
 //					"nioneo_logical.log", "rw" ).getChannel();
 //			fileChannel.truncate( fileChannel.size() - 3 );
 //			fileChannel.force( false );
 //			fileChannel.close();
-//			copyLogicalLog();
-//			ds.close();
-//			renameLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
 			xaRes = xaCon.getXaResource();

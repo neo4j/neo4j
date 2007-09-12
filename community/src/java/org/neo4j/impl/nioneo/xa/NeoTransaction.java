@@ -146,11 +146,6 @@ class NeoTransaction extends XaTransaction
 		}
 		for ( RelationshipRecord record : relRecords.values() )
 		{
-//				if ( !record.inUse() )
-//				{
-//					assert record.getNextProp() == 
-//						Record.NO_NEXT_PROPERTY.intValue();
-//				}
 			Command.RelationshipCommand command = 
 				new Command.RelationshipCommand( 
 					neoStore.getRelationshipStore(), record );
@@ -260,7 +255,6 @@ class NeoTransaction extends XaTransaction
 						}
 					}
 				}
-//				nm.removePropertyIndexFromCache( record.getId() );
 			}
 			for ( PropertyRecord record : propertyRecords.values() )
 			{
@@ -501,7 +495,7 @@ class NeoTransaction extends XaTransaction
 		{
 			Relationship lockableRel = new LockableRelationship( 
 				rel.getFirstPrevRel() );
-			lockManager.getWriteLock( lockableRel );
+			getWriteLock( lockableRel );
 			RelationshipRecord prevRel = getRelationshipRecord( 
 				rel.getFirstPrevRel() );
 			if ( prevRel == null )
@@ -523,14 +517,13 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( prevRel + 
 					" don't match " + rel );
 			}
-			addRelationshipLockToTransaction( lockableRel );
 		}
 		// update first node next
 		if ( rel.getFirstNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
 		{
 			Relationship lockableRel = new LockableRelationship( 
 				rel.getFirstNextRel() );
-			lockManager.getWriteLock( lockableRel );
+			getWriteLock( lockableRel );
 			RelationshipRecord nextRel = getRelationshipRecord( 
 				rel.getFirstNextRel() );
 			if ( nextRel == null )
@@ -552,14 +545,13 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( nextRel + 
 					" don't match " + rel );
 			}
-			addRelationshipLockToTransaction( lockableRel );
 		}
 		// update second node prev
 		if ( rel.getSecondPrevRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
 		{
 			Relationship lockableRel = new LockableRelationship( 
 				rel.getSecondPrevRel() );
-			lockManager.getWriteLock( lockableRel );
+			getWriteLock( lockableRel );
 			RelationshipRecord prevRel = getRelationshipRecord( 
 				rel.getSecondPrevRel() );
 			if ( prevRel == null )
@@ -581,14 +573,13 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( prevRel + 
 					" don't match " + rel );
 			}
-			addRelationshipLockToTransaction( lockableRel );
 		}
 		// update second node next
 		if ( rel.getSecondNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
 		{
 			Relationship lockableRel = new LockableRelationship( 
 				rel.getSecondNextRel() );
-			lockManager.getWriteLock( lockableRel );
+			getWriteLock( lockableRel );
 			RelationshipRecord nextRel = getRelationshipRecord( 
 				rel.getSecondNextRel() );
 			if ( nextRel == null )
@@ -610,15 +601,24 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( nextRel + 
 					" don't match " + rel );
 			}
-			addRelationshipLockToTransaction( lockableRel );
 		}
 	}
 	
-	private void addRelationshipLockToTransaction( Relationship lockableRel )
-    {
-		lockReleaser.addLockToTransaction( lockableRel, LockType.WRITE );
-    }
-
+	private void getWriteLock( Relationship lockableRel )
+	{
+		lockManager.getWriteLock( lockableRel );
+		try
+		{
+			lockReleaser.addLockToTransaction( lockableRel, LockType.WRITE );
+		}
+		catch ( Throwable t )
+		{
+			lockManager.releaseWriteLock( lockableRel );
+			throw new RuntimeException( "Unable add lock of relationship[" + 
+				lockableRel + "] to lock releaser", t );
+		}
+	}
+	
 	public RelationshipData[] nodeGetRelationships( int nodeId )
 		throws IOException
     {
@@ -998,9 +998,6 @@ class NeoTransaction extends XaTransaction
 			addRelationshipRecord( relRecord );
 		}
 		
-//		PropertyType type = getPropertyStore().getType( value );
-//		PropertyRecord propertyRecord = new PropertyRecord( propertyId, 
-//			type );
 		PropertyRecord propertyRecord = new PropertyRecord( propertyId );
 		propertyRecord.setInUse( true );
 		propertyRecord.setCreated();
@@ -1019,15 +1016,6 @@ class NeoTransaction extends XaTransaction
 			prevProp.setPrevProp( propertyId );
 			propertyRecord.setNextProp( prevProp.getId() );
 		}
-//		int keyBlockId = getPropertyStore().nextKeyBlockId();
-//		propertyRecord.setKeyBlock( keyBlockId );
-//		Collection<DynamicRecord> keyRecords = 
-//			getPropertyStore().allocateKeyRecords( keyBlockId, 
-//				index.getChars() );
-//		for ( DynamicRecord keyRecord : keyRecords )
-//		{
-//			propertyRecord.addKeyRecord( keyRecord );
-//		}
 		int keyIndexId = index.getKeyId();
 		propertyRecord.setKeyIndexId( keyIndexId );
 		getPropertyStore().encodeValue( propertyRecord, value );
@@ -1045,9 +1033,6 @@ class NeoTransaction extends XaTransaction
 			addNodeRecord( nodeRecord );
 		}
 		
-//		PropertyType type = getPropertyStore().getType( value );
-//		PropertyRecord propertyRecord = new PropertyRecord( propertyId, 
-//			type );
 		PropertyRecord propertyRecord = new PropertyRecord( propertyId );
 		propertyRecord.setInUse( true );
 		propertyRecord.setCreated();
@@ -1066,15 +1051,6 @@ class NeoTransaction extends XaTransaction
 			prevProp.setPrevProp( propertyId );
 			propertyRecord.setNextProp( prevProp.getId() );
 		}
-//		int keyBlockId = getPropertyStore().nextKeyBlockId();
-//		propertyRecord.setKeyBlock( keyBlockId );
-//		Collection<DynamicRecord> keyRecords = 
-//			getPropertyStore().allocateKeyRecords( keyBlockId, 
-//				index.getChars() );
-//		for ( DynamicRecord keyRecord : keyRecords )
-//		{
-//			propertyRecord.addKeyRecord( keyRecord );
-//		}
 		int keyIndexId = index.getKeyId();
 		propertyRecord.setKeyIndexId( keyIndexId );
 		getPropertyStore().encodeValue( propertyRecord, value );
@@ -1118,7 +1094,7 @@ class NeoTransaction extends XaTransaction
 		{
 			Relationship lockableRel = new LockableRelationship( 
 				firstNode.getNextRel() );
-			lockManager.getWriteLock( lockableRel );
+			getWriteLock( lockableRel );
 			RelationshipRecord nextRel = getRelationshipRecord( 
 					firstNode.getNextRel() );
 			if ( nextRel == null )
@@ -1140,13 +1116,12 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( firstNode + " dont match " +
 					nextRel );
 			}
-			addRelationshipLockToTransaction( lockableRel );
 		}
 		if ( secondNode.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
 		{
 			Relationship lockableRel = new LockableRelationship( 
 				secondNode.getNextRel() );
-			lockManager.getWriteLock( lockableRel );
+			getWriteLock( lockableRel );
 			RelationshipRecord nextRel = getRelationshipRecord( 
 					secondNode.getNextRel() );
 			if ( nextRel == null )
@@ -1168,7 +1143,6 @@ class NeoTransaction extends XaTransaction
 				throw new RuntimeException( firstNode + " dont match " +
 					nextRel );
 			}
-			addRelationshipLockToTransaction( lockableRel );
 		}
 		firstNode.setNextRel( rel.getId() );
 		secondNode.setNextRel( rel.getId() );
@@ -1237,47 +1211,6 @@ class NeoTransaction extends XaTransaction
 		addRelationshipTypeRecord( record );
 	}
 
-//	public boolean propertyDeleted( int propertyId )
-//	{
-//		if ( removedPropsMap.containsKey( propertyId ) || 
-//			strayPropMap.containsKey( propertyId ) )
-//		{
-//			return true;
-//		}
-//		return false;
-//	}
-	
-//	public boolean nodeCreated( int nodeId )
-//	{
-//		return createdNodesMap.containsKey( nodeId );
-//	}
-
-//	public boolean relationshipCreated( int relId )
-//	{
-//		return createdRelsMap.containsKey( relId );
-//	}
-
-//	public boolean relationshipTypeAdded( int id )
-//	{
-//		return createdRelTypesMap.containsKey( id );
-//	}
-	
-//	public boolean nodeDeleted( int nodeId )
-//	{
-//		return deletedNodesMap.containsKey( nodeId );
-//	}
-
-//	public boolean relationshipDeleted( int relId )
-//	{
-//		return deletedRelsMap.containsKey( relId );
-//	}
-	
-//	RelationshipData getCreatedRelationship( int id )
-//	{
-//		return ( ( MemCommand.RelationshipCreate ) 
-//			createdRelsMap.get( id ) ).getRelationshipData();
-//	}
-	
 	static class CommandSorter implements Comparator<Command>
 	{
 		public int compare( Command o1, Command o2 )
@@ -1349,7 +1282,7 @@ class NeoTransaction extends XaTransaction
 	
 	private static class LockableRelationship implements Relationship
 	{
-		private int id;
+		private final int id;
 		
 		LockableRelationship( int id )
 		{
@@ -1444,6 +1377,11 @@ class NeoTransaction extends XaTransaction
 				hashCode = 3217 * (int) this.getId();
 			}
 			return hashCode;
+		}
+
+		public String toString()
+		{
+			return	"Lockable relationship #" + this.getId();
 		}
 	}
 }
