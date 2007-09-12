@@ -8,7 +8,7 @@ fi
 
 LIB_FILES=`find $NEO_HOME/lib -follow -iname "*.jar"`
 LIB_FILES=`echo $LIB_FILES | sed -e 's/ /:/g'`
-NEO_CLASSPATH=$LIB_FILES:$NEO_HOME/build/classes
+NEO_CLASSPATH=$LIB_FILES:$NEO_HOME/target/classes
 
 printf "NEO_HOME=%s\n" $NEO_HOME
 printf "CLASSPATH=%s\n" $NEO_CLASSPATH
