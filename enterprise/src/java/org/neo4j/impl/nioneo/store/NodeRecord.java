@@ -39,5 +39,4 @@ public class NodeRecord extends AbstractRecord
 			nextProp ).append( "]" );
 		return buf.toString();
 	}
-
 }

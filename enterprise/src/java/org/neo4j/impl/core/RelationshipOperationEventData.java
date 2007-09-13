@@ -54,14 +54,6 @@ public interface RelationshipOperationEventData extends PersistenceMetadata
 	 */
 	public Object getProperty();
 
-	/**
-	 * Returns the removed value of a added property or old value in case of 
-	 * change property operation, else null.
-	 *
-	 * @return the property value
-	 */
-//	public Object getOldProperty();
-	
 	public int getStartNodeId();
 	
 	public int getEndNodeId();

@@ -30,8 +30,6 @@ class PersistenceWindowPool
 	private final String storeName;
 	private final int blockSize;
 	private FileChannel fileChannel;
-//	private LruCache<Integer,PersistenceWindow> rowWindowPool = 
-//		new LruCache<Integer,PersistenceWindow>( "RowWindows", 100 );
 	private Map<Integer,LockableWindow> activeRowWindows = 
 		new HashMap<Integer,LockableWindow>();
 	private ArrayMap<Integer,Set<LockableWindow>> txIdentifiers = 
@@ -115,17 +113,6 @@ class PersistenceWindowPool
 		return false;
 	}
 	
-//	public void addMiss()
-//	{
-//		miss++;
-//		brickMiss++;
-//		if ( brickMiss >= REFRESH_BRICK_COUNT )
-//		{
-//			brickMiss = 0;
-//			refreshBricks();
-//		}
-//	}
-	
 	/**
 	 * Acquires a windows for <CODE>position</CODE> and 
 	 * <CODE>operationType</CODE> locking the window preventing other
@@ -188,23 +175,11 @@ class PersistenceWindowPool
 			{
 				miss++;
 				brickMiss++;
-//				if ( operationType == OperationType.READ )
-//				{
-//					retur
-//				}
-//				window = activeRowWindows.get( position );
-//				if ( window == null )
-//				{
-//					window = ( LockableWindow ) rowWindowPool.get( position );
-//					if ( window == null )
-//					{
-						PersistenceRow dpw = new PersistenceRow( 
-							blockSize, fileChannel );
-						dpw.position( position );
-						window = dpw;
-//					}
-					activeRowWindows.put( position, window );
-//				}
+				PersistenceRow dpw = new PersistenceRow( 
+					blockSize, fileChannel );
+				dpw.position( position );
+				window = dpw;
+				activeRowWindows.put( position, window );
 			}
 			else
 			{
@@ -242,11 +217,6 @@ class PersistenceWindowPool
 				{
 					int key = dpw.position();
 					activeRowWindows.remove( key );
-//					if ( activeRowWindows.remove( key ) == null )
-//					{
-//						assert true;
-//					}
-//					rowWindowPool.add( key, window );
 				}
 			}
 			( ( LockableWindow ) window ).unLock();
@@ -261,7 +231,6 @@ class PersistenceWindowPool
 			txIdentifiers = null;
 			fileChannel = null;
 			activeRowWindows = null;
-			// cleanRowWindows();
 		}
 		dumpStatistics();
 	}
@@ -555,27 +524,6 @@ class PersistenceWindowPool
 	
 	private void expandBricks( int newBrickCount ) throws IOException
 	{
-//		int diff = (int) fileChannel.size() - ( brickCount * brickSize );
-//		if ( diff > 0 && diff < brickSize )
-//		{
-//			byte zeroBuf[] = new byte[ brickSize - diff ];
-//			java.util.Arrays.fill( zeroBuf, (byte) 0 );
-//			fileChannel.write( java.nio.ByteBuffer.wrap( zeroBuf ), 
-//				fileChannel.size() );
-//		}
-//		int newBrickCount = (int) fileChannel.size() / brickSize;
-		/*if ( newBrickCount > MAX_BRICK_COUNT )
-		{
-			logWarn( "Max brick count exceeded, need more memory then " + 
-				mappedMem ); 
-			logWarn( "Memory mapped windows have been turned off" );
-			mappedMem = 0;
-			brickCount = 0;
-			brickSize = 0;
-			memUsed = 0;
-			brickArray = new BrickElement[0];
-			return;
-		}*/
 		if ( newBrickCount > brickCount )
 		{
 			BrickElement tmpArray[] = new BrickElement[ newBrickCount ];

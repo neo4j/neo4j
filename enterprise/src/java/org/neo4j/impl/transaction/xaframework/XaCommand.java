@@ -91,8 +91,6 @@ public abstract class XaCommand
 	 * data
 	 * @throws IOException In case of *real* IO failure
 	 */
-//	public abstract void writeToFile( FileChannel fileChannel, 
-//		ByteBuffer buffer ) throws IOException;
 	public abstract void writeToFile( LogBuffer buffer ) throws IOException;
 		
 	/**

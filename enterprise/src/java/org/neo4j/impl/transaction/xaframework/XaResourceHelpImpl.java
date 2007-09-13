@@ -62,7 +62,6 @@ public abstract class XaResourceHelpImpl implements XAResource
 	
 	public void forget( Xid xid ) throws XAException
 	{
-		// throw heuristic if state > COMMITTING
 		xaRm.forget( xid );
 	}
 	

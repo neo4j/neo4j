@@ -120,12 +120,6 @@ public class XaLogicalLog
 			byte globalId[] = xid.getGlobalTransactionId();
 			byte branchId[] = xid.getBranchQualifier();
 			int formatId = xid.getFormatId();
-//			buffer.clear();
-//			buffer.put( TX_START ).put( ( byte ) globalId.length ).put( 
-//			( byte ) branchId.length ).put( globalId ).put( branchId ).putInt( 
-//				xidIdent ).putInt( formatId );
-//			buffer.flip();
-//			fileChannel.write( buffer );
 			writeBuffer.put( TX_START ).put( ( byte ) globalId.length ).put( 
 			( byte ) branchId.length ).put( globalId ).put( branchId ).putInt( 
 				xidIdent ).putInt( formatId );
@@ -191,7 +185,6 @@ public class XaLogicalLog
 		XaTransaction xaTx = xaTf.create( identifier );
 		xaTx.setRecovered();
 		recoveredTxMap.put( identifier, xaTx );
-		System.out.println( "Start: " + identifier );
 		xaRm.injectStart( xid, xaTx );
 		return true;
 	}
@@ -202,11 +195,6 @@ public class XaLogicalLog
 		assert xidIdentMap.get( identifier ) != null;
 		try
 		{
-//			buffer.clear();
-//			buffer.put( TX_PREPARE ).putInt( identifier );
-//			buffer.flip();
-//			fileChannel.write( buffer );
-//			force();
 			writeBuffer.put( TX_PREPARE ).putInt( identifier );
 			writeBuffer.force();
 		}
@@ -227,7 +215,6 @@ public class XaLogicalLog
 		}
 		buffer.flip();
 		int identifier = buffer.getInt();
-		System.out.println( "Prepare: " + identifier );
 		Xid xid = xidIdentMap.get( identifier );
 		if ( xaRm.injectPrepare( xid ) )
 		{
@@ -241,15 +228,9 @@ public class XaLogicalLog
 	//[TX_1P_COMMIT][identifier]
 	public synchronized void commitOnePhase( int identifier ) throws XAException
 	{
-//		validate( identifier ); 
 		assert xidIdentMap.get( identifier ) != null;
 		try
 		{
-//			buffer.clear();
-//			buffer.put( TX_1P_COMMIT ).putInt( identifier );
-//			buffer.flip();
-//			fileChannel.write( buffer );
-//			force();
 			writeBuffer.put( TX_1P_COMMIT ).putInt( identifier );
 			writeBuffer.force();
 		}
@@ -271,7 +252,6 @@ public class XaLogicalLog
 		buffer.flip();
 		int identifier = buffer.getInt();
 		Xid xid = xidIdentMap.get( identifier );
-		System.out.println( "1PC: " + identifier );
 		xaRm.injectOnePhaseCommit( xid );
 		return true;
 	}
@@ -279,14 +259,9 @@ public class XaLogicalLog
 	//[DONE][identifier]
 	public synchronized void done( int identifier ) throws XAException
 	{
-//		validate( identifier );
 		assert xidIdentMap.get( identifier ) != null;
 		try
 		{
-//			buffer.clear();
-//			buffer.put( DONE ).putInt( identifier );
-//			buffer.flip();
-//			fileChannel.write( buffer );
 			writeBuffer.put( DONE ).putInt( identifier );
 			xidIdentMap.remove( identifier );
 		}
@@ -317,7 +292,6 @@ public class XaLogicalLog
 		}
 		buffer.flip();
 		int identifier = buffer.getInt();
-		System.out.println( "Done: " + identifier );
 		Xid xid = xidIdentMap.get( identifier );
 		xaRm.pruneXid( xid );
 		xidIdentMap.remove( identifier );
@@ -330,10 +304,6 @@ public class XaLogicalLog
 		throws IOException
 	{
 		assert xidIdentMap.get( identifier ) != null;
-//		buffer.clear();
-//		buffer.put( COMMAND ).putInt( identifier );
-//		buffer.flip();
-//		fileChannel.write( buffer );
 		writeBuffer.put( COMMAND ).putInt( identifier );
 		command.writeToFile( writeBuffer ); // fileChannel, buffer );
 	}
@@ -347,7 +317,6 @@ public class XaLogicalLog
 		}
 		buffer.flip();
 		int identifier = buffer.getInt();
-		System.out.print( "Command: " + identifier + " " );
 		XaCommand command = cf.readCommand( fileChannel, buffer );
 		if ( command == null ) 
 		{
@@ -376,7 +345,6 @@ public class XaLogicalLog
 			log.info( "Active transactions: " + xidIdentMap.size() );
 			log.info( "Closing dirty log: " + fileName );
 			writeBuffer.force();
-			// force();
 			fileChannel.close();
 			return;
 		}
@@ -384,7 +352,6 @@ public class XaLogicalLog
 		long truncateAt = writeBuffer.getFileChannelPosition();
 		writeBuffer = null;
 		fileChannel.truncate( truncateAt );
-		// force();
 		fileChannel.close();
 		File file = new File( fileName );
 		if ( !file.exists() )
@@ -394,20 +361,6 @@ public class XaLogicalLog
 		// TODO: if store old logs save them here
 		file.delete();
 	}
-	
-//	void force() throws IOException
-//	{
-// 		fileChannel.force( false );
-//	}
-
-//	private void validate( int identifier ) throws XAException
-//	{
-//		if ( !xidIdentMap.containsKey( identifier ) )
-//		{
-//			throw new XAException( "Unkown identifier[" + identifier + 
-//				"] coulndn't find Xid" );
-//		}
-//	}
 	
 	private void doInternalRecovery() throws IOException
 	{

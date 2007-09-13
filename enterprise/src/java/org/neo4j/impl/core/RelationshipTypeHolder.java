@@ -46,7 +46,6 @@ class RelationshipTypeHolder
 	public void addValidRelationshipTypes( 
 		Class<? extends RelationshipType> relTypeClass )
 	{
-		// enumClasses.add( relTypeClass );
 		for ( RelationshipType enumConstant : relTypeClass.getEnumConstants() )
 		{
 			String name = Enum.class.cast( enumConstant ).name();
@@ -59,8 +58,6 @@ class RelationshipTypeHolder
 			{
 				relTranslation.put( relTypes.get( name ), name );
 			}
-//			validTypes.put( enumConstant, name );
-//			validTypes.add( name );
 		}
 	}
 
@@ -80,22 +77,12 @@ class RelationshipTypeHolder
 		{
 			relTranslation.put( relTypes.get( name ), name );
 		}
-//		validTypes.add( name );
 		return new RelationshipTypeImpl( name );
 	}
 	
 	boolean isValidRelationshipType( RelationshipType type )
 	{
 		return relTypes.get( type.name() ) != null;
-		//return validTypes.contains( type.name() );
-//		if ( type == null || !enumClasses.contains( type.getClass() ) )
-//			//type.getClass().equals( this.enumClass ) )
-//		{
-//			return false;
-//		}
-//		String name = Enum.class.cast( type ).name();
-//		return relTypes.containsKey( name );
-		// .contains( name );
 	}
 	
 	RelationshipType getRelationshipTypeByName( String name )
@@ -104,12 +91,7 @@ class RelationshipTypeHolder
 		{
 			return new RelationshipTypeImpl( name );
 		}
-//		if ( validTypes.contains( name ) )
-//		{
-//			return new RelationshipTypeImpl( name );
-//		}
 		return null;
-		// return relTranslation.get( relTypes.get( name ) );
 	}
 	
 	private static class RelationshipTypeImpl implements RelationshipType
@@ -153,14 +135,8 @@ class RelationshipTypeHolder
 		boolean success = false;
 		int id = IdGenerator.getGenerator().nextId( 
 			RelationshipType.class );
-//		CreateRelationshipTypeCommand command = 
-//			new CreateRelationshipTypeCommand();
 		try
 		{
-//			command.setId( id );
-//			command.setName( name );
-//			command.addToTransaction();
-//			command.execute();
 			addRelType( name, id );
 			EventManager em = EventManager.getManager();
 			EventData eventData = new EventData( new RelTypeOpData( id, 
@@ -169,7 +145,6 @@ class RelationshipTypeHolder
 				eventData ) )
 			{
 				setRollbackOnly();
-//				command.undo();
 				throw new RuntimeException( 
 					"Generate pro-active event failed." );
 			}
@@ -179,11 +154,6 @@ class RelationshipTypeHolder
 			success = true;
 			return id;
 		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			command.undo();
-//			throw new RuntimeException( "Failed executing command.", e );
-//		}
 		finally
 		{
 			TransactionUtil.finishTx( success, txStarted );
@@ -251,8 +221,6 @@ class RelationshipTypeHolder
 	
 	int getIdFor( RelationshipType type )
 	{
-//		String name = Enum.class.cast( type ).name();
-//		return relTypes.get( name );
 		return relTypes.get( type.name() );
 	}
 	
@@ -273,17 +241,12 @@ class RelationshipTypeHolder
 	    {
 	    	relTypeList.add( new RelationshipTypeImpl( name ) );
 	    }
-//	    for ( String name : validTypes )
-//	    {
-//	    	relTypeList.add( new RelationshipTypeImpl( name ) );
-//	    }
 		return relTypeList;
     }
 
 	public boolean hasRelationshipType( String name )
     {
 		return relTypes.get( name ) != null;
-		// return validTypes.contains( name );
     }
 	
 	void clear()

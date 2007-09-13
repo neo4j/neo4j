@@ -27,11 +27,6 @@ class Property
 		return value;
 	}
 	
-//	void setId( int id )
-//	{
-//		this.id = id;
-//	}
-	
 	void setNewValue( Object newValue )
 	{
 		this.value = newValue;

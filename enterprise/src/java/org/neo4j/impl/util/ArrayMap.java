@@ -62,7 +62,6 @@ public class ArrayMap<K,V>
 					propertyMap.put( arrayEntries[i].getKey(), 
 						arrayEntries[i].getValue() );
 				}
-				// arrayEntries = null;
 				arrayCount = -1;
 				propertyMap.put( key, value );
 			}

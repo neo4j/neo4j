@@ -287,7 +287,6 @@ class NeoTransaction extends XaTransaction
 					}
 				}
 			}
-			// neoStore.forget( getIdentifier() );
 		}
 		catch ( IOException e )
 		{
@@ -348,7 +347,6 @@ class NeoTransaction extends XaTransaction
 			{
 				command.execute();
 			}
-			// neoStore.flush( getIdentifier() );
 		}
 		catch ( Throwable t )
 		{

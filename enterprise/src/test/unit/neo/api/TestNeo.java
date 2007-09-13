@@ -1,5 +1,6 @@
 package unit.neo.api;
 
+import java.util.Random;
 import javax.transaction.Status;
 import javax.transaction.UserTransaction;
 import junit.framework.Test;
@@ -597,5 +598,15 @@ public class TestNeo extends TestCase
 		}
 		assertEquals( nodeCount, nm.getNumberOfIdsInUse( Node.class ) );
 		assertEquals( relCount, nm.getNumberOfIdsInUse( Relationship.class ) );
+	}
+	
+	public void testRandomPropertyName()
+	{
+		Node node1 = NodeManager.getManager().createNode();
+		String key = "random_" + new Random( 
+			System.currentTimeMillis() ).nextLong();
+		node1.setProperty( key, "value" );
+		assertEquals( "value", node1.getProperty( key ) );
+		node1.delete();
 	}
 }

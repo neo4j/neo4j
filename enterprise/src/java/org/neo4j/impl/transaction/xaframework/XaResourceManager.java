@@ -107,14 +107,12 @@ public class XaResourceManager
 	synchronized void start( XAResource xaResource, Xid xid ) 
 		throws XAException
 	{
-		// if ( xaResourceMap.containsKey( xaResource ) )
 		if ( xaResourceMap.get( xaResource ) != null )
 		{
 			throw new XAException( "Resource[" + xaResource + 
 				"] already enlisted or suspended" );
 		}
 		xaResourceMap.put( xaResource, xid );
-//		if ( !xidMap.containsKey( xid ) )
 		if ( xidMap.get( xid ) == null )
 		{
 			int identifier = log.start( xid );
@@ -126,7 +124,6 @@ public class XaResourceManager
 	synchronized void injectStart( Xid xid, XaTransaction tx )
 		throws IOException
 	{
-		// if ( xidMap.containsKey( xid ) )
 		if ( xidMap.get( xid ) != null )
 		{
 			throw new IOException( "Inject start failed, xid: " + xid + 
@@ -139,8 +136,6 @@ public class XaResourceManager
 	synchronized void resume( Xid xid ) throws XAException
 	{
 		XidStatus status = xidMap.get( xid );
-		// if ( !xidMap.containsKey( xid ) )
-		
 		if ( status == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
@@ -156,12 +151,10 @@ public class XaResourceManager
 
 	synchronized void join( XAResource xaResource, Xid xid ) throws XAException
 	{
-		// if ( !xidMap.containsKey( xid ) )
 		if ( xidMap.get( xid ) == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
 		}
-//		if ( xaResourceMap.containsKey( xaResource ) )
 		if ( xaResourceMap.get( xaResource ) != null )
 		{
 			throw new XAException( "Resource[" + xaResource + 
@@ -173,19 +166,16 @@ public class XaResourceManager
 	synchronized void end( XAResource xaResource, Xid xid ) throws XAException
 	{
 		Xid xidEntry = xaResourceMap.remove( xaResource );
-//		if ( !xaResourceMap.containsKey( xaResource ) )
 		if ( xidEntry == null )
 		{
 			throw new XAException( "Resource[" + xaResource + 
 				"] not enlisted" );
 		}
-//		xaResourceMap.remove( xaResource );
 	}
 
 	synchronized void suspend( Xid xid ) throws XAException
 	{
 		XidStatus status = xidMap.get( xid );
-		// if ( !xidMap.containsKey( xid ) )
 		if ( status == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
@@ -199,19 +189,16 @@ public class XaResourceManager
 	
 	synchronized void fail( XAResource xaResource, Xid xid ) throws XAException
 	{
-//		if ( !xidMap.containsKey( xid ) )
 		if ( xidMap.get( xid ) == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
 		}
 		Xid xidEntry = xaResourceMap.remove( xaResource );
-		// if ( !xaResourceMap.containsKey( xaResource ) )
 		if ( xidEntry == null )
 		{
 			throw new XAException( "Resource[" + xaResource + 
 				"] not enlisted" );
 		}
-//		xaResourceMap.remove( xaResource );
 		XidStatus status = xidMap.get( xid );
 		status.getTransactionStatus().markAsRollback();
 	}
@@ -316,7 +303,6 @@ public class XaResourceManager
 	synchronized int prepare( Xid xid ) throws XAException
 	{
 		XidStatus status = xidMap.get( xid );
-		// if ( !xidMap.containsKey( xid ) )
 		if ( status == null )
 		{
 			throw new XAException( "Unkown xid[" + xid + "]" );
@@ -348,7 +334,6 @@ public class XaResourceManager
 	synchronized boolean injectPrepare( Xid xid ) throws IOException
 	{
 		XidStatus status = xidMap.get( xid );
-		// if ( !xidMap.containsKey( xid ) )
 		if ( status == null )
 		{
 			throw new IOException( "Unkown xid[" + xid + "]" );
@@ -381,7 +366,6 @@ public class XaResourceManager
 	synchronized void injectOnePhaseCommit( Xid xid ) throws IOException
 	{
 		XidStatus status = xidMap.get( xid );
-		// if ( !xidMap.containsKey( xid ) )
 		if ( status == null )
 		{
 			throw new IOException( "Unkown xid[" + xid + "]" );
@@ -435,10 +419,6 @@ public class XaResourceManager
 				}
 				lazyDoneRecords = new ArrayList<Integer>();
 			}
-//			List<Integer> list = new ArrayList<Integer>();
-//			list.add( xaTransaction.getIdentifier() );
-//			tf.lazyDoneWrite( list );
-//			log.done( xaTransaction.getIdentifier() );
 		}
 		else
 		{

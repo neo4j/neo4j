@@ -26,9 +26,6 @@ public class LockReleaser
 	private static Logger log = Logger.getLogger( 
 		LockReleaser.class.getName() );
 	
-//	private static final TransactionIsolationLevel DEFAULT_ISOLATION_LEVEL = 
-//		TransactionIsolationLevel.READ_COMMITTED;
-	
 	private static final LockReleaser instance = new LockReleaser();
 	private static final LockManager lockManager = LockManager.getManager();
 	private static final TransactionManager transactionManager = 
@@ -53,36 +50,6 @@ public class LockReleaser
 		return instance;
 	}
 	
-//	private static class CommandStackElement
-//	{
-//		TransactionIsolationLevel isolationLevel;
-//		Stack<Command> commands;
-//		Stack<LockElement> locks;
-//		
-//		CommandStackElement( TransactionIsolationLevel level, 
-//			Stack<Command> stack )
-//		{
-//			this.isolationLevel = level;
-//			this.commands = stack;
-//		}
-//		
-//		public String toString()
-//		{
-//			int commandCount = 0;
-//			if ( commands != null )
-//			{
-//				commandCount = commands.size();
-//			}
-//			int lockCount = 0;
-//			if ( locks != null )
-//			{
-//				lockCount = locks.size();
-//			}
-//			return "CommandCount[" + commandCount + "], LockCount[" + 
-//				lockCount + "]";
-//		}
-//	}
-	
 	private static class LockElement
 	{
 		Object resource;
@@ -94,39 +61,6 @@ public class LockReleaser
 			this.lockType = type;
 		}
 	}
-	
-//	boolean txCommitHookRegistered()
-//	{
-//		return lockMap.get( Thread.currentThread() ) != null;
-//	}
-//	
-//	void registerTxCommitHook( Thread currentThread )
-//	{
-//		Transaction tx = null;
-//		try
-//		{
-//			tx = TransactionFactory.getTransactionManager().getTransaction();
-//			if ( tx == null )
-//			{
-//				throw new NotInTransactionException();
-//			}
-//		}
-//		catch ( javax.transaction.SystemException e )
-//		{
-//			throw new NotInTransactionException( e );
-//		}
-//		try
-//		{
-//			tx.registerSynchronization( txCommitHook );
-//		}
-//		catch ( Exception e )
-//		{
-//			throw new NotInTransactionException( e );
-//		}
-//		CommandStackElement cse = new CommandStackElement( 
-//			DEFAULT_ISOLATION_LEVEL, new Stack<Command>() );
-//		lockMap.put( currentThread, cse );
-//	}
 	
 	/**
 	 * Depending on transaction isolation level a lock may be released 
@@ -184,89 +118,6 @@ public class LockReleaser
 	}
 
 	/**
-	 * Changes the transaction isolation level for this transaction. This 
-	 * should be done right after <CODE>UserTransaction.begin()</CODE>. Trying 
-	 * to change isolation level after commands or locks has been added to the 
-	 * transaction will result in a {@link InvalidTransactionException} beeing 
-	 * thrown. 
-	 * 
-	 * @param level new transaction isolation level
-	 * @throws InvalidTransactionException if unable to change isolation 
-	 * level for this transaction
-	 * @throws NotInTransactionException
-	 */
-//	public void setTransactionIsolationLevel( TransactionIsolationLevel level )
-//		throws InvalidTransactionException, NotInTransactionException
-//	{
-//		Transaction tx = null;
-//		try
-//		{
-//			tx = TransactionFactory.getTransactionManager().getTransaction();
-//			if ( tx == null )
-//			{
-//				throw new NotInTransactionException();
-//			}
-//		}
-//		catch ( javax.transaction.SystemException e )
-//		{
-//			throw new NotInTransactionException( e );
-//		}
-//
-//		Thread currentThread = Thread.currentThread();
-//		if ( lockMap.get( currentThread ) != null )
-//		{
-//			throw new InvalidTransactionException( 
-//				"Transaction already in use." );
-//		}
-//		else
-//		{
-//			try
-//			{
-//				tx.registerSynchronization( txCommitHook );
-//			}
-//			catch ( Exception e )
-//			{
-//				throw new NotInTransactionException( e );
-//			}
-//			lockMap.put( currentThread, new ArrayList<LockElement>() );
-//		}
-//	}
-	
-	/**
-	 * Returns the transaction isolation level for the current transaction. 
-	 *
-	 * @return the transaction isolation level
-	 * @throws NotInTransactionException
-	 */
-//	public TransactionIsolationLevel getTransactionIsolationLevel()
-//		throws NotInTransactionException
-//	{
-//		try
-//		{
-//			if ( TransactionFactory.getTransactionManager().getTransaction() ==
-//						null )
-//			{
-//				throw new NotInTransactionException();
-//			}
-//		}
-//		catch ( javax.transaction.SystemException e )
-//		{
-//			throw new NotInTransactionException( e );
-//		}
-//		
-//		Thread currentThread = Thread.currentThread();
-//		CommandStackElement cse = lockMap.get( currentThread );
-//		if ( cse != null )
-//		{
-//			return cse.isolationLevel;
-//		}
-//		else
-//		{
-//			return DEFAULT_ISOLATION_LEVEL;
-//		}
-//	}
-	
-	/**
 	 * Releases all commands that participated in the successfully commited
 	 * transaction.
 	 *
@@ -321,8 +172,6 @@ public class LockReleaser
 			System.out.println( "" + thread + "->" +  
 				lockMap.get( thread ).size() );
 		}
-//		System.out.println( "TransactionCache size: " + 
-//			TransactionCache.size() );
 	}
 }
 		

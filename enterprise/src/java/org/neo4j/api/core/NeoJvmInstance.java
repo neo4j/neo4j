@@ -43,11 +43,6 @@ class NeoJvmInstance
 		{
 			throw new RuntimeException( "A Neo instance already started" );
 		}
-//		if ( clazz.getEnumConstants() == null )
-//		{
-//			throw new IllegalArgumentException( "No enum constants found in " + 
-//				clazz );
-//		}
 		
 		config = new Config();
 		config.getTxModule().setTxLogDirectory( storeDir );
