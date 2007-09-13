@@ -1,46 +1,97 @@
 package org.neo4j.impl.nioneo.store;
 
-public class DynamicRecord
+
+public class DynamicRecord extends AbstractRecord
 {
-	private int id;
-	private boolean inUse = false;
-	private byte[] data;
+	private byte[] data = null;
+	private char[] charData = null;
+	private int length;
 	private int prevBlock = Record.NO_PREV_BLOCK.intValue();
 	private int nextBlock = Record.NO_NEXT_BLOCK.intValue();
+	private boolean isLight = false;
+	private int type;
 	
 	public DynamicRecord( int id )
 	{
-		this.id = id;
+		super( id );
 	}
 	
-	public int getId()
+	public int getType()
 	{
-		return id;
+		return type;
 	}
 	
-	public boolean inUse()
+	void setType( int type )
 	{
-		return inUse;
+		this.type = type;
+	}
+	
+	void setIsLight( boolean status )
+	{
+		this.isLight = status;
+	}
+	
+	public boolean isLight()
+	{
+		return isLight;
+	}
+	
+	public void setLength( int length )
+	{
+		this.length = length;
 	}
 	
 	public void setInUse( boolean inUse )
 	{
-		this.inUse = inUse;
+		super.setInUse( inUse );
+		if ( !inUse )
+		{
+			data = null;
+		}
+	}
+	
+	public void setInUse( boolean inUse, int type )
+	{
+		this.type = type;
+		this.setInUse( inUse );
 	}
 	
 	public void setData( byte[] data )
 	{
+		isLight = false;
+		this.length = data.length;
 		this.data = data;
+	}
+	
+	public void setCharData( char[] data )
+	{
+		isLight = false;
+		this.length = data.length * 2;
+		this.charData = data;
 	}
 	
 	public int getLength()
 	{
-		return data.length;
+		return length;
 	}
 	
 	public byte[] getData()
 	{
+		assert !isLight;
+		assert charData == null;
 		return data;
+	}
+	
+	public boolean isCharData()
+	{
+		return charData != null;
+	}
+	
+	public char[] getDataAsChar()
+	{
+		assert !isLight;
+		assert data == null;
+		return charData;
 	}
 	
 	public int getPrevBlock()
@@ -67,9 +118,14 @@ public class DynamicRecord
 	public String toString()
 	{
 		StringBuffer buf = new StringBuffer();
-		buf.append( "DynamicRecord[" ).append( id ).append( "," ).append( 
-			inUse ).append( "," ).append( prevBlock ).append( "," ).append( 
-			data.length ).append( "," ).append( nextBlock ).append( "]" );
+		buf.append( "DynamicRecord[" ).append( getId() ).append( "," ).append( 
+			inUse() );
+		if ( inUse() )
+		{
+			buf.append( "," ).append( prevBlock ).append( "," ).append( 
+				isLight ? null : data.length ).append( "," ).append( 
+				nextBlock ).append( "]" );
+		}
 		return buf.toString();
 	}
 }

@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,6 +67,12 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		super.flush( txIdentifier );
 	}
 	
+	public void flushAll() throws IOException
+	{
+		typeNameStore.flushAll();
+		super.flushAll();
+	}
+	
 	@Override
 	public void forget( int txIdentifier )
 	{
@@ -116,29 +124,8 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		}
 	}
 	
-	public RelationshipTypeRecord getRecord( int id ) throws IOException
-	{
-		PersistenceWindow window = acquireWindow( id, OperationType.READ );
-		try
-		{
-			RelationshipTypeRecord record = 
-				getRecord( id, window.getBuffer() );
-			Collection<DynamicRecord> typeNameRecords = 
-				typeNameStore.getRecords( record.getTypeBlock() );
-			for ( DynamicRecord typeRecord : typeNameRecords )
-			{
-				record.addTypeRecord( typeRecord );
-			}
-			return record;
-		}
-		finally 
-		{
-			releaseWindow( window );
-		}
-	}
-
 	public Collection<DynamicRecord> allocateTypeNameRecords( int startBlock, 
-		byte src[] ) throws IOException
+		char src[] ) throws IOException
 	{
 		return typeNameStore.allocateRecords( startBlock, src );
 	}
@@ -146,37 +133,89 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	public void updateRecord( RelationshipTypeRecord record ) 
 		throws IOException
 	{
-		PersistenceWindow window = acquireWindow( record.getId(), 
-			OperationType.WRITE );
-		try
+		if ( record.isTransferable() && !hasWindow( record.getId() ) )
 		{
-			updateRecord( record, window.getBuffer() );
-			for ( DynamicRecord typeRecord : record.getTypeRecords() )
+			transferRecord( record );
+		}
+		else
+		{
+			PersistenceWindow window = acquireWindow( record.getId(), 
+				OperationType.WRITE );
+			try
 			{
-				typeNameStore.updateRecord( typeRecord );
+				updateRecord( record, window.getBuffer() );
+			}
+			finally 
+			{
+				releaseWindow( window );
 			}
 		}
-		finally 
+		for ( DynamicRecord typeRecord : record.getTypeRecords() )
 		{
-			releaseWindow( window );
+			typeNameStore.updateRecord( typeRecord );
 		}
+	}
+	
+	private void transferRecord( RelationshipTypeRecord record ) 
+		throws IOException
+	{
+		int id = record.getId();
+		long count = record.getTransferCount();
+		FileChannel fileChannel = getFileChannel();
+		fileChannel.position( id * getRecordSize() );
+		if ( count != record.getFromChannel().transferTo( 
+			record.getTransferStartPosition(), count, fileChannel ) )
+		{
+			throw new RuntimeException( "expected " + count + 
+				" bytes transfered" );
+		}
+	}
+	
+	public RelationshipTypeRecord getRecord( int id, ReadFromBuffer buffer ) 
+		throws IOException
+	{
+		RelationshipTypeRecord record;
+		if ( buffer != null && !hasWindow( id ) )
+		{
+			buffer.makeReadyForTransfer();
+			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
+				buffer.getFileChannel() );
+			ByteBuffer buf = buffer.getByteBuffer();
+			byte inUse = buf.get();
+			assert inUse == Record.IN_USE.byteValue();
+			record = new RelationshipTypeRecord( id );
+			record.setInUse( true );
+			record.setTypeBlock( buf.getInt() );
+		}
+		else
+		{
+			PersistenceWindow window = acquireWindow( id, OperationType.READ );
+			try
+			{
+				record = getRecord( id, window.getBuffer() );
+				// cache.add( id, record );
+			}
+			finally 
+			{
+				releaseWindow( window );
+			}
+		}
+		Collection<DynamicRecord> nameRecords = 
+			typeNameStore.getRecords( record.getTypeBlock(), buffer );
+		for ( DynamicRecord nameRecord : nameRecords )
+		{
+			record.addTypeRecord( nameRecord );
+		}
+		return record;
 	}
 	
 	public RelationshipTypeData getRelationshipType( int id ) 
 		throws IOException
 	{
-		PersistenceWindow window = acquireWindow( id, OperationType.READ );
-		try
-		{
-			int typeNameBlockId = getRelationshipTypeBlockId( id, 
-				window.getBuffer() ); 
-			String name = typeNameStore.getString( typeNameBlockId );  
-			return new RelationshipTypeData( id, name );
-		}
-		finally
-		{
-			releaseWindow( window );
-		}
+		RelationshipTypeRecord record = getRecord( id, 
+			(ReadFromBuffer) null );
+		String name = getStringFor( record, null );
+		return new RelationshipTypeData( id, name );
 	}
 	
 	public RelationshipTypeData[] getRelationshipTypes()
@@ -186,29 +225,20 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 			new LinkedList<RelationshipTypeData>();
 		for ( int i = 0; ; i++ )
 		{
-			int blockId = -1;
+			// int blockId = -1;
+			RelationshipTypeRecord record;
 			try
 			{
-				PersistenceWindow window = acquireWindow( i, 
-					OperationType.READ );
-				try
-				{
-					blockId = getRelationshipTypeBlockId( i, 
-						window.getBuffer() );
-				}
-				finally
-				{
-					releaseWindow( window );
-				}
+				record = getRecord( i, (ReadFromBuffer) null );
 			}
 			catch ( IOException e )
 			{
 				break;
 			}
-			if ( blockId != Record.RESERVED.intValue() )
+			if ( record.getTypeBlock() != Record.RESERVED.intValue() )
 			{
-				typeDataList.add( new RelationshipTypeData( 
-					i, typeNameStore.getString( blockId ) ) );						
+				String name = getStringFor( record, null );
+				typeDataList.add( new RelationshipTypeData( i, name ) );						
 			}
 		}
 		return typeDataList.toArray( 
@@ -269,18 +299,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		}
 	}
 	
-	private int getRelationshipTypeBlockId( int id, Buffer buffer ) 
-		throws IOException 
-	{
-		int offset = ( id - buffer.position() ) * getRecordSize();
-		buffer.setOffset( offset );
-		if ( buffer.get() != Record.IN_USE.byteValue() )
-		{
-			throw new IOException( "Record[" + id + "] not in use" );
-		}
-		return buffer.getInt();
-	}
-	
 	@Override
 	protected void rebuildIdGenerator() throws IOException
 	{
@@ -334,6 +352,49 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		openIdGenerator();
 	}
 
+	public String getStringFor( RelationshipTypeRecord relTypeRecord, 
+		ReadFromBuffer buffer ) throws IOException
+    {
+		int recordToFind = relTypeRecord.getTypeBlock();
+		Iterator<DynamicRecord> records = 
+			relTypeRecord.getTypeRecords().iterator();
+		List<char[]> charList = new LinkedList<char[]>();
+		int totalSize = 0;
+		while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
+			records.hasNext() )
+		{
+			DynamicRecord record = records.next();
+			if ( record.inUse() && record.getId() == recordToFind )
+			{
+				if ( record.isLight() )
+				{
+					typeNameStore.makeHeavy( record, buffer );
+				}
+				if ( !record.isCharData() )
+				{
+					ByteBuffer buf = ByteBuffer.wrap( record.getData() );
+					char[] chars = new char[ record.getData().length / 2 ];
+					totalSize += chars.length;
+					buf.asCharBuffer().get( chars );
+					charList.add( chars );
+				}
+				else
+				{
+					charList.add( record.getDataAsChar() );
+				}
+				recordToFind = record.getNextBlock();
+				// TODO: optimize here, high chance next is right one
+				records = relTypeRecord.getTypeRecords().iterator();
+			}
+		}
+		StringBuffer buf = new StringBuffer();
+		for ( char[] str : charList )
+		{
+			buf.append( str );
+		}
+		return buf.toString();
+    }
+	
 	@Override
 	public void makeStoreOk() throws IOException
 	{

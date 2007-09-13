@@ -1,18 +1,14 @@
 package org.neo4j.impl.persistence;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.logging.Logger;
-
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
-
 import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.transaction.TransactionFactory;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * The ResourceBroker is the access point for {@link ResourceConnection}s to
@@ -36,14 +32,16 @@ class ResourceBroker
 {
 	private static Logger log = Logger.getLogger( 
 		ResourceBroker.class.getName() );
+	private static final PersistenceSourceDispatcher dispatcher =
+		PersistenceSourceDispatcher.getDispatcher();
 
-	private Map<Transaction,ConnectionBundle> txConnectionMap = 
-		new HashMap<Transaction,ConnectionBundle>();
+	private ArrayMap<Transaction,ResourceConnection> txConnectionMap = 
+		new ArrayMap<Transaction,ResourceConnection>( 5, true, true );
 
 	// A hook that releases resources after tx.commit
-	private Synchronization txCommitHook = new TxCommitHook();
+	private final Synchronization txCommitHook = new TxCommitHook();
 	
-	private static ResourceBroker instance	= new ResourceBroker();
+	private static final ResourceBroker instance = new ResourceBroker();
 	private ResourceBroker() { }
 	
 	/**
@@ -74,57 +72,16 @@ class ResourceBroker
 	 * unable to acquire a resource connection for any reason other than
 	 * <CODE>NotInTransaction</CODE>
 	 */
-	synchronized ResourceConnection acquireResourceConnection(
-													PersistenceMetadata meta )
-		throws	ResourceAcquisitionFailedException,
-				NotInTransactionException
+	ResourceConnection acquireResourceConnection()
+		throws ResourceAcquisitionFailedException, NotInTransactionException
 	{
-		if ( meta == null || meta.getEntity() == null )
-		{
-			Object entity = null;
-			if ( meta != null )
-			{
-				entity = meta.getEntity();
-			}
-			throw new IllegalArgumentException( "meta =" + meta + ", " +
-												"meta.getEntity = " +
-												entity );
-		}
-		
 		ResourceConnection con		= null;
-		ConnectionBundle bundle		= null;
 		PersistenceSource source	= null;
 		
-		// Get persistence source for entity
-		source = PersistenceSourceDispatcher.getDispatcher().
-					getPersistenceSource( meta.getEntity() );
-		
-		// Get transaction for current thread
-		Transaction tx			= this.getCurrentTransaction();
-
-		// Get the bundle for this tx or create new one if one does not exist
-		bundle = txConnectionMap.get( tx );
-		if ( bundle == null )
-		{
-			try
-			{
-				bundle = new ConnectionBundle();
-				tx.registerSynchronization( txCommitHook );
-				txConnectionMap.put( tx, bundle );
-			}
-			catch ( Exception e )
-			{
-				throw new ResourceAcquisitionFailedException( 
-					"Unable to register commit hook with current tx", e );
-			}
-		}
-		
-		// If we already have a connection for this guy, reuse it... 
-		if ( bundle.hasConnectionForPersistenceSource(source) )
-		{
-			con = bundle.getConnectionForPersistenceSource( source );
-		}
-		else // ... or else, create a new connection and enlist it in tx
+		source = dispatcher.getPersistenceSource();
+		Transaction tx = this.getCurrentTransaction();
+		con = txConnectionMap.get( tx );
+		if ( con == null )
 		{
 			try
 			{
@@ -135,7 +92,8 @@ class ResourceBroker
 						"Unable to enlist '" + con.getXAResource() + "' in " +
 						"transaction" );
 				}
-				bundle.setConnectionForPersistenceSource( source, con );
+				tx.registerSynchronization( txCommitHook );
+				txConnectionMap.put( tx, con );
 			}
 			catch ( ConnectionCreationFailedException ccfe )
 			{
@@ -154,15 +112,8 @@ class ResourceBroker
 			}
 		}
 		return con;
-	} // end acquireResourceConnection()
-	
-	
-	synchronized XAResource getXaResource( byte resourceId[] )
-	{
-		return PersistenceSourceDispatcher.getDispatcher().
-					getXaResource( resourceId );
 	}
-	// -- Private operations
+	
 	
 	/**
 	 * Releases all resources held by the transaction associated with the
@@ -172,26 +123,21 @@ class ResourceBroker
 	 * @throws NotInTransactionException if the resource broker is unable to
 	 * fetch a transaction for the current thread
 	 */
-	synchronized void releaseResourceConnectionsForTransaction()
-		throws NotInTransactionException
+	void releaseResourceConnectionsForTransaction() throws NotInTransactionException
 	{
 		Transaction tx = getCurrentTransaction();
-		ConnectionBundle bundle = txConnectionMap.remove( tx );
-		if ( bundle != null )
+		ResourceConnection con = txConnectionMap.remove( tx );
+		if ( con != null )
 		{
-			Iterator connections = bundle.getAllConnections();
-			while ( connections.hasNext() )
+			try
 			{
-				try
-				{
-					this.destroyCon( (ResourceConnection) connections.next() );
-				}
-				catch ( ConnectionDestructionFailedException cdfe )
-				{
-					cdfe.printStackTrace();
-					log.severe(	"Unable to close connection. Will continue " +
-								"anyway." );
-				}
+				this.destroyCon( con );
+			}
+			catch ( ConnectionDestructionFailedException cdfe )
+			{
+				cdfe.printStackTrace();
+				log.severe(	"Unable to close connection. Will continue " +
+							"anyway." );
 			}
 		}
 	}
@@ -202,20 +148,13 @@ class ResourceBroker
 	 * @throws NotInTransactionException if the resource broker is unable to
 	 * fetch a transaction for the current thread
 	 */
-	synchronized void delistResourcesForTransaction()
-		throws NotInTransactionException
+	void delistResourcesForTransaction() throws NotInTransactionException
 	{
 		Transaction tx = this.getCurrentTransaction();
-		ConnectionBundle bundle = txConnectionMap.get( tx );
-		if ( bundle != null )
+		ResourceConnection con = txConnectionMap.get( tx );
+		if ( con != null )
 		{
-			Iterator connections = bundle.getAllConnections();
-			while ( connections.hasNext() )
-			{
-				ResourceConnection resourceConnection = 
-					(ResourceConnection) connections.next();
-				this.delistCon( tx, resourceConnection );
-			}
+			this.delistCon( tx, con );
 		}
 	}
 	
@@ -275,61 +214,12 @@ class ResourceBroker
 		}
 	}
 	
-	
-	// -- Inner classes
-	
-	// A bundle of connections for a transaction. Basically, the
-	// <CODE>ConnectionBundle</CODE> is a wrapped hash table that
-	// maps PersistenceSources to ResourceConnections.
-	static class ConnectionBundle
-	{
-		private Map<PersistenceSource,ResourceConnection> sourceConnectionMap = 
-			new HashMap<PersistenceSource,ResourceConnection>();
-		
-		boolean hasConnectionForPersistenceSource( PersistenceSource source )
-		{
-			return this.sourceConnectionMap.containsKey( source );
-		}
-		
-		ResourceConnection getConnectionForPersistenceSource( PersistenceSource
-															  source )
-		{
-			return this.sourceConnectionMap.get( source );
-		}
-		
-		void setConnectionForPersistenceSource( PersistenceSource source,
-												ResourceConnection con )
-		{
-			if ( this.sourceConnectionMap.containsKey(source) )
-			{
-				throw new RuntimeException( "There's already a connection " +
-											"allocated for " + source );
-			}
-			this.sourceConnectionMap.put( source, con );
-		}
-		
-		Iterator getAllConnections()
-		{
-			return this.sourceConnectionMap.values().iterator();
-		}
-	}
-	
-	// The transaction commit hook: invoked before and after completion
-	// of a transaction. Before completion, we delist resources. After
-	// completion, we notify the command pool that it should either
-	// clear and release the commands (if all went well) or undo them
-	// (if the commit failed). We also release the resource connections
-	// we have assigned to this transaction after completion.
 	private static class TxCommitHook implements Synchronization
 	{
-		// Delist resources. This is done automatically by some Tx manager,
-		// but this behavior is not required by the JTA spec, so we delist 
-		// here just to be on the safe side of things.
-		public void beforeCompletion()
+		public void afterCompletion( int param )
 		{
 			try
 			{
-				getBroker().delistResourcesForTransaction();
 				releaseConnections();
 			}
 			catch ( Throwable t )
@@ -339,8 +229,17 @@ class ResourceBroker
 			}
 		}
 
-		public void afterCompletion( int param )
+		public void beforeCompletion()
 		{
+			try
+			{
+				getBroker().delistResourcesForTransaction();
+			}
+			catch ( Throwable t )
+			{
+				t.printStackTrace();
+				log.severe( "Unable to delist resources for tx." );
+			}
 		}
 		
 		private void releaseConnections()
@@ -355,7 +254,6 @@ class ResourceBroker
 				log.severe( "Error while releasing resources for tx." );
 			}
 		}
-
 	}
 }
 

@@ -3,9 +3,9 @@ package org.neo4j.impl.event;
 
 public class EventElement
 {
-	private Event event = null;
-	private EventData data = null;
-	private boolean proActive;
+	private final Event event;
+	private final EventData data;
+	private final boolean proActive;
 
 	EventElement( Event event, EventData data, boolean proActive )
 	{

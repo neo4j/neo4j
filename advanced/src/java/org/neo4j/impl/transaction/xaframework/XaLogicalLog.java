@@ -6,13 +6,10 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
-
-
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In 
@@ -37,6 +34,8 @@ import javax.transaction.xa.Xid;
 public class XaLogicalLog
 {
 	private Logger log;
+	// empty record due to memory mapped file
+	private static final byte EMPTY = (byte) 0;
 	// tx has started
 	private static final byte TX_START = (byte) 1;
 	// tx has been prepared
@@ -50,17 +49,19 @@ public class XaLogicalLog
 	
 	private FileChannel fileChannel = null;
 	private ByteBuffer buffer = null;
+	private LogBuffer writeBuffer = null;
 	private long logCreated = 0;
-	private HashMap<Integer,Xid> xidIdentMap = new HashMap<Integer,Xid>();
+	private ArrayMap<Integer,Xid> xidIdentMap = new ArrayMap<Integer,Xid>( 4, 
+		false, true );
 	private HashMap<Integer,XaTransaction> recoveredTxMap = 
 		new HashMap<Integer,XaTransaction>();
 	private int nextIdentifier = 1;
 	private boolean scanIsComplete = false;
 
 	private	String fileName = null;
-	private XaResourceManager xaRm = null;
-	private XaCommandFactory cf = null;
-	private XaTransactionFactory xaTf = null;
+	private final XaResourceManager xaRm;
+	private final XaCommandFactory cf;
+	private final XaTransactionFactory xaTf;
 	
 	XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,   
 		XaTransactionFactory xaTf ) // throws IOException
@@ -90,7 +91,8 @@ public class XaLogicalLog
 			buffer.putLong( logCreated );
 			buffer.flip();
 			fileChannel.write( buffer ); 
-		}		
+		}
+		writeBuffer = new LogBuffer( fileChannel );
 	}
 	
 	boolean scanIsComplete()
@@ -118,12 +120,9 @@ public class XaLogicalLog
 			byte globalId[] = xid.getGlobalTransactionId();
 			byte branchId[] = xid.getBranchQualifier();
 			int formatId = xid.getFormatId();
-			buffer.clear();
-			buffer.put( TX_START ).put( ( byte ) globalId.length ).put( 
+			writeBuffer.put( TX_START ).put( ( byte ) globalId.length ).put( 
 			( byte ) branchId.length ).put( globalId ).put( branchId ).putInt( 
 				xidIdent ).putInt( formatId );
-			buffer.flip();
-			fileChannel.write( buffer );
 			xidIdentMap.put( xidIdent, xid );
 		}
 		catch ( IOException e )
@@ -193,14 +192,11 @@ public class XaLogicalLog
 	//[TX_PREPARE][identifier]
 	public synchronized void prepare( int identifier ) throws XAException
 	{
-		validate( identifier ); 
+		assert xidIdentMap.get( identifier ) != null;
 		try
 		{
-			buffer.clear();
-			buffer.put( TX_PREPARE ).putInt( identifier );
-			buffer.flip();
-			fileChannel.write( buffer );
-			force();
+			writeBuffer.put( TX_PREPARE ).putInt( identifier );
+			writeBuffer.force();
 		}
 		catch ( IOException e )
 		{
@@ -232,14 +228,11 @@ public class XaLogicalLog
 	//[TX_1P_COMMIT][identifier]
 	public synchronized void commitOnePhase( int identifier ) throws XAException
 	{
-		validate( identifier ); 
+		assert xidIdentMap.get( identifier ) != null;
 		try
 		{
-			buffer.clear();
-			buffer.put( TX_1P_COMMIT ).putInt( identifier );
-			buffer.flip();
-			fileChannel.write( buffer );
-			force();
+			writeBuffer.put( TX_1P_COMMIT ).putInt( identifier );
+			writeBuffer.force();
 		}
 		catch ( IOException e )
 		{
@@ -266,13 +259,10 @@ public class XaLogicalLog
 	//[DONE][identifier]
 	public synchronized void done( int identifier ) throws XAException
 	{
-		validate( identifier );
+		assert xidIdentMap.get( identifier ) != null;
 		try
 		{
-			buffer.clear();
-			buffer.put( DONE ).putInt( identifier );
-			buffer.flip();
-			fileChannel.write( buffer );
+			writeBuffer.put( DONE ).putInt( identifier );
 			xidIdentMap.remove( identifier );
 		}
 		catch ( IOException e )
@@ -313,16 +303,9 @@ public class XaLogicalLog
 	public synchronized void writeCommand( XaCommand command, int identifier )
 		throws IOException
 	{
-		if ( !xidIdentMap.containsKey( identifier ) )
-		{
-			throw new IOException( "Unkown identifier[" + identifier + 
-				"] coulndn't find Xid" );
-		}
-		buffer.clear();
-		buffer.put( COMMAND ).putInt( identifier );
-		buffer.flip();
-		fileChannel.write( buffer );
-		command.writeToFile( fileChannel, buffer );
+		assert xidIdentMap.get( identifier ) != null;
+		writeBuffer.put( COMMAND ).putInt( identifier );
+		command.writeToFile( writeBuffer ); // fileChannel, buffer );
 	}
 	
 	private boolean readCommandEntry() throws IOException
@@ -346,17 +329,29 @@ public class XaLogicalLog
 		return true;
 	}
 
+	// used in testing, truncate log to real size removing any non used memory
+	// mapped space
+	public synchronized void truncate() throws IOException
+	{
+		long truncateAt = writeBuffer.getFileChannelPosition();
+		writeBuffer.releaseMemoryMapped();
+		fileChannel.truncate( truncateAt );
+	}
+	
 	public synchronized void close() throws IOException
 	{
 		if ( xidIdentMap.size() > 0 )
 		{
 			log.info( "Active transactions: " + xidIdentMap.size() );
 			log.info( "Closing dirty log: " + fileName );
-			force();
+			writeBuffer.force();
 			fileChannel.close();
 			return;
 		}
-		force();
+		writeBuffer.force();
+		long truncateAt = writeBuffer.getFileChannelPosition();
+		writeBuffer = null;
+		fileChannel.truncate( truncateAt );
 		fileChannel.close();
 		File file = new File( fileName );
 		if ( !file.exists() )
@@ -365,20 +360,6 @@ public class XaLogicalLog
 		}
 		// TODO: if store old logs save them here
 		file.delete();
-	}
-	
-	void force() throws IOException
-	{
- 		fileChannel.force( false );
-	}
-
-	private void validate( int identifier ) throws XAException
-	{
-		if ( !xidIdentMap.containsKey( identifier ) )
-		{
-			throw new XAException( "Unkown identifier[" + identifier + 
-				"] coulndn't find Xid" );
-		}
 	}
 	
 	private void doInternalRecovery() throws IOException
@@ -444,13 +425,14 @@ public class XaLogicalLog
 			case TX_1P_COMMIT: return readTxOnePhaseCommit();
 			case COMMAND: return readCommandEntry();
 			case DONE: return readDoneEntry();
+			case EMPTY: return false;
 			default: throw new IOException( "Internal recovery failed, " + 
 				"unkown log entry[" + entry + "]" );
 		}
 	}
 	
-	private Map<Thread,Integer> txIdentMap = 
-		java.util.Collections.synchronizedMap( new HashMap<Thread,Integer>() );
+	private ArrayMap<Thread,Integer> txIdentMap = 
+		new ArrayMap<Thread,Integer>( 5, true, true );
 	
 	void registerTxIdentifier( int identifier )
 	{

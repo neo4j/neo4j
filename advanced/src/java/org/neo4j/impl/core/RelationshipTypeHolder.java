@@ -6,24 +6,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.impl.command.Command;
-import org.neo4j.impl.command.ExecuteFailedException;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.persistence.IdGenerator;
-import org.neo4j.impl.persistence.PersistenceMetadata;
 import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.transaction.TransactionUtil;
+import org.neo4j.impl.util.ArrayMap;
 
 class RelationshipTypeHolder
 {
-	private static RelationshipTypeHolder holder = 
+	private static final RelationshipTypeHolder holder = 
 		new RelationshipTypeHolder();
 	private static Logger log = 
 		Logger.getLogger( RelationshipTypeHolder.class.getName() );
 	
-	private Map<String,Integer> relTypes = new HashMap<String,Integer>();
+	private ArrayMap<String,Integer> relTypes = new ArrayMap<String,Integer>();
 	private Map<Integer,String> relTranslation =
 		new HashMap<Integer,String>();
 	
@@ -48,11 +46,10 @@ class RelationshipTypeHolder
 	public void addValidRelationshipTypes( 
 		Class<? extends RelationshipType> relTypeClass )
 	{
-		// enumClasses.add( relTypeClass );
 		for ( RelationshipType enumConstant : relTypeClass.getEnumConstants() )
 		{
 			String name = Enum.class.cast( enumConstant ).name();
-			if ( !relTypes.containsKey( name ) )
+			if ( relTypes.get( name ) == null )
 			{
 				int id = createRelationshipType( name );
 				relTranslation.put( id, name );
@@ -61,15 +58,13 @@ class RelationshipTypeHolder
 			{
 				relTranslation.put( relTypes.get( name ), name );
 			}
-//			validTypes.put( enumConstant, name );
-//			validTypes.add( name );
 		}
 	}
 
 	public RelationshipType addValidRelationshipType( String name, 
 		boolean create ) 
 	{
-		if ( !relTypes.containsKey( name ) )
+		if ( relTypes.get( name ) == null )
 		{
 			if ( !create )
 			{
@@ -82,36 +77,21 @@ class RelationshipTypeHolder
 		{
 			relTranslation.put( relTypes.get( name ), name );
 		}
-//		validTypes.add( name );
 		return new RelationshipTypeImpl( name );
 	}
 	
 	boolean isValidRelationshipType( RelationshipType type )
 	{
-		return relTypes.containsKey( type.name() );
-		//return validTypes.contains( type.name() );
-//		if ( type == null || !enumClasses.contains( type.getClass() ) )
-//			//type.getClass().equals( this.enumClass ) )
-//		{
-//			return false;
-//		}
-//		String name = Enum.class.cast( type ).name();
-//		return relTypes.containsKey( name );
-		// .contains( name );
+		return relTypes.get( type.name() ) != null;
 	}
 	
 	RelationshipType getRelationshipTypeByName( String name )
 	{
-		if ( relTypes.containsKey( name  ) )
+		if ( relTypes.get( name  ) != null )
 		{
 			return new RelationshipTypeImpl( name );
 		}
-//		if ( validTypes.contains( name ) )
-//		{
-//			return new RelationshipTypeImpl( name );
-//		}
 		return null;
-		// return relTranslation.get( relTypes.get( name ) );
 	}
 	
 	private static class RelationshipTypeImpl implements RelationshipType
@@ -155,21 +135,16 @@ class RelationshipTypeHolder
 		boolean success = false;
 		int id = IdGenerator.getGenerator().nextId( 
 			RelationshipType.class );
-		CreateRelationshipTypeCommand command = 
-			new CreateRelationshipTypeCommand();
 		try
 		{
-			command.setId( id );
-			command.setName( name );
-			command.addToTransaction();
-			command.execute();
+			addRelType( name, id );
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( command );
+			EventData eventData = new EventData( new RelTypeOpData( id, 
+				name ) );
 			if ( !em.generateProActiveEvent( Event.RELATIONSHIPTYPE_CREATE, 
 				eventData ) )
 			{
 				setRollbackOnly();
-				command.undo();
 				throw new RuntimeException( 
 					"Generate pro-active event failed." );
 			}
@@ -178,11 +153,6 @@ class RelationshipTypeHolder
 				eventData );
 			success = true;
 			return id;
-		}
-		catch ( ExecuteFailedException e )
-		{
-			command.undo();
-			throw new RuntimeException( "Failed executing command.", e );
 		}
 		finally
 		{
@@ -203,52 +173,20 @@ class RelationshipTypeHolder
 		}
 	}
 
-	private static class CreateRelationshipTypeCommand extends Command
-		implements RelationshipTypeOperationEventData, PersistenceMetadata
+	static class RelTypeOpData implements RelationshipTypeOperationEventData
 	{
 		private int id = -1;
 		private String name = null;
 		
-		protected CreateRelationshipTypeCommand()
-		{
-			super();
-		}
-	
-		public void addToTransaction()
-		{
-			addCommandToTransaction();
-		}
-
-		protected void onExecute()
-		{
-			RelationshipTypeHolder.getHolder().addRelType( 
-				name, id );
-		}
-	
-		protected void onUndo()
-		{
-			RelationshipTypeHolder.getHolder().removeRelType( name );
-		}
-	
-		protected synchronized void onReset()
-		{
-			id = -1;
-			name = null;
-		}
-		
-		void  setId( int id )
+		RelTypeOpData( int id, String name )
 		{
 			this.id = id;
+			this.name = name;
 		}
-		
+	
 		public int getId()
 		{
 			return this.id;
-		}
-		
-		void setName( String name )
-		{
-			this.name = name;
 		}
 		
 		public String getName()
@@ -272,10 +210,17 @@ class RelationshipTypeHolder
 		relTypes.remove( name  );
 	}
 
+	void removeRelType( int id )
+	{
+		String name = relTranslation.remove( id );
+		if ( name != null )
+		{
+			relTypes.remove( name  );
+		}
+	}
+	
 	int getIdFor( RelationshipType type )
 	{
-//		String name = Enum.class.cast( type ).name();
-//		return relTypes.get( name );
 		return relTypes.get( type.name() );
 	}
 	
@@ -296,22 +241,17 @@ class RelationshipTypeHolder
 	    {
 	    	relTypeList.add( new RelationshipTypeImpl( name ) );
 	    }
-//	    for ( String name : validTypes )
-//	    {
-//	    	relTypeList.add( new RelationshipTypeImpl( name ) );
-//	    }
 		return relTypeList;
     }
 
 	public boolean hasRelationshipType( String name )
     {
-		return relTypes.containsKey( name );
-		// return validTypes.contains( name );
+		return relTypes.get( name ) != null;
     }
 	
 	void clear()
 	{
-		relTypes = new HashMap<String,Integer>();
+		relTypes = new ArrayMap<String,Integer>();
 		relTranslation = new HashMap<Integer,String>();
 	}
 }

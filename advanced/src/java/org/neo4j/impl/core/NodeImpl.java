@@ -3,16 +3,10 @@ package org.neo4j.impl.core;
 // Java imports
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
-
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
@@ -21,8 +15,6 @@ import org.neo4j.api.core.ReturnableEvaluator;
 import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
-import org.neo4j.impl.command.CommandManager;
-import org.neo4j.impl.command.ExecuteFailedException;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
@@ -32,8 +24,9 @@ import org.neo4j.impl.transaction.LockNotFoundException;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.transaction.TransactionFactory;
-import org.neo4j.impl.transaction.TransactionIsolationLevel;
 import org.neo4j.impl.traversal.TraverserFactory;
+import org.neo4j.impl.util.ArrayIntSet;
+import org.neo4j.impl.util.ArrayMap;
 
 
 /**
@@ -71,20 +64,21 @@ class NodeImpl implements Node, Comparable
 		FULL_REL }
 	
 	private static Logger log = Logger.getLogger( NodeImpl.class.getName() );
+	private static final LockManager lockManager = LockManager.getManager();
+	private static final LockReleaser lockReleaser = LockReleaser.getManager();
+	private static final NodeManager nodeManager = NodeManager.getManager();
+	private static final TraverserFactory travFactory = 
+		TraverserFactory.getFactory();
 	
-	private int id = -1;
+	private final int id;
 	private boolean isDeleted = false;
 	private NodePhase nodePropPhase;
 	private NodePhase nodeRelPhase;
-	private Map<String,Set<Integer>> relationshipMap = 
-		new HashMap<String,Set<Integer>>();
-	private Map<String,Property> propertyMap = 
-		new HashMap<String,Property>();
+	private ArrayMap<String,ArrayIntSet> relationshipMap = 
+		new ArrayMap<String,ArrayIntSet>(); 
+	private ArrayMap<Integer,Property> propertyMap = 
+		new ArrayMap<Integer,Property>( 9, false, true );
 	
-	private static NodeManager nodeManager = 
-		NodeManager.getManager();
-	private static TraverserFactory travFactory = 
-		TraverserFactory.getFactory();
 
 	NodeImpl( int id )
 	{
@@ -125,12 +119,11 @@ class NodeImpl implements Node, Comparable
 			// TODO: rewrite this with iterator wrapper
 			List<Relationship> allRelationships = 
 				new LinkedList<Relationship>();
-			Iterator<Set<Integer>> values = 
-				relationshipMap.values().iterator();
+			Iterator<ArrayIntSet> values = relationshipMap.values().iterator();
 			while ( values.hasNext() )
 			{
-				Set<Integer> relTypeSet = values.next();
-				for ( int relId : relTypeSet )
+				ArrayIntSet relTypeSet = values.next();
+				for ( int relId : relTypeSet.values() )
 				{
 					allRelationships.add( 
 						nodeManager.getRelationshipById( relId) );
@@ -164,12 +157,12 @@ class NodeImpl implements Node, Comparable
 			// TODO: rewrite this with iterator wrapper
 			List<Relationship> allRelationships = 
 				new LinkedList<Relationship>();
-			Iterator<Set<Integer>> values = 
+			Iterator<ArrayIntSet> values = 
 				relationshipMap.values().iterator();
 			while ( values.hasNext() )
 			{
-				Set<Integer> relTypeSet = values.next();
-				for ( int relId : relTypeSet )
+				ArrayIntSet relTypeSet = values.next();
+				for ( int relId : relTypeSet.values() )
 				{
 					Relationship rel = nodeManager.getRelationshipById( 
 						relId ); 
@@ -204,7 +197,7 @@ class NodeImpl implements Node, Comparable
 				return Collections.emptyList();
 			}
 			// TODO: rewrite with iterator wrapper
-			Set<Integer> relationshipSet = relationshipMap.get( type.name() );
+			ArrayIntSet relationshipSet = relationshipMap.get( type.name() );
 			if ( relationshipSet == null )
 			{
 				return Collections.emptyList();
@@ -270,7 +263,7 @@ class NodeImpl implements Node, Comparable
 				return Collections.emptyList();
 			}
 			// TODO: rewrite with iterator wrapper
-			Set<Integer> relationshipSet = relationshipMap.get( type.name() );
+			ArrayIntSet relationshipSet = relationshipMap.get( type.name() );
 			if ( relationshipSet == null )
 			{
 				return Collections.emptyList();
@@ -320,18 +313,10 @@ class NodeImpl implements Node, Comparable
 	public void delete() // throws DeleteException
 	{
 		acquireLock( this, LockType.WRITE );
-		NodeCommands nodeCommand = null;
 		try
 		{
-			// neo constraints need to validate all rels deleted so we 
-			// must have full node
-			ensureFullRelationships();
-			nodeCommand = new NodeCommands();
-			nodeCommand.setNode( this );
-			nodeCommand.initDelete();
-		
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( nodeCommand );
+			EventData eventData = new EventData( new NodeOpData( this, id ) );
 			if ( !em.generateProActiveEvent( Event.NODE_DELETE, 
 				eventData ) )
 			{
@@ -343,26 +328,19 @@ class NodeImpl implements Node, Comparable
 			// normal node phase here isn't necessary, if something breaks we 
 			// still have the node as it was in memory and the transaction will 
 			// rollback so the full node will still be persistent
-			nodeCommand.execute();
+			nodeRelPhase = NodePhase.EMPTY_REL;
+			nodePropPhase = NodePhase.EMPTY_PROPERTY;
+			relationshipMap = new ArrayMap<String,ArrayIntSet>(); 
+			propertyMap = new ArrayMap<Integer,Property>( 9, false, true );
+			
+			nodeManager.removeNodeFromCache( id );
 			em.generateReActiveEvent( Event.NODE_DELETE, eventData );
-		}
-		catch ( ExecuteFailedException e )
-		{
-			setRollbackOnly();
-			if ( nodeCommand != null )
-			{
-				nodeCommand.undo();
-			}
-			throw new DeleteException( "Failed executing command deleting " +
-				this, e );
 		}
 		finally
 		{
 			releaseLock( this, LockType.WRITE );
 		}
 	}
-	
-	// Property operations
 	
 	/**
 	 * Returns all properties on <CODE>this</CODE> node. The whole node will be 
@@ -404,9 +382,9 @@ class NodeImpl implements Node, Comparable
 		{
 			ensureFullProperties();
 			List<String> propertyKeys = new ArrayList<String>();
-			for ( String key : propertyMap.keySet() )
+			for ( int keyId : propertyMap.keySet() )
 			{
-				propertyKeys.add( key );
+				propertyKeys.add( PropertyIndex.getIndexFor( keyId ).getKey() );
 			}
 			return propertyKeys;
 		}
@@ -430,32 +408,100 @@ class NodeImpl implements Node, Comparable
 	public Object getProperty( String key ) 
 		throws NotFoundException
 	{
+		if ( key == null )
+		{
+			throw new IllegalArgumentException( "null key" );
+		}
 		acquireLock( this, LockType.READ );
 		try
 		{
-			if ( propertyMap.containsKey( key ) )
+			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
-				return propertyMap.get( key ).getValue();
+				Property property = propertyMap.get( index.getKeyId() );
+				if ( property != null )
+				{
+					return property.getValue();
+				}
+				
+				if ( ensureFullProperties() )
+				{
+					property = propertyMap.get( index.getKeyId() );
+					if ( property != null )
+					{
+						return property.getValue();
+					}
+				}
 			}
-			ensureFullProperties();
-			if ( propertyMap.containsKey( key ) )
+			if ( !PropertyIndex.hasAll() )
 			{
-				return propertyMap.get( key ).getValue();
+				ensureFullProperties();
+				for ( int keyId : propertyMap.keySet() )
+				{
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
+					{
+						PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+							keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							return propertyMap.get( indexToCheck.getKeyId() );
+						}
+					}
+				}
 			}
 		}
 		finally
 		{
 			releaseLock( this, LockType.READ );
 		}
-		throw new NotFoundException( "" + key + 
-			" property not found." );
+		throw new NotFoundException( "" + key + " property not found." );
 	}
 	
 	public Object getProperty( String key, Object defaultValue )
 	{
-		if ( hasProperty( key ) )
+		if ( key == null )
 		{
-			return getProperty( key );
+			throw new IllegalArgumentException( "null key" );
+		}
+		acquireLock( this, LockType.READ );
+		try
+		{
+			for ( PropertyIndex index : PropertyIndex.index( key ) )
+			{
+				Property property = propertyMap.get( index.getKeyId() );
+				if ( property != null )
+				{
+					return property.getValue();
+				}
+				
+				if ( ensureFullProperties() )
+				{
+					property = propertyMap.get( index.getKeyId() );
+					if ( property != null )
+					{
+						return property.getValue();
+					}
+				}
+			}
+			if ( !PropertyIndex.hasAll() )
+			{
+				ensureFullProperties();
+				for ( int keyId : propertyMap.keySet() )
+				{
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
+					{
+						PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+							keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							return propertyMap.get( indexToCheck.getKeyId() );
+						}
+					}
+				}
+			}
+		}
+		finally
+		{
+			releaseLock( this, LockType.READ );
 		}
 		return defaultValue;
 	}
@@ -474,12 +520,31 @@ class NodeImpl implements Node, Comparable
 		acquireLock( this, LockType.READ );
 		try
 		{
-			if ( propertyMap.containsKey( key ) )
+			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
-				return true;
+				Property property = propertyMap.get( index.getKeyId() );
+				if ( property != null )
+				{
+					return true;
+				}
+				if ( ensureFullProperties() )
+				{
+					if ( propertyMap.get( index.getKeyId() ) != null )
+					{
+						return true;
+					}
+				}
 			}
 			ensureFullProperties();
-			return propertyMap.containsKey( key );
+			for ( int keyId : propertyMap.keySet() )
+			{
+				PropertyIndex indexToCheck = PropertyIndex.getIndexFor( keyId );
+				if ( indexToCheck.getKey().equals( key ) )
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 		finally
 		{
@@ -501,61 +566,82 @@ class NodeImpl implements Node, Comparable
 	public void setProperty( String key, Object value ) 
 		throws IllegalValueException 
 	{
-		if ( !hasProperty( key ) )
-		{
-			addProperty( key, value );
-		}
-		else
-		{
-			changeProperty( key, value );
-		}
-	}
-	
-	void addProperty( String key, Object value ) 
-		throws IllegalValueException
-	{
 		if ( key == null || value == null )
 		{
 			throw new IllegalValueException( "Null parameter, " +
 				"key=" + key + ", " + "value=" + value );
 		}
 		acquireLock( this, LockType.WRITE );
-		NodeCommands nodeCommand = null;
 		try
 		{
 			// must make sure we don't add already existing property
 			ensureFullProperties();
-			nodeCommand = new NodeCommands(); 
-			nodeCommand.setNode( this );
-			nodeCommand.initAddProperty( key, new Property( -1, value ) );
-			// have to execute command here since the full node is loaded
-			// and then the property would already be in cache
-			nodeCommand.execute();
+			PropertyIndex index = null;
+			Property property = null;
+			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
+			{
+				property = propertyMap.get( cachedIndex.getKeyId() );
+				index = cachedIndex;
+				if ( property != null )
+				{
+					break;
+				}
+			}
+			if ( property == null && !PropertyIndex.hasAll() )
+			{
+				for ( int keyId : propertyMap.keySet() )
+				{
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
+					{
+						PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+							keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							index = indexToCheck;
+							property = propertyMap.get( indexToCheck.getKeyId() );
+							break;
+						}
+					}
+				}
+			}
+			if ( index == null )
+			{
+				index = PropertyIndex.createPropertyIndex( key );
+			}
+			Event event = Event.NODE_ADD_PROPERTY;
+			NodeOpData data;
+			if ( property != null )
+			{
+				int propertyId = property.getId();
+				data = new NodeOpData( this, id, propertyId, index, value );
+				event = Event.NODE_CHANGE_PROPERTY;
+			}
+			else
+			{
+				data = new NodeOpData( this, id, -1, index, value );
+			}
 
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( nodeCommand );
-			if ( !em.generateProActiveEvent( Event.NODE_ADD_PROPERTY, 
-				eventData ) )
+			EventData eventData = new EventData( data );
+			if ( !em.generateProActiveEvent( event, eventData ) )
 			{
 				setRollbackOnly();
-				nodeCommand.undo();
 				throw new IllegalValueException( 
 					"Generate pro-active event failed, " +
 					" unable to add property[" + key + "," + value + 
 					"] on " + this );
 			}
-
-			em.generateReActiveEvent( Event.NODE_ADD_PROPERTY, eventData );
-		}
-		catch ( ExecuteFailedException e )
-		{
-			if ( nodeCommand != null )
+			if ( event == Event.NODE_ADD_PROPERTY )
 			{
-				nodeCommand.undo();
+				doAddProperty( index, new Property( data.getPropertyId(), 
+					value ) );
 			}
-			throw new IllegalValueException( "Failed executing command when " +
-				" adding property[" + key + "," + value + 
-				"] on " + this, e );
+			else
+			{
+				doChangeProperty( index, new Property( data.getPropertyId(), 
+					value ) );
+			}
+			em.generateReActiveEvent( event, eventData );
 		}
 		finally
 		{
@@ -578,100 +664,63 @@ class NodeImpl implements Node, Comparable
 			throw new IllegalArgumentException( "Null parameter." );
 		}
 		acquireLock( this, LockType.WRITE );
-		NodeCommands nodeCommand = null;
 		try
 		{
-			// if null or not found make sure full
-			ensureFullProperties();
-			if ( !propertyMap.containsKey( key ) )
+			Property property = null;
+			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
+			{
+				property = propertyMap.remove( cachedIndex.getKeyId() );
+				if ( property == null )
+				{
+					if ( ensureFullProperties() )
+					{
+						property = propertyMap.remove( cachedIndex.getKeyId() );
+						if ( property != null )
+						{
+							break;
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+			if ( property == null && !PropertyIndex.hasAll() )
+			{
+				ensureFullProperties();
+				for ( int keyId : propertyMap.keySet() )
+				{
+					if ( !PropertyIndex.hasIndexFor( keyId ) )
+					{
+						PropertyIndex indexToCheck = PropertyIndex.getIndexFor( 
+							keyId );
+						if ( indexToCheck.getKey().equals( key ) )
+						{
+							property = propertyMap.remove( indexToCheck.getKeyId() );
+							break;
+						}
+					}
+				}
+			}
+			if ( property == null )
 			{
 				return null;
 			}
-			nodeCommand = new NodeCommands(); 
-			nodeCommand.setNode( this );
-			
-			nodeCommand.initRemoveProperty( doGetProperty( key ).getId(), 
-				key );
-			// have to execute here for NodeOperationEventData to be correct
-			// nodeCommand also checks that the property really exist
-			nodeCommand.execute();
+			NodeOpData data = new NodeOpData( this, id, property.getId() );
 			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( nodeCommand );
+			EventData eventData = new EventData( data );
 			if ( !em.generateProActiveEvent( Event.NODE_REMOVE_PROPERTY, 
 				eventData ) )
 			{
 				setRollbackOnly();
-				nodeCommand.undo();
 				throw new NotFoundException( 
 					"Generate pro-active event failed, " +
 					"unable to remove property[" + key + "] from " + this );
 			}
 
 			em.generateReActiveEvent( Event.NODE_REMOVE_PROPERTY, eventData );
-			return nodeCommand.getOldProperty();
-		}
-		catch ( ExecuteFailedException e )
-		{
-			if ( nodeCommand != null )
-			{
-				nodeCommand.undo();
-			}
-			throw new NotFoundException( "Failed executing command " +
-				"while removing property[" + key + "] on " + this, e );
-		}
-		finally
-		{
-			releaseLock( this, LockType.WRITE );
-		}
-	}
-	
-	Object changeProperty( String key, Object newValue ) 
-		throws IllegalValueException, NotFoundException 
-	{
-		if ( key == null || newValue == null )
-		{
-			throw new IllegalValueException( "Null parameter, " +
-				"key=" + key + ", " + "value=" + newValue );
-		}
-		acquireLock( this, LockType.WRITE );
-		NodeCommands nodeCommand = null;
-		try
-		{
-			// if null or not found make sure full
-			ensureFullProperties();
-			nodeCommand = new NodeCommands();
-			nodeCommand.setNode( this );
-			int propertyId = doGetProperty( key ).getId();
-			nodeCommand.initChangeProperty( propertyId, key,  
-				new Property( propertyId, newValue ) );
-			// have to execute here for NodeOperationEventData to be correct
-			nodeCommand.execute();
-
-			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( nodeCommand );
-			if ( !em.generateProActiveEvent( Event.NODE_CHANGE_PROPERTY, 
-				eventData ) )
-			{
-				setRollbackOnly();
-				nodeCommand.undo();
-				throw new IllegalValueException( 
-					"Generate pro-active event failed, " +
-					" unable to change property[" + key + "," + newValue + 
-					"] on " + this );
-			}
-			
-			em.generateReActiveEvent( Event.NODE_CHANGE_PROPERTY, eventData );
-			return nodeCommand.getOldProperty();
-		}
-		catch ( ExecuteFailedException e )
-		{
-			if ( nodeCommand != null )
-			{
-				nodeCommand.undo();
-			}
-			throw new IllegalValueException( "Failed executing command when " +
-				" changing property[" + key + "," + newValue + 
-				"] on " + this, e );
+			return property.getValue();
 		}
 		finally
 		{
@@ -689,7 +738,6 @@ class NodeImpl implements Node, Comparable
 	 * @param node the node to compare this node with
 	 * @return 0 if equal id, 1 if this id is greater else -1
 	 */
-	// TODO: Verify this implementation
 	public int compareTo( Object node )
 	{
 		Node n = (Node) node;
@@ -773,59 +821,63 @@ class NodeImpl implements Node, Comparable
 	 * NOTE: caller is responsible for acquiring write lock on this node
 	 * before calling this method.
 	 */
-	void doAddProperty( String key, Property value )
+	void doAddProperty( PropertyIndex index, Property value )
 		throws IllegalValueException
 	{
-		if ( propertyMap.containsKey( key ) )
+		if ( propertyMap.get( index.getKeyId() ) != null )
 		{
-			throw new IllegalValueException( "Property[" + key + 
+			throw new IllegalValueException( "Property[" + index.getKey() + 
 				"] already added." );
 		}
-		propertyMap.put( key, value );
+		propertyMap.put( index.getKeyId(), value );
 	}
 
 	 // caller is responsible for acquiring lock
-	Property doRemoveProperty( String key ) throws NotFoundException
+	Property doRemoveProperty( PropertyIndex index ) throws NotFoundException
 	{
-		if ( propertyMap.containsKey( key ) )
+		Property property = propertyMap.remove( index.getKeyId() );
+		if ( property != null )
 		{
-			return propertyMap.remove( key );
+			return property;
 		}
-		throw new NotFoundException( "Property not found: " +	key );
+		throw new NotFoundException( "Property not found: " + index.getKey() );
 	}
 
 	 // caller is responsible for acquiring lock
-	Property doChangeProperty( String key, Property newValue )
+	Property doChangeProperty( PropertyIndex index, Property newValue )
 		throws IllegalValueException, NotFoundException
 	{
-		if ( propertyMap.containsKey( key ) )
+		Property property = propertyMap.get( index.getKeyId() );
+		if ( property != null )
 		{
-			Property oldValue  = propertyMap.get( key );
-			propertyMap.put( key, newValue );
-			return oldValue;
+			Property oldProperty = new Property( property.getId(), 
+				property.getValue() );
+			property.setNewValue( newValue.getValue() );
+			return oldProperty;
 		}
-		throw new NotFoundException( "Property not found: " + key );
+		throw new NotFoundException( "Property not found: " + index.getKey() );
 	}
 	
 	 // caller is responsible for acquiring lock
-	Property doGetProperty( String key ) throws NotFoundException
+	Property doGetProperty( PropertyIndex index ) throws NotFoundException
 	{
-		if ( propertyMap.containsKey( key ) )
+		Property property = propertyMap.get( index.getKeyId() );
+		if ( property != null )
 		{
-			return propertyMap.get( key );
+			return property;
 		}
-		throw new NotFoundException( "Property not found: " + key );
+		throw new NotFoundException( "Property not found: " + index.getKey() );
 	}
 
 	 // caller is responsible for acquiring lock
 	 // this method is only called when a relationship is created or 
 	 // a relationship delete is undone or when the full node is loaded
-	void addRelationship( RelationshipType type, Integer relId ) 
+	void addRelationship( RelationshipType type, int relId ) 
 	{
-		Set<Integer> relationshipSet = relationshipMap.get( type.name() );
+		ArrayIntSet relationshipSet = relationshipMap.get( type.name() );
 		if ( relationshipSet == null )
 		{
-			relationshipSet = new LinkedHashSet<Integer>();
+			relationshipSet = new ArrayIntSet();
 			relationshipMap.put( type.name(), relationshipSet );
 		}
 		relationshipSet.add( relId );
@@ -834,21 +886,35 @@ class NodeImpl implements Node, Comparable
 	 // caller is responsible for acquiring lock
 	 // this method is only called when a undo create relationship or
 	 // a relationship delete is invoked.
-	void removeRelationship( RelationshipType type, Integer relId )
+	void removeRelationship( RelationshipType type, int relId )
 	{
-		Set<Integer> relationshipSet = relationshipMap.get( type.name() );
+		ArrayIntSet relationshipSet = relationshipMap.get( type.name() );
 		if ( relationshipSet != null )
 		{
-			relationshipSet.remove( relId );
+			if ( !relationshipSet.remove( relId ) )
+			{
+				if ( ensureFullRelationships() )
+				{
+					relationshipSet.remove( relId );
+				}
+			}
 			if ( relationshipSet.size() == 0 )
 			{
 				relationshipMap.remove( type.name() );
+			}
+		}
+		else
+		{
+			if ( ensureFullRelationships() )
+			{
+				removeRelationship( type, relId );
 			}
 		}
 	}
 	
 	boolean hasRelationships()
 	{
+		ensureFullRelationships();
 		return ( relationshipMap.size() > 0 );
 	}
 	
@@ -865,73 +931,74 @@ class NodeImpl implements Node, Comparable
 		}
 	}
 
-	private void ensureFullProperties()
+	private boolean ensureFullProperties()
 	{
 		if ( nodePropPhase != NodePhase.FULL_PROPERTY )
 		{
 			RawPropertyData[] rawProperties = 
-				NodeManager.getManager().loadProperties( this );
-			Set<Integer> addedProps = new LinkedHashSet<Integer>();
-			Map<String,Property> newPropertyMap = 
-				new HashMap<String,Property>();
+				nodeManager.loadProperties( this );
+			ArrayIntSet addedProps = new ArrayIntSet();
+			ArrayMap<Integer,Property> newPropertyMap = 
+				new ArrayMap<Integer,Property>();
 			for ( RawPropertyData propData : rawProperties )
 			{
 				int propId = propData.getId();
-				assert !addedProps.contains( propId );
-				addedProps.add( propId );
+				assert addedProps.add( propId );
 				Property property = new Property( propId, 
 					propData.getValue() );
-				newPropertyMap.put( propData.getKey(), property );
+				newPropertyMap.put( propData.getIndex(), property );
 			}
-			for ( String key : this.propertyMap.keySet() )
+			for ( int index : this.propertyMap.keySet() )
 			{
-				Property prop = propertyMap.get( key );
+				Property prop = propertyMap.get( index );
 				if ( !addedProps.contains( prop.getId() ) )
 				{
-					newPropertyMap.put( key, prop );
+					newPropertyMap.put( index, prop );
 				}
 			}
 			this.propertyMap = newPropertyMap;
 			nodePropPhase = NodePhase.FULL_PROPERTY;
+			return true;
 		}
+		return false;
 	}
 	
-	private void ensureFullRelationships()
+	private boolean ensureFullRelationships()
 	{
 		if ( nodeRelPhase != NodePhase.FULL_REL )
 		{
 			List<Relationship> fullRelationshipList = 
-				NodeManager.getManager().loadRelationships( this );
-			Set<Integer> addedRels = new HashSet<Integer>();
-			Map<String,Set<Integer>> newRelationshipMap = 
-				new HashMap<String,Set<Integer>>();
+				nodeManager.loadRelationships( this );
+			ArrayIntSet addedRels = new ArrayIntSet();
+			ArrayMap<String,ArrayIntSet> newRelationshipMap = 
+				new ArrayMap<String,ArrayIntSet>(); 
 			for ( Relationship rel : fullRelationshipList )
 			{
 				int relId = (int) rel.getId();
-				assert !addedRels.contains( relId );
 				addedRels.add( relId );
 				RelationshipType type = rel.getType();
-				Set<Integer> relationshipSet = newRelationshipMap.get( type.name() );
+				ArrayIntSet relationshipSet = newRelationshipMap.get( 
+					type.name() );
 				if ( relationshipSet == null )
 				{
-					relationshipSet = new LinkedHashSet<Integer>();
+					relationshipSet = new ArrayIntSet();
 					newRelationshipMap.put( type.name(), relationshipSet );
 				}
 				relationshipSet.add( relId );
 			}
 			for ( String typeName : this.relationshipMap.keySet() )
 			{
-				Set<Integer> relationshipSet = 
+				ArrayIntSet relationshipSet = 
 					this.relationshipMap.get( typeName );
-				for ( Integer relId : relationshipSet )
+				for ( Integer relId : relationshipSet.values() )
 				{
 					if ( !addedRels.contains( relId ) )
 					{
-						Set<Integer> newRelationshipSet = 
+						ArrayIntSet newRelationshipSet = 
 							newRelationshipMap.get( typeName );
 						if ( newRelationshipSet == null )
 						{
-							newRelationshipSet = new LinkedHashSet<Integer>();
+							newRelationshipSet = new ArrayIntSet();
 							newRelationshipMap.put( typeName, 
 								newRelationshipSet );
 						}
@@ -942,22 +1009,22 @@ class NodeImpl implements Node, Comparable
 			}
 			this.relationshipMap = newRelationshipMap;
 			nodeRelPhase = NodePhase.FULL_REL;
+			return true;
 		}
+		return false;
 	}
 	
 	private void acquireLock( Object resource, LockType lockType )
 	{
 		try
 		{
-			// make sure we're in transaction
-			TransactionFactory.getTransactionIsolationLevel();
 			if ( lockType == LockType.READ )
 			{
-				LockManager.getManager().getReadLock( resource );
+				lockManager.getReadLock( resource );
 			}
 			else if ( lockType == LockType.WRITE )
 			{
-				LockManager.getManager().getWriteLock( resource );
+				lockManager.getWriteLock( resource );
 			}
 			else
 			{
@@ -985,41 +1052,26 @@ class NodeImpl implements Node, Comparable
 	{
 		try
 		{
-			TransactionIsolationLevel level = 
-				TransactionFactory.getTransactionIsolationLevel();
-			if ( level == TransactionIsolationLevel.READ_COMMITTED )
+			if ( lockType == LockType.READ )
 			{
-				if ( lockType == LockType.READ )
+				lockManager.releaseReadLock( resource );
+			}
+			else if ( lockType == LockType.WRITE )
+			{
+				if ( forceRelease ) 
 				{
-					LockManager.getManager().releaseReadLock( resource );
-				}
-				else if ( lockType == LockType.WRITE )
-				{
-					if ( forceRelease ) 
-					{
-						LockManager.getManager().releaseWriteLock( resource );
-					}
-					else
-					{
-						CommandManager.getManager().addLockToTransaction( resource, 
-							lockType );
-					}
+					lockManager.releaseWriteLock( resource );
 				}
 				else
 				{
-					throw new RuntimeException( "Unkown lock type: " + 
+					lockReleaser.addLockToTransaction( resource, 
 						lockType );
 				}
 			}
-			else if ( level == TransactionIsolationLevel.BAD )
-			{
-				CommandManager.getManager().addLockToTransaction( resource, 
-					lockType );
-			}
 			else
 			{
-				throw new RuntimeException( 
-					"Unkown transaction isolation level, " + level );
+				throw new RuntimeException( "Unkown lock type: " + 
+					lockType );
 			}
 		}
 		catch ( NotInTransactionException e )

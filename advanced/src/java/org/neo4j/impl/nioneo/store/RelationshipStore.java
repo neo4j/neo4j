@@ -1,8 +1,8 @@
 package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Map;
 
 /**
@@ -20,12 +20,6 @@ public class RelationshipStore extends AbstractStore implements Store
 	// second_next_rel_id+next_prop_id(int)
 	private static final int RECORD_SIZE = 33;
 	
-	private Map<Integer,RelationshipRecord> cache = 
-		Collections.synchronizedMap( 
-			new HashMap<Integer,RelationshipRecord>() );
-	
-	private PropertyStore propStore = null;
-	
 	/**
 	 * See {@link AbstractStore#AbstractStore(String, Map)}
 	 */
@@ -41,11 +35,6 @@ public class RelationshipStore extends AbstractStore implements Store
 	public RelationshipStore( String fileName ) throws IOException
 	{
 		super( fileName );
-	}
-	
-	void setPropertyStore( PropertyStore propStore )
-	{
-		this.propStore = propStore;
 	}
 	
 	public String getTypeAndVersionDescriptor()
@@ -78,22 +67,32 @@ public class RelationshipStore extends AbstractStore implements Store
 		createEmptyStore( fileName, VERSION );
 	}
 	
-	public RelationshipRecord getRecord( int id ) throws IOException
+	public RelationshipRecord getRecord( int id, ReadFromBuffer buffer ) 
+		throws IOException
 	{
-		RelationshipRecord record = cache.get( id );
-		if ( record != null )
+		RelationshipRecord record;
+		if ( buffer != null && !hasWindow( id ) )
 		{
-			if ( !record.inUse() )
-			{
-				throw new IOException( "Record[" + id + "] not in use" );
-			}
+			buffer.makeReadyForTransfer();
+			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
+				buffer.getFileChannel() );
+			ByteBuffer buf = buffer.getByteBuffer();
+			byte inUse = buf.get();
+			assert inUse == Record.IN_USE.byteValue();
+			record = new RelationshipRecord( id, 
+				buf.getInt(), buf.getInt(), buf.getInt() );
+			record.setInUse( true );
+			record.setFirstPrevRel( buf.getInt() );
+			record.setFirstNextRel( buf.getInt() );
+			record.setSecondPrevRel( buf.getInt() );
+			record.setSecondNextRel( buf.getInt() );
+			record.setNextProp( buf.getInt() );
 			return record;
 		}
 		PersistenceWindow window = acquireWindow( id, OperationType.READ );
 		try
 		{
-			record = getRecord( id, window.getBuffer(), false );
-			cache.put( id, record );
+			record = getRecord( id, window.getBuffer() );
 			return record;
 		}
 		finally 
@@ -104,12 +103,16 @@ public class RelationshipStore extends AbstractStore implements Store
 	
 	public void updateRecord( RelationshipRecord record ) throws IOException
 	{
+		if ( record.isTransferable() && !hasWindow( record.getId() ) )
+		{
+			transferRecord( record );
+			return;
+		}
 		PersistenceWindow window = acquireWindow( record.getId(), 
 			OperationType.WRITE );
 		try
 		{
 			updateRecord( record, window.getBuffer() );
-			cache.remove( record.getId() );
 		}
 		finally 
 		{
@@ -117,36 +120,17 @@ public class RelationshipStore extends AbstractStore implements Store
 		}
 	}
 	
-	public PropertyData[] getProperties( int relId )
-		throws IOException
+	private void transferRecord( RelationshipRecord record ) throws IOException
 	{
-		PersistenceWindow window = acquireWindow( relId, OperationType.READ );
-		try
+		int id = record.getId();
+		long count = record.getTransferCount();
+		FileChannel fileChannel = getFileChannel();
+		fileChannel.position( id * getRecordSize() );
+		if ( count != record.getFromChannel().transferTo( 
+			record.getTransferStartPosition(), count, fileChannel ) )
 		{
-			int nextPropertyId = 
-				getNextPropertyId( relId, window.getBuffer() );
-			if ( nextPropertyId != Record.NO_NEXT_PROPERTY.intValue() )
-			{
-				return propStore.getProperties( nextPropertyId );
-			}
-			return new PropertyData[0];
-		}
-		finally
-		{
-			releaseWindow( window );
-		}
-	}
-
-	public RelationshipData getRelationship( int id ) throws IOException
-	{
-		PersistenceWindow window = acquireWindow( id, OperationType.READ );
-		try
-		{
-			return getRelationship( id, window.getBuffer() );
-		}
-		finally
-		{
-			releaseWindow( window );
+			throw new RuntimeException( "expected " + count + 
+				" bytes transfered" );
 		}
 	}
 	
@@ -168,13 +152,7 @@ public class RelationshipStore extends AbstractStore implements Store
 		}
 		else
 		{
-			buffer.put( Record.NOT_IN_USE.byteValue() ).putInt( 0 ).putInt( 
-				0 ).putInt( 0 ).putInt( 
-					Record.NO_PREV_RELATIONSHIP.intValue() ).putInt( 
-					Record.NO_NEXT_RELATIONSHIP.intValue() ).putInt( 
-					Record.NO_PREV_RELATIONSHIP.intValue() ).putInt( 
-					Record.NO_NEXT_RELATIONSHIP.intValue() ).putInt( 
-					Record.NO_NEXT_PROPERTY.intValue() );
+			buffer.put( Record.NOT_IN_USE.byteValue() );
 			if ( !isInRecoveryMode() )
 			{
 				freeId( id );
@@ -182,15 +160,15 @@ public class RelationshipStore extends AbstractStore implements Store
 		}
 	}
 	
-	private RelationshipRecord getRecord( int id, Buffer buffer, 
-		boolean checkOnly ) throws IOException
+	private RelationshipRecord getRecord( int id, Buffer buffer ) 
+		throws IOException
 	{
 		int offset = ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		byte inUse = buffer.get();
 		boolean inUseFlag = ( ( inUse & Record.IN_USE.byteValue() ) == 
 			Record.IN_USE.byteValue() );
-		if ( !inUseFlag && !checkOnly )
+		if ( !inUseFlag )
 		{
 			throw new IOException( "Record[" + id + "] not in use" );
 		}
@@ -203,32 +181,6 @@ public class RelationshipStore extends AbstractStore implements Store
 		record.setSecondNextRel( buffer.getInt() );
 		record.setNextProp( buffer.getInt() );
 		return record;
-	}
-	
-	private RelationshipData getRelationship( int id, Buffer buffer ) 
-		throws IOException
-	{
-		int offset = ( id - buffer.position() ) * getRecordSize();
-		buffer.setOffset( offset );
-		byte inUse = buffer.get();
-		boolean inUseFlag = ( ( inUse & Record.IN_USE.byteValue() ) == 
-			Record.IN_USE.byteValue() );
-		if ( !inUseFlag )
-		{
-			throw new IOException( "Record[" + id + "] not in use[" +
-				inUse + "]" );
-		}
-		return new RelationshipData( id, buffer.getInt(), 
-			buffer.getInt(), buffer.getInt(), buffer.getInt(), 
-			buffer.getInt(), buffer.getInt(), buffer.getInt(), 
-			buffer.getInt() );
-	}
-	
-	private int getNextPropertyId( int relId, Buffer buffer ) 
-	{
-		int offset = ( relId - buffer.position() ) * getRecordSize();
-		buffer.setOffset( offset + 29 );
-		return buffer.getInt();
 	}
 	
 	public String toString()

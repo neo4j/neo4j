@@ -88,6 +88,7 @@ public class TestDeadlockDetection extends TestCase
 							taskCompleted = true;
 							nextTask = DO_NOTHING_TASK;
 							break;
+						case QUIT_TASK: break;
 						default: 
 							throw new RuntimeException( "Unkown task " +
 								nextTask );

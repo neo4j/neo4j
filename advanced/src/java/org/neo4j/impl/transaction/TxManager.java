@@ -26,6 +26,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * Public for testing purpose only. Use {@link TransactionFactory} to get 
@@ -35,9 +36,9 @@ import javax.transaction.xa.Xid;
 public class TxManager implements TransactionManager
 {
 	private static Logger log = Logger.getLogger( TxManager.class.getName() );
-	private static TxManager manager = new TxManager();
+	private static final TxManager manager = new TxManager();
 	
-	private Map<Thread,Transaction> txThreadMap; 
+	private ArrayMap<Thread,TransactionImpl> txThreadMap; 
 	
 	private String logSwitcherFileName = "var/tm/active_tx_log";
 	private String txLog1FileName = "var/tm/tm_tx_log.1"; 
@@ -54,8 +55,7 @@ public class TxManager implements TransactionManager
 	
 	void init()
 	{
-		txThreadMap = java.util.Collections.synchronizedMap( 
-			new HashMap<Thread,Transaction>() );
+		txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
 		String txLogDir = System.getProperty( "neo.tx_log_directory" );
 		if ( txLogDir == null )
 		{
@@ -91,7 +91,7 @@ public class TxManager implements TransactionManager
 					new File( txLog2FileName ).exists() )
 				{
 					throw new RuntimeException( "Unable to start TM, " +
-						"no active tx log file found, but found either " +
+						"no active tx log file found but found either " +
 						txLog1FileName + " or " + txLog2FileName +
 						" file, please set one of them as active or " +
 						"remove them." );
@@ -162,8 +162,6 @@ public class TxManager implements TransactionManager
 		// change active log 
 		FileChannel fc = new RandomAccessFile( 
 			logSwitcherFileName, "rw" ).getChannel(); 
-		// byte fileName[] = new byte[ 256 ];
-		// ByteBuffer buf = ByteBuffer.wrap( newFile.getBytes( "UTF-8" ) );
 		ByteBuffer buf = ByteBuffer.wrap( newFileName.getBytes() );
 		fc.truncate( 0 );
 		fc.write( buf );
@@ -295,7 +293,7 @@ public class TxManager implements TransactionManager
 	
 	private void buildRecoveryInfo( List<NonCompletedTransaction> commitList, 
 		List<List<Xid>> rollbackList, Map<Resource,XAResource> resourceMap, 
-		Iterator<List<TxLog.Record>> danglingRecordList ) throws XAException
+		Iterator<List<TxLog.Record>> danglingRecordList )
 	{
 		while ( danglingRecordList.hasNext() )
 		{
@@ -454,12 +452,13 @@ public class TxManager implements TransactionManager
 		}
 				
 		Thread thread = Thread.currentThread();
-		if ( txThreadMap.containsKey( thread ) )
+		TransactionImpl tx = txThreadMap.get( thread );
+		if ( tx != null )
 		{
 			throw new NotSupportedException( 
 				"Nested transactions not supported" );
 		}
-		TransactionImpl tx = new TransactionImpl();
+		tx = new TransactionImpl();
 		txThreadMap.put( thread, tx );
 		try
 		{
@@ -485,11 +484,11 @@ public class TxManager implements TransactionManager
 				);
 		}
 		Thread thread = Thread.currentThread();
-		if ( !txThreadMap.containsKey( thread ) )
+		TransactionImpl tx = txThreadMap.get( thread );
+		if ( tx == null )
 		{
 			throw new IllegalStateException( "Not in transaction" );
 		}
-		TransactionImpl tx = ( TransactionImpl ) txThreadMap.get( thread );
 		if ( tx.getStatus() != Status.STATUS_ACTIVE && 
 			tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
 		{
@@ -649,13 +648,13 @@ public class TxManager implements TransactionManager
 				);
 		}
 		Thread thread = Thread.currentThread();
-		if ( !txThreadMap.containsKey( thread ) )
+		TransactionImpl tx = txThreadMap.get( thread );
+		if ( tx == null )
 		{
 			throw new IllegalStateException( "Not in transaction" );
 		}
-		TransactionImpl tx = ( TransactionImpl ) txThreadMap.get( thread );
 		if ( tx.getStatus() == Status.STATUS_ACTIVE || 
-			tx.getStatus() == Status.STATUS_MARKED_ROLLBACK || 
+			tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
 			tx.getStatus() == Status.STATUS_PREPARING )
 		{
 			tx.doBeforeCompletion();
@@ -693,13 +692,6 @@ public class TxManager implements TransactionManager
 			}
 			tx.setStatus( Status.STATUS_NO_TRANSACTION );
 		}
-		// prepared is set in commit
-//		else if ( tx.getStatus() == Status.STATUS_PREPARING )
-//		{
-//			// let commit take care of rollback
-//			tx.setStatus( Status.STATUS_MARKED_ROLLBACK );
-//			throw new RuntimeException( "Should never be, not yet" );
-//		}
 		else 
 		{
 			throw new IllegalStateException( "Tx status is: " + 
@@ -710,7 +702,7 @@ public class TxManager implements TransactionManager
 	public int getStatus() // throws SystemException
 	{
 		Thread thread = Thread.currentThread();
-                TransactionImpl tx = (TransactionImpl) txThreadMap.get( thread );
+		TransactionImpl tx = txThreadMap.get( thread );
 		if ( tx != null )
 		{
 			return tx.getStatus();
@@ -733,14 +725,14 @@ public class TxManager implements TransactionManager
 				);
 		}
 		Thread thread = Thread.currentThread();
-		if ( txThreadMap.containsKey( thread ) )
+		if ( txThreadMap.get( thread ) != null )
 		{
 			throw new IllegalStateException( "Transaction already associated" );
 		}
-		if ( ( ( TransactionImpl ) tx ).getStatus() != 
-			Status.STATUS_NO_TRANSACTION )
+		TransactionImpl txImpl = (TransactionImpl) tx;
+		if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
 		{
-			txThreadMap.put( thread, tx );
+			txThreadMap.put( thread, txImpl );
 		}
 		// generate pro-active event resume
 	}
@@ -754,8 +746,7 @@ public class TxManager implements TransactionManager
 				);
 		}
 		// check for ACTIVE/MARKED_ROLLBACK?
-		TransactionImpl tx = ( TransactionImpl ) 
-			txThreadMap.remove( Thread.currentThread() );
+		TransactionImpl tx = txThreadMap.remove( Thread.currentThread() );
 		if ( tx != null )
 		{
 			// generate pro-active event suspend
@@ -772,11 +763,12 @@ public class TxManager implements TransactionManager
 				);
 		}
 		Thread thread = Thread.currentThread();
-		if ( !txThreadMap.containsKey( thread ) )
+		TransactionImpl tx = txThreadMap.get( thread );
+		if ( tx == null )
 		{
 			throw new IllegalStateException( "Not in transaction" );
 		}
-		( ( TransactionImpl ) txThreadMap.get( thread ) ).setRollbackOnly(); 
+		tx.setRollbackOnly(); 
 	}
 
 	public void setTransactionTimeout( int seconds ) throws SystemException

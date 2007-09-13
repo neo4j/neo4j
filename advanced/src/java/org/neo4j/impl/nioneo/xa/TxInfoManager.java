@@ -2,18 +2,15 @@ package org.neo4j.impl.nioneo.xa;
 
 import org.neo4j.impl.transaction.xaframework.XaLogicalLog;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Holds information about the current transaction such as recovery mode
  * and transaction identifier.
  */
 public class TxInfoManager
 {
-	private static TxInfoManager txManager = new TxInfoManager();
+	private static final TxInfoManager txManager = new TxInfoManager();
 	
-	private Map<Thread,Boolean> txMode = new HashMap<Thread,Boolean>();
+	private boolean recoveryMode = false;
 	
 	public static TxInfoManager getManager()
 	{
@@ -29,12 +26,12 @@ public class TxInfoManager
 	
 	void registerMode( boolean mode )
 	{
-		txMode.put( Thread.currentThread(), Boolean.valueOf( mode ) );
+		this.recoveryMode = mode;
 	}
 	
 	void unregisterMode()
 	{
-		txMode.remove( Thread.currentThread() );
+		recoveryMode = false;
 	}
 	
 	/**
@@ -46,12 +43,7 @@ public class TxInfoManager
 	 */
 	public boolean isInRecoveryMode()
 	{
-		Boolean b = txMode.get( Thread.currentThread() );
-		if ( b == null )
-		{
-			return false;
-		}
-		return b;
+		return recoveryMode;
 	}
 	
 	/**
