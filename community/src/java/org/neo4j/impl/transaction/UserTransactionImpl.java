@@ -28,7 +28,6 @@ public class UserTransactionImpl implements UserTransaction
 
 	private UserTransactionImpl()
 	{
-//		tm = TransactionFactory.getTransactionManager();
 	}
 	
 	public void begin() throws NotSupportedException, SystemException

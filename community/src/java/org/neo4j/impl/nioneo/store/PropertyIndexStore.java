@@ -206,7 +206,6 @@ public class PropertyIndexStore extends AbstractStore implements Store
 			try
 			{
 				updateRecord( record, window.getBuffer() );
-	//			cache.remove( record.getId() );
 			}
 			finally 
 			{

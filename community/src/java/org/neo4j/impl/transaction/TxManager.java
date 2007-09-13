@@ -162,8 +162,6 @@ public class TxManager implements TransactionManager
 		// change active log 
 		FileChannel fc = new RandomAccessFile( 
 			logSwitcherFileName, "rw" ).getChannel(); 
-		// byte fileName[] = new byte[ 256 ];
-		// ByteBuffer buf = ByteBuffer.wrap( newFile.getBytes( "UTF-8" ) );
 		ByteBuffer buf = ByteBuffer.wrap( newFileName.getBytes() );
 		fc.truncate( 0 );
 		fc.write( buf );

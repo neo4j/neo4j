@@ -19,7 +19,7 @@ import java.util.Map;
 public class PropertyStore extends AbstractStore implements Store
 {
 	// store version, each store ends with this string (byte encoded)
-	private static final String VERSION = "PropertyStore v0.9.2";
+	private static final String VERSION = "PropertyStore v0.9.3";
 	 
 	// record header size
 	// in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+

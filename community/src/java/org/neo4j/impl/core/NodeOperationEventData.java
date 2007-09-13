@@ -54,12 +54,4 @@ public interface NodeOperationEventData extends PersistenceMetadata
 	 * @return the property value
 	 */
 	public Object getProperty();
-
-	/**
-	 * Returns the removed value of a added property or old value in case of 
-	 * change property operation, else null.
-	 *
-	 * @return the property value
-	 */
-//	public Object getOldProperty();
 }

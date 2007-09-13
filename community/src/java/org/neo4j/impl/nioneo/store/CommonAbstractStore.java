@@ -329,11 +329,6 @@ public abstract class CommonAbstractStore
 		return windowPool.hasWindow( position );
 	}
 	
-//	protected void addMiss()
-//	{
-//		windowPool.addMiss();
-//	}
-	
 	/**
 	 * Releases the window and writes the data (async) if the 
 	 * <CODE>window</CODE> was a {@link PersistenceRow}. 

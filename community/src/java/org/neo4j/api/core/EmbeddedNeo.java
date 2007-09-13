@@ -30,7 +30,6 @@ import org.neo4j.impl.shell.NeoShellServer;
 public class EmbeddedNeo
 {
 	private static Logger log = Logger.getLogger( EmbeddedNeo.class.getName() );
-    //private Class<? extends RelationshipType> validRelationshipTypes;
 	private NeoShellServer shellServer;
 	
 	/**
@@ -46,7 +45,6 @@ public class EmbeddedNeo
 	public EmbeddedNeo( Class<? extends RelationshipType> validRelationshipTypes,
 		String storeDir, boolean create )
 	{	    
-		//this.validRelationshipTypes = validRelationshipTypes;
 		this.shellServer = null;
 		NeoJvmInstance.start( validRelationshipTypes, storeDir, create );
 	}
@@ -135,17 +133,6 @@ public class EmbeddedNeo
 		NeoJvmInstance.shutdown();
 	}
 	
-	/**
-	 * Returns the valid relationship types for this Neo instance invocation.
-	 * This is the exact same class instance that was passed to the constructor
-	 * of this EmbeddedNeo.
-	 * @return the valid relationship types for this Neo instance invocation
-	 */
-//	public Class<? extends RelationshipType> getRelationshipTypes()
-//	{
-//	    return this.validRelationshipTypes;
-//	}
-
 	/**
 	 * Enables remote shell access to this Neo instance, if the Neo4j
 	 * <code>shell</code> project is available on the classpath. This will
@@ -244,7 +231,6 @@ public class EmbeddedNeo
     	return NeoJvmInstance.registerRelationshipType( name, true );
     }
     
-    // must exist in store
     public RelationshipType registerRelationshipType( String name )
     {
     	return NeoJvmInstance.registerRelationshipType( name, false );

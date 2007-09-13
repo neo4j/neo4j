@@ -89,7 +89,6 @@ public class ArrayIntSet
 			return relationshipSet;
 		}
 		List<Integer> relIdList = new ArrayList<Integer>(5);
-		// for ( int i = 0; i < arrayCount; i++ )
 		for ( int i = arrayCount - 1; i >=0; i-- )
 		{
 			relIdList.add( rels[i] );

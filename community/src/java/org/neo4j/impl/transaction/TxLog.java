@@ -30,7 +30,6 @@ public class TxLog
 	private String name = null;
 	private FileChannel fileChannel = null;
 	private ByteBuffer buffer = null;
-	// private int totalBytesWritten = 0;
 	private int recordCount = 0;
 	
 	public static final byte TX_START = 1;
@@ -405,8 +404,6 @@ public class TxLog
 		Iterator<Record> recordItr = records.iterator();
 		fileChannel = new RandomAccessFile( newFile, "rw" ).getChannel();
 		fileChannel.position( fileChannel.size() );
-//		buffer = ByteBuffer.allocateDirect( 3 + Xid.MAXGTRIDSIZE + 
-//			Xid.MAXBQUALSIZE );
 		name = newFile;
 		truncate();
 		while ( recordItr.hasNext() )

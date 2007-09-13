@@ -279,30 +279,12 @@ class NeoConstraintsListener implements ProActiveEventListener
 					);
 				return false;
 			}
-			// remove this rel from deleted nodes in this tx
-			// have to do this since cache won't return correct node impl 
-			// if deletion is in wrong order (eg node.del then rel.del)
-//			int startNodeId = rel.getStartNodeId();
-//			if ( deletedNodes != null && 
-//					deletedNodes.containsKey( startNodeId ) )
-//			{
-//				deletedNodes.get( startNodeId ).removeRelationship( 
-//					rel.getType(), (int) rel.getId() );
-//			}
-//			int endNodeId = rel.getEndNodeId();
-//			if ( deletedNodes != null &&
-//					deletedNodes.containsKey( endNodeId ) )
-//			{
-//				deletedNodes.get( endNodeId ).removeRelationship( 
-//					rel.getType(), (int) rel.getId() );
-//			}
 
 			if ( deletedRelationships == null )
 			{
 				deletedRelationships = 
 					new java.util.HashSet<RelationshipImpl>();
 			}
-//			System.out.println( " evaluated delete of: " + rel.getId() );
 			deletedRelationships.add( rel );
 			return true;
 		}
@@ -318,13 +300,6 @@ class NeoConstraintsListener implements ProActiveEventListener
 					"] illegal since it has already been deleted (in this tx)" );
 				return false;
 			}
-			// make sure it exist and that is done in Add/Change/Remove
-//			if ( event == Event.NODE_ADD_PROPERTY ) 
-//			{
-//				Object property = (( NodeCommands )	eventData.getData() 
-//					).getProperty();
-//				return validatePropertyType( node, property );
-//			}
 			return true;
 		}
 
@@ -341,13 +316,6 @@ class NeoConstraintsListener implements ProActiveEventListener
 					);
 				return false;
 			}
-			// make sure it exist and that is done in Add/Change/Remove 
-//			if ( event == Event.RELATIONSHIP_ADD_PROPERTY ) 
-//			{
-//				Object property = (( RelationshipCommands ) eventData.getData()
-//					).getProperty();
-//				return validatePropertyType( rel, property );
-//			}
 			return true;
 		}
 		
