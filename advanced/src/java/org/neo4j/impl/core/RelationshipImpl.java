@@ -224,9 +224,6 @@ class RelationshipImpl
 		{
 			throw new IllegalArgumentException( "null key" );
 		}
-		// make sure we're in transaction
-//		TransactionIsolationLevel level = 
-//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -266,7 +263,7 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ ); //, level );
+			releaseLock( this, LockType.READ );
 		}			
 		throw new NotFoundException( "" + key + 
 			" property not found." );
@@ -274,8 +271,6 @@ class RelationshipImpl
 	
 	public Object getProperty( String key, Object defaultValue )
 	{
-//		TransactionIsolationLevel level = 
-//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -315,7 +310,7 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ ); //, level );
+			releaseLock( this, LockType.READ );
 		}			
 		return defaultValue;	
 	}
@@ -329,8 +324,6 @@ class RelationshipImpl
 	 */
 	public Iterable<Object> getPropertyValues()
 	{
-//		TransactionIsolationLevel level = 
-//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -345,7 +338,7 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ ); //, level );
+			releaseLock( this, LockType.READ );
 		}
 	}
 	
@@ -358,8 +351,6 @@ class RelationshipImpl
 	 */
 	public Iterable<String> getPropertyKeys()
 	{
-//		TransactionIsolationLevel level = 
-//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -373,7 +364,7 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ ); // , level );
+			releaseLock( this, LockType.READ );
 		}			
 	}
 
@@ -389,8 +380,6 @@ class RelationshipImpl
 	 */
 	public boolean hasProperty( String key )
 	{
-//		TransactionIsolationLevel level = 
-//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.READ );
 		try
 		{
@@ -422,7 +411,7 @@ class RelationshipImpl
 		}
 		finally
 		{
-			releaseLock( this, LockType.READ ); //, level );
+			releaseLock( this, LockType.READ );
 		}			
 	}
 	
@@ -440,21 +429,16 @@ class RelationshipImpl
 	public void setProperty( String key, Object value ) 
 		throws IllegalValueException
 	{
-//		TransactionIsolationLevel level = 
-//			TransactionFactory.getTransactionIsolationLevel();
 		if ( key == null || value == null )
 		{
 			throw new IllegalValueException( "Null parameter, " +
 				"key=" + key + ", " + "value=" + value );
 		}
 		acquireLock( this, LockType.WRITE );
-//		RelationshipCommands relationshipCommand = null;
 		try
 		{
 			// must make sure we don't add already existing property
 			ensureFullRelationship();
-//			relationshipCommand = new RelationshipCommands();
-//			relationshipCommand.setRelationship( this );
 			PropertyIndex index = null;
 			Property property = null;
 			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
@@ -492,8 +476,6 @@ class RelationshipImpl
 			if ( property != null )
 			{
 				int propertyId = property.getId();
-//				relationshipCommand.initChangeProperty( propertyId, index,  
-//					new Property( propertyId, value ) );
 				data = new RelationshipOpData( this, id, propertyId, index, 
 					value );
 				event = Event.RELATIONSHIP_CHANGE_PROPERTY;
@@ -501,19 +483,13 @@ class RelationshipImpl
 			else
 			{
 				data = new RelationshipOpData( this, id, -1, index, value );
-//				relationshipCommand.initAddProperty( index, 
-//					new Property( -1, value ) );
 			}
-			// have to execute command here since the full node is loaded
-			// and then the property would already be in cache
-//			relationshipCommand.execute();
 			
 			EventManager em = EventManager.getManager();
 			EventData eventData = new EventData( data );
 			if ( !em.generateProActiveEvent( event, eventData ) )
 			{
 				setRollbackOnly();
-//				relationshipCommand.undo();
 				throw new IllegalValueException( 
 					"Generate pro-active event failed." );
 			}
@@ -530,69 +506,11 @@ class RelationshipImpl
 
 			em.generateReActiveEvent( event, eventData );
 		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			if ( relationshipCommand != null )
-//			{
-//				relationshipCommand.undo();
-//			}
-//			throw new IllegalValueException( "Failed executing command.", e );
-//		}
 		finally
 		{
-			releaseLock( this, LockType.WRITE ); //, level );
+			releaseLock( this, LockType.WRITE );
 		}
 	}
-	
-//	void addProperty( String key, Object value ) 
-//		throws IllegalValueException
-//	{
-//		if ( key == null || value == null )
-//		{
-//			throw new IllegalValueException( "Null parameter, " +
-//				"key=" + key + ", " + "value=" + value );
-//		}
-//		acquireLock( this, LockType.WRITE );
-//		RelationshipCommands relationshipCommand = null;
-//		try
-//		{
-//			// must make sure we don't add already existing property
-//			ensureFullRelationship();
-//			relationshipCommand = new RelationshipCommands();
-//			relationshipCommand.setRelationship( this );
-//			relationshipCommand.initAddProperty( key, 
-//				new Property( -1, value ) );
-//			// have to execute command here since full relationship will be 
-//			// loaded and property already in cache
-//			relationshipCommand.execute();
-//			
-//			EventManager em = EventManager.getManager();
-//			EventData eventData = new EventData( relationshipCommand );
-//			if ( !em.generateProActiveEvent( Event.RELATIONSHIP_ADD_PROPERTY, 
-//				eventData ) )
-//			{
-//				setRollbackOnly();
-//				relationshipCommand.undo();
-//				throw new IllegalValueException( 
-//					"Generate pro-active event failed." );
-//			}
-//
-//			em.generateReActiveEvent( Event.RELATIONSHIP_ADD_PROPERTY, 
-//				eventData );
-//		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			if ( relationshipCommand != null )
-//			{
-//				relationshipCommand.undo();
-//			}
-//			throw new IllegalValueException( "Failed executing command.", e );
-//		}
-//		finally
-//		{
-//			releaseLock( this, LockType.WRITE );
-//		}
-//	}
 	
 	/**
 	 * Removes the property <CODE>key</CODE>. If null property <CODE>key</CODE> 
@@ -608,14 +526,10 @@ class RelationshipImpl
 		{
 			throw new IllegalArgumentException( "Null parameter." );
 		}
-//		TransactionIsolationLevel level = 
-//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.WRITE );
-//		RelationshipCommands relationshipCommand = null;
 		try
 		{
 			// if not found just return null
-//			PropertyIndex index = null;
 			Property property = null;
 			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
 			{
@@ -627,7 +541,6 @@ class RelationshipImpl
 						property = propertyMap.remove( cachedIndex.getKeyId() );
 						if ( property != null )
 						{
-//							index = cachedIndex;
 							break;
 						}
 					}
@@ -658,14 +571,6 @@ class RelationshipImpl
 			{
 				return null;
 			}
-//			relationshipCommand = new RelationshipCommands();
-//			relationshipCommand.setRelationship( this );
-//			relationshipCommand.initRemoveProperty( 
-//				doGetProperty( index ).getId(), index );
-			// have to execute here for RelationshipOperationEventData to be 
-			// command also checks that the property really exist
-//			relationshipCommand.execute();
-
 			RelationshipOpData data = new RelationshipOpData( this, id, 
 				property.getId() );
 			EventManager em = EventManager.getManager();
@@ -674,86 +579,20 @@ class RelationshipImpl
 				eventData ) )
 			{
 				setRollbackOnly();
-//				relationshipCommand.undo();
 				throw new NotFoundException( 
 					"Generate pro-active event failed." );
 			}
 
 			em.generateReActiveEvent( Event.RELATIONSHIP_REMOVE_PROPERTY, 
 				eventData );
-//			return relationshipCommand.getOldProperty();
 			return property.getValue();
 		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			if ( relationshipCommand != null )
-//			{
-//				relationshipCommand.undo();
-//			}
-//			throw new NotFoundException( "Failed executing command.", e );
-//		}
 		finally
 		{
-			releaseLock( this, LockType.WRITE ); //, level );
+			releaseLock( this, LockType.WRITE );
 		}
 	}
 	
-//	Object changeProperty( String key, Object newValue ) 
-//		throws IllegalValueException, NotFoundException
-//	{
-//		if ( key == null || newValue == null )
-//		{
-//			throw new IllegalValueException( "Null parameter, " +
-//				"key=" + key + ", " + "value=" + newValue );
-//		}
-//		acquireLock( this, LockType.WRITE );
-//		RelationshipCommands relationshipCommand = null;
-//		try
-//		{
-//			// if null or not found make sure full
-//			Property property = propertyMap.get( key );
-//			if ( property == null )
-//			{
-//				ensureFullRelationship();
-//			}
-//			relationshipCommand = new RelationshipCommands();
-//			relationshipCommand.setRelationship( this );
-//			int propertyId = doGetProperty( key ).getId();
-//			relationshipCommand.initChangeProperty( propertyId, key, new 
-//				Property( propertyId, newValue )  );
-//			// have to execute here for RelationshipOperationEventData to be 
-//			// command also checks that the property really exist
-//			relationshipCommand.execute();
-//
-//			EventManager em = EventManager.getManager();
-//			EventData eventData = new EventData( relationshipCommand );
-//			if ( !em.generateProActiveEvent( Event.RELATIONSHIP_CHANGE_PROPERTY, 
-//				eventData ) )
-//			{
-//				setRollbackOnly();
-//				relationshipCommand.undo();
-//				throw new IllegalValueException( 
-//					"Generate pro-active event failed." );
-//			}
-//
-//			em.generateReActiveEvent( Event.RELATIONSHIP_CHANGE_PROPERTY, eventData );
-//			return relationshipCommand.getOldProperty();
-//		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			setRollbackOnly();
-//			if ( relationshipCommand != null )
-//			{
-//				relationshipCommand.undo();
-//			}
-//			throw new IllegalValueException( "Failed executing command.", e );
-//		}
-//		finally
-//		{
-//			releaseLock( this, LockType.WRITE );
-//		}
-//	}
-
 	/**
 	 * Deletes this relationship removing it from cache and persistent storage. 
 	 * If unable to delete a <CODE>DeleteException</CODE> is thrown.
@@ -767,14 +606,10 @@ class RelationshipImpl
 	 */
 	public void delete() //throws DeleteException
 	{
-//		RelationshipCommands relationshipCommand = null;
 		NodeImpl startNode = null;
 		NodeImpl endNode = null;
 		boolean startNodeLocked = false;
 		boolean endNodeLocked = false;
-		// make sure we're in transaction
-//		TransactionIsolationLevel level = 
-//			TransactionFactory.getTransactionIsolationLevel();
 		acquireLock( this, LockType.WRITE );
 		try
 		{
@@ -793,12 +628,6 @@ class RelationshipImpl
 			// no need to load full relationship, all properties will be 
 			// deleted when relationship is deleted
 			
-//			relationshipCommand = new RelationshipCommands();
-//			relationshipCommand.setRelationship( this );
-//			relationshipCommand.setStartNode( startNode );
-//			relationshipCommand.setEndNode( endNode );
-//			relationshipCommand.initDelete();
-			
 			EventManager em = EventManager.getManager();
 			int typeId = RelationshipTypeHolder.getHolder().getIdFor( type ); 
 			EventData eventData = new EventData( new RelationshipOpData( this, 
@@ -814,7 +643,6 @@ class RelationshipImpl
 			// full phase here isn't necessary, if something breaks we still
 			// have the relationship as it was in memory and the transaction 
 			// will rollback so the full relationship will still be persistent
-//			relationshipCommand.execute();
 			if ( startNode != null )
 			{
 				startNode.removeRelationship( type, id );
@@ -827,15 +655,6 @@ class RelationshipImpl
 			
 			em.generateReActiveEvent( Event.RELATIONSHIP_DELETE, eventData );
 		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			setRollbackOnly();
-//			if ( relationshipCommand != null )
-//			{
-//				relationshipCommand.undo();
-//			}
-//			throw new DeleteException( "Failed executing command.", e );
-//		}
 		finally
 		{
 			boolean releaseFailed = false;
@@ -897,7 +716,6 @@ class RelationshipImpl
 	 * @param rel the relationship to compare this node with
 	 * @return 0 if equal id, 1 if this id is greater else -1
 	 */
-	// TODO: Verify this implementation
 	public int compareTo( Object rel )
 	{
 		Relationship r = (Relationship) rel;
@@ -1088,37 +906,23 @@ class RelationshipImpl
 		}
 	}
 	
-	private void releaseLock( Object resource, LockType lockType/*, 
-		TransactionIsolationLevel level*/ )
+	private void releaseLock( Object resource, LockType lockType )
 	{
 		try
 		{
-//			if ( level == TransactionIsolationLevel.READ_COMMITTED )
-//			{
-				if ( lockType == LockType.READ )
-				{
-					lockManager.releaseReadLock( resource );
-				}
-				else if ( lockType == LockType.WRITE )
-				{
-					lockReleaser.addLockToTransaction( resource, lockType );
-				}
-				else
-				{
-					throw new RuntimeException( "Unkown lock type: " + 
-						lockType );
-				}
-//			}
-//			else if ( level == TransactionIsolationLevel.BAD )
-//			{
-//				LockReleaser.getManager().addLockToTransaction( resource, 
-//					lockType );
-//			}
-//			else
-//			{
-//				throw new RuntimeException( 
-//					"Unkown transaction isolation level, " + level );
-//			}
+			if ( lockType == LockType.READ )
+			{
+				lockManager.releaseReadLock( resource );
+			}
+			else if ( lockType == LockType.WRITE )
+			{
+				lockReleaser.addLockToTransaction( resource, lockType );
+			}
+			else
+			{
+				throw new RuntimeException( "Unkown lock type: " + 
+					lockType );
+			}
 		}
 		catch ( NotInTransactionException e )
 		{

@@ -313,16 +313,8 @@ class NodeImpl implements Node, Comparable
 	public void delete() // throws DeleteException
 	{
 		acquireLock( this, LockType.WRITE );
-//		NodeCommands nodeCommand = null;
 		try
 		{
-			// neo constraints need to validate all rels deleted so we 
-			// must have full node
-//			ensureFullRelationships();
-//			nodeCommand = new NodeCommands();
-//			nodeCommand.setNode( this );
-//			nodeCommand.initDelete();
-		
 			EventManager em = EventManager.getManager();
 			EventData eventData = new EventData( new NodeOpData( this, id ) );
 			if ( !em.generateProActiveEvent( Event.NODE_DELETE, 
@@ -342,26 +334,13 @@ class NodeImpl implements Node, Comparable
 			propertyMap = new ArrayMap<Integer,Property>( 9, false, true );
 			
 			nodeManager.removeNodeFromCache( id );
-			// nodeCommand.execute();
 			em.generateReActiveEvent( Event.NODE_DELETE, eventData );
 		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			setRollbackOnly();
-//			if ( nodeCommand != null )
-//			{
-//				nodeCommand.undo();
-//			}
-//			throw new DeleteException( "Failed executing command deleting " +
-//				this, e );
-//		}
 		finally
 		{
 			releaseLock( this, LockType.WRITE );
 		}
 	}
-	
-	// Property operations
 	
 	/**
 	 * Returns all properties on <CODE>this</CODE> node. The whole node will be 
@@ -541,8 +520,6 @@ class NodeImpl implements Node, Comparable
 		acquireLock( this, LockType.READ );
 		try
 		{
-//			PropertyIndex index = PropertyIndex.index( key );
-//			if ( index != null )
 			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
 				Property property = propertyMap.get( index.getKeyId() );
@@ -595,15 +572,10 @@ class NodeImpl implements Node, Comparable
 				"key=" + key + ", " + "value=" + value );
 		}
 		acquireLock( this, LockType.WRITE );
-//		NodeCommands nodeCommand = null;
 		try
 		{
 			// must make sure we don't add already existing property
 			ensureFullProperties();
-//			nodeCommand = new NodeCommands(); 
-//			nodeCommand.setNode( this );
-//			PropertyIndex index = PropertyIndex.index( key );
-//			if ( index == null )
 			PropertyIndex index = null;
 			Property property = null;
 			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
@@ -642,25 +614,18 @@ class NodeImpl implements Node, Comparable
 			{
 				int propertyId = property.getId();
 				data = new NodeOpData( this, id, propertyId, index, value );
-//				nodeCommand.initChangeProperty( propertyId, index,  
-//					new Property( propertyId, value ) );
 				event = Event.NODE_CHANGE_PROPERTY;
 			}
 			else
 			{
 				data = new NodeOpData( this, id, -1, index, value );
-//				nodeCommand.initAddProperty( index, new Property( -1, value ) );
 			}
-			// have to execute command here since the full node is loaded
-			// and then the property would already be in cache
-//			nodeCommand.execute();
 
 			EventManager em = EventManager.getManager();
 			EventData eventData = new EventData( data );
 			if ( !em.generateProActiveEvent( event, eventData ) )
 			{
 				setRollbackOnly();
-//				nodeCommand.undo();
 				throw new IllegalValueException( 
 					"Generate pro-active event failed, " +
 					" unable to add property[" + key + "," + value + 
@@ -678,74 +643,11 @@ class NodeImpl implements Node, Comparable
 			}
 			em.generateReActiveEvent( event, eventData );
 		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			if ( nodeCommand != null )
-//			{
-//				nodeCommand.undo();
-//			}
-//			throw new IllegalValueException( "Failed executing command when " +
-//				" adding property[" + key + "," + value + 
-//				"] on " + this, e );
-//		}
 		finally
 		{
 			releaseLock( this, LockType.WRITE );
 		}
 	}
-	
-//	void addProperty( String key, Object value ) 
-//		throws IllegalValueException
-//	{
-//		if ( key == null || value == null )
-//		{
-//			throw new IllegalValueException( "Null parameter, " +
-//				"key=" + key + ", " + "value=" + value );
-//		}
-//		acquireLock( this, LockType.WRITE );
-//		NodeCommands nodeCommand = null;
-//		try
-//		{
-//			// must make sure we don't add already existing property
-//			ensureFullProperties();
-//			nodeCommand = new NodeCommands(); 
-//			nodeCommand.setNode( this );
-//			PropertyIndex index = PropertyIndex.index( key );
-//			nodeCommand.initAddProperty( index, new Property( -1, value ) );
-//			// have to execute command here since the full node is loaded
-//			// and then the property would already be in cache
-//			nodeCommand.execute();
-//
-//			EventManager em = EventManager.getManager();
-//			EventData eventData = new EventData( nodeCommand );
-//			if ( !em.generateProActiveEvent( Event.NODE_ADD_PROPERTY, 
-//				eventData ) )
-//			{
-//				setRollbackOnly();
-//				nodeCommand.undo();
-//				throw new IllegalValueException( 
-//					"Generate pro-active event failed, " +
-//					" unable to add property[" + key + "," + value + 
-//					"] on " + this );
-//			}
-//
-//			em.generateReActiveEvent( Event.NODE_ADD_PROPERTY, eventData );
-//		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			if ( nodeCommand != null )
-//			{
-//				nodeCommand.undo();
-//			}
-//			throw new IllegalValueException( "Failed executing command when " +
-//				" adding property[" + key + "," + value + 
-//				"] on " + this, e );
-//		}
-//		finally
-//		{
-//			releaseLock( this, LockType.WRITE );
-//		}
-//	}
 	
 	/**
 	 * Removes the property <CODE>key</CODE>. If null property <CODE>key</CODE> 
@@ -762,11 +664,8 @@ class NodeImpl implements Node, Comparable
 			throw new IllegalArgumentException( "Null parameter." );
 		}
 		acquireLock( this, LockType.WRITE );
-//		NodeCommands nodeCommand = null;
 		try
 		{
-			// if not found just return null
-//			PropertyIndex index = null;
 			Property property = null;
 			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
 			{
@@ -778,7 +677,6 @@ class NodeImpl implements Node, Comparable
 						property = propertyMap.remove( cachedIndex.getKeyId() );
 						if ( property != null )
 						{
-//							index = cachedIndex;
 							break;
 						}
 					}
@@ -809,13 +707,6 @@ class NodeImpl implements Node, Comparable
 			{
 				return null;
 			}
-//			nodeCommand = new NodeCommands(); 
-//			nodeCommand.setNode( this );		
-//			nodeCommand.initRemoveProperty( doGetProperty( index ).getId(), 
-//				index );
-			// have to execute here for NodeOperationEventData to be correct
-			// nodeCommand also checks that the property really exist
-//			nodeCommand.execute();
 			NodeOpData data = new NodeOpData( this, id, property.getId() );
 			EventManager em = EventManager.getManager();
 			EventData eventData = new EventData( data );
@@ -823,7 +714,6 @@ class NodeImpl implements Node, Comparable
 				eventData ) )
 			{
 				setRollbackOnly();
-//				nodeCommand.undo();
 				throw new NotFoundException( 
 					"Generate pro-active event failed, " +
 					"unable to remove property[" + key + "] from " + this );
@@ -831,80 +721,12 @@ class NodeImpl implements Node, Comparable
 
 			em.generateReActiveEvent( Event.NODE_REMOVE_PROPERTY, eventData );
 			return property.getValue();
-			// return nodeCommand.getOldProperty();
 		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			if ( nodeCommand != null )
-//			{
-//				nodeCommand.undo();
-//			}
-//			throw new NotFoundException( "Failed executing command " +
-//				"while removing property[" + key + "] on " + this, e );
-//		}
 		finally
 		{
 			releaseLock( this, LockType.WRITE );
 		}
 	}
-	
-//	Object changeProperty( String key, Object newValue ) 
-//		throws IllegalValueException, NotFoundException 
-//	{
-//		if ( key == null || newValue == null )
-//		{
-//			throw new IllegalValueException( "Null parameter, " +
-//				"key=" + key + ", " + "value=" + newValue );
-//		}
-//		acquireLock( this, LockType.WRITE );
-//		NodeCommands nodeCommand = null;
-//		try
-//		{
-//			// if null or not found make sure full
-//			Property property = propertyMap.get( key );
-//			if ( property == null )
-//			{
-//				ensureFullProperties();
-//			}
-//			nodeCommand = new NodeCommands();
-//			nodeCommand.setNode( this );
-//			int propertyId = doGetProperty( key ).getId();
-//			nodeCommand.initChangeProperty( propertyId, key,  
-//				new Property( propertyId, newValue ) );
-//			// have to execute here for NodeOperationEventData to be correct
-//			nodeCommand.execute();
-//
-//			EventManager em = EventManager.getManager();
-//			EventData eventData = new EventData( nodeCommand );
-//			if ( !em.generateProActiveEvent( Event.NODE_CHANGE_PROPERTY, 
-//				eventData ) )
-//			{
-//				setRollbackOnly();
-//				nodeCommand.undo();
-//				throw new IllegalValueException( 
-//					"Generate pro-active event failed, " +
-//					" unable to change property[" + key + "," + newValue + 
-//					"] on " + this );
-//			}
-//			
-//			em.generateReActiveEvent( Event.NODE_CHANGE_PROPERTY, eventData );
-//			return nodeCommand.getOldProperty();
-//		}
-//		catch ( ExecuteFailedException e )
-//		{
-//			if ( nodeCommand != null )
-//			{
-//				nodeCommand.undo();
-//			}
-//			throw new IllegalValueException( "Failed executing command when " +
-//				" changing property[" + key + "," + newValue + 
-//				"] on " + this, e );
-//		}
-//		finally
-//		{
-//			releaseLock( this, LockType.WRITE );
-//		}
-//	}
 	
 	/**
 	 * If object <CODE>node</CODE> is a node, 0 is returned if <CODE>this</CODE>
@@ -916,7 +738,6 @@ class NodeImpl implements Node, Comparable
 	 * @param node the node to compare this node with
 	 * @return 0 if equal id, 1 if this id is greater else -1
 	 */
-	// TODO: Verify this implementation
 	public int compareTo( Object node )
 	{
 		Node n = (Node) node;
@@ -1072,12 +893,9 @@ class NodeImpl implements Node, Comparable
 		{
 			if ( !relationshipSet.remove( relId ) )
 			{
-				// if ( !ensureFullRelationships() )
 				if ( ensureFullRelationships() )
 				{
 					relationshipSet.remove( relId );
-//					throw new RuntimeException( "Relationship[" + relId + 
-//						"] not found on " + this );
 				}
 			}
 			if ( relationshipSet.size() == 0 )
@@ -1087,15 +905,10 @@ class NodeImpl implements Node, Comparable
 		}
 		else
 		{
-			// if ( !ensureFullRelationships() )
 			if ( ensureFullRelationships() )
 			{
-//				throw new RuntimeException( "Relationship[" + relId + 
-//					"] not found on " + this );
 				removeRelationship( type, relId );
 			}
-			// try again
-			// removeRelationship( type, relId );
 		}
 	}
 	
@@ -1205,8 +1018,6 @@ class NodeImpl implements Node, Comparable
 	{
 		try
 		{
-			// make sure we're in transaction
-			// TransactionFactory.getTransactionIsolationLevel();
 			if ( lockType == LockType.READ )
 			{
 				lockManager.getReadLock( resource );
@@ -1241,42 +1052,27 @@ class NodeImpl implements Node, Comparable
 	{
 		try
 		{
-//			TransactionIsolationLevel level = 
-//				TransactionFactory.getTransactionIsolationLevel();
-//			if ( level == TransactionIsolationLevel.READ_COMMITTED )
-//			{
-				if ( lockType == LockType.READ )
+			if ( lockType == LockType.READ )
+			{
+				lockManager.releaseReadLock( resource );
+			}
+			else if ( lockType == LockType.WRITE )
+			{
+				if ( forceRelease ) 
 				{
-					lockManager.releaseReadLock( resource );
-				}
-				else if ( lockType == LockType.WRITE )
-				{
-					if ( forceRelease ) 
-					{
-						lockManager.releaseWriteLock( resource );
-					}
-					else
-					{
-						lockReleaser.addLockToTransaction( resource, 
-							lockType );
-					}
+					lockManager.releaseWriteLock( resource );
 				}
 				else
 				{
-					throw new RuntimeException( "Unkown lock type: " + 
+					lockReleaser.addLockToTransaction( resource, 
 						lockType );
 				}
-//			}
-//			else if ( level == TransactionIsolationLevel.BAD )
-//			{
-//				LockReleaser.getManager().addLockToTransaction( resource, 
-//					lockType );
-//			}
-//			else
-//			{
-//				throw new RuntimeException( 
-//					"Unkown transaction isolation level, " + level );
-//			}
+			}
+			else
+			{
+				throw new RuntimeException( "Unkown lock type: " + 
+					lockType );
+			}
 		}
 		catch ( NotInTransactionException e )
 		{

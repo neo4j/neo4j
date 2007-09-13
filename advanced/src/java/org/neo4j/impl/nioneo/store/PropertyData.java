@@ -9,7 +9,6 @@ public class PropertyData
 	private final int id;
 	private final int keyIndexId;
 	private final Object value;
-//	private int nextPropertyId;
 	
 	/**
 	 * @param id The id of the property
@@ -23,7 +22,6 @@ public class PropertyData
 		this.id = id;
 		this.keyIndexId = keyIndexId;
 		this.value = value;
-//		this.nextPropertyId = nextPropertyId;
 	}
 	
 	public int getId()
@@ -40,10 +38,5 @@ public class PropertyData
 	{
 		return value;
 	}
-	
-//	public int nextPropertyId()
-//	{
-//		return nextPropertyId;
-//	}
 }
 

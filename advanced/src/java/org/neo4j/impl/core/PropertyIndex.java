@@ -1,8 +1,10 @@
 package org.neo4j.impl.core;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
@@ -28,21 +30,34 @@ public class PropertyIndex
 	private static ArrayMap<Integer,PropertyIndex> idToIndexMap
 		= new ArrayMap<Integer,PropertyIndex>( 9, true, false );
 	
+	private static ArrayMap<Thread,TxCommitHook> txCommitHooks = 
+		new ArrayMap<Thread,TxCommitHook>( 5, true, false );
+	
 	private static boolean hasAll = false;
 	
 	static void clear()
 	{
 		indexMap = new ArrayMap<String,List<PropertyIndex>>( 5, true, false );
 		idToIndexMap = new ArrayMap<Integer,PropertyIndex>( 9, true, false );
+		txCommitHooks.clear();
 	}
 	
 	public static Iterable<PropertyIndex> index( String key )
 	{
-//		if ( key == null )
-//		{
-//			throw new IllegalArgumentException( "null key" );
-//		}
 		List<PropertyIndex> list = indexMap.get( key );
+		TxCommitHook hook = txCommitHooks.get( Thread.currentThread() );
+		if ( hook != null )
+		{
+			PropertyIndex index = hook.getIndex( key );
+			if ( index != null )
+			{
+				if ( list == null )
+				{
+					list = new LinkedList<PropertyIndex>();
+				}
+				list.add( index );
+			}
+		}
 		if ( list != null )
 		{
 			return list;
@@ -145,9 +160,38 @@ public class PropertyIndex
 	// concurent transactions may create duplicate keys, oh well
 	static PropertyIndex createPropertyIndex( String key )
 	{
+		TxCommitHook hook = txCommitHooks.get( Thread.currentThread() );
+		if ( hook == null )
+		{
+			hook = new TxCommitHook();
+			txCommitHooks.put( Thread.currentThread(), hook );
+			try
+			{
+				Transaction tx = transactionManager.getTransaction();
+				if ( tx == null )
+				{
+					throw new NotInTransactionException( 
+						"Unable to create property index for " + key );
+				}
+				tx.registerSynchronization( hook );
+			}
+			catch ( javax.transaction.SystemException e )
+			{
+				throw new NotInTransactionException( e );
+			}
+			catch ( Exception e )
+			{
+				throw new NotInTransactionException( e );
+			}
+		}
+		PropertyIndex index = hook.getIndex( key );
+		if ( index != null )
+		{
+			return index;
+		}
 		int id = IdGenerator.getGenerator().nextId( PropertyIndex.class );
-		PropertyIndex index = new PropertyIndex( key, id );
-
+		index = new PropertyIndex( key, id );
+		hook.addIndex( index );
 		EventManager em = EventManager.getManager();
 		EventData eventData = new EventData( new PropIndexOpData( index ) );
 		if ( !em.generateProActiveEvent( Event.PROPERTY_INDEX_CREATE, 
@@ -157,45 +201,42 @@ public class PropertyIndex
 			throw new CreateException( "Unable to create property index, " +
 				"pro-active event failed." );
 		}
-		Transaction tx = null;
-		try
-		{
-			tx = transactionManager.getTransaction();
-			if ( tx == null )
-			{
-				throw new NotInTransactionException( 
-					"Unable to create property index for " + 
-					index.getKey() );
-			}
-			
-			tx.registerSynchronization( new TxCommitHook( index ) );
-		}
-		catch ( javax.transaction.SystemException e )
-		{
-			throw new NotInTransactionException( e );
-		}
-		catch ( Exception e )
-		{
-			throw new NotInTransactionException( e );
-		}
 		em.generateReActiveEvent( Event.PROPERTY_INDEX_CREATE, eventData );
 		return index;
 	}
 	
 	private static class TxCommitHook implements Synchronization
 	{
-		private PropertyIndex createdIndex;
+		private Map<String,PropertyIndex> createdIndexes = 
+			new HashMap<String,PropertyIndex>();
 		
-		TxCommitHook( PropertyIndex indexToCreate )
+		void addIndex( PropertyIndex index )
 		{
-			this.createdIndex = indexToCreate;
+			assert !createdIndexes.containsKey( index.getKey() );
+			createdIndexes.put( index.getKey(), index );
+		}
+		
+		PropertyIndex getIndex( String key )
+		{
+			return createdIndexes.get( key );
 		}
 		
 		public void afterCompletion( int status )
         {
+			try
+			{
 			if ( status == Status.STATUS_COMMITTED )
 			{
-				addPropertyIndex( createdIndex );
+				for ( PropertyIndex index : createdIndexes.values() )
+				{
+					addPropertyIndex( index );
+				}
+			}
+			txCommitHooks.remove( Thread.currentThread() );
+			}
+			catch ( Throwable t )
+			{
+				t.printStackTrace();
 			}
         }
 
@@ -217,17 +258,6 @@ public class PropertyIndex
 	{
 		return key;
 	}
-	
-//	public char[] getChars()
-//	{
-//		if ( chars == null )
-//		{
-//			int keyLength = key.length();
-//			chars = new char[ keyLength ];
-//			key.getChars( 0, keyLength, chars, 0 );
-//		}
-//		return chars;
-//	}
 	
 	@Override
 	public int hashCode()

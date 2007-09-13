@@ -10,8 +10,6 @@ public class TxInfoManager
 {
 	private static final TxInfoManager txManager = new TxInfoManager();
 	
-	// private Map<Thread,Boolean> txMode = new HashMap<Thread,Boolean>();
-	
 	private boolean recoveryMode = false;
 	
 	public static TxInfoManager getManager()
@@ -28,13 +26,11 @@ public class TxInfoManager
 	
 	void registerMode( boolean mode )
 	{
-		// txMode.put( Thread.currentThread(), Boolean.valueOf( mode ) );
 		this.recoveryMode = mode;
 	}
 	
 	void unregisterMode()
 	{
-		// txMode.remove( Thread.currentThread() );
 		recoveryMode = false;
 	}
 	
@@ -48,12 +44,6 @@ public class TxInfoManager
 	public boolean isInRecoveryMode()
 	{
 		return recoveryMode;
-//		Boolean b = txMode.get( Thread.currentThread() );
-//		if ( b == null )
-//		{
-//			return false;
-//		}
-//		return b;
 	}
 	
 	/**

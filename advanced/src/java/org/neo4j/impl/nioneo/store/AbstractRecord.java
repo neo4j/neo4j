@@ -55,7 +55,6 @@ public abstract class AbstractRecord
 	
 	boolean isTransferable()
 	{
-		// return false;
 		return fromChannel != null;
 	}
 	

@@ -12,7 +12,7 @@ import java.util.Map;
 class DynamicArrayStore extends AbstractDynamicStore
 {
 	// store version, each store ends with this string (byte encoded)
-	private static final String VERSION = "ArrayPropertyStore v0.9";
+	private static final String VERSION = "ArrayPropertyStore v0.9.2";
 	
 	private static enum ArrayType
 	{
@@ -395,8 +395,6 @@ class DynamicArrayStore extends AbstractDynamicStore
 			String[] array = new String[ buf.getInt() ];
 			for ( int i = 0; i < array.length; i++ )
 			{
-//				byte strBuffer[] = new byte[ buf.getInt() ];
-//				buf.get( strBuffer );
 				int charLength = buf.getInt() / 2;
 				char charBuffer[] = new char[ charLength ];
 				for ( int j = 0; j < charLength; j++ )

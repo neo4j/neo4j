@@ -106,11 +106,6 @@ public class PropertyRecord extends AbstractRecord
 			"," ).append( inUse() ).append( "," ).append( type ).append( 
 			"," ).append( keyIndexId ).append( "," ).append( propBlock ).append( 
 			"," ).append( prevProp ).append( "," ).append( nextProp );
-//		buf.append( ", Key[" );
-//		for ( DynamicRecord record : keyRecords )
-//		{
-//			buf.append( record );
-//		}
 		buf.append( ", Value[" );
 		for ( DynamicRecord record : valueRecords )
 		{

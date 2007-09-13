@@ -434,14 +434,6 @@ public class EventManager
 		return eventQueue.getNotifyOnCount();
 	}
 	
-//	private void checkIfDestroyed()
-//	{
-//		if ( destroyed )
-//		{
-//			throw new RuntimeException( "EventModule has been destroyed." );
-//		}
-//	}
-	
 	private void markWithOriginatingThread( EventData data )
 	{
 		if ( data != null )

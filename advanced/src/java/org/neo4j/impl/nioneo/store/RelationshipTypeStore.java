@@ -212,18 +212,10 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	public RelationshipTypeData getRelationshipType( int id ) 
 		throws IOException
 	{
-//		PersistenceWindow window = acquireWindow( id, OperationType.READ );
-//		try
-//		{
-			RelationshipTypeRecord record = getRecord( id, 
-				(ReadFromBuffer) null );
-			String name = getStringFor( record, null );
-			return new RelationshipTypeData( id, name );
-//		}
-//		finally
-//		{
-//			releaseWindow( window );
-//		}
+		RelationshipTypeRecord record = getRecord( id, 
+			(ReadFromBuffer) null );
+		String name = getStringFor( record, null );
+		return new RelationshipTypeData( id, name );
 	}
 	
 	public RelationshipTypeData[] getRelationshipTypes()
@@ -237,28 +229,12 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 			RelationshipTypeRecord record;
 			try
 			{
-//				PersistenceWindow window = acquireWindow( i, 
-//					OperationType.READ );
-//				try
-//				{
-//					blockId = getRelationshipTypeBlockId( i, 
-//						window.getBuffer() );
-					record = getRecord( i, (ReadFromBuffer) null );
-//				}
-//				finally
-//				{
-//					releaseWindow( window );
-//				}
+				record = getRecord( i, (ReadFromBuffer) null );
 			}
 			catch ( IOException e )
 			{
 				break;
 			}
-//			if ( blockId != Record.RESERVED.intValue() )
-//			{
-//				typeDataList.add( new RelationshipTypeData( 
-//					i, typeNameStore.getString( blockId ) ) );						
-//			}
 			if ( record.getTypeBlock() != Record.RESERVED.intValue() )
 			{
 				String name = getStringFor( record, null );
@@ -322,18 +298,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 			buffer.put( Record.NOT_IN_USE.byteValue() ).putInt( 0 );
 		}
 	}
-	
-//	private int getRelationshipTypeBlockId( int id, Buffer buffer ) 
-//		throws IOException 
-//	{
-//		int offset = ( id - buffer.position() ) * getRecordSize();
-//		buffer.setOffset( offset );
-//		if ( buffer.get() != Record.IN_USE.byteValue() )
-//		{
-//			throw new IOException( "Record[" + id + "] not in use" );
-//		}
-//		return buffer.getInt();
-//	}
 	
 	@Override
 	protected void rebuildIdGenerator() throws IOException
