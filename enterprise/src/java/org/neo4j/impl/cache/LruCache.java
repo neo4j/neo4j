@@ -11,7 +11,7 @@ import java.util.Map;
  */
 public class LruCache<K,E> extends Cache<K,E> 
 {
-	private String name = null;
+	private final String name;
 	int maxSize = 1000;
 	private boolean resizing = false;
 
@@ -25,8 +25,11 @@ public class LruCache<K,E> extends Cache<K,E>
 				{
 					adaptCache();
 				}
-				super.remove( eldest.getKey() );
-				elementCleaned( eldest.getValue() );
+				else
+				{
+					super.remove( eldest.getKey() );
+					elementCleaned( eldest.getValue() );
+				}
 			}
 			return false;
 		}

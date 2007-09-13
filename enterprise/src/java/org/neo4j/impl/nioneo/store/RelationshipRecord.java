@@ -1,12 +1,11 @@
 package org.neo4j.impl.nioneo.store;
 
-public class RelationshipRecord
+
+public class RelationshipRecord extends AbstractRecord
 {
-	private int id;
-	private int firstNode;
-	private int secondNode;
-	private int type;
-	private boolean inUse = false;
+	private final int firstNode;
+	private final int secondNode;
+	private final int type;
 	private int firstPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
 	private int firstNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
 	private int secondPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
@@ -16,25 +15,10 @@ public class RelationshipRecord
 	public RelationshipRecord( int id, int firstNode, 
 		int secondNode, int type )
 	{
-		this.id = id;
+		super( id );
 		this.firstNode = firstNode;
 		this.secondNode = secondNode;
 		this.type = type;
-	}
-	
-	public int getId()
-	{
-		return id;
-	}
-	
-	public boolean inUse()
-	{
-		return inUse;
-	}
-	
-	public void setInUse( boolean inUse )
-	{
-		this.inUse = inUse;
 	}
 	
 	public int getFirstNode()
@@ -106,8 +90,8 @@ public class RelationshipRecord
 	public String toString()
 	{
 		StringBuffer buf = new StringBuffer();
-		buf.append( "RelationshipRecord[" ).append( id ).append( "," ).append( 
-			inUse ).append( "," ).append( "," ).append( 
+		buf.append( "RelationshipRecord[" ).append( getId() ).append( 
+			"," ).append( inUse() ).append( "," ).append( "," ).append( 
 			firstNode ).append( "," ).append( secondNode ).append( 
 			"," ).append( type ).append( "," ).append( firstPrevRel ).append( 
 			",").append( firstNextRel ).append( "," ).append( 

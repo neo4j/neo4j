@@ -1,8 +1,7 @@
 package org.neo4j.impl.transaction;
 
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * A read/write lock is a lock that will allow many threads to acquire read
@@ -32,19 +31,19 @@ import java.util.Map;
  */
 class RWLock
 {
-	private static RagManager ragManager = RagManager.getManager();
+	private static final RagManager ragManager = RagManager.getManager();
 	
 	private int writeCount = 0; // total writeCount
 	private int readCount = 0; // total readCount
 	private int marked = 0; //synch helper in LockManager
 	
-	private Object resource = null; // the resource for this RWLock
+	private final Object resource; // the resource for this RWLock
 
-	private LinkedList<WaitElement> waitingThreadList = 
+	private final LinkedList<WaitElement> waitingThreadList = 
 		new LinkedList<WaitElement>();
 
-	private Map<Thread,ThreadLockElement> threadLockElementMap = 
-		new HashMap<Thread,ThreadLockElement>();
+	private final ArrayMap<Thread,ThreadLockElement> threadLockElementMap = 
+		new ArrayMap<Thread,ThreadLockElement>( 5, false, true );
 	
 	RWLock( Object resource )
 	{
@@ -54,7 +53,7 @@ class RWLock
 	// keeps track a threads read and write lock count on this RWLock
 	private static class ThreadLockElement
 	{
-		Thread thread = null;
+		final Thread thread;
 		int readCount = 0;
 		int writeCount = 0;
 		
@@ -67,8 +66,8 @@ class RWLock
 	// keeps track of what type of lock a thread is waiting for
 	private static class WaitElement
 	{
-		ThreadLockElement element = null;
-		LockType lockType = null;
+		final ThreadLockElement element;
+		final LockType lockType;
 		
 		WaitElement( ThreadLockElement element, LockType lockType )
 		{
@@ -358,7 +357,7 @@ class RWLock
 	synchronized void dumpStack()
 	{
 		System.out.println( "Total lock count: readCount=" + readCount + 
-			" writeCount=" + writeCount );
+			" writeCount=" + writeCount + " for " + resource );
 		
 		System.out.println( "Waiting list:" );
 		java.util.Iterator itr = waitingThreadList.iterator();

@@ -1,6 +1,7 @@
 package org.neo4j.impl.transaction.xaframework;
 
 import java.io.IOException;
+import javax.transaction.xa.XAException;
 
 
 /**
@@ -74,9 +75,12 @@ public class XaContainer
 	{
 		try
 		{
+			if ( rm != null )
+			{
+				rm.writeOutLazyDoneRecords();
+			}
 			if ( log != null )
 			{
-				log.force();
 				log.close();
 			}
 		}
@@ -85,6 +89,11 @@ public class XaContainer
 			System.out.println( "Unable to close logical log" );
 			e.printStackTrace();
 		}
+        catch ( XAException e )
+        {
+			System.out.println( "Unable to close XA container" );
+			e.printStackTrace();
+        }
 		log = null;
 		rm = null;
 		cf = null;
@@ -109,5 +118,10 @@ public class XaContainer
 	public XaTransactionFactory getTransactionFactory()
 	{
 		return tf;
+	}
+	
+	public void setLazyDoneRecords() throws XAException
+	{
+		rm.setLazyDoneRecords( true );
 	}
 }

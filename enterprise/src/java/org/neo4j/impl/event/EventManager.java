@@ -34,7 +34,7 @@ public class EventManager
 	private static Logger log =
 		Logger.getLogger( EventManager.class.getName() );
 	
-	private static EventManager instance = new EventManager();
+	private static final EventManager instance = new EventManager();
 	
 	private Map<Event,List<ProActiveEventListener>> proActiveEventListeners = 
 		new HashMap<Event,List<ProActiveEventListener>>();
@@ -45,7 +45,7 @@ public class EventManager
 	private boolean startIsOk = true;
 	private boolean destroyed = true;	
 
-	private EventQueue eventQueue		= new EventQueue();
+	private EventQueue eventQueue = new EventQueue();
 	
 	private EventManager()
 	{
@@ -76,7 +76,7 @@ public class EventManager
 	 */
 	public boolean generateProActiveEvent( Event event,	EventData data )
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		
 		List<ProActiveEventListener> listenerList = 
 			proActiveEventListeners.get( event );
@@ -118,7 +118,7 @@ public class EventManager
 	 */
 	public void generateReActiveEvent( Event event, EventData data )
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		markWithOriginatingThread( data );
 		EventElement evtElement = new EventElement( event, data, false );
 		synchronized ( eventElements )
@@ -165,7 +165,7 @@ public class EventManager
 		throws EventListenerAlreadyRegisteredException, 
 		EventListenerNotRegisteredException
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		if ( listener == null || event == null )
 		{
 			throw new EventListenerNotRegisteredException( 
@@ -211,7 +211,7 @@ public class EventManager
 		ProActiveEventListener listener, Event event )
 		throws EventListenerNotRegisteredException
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		if ( proActiveEventListeners.containsKey( event ) )
 		{
 			List<ProActiveEventListener> listenerList = 
@@ -256,7 +256,7 @@ public class EventManager
 		throws EventListenerAlreadyRegisteredException, 
 		EventListenerNotRegisteredException
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		if ( listener == null || event == null )
 		{
 			throw new EventListenerNotRegisteredException( 
@@ -303,7 +303,7 @@ public class EventManager
 		ReActiveEventListener listener, Event event )
 		throws EventListenerNotRegisteredException
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		if ( reActiveEventListeners.containsKey( event ) )
 		{
 			List<ReActiveEventListener> listenerList = 
@@ -373,7 +373,7 @@ public class EventManager
 	
 	synchronized void stop()
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		if ( !startIsOk )
 		{
 			startIsOk = true;
@@ -388,7 +388,7 @@ public class EventManager
 	
 	synchronized void destroy()
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		if ( startIsOk )
 		{
 			removeListeners();
@@ -412,34 +412,26 @@ public class EventManager
 	
 	void setReActiveEventQueueWaitTime( int time )
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		eventQueue.setWaitTime( time );
 	}
 	
 	int getReActiveEventQueueWaitTime()
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		return eventQueue.getWaitTime();
 	}
 	
 	void setReActiveEventQueueNotifyOnCount( int count )
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		eventQueue.setNotifyOnCount( count );
 	}
 	
 	int getReActiveEventQueueNotifyOnCount()
 	{
-		checkIfDestroyed();
+		assert !destroyed;
 		return eventQueue.getNotifyOnCount();
-	}
-	
-	private void checkIfDestroyed()
-	{
-		if ( destroyed )
-		{
-			throw new RuntimeException( "EventModule has been destroyed." );
-		}
 	}
 	
 	private void markWithOriginatingThread( EventData data )

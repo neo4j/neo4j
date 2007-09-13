@@ -43,11 +43,6 @@ class NeoJvmInstance
 		{
 			throw new RuntimeException( "A Neo instance already started" );
 		}
-//		if ( clazz.getEnumConstants() == null )
-//		{
-//			throw new IllegalArgumentException( "No enum constants found in " + 
-//				clazz );
-//		}
 		
 		config = new Config();
 		config.getTxModule().setTxLogDirectory( storeDir );
@@ -55,17 +50,18 @@ class NeoJvmInstance
 		Map<String,String> params = new java.util.HashMap<String,String>();
 		storeDir = convertFileSeparators( storeDir );
 		String separator = System.getProperty( "file.separator" );
-		String store = storeDir + separator + "neostore";
+		String store = storeDir + separator + "neostore";		
 		params.put( "neo_store", store );
 		params.put( "create", String.valueOf( create ) );
 		String logicalLog = storeDir + separator + "nioneo_logical.log";
 		params.put( "logical_log", logicalLog );
-		params.put( "neostore.nodestore.db.mapped_memory", "500k" );
-		params.put( "neostore.propertystore.db.mapped_memory", "1M" );
-		params.put( "neostore.propertystore.db.keys.mapped_memory", "1M" );
-		params.put( "neostore.propertystore.db.strings.mapped_memory", "1M" );
+		params.put( "neostore.nodestore.db.mapped_memory", "20M" );
+		params.put( "neostore.propertystore.db.mapped_memory", "90M" );
+		params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
+		params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
+		params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
 		params.put( "neostore.propertystore.db.arrays.mapped_memory", "1M" );
-		params.put( "neostore.relationshipstore.db.mapped_memory", "1M" );
+		params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
 		byte resourceId[] = "414141".getBytes();
 		config.getTxModule().registerDataSource( DEFAULT_DATA_SOURCE_NAME,
 			NIO_NEO_DB_CLASS, resourceId, params );
@@ -90,9 +86,9 @@ class NeoJvmInstance
 		config.getNeoModule().start();
 		started = true;
 	}
-	
-	private static String convertFileSeparators( String fileName )
-	{
+
+    private static String convertFileSeparators( String fileName )
+    {
 		String fileSeparator = System.getProperty( "file.separator" );
 		if ( "\\".equals( fileSeparator ) )
 		{
@@ -104,10 +100,9 @@ class NeoJvmInstance
 		}
 		// dont know what to do
 		return fileName;
-	}
-	
-
-	/**
+    }
+    
+    /**
 	 * Returns true if Neo is started.
 	 * 
 	 * @return True if Neo started

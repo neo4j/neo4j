@@ -13,7 +13,7 @@ public class TestAll extends TestSuite
 		suite.addTest( TestRelationship.suite() );
 		suite.addTest( TestNeo.suite() );
 		suite.addTest( TestNeoCacheAndPersistence.suite() );
-		suite.addTest( TestTraversal.suite() );
+		// suite.addTest( TestTraversal.suite() );
 		suite.addTest( TestNodeSorting.suite() );
 		suite.addTest( TestNeoConstrains.suite() );
 		suite.addTest( TestPropertyTypes.suite() );

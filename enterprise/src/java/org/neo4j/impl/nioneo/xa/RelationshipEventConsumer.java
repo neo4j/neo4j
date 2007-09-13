@@ -2,6 +2,7 @@ package org.neo4j.impl.nioneo.xa;
 
 import java.io.IOException;
 
+import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 
@@ -40,7 +41,7 @@ public interface RelationshipEventConsumer
 	 * @param value The value of the property
 	 * @throws IOException If unable to add property
 	 */
-	public void addProperty( int relId, int propertyId, String key, 
+	public void addProperty( int relId, int propertyId, PropertyIndex index, 
 		Object value ) throws IOException;
 
 	/**

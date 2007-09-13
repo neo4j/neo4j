@@ -1,17 +1,14 @@
 package org.neo4j.impl.core;
 
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
-
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.event.Event;
@@ -20,7 +17,10 @@ import org.neo4j.impl.event.EventListenerAlreadyRegisteredException;
 import org.neo4j.impl.event.EventListenerNotRegisteredException;
 import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.event.ProActiveEventListener;
+import org.neo4j.impl.persistence.PersistenceMetadata;
 import org.neo4j.impl.transaction.TransactionFactory;
+import org.neo4j.impl.transaction.TxManager;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * o Check so the nodes connected to a created relationship are valid
@@ -33,13 +33,12 @@ class NeoConstraintsListener implements ProActiveEventListener
 {
 	static Logger log = Logger.getLogger( 
 		NeoConstraintsListener.class.getName() );
-	private static NeoConstraintsListener listener = 
+	private static final NeoConstraintsListener listener = 
 		new NeoConstraintsListener();
 	
 	// evaluator for each running transaction
-	private Map<Thread,NeoConstraintsEvaluator> evaluators = 
-		java.util.Collections.synchronizedMap( 
-			new HashMap<Thread,NeoConstraintsEvaluator>() );
+	private final ArrayMap<Thread,NeoConstraintsEvaluator> evaluators = 
+		new ArrayMap<Thread,NeoConstraintsEvaluator>( 5, true, true );
 
 	private NeoConstraintsListener()
 	{
@@ -126,7 +125,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 		Transaction tx = null;
 		try
 		{
-			int status = TransactionFactory.getUserTransaction().getStatus();
+			int status = TxManager.getManager().getStatus();
 			if ( status == Status.STATUS_NO_TRANSACTION || 
 				status == Status.STATUS_MARKED_ROLLBACK )
 			{
@@ -173,20 +172,20 @@ class NeoConstraintsListener implements ProActiveEventListener
 			else if ( event == Event.RELATIONSHIP_CREATE )
 			{
 				RelationshipImpl rel = ( RelationshipImpl ) 
-					( ( RelationshipCommands ) eventData.getData() 
+					( ( PersistenceMetadata ) eventData.getData() 
 						).getEntity();
 				return evaluateCreateRelationship( rel );
 			}
 			else if ( event == Event.NODE_DELETE )
 			{
-				NodeImpl node = ( NodeImpl ) (( NodeCommands ) 
+				NodeImpl node = ( NodeImpl ) (( PersistenceMetadata ) 
 					eventData.getData()).getEntity();
 				return evaluateDeleteNode( node );
 			}
 			else if ( event == Event.RELATIONSHIP_DELETE )
 			{
 				RelationshipImpl rel = ( RelationshipImpl ) 
-					( ( RelationshipCommands ) eventData.
+					( ( PersistenceMetadata ) eventData.
 						getData()).getEntity();
 				return evaluateDeleteRelationship( rel );
 			}
@@ -195,7 +194,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 						event == Event.NODE_REMOVE_PROPERTY )
 			{
 				// check if node deleted
-				Node node = ( Node ) (( NodeCommands ) 
+				Node node = ( Node ) (( PersistenceMetadata ) 
 					eventData.getData()).getEntity();
 				return evaluateNodePropertyOperation( node, event, eventData );
 			}
@@ -205,7 +204,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 			{
 				// check if rel deleted
 				Relationship rel = ( Relationship ) 
-					( ( RelationshipCommands ) eventData.
+					( ( PersistenceMetadata ) eventData.
 						getData()).getEntity();
 				return evaluateRelationshipPropertyOperation( rel, event, 
 					eventData );
@@ -216,19 +215,18 @@ class NeoConstraintsListener implements ProActiveEventListener
 		private boolean evaluateCreateRelationship( RelationshipImpl rel )
 		{
 			// verify nodes not deleted
-			Integer nodeIds[] = rel.getNodeIds();
 			if ( deletedNodes != null )
 			{
-				if ( deletedNodes.containsKey( nodeIds[0] ) )
+				if ( deletedNodes.containsKey( rel.getStartNodeId() ) )
 				{
-					log.severe( "Node[0] : " + nodeIds[0] + 
+					log.severe( "Node[0] : " + rel.getStartNodeId() + 
 						", on created relationship[" + rel + "]" + 
 						" does not exist (deleted in same tx)" );
 					return false;
 				}
-				if ( deletedNodes.containsKey( nodeIds[1] ) )
+				if ( deletedNodes.containsKey( rel.getEndNodeId() ) )
 				{
-					log.severe( "Node[1] : " + nodeIds[1] + 
+					log.severe( "Node[1] : " + rel.getEndNodeId() + 
 						", on created relationship[" + rel + "]" + 
 						" does not exist (deleted in same tx)" );
 					return false;
@@ -281,22 +279,6 @@ class NeoConstraintsListener implements ProActiveEventListener
 					);
 				return false;
 			}
-			// remove this rel from deleted nodes in this tx
-			// have to do this since cache won't return correct node impl 
-			// if deletion is in wrong order (eg node.del then rel.del)
-			Integer nodeIds[] = rel.getNodeIds();
-			if ( deletedNodes != null && 
-					deletedNodes.containsKey( nodeIds[0] ) )
-			{
-				deletedNodes.get( nodeIds[0] ).removeRelationship( 
-					rel.getType(), (int) rel.getId() );
-			}
-			if ( deletedNodes != null &&
-					deletedNodes.containsKey( nodeIds[1] ) )
-			{
-				deletedNodes.get( nodeIds[1] ).removeRelationship( 
-					rel.getType(), (int) rel.getId() );
-			}
 
 			if ( deletedRelationships == null )
 			{
@@ -318,13 +300,6 @@ class NeoConstraintsListener implements ProActiveEventListener
 					"] illegal since it has already been deleted (in this tx)" );
 				return false;
 			}
-			// make sure it exist and that is done in Add/Change/Remove
-			if ( event == Event.NODE_ADD_PROPERTY ) 
-			{
-				Object property = (( NodeCommands )	eventData.getData() 
-					).getProperty();
-				return validatePropertyType( node, property );
-			}
 			return true;
 		}
 
@@ -340,13 +315,6 @@ class NeoConstraintsListener implements ProActiveEventListener
 					"] illegal since it has already been deleted (in this tx)" 
 					);
 				return false;
-			}
-			// make sure it exist and that is done in Add/Change/Remove 
-			if ( event == Event.RELATIONSHIP_ADD_PROPERTY ) 
-			{
-				Object property = (( RelationshipCommands ) eventData.getData()
-					).getProperty();
-				return validatePropertyType( rel, property );
 			}
 			return true;
 		}
@@ -415,6 +383,8 @@ class NeoConstraintsListener implements ProActiveEventListener
 			// TODO: if we get called when status active
 			// and transaction is beeing rolled back this may not evaluate
 			// no harm done but will get the "severe" log message
+			try
+			{
 			getListener().removeThisEvaluator();
 			if ( getTransactionStatus() == Status.STATUS_MARKED_ROLLBACK )
 			{
@@ -448,6 +418,11 @@ class NeoConstraintsListener implements ProActiveEventListener
 						setRollbackOnly();
 					}
 				}
+			}
+			}
+			catch ( Throwable t )
+			{
+				t.printStackTrace();
 			}
 		}
 

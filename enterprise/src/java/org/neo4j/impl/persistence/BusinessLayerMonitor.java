@@ -42,7 +42,8 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 	Logger log = Logger.getLogger( BusinessLayerMonitor.class.getName() );
 	
 	// -- Singleton stuff
-	private static BusinessLayerMonitor monitor = new BusinessLayerMonitor();
+	private static final BusinessLayerMonitor monitor = 
+		new BusinessLayerMonitor();
 	private BusinessLayerMonitor() {}
 	/**
 	 * Singleton accessor.
@@ -53,10 +54,6 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 		return monitor;
 	}
 	
-	
-	// -- Event hooks
-
-	// javadoc: see ProActiveEventListener.proActiveEventReceived
 	public boolean proActiveEventReceived( Event event, EventData data )
 	{
 		boolean success = false;
@@ -130,22 +127,13 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 	// everything else			->	report error
 	public void reActiveEventReceived( Event event, EventData data )
 	{
-		// Sanity check: event data must not be null, and data.getData() must
-		// implement PersistenceSource. This is true for the events
-		// DATA_SOURCE_ADDED and _REMOVED, but may change in the future.
 		if ( data == null || !(data.getData() instanceof PersistenceSource) )
 		{
 			String msg = "The data for " + event + " is " + data +
 						 ", which does not implement PersistenceSource.";
 			throw new IllegalArgumentException(	msg );
 		}
-
-		/*if ( event == Event.DATA_SOURCE_ADDED )
-		{
-			PersistenceSourceDispatcher.getDispatcher().
-				persistenceSourceAdded( (PersistenceSource) data.getData() );
-		}
-		else*/ if ( event == Event.DATA_SOURCE_REMOVED )
+		if ( event == Event.DATA_SOURCE_REMOVED )
 		{
 			PersistenceSourceDispatcher.getDispatcher().
 				persistenceSourceRemoved( (PersistenceSource) data.getData() );
@@ -156,9 +144,6 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 		}
 	}
 	
-
-	// -- Persistence-related operations
-
 	private void performPersistenceOperationForEvent( Event event,
 													  EventData data )
 		throws	UnsupportedPersistenceTypeException,
@@ -172,16 +157,11 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 						 ", which does not implement PersistenceMetadata.";
 			throw new IllegalArgumentException(	msg );
 		}
-		PersistenceMetadata	entityMetaData 	= 
-			(PersistenceMetadata) data.getData();
 		ResourceConnection resource = 
-			ResourceBroker.getBroker().acquireResourceConnection( 
-				entityMetaData );
+			ResourceBroker.getBroker().acquireResourceConnection(); 
 		resource.performUpdate( event, data );
 	}
 	
-	// -- Lifecycle operations
-
 	/**
 	 * Registers the monitor as a listener for the appropriate events.
 	 * Invoked by the PersistenceModule on startup- and reload requests.
@@ -205,9 +185,9 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 		this.registerProActiveEvent( Event.RELATIONSHIP_REMOVE_PROPERTY );
 		this.registerProActiveEvent( Event.RELATIONSHIP_CHANGE_PROPERTY );
 		this.registerProActiveEvent( Event.RELATIONSHIPTYPE_CREATE );
+		this.registerProActiveEvent( Event.PROPERTY_INDEX_CREATE );
 		this.registerProActiveEvent( Event.DATA_SOURCE_ADDED );
 		
-		// this.registerReActiveEvent( Event.DATA_SOURCE_ADDED );
 		this.registerReActiveEvent( Event.DATA_SOURCE_REMOVED );
 	}
 	
@@ -231,9 +211,9 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 		this.unregisterProActiveEvent( Event.RELATIONSHIP_REMOVE_PROPERTY );
 		this.unregisterProActiveEvent( Event.RELATIONSHIP_CHANGE_PROPERTY );
 		this.unregisterProActiveEvent( Event.RELATIONSHIPTYPE_CREATE );
+		this.unregisterProActiveEvent( Event.PROPERTY_INDEX_CREATE );
 		this.unregisterProActiveEvent( Event.DATA_SOURCE_ADDED );
 		
-		// this.unregisterReActiveEvent( Event.DATA_SOURCE_ADDED );
 		this.unregisterReActiveEvent( Event.DATA_SOURCE_REMOVED );
 	}
 	

@@ -2,8 +2,8 @@ package org.neo4j.impl.core;
 
 public class RawRelationshipTypeData
 {
-	private String name = null;
-	private int id = -1;
+	private final String name;
+	private final int id;
 	
 	public RawRelationshipTypeData( int id, String name )
 	{

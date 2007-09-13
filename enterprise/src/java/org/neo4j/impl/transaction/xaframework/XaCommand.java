@@ -1,8 +1,6 @@
 package org.neo4j.impl.transaction.xaframework;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.ByteBuffer;
 
 
 // TODO: make writeToFile safe (not being able to do anything but write a 
@@ -93,8 +91,7 @@ public abstract class XaCommand
 	 * data
 	 * @throws IOException In case of *real* IO failure
 	 */
-	public abstract void writeToFile( FileChannel fileChannel, 
-		ByteBuffer buffer ) throws IOException;
+	public abstract void writeToFile( LogBuffer buffer ) throws IOException;
 		
 	/**
 	 * If this command is created by the command factory during a recovery 

@@ -45,7 +45,7 @@ public interface ResourceConnection
 	 */	
 	public void destroy() throws ConnectionDestructionFailedException;
 	
-	public Object performOperation( PersistenceManager.Operation operation, 
+	public Object performOperation( Operation operation, 
 		Object param ) throws PersistenceException;
 	
 	public void performUpdate( Event event, EventData data ) 

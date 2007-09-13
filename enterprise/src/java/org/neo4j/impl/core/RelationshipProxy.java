@@ -6,9 +6,9 @@ import org.neo4j.api.core.RelationshipType;
 
 class RelationshipProxy implements Relationship
 {
-	private static NodeManager nm = NodeManager.getManager();
+	private static final NodeManager nm = NodeManager.getManager();
 
-	private int relId = -1;
+	private final int relId;
 	
 	RelationshipProxy( int relId )
 	{

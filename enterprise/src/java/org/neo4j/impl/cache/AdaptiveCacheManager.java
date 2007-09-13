@@ -9,7 +9,8 @@ public class AdaptiveCacheManager
 {
 	private static Logger log = 
 		Logger.getLogger( AdaptiveCacheManager.class.getName() );
-	private static AdaptiveCacheManager instance = new AdaptiveCacheManager();
+	private static final AdaptiveCacheManager instance = 
+		new AdaptiveCacheManager();
 	
 	
 	public static AdaptiveCacheManager getManager()
@@ -17,7 +18,7 @@ public class AdaptiveCacheManager
 		return instance;
 	}
 	
-	private List<AdaptiveCacheElement> caches = 
+	private final List<AdaptiveCacheElement> caches = 
 		new CopyOnWriteArrayList<AdaptiveCacheElement>();
 	private AdaptiveCacheWorker workerThread;
 	
@@ -226,9 +227,9 @@ public class AdaptiveCacheManager
 	
 	private static class AdaptiveCacheElement
 	{
-		private Cache cache;
-		private float ratio;
-		private int minSize;
+		private final Cache cache;
+		private final float ratio;
+		private final int minSize;
 		
 		AdaptiveCacheElement( Cache cache, float ratio, 
 			int minSize )

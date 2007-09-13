@@ -11,7 +11,7 @@ import java.util.Map;
  */
 public class FifoCache<K,E> extends Cache<K,E> 
 {
-	private String name = null;
+	private final String name;
 	int maxSize = 1000;
 
 	private Map<K,E> cache = new LinkedHashMap<K,E>()

@@ -1,12 +1,14 @@
 package org.neo4j.impl.core;
 
+import org.neo4j.impl.persistence.PersistenceMetadata;
+
 /**
  * This interface defines methods needed for persistence layer when 
  * incremental changes to a node are made persistent. Nodes generates
  * a pro-active event when changes are made to them and passes event data
  * of this type.
  */
-public interface NodeOperationEventData
+public interface NodeOperationEventData extends PersistenceMetadata
 {
 	/**
 	 * Returns the node that generated the event. This method is used in 
@@ -43,7 +45,7 @@ public interface NodeOperationEventData
 	 *
 	 * @return the property index
 	 */
-	public String getPropertyKey();
+	public PropertyIndex getPropertyIndex();
 	
 	/**
 	 * Returns the value of a added property or new value in case of change
@@ -52,12 +54,4 @@ public interface NodeOperationEventData
 	 * @return the property value
 	 */
 	public Object getProperty();
-
-	/**
-	 * Returns the removed value of a added property or old value in case of 
-	 * change property operation, else null.
-	 *
-	 * @return the property value
-	 */
-	public Object getOldProperty();
 }

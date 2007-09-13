@@ -72,22 +72,7 @@ public class IdGeneratorModule
 													 "operations" );
 		}
 		
-//		try
-//		{
-			// ModuleManager mgr = ModuleManager.getManager();
-			// KModule source = mgr.getModuleByName( sourceName );
-			throw new RuntimeException( "Implement this" );
-//			if ( source instanceof PersistenceSource )
-//			{
-//				this.persistenceSource = (PersistenceSource) source;
-//			}
-//			else
-//			{
-//				// Throwing RuntimeExc is ok in an JMX-invoked method
-//				throw new RuntimeException( sourceName + " is not a " +
-//											"persistence source" );
-//			}
-//		}
+		throw new RuntimeException( "Implement this" );
 	}
 	
 	public synchronized void setPersistenceSourceInstance( 
@@ -96,8 +81,6 @@ public class IdGeneratorModule
 		this.persistenceSource = source;
 	}
 
-	// -- Misc operations
-	
 	public String toString()
 	{
 		return this.getModuleName();
