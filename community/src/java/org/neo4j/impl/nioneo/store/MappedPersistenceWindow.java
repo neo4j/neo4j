@@ -75,6 +75,10 @@ class MappedPersistenceWindow extends LockableWindow
 		return position() == ( ( MappedPersistenceWindow ) o ).position();
 	}
 	
+	void unmap()
+	{
+	}
+	
 	private volatile int hashCode = 0;
 
 	public int hashCode()

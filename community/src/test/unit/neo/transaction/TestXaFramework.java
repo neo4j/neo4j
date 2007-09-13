@@ -5,20 +5,19 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
+import java.util.List;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
 import org.neo4j.api.core.Node;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.transaction.XaDataSourceManager;
+import org.neo4j.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.impl.transaction.xaframework.XaCommand;
 import org.neo4j.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.impl.transaction.xaframework.XaConnection;
@@ -59,13 +58,14 @@ public class TestXaFramework extends TestCase
 		}
 		
 		public void execute() {}
-		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
-			throws IOException 
+//		public void writeToFile( FileChannel fileChannel, ByteBuffer buffer ) 
+//			throws IOException 
+		public void writeToFile( LogBuffer buffer ) throws IOException 
 		{
-			buffer.clear();
+//			buffer.clear();
 			buffer.putInt( type );
-			buffer.flip();
-			fileChannel.write( buffer );
+//			buffer.flip();
+//			fileChannel.write( buffer );
 		} 
 	}
 	
@@ -121,6 +121,11 @@ public class TestXaFramework extends TestCase
 		{
 			return new DummyTransaction( identifier, getLogicalLog() );
 		}
+
+		@Override
+        public void lazyDoneWrite( List<Integer> identifiers ) throws XAException
+        {
+        }
 	}
 	
 	public static class DummyXaDataSource extends XaDataSource

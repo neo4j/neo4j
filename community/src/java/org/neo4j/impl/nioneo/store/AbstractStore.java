@@ -57,7 +57,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 
 		// write the header
 		FileChannel channel = new FileOutputStream( fileName ).getChannel();
-		int endHeaderSize = typeAndVersionDescriptor.length();
+		int endHeaderSize = typeAndVersionDescriptor.getBytes().length;
 		ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
 		buffer.put( typeAndVersionDescriptor.getBytes() ).flip();
 		channel.write( buffer );
@@ -82,11 +82,11 @@ public abstract class AbstractStore extends CommonAbstractStore
 	{
 		long fileSize = getFileChannel().size();
 		String expectedVersion = getTypeAndVersionDescriptor();
-		byte version[] = new byte[ expectedVersion.length() ];
+		byte version[] = new byte[ expectedVersion.getBytes().length ];
 		ByteBuffer buffer = ByteBuffer.wrap( version );
-		if ( fileSize >= expectedVersion.length() )
+		if ( fileSize >= version.length )
 		{
-			getFileChannel().position( fileSize - expectedVersion.length() );
+			getFileChannel().position( fileSize - version.length );
 		}
 		else
 		{
@@ -98,13 +98,13 @@ public abstract class AbstractStore extends CommonAbstractStore
 			setStoreNotOk();
 		}
 		if ( getRecordSize() != 0 && 
-			( fileSize - expectedVersion.length() ) % getRecordSize() != 0 )
+			( fileSize - version.length ) % getRecordSize() != 0 )
 		{
 			setStoreNotOk();
 		}
 		if ( getStoreOk() )
 		{
-			getFileChannel().truncate( fileSize - expectedVersion.length() );
+			getFileChannel().truncate( fileSize - version.length );
 		}
 		try
 		{

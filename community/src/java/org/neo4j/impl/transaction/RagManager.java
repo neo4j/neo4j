@@ -3,9 +3,10 @@ package org.neo4j.impl.transaction;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * The Resource Allocation Graph manager is used for deadlock detection. It
@@ -45,15 +46,15 @@ class RagManager
 	// o When the thread wakes up from waiting on a resource the 
 	//   stopWaitOn( resource ) method must be invoked
 	
-	private static RagManager instance = new RagManager();
+	private static final RagManager instance = new RagManager();
 	
-	private Map<Object,List<Thread>> resourceMap = 
+	private final Map<Object,List<Thread>> resourceMap = 
 		new HashMap<Object,List<Thread>>();
 	
 	// key = Thread
 	// value = resource that the Thread is waiting for
-	private Map<Thread,Object> waitingThreadMap = 
-		new HashMap<Thread,Object>();
+	private final ArrayMap<Thread,Object> waitingThreadMap = 
+		new ArrayMap<Thread,Object>( 5, false, true );
 	
 	private RagManager() {}
 	
@@ -118,7 +119,8 @@ class RagManager
 		}
 		
 		Thread waitingThread = Thread.currentThread();
-		if ( waitingThreadMap.containsKey( waitingThread ) )
+		//if ( waitingThreadMap.containsKey( waitingThread ) )
+		if ( waitingThreadMap.get( waitingThread ) != null )
 		{
 			throw new RuntimeException( "Thread already waiting for resource" );
 		}

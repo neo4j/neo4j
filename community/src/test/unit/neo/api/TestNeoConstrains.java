@@ -2,14 +2,11 @@ package unit.neo.api;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.Status;
 import javax.transaction.UserTransaction;
-
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
@@ -17,7 +14,6 @@ import org.neo4j.impl.core.IllegalValueException;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.core.NotFoundException;
 import org.neo4j.impl.transaction.TransactionFactory;
-
 import unit.neo.MyRelTypes;
 
 public class TestNeoConstrains extends TestCase
@@ -197,13 +193,7 @@ public class TestNeoConstrains extends TestCase
 			Node node2 = nm.createNode();
 			TransactionFactory.getUserTransaction().commit();
 			TransactionFactory.getUserTransaction().begin();
-			try
-			{
-				node1.delete();
-			}
-			catch ( Exception e )
-			{ // ok
-			}
+			node1.delete();
 			try
 			{
 				NodeManager.getManager().createRelationship( node1, node2, 
@@ -220,6 +210,9 @@ public class TestNeoConstrains extends TestCase
 			catch ( Exception e )
 			{ // good
 			}
+			TransactionFactory.getUserTransaction().begin();
+			node2.delete();
+			node1.delete();
 		}
 		catch ( Exception e )
 		{
@@ -274,14 +267,12 @@ public class TestNeoConstrains extends TestCase
 			node.setProperty( key, new Integer( 1 ) );
 			fail( "Add property on deleted node should not validate" );
 		}
-		catch ( IllegalValueException e )
+		catch ( Exception e )
 		{
 			// good
 		}
 	}
 
-	
-	// this test will cause the PL to print a stack trace...
 	public void testRemovePropertyDeletedNode()
 	{
 		try
@@ -293,20 +284,12 @@ public class TestNeoConstrains extends TestCase
 			try
 			{
 				node.removeProperty( key );
-			}
-			catch ( NotFoundException e )
-			{
-				// ok so the persistance storage has constrains... 
-				// would have detected it up on commit...
-			}
-			try
-			{
 				TransactionFactory.getUserTransaction().commit();
 				fail( "Remove property on deleted node should not validate" );
 			}
-			catch (  Exception e )
+			catch ( Exception e )
 			{
-				// good
+				// ok
 			}
 		}
 		catch ( Exception e )
@@ -315,7 +298,6 @@ public class TestNeoConstrains extends TestCase
 		}
 	}
 
-	// this test will cause the PL to print a stack trace...
 	public void testChangePropertyDeletedNode()
 	{
 		try
@@ -327,20 +309,12 @@ public class TestNeoConstrains extends TestCase
 			try
 			{
 				node.setProperty( key, new Integer( 2 ) );
-			}
-			catch ( IllegalValueException e )
-			{
-				// ok so the persistance storage has constrains... 
-				// would have detected it up on commit...
-			}
-			try
-			{
 				TransactionFactory.getUserTransaction().commit();
 				fail( "Change property on deleted node should not validate" );
 			}
-			catch (  Exception e )
+			catch ( Exception e )
 			{
-				// good
+				// ok
 			}
 		}
 		catch ( Exception e )
@@ -362,20 +336,14 @@ public class TestNeoConstrains extends TestCase
 			try
 			{
 				rel.setProperty( key, new Integer( 1 ) );
-				fail( "Add property on deleted rel should not validate" );
-			}
-			catch ( IllegalValueException e )
-			{ // good
-			}
-			try
-			{
 				TransactionFactory.getUserTransaction().commit();
 				fail( "Add property on deleted rel should not validate" );
 			}
-			catch (  Exception e )
-			{
-				// good
+			catch ( Exception e )
+			{ // good
 			}
+			node1.delete();
+			node2.delete();
 		}
 		catch ( Exception e )
 		{
@@ -383,8 +351,6 @@ public class TestNeoConstrains extends TestCase
 		}
 	}
 
-	
-	// this test will cause the PL to print a stack trace...
 	public void testRemovePropertyDeletedRelationship()
 	{
 		try
@@ -399,22 +365,15 @@ public class TestNeoConstrains extends TestCase
 			try
 			{
 				rel.removeProperty( key );
-			}
-			catch ( NotFoundException e )
-			{
-				// ok so the persistance storage has constrains...
-				// would have detected it up on commit...
-			}
-				
-			try
-			{
 				TransactionFactory.getUserTransaction().commit();
 				fail( "Remove property on deleted rel should not validate" );
 			}
-			catch (  Exception e )
+			catch ( Exception e )
 			{
-				// good
+				// ok
 			}
+			node1.delete();
+			node2.delete();
 		}
 		catch ( Exception e )
 		{
@@ -422,7 +381,6 @@ public class TestNeoConstrains extends TestCase
 		}
 	}
 
-	// this test will cause the PL to print a stack trace...
 	public void testChangePropertyDeletedRelationship()
 	{
 		try
@@ -437,21 +395,15 @@ public class TestNeoConstrains extends TestCase
 			try
 			{
 				rel.setProperty( key, new Integer( 2 ) );
-			}
-			catch ( IllegalValueException e )
-			{
-				// ok so the persistance storage has constrains...
-				// would have detected it up on commit...
-			}
-			try
-			{
 				TransactionFactory.getUserTransaction().commit();
 				fail( "Change property on deleted rel should not validate" );
 			}
-			catch (  Exception e )
+			catch ( Exception e )
 			{
-				// good
+				// ok
 			}
+			node1.delete();
+			node2.delete();
 		}
 		catch ( Exception e )
 		{
@@ -469,19 +421,12 @@ public class TestNeoConstrains extends TestCase
 			try
 			{
 				node1.delete();
-			}
-			catch ( Exception e )
-			{
-				// ok so persistence storage detects error
-			}
-			try
-			{
 				TransactionFactory.getUserTransaction().commit();
 				fail( "Should not validate" );
 			}
-			catch (  Exception e )
+			catch ( Exception e )
 			{
-				// good
+				// ok
 			}
 		}
 		catch ( Exception e )
@@ -506,19 +451,12 @@ public class TestNeoConstrains extends TestCase
 			try
 			{
 				rel.delete();
-			}
-			catch ( Exception e )
-			{
-				// ok so persistence storage detects error
-			}
-			try
-			{
 				TransactionFactory.getUserTransaction().commit();
 				fail( "Should not validate" );
 			}
-			catch (  Exception e )
+			catch ( Exception e )
 			{
-				// good
+				// ok
 			}
 		}
 		catch ( Exception e )
@@ -578,6 +516,7 @@ public class TestNeoConstrains extends TestCase
 			}
 			catch ( Exception e )
 			{ } // good
+			TransactionFactory.getUserTransaction().begin();
 			try
 			{
 				nm.getNodeById( (int) node1.getId() );
@@ -599,6 +538,7 @@ public class TestNeoConstrains extends TestCase
 		}
 		catch ( Exception e )
 		{
+			e.printStackTrace();
 			fail( "" + e );
 		}
 		finally

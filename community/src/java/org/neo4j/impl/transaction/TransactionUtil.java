@@ -114,8 +114,9 @@ public class TransactionUtil
 			}
 			catch ( Exception ee )
 			{
+				ee.printStackTrace();
 				throw new RuntimeException(
-					"Unable to rollback commit operation " + ee, ee );
+					"Unable to rollback failed commit operation " + ee, e );
 			}
 			throw new RuntimeException( "Unable to commit operation", e );
 		}

@@ -9,7 +9,7 @@ class EventQueue extends Thread
 	private static Logger log =
 		Logger.getLogger( EventQueue.class.getName() );
 
-	private LinkedList<EventElement> queueList = 
+	private final LinkedList<EventElement> queueList = 
 		new LinkedList<EventElement>();
 	// time to wait before next flush
 	private int waitTime = 50;

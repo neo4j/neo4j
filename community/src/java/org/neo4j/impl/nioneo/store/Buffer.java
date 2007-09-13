@@ -18,7 +18,7 @@ public class Buffer
 	private static Logger logger = Logger.getLogger( Buffer.class.getName() );
 	
 	private ByteBuffer buf = null;
-	private PersistenceWindow persistenceWindow = null;
+	private final PersistenceWindow persistenceWindow;
 	
 	Buffer( PersistenceWindow persistenceWindow )
 	{
@@ -160,6 +160,14 @@ public class Buffer
 		return this;
 	}
 
+	public Buffer put( char src[] )
+	{
+		int oldPos = buf.position();
+		buf.asCharBuffer().put( src );
+		buf.position( oldPos + src.length * 2 );
+		return this;
+	}
+	
 	/**
 	 * Puts a <CODE>byte array</CODE> into the underlying buffer starting
 	 * from <CODE>offset</CODE> in the array and writing <CODE>length</CODE>
@@ -186,6 +194,12 @@ public class Buffer
 	public Buffer get( byte dst[] )
 	{
 		buf.get( dst );
+		return this;
+	}
+	
+	public Buffer get( char dst[] )
+	{
+		buf.asCharBuffer().get( dst );
 		return this;
 	}
 }

@@ -25,6 +25,8 @@ public class NeoModule
 	private boolean startIsOk = true;
 	private Class<? extends RelationshipType> relTypeClass;
 	
+	private static final int INDEX_COUNT = 1500;
+	
 	public void init()
 	{
 	}
@@ -37,12 +39,16 @@ public class NeoModule
 		}
 		// load and verify from PS
 		RawRelationshipTypeData relTypes[] = null;
+		RawPropertyIndex propertyIndexes[] = null;
 		try
 		{
 			NeoConstraintsListener.getListener().registerEventListeners();
 			TransactionFactory.getUserTransaction().begin();
 			relTypes = 
 				PersistenceManager.getManager().loadAllRelationshipTypes();
+			propertyIndexes = 
+				PersistenceManager.getManager().loadPropertyIndexes( 
+					INDEX_COUNT );
 			TransactionFactory.getUserTransaction().commit();
 		}
 		catch ( Exception e )
@@ -64,6 +70,11 @@ public class NeoModule
 		if ( relTypeClass != null )
 		{
 			rth.addValidRelationshipTypes( relTypeClass );
+		}
+		PropertyIndex.addPropertyIndexes( propertyIndexes );
+		if ( propertyIndexes.length < INDEX_COUNT )
+		{
+			PropertyIndex.setHasAll( true );
 		}
 		AdaptiveCacheManager.getManager().start();
 		startIsOk = false;
@@ -135,6 +146,7 @@ public class NeoModule
 	{
 		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
 		rth.clear();
+		PropertyIndex.clear();
 		NodeManager.getManager().clearCache();
 		NeoConstraintsListener.getListener().unregisterEventListeners();
 		AdaptiveCacheManager.getManager().stop();

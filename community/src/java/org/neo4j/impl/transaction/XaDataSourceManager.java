@@ -27,13 +27,13 @@ public class XaDataSourceManager
 	private static XaDataSourceManager manager = new XaDataSourceManager();
 	
 	// key = data source name, value = data source
-	private Map<String,XaDataSource> dataSources = 
+	private final Map<String,XaDataSource> dataSources = 
 		new HashMap<String,XaDataSource>();
 	// key = branchId, value = data source
-	private Map<String,XaDataSource> branchIdMapping = 
+	private final Map<String,XaDataSource> branchIdMapping = 
 		new HashMap<String,XaDataSource>();
 	// key = data source name, value = branchId
-	private Map<String,byte[]> sourceIdMapping = 
+	private final Map<String,byte[]> sourceIdMapping = 
 		new HashMap<String,byte[]>();
 	
 	private XaDataSourceManager()

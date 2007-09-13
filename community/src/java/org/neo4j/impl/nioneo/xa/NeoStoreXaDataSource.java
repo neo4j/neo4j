@@ -1,5 +1,21 @@
 package org.neo4j.impl.nioneo.xa;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.transaction.xa.XAException;
+import org.neo4j.api.core.Node;
+import org.neo4j.api.core.Relationship;
+import org.neo4j.api.core.RelationshipType;
+import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.Store;
@@ -11,22 +27,7 @@ import org.neo4j.impl.transaction.xaframework.XaContainer;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.impl.transaction.xaframework.XaTransactionFactory;
-
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-
-import java.nio.channels.FileChannel;
-import java.nio.ByteBuffer;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.File;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a facotry for 
@@ -42,9 +43,9 @@ public class NeoStoreXaDataSource extends XaDataSource
 	private static Logger logger = 
 		Logger.getLogger( NeoStoreXaDataSource.class.getName() );
 	
-	private NeoStore neoStore = null;
-	private XaContainer xaContainer = null;
-	private HashMap<Class,Store> idGenerators = null;
+	private final NeoStore neoStore;
+	private final XaContainer xaContainer;
+	private final ArrayMap<Class,Store> idGenerators;
 	
 
 	/**
@@ -102,12 +103,20 @@ public class NeoStoreXaDataSource extends XaDataSource
 			autoCreatePath( store );
 			NeoStore.createStore( store );
 		}
-		
+			
 		neoStore = new NeoStore( config );
-		String logicalLog = ( String ) config.get( "logical_log" );
-		xaContainer = XaContainer.create( logicalLog, 
+		xaContainer = XaContainer.create( 
+			( String ) config.get( "logical_log" ), 
 			new CommandFactory( neoStore ), 
 			new TransactionFactory( neoStore ) );
+		try
+		{
+			xaContainer.setLazyDoneRecords();
+		}
+		catch ( XAException e )
+		{
+			throw new IOException( "Unable to set lazy done records, " + e );
+		}
 		TxInfoManager.getManager().setRealLog( xaContainer.getLogicalLog() );
 		xaContainer.openLogicalLog();
 		if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
@@ -119,17 +128,18 @@ public class NeoStoreXaDataSource extends XaDataSource
 			logger.info(  
 				"Waiting for TM to take care of recovered transactions." );
 		}
-		idGenerators = new HashMap<Class,Store>();
+		idGenerators = new ArrayMap<Class,Store>( 5, false, false );
 		this.idGenerators.put( Node.class, neoStore.getNodeStore() );
 		this.idGenerators.put( Relationship.class, 
 			neoStore.getRelationshipStore() );
 		this.idGenerators.put( RelationshipType.class, 
 			neoStore.getRelationshipTypeStore() );
-		// hack to get TestXa unit test to run
 		this.idGenerators.put( PropertyStore.class, 
-				neoStore.getPropertyStore() ); 
+				neoStore.getPropertyStore() );
+		this.idGenerators.put( PropertyIndex.class, 
+			neoStore.getPropertyStore().getIndexStore() );
 	}
-	
+
 	private void autoCreatePath( String store ) throws IOException
 	{
 		String fileSeparator = System.getProperty( "file.separator" );
@@ -161,6 +171,14 @@ public class NeoStoreXaDataSource extends XaDataSource
 		xaContainer = XaContainer.create( logicalLogPath, 
 			new CommandFactory( neoStore ), 
 			new TransactionFactory( neoStore ) );
+		try
+		{
+			xaContainer.setLazyDoneRecords();
+		}
+		catch ( XAException e )
+		{
+			throw new IOException( "Unable to set lazy done records, " + e );
+		}
 		TxInfoManager.getManager().setRealLog( xaContainer.getLogicalLog() );
 		xaContainer.openLogicalLog();
 		if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
@@ -172,7 +190,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 			logger.info( 
 				"Waiting for TM to take care of recovered transactions." );
 		}
-		idGenerators = new HashMap<Class,Store>();
+		idGenerators = new ArrayMap<Class,Store>( 5, false, false );
 		this.idGenerators.put( Node.class, neoStore.getNodeStore() );
 		this.idGenerators.put( Relationship.class, 
 			neoStore.getRelationshipStore() );
@@ -181,6 +199,14 @@ public class NeoStoreXaDataSource extends XaDataSource
 		// hack to get TestXa unit test to run
 		this.idGenerators.put( PropertyStore.class, 
 				neoStore.getPropertyStore() ); 
+		this.idGenerators.put( PropertyIndex.class, 
+			neoStore.getPropertyStore().getIndexStore() );
+	}
+
+	// used for testing
+	public void truncateLogicalLog() throws IOException
+	{
+		xaContainer.getLogicalLog().truncate();
 	}
 	
 	NeoStore getNeoStore()
@@ -224,7 +250,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 				buffer );
 			if ( command != null )
 			{
-				command.setIsInRecoveryMode();
+				command.setRecovered();
 			}
 			return command;
 		}
@@ -257,6 +283,20 @@ public class NeoStoreXaDataSource extends XaDataSource
 				throw new RuntimeException( "Unable to make stores ok", e );
 			}
 		}
+
+		@Override
+        public void lazyDoneWrite( List<Integer> identifiers ) throws XAException
+        {
+			try
+            {
+                neoStore.flushAll();
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+                throw new XAException( "Unable to flush neo store." );
+            }
+        }
 	}
 
 	public int nextId( Class clazz )
