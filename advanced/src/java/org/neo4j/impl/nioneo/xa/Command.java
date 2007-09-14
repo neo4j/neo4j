@@ -77,7 +77,7 @@ abstract class Command extends XaCommand
 				{
 					char[] chars = record.getDataAsChar();
 					buffer.put( chars );
-					record.setTransferCount( 13 + chars.length / 2 );
+					record.setTransferCount( 13 + chars.length * 2 );
 				}
 			}
 			else
