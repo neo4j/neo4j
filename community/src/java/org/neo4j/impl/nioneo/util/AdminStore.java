@@ -6,11 +6,17 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import org.neo4j.impl.nioneo.store.AbstractDynamicStore;
+import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.NeoStore;
+import org.neo4j.impl.nioneo.store.Record;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
 
 
@@ -62,10 +68,10 @@ public class AdminStore
 					inputStream.close();
 				}
 			}
-//			else if ( args[i].equals( "--dump-rel-types" ) )
-//			{
-//				dumpRelTypes( args[++i] );
-//			}
+			else if ( args[i].equals( "--dump-rel-types" ) )
+			{
+				dumpRelTypes( args[++i] );
+			}
 			else if ( args[i].equals( "--fsck" ) )
 			{
 				fsckStore( args[++i] );
@@ -105,60 +111,95 @@ public class AdminStore
 			createEmptyStore( fileName, blockSize, VERSION );
 		}
 		
-//		public String getString( int blockId ) throws IOException
-//		{
-//			return new String( get( blockId ) );
-//		}
-		
 		void rebuildIdGenerators() throws IOException
 		{
 			rebuildIdGenerator();
 		}
 	}
 	
-//	private static void dumpRelTypes( String fileName ) throws IOException
-//	{
-//		String storeName = fileName + ".relationshiptypestore.db";
-//		File relTypeStore = new File( storeName );
-//		if ( !relTypeStore.exists() )
-//		{
-//			throw new IOException( "Couldn't find relationship type store " + 
-//				storeName );
-//		}
-//		DynamicStringStore typeNameStore = new DynamicStringStore( 
-//			storeName + ".names" );
-//		typeNameStore.rebuildIdGenerators();
-//		// in_use(byte)+type_blockId(int)
-//		System.out.println( storeName );
-//		ByteBuffer buffer = ByteBuffer.allocate( 5 );
-//		FileChannel fileChannel = 
-//			new RandomAccessFile( storeName, "rw" ).getChannel();
-//		fileChannel.position( 0 );
-//		int i = 0;
-//		while ( fileChannel.read( buffer ) == 5 )
-//		{
-//			buffer.flip();
-//			byte inUse = buffer.get();
-//			int block = buffer.getInt();
-//			String name = "N/A";
-//			try
-//			{
-//				name = typeNameStore.getString( block );
-//			}
-//			catch ( IOException e )
-//			{}
-//			System.out.println( "ID[" + i + "] use[" + inUse + 
-//				"] blockId[" + block + "] name[" + name + "]" ); 
-//			i++;
-//			buffer.clear();
-//		}
-//		typeNameStore.close();
-//	}
+	private static void dumpRelTypes( String fileName ) throws IOException
+	{
+		String storeName = fileName + ".relationshiptypestore.db";
+		File relTypeStore = new File( storeName );
+		if ( !relTypeStore.exists() )
+		{
+			throw new IOException( "Couldn't find relationship type store " + 
+				storeName );
+		}
+		DynamicStringStore typeNameStore = new DynamicStringStore( 
+			storeName + ".names" );
+		typeNameStore.rebuildIdGenerators();
+		// in_use(byte)+type_blockId(int)
+		System.out.println( storeName );
+		ByteBuffer buffer = ByteBuffer.allocate( 5 );
+		FileChannel fileChannel = 
+			new RandomAccessFile( storeName, "rw" ).getChannel();
+		fileChannel.position( 0 );
+		int i = 0;
+		while ( fileChannel.read( buffer ) == 5 )
+		{
+			buffer.flip();
+			byte inUse = buffer.get();
+			int block = buffer.getInt();
+			String name = "N/A";
+			try
+			{
+				Collection<DynamicRecord> records = 
+					typeNameStore.getRecords( block, null );
+				name = getStringFor( records, block );
+			}
+			catch ( IOException e )
+			{}
+			System.out.println( "ID[" + i + "] use[" + inUse + 
+				"] blockId[" + block + "] name[" + name + "]" ); 
+			i++;
+			buffer.clear();
+		}
+		typeNameStore.close();
+	}
 	
 	public static void createStore( String fileName ) throws IOException
 	{
 		NeoStore.createStore( fileName );
 	}
+	
+	private static String getStringFor( Collection<DynamicRecord> recordsCol, 
+		int startBlock ) throws IOException
+    {
+		int recordToFind = startBlock;
+		Iterator<DynamicRecord> records = recordsCol.iterator();
+		List<char[]> charList = new LinkedList<char[]>();
+		int totalSize = 0;
+		while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
+			records.hasNext() )
+		{
+			DynamicRecord record = records.next();
+			if ( record.inUse() && record.getId() == recordToFind )
+			{
+				if ( !record.isCharData() )
+				{
+					ByteBuffer buf = ByteBuffer.wrap( record.getData() );
+					char[] chars = new char[ record.getData().length / 2 ];
+					totalSize += chars.length;
+					buf.asCharBuffer().get( chars );
+					charList.add( chars );
+				}
+				else
+				{
+					charList.add( record.getDataAsChar() );
+				}
+				recordToFind = record.getNextBlock();
+				// TODO: make opti here, high chance next is right one
+				records = recordsCol.iterator();
+			}
+		}
+		StringBuffer buf = new StringBuffer();
+		for ( char[] str : charList )
+		{
+			buf.append( str );
+		}
+		return buf.toString();
+    }
 
 	public static void fsckStore( String fileName ) throws IOException
 	{
