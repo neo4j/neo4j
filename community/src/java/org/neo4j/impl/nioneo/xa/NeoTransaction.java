@@ -98,7 +98,8 @@ class NeoTransaction extends XaTransaction
 			return false;
 		}
 		if ( nodeRecords.size() == 0 && relRecords.size() == 0 && 
-			relTypeRecords.size() == 0 && propertyRecords.size() == 0 )
+			relTypeRecords.size() == 0 && propertyRecords.size() == 0 && 
+			propIndexRecords.size() == 0 )
 		{
 			return true;
 		}
