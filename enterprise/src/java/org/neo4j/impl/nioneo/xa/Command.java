@@ -407,7 +407,7 @@ abstract class Command extends XaCommand
 		@Override
 		public String toString()
 		{
-			return "PropertyCommand[" + record + "]";
+			return "PropertyIndexCommand[" + record + "]";
 		}
 
 		@Override

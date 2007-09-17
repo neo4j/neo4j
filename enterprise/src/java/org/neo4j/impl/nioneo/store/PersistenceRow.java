@@ -13,13 +13,17 @@ import java.nio.channels.FileChannel;
 class PersistenceRow extends LockableWindow
 {
 	private int recordSize = -1;
-	private int position = -1;
+	private final long position;
 	private Buffer buffer = null;
 	
-	PersistenceRow( int recordSize, FileChannel channel ) 
+	PersistenceRow( long position, int recordSize, FileChannel channel ) 
 		throws IOException
 	{
 		super( channel );
+		if ( position < 0 )
+		{
+			throw new IOException( "Illegal position[" + position + "]" );
+		}
 		if ( recordSize <= 0 )
 		{
 			throw new IOException( "Illegal recordSize[" + recordSize + "]" );
@@ -28,9 +32,10 @@ class PersistenceRow extends LockableWindow
 		{
 			throw new IOException( "Null file channel" );
 		}
+		this.position = position;
 		this.recordSize = recordSize;
 		this.buffer = new Buffer( this );
-		this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
+		goToPosition();
 	}
 	
 	public Buffer getBuffer()
@@ -38,31 +43,22 @@ class PersistenceRow extends LockableWindow
 		return buffer;
 	}
 	
-	public int position()
+	public long position()
 	{
 		return position;
 	}
 	
-	void position( int id ) throws IOException
+	private void goToPosition() throws IOException
 	{
 		long fileSize = getFileChannel().size();
-		int recordCount = ( int ) fileSize / recordSize;
-		if ( id < 0 )
+		int recordCount = ( int ) (fileSize / recordSize);
+		this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
+		if ( position > recordCount )
 		{
-			throw new IOException( "Illegal position[" + id + "]" );
-		}
-		if ( position == id )
-		{
+			// use new buffer since it will contain only zeros
 			return;
 		}
 		ByteBuffer byteBuffer = buffer.getBuffer();
-		position = id;
-		if ( id > recordCount )
-		{
-			// get a new buffer since it will contain only zeros
-			this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
-			return;
-		}
 		byteBuffer.clear();
 		getFileChannel().read( byteBuffer, position * recordSize );
 		byteBuffer.rewind();
@@ -92,15 +88,9 @@ class PersistenceRow extends LockableWindow
 		return position() == ( ( PersistenceRow ) o ).position();
 	}
 	
-	private volatile int hashCode = 0;
-
 	public int hashCode()
 	{
-		if ( hashCode == 0 )
-		{
-			hashCode = 3217 * position();
-		}
-		return hashCode;
+		return (int) this.position;
 	}
 	
 	public String toString()

@@ -9,13 +9,13 @@ import java.nio.channels.FileChannel;
  */
 class MappedPersistenceWindow extends LockableWindow
 {
-	private int position = -1;
+	private long position = -1;
 	private Buffer buffer = null;
 	private int windowSize = -1;
 	private int recordSize = -1;
 	private int totalSize = -1;
 	
-	MappedPersistenceWindow( int position, int recordSize, int totalSize,  
+	MappedPersistenceWindow( long position, int recordSize, int totalSize,  
 		FileChannel channel ) throws IOException
 	{
 		super( channel );
@@ -51,7 +51,7 @@ class MappedPersistenceWindow extends LockableWindow
 		return buffer;
 	}
 	
-	public int position()
+	public long position()
 	{
 		return position;
 	}
@@ -85,7 +85,7 @@ class MappedPersistenceWindow extends LockableWindow
 	{
 		if ( hashCode == 0 )
 		{
-			hashCode = 3217 * position();
+			hashCode = (int) position();
 		}
 		return hashCode;
 	}

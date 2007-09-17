@@ -35,7 +35,7 @@ public class Buffer
 	 *  
 	 * @return The persistence window's position
 	 */
-	public int position()
+	public long position()
 	{
 		return persistenceWindow.position();
 	}
@@ -201,5 +201,10 @@ public class Buffer
 	{
 		buf.asCharBuffer().get( dst );
 		return this;
+	}
+	
+	public String toString()
+	{
+		return "Buffer[" + buf + "," + persistenceWindow + "]"; 
 	}
 }

@@ -391,8 +391,8 @@ public class NodeManager
 		{
 			return new RelationshipProxy( relId );
 		}
-		Relationship dummyRel = new RelationshipImpl( relId );
-		acquireLock( dummyRel, LockType.READ );
+		relationship = new RelationshipImpl( relId );
+		acquireLock( relationship, LockType.READ );
 		try
 		{
 			if ( relCache.get( relId ) != null )
@@ -428,7 +428,7 @@ public class NodeManager
 		finally
 		{
 			// forceReleaseWriteLock( dummyRel );
-			forceReleaseReadLock( dummyRel );
+			forceReleaseReadLock( relationship );
 		}
 	}
 	
@@ -444,8 +444,8 @@ public class NodeManager
 		{
 			return relationship;
 		}
-		Relationship dummyRel = new RelationshipImpl( relId );
-		acquireLock( dummyRel, LockType.READ );
+		relationship = new RelationshipImpl( relId );
+		acquireLock( relationship, LockType.READ );
 		try
 		{
 			if ( relCache.get( relId ) != null )
@@ -482,7 +482,7 @@ public class NodeManager
 		}
 		finally
 		{
-			forceReleaseReadLock( dummyRel );
+			forceReleaseReadLock( relationship );
 		}
 	}
 	

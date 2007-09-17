@@ -183,7 +183,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	{
 		if ( record.isTransferable() && !hasWindow( record.getId() ) )
 		{
-			int id = record.getId();
+			long id = record.getId();
 			long count = record.getTransferCount();
 			FileChannel fileChannel = getFileChannel();
 			fileChannel.position( id * getBlockSize() );
@@ -201,7 +201,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		try
 		{
 			Buffer buffer = window.getBuffer();
-			int offset = ( blockId - buffer.position() ) * getBlockSize();
+			int offset = (int) ( blockId - buffer.position() ) * 
+				getBlockSize();
 			buffer.setOffset( offset );
 			if ( record.inUse() )
 			{
@@ -350,7 +351,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 			if ( buffer != null && !hasWindow( blockId ) )
 			{
 				buffer.makeReadyForTransfer();
-				getFileChannel().transferTo( blockId * getBlockSize(), 
+				getFileChannel().transferTo( ((long) blockId) * getBlockSize(), 
 					BLOCK_HEADER_SIZE, buffer.getFileChannel() );
 				ByteBuffer buf = buffer.getByteBuffer();
 				record = new DynamicRecord( blockId );
@@ -401,7 +402,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		{
 			int nrOfBytes = record.getLength();
 			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( blockId * getBlockSize() + 
+			getFileChannel().transferTo( ((long) blockId) * getBlockSize() + 
 				BLOCK_HEADER_SIZE, nrOfBytes, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			byte bytes[] = new byte[nrOfBytes];
@@ -415,8 +416,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 			try
 			{
 				Buffer buf = window.getBuffer();
-				int offset = ( blockId - buf.position() ) * getBlockSize() + 
-					BLOCK_HEADER_SIZE;
+				int offset = (int) ( blockId - buf.position() ) * 
+					getBlockSize() + BLOCK_HEADER_SIZE;
 				buf.setOffset( offset );
 				byte bytes[] = new byte[record.getLength()];
 				buf.get( bytes );
@@ -433,7 +434,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		throws IOException
 	{
 		DynamicRecord record = new DynamicRecord( blockId );
-		int offset = ( blockId - buffer.position() ) * getBlockSize();
+		int offset = (int) ( blockId - buffer.position() ) * getBlockSize();
 		buffer.setOffset( offset );
 		byte inUse = buffer.get();
 		if ( inUse != Record.IN_USE.byteValue() )
@@ -464,7 +465,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		throws IOException
 	{
 		DynamicRecord record = new DynamicRecord( blockId );
-		int offset = ( blockId - buffer.position() ) * getBlockSize();
+		int offset = (int) ( blockId - buffer.position() ) * getBlockSize();
 		buffer.setOffset( offset );
 		byte inUse = buffer.get();
 		if ( inUse != Record.IN_USE.byteValue() )
@@ -565,7 +566,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		try
 		{
 			Buffer buffer = window.getBuffer();
-			int offset = ( blockId - buffer.position() ) * getBlockSize();
+			int offset = (int) ( blockId - buffer.position() ) * 
+				getBlockSize();
 			buffer.setOffset( offset );
 			byte inUse = buffer.get();
 			if ( inUse != Record.IN_USE.byteValue() )
@@ -600,7 +602,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 					releaseWindow( window );
 					window = acquireWindow( nextBlock, OperationType.READ );
 					buffer = window.getBuffer();
-					offset = ( nextBlock - buffer.position() ) * 
+					offset = (int) ( nextBlock - buffer.position() ) * 
 						getBlockSize();
 					buffer.setOffset( offset );
 					inUse = buffer.get();
@@ -661,11 +663,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		FileChannel fileChannel = getFileChannel();
 		long fileSize = fileChannel.size();
 		// long dot = fileSize / getBlockSize() / 20;
-		long defragedCount = 0;
+		long defraggedCount = 0;
 		ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
 		LinkedList<Integer> freeIdList = new LinkedList<Integer>();
 		int highId = 0;
-		for ( int i = 1; i * getBlockSize() < fileSize; i++ )
+		for ( long i = 1; i * getBlockSize() < fileSize; i++ )
 		{
 			fileChannel.position( i * getBlockSize() );
 			fileChannel.read( byteBuffer );
@@ -675,15 +677,15 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 			nextBlockId();
 			if ( inUse == Record.NOT_IN_USE.byteValue() )
 			{
-				freeIdList.add( i );
+				freeIdList.add( (int) i );
 			}
 			else
 			{
-				highId = i;
+				highId = (int) i;
 				while ( !freeIdList.isEmpty() )
 				{
 					freeBlockId( freeIdList.removeFirst() );
-					defragedCount++;
+					defraggedCount++;
 				}
 			}
 //			if ( dot != 0 && i % dot == 0 )
@@ -693,7 +695,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		}
 		setHighId( highId + 1 );
 		logger.info( "[" + getStorageFileName() + "] high id=" + getHighId() + 
-			" (defraged=" + defragedCount + ")" );  
+			" (defragged=" + defraggedCount + ")" );  
 		closeIdGenerator();
 		openIdGenerator();
 	}
