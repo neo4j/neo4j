@@ -349,9 +349,7 @@ public class XaLogicalLog
 			return;
 		}
 		writeBuffer.force();
-		long truncateAt = writeBuffer.getFileChannelPosition();
 		writeBuffer = null;
-		fileChannel.truncate( truncateAt );
 		fileChannel.close();
 		File file = new File( fileName );
 		if ( !file.exists() )
@@ -359,7 +357,26 @@ public class XaLogicalLog
 			throw new IOException( "Logical log[" + fileName + "] not found" );
 		}
 		// TODO: if store old logs save them here
-		file.delete();
+		try
+		{
+			file.delete();
+		}
+		catch ( Exception e )
+		{
+			try
+			{
+				Thread.sleep( 500 );
+				// try again
+				file.delete();
+			}
+			catch ( Throwable t )
+			{
+				log.warning( "Unable to delete clean logical log[" +  
+					fileName + "]" + e );
+				log.info( "Since you're not using a real operating system " + 
+					"you will be punished for it at next startup" );
+			}
+		}
 	}
 	
 	private void doInternalRecovery() throws IOException

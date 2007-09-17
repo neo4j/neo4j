@@ -105,8 +105,10 @@ public class RelationshipStore extends AbstractStore implements Store
 	{
 		if ( record.isTransferable() && !hasWindow( record.getId() ) )
 		{
-			transferRecord( record );
-			return;
+			if ( transferRecord( record ) )
+			{
+				return;
+			}
 		}
 		PersistenceWindow window = acquireWindow( record.getId(), 
 			OperationType.WRITE );
@@ -120,7 +122,8 @@ public class RelationshipStore extends AbstractStore implements Store
 		}
 	}
 	
-	private void transferRecord( RelationshipRecord record ) throws IOException
+	private boolean transferRecord( RelationshipRecord record ) 
+		throws IOException
 	{
 		long id = record.getId();
 		long count = record.getTransferCount();
@@ -129,9 +132,9 @@ public class RelationshipStore extends AbstractStore implements Store
 		if ( count != record.getFromChannel().transferTo( 
 			record.getTransferStartPosition(), count, fileChannel ) )
 		{
-			throw new RuntimeException( "expected " + count + 
-				" bytes transfered" );
+			return false;
 		}
+		return true;
 	}
 	
 	private void updateRecord( RelationshipRecord record, Buffer buffer )

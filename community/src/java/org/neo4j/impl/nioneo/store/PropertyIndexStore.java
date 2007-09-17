@@ -197,7 +197,19 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	{
 		if ( record.isTransferable() && !hasWindow( record.getId() ) )
 		{
-			transferRecord( record );
+			if ( !transferRecord( record ) )
+			{
+				PersistenceWindow window = acquireWindow( record.getId(), 
+					OperationType.WRITE );
+				try
+				{
+					updateRecord( record, window.getBuffer() );
+				}
+				finally 
+				{
+					releaseWindow( window );
+				}
+			}
 		}
 		else
 		{
@@ -249,7 +261,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 		return record;
 	}
 	
-	private void transferRecord( PropertyIndexRecord record ) throws IOException
+	private boolean transferRecord( PropertyIndexRecord record ) throws IOException
 	{
 		int id = record.getId();
 		long count = record.getTransferCount();
@@ -258,9 +270,11 @@ public class PropertyIndexStore extends AbstractStore implements Store
 		if ( count != record.getFromChannel().transferTo( 
 			record.getTransferStartPosition(), count, fileChannel ) )
 		{
-			throw new RuntimeException( "expected " + count + 
-				" bytes transfered" );
+//			throw new RuntimeException( "expected " + count + 
+//				" bytes transfered" );
+			return false;
 		}
+		return true;
 	}
 	
 	private void updateRecord( PropertyIndexRecord record, Buffer buffer )
