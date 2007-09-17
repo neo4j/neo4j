@@ -260,6 +260,14 @@ class NeoTransaction extends XaTransaction
 			}
 			for ( PropertyRecord record : propertyRecords.values() )
 			{
+				if ( record.getNodeId() != -1 )
+				{
+					nm.removeNodeFromCache( record.getNodeId() );
+				}
+				else if ( record.getRelId() != -1 )
+				{
+					nm.removeRelationshipFromCache( record.getRelId() );
+				}
 				if ( record.isCreated() )
 				{
 					getPropertyStore().freeId( record.getId() );
@@ -698,6 +706,7 @@ class NeoTransaction extends XaTransaction
 				readFromBuffer );
 			addPropertyRecord( propRecord );
 		}
+		propRecord.setRelId( relId );
 		if ( propRecord.isLight() )
 		{
 			getPropertyStore().makeHeavy( propRecord, readFromBuffer );
@@ -866,6 +875,7 @@ class NeoTransaction extends XaTransaction
 				readFromBuffer );
 			addPropertyRecord( propRecord );
 		}
+		propRecord.setNodeId( nodeId );
 		if ( propRecord.isLight() )
 		{
 			getPropertyStore().makeHeavy( propRecord, readFromBuffer );
@@ -912,7 +922,8 @@ class NeoTransaction extends XaTransaction
 		}
 	}
 
-	void relChangeProperty( int propertyId, Object value ) throws IOException
+	void relChangeProperty( int relId, int propertyId, Object value ) 
+		throws IOException
 	{
 		PropertyRecord propertyRecord = getPropertyRecord( propertyId );
 		if ( propertyRecord == null )
@@ -921,6 +932,7 @@ class NeoTransaction extends XaTransaction
 				readFromBuffer );
 			addPropertyRecord( propertyRecord );
 		}
+		propertyRecord.setRelId( relId );
 		if ( propertyRecord.isLight() )
 		{
 			getPropertyStore().makeHeavy( propertyRecord, readFromBuffer );
@@ -949,7 +961,7 @@ class NeoTransaction extends XaTransaction
 		addPropertyRecord( propertyRecord );
 	}
 	
-	void nodeChangeProperty( int propertyId, Object value )
+	void nodeChangeProperty( int nodeId, int propertyId, Object value )
 		throws IOException
 	{
 		PropertyRecord propertyRecord = getPropertyRecord( propertyId );
@@ -959,6 +971,7 @@ class NeoTransaction extends XaTransaction
 				readFromBuffer );
 			addPropertyRecord( propertyRecord );
 		}
+		propertyRecord.setNodeId( nodeId );
 		if ( propertyRecord.isLight() )
 		{
 			getPropertyStore().makeHeavy( propertyRecord, readFromBuffer );
@@ -997,7 +1010,6 @@ class NeoTransaction extends XaTransaction
 				readFromBuffer );
 			addRelationshipRecord( relRecord );
 		}
-		
 		PropertyRecord propertyRecord = new PropertyRecord( propertyId );
 		propertyRecord.setInUse( true );
 		propertyRecord.setCreated();
