@@ -207,7 +207,7 @@ public class TxModule
 		catch ( Exception e )
 		{
 			throw new RuntimeException( "Could not create data source " + 
-			name + "[" + name + "]", e );
+				name + "[" + name + "]", e );
 		}
 	}
 

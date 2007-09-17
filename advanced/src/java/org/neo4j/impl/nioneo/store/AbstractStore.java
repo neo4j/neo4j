@@ -184,11 +184,11 @@ public abstract class AbstractStore extends CommonAbstractStore
 		long fileSize = fileChannel.size();
 		int recordSize = getRecordSize();
 //		long dot = fileSize / recordSize / 20;
-		long defragedCount = 0;
+		long defraggedCount = 0;
 		ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
 		LinkedList<Integer> freeIdList = new LinkedList<Integer>();
 		int highId = -1;
-		for ( int i = 0; i * recordSize < fileSize; i++ )
+		for ( long i = 0; i * recordSize < fileSize; i++ )
 		{
 			fileChannel.position( i * recordSize );
 			fileChannel.read( byteBuffer );
@@ -198,15 +198,15 @@ public abstract class AbstractStore extends CommonAbstractStore
 			nextId();
 			if ( inUse == RECORD_NOT_IN_USE )
 			{
-				freeIdList.add( i );
+				freeIdList.add( (int) i );
 			}
 			else
 			{
-				highId = i;
+				highId = (int) i;
 				while ( !freeIdList.isEmpty() )
 				{
 					freeId( freeIdList.removeFirst() );
-					defragedCount++;
+					defraggedCount++;
 				}
 			}
 //			if ( dot != 0 && i % dot == 0 )
@@ -216,7 +216,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 		}
 		setHighId( highId + 1 );
 		logger.info( "[" + getStorageFileName() + "] high id=" + getHighId() + 
-			" (defraged=" + defragedCount + ")" );  
+			" (defragged=" + defraggedCount + ")" );  
 		closeIdGenerator();
 		openIdGenerator();
 	}	

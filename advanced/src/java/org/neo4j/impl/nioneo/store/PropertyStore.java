@@ -206,7 +206,7 @@ public class PropertyStore extends AbstractStore implements Store
 	
 	private void transferRecord( PropertyRecord record ) throws IOException
 	{
-		int id = record.getId();
+		long id = record.getId();
 		long count = record.getTransferCount();
 		FileChannel fileChannel = getFileChannel();
 		fileChannel.position( id * getRecordSize() );
@@ -225,7 +225,7 @@ public class PropertyStore extends AbstractStore implements Store
 		throws IOException
 	{
 		int id = record.getId();
-		int offset = ( id - buffer.position() ) * getRecordSize();
+		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		if ( record.inUse() )
 		{
@@ -251,8 +251,8 @@ public class PropertyStore extends AbstractStore implements Store
 		if ( buffer != null && !hasWindow( id ) )
 		{
 			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
-				buffer.getFileChannel() );
+			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
+				RECORD_SIZE, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			byte inUse = buf.get();
 			assert inUse == Record.IN_USE.byteValue();
@@ -313,8 +313,8 @@ public class PropertyStore extends AbstractStore implements Store
 		if ( buffer != null && !hasWindow( id ) )
 		{
 			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
-				buffer.getFileChannel() );
+			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
+				RECORD_SIZE, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			byte inUse = buf.get();
 			assert inUse == Record.IN_USE.byteValue();
@@ -368,7 +368,7 @@ public class PropertyStore extends AbstractStore implements Store
 	private PropertyRecord getRecord( int id, Buffer buffer ) 
 		throws IOException
 	{
-		int offset = ( id - buffer.position() ) * getRecordSize();
+		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		if ( buffer.get() != Record.IN_USE.byteValue() )
 		{
@@ -570,9 +570,9 @@ public class PropertyStore extends AbstractStore implements Store
 		int maxId = getHighestPossibleIdInUse();
 		Map<String,Integer> keyToIndex = new HashMap<String, Integer>();
 		ByteBuffer buf = ByteBuffer.allocate( 9 );
-		for ( int i = 0; i <= maxId; i++ )
+		for ( long i = 0; i <= maxId; i++ )
 		{
-			int position = i * RECORD_SIZE; 
+			long position = i * RECORD_SIZE; 
 			getFileChannel().position( position );
 			buf.clear();
 			if ( getFileChannel().read( buf ) != 9 )

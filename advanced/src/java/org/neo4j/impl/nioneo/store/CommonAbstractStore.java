@@ -452,7 +452,7 @@ public abstract class CommonAbstractStore
 			recordSize = ( ( AbstractStore ) this ).getRecordSize();
         }
 		closeIdGenerator();
-		fileChannel.position( highId * recordSize );
+		fileChannel.position( ((long) highId) * recordSize );
 		ByteBuffer buffer = ByteBuffer.wrap(
 			getTypeAndVersionDescriptor().getBytes() );
 		int bytes = fileChannel.write( buffer );

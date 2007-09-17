@@ -1374,15 +1374,9 @@ class NeoTransaction extends XaTransaction
 			return this.getId() == ((Relationship) o).getId();
 		}
 		
-		private volatile int hashCode = 0;
-		
 		public int hashCode()
 		{
-			if ( hashCode == 0 )
-			{
-				hashCode = 3217 * (int) this.getId();
-			}
-			return hashCode;
+			return id;
 		}
 
 		public String toString()

@@ -159,7 +159,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	private void transferRecord( RelationshipTypeRecord record ) 
 		throws IOException
 	{
-		int id = record.getId();
+		long id = record.getId();
 		long count = record.getTransferCount();
 		FileChannel fileChannel = getFileChannel();
 		fileChannel.position( id * getRecordSize() );
@@ -178,8 +178,8 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		if ( buffer != null && !hasWindow( id ) )
 		{
 			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
-				buffer.getFileChannel() );
+			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
+				RECORD_SIZE, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			byte inUse = buf.get();
 			assert inUse == Record.IN_USE.byteValue();
@@ -257,7 +257,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	
 	private void markAsReserved( int id, Buffer buffer ) throws IOException
 	{
-		int offset = ( id - buffer.position() ) * getRecordSize();
+		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		if ( buffer.get() != Record.NOT_IN_USE.byteValue() )
 		{
@@ -271,7 +271,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	private RelationshipTypeRecord getRecord( int id, Buffer buffer ) 
 		throws IOException
 	{
-		int offset = ( id - buffer.position() ) * getRecordSize();
+		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		if ( buffer.get() != Record.IN_USE.byteValue() )
 		{
@@ -286,7 +286,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	private void updateRecord( RelationshipTypeRecord record, Buffer buffer )
 	{
 		int id = record.getId();
-		int offset = ( id - buffer.position() ) * getRecordSize();
+		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		if ( record.inUse() )
 		{

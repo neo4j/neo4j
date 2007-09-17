@@ -782,29 +782,9 @@ class NodeImpl implements Node, Comparable
 		
 	}
 	
-	private volatile int hashCode = 0;
-	
 	public int hashCode()
 	{
-		// hashcode contract:
-		// 1. must return the same result for the same object consistenlty
-		// 2. if two objects are equal they must produce the same hashcode
-		// also two distinct object should (not required) produce different
-		// hash values, ideally a hash function should distribute any 
-		// collection uniformly across all possible hash values
-		
-		// we have 
-		if ( hashCode == 0 )
-		{
-			// this one is so leet, if you don't understand, that is ok...
-			// you're just not on the same elitness level as some of us, 
-			// nothing to be ashamed of
-			hashCode = 3217 * (int) this.getId();
-		}
-		return hashCode;
-
-		// or maybe this is enough when we have zillions of nodes?
-		// return this.id;
+		return id;
 	}
 	
 	/**
