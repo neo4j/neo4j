@@ -187,13 +187,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 			long count = record.getTransferCount();
 			FileChannel fileChannel = getFileChannel();
 			fileChannel.position( id * getBlockSize() );
-			if ( count != record.getFromChannel().transferTo( 
+			if ( count == record.getFromChannel().transferTo( 
 				record.getTransferStartPosition(), count, fileChannel ) )
 			{
-				throw new RuntimeException( "expected " + count + 
-					" bytes transfered" );
+				return;
 			}
-			return;
 		}
 		int blockId = record.getId();
 		PersistenceWindow window = acquireWindow( blockId, 
