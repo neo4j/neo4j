@@ -13,7 +13,7 @@ abstract class LockableWindow implements PersistenceWindow
 {
 	public abstract Buffer getBuffer();
 
-	public abstract int position();
+	public abstract long position();
 	
 	public abstract int size();
 	
@@ -30,7 +30,7 @@ abstract class LockableWindow implements PersistenceWindow
 		this.fileChannel = fileChannel;
 	}
 
-	boolean encapsulates( int position )
+	boolean encapsulates( long position )
 	{
 		return position() <= position && position < position() + size();
 	}

@@ -18,7 +18,7 @@ public interface PersistenceWindow
 	 * 
 	 * @return The current position
 	 */
-	public int position();
+	public long position();
 	
 	/**
 	 * Returns the size of this window meaning the number of records/blocks it 

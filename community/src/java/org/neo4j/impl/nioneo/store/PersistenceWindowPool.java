@@ -70,13 +70,14 @@ class PersistenceWindowPool
 		dumpStatus();
 	}
 	
-	public boolean hasWindow( int position ) throws IOException
+	public boolean hasWindow( long position ) throws IOException
 	{
 		synchronized ( activeRowWindows )
 		{
 			if ( brickSize > 0 )
 			{
-				int brickIndex = position * blockSize / brickSize;
+				int brickIndex = (int) (position * 
+					blockSize / brickSize);
 				if ( brickIndex < brickArray.length )
 				{
 					if ( brickArray[brickIndex].getWindow() == null )
@@ -123,7 +124,7 @@ class PersistenceWindowPool
 	 * @return A locked window encapsulating the position
 	 * @throws IOException If unable to acquire the window
 	 */
-	PersistenceWindow acquire( int position, OperationType operationType ) 
+	PersistenceWindow acquire( long position, OperationType operationType ) 
 		throws IOException
 	{
 		LockableWindow window = null;
@@ -148,7 +149,7 @@ class PersistenceWindowPool
 			}
 			if ( brickSize > 0 )
 			{
-				int brickIndex = position * blockSize / brickSize;
+				int brickIndex = (int) (position * blockSize / brickSize);
 				if ( brickIndex < brickArray.length )
 				{
 					window = brickArray[brickIndex].getWindow();
@@ -169,17 +170,17 @@ class PersistenceWindowPool
 				else
 				{
 					expandBricks( brickIndex + 1 );
+					window = brickArray[brickIndex].getWindow();
 				}
 			}
 			if ( window == null )
 			{
 				miss++;
 				brickMiss++;
-				PersistenceRow dpw = new PersistenceRow( 
+				PersistenceRow dpw = new PersistenceRow( position, 
 					blockSize, fileChannel );
-				dpw.position( position );
 				window = dpw;
-				activeRowWindows.put( position, window );
+				activeRowWindows.put( (int)position, window );
 			}
 			else
 			{
@@ -215,7 +216,7 @@ class PersistenceWindowPool
 				dpw.writeOut();
 				if ( dpw.getWaitingThreadsCount() == 0 && !dpw.isMarked() )
 				{
-					int key = dpw.position();
+					int key = (int) dpw.position();
 					activeRowWindows.remove( key );
 				}
 			}
@@ -376,7 +377,7 @@ class PersistenceWindowPool
 		}
 		if ( mappedMem > 0 && fileSize > 0 )
 		{
-			float ratio = ( mappedMem + 0.0f ) / fileSize;
+			double ratio = ( mappedMem + 0.0d ) / fileSize;
 			if ( ratio >= 1 )
 			{
 				brickSize = mappedMem / 10;
@@ -385,7 +386,7 @@ class PersistenceWindowPool
 			}
 			else
 			{
-				brickCount = (int) ( 100.0 / ratio );
+				brickCount = (int) ( 100.0d / ratio );
 				if ( brickCount > MAX_BRICK_COUNT )
 				{
 					brickCount = MAX_BRICK_COUNT;
@@ -401,7 +402,7 @@ class PersistenceWindowPool
 					brickSize = 0;
 					return;
 				}
-				brickSize = (int) fileSize / brickCount;
+				brickSize = (int) (fileSize / brickCount);
 				brickSize = ( brickSize / blockSize ) * blockSize;
 				assert brickSize > blockSize;
 			}
@@ -415,21 +416,6 @@ class PersistenceWindowPool
 		for ( int i = 0; i < brickCount; i++ )
 		{
 			BrickElement element = new BrickElement( i );
-			if ( mappedMem >= brickCount * brickSize )
-			{
-				try
-				{
-					element.setWindow( new MappedPersistenceWindow( 
-						i * brickSize / blockSize, blockSize, brickSize, 
-						fileChannel ) );
-					memUsed += brickSize;
-				}
-				catch ( MappedMemException e )
-				{
-					// ok...
-					logWarn( "Unable to memory map" );
-				}
-			}
 			brickArray[i] = element;
 		}
 	}
@@ -466,10 +452,14 @@ class PersistenceWindowPool
 		{
 			BrickElement nonMappedBrick = nonMappedBricks.get( 
 				nonMappedIndex-- );
+			if ( nonMappedBrick.getHit() == 0 )
+			{
+				return;
+			}
 			try
 			{
 				nonMappedBrick.setWindow( new MappedPersistenceWindow( 
-					nonMappedBrick.index() * brickSize / blockSize, 
+					((long) nonMappedBrick.index()) * brickSize / blockSize, 
 					blockSize, brickSize, fileChannel ) );
 				memUsed += brickSize;
 				// nonMappedBricks.remove( nonMappedIndex );
@@ -508,8 +498,8 @@ class PersistenceWindowPool
 				try
 				{
 					nonMappedBrick.setWindow( new MappedPersistenceWindow( 
-						nonMappedBrick.index() * brickSize / blockSize, 
-						blockSize, brickSize, fileChannel ) );
+						((long) nonMappedBrick.index()) * brickSize / 
+						blockSize, blockSize, brickSize, fileChannel ) );
 					memUsed += brickSize;
 					switches++;
 				}
@@ -537,8 +527,8 @@ class PersistenceWindowPool
 					try
 					{
 						be.setWindow( new MappedPersistenceWindow( 
-							i * brickSize / blockSize, blockSize, brickSize, 
-							fileChannel ) );
+							((long) i) * brickSize / blockSize, blockSize, 
+							brickSize, fileChannel ) );
 						memUsed += brickSize;
 					}
 					catch ( MappedMemException e )

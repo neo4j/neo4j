@@ -77,8 +77,8 @@ public class NodeStore extends AbstractStore implements Store
 		if ( buffer != null && !hasWindow( id ) )
 		{
 			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
-				buffer.getFileChannel() );
+			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
+				RECORD_SIZE, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			record = new NodeRecord( id );
 			byte inUse = buf.get();
@@ -126,8 +126,8 @@ public class NodeStore extends AbstractStore implements Store
 		if ( buffer != null && !hasWindow( id ) )
 		{
 			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
-				buffer.getFileChannel() );
+			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
+				RECORD_SIZE, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			record = new NodeRecord( id );
 			byte inUse = buf.get();
@@ -160,7 +160,7 @@ public class NodeStore extends AbstractStore implements Store
 	private NodeRecord getRecord( int id, Buffer buffer, boolean check ) 
 		throws IOException
 	{
-		int offset = ( id - buffer.position() ) * getRecordSize();
+		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		boolean inUse = ( buffer.get() == Record.IN_USE.byteValue() );
 		if ( !inUse && !check )
@@ -176,7 +176,7 @@ public class NodeStore extends AbstractStore implements Store
 	
 	private void transferRecord( NodeRecord record ) throws IOException
 	{
-		int id = record.getId();
+		long id = record.getId();
 		long count = record.getTransferCount();
 		FileChannel fileChannel = getFileChannel();
 		fileChannel.position( id * getRecordSize() );
@@ -192,7 +192,7 @@ public class NodeStore extends AbstractStore implements Store
 		throws IOException
 	{
 		int id = record.getId();
-		int offset = ( id - buffer.position() ) * getRecordSize();
+		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		if ( record.inUse() )
 		{

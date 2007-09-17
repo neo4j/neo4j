@@ -114,15 +114,9 @@ class RelationshipProxy implements Relationship
 		
 	}
 	
-	private volatile int hashCode = 0;
-
 	public int hashCode()
 	{
-		if ( hashCode == 0 )
-		{
-			hashCode = 3217 * (int) this.getId();
-		}
-		return hashCode;
+		return relId;
 	}
 	
 	public String toString()

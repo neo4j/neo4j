@@ -74,8 +74,8 @@ public class RelationshipStore extends AbstractStore implements Store
 		if ( buffer != null && !hasWindow( id ) )
 		{
 			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( id * RECORD_SIZE, RECORD_SIZE, 
-				buffer.getFileChannel() );
+			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
+				RECORD_SIZE, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			byte inUse = buf.get();
 			assert inUse == Record.IN_USE.byteValue();
@@ -122,7 +122,7 @@ public class RelationshipStore extends AbstractStore implements Store
 	
 	private void transferRecord( RelationshipRecord record ) throws IOException
 	{
-		int id = record.getId();
+		long id = record.getId();
 		long count = record.getTransferCount();
 		FileChannel fileChannel = getFileChannel();
 		fileChannel.position( id * getRecordSize() );
@@ -138,7 +138,7 @@ public class RelationshipStore extends AbstractStore implements Store
 		throws IOException
 	{
 		int id = record.getId();
-		int offset = ( id - buffer.position() ) * getRecordSize();
+		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		if ( record.inUse() )
 		{
@@ -163,7 +163,7 @@ public class RelationshipStore extends AbstractStore implements Store
 	private RelationshipRecord getRecord( int id, Buffer buffer ) 
 		throws IOException
 	{
-		int offset = ( id - buffer.position() ) * getRecordSize();
+		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		byte inUse = buffer.get();
 		boolean inUseFlag = ( ( inUse & Record.IN_USE.byteValue() ) == 
