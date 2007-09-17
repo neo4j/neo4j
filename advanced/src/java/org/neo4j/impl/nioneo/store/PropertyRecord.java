@@ -14,6 +14,8 @@ public class PropertyRecord extends AbstractRecord
 	private int nextProp = Record.NO_NEXT_PROPERTY.intValue();
 	private List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
 	private boolean isLight = false;
+	private int nodeRelId = -1;
+	private boolean nodeIdSet = false;
 	
 	public PropertyRecord( int id )
 	{
@@ -23,6 +25,36 @@ public class PropertyRecord extends AbstractRecord
 	public void setType( PropertyType type )
 	{
 		this.type = type;
+	}
+	
+	public void setNodeId( int nodeId )
+	{
+		nodeIdSet = true;
+		nodeRelId = nodeId;
+	}
+	
+	public void setRelId( int relId )
+	{
+		nodeIdSet = false;
+		nodeRelId = relId;
+	}
+	
+	public int getNodeId()
+	{
+		if ( nodeIdSet )
+		{
+			return nodeRelId;
+		}
+		return -1;
+	}
+	
+	public int getRelId()
+	{
+		if ( !nodeIdSet )
+		{
+			return nodeRelId;
+		}
+		return -1;
 	}
 	
 	void setIsLight( boolean status )

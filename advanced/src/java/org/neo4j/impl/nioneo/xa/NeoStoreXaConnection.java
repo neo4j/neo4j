@@ -187,7 +187,8 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		public void changeProperty( int nodeId, int propertyId, Object value ) 
 			throws IOException
 		{
-			xaCon.getNeoTransaction().nodeChangeProperty( propertyId, value );
+			xaCon.getNeoTransaction().nodeChangeProperty( nodeId, propertyId, 
+				value );
 		}
 		
 		public void removeProperty( int nodeId, int propertyId ) 
@@ -252,7 +253,8 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		public void changeProperty( int relId, int propertyId, Object value ) 
 			throws IOException
 		{
-			xaCon.getNeoTransaction().relChangeProperty( propertyId, value );		
+			xaCon.getNeoTransaction().relChangeProperty( relId, propertyId, 
+				value );		
 		}
 		
 		public void removeProperty( int relId, int propertyId ) 
