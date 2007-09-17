@@ -9,9 +9,8 @@ import junit.framework.TestSuite;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.impl.core.IllegalValueException;
+import org.neo4j.api.core.Transaction;
 import org.neo4j.impl.core.NodeManager;
-import org.neo4j.impl.core.NotFoundException;
 import org.neo4j.impl.transaction.TransactionFactory;
 import unit.neo.MyRelTypes;
 
@@ -29,16 +28,7 @@ public class TestNeo extends TestCase
 	
 	public static Test suite()
 	{
-		TestSuite suite = new TestSuite();
-		// suite.addTest( new TestNeo( "testNodePropertyPerformance" ) );
-		// suite.addTest( new TestNeo( "testNodePropertyPerformance2" ) );
-		// suite.addTest( new TestNeo( "testNodeIdxPerformance" ) );
-		suite.addTest( new TestNeo( "testBasicNodeRelationships" ) );
-		suite.addTest( new TestNeo( "testReferenceNode" ) );
-		suite.addTest( new TestNeo( "testAddMoreRelationshipTypes" ) );
-		suite.addTest( new TestNeo( "testAddMoreRelationshipTypes2" ) );
-		suite.addTest( new TestNeo( "testIdUsageInfo" ) );
-		// suite.addTest( new TestNeo( "testLotsAndLotsOfNodeRelationships" ) );
+		TestSuite suite = new TestSuite( TestNeo.class );
 		return suite;
 	}
 	
@@ -130,221 +120,6 @@ public class TestNeo extends TestCase
 		}*/
 	}
 	
-	public void testNodePropertyPerformance()
-	{
-		try
-		{
-			TransactionFactory.getTransactionManager().setTransactionTimeout( 
-				120 );
-		}
-		catch ( javax.transaction.SystemException e )
-		{
-			fail( "Unable to set transaction timout." );
-		}
-		
-		int amountOfNodes = 10000;
-		String key = "key1";
-		Object value = new Integer( 1 );
-		
-		// Create node space
-		Node[] nodeSpace = new Node[amountOfNodes];
-		for ( int i = 0; i < amountOfNodes; i++ )
-		{
-			nodeSpace[i] = NodeManager.getManager().createNode();
-		}
-		
-		// Populate node space
-		Timer writeTime = new Timer();
-		writeTime.start();
-		for ( int i = 0; i < amountOfNodes; i++ )
-		{
-			if ( Math.random() < 0.80d )
-			{
-				try
-				{
-					nodeSpace[i].setProperty( key, value );
-				}
-				catch ( IllegalValueException e )
-				{
-					fail( "" + e );
-				}
-			}
-			else
-			{
-				for ( int j = 1; j <= 13; j++ )
-				{
-					try
-					{
-						nodeSpace[i].setProperty( "key" + j, value );
-					}
-					catch ( IllegalValueException e )
-					{
-						fail( "" + e );
-					}
-				}
-			}
-		}
-		writeTime.stop();
-		
-		// Read from node space
-		Timer readTime = new Timer();
-		readTime.start();
-		for ( int i = 0; i < amountOfNodes; i++ )
-		{
-			try
-			{
-				Object val = nodeSpace[i].getProperty( key );
-				assertEquals( value, val );
-			}
-			catch ( NotFoundException e )
-			{
-				fail( "" + e );
-			}
-		}
-		readTime.stop();
-		
-		/*for ( int i = 0; i < nodeSpace.length; i++ )
-		{
-			try
-			{
-				nodeSpace[i].delete();
-			}
-			catch ( DeleteException e )
-			{
-				fail( "" + e );
-			}
-		}*/
-		/*
-		System.out.println( "\nProperty performance:" );
-		System.out.println( "\tWrite " + amountOfNodes + " properties: " +
-							writeTime.getTime() + "ms" );
-		System.out.println( "\tRead " + amountOfNodes + " properties: " +
-							readTime.getTime() + "ms" );
-		 */
-	}
-	
-	public void testNodePropertyPerformance2()
-	{
-		int amountOfNodes = 100000;
-		String key = "key1";
-		Object value = new Object();
-		
-		// Create node space
-		Node[] nodeSpace = new Node[amountOfNodes];
-		for ( int i = 0; i < amountOfNodes; i++ )
-		{
-			nodeSpace[i] = NodeManager.getManager().createNode();
-		}
-		
-		// Populate node space
-		Timer writeTime = new Timer();
-		writeTime.start();
-		for ( int i = 0; i < amountOfNodes; i++ )
-		{
-			try
-			{
-				nodeSpace[i].setProperty( key, value );
-			}
-			catch ( IllegalValueException e )
-			{
-				fail( "" + e );
-			}
-		}
-		writeTime.stop();
-		
-		// Read from node space
-		Timer readTime = new Timer();
-		readTime.start();
-		for ( int i = 0; i < amountOfNodes; i++ )
-		{
-			try
-			{
-				Object val = nodeSpace[i].getProperty( key );
-				assertEquals( value, val );
-			}
-			catch ( NotFoundException e )
-			{
-				fail( "" + e );
-			}
-		}
-		readTime.stop();
-		
-		System.out.println( "\nProperty performance:" );
-		System.out.println( "\tWrite " + amountOfNodes + " properties: " +
-							writeTime.getTime() + "ms" );
-		System.out.println( "\tRead " + amountOfNodes + " properties: " +
-							readTime.getTime() + "ms" );
-		for ( int i = 0; i < nodeSpace.length; i++ )
-		{
-			nodeSpace[i].delete();
-		}
-	}
-
-	public void testNodePropertyIdxPerformance()
-	{
-		/* int amountOfNodes = 100000;
-		String key = "key1";
-		Object value = new Object();
-		
-		// Create node space
-		NodeImplFastProp[] nodeSpace = new NodeImplFastProp[amountOfNodes];
-		for ( int i = 0; i < amountOfNodes; i++ )
-		{
-			nodeSpace[i] = (NodeImplFastProp)
-								NodeManager.getManager().createNodePropIdx();
-		}
-		
-		PropertyIndex idx = nodeSpace[0].getPropertyIndex( key );
-		
-		// Populate node space
-		Timer writeTime = new Timer();
-		writeTime.start();
-		for ( int i = 0; i < amountOfNodes; i++ )
-		{
-			//PropertyIndex idx = nodeSpace[i].getPropertyIndex(key);
-			nodeSpace[i].addProperty( idx, value );
-		}
-		writeTime.stop();
-		
-		// Read from node space
-		Timer readTime = new Timer();
-		readTime.start();
-		for ( int i = 0; i < amountOfNodes; i++ )
-		{
-			//PropertyIndex idx = nodeSpace[i].getPropertyIndex(key);
-			Object val = nodeSpace[i].getProperty( idx );
-		}
-		readTime.stop();
-		
-		System.out.println( "\nPropertyIdx performance:" );
-		System.out.println( "\tWrite " + amountOfNodes + " properties: " +
-							writeTime.getTime() + "ms" );
-		System.out.println( "\tRead " + amountOfNodes + " properties: " +
-							readTime.getTime() + "ms" );*/
-	}
-	
-	// Simple timer class
-	private class Timer
-	{
-		private long startTime = -1;
-		private long endTime = -1;
-		
-		void start()
-		{
-			this.startTime = System.currentTimeMillis();
-		}
-		
-		void stop()
-		{
-			this.endTime = System.currentTimeMillis();
-		}
-		
-		long getTime()
-		{
-			return endTime - startTime;
-		}
-	}
-
 	public void testBasicNodeRelationships()
 	{
 		Node firstNode = null;
@@ -398,97 +173,6 @@ public class TestNeo extends TestCase
 		secondNode.delete();
 		firstNode.delete();
 	}
-//	
-//	public void testLotsAndLotsOfNodeRelationships()
-//	{
-//		// Get n = 2*random(5, 10)
-//		// Get r = random(n, 3*n)
-//		// Create n nodes
-//		// Loop from 1 to r
-//		//	Create relationship between two nodes id=random(1, max n)
-//
-//		// Randomize
-//		Random randGen = new Random();
-//		int amountOfNodes = 2 * (10 + randGen.nextInt( 100 ));
-//		int amountOfRels = amountOfNodes + randGen.nextInt( 2 * amountOfNodes );
-//
-//		// Create storage
-//		Node[] allNodes = new Node[amountOfNodes];
-//		Relationship[] allRels = new Relationship[amountOfRels];
-//
-//		// Create node space
-//		for ( int i = 0; i < amountOfNodes; i++ )
-//		{
-//			allNodes[i] = NodeManager.getManager().createNode();
-//		}
-//
-//		// Create relationships
-//		for ( int i = 0; i < amountOfRels; i++ )
-//		{
-//			int firstNodeId = randGen.nextInt( amountOfNodes );
-//			int secondNodeId = randGen.nextInt( amountOfNodes );
-//
-//			while ( secondNodeId == firstNodeId )
-//			{
-//				secondNodeId = randGen.nextInt( amountOfNodes );
-//			}
-//
-//			allRels[i] = NodeManager.getManager().createRelationship(
-//								allNodes[firstNodeId],
-//								allNodes[secondNodeId],
-//								RelationshipType.TEST,
-//								false );
-//		}
-//
-//		// Assert node space
-//		for ( int i = 0; i < amountOfNodes; i++ )
-//		{
-//			this.assertNode(allNodes[i]);
-//		}
-//		
-//		for ( int i = 0; i < allRels.length; i++ )
-//		{
-//			allRels[i].delete();
-//		}
-//		for ( int i = 0; i < allNodes.length; i++ )
-//		{
-//			allNodes[i].delete();
-//		}
-//	}
-//	
-//	private void assertNode( Node node )
-//	{
-//		assertNotNull( node );
-//		Relationship[] relArray = node.getRelationships();
-//		
-//		for ( int i = 0; i < relArray.length; i++ )
-//		{
-//			// Scenario pic:
-//			// [n1] <=r=> [n2]
-//			
-//			Node n1 = node;
-//			Node n2 = null;
-//			Relationship r = null;
-//			
-//			// Get r and n2
-//			r = relArray[i];
-//			RelationshipType rType = r.getType();
-//			n2 = r.getOtherNode(n1);
-//			assertNotNull(n2);
-//			
-//			// Verify that the relationship exists from n2's point of view 
-//			// and that it leads back to n1
-//			assertTrue( n2.hasRelationships(rType) );
-//			Relationship[] n2Rels = n2.getRelationships( rType );
-//			assertTrue( this.objectExistsInArray(r, n2Rels) );
-//			assertSame( n1, r.getOtherNode(n2) );
-//			
-//			// Verify that r exists amongst n2's relationships
-//			Relationship[] otherRels = n2.getRelationships();
-//			assertTrue( this.objectExistsInArray( r, otherRels ) );
-//		}
-//	}
-	
 	
 	private boolean objectExistsInIterable( Relationship rel, 
 		Iterable<Relationship> allRels )
@@ -608,5 +292,55 @@ public class TestNeo extends TestCase
 		node1.setProperty( key, "value" );
 		assertEquals( "value", node1.getProperty( key ) );
 		node1.delete();
+	}
+	
+	public void testNodeChangePropertyArray() throws Exception
+	{
+		UserTransaction ut = TransactionFactory.getUserTransaction();
+		ut.commit();
+		Transaction tx = Transaction.begin();
+		Node node;
+		try
+		{
+			node = NodeManager.getManager().createNode();
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+		tx = Transaction.begin();
+		try
+		{
+			node.setProperty( "test", new String[] { "value1" } );
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+		tx = Transaction.begin();
+		try
+		{
+			node.setProperty( "test", new String[] { "value1", "value2" } );
+			// no success, we wanna test rollback on this operation
+		}
+		finally
+		{
+			tx.finish();
+		}
+		tx = Transaction.begin();
+		try
+		{
+			String[] value = (String[]) node.getProperty( "test" );
+			assertEquals( 1, value.length );
+			assertEquals( "value1", value[0] );
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+		ut.begin();
 	}
 }
