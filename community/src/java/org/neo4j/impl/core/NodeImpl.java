@@ -125,8 +125,9 @@ class NodeImpl implements Node, Comparable
 				ArrayIntSet relTypeSet = values.next();
 				for ( int relId : relTypeSet.values() )
 				{
-					allRelationships.add( 
-						nodeManager.getRelationshipById( relId) );
+//					allRelationships.add( 
+//						nodeManager.getRelationshipById( relId) );
+					allRelationships.add( new RelationshipProxy( relId ) );
 				}
 			}
 			return allRelationships;
@@ -206,8 +207,9 @@ class NodeImpl implements Node, Comparable
 			Iterator<Integer> values = relationshipSet.iterator();
 			while ( values.hasNext() )
 			{
-				rels.add( nodeManager.getRelationshipById( 
-					values.next() ) ); 
+//				rels.add( nodeManager.getRelationshipById( 
+//					values.next() ) );
+				rels.add( new RelationshipProxy( values.next() ) );
 			}
 			return rels;
 		}
