@@ -142,8 +142,10 @@ class RelationshipImpl
 		{
 			return new Node[]
 			{ 
-				nodeManager.getNodeById( startNodeId ), 
-				nodeManager.getNodeById( endNodeId ) 
+//				nodeManager.getNodeById( startNodeId ), 
+//				nodeManager.getNodeById( endNodeId )
+				new NodeProxy( startNodeId ),
+				new NodeProxy( endNodeId )
 			};
 		}
 		catch ( NotFoundException e )
@@ -167,11 +169,13 @@ class RelationshipImpl
 	{
 		if ( startNodeId == (int) node.getId() )
 		{
-			return nodeManager.getNodeById( endNodeId );
+			// return nodeManager.getNodeById( endNodeId );
+			return new NodeProxy( endNodeId );
 		}
 		if ( endNodeId == (int) node.getId() )
 		{
-			return nodeManager.getNodeById( startNodeId );
+			// return nodeManager.getNodeById( startNodeId );
+			return new NodeProxy( startNodeId );
 		}
 		throw new RuntimeException( "Node[" + node.getId() + 
 			"] not connected to this relationship[" + getId() + "]" );
@@ -179,7 +183,8 @@ class RelationshipImpl
 	
 	public Node getStartNode()
 	{
-		return nodeManager.getNodeById( startNodeId );
+		// return nodeManager.getNodeById( startNodeId );
+		return new NodeProxy( startNodeId );
 	}
 	
 	int getStartNodeId()
@@ -189,7 +194,8 @@ class RelationshipImpl
 	
 	public Node getEndNode()
 	{
-		return nodeManager.getNodeById( endNodeId );
+		// return nodeManager.getNodeById( endNodeId );
+		return new NodeProxy( endNodeId );
 	}
 	
 	int getEndNodeId()
