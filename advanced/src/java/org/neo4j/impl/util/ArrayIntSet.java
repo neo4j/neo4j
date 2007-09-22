@@ -1,9 +1,7 @@
 package org.neo4j.impl.util;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 // use array for first few properties to decrease memory footprint (and
@@ -52,7 +50,11 @@ public class ArrayIntSet
 	
 	public Iterator<Integer> iterator()
 	{
-		return values().iterator();
+		if ( arrayCount == -1 )
+		{
+			return relationshipSet.iterator();
+		}
+		return new ArrayIntIterator( rels, arrayCount );
 	}
 	
 	public boolean remove( int id )
@@ -88,12 +90,46 @@ public class ArrayIntSet
 		{
 			return relationshipSet;
 		}
-		List<Integer> relIdList = new ArrayList<Integer>(5);
-		for ( int i = arrayCount - 1; i >=0; i-- )
+		return new ArrayIntIterator( rels, arrayCount );
+//		List<Integer> relIdList = new ArrayList<Integer>(5);
+//		for ( int i = arrayCount - 1; i >=0; i-- )
+//		{
+//			relIdList.add( rels[i] );
+//		}
+//		return relIdList;
+	}
+	
+	private static class ArrayIntIterator implements Iterator<Integer>, Iterable<Integer>
+	{
+		private int[] intArray;
+		private int pos = -1;
+		private int arrayCount;
+		
+		ArrayIntIterator( int[] array, int count )
 		{
-			relIdList.add( rels[i] );
+			this.intArray = array;
+			this.arrayCount = count;
 		}
-		return relIdList;
+
+		public boolean hasNext()
+        {
+	        return pos + 1 < arrayCount;
+        }
+
+		public Integer next()
+        {
+			return intArray[++pos];
+        }
+
+		public void remove()
+        {
+			throw new UnsupportedOperationException();
+        }
+
+		public Iterator<Integer> iterator()
+        {
+			return this;
+        }
 	}
 	
 	public boolean contains( int id )
