@@ -49,7 +49,7 @@ import org.neo4j.impl.util.ArrayMap;
 class RelationshipImpl 
 	implements Relationship, Comparable
 {
-	private enum RelationshipPhase { NORMAL, FULL }
+	private static enum RelationshipPhase { NORMAL, FULL }
 	
 	private static Logger log = 
 		Logger.getLogger( RelationshipImpl.class.getName() );
@@ -62,8 +62,8 @@ class RelationshipImpl
 	private final int endNodeId;
 	private RelationshipPhase phase = RelationshipPhase.NORMAL;
 	private final RelationshipType type;
-	private ArrayMap<Integer,Property> propertyMap = 
-		new ArrayMap<Integer,Property>( 9, false, true );
+	private ArrayMap<Integer,Property> propertyMap = null;
+		// new ArrayMap<Integer,Property>( 9, false, true );
 	private boolean isDeleted = false;
 	
 	/**
@@ -235,7 +235,11 @@ class RelationshipImpl
 		{
 			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
-				Property property = propertyMap.get( index.getKeyId() );
+				Property property = null;
+				if ( propertyMap != null )
+				{
+					property = propertyMap.get( index.getKeyId() );
+				}
 				if ( property != null )
 				{
 					return property.getValue();
@@ -282,7 +286,11 @@ class RelationshipImpl
 		{
 			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
-				Property property = propertyMap.get( index.getKeyId() );
+				Property property = null;
+				if ( propertyMap != null )
+				{
+					property = propertyMap.get( index.getKeyId() );
+				}
 				if ( property != null )
 				{
 					return property.getValue();
@@ -391,7 +399,11 @@ class RelationshipImpl
 		{
 			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
-				Property property = propertyMap.get( index.getKeyId() );
+				Property property = null;
+				if ( propertyMap != null )
+				{
+					property = propertyMap.get( index.getKeyId() );
+				}
 				if ( property != null )
 				{
 					return true;
@@ -539,7 +551,11 @@ class RelationshipImpl
 			Property property = null;
 			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
 			{
-				property = propertyMap.remove( cachedIndex.getKeyId() );
+				property = null;
+				if ( propertyMap != null )
+				{
+					property = propertyMap.remove( cachedIndex.getKeyId() );
+				}
 				if ( property == null )
 				{
 					if ( ensureFullRelationship() )
@@ -849,17 +865,28 @@ class RelationshipImpl
 					propData.getValue() );
 				newPropertyMap.put( propData.getIndex(), property );
 			}
-			for ( int index : this.propertyMap.keySet() )
+			if ( propertyMap != null )
 			{
-				Property prop = propertyMap.get( index );
-				if ( !addedProps.contains( prop.getId() ) )
+				for ( int index : this.propertyMap.keySet() )
 				{
-					newPropertyMap.put( index, prop );
+					Property prop = propertyMap.get( index );
+					if ( !addedProps.contains( prop.getId() ) )
+					{
+						newPropertyMap.put( index, prop );
+					}
 				}
 			}
 			this.propertyMap = newPropertyMap;
 			this.phase = RelationshipPhase.FULL;
 			return true;
+		}
+		else
+		{
+			if ( propertyMap == null )
+			{
+				propertyMap = 
+					new ArrayMap<Integer,Property>( 9, false, true );
+			}
 		}
 		return false;
 	}		
