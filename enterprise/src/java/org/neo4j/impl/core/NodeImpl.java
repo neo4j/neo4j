@@ -57,7 +57,7 @@ import org.neo4j.impl.util.ArrayMap;
  */
 class NodeImpl implements Node, Comparable
 {
-	private enum NodePhase { 
+	private static enum NodePhase { 
 		EMPTY_PROPERTY, 
 		FULL_PROPERTY,
 		EMPTY_REL,
@@ -76,8 +76,8 @@ class NodeImpl implements Node, Comparable
 	private NodePhase nodeRelPhase;
 	private ArrayMap<String,ArrayIntSet> relationshipMap = 
 		new ArrayMap<String,ArrayIntSet>(); 
-	private ArrayMap<Integer,Property> propertyMap = 
-		new ArrayMap<Integer,Property>( 9, false, true );
+	private ArrayMap<Integer,Property> propertyMap = null; 
+		// new ArrayMap<Integer,Property>( 9, false, true );
 	
 
 	NodeImpl( int id )
@@ -419,7 +419,11 @@ class NodeImpl implements Node, Comparable
 		{
 			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
-				Property property = propertyMap.get( index.getKeyId() );
+				Property property = null;
+				if ( propertyMap != null )
+				{
+					property = propertyMap.get( index.getKeyId() );
+				}
 				if ( property != null )
 				{
 					return property.getValue();
@@ -469,7 +473,11 @@ class NodeImpl implements Node, Comparable
 		{
 			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
-				Property property = propertyMap.get( index.getKeyId() );
+				Property property = null;
+				if ( propertyMap != null ) 
+				{
+					property = propertyMap.get( index.getKeyId() );
+				}
 				if ( property != null )
 				{
 					return property.getValue();
@@ -524,7 +532,11 @@ class NodeImpl implements Node, Comparable
 		{
 			for ( PropertyIndex index : PropertyIndex.index( key ) )
 			{
-				Property property = propertyMap.get( index.getKeyId() );
+				Property property = null;
+				if ( propertyMap != null )
+				{
+					property = propertyMap.get( index.getKeyId() );
+				}
 				if ( property != null )
 				{
 					return true;
@@ -671,7 +683,11 @@ class NodeImpl implements Node, Comparable
 			Property property = null;
 			for ( PropertyIndex cachedIndex : PropertyIndex.index( key ) )
 			{
-				property = propertyMap.remove( cachedIndex.getKeyId() );
+				property = null;
+				if ( propertyMap != null )
+				{
+					property = propertyMap.remove( cachedIndex.getKeyId() );
+				}
 				if ( property == null )
 				{
 					if ( ensureFullProperties() )
@@ -930,17 +946,28 @@ class NodeImpl implements Node, Comparable
 					propData.getValue() );
 				newPropertyMap.put( propData.getIndex(), property );
 			}
-			for ( int index : this.propertyMap.keySet() )
+			if ( propertyMap != null )
 			{
-				Property prop = propertyMap.get( index );
-				if ( !addedProps.contains( prop.getId() ) )
+				for ( int index : this.propertyMap.keySet() )
 				{
-					newPropertyMap.put( index, prop );
+					Property prop = propertyMap.get( index );
+					if ( !addedProps.contains( prop.getId() ) )
+					{
+						newPropertyMap.put( index, prop );
+					}
 				}
 			}
 			this.propertyMap = newPropertyMap;
 			nodePropPhase = NodePhase.FULL_PROPERTY;
 			return true;
+		}
+		else
+		{
+			if ( propertyMap == null )
+			{
+				propertyMap = 
+					new ArrayMap<Integer,Property>( 9, false, true );
+			}
 		}
 		return false;
 	}
