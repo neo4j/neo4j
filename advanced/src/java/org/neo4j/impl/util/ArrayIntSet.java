@@ -67,11 +67,12 @@ public class ArrayIntSet
 				if ( arrayCount - 1 < rels.length / 3 )
 				{
 					dest = new int[ rels.length / 2 ];
-					System.arraycopy( rels, 0, dest, 0, i );
+					System.arraycopy( rels, 0, dest, 0, arrayCount );
 				}
 				if ( i + 1 < dest.length && (arrayCount - i - 1) > 0 )
 				{
 					System.arraycopy( rels, i+1, dest, i, arrayCount - i - 1 );
+					rels = dest;
 				}
 				arrayCount--;
 				return true;

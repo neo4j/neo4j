@@ -10,6 +10,7 @@ public class TestAll extends TestSuite
 	{
 		TestSuite suite = new TestSuite();
 		suite.addTest( TestArrayMap.suite() );
+		suite.addTest( TestArrayIntSet.suite() );
 		return new TestSetup( suite );
 	}
 	
