@@ -234,7 +234,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 						"Unkown operation[" + operation + "]" );
 				}
 			}
-			catch ( Exception t )
+			catch ( IOException t )
 			{
 				throw new PersistenceException( t );
 			}
@@ -244,176 +244,148 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 			throws PersistenceUpdateFailedException
 		{
 			Object data = eventData.getData();
-			if ( data instanceof NodeOperationEventData )
+			try
 			{
-				performNodeUpdate( event, (NodeOperationEventData) data );
+				if ( data instanceof NodeOperationEventData )
+				{
+					performNodeUpdate( event, (NodeOperationEventData) data );
+				}
+				else if ( data instanceof RelationshipOperationEventData )
+				{
+					performRelationshipUpdate( event, 
+						(RelationshipOperationEventData) data );
+				}
+				else if ( data instanceof PropertyIndexOperationEventData )
+				{
+					performPropertyIndexUpdate( event, 
+						(PropertyIndexOperationEventData) data );
+				}
+				else if ( data instanceof RelationshipTypeOperationEventData )
+				{
+					performRelationshipTypeUpdate( event, 
+						(RelationshipTypeOperationEventData) data );
+				}
+				else
+				{
+					throw new PersistenceUpdateFailedException( 
+						"Unkown event/data " + "type:[" + event + "]/[" + 
+						data + "]" );
+				}
 			}
-			else if ( data instanceof RelationshipOperationEventData )
+			catch ( IOException e )
 			{
-				performRelationshipUpdate( event, 
-					(RelationshipOperationEventData) data );
-			}
-			else if ( data instanceof PropertyIndexOperationEventData )
-			{
-				performPropertyIndexUpdate( event, 
-					(PropertyIndexOperationEventData) data );
-			}
-			else if ( data instanceof RelationshipTypeOperationEventData )
-			{
-				performRelationshipTypeUpdate( event, 
-					(RelationshipTypeOperationEventData) data );
-			}
-			else
-			{
-				throw new PersistenceUpdateFailedException( 
-					"Unkown event/data " + "type:[" + event + "]/[" + 
-					data + "]" );
+				throw new PersistenceUpdateFailedException( "Event[" + 
+					event + "]", e );
 			}
 		}
 		
 		private void performNodeUpdate( Event event, 
 			NodeOperationEventData data ) 
-			throws PersistenceUpdateFailedException
+			throws IOException, PersistenceUpdateFailedException
 		{
-			try
+			if ( event == Event.NODE_ADD_PROPERTY )
 			{
-				if ( event == Event.NODE_ADD_PROPERTY )
-				{
-					int propertyId = propStore.nextId();
-					nodeConsumer.addProperty( 
-						data.getNodeId(), propertyId, 
-						data.getPropertyIndex(), 
-						data.getProperty() ); 
-					data.setNewPropertyId( propertyId );
-				}
-				else if ( event == Event.NODE_CHANGE_PROPERTY )
-				{
-					nodeConsumer.changeProperty( data.getNodeId(), 
-						data.getPropertyId(), data.getProperty() );
-				}
-				else if ( event == Event.NODE_REMOVE_PROPERTY )
-				{
-					nodeConsumer.removeProperty( data.getNodeId(), 
-						data.getPropertyId() );
-				}
-				else if ( event == Event.NODE_DELETE )
-				{
-					int nodeId = data.getNodeId();
-					nodeConsumer.deleteNode( nodeId );
-				}
-				else if ( event == Event.NODE_CREATE )
-				{
-					int nodeId = data.getNodeId();
-					nodeConsumer.createNode( nodeId );
-				}
-				else
-				{
-					throw new PersistenceUpdateFailedException( 
-						"Unkown event: " + event );
-				}
+				int propertyId = propStore.nextId();
+				nodeConsumer.addProperty( data.getNodeId(), propertyId, 
+					data.getPropertyIndex(), data.getProperty() ); 
+				data.setNewPropertyId( propertyId );
 			}
-			catch ( Exception t )
+			else if ( event == Event.NODE_CHANGE_PROPERTY )
 			{
-				throw new PersistenceUpdateFailedException( "Event[" + 
-					event + "]", t );
+				nodeConsumer.changeProperty( data.getNodeId(), 
+					data.getPropertyId(), data.getProperty() );
+			}
+			else if ( event == Event.NODE_REMOVE_PROPERTY )
+			{
+				nodeConsumer.removeProperty( data.getNodeId(), 
+					data.getPropertyId() );
+			}
+			else if ( event == Event.NODE_DELETE )
+			{
+				int nodeId = data.getNodeId();
+				nodeConsumer.deleteNode( nodeId );
+			}
+			else if ( event == Event.NODE_CREATE )
+			{
+				int nodeId = data.getNodeId();
+				nodeConsumer.createNode( nodeId );
+			}
+			else
+			{
+				throw new PersistenceUpdateFailedException( 
+					"Unkown event: " + event );
 			}
 		}
 		
 		private void performRelationshipUpdate( Event event, 
 			RelationshipOperationEventData data ) 
-			throws PersistenceUpdateFailedException
+			throws PersistenceUpdateFailedException, IOException
 		{
-			try
+			if ( event == Event.RELATIONSHIP_ADD_PROPERTY )
 			{
-				if ( event == Event.RELATIONSHIP_ADD_PROPERTY )
-				{
-					int propertyId = propStore.nextId();
-					relConsumer.addProperty( 
-						data.getRelationshipId(), propertyId, 
-						data.getPropertyIndex(), 
-						data.getProperty() );
-					data.setNewPropertyId( propertyId ); 
-				}
-				else if ( event == Event.RELATIONSHIP_CHANGE_PROPERTY )
-				{
-					relConsumer.changeProperty( data.getRelationshipId(),  
-						data.getPropertyId(), data.getProperty() );
-				}
-				else if ( event == Event.RELATIONSHIP_REMOVE_PROPERTY )
-				{
-					relConsumer.removeProperty( data.getRelationshipId(), 
-						data.getPropertyId() );
-				}
-				else if ( event == Event.RELATIONSHIP_DELETE )
-				{
-					int relId = data.getRelationshipId();
-					relConsumer.deleteRelationship( relId );
-				}
-				else if ( event == Event.RELATIONSHIP_CREATE )
-				{
-					int firstNodeId = data.getStartNodeId(); 
-					int secondNodeId = data.getEndNodeId();
-					relConsumer.createRelationship( data.getRelationshipId(), 
-						firstNodeId, secondNodeId, data.getTypeId() );
-				}
-				else
-				{
-					throw new PersistenceUpdateFailedException( 
-						"Unkown event: " + event );
-				}
+				int propertyId = propStore.nextId();
+				relConsumer.addProperty( data.getRelationshipId(), propertyId, 
+					data.getPropertyIndex(), data.getProperty() );
+				data.setNewPropertyId( propertyId ); 
 			}
-			catch ( Exception t )
+			else if ( event == Event.RELATIONSHIP_CHANGE_PROPERTY )
 			{
-				throw new PersistenceUpdateFailedException( "Event[" + 
-					event + "]", t );
+				relConsumer.changeProperty( data.getRelationshipId(),  
+					data.getPropertyId(), data.getProperty() );
+			}
+			else if ( event == Event.RELATIONSHIP_REMOVE_PROPERTY )
+			{
+				relConsumer.removeProperty( data.getRelationshipId(), 
+					data.getPropertyId() );
+			}
+			else if ( event == Event.RELATIONSHIP_DELETE )
+			{
+				int relId = data.getRelationshipId();
+				relConsumer.deleteRelationship( relId );
+			}
+			else if ( event == Event.RELATIONSHIP_CREATE )
+			{
+				int firstNodeId = data.getStartNodeId(); 
+				int secondNodeId = data.getEndNodeId();
+				relConsumer.createRelationship( data.getRelationshipId(), 
+					firstNodeId, secondNodeId, data.getTypeId() );
+			}
+			else
+			{
+				throw new PersistenceUpdateFailedException( 
+					"Unkown event: " + event );
 			}
 		}
 	
 		private void performPropertyIndexUpdate( Event event, 
 			PropertyIndexOperationEventData data ) 
-			throws PersistenceUpdateFailedException
+			throws PersistenceUpdateFailedException, IOException
 		{
-			try
+			if ( event == Event.PROPERTY_INDEX_CREATE )
 			{
-				if ( event == Event.PROPERTY_INDEX_CREATE )
-				{
-					propIndexConsumer.createPropertyIndex( 
-						data.getIndex().getKeyId(), data.getIndex().getKey() );
-				}
-				else
-				{
-					throw new PersistenceUpdateFailedException( 
-						"Unkown event: " + event );
-				}
+				propIndexConsumer.createPropertyIndex( 
+					data.getIndex().getKeyId(), data.getIndex().getKey() );
 			}
-			catch ( IOException e )
+			else
 			{
-				throw new PersistenceUpdateFailedException( "Event[" + 
-					event + "]", e );
+				throw new PersistenceUpdateFailedException( 
+					"Unkown event: " + event );
 			}
 		}
 		
 		private void performRelationshipTypeUpdate( Event event, 
-				RelationshipTypeOperationEventData data ) 
-				throws PersistenceUpdateFailedException
+			RelationshipTypeOperationEventData data ) 
+			throws PersistenceUpdateFailedException, IOException
 		{
-			try
+			if ( event == Event.RELATIONSHIPTYPE_CREATE )
 			{
-				if ( event == Event.RELATIONSHIPTYPE_CREATE )
-				{
-					relTypeConsumer.addRelationshipType( data.getId(), 
-						data.getName() );
-				}
-				else
-				{
-					throw new PersistenceUpdateFailedException( 
-						"Unkown event: " + event );
-				}
+				relTypeConsumer.addRelationshipType( data.getId(), 
+					data.getName() );
 			}
-			catch ( IOException e )
+			else
 			{
-				throw new PersistenceUpdateFailedException( "Event[" + 
-					event + "]", e );
+				throw new PersistenceUpdateFailedException( 
+					"Unkown event: " + event );
 			}
 		}
 	}	
