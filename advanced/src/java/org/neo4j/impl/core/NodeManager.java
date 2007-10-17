@@ -472,10 +472,6 @@ public class NodeManager
 			relCache.add( relId, relationship );
 			return relationship;
 		}
-		catch ( NotFoundException e )
-		{
-			throw new RuntimeException( "Relationship deleted?", e );
-		}
 		catch ( PersistenceException e )
 		{
 			throw new RuntimeException( "Relationship deleted?", e );
@@ -512,7 +508,7 @@ public class NodeManager
 		{
 			return PersistenceManager.getManager().loadPropertyValue( id );
 		}
-		catch ( Exception e )
+		catch ( PersistenceException e )
 		{
 			e.printStackTrace();
 			log.severe( "Failed loading property value[" +

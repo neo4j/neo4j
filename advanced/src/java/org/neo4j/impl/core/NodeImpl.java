@@ -4,7 +4,6 @@ package org.neo4j.impl.core;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import org.neo4j.api.core.Direction;
@@ -117,7 +116,7 @@ class NodeImpl implements Node, Comparable
 			// of relationships ids) and merge them all into one list. 
 			// Convert it to array and return it.
 			// TODO: rewrite this with iterator wrapper
-			List<Relationship> allRelationships = 
+/*			List<Relationship> allRelationships = 
 				new LinkedList<Relationship>();
 			Iterator<ArrayIntSet> values = relationshipMap.values().iterator();
 			while ( values.hasNext() )
@@ -125,12 +124,30 @@ class NodeImpl implements Node, Comparable
 				ArrayIntSet relTypeSet = values.next();
 				for ( int relId : relTypeSet.values() )
 				{
-//					allRelationships.add( 
-//						nodeManager.getRelationshipById( relId) );
 					allRelationships.add( new RelationshipProxy( relId ) );
 				}
 			}
-			return allRelationships;
+			return allRelationships;*/
+			
+			Iterator<ArrayIntSet> values = relationshipMap.values().iterator();
+			int size = 0;
+			while ( values.hasNext() )
+			{
+				ArrayIntSet relTypeSet = values.next();
+				size += relTypeSet.size();
+			}
+			values = relationshipMap.values().iterator();
+			int[] ids = new int[size];
+			int position = 0;
+			while ( values.hasNext() )
+			{
+				ArrayIntSet relTypeSet = values.next();
+				for ( int relId : relTypeSet.values() )
+				{
+					ids[position++] = relId;
+				}
+			}
+			return new RelationshipIterator( ids, this, Direction.BOTH );
 		}
 		finally
 		{
@@ -156,7 +173,7 @@ class NodeImpl implements Node, Comparable
 			// of relationships) and merge them all into one list. Convert it 
 			// to array and return it.
 			// TODO: rewrite this with iterator wrapper
-			List<Relationship> allRelationships = 
+/*			List<Relationship> allRelationships = 
 				new LinkedList<Relationship>();
 			Iterator<ArrayIntSet> values = 
 				relationshipMap.values().iterator();
@@ -179,7 +196,26 @@ class NodeImpl implements Node, Comparable
 					}
 				}
 			}
-			return allRelationships;
+			return allRelationships;*/
+			Iterator<ArrayIntSet> values = relationshipMap.values().iterator();
+			int size = 0;
+			while ( values.hasNext() )
+			{
+				ArrayIntSet relTypeSet = values.next();
+				size += relTypeSet.size();
+			}
+			values = relationshipMap.values().iterator();
+			int[] ids = new int[size];
+			int position = 0;
+			while ( values.hasNext() )
+			{
+				ArrayIntSet relTypeSet = values.next();
+				for ( int relId : relTypeSet.values() )
+				{
+					ids[position++] = relId;
+				}
+			}
+			return new RelationshipIterator( ids, this, dir );
 		}
 		finally
 		{
@@ -203,15 +239,20 @@ class NodeImpl implements Node, Comparable
 			{
 				return Collections.emptyList();
 			}
-			List<Relationship> rels = new LinkedList<Relationship>(); 
+/*			List<Relationship> rels = new LinkedList<Relationship>(); 
 			Iterator<Integer> values = relationshipSet.iterator();
 			while ( values.hasNext() )
 			{
-//				rels.add( nodeManager.getRelationshipById( 
-//					values.next() ) );
 				rels.add( new RelationshipProxy( values.next() ) );
 			}
-			return rels;
+			return rels;*/
+			int[] ids = new int[relationshipSet.size()];
+			int position = 0;
+			for ( int relId : relationshipSet.values() )
+			{
+				ids[position++] = relId;
+			}
+			return new RelationshipIterator( ids, this, Direction.BOTH );
 		}
 		finally
 		{
@@ -221,7 +262,7 @@ class NodeImpl implements Node, Comparable
 
 	public Iterable<Relationship> getRelationships( RelationshipType... types )
 	{
-		List<Relationship> rels = new LinkedList<Relationship>();
+/*		List<Relationship> rels = new LinkedList<Relationship>();
 		for ( RelationshipType type : types )
 		{
 			for ( Relationship rel : getRelationships( type ) )
@@ -229,7 +270,31 @@ class NodeImpl implements Node, Comparable
 				rels.add( rel );
 			}
 		}
-		return rels;
+		return rels;*/
+		int size = 0;
+		for ( RelationshipType type : types )
+		{
+			ArrayIntSet relTypeSet = relationshipMap.get( type.name() );
+			if ( relTypeSet != null )
+			{
+				size += relTypeSet.size();
+			}
+		}
+		int[] ids = new int[size];
+		int position = 0;
+		for ( RelationshipType type : types )
+		{
+			ArrayIntSet relTypeSet = relationshipMap.get( type.name() );
+			if ( relTypeSet != null )
+			{
+				for ( int relId : relTypeSet.values() )
+				{
+					ids[position++] = relId;
+				}
+			}
+		}
+		return new RelationshipIterator( ids, this, Direction.BOTH );
+		
 	}
 	
 	public Relationship getSingleRelationship( RelationshipType type, 
@@ -270,7 +335,7 @@ class NodeImpl implements Node, Comparable
 			{
 				return Collections.emptyList();
 			}
-			List<Relationship> rels = new LinkedList<Relationship>(); 
+/*			List<Relationship> rels = new LinkedList<Relationship>(); 
 			Iterator<Integer> values = relationshipSet.iterator();
 			while ( values.hasNext() )
 			{
@@ -287,7 +352,14 @@ class NodeImpl implements Node, Comparable
 					rels.add( rel );
 				}
 			}
-			return rels;
+			return rels;*/
+			int[] ids = new int[relationshipSet.size()];
+			int position = 0;
+			for ( int relId : relationshipSet.values() )
+			{
+				ids[position++] = relId;
+			}
+			return new RelationshipIterator( ids, this, dir );
 		}
 		finally
 		{
