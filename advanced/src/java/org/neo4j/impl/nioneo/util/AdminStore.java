@@ -72,6 +72,10 @@ public class AdminStore
 			{
 				dumpRelTypes( args[++i] );
 			}
+			else if ( args[i].equals( "--convert-rel-types" ) )
+			{
+				convertRelTypes( args[++i] );
+			}
 			else if ( args[i].equals( "--fsck" ) )
 			{
 				fsckStore( args[++i] );
@@ -158,6 +162,79 @@ public class AdminStore
 		typeNameStore.close();
 	}
 	
+	private static void convertRelTypes( String fileName ) throws IOException
+	{
+		String storeName = fileName + ".relationshiptypestore.db";
+		
+		File relTypeStore = new File( storeName );
+		if ( !relTypeStore.exists() )
+		{
+			throw new IOException( "Couldn't find relationship type store " + 
+				storeName );
+		}
+		DynamicStringStore typeNameStore = new DynamicStringStore( 
+			storeName + ".names" );
+		typeNameStore.rebuildIdGenerators();
+		// in_use(byte)+type_blockId(int)
+		System.out.println( storeName );
+		ByteBuffer buffer = ByteBuffer.allocate( 5 );
+		FileChannel fileChannel = 
+			new RandomAccessFile( storeName, "rw" ).getChannel();
+		fileChannel.position( 0 );
+		int i = 0;
+		int reservedCount = 1;
+		int lastOkPos = 0;
+		while ( fileChannel.read( buffer ) == 5 )
+		{
+			buffer.flip();
+			byte inUse = buffer.get();
+			int block = buffer.getInt();
+			String name = "RESERVED";
+			if ( block == -1 )
+			{
+				name = name + reservedCount++;
+			}
+			else
+			{
+				try
+				{
+					Collection<DynamicRecord> records = 
+						typeNameStore.getRecords( block, null );
+					name = getOldStringFor( records, block );
+					for ( DynamicRecord record : records )
+					{
+						record.setInUse( false );
+						typeNameStore.updateRecord( record );
+					}
+					int nextId = typeNameStore.nextBlockId();
+					char[] chars = new char[ name.length() ];
+					name.getChars( 0, name.length(), chars, 0 );
+					records = typeNameStore.allocateRecords( nextId, chars );
+					for ( DynamicRecord record : records )
+					{
+						typeNameStore.updateRecord( record );
+					}
+					buffer.flip();
+					buffer.putInt( nextId );
+					buffer.flip();
+					fileChannel.position( i * 5 + 1 );
+					fileChannel.write( buffer );
+					lastOkPos = i;
+				}
+				catch ( IOException e )
+				{
+					name = null;
+				}
+			}
+			System.out.println( "ID[" + i + "] use[" + inUse + 
+				"] blockId[" + block + "] name[" + name + "]" ); 
+			i++;
+			buffer.clear();
+		}
+		typeNameStore.close();
+		fileChannel.truncate( (lastOkPos + 1 ) * 5 );
+	}
+	
 	public static void createStore( String fileName ) throws IOException
 	{
 		NeoStore.createStore( fileName );
@@ -201,6 +278,49 @@ public class AdminStore
 		return buf.toString();
     }
 
+	private static String getOldStringFor( 
+		Collection<DynamicRecord> recordsCol, int startBlock ) 
+		throws IOException
+    {
+		int recordToFind = startBlock;
+		Iterator<DynamicRecord> records = recordsCol.iterator();
+		List<byte[]> byteList = new LinkedList<byte[]>();
+		int totalSize = 0;
+		while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
+			records.hasNext() )
+		{
+			DynamicRecord record = records.next();
+			if ( record.inUse() && record.getId() == recordToFind )
+			{
+				if ( !record.isCharData() )
+				{
+					ByteBuffer buf = ByteBuffer.wrap( record.getData() );
+					byte[] bytes = new byte[ record.getData().length ];
+					totalSize += bytes.length;
+					buf.get( bytes );
+					byteList.add( bytes );
+				}
+				else
+				{
+					throw new RuntimeException();
+					// charList.add( record.getDataAsChar() );
+				}
+				recordToFind = record.getNextBlock();
+				// TODO: make opti here, high chance next is right one
+				records = recordsCol.iterator();
+			}
+		}
+		StringBuffer buf = new StringBuffer();
+		byte[] allBytes = new byte[totalSize];
+		int position = 0;
+		for ( byte[] bytes : byteList )
+		{
+			System.arraycopy( bytes, 0, allBytes, position, bytes.length );
+			position += bytes.length;
+		}
+		return new String( allBytes );
+    }
+	
 	public static void fsckStore( String fileName ) throws IOException
 	{
 		File neoStore = new File( fileName );
