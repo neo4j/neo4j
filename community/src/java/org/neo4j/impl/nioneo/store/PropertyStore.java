@@ -573,21 +573,38 @@ public class PropertyStore extends AbstractStore implements Store
 	
 	private void convertKeyToIndexStore() throws IOException
 	{
+		if ( !this.getStoreOk() )
+		{
+			super.makeStoreOk();
+		}
+		if ( !stringPropertyStore.getStoreOk() )
+		{
+			stringPropertyStore.makeStoreOk();
+		}
 		DynamicStringStore oldKeyStore = new DynamicStringStore( 
 			getStorageFileName() + ".keys" );
+		if ( !oldKeyStore.getStoreOk() )
+		{
+			oldKeyStore.makeStoreOk();
+		}
 		System.out.println( "Converting property keys to property indexes..." );
 		PropertyIndexStore.createStore( getStorageFileName() + ".index" );
 		propertyIndexStore = new PropertyIndexStore( getStorageFileName() + 
 			".index", getConfig() );
+		DynamicStringStore.createStore( "new_string_store", 
+			STRING_STORE_BLOCK_SIZE );
+		DynamicStringStore newStringStore = new DynamicStringStore( 
+			"new_string_store", getConfig() );
 		int maxId = getHighestPossibleIdInUse();
+		System.out.println( "Highest property id: " + maxId );
 		Map<String,Integer> keyToIndex = new HashMap<String, Integer>();
-		ByteBuffer buf = ByteBuffer.allocate( 9 );
+		ByteBuffer buf = ByteBuffer.allocate( 17 );
 		for ( long i = 0; i <= maxId; i++ )
 		{
 			long position = i * RECORD_SIZE; 
 			getFileChannel().position( position );
 			buf.clear();
-			if ( getFileChannel().read( buf ) != 9 )
+			if ( getFileChannel().read( buf ) != 17 )
 			{
 				break; // we're done
 			}
@@ -595,12 +612,30 @@ public class PropertyStore extends AbstractStore implements Store
 			if ( buf.get() == Record.IN_USE.byteValue() )
 			{
 				// convert to index
-				buf.getInt();
+				int type = buf.getInt();
 				int oldKeyId = buf.getInt();
-				String oldKey = getOldKeyStringFor( oldKeyId, oldKeyStore );
+				int newStringBlockId = -1;
+				if ( type == 2 ) // old string
+				{
+					String oldString = getOldStringFromStore( 
+						(int) buf.getLong(), stringPropertyStore );
+					newStringBlockId = newStringStore.nextId();
+					int length = oldString.length();
+					char[] chars = new char[length];
+					oldString.getChars( 0, length, chars, 0 );
+					Collection<DynamicRecord> allRecords = 
+						newStringStore.allocateRecords( newStringBlockId, 
+							chars );
+					for ( DynamicRecord record: allRecords )
+					{
+						newStringStore.updateRecord( record );
+					}
+				}
+				String oldKey = getOldStringFromStore( oldKeyId, oldKeyStore );
 				int newIndexKeyId = -1;
 				if ( !keyToIndex.containsKey( oldKey ) )
 				{
+					System.out.println( "Found: " + oldKey );
 					newIndexKeyId = createNewPropertyIndex( oldKey );
 					keyToIndex.put( oldKey, newIndexKeyId );
 				}
@@ -610,14 +645,43 @@ public class PropertyStore extends AbstractStore implements Store
 				}
 				buf.clear();
 				buf.putInt( newIndexKeyId );
+				int bytesToWrite = 4;
+				if ( newStringBlockId != -1 )
+				{
+					bytesToWrite += 8;
+					buf.putLong( newStringBlockId );
+				}
 				buf.flip();
 				getFileChannel().position( position + 5 );
-				if ( getFileChannel().write( buf ) != 4 )
+				if ( getFileChannel().write( buf ) != bytesToWrite )
 				{
-					throw new IOException( "did not write 4 bytes..." );
+					throw new IOException( "did not write " + bytesToWrite + 
+						" bytes..." );
 				}
 			}
 		}
+		newStringStore.close();
+		stringPropertyStore.close();
+		File oldStringStore = new File( getStorageFileName() + ".strings" );
+		oldStringStore.delete();
+		oldStringStore = new File( getStorageFileName() + ".strings.blockid" );
+		if ( oldStringStore.exists() )
+		{
+			oldStringStore.delete();
+		}
+		oldStringStore = new File( getStorageFileName() + ".strings.id" );
+		if ( oldStringStore.exists() )
+		{
+			oldStringStore.delete();
+		}
+		File newStringStoreFile = new File( 
+			newStringStore.getStorageFileName() );
+		newStringStoreFile.renameTo( new File( 
+			stringPropertyStore.getStorageFileName() ) );
+		new File( "new_string_store.id" ).delete();
+		stringPropertyStore = new DynamicStringStore( getStorageFileName() 
+			+ ".strings" );
+		stringPropertyStore.makeStoreOk();
 	}
 	
 	private int createNewPropertyIndex( String oldKey ) throws IOException
@@ -641,7 +705,7 @@ public class PropertyStore extends AbstractStore implements Store
 		return record.getId();
 	}
 	
-	private String getOldKeyStringFor( int oldKeyId, DynamicStringStore 
+	private String getOldStringFromStore( int oldKeyId, DynamicStringStore 
 		oldKeyStore ) throws IOException
     {
 		Collection<DynamicRecord> allRecords = oldKeyStore.getRecords( oldKeyId, 
