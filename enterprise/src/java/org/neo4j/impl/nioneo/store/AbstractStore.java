@@ -188,7 +188,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 		ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
 		LinkedList<Integer> freeIdList = new LinkedList<Integer>();
 		int highId = -1;
-		for ( long i = 0; i * recordSize < fileSize; i++ )
+		for ( long i = 0; i * recordSize < fileSize && recordSize > 0; i++ )
 		{
 			fileChannel.position( i * recordSize );
 			fileChannel.read( byteBuffer );
