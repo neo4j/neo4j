@@ -7,6 +7,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,6 +17,9 @@ import java.util.Set;
 import org.neo4j.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.NeoStore;
+import org.neo4j.impl.nioneo.store.PropertyRecord;
+import org.neo4j.impl.nioneo.store.PropertyStore;
+import org.neo4j.impl.nioneo.store.PropertyType;
 import org.neo4j.impl.nioneo.store.Record;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
 
@@ -76,6 +80,10 @@ public class AdminStore
 			{
 				convertRelTypes( args[++i] );
 			}
+			else if ( args[i].equals( "--fix-same-index" ) )
+			{
+				fixMultiIndex( args[++i] );
+			}
 			else if ( args[i].equals( "--fsck" ) )
 			{
 				fsckStore( args[++i] );
@@ -121,6 +129,81 @@ public class AdminStore
 		}
 	}
 	
+	private static void fixMultiIndex( String fileName ) throws IOException
+	{
+		String storeName = fileName + ".propertystore.db";
+		PropertyStore propStore = new PropertyStore( storeName );
+		propStore.makeStoreOk();
+		for ( int i = 0; i < propStore.getHighestPossibleIdInUse(); i++ )
+		{
+			PropertyRecord record;
+			try
+			{
+				record = propStore.getLightRecord( i, null );
+				if ( !record.inUse() || record.getPrevProp() != 
+					Record.NO_PREVIOUS_PROPERTY.intValue() )
+				{
+					continue;
+				}
+			}
+			catch ( Exception e )
+			{
+				// not in use
+				continue;
+			}
+			Set<Integer> indexesFound = new HashSet<Integer>();
+			do
+			{
+				int index = record.getKeyIndexId();
+				if ( indexesFound.contains( index ) )
+				{
+					System.out.println( "Found multi index: " + index );
+					if ( record.getType() == PropertyType.STRING )
+					{
+						propStore.makeHeavy( record, null );
+					}
+					if ( record.getPrevProp() == 
+						Record.NO_PREVIOUS_PROPERTY.intValue() )
+					{
+						throw new RuntimeException();
+					}
+					if ( record.getPrevProp() != 
+						Record.NO_PREVIOUS_PROPERTY.intValue() )
+					{
+						PropertyRecord prev = propStore.getLightRecord( 
+							record.getPrevProp(), null );
+						prev.setNextProp( record.getNextProp() );
+						propStore.updateRecord( prev );
+					}
+					if ( record.getNextProp() != 
+						Record.NO_NEXT_PROPERTY.intValue() )
+					{
+						PropertyRecord next = propStore.getLightRecord( 
+							record.getNextProp(), null );
+						next.setPrevProp( record.getPrevProp() );
+						propStore.updateRecord( next );
+					}
+					record.setInUse( false );
+					propStore.updateRecord( record );
+				}
+				else
+				{
+					indexesFound.add( index );
+				}
+				int nextProp = record.getNextProp();
+				if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+				{
+					record = propStore.getLightRecord( nextProp, null );
+				}
+				else
+				{
+					record = null;
+				}
+			} while ( record != null );
+		}
+		propStore.close();
+	}
+	
 	private static void dumpRelTypes( String fileName ) throws IOException
 	{
 		String storeName = fileName + ".relationshiptypestore.db";
@@ -132,7 +215,7 @@ public class AdminStore
 		}
 		DynamicStringStore typeNameStore = new DynamicStringStore( 
 			storeName + ".names" );
-		typeNameStore.rebuildIdGenerators();
+		typeNameStore.makeStoreOk();
 		// in_use(byte)+type_blockId(int)
 		System.out.println( storeName );
 		ByteBuffer buffer = ByteBuffer.allocate( 5 );
@@ -174,7 +257,7 @@ public class AdminStore
 		}
 		DynamicStringStore typeNameStore = new DynamicStringStore( 
 			storeName + ".names" );
-		typeNameStore.rebuildIdGenerators();
+		typeNameStore.makeStoreOk();
 		// in_use(byte)+type_blockId(int)
 		System.out.println( storeName );
 		ByteBuffer buffer = ByteBuffer.allocate( 5 );
@@ -223,6 +306,7 @@ public class AdminStore
 				}
 				catch ( IOException e )
 				{
+					e.printStackTrace();
 					name = null;
 				}
 			}
@@ -328,13 +412,14 @@ public class AdminStore
 		{
 			throw new IOException( "No such neostore " + fileName );
 		}
-		Set relTypeSet = checkRelTypeStore( 
+		Set<Integer> relTypeSet = checkRelTypeStore( 
 			fileName + ".relationshiptypestore.db" );
-		Set propertyIndexSet = checkPropertyIndexStore( fileName + 
+		Set<Integer> propertyIndexSet = checkPropertyIndexStore( fileName + 
 			".propertystore.db.index" );
-		Set propertySet = checkPropertyStore( fileName + ".propertystore.db", 
-			propertyIndexSet );
-		Set nodeSet = checkNodeStore( fileName + ".nodestore.db", propertySet );
+		Set<Integer> propertySet = checkPropertyStore( 
+			fileName + ".propertystore.db", propertyIndexSet );
+		Set<Integer> nodeSet = checkNodeStore( fileName + ".nodestore.db", 
+			propertySet ); 
 		checkRelationshipStore( fileName + ".relationshipstore.db", 
 			propertySet, relTypeSet, nodeSet );
 		if ( !propertySet.isEmpty() )
@@ -356,7 +441,8 @@ public class AdminStore
 	private static final byte RECORD_IN_USE = 1;
 	private static final int RESERVED = -1;
 	
-	private static Set checkRelTypeStore( String storeName ) throws IOException
+	private static Set<Integer> checkRelTypeStore( String storeName ) 
+		throws IOException
 	{
 		File relTypeStore = new File( storeName );
 		if ( !relTypeStore.exists() )
@@ -369,7 +455,7 @@ public class AdminStore
 		{
 			idGenerator.delete();
 		}
-		Set startBlocks = checkDynamicStore( storeName + ".names" );
+		Set<Integer> startBlocks = checkDynamicStore( storeName + ".names" );
 		// in_use(byte)+type_blockId(int)
 		System.out.print( storeName );
 		ByteBuffer buffer = ByteBuffer.allocate( 5 );
@@ -399,8 +485,8 @@ public class AdminStore
 			}
 			else if ( inUse != RECORD_NOT_IN_USE )
 			{
-				break;
-				// fileChannel.truncate( fileChannel.position() );
+				System.out.println( "Unkown record at: " + i );
+				System.out.println( "In use flag was: " + inUse );
 			}
 			i++;
 			if ( dot != 0 && i % dot == 0 )
@@ -412,22 +498,19 @@ public class AdminStore
 		System.out.print( " high id:" + i + " count:" + inUseCount );
 		if ( !startBlocks.isEmpty() )
 		{
-			// throw new IOException( "Stray type name blocks found " +
-			//	startBlocks.size() );
 			System.out.println( "Stray type name blocks found " +
 				startBlocks.size() );
 		}
-//		fileChannel.truncate( i * 5 );
 		fileChannel.close();
 		System.out.println( ".ok" );
 		return relTypeSet;
 	}
 
-	private static Set checkPropertyStore( String storeName, Set propertyIndex ) 
-		throws IOException
+	private static Set checkPropertyStore( String storeName, 
+		Set<Integer> propertyIndex ) throws IOException
 	{
-		File relTypeStore = new File( storeName );
-		if ( !relTypeStore.exists() )
+		File propStore = new File( storeName );
+		if ( !propStore.exists() )
 		{
 			throw new IOException( "Couldn't find property store " + 
 				storeName );
@@ -545,8 +628,8 @@ public class AdminStore
 			}
 			else if ( inUse != RECORD_NOT_IN_USE )
 			{
-				break;
-				// throw new IOException( "Bad record at " + i );
+				System.out.println( "Unkown record at: " + i );
+				System.out.println( "In use flag was: " + inUse );
 			}
 			if ( dot != 0 && i % dot == 0 )
 			{
@@ -558,25 +641,17 @@ public class AdminStore
 		{
 			System.out.println( "Stray string blocks found " +
 				stringStartBlocks.size() );
-			// throw new IOException( "Stray string blocks found " +
-			//	stringStartBlocks.size() );
 		}
-//		if ( !keyStartBlocks.isEmpty() )
-//		{
-//			System.out.println( "Stray key blocks found " +
-//				keyStartBlocks.size() );
-//		}
-//		fileChannel.truncate( i * recordSize );
 		fileChannel.close();
 		System.out.println( ".ok" );
 		return startBlocks;
 	}
 	
-	private static Set checkPropertyIndexStore( String storeName ) 
+	private static Set<Integer> checkPropertyIndexStore( String storeName ) 
 		throws IOException
 	{
-		File relTypeStore = new File( storeName );
-		if ( !relTypeStore.exists() )
+		File indexStore = new File( storeName );
+		if ( !indexStore.exists() )
 		{
 			throw new IOException( "Couldn't find property store " + 
 				storeName );
@@ -620,9 +695,8 @@ public class AdminStore
 			}
 			else if ( inUse != RECORD_NOT_IN_USE )
 			{
-				break;
-//				throw new IOException( "Bad record at " + i + ", inUse=" + 
-//					inUse );
+				System.out.println( "Unkown record at: " + i );
+				System.out.println( "In use flag was: " + inUse );
 			}
 			if ( dot != 0 && i % dot == 0 )
 			{
@@ -635,17 +709,16 @@ public class AdminStore
 			System.out.println( "Stray key blocks found " +
 				keyStartBlocks.size() );
 		}
-//		fileChannel.truncate( i * recordSize );
 		fileChannel.close();
 		System.out.println( ".ok" );
 		return startBlocks;
 	}
 
-	private static Set checkNodeStore( String storeName, Set propertySet ) 
-		throws IOException
+	private static Set checkNodeStore( String storeName, 
+		Set<Integer> propertySet ) throws IOException
 	{
-		File relTypeStore = new File( storeName );
-		if ( !relTypeStore.exists() )
+		File nodeStore = new File( storeName );
+		if ( !nodeStore.exists() )
 		{
 			throw new IOException( "Couldn't find node store " + 
 				storeName );
@@ -692,15 +765,8 @@ public class AdminStore
 			}
 			else if ( inUse != RECORD_NOT_IN_USE )
 			{
-				break;
-//				buffer.clear();
-//				buffer.put( RECORD_NOT_IN_USE );
-//				buffer.putInt( NO_NEXT_RELATIONSHIP );
-//				buffer.putInt( NO_NEXT_PROPERTY );
-//				buffer.flip();
-//				fileChannel.position( i * recordSize );
-//				fileChannel.write( buffer );
-//				System.out.print( "o" );
+				System.out.println( "Unkown record at: " + i );
+				System.out.println( "In use flag was: " + inUse );
 			}
 			if ( dot != 0 && i % dot == 0 )
 			{
@@ -708,7 +774,6 @@ public class AdminStore
 			}
 		}
 		System.out.print( " high id:" + i + " count:" + inUseCount );
-//		fileChannel.truncate( i * recordSize );
 		fileChannel.close();
 		System.out.println( ".ok" );
 		return nodeSet;
@@ -721,7 +786,8 @@ public class AdminStore
 	private static final int  NO_NEXT_PROPERTY = -1;
 
 	private static void checkRelationshipStore( String storeName, 
-		Set propertySet, Set relTypeSet, Set nodeSet ) throws IOException
+		Set<Integer> propertySet, Set<Integer> relTypeSet, 
+		Set<Integer> nodeSet ) throws IOException
 	{
 		File relStore = new File( storeName );
 		if ( !relStore.exists() )
@@ -798,8 +864,8 @@ public class AdminStore
 			}
 			else if ( inUse != RECORD_NOT_IN_USE )
 			{
-				break;
-				// throw new IOException( "Bad record at " + i );
+				System.out.println( "Unkown record at: " + i );
+				System.out.println( "In use flag was: " + inUse );
 			}
 			if ( dot != 0 && i % dot == 0 )
 			{
@@ -807,7 +873,6 @@ public class AdminStore
 			}
 		}
 		System.out.print( " high id:" + i + " count:" + inUseCount );
-//		fileChannel.truncate( i * recordSize );
 		fileChannel.close();
 		System.out.println( ".ok" );
 	}
@@ -1021,8 +1086,8 @@ public class AdminStore
 			}
 			else if ( inUse != BLOCK_NOT_IN_USE )
 			{
-				break;
-				// throw new IOException( "Bad block at " + i );
+				System.out.println( "Unkown record at: " + i );
+				System.out.println( "In use flag was: " + inUse );
 			}
 			if ( dot != 0 && i % dot == 0 )
 			{
@@ -1030,7 +1095,6 @@ public class AdminStore
 			}
 		}
 		System.out.print( " high id:" + i + " count:" + inUseCount );
-//		fileChannel.truncate( i * blockSize );
 		fileChannel.close();
 		System.out.println( ".ok" );
 		return startBlocks;
