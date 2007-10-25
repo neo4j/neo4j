@@ -407,7 +407,7 @@ public class XaResourceManager
 			txStatus.markCommitStarted();
 			xaTransaction.commit();
 		}
-		if ( lazyDone )
+		if ( lazyDone && !xaTransaction.isReadOnly() )
 		{
 			lazyDoneRecords.add( xaTransaction.getIdentifier() );
 			if ( lazyDoneRecords.size() >= 100 )
