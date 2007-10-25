@@ -503,7 +503,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 			if ( buffer != null && !hasWindow( blockId ) )
 			{
 				buffer.makeReadyForTransfer();
-				getFileChannel().transferTo( blockId * getBlockSize(), 
+				getFileChannel().transferTo( (long) blockId * getBlockSize(), 
 					getBlockSize(), buffer.getFileChannel() );
 				ByteBuffer buf = buffer.getByteBuffer();
 				record = new DynamicRecord( blockId );
