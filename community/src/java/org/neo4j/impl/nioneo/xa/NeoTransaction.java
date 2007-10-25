@@ -303,16 +303,6 @@ class NeoTransaction extends XaTransaction
 			throw new XAException( "Unable to rollback transaction[" + 
 				getIdentifier() + "], " + e);
 		}
-		nodeRecords = null;
-		propertyRecords = null;
-		relRecords = null;
-		relTypeRecords = null;
-		propIndexRecords = null;
-		nodeCommands = null; 
-		propCommands = null;
-		propIndexCommands = null;
-		relCommands = null;
-		relTypeCommands = null;
 	}
 	
 	public void doCommit() throws XAException
@@ -365,16 +355,6 @@ class NeoTransaction extends XaTransaction
 		}
 		finally
 		{
-			nodeRecords = null;
-			propertyRecords = null;
-			relRecords = null;
-			relTypeRecords = null;
-			propIndexRecords = null;
-			nodeCommands = null; 
-			propCommands = null;
-			propIndexCommands = null;
-			relCommands = null;
-			relTypeCommands = null;
 			TxInfoManager.getManager().unregisterMode();
 		}
 	}
@@ -909,7 +889,7 @@ class NeoTransaction extends XaTransaction
 			prevPropRecord.setNextProp( nextProp );
 			addPropertyRecord( prevPropRecord );
 		}
-		if ( nextProp != Record.NO_PREVIOUS_PROPERTY.intValue() )
+		if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
 		{
 			PropertyRecord nextPropRecord = getPropertyRecord( nextProp );
 			if ( nextPropRecord == null )
