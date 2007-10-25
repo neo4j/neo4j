@@ -265,7 +265,8 @@ class RelationshipImpl
 							PropertyIndex.getIndexFor( keyId );
 						if ( indexToCheck.getKey().equals( key ) )
 						{
-							return propertyMap.get( indexToCheck.getKeyId() );
+							return propertyMap.get( 
+								indexToCheck.getKeyId() ).getValue();
 						}
 					}
 				}
@@ -316,7 +317,8 @@ class RelationshipImpl
 							PropertyIndex.getIndexFor( keyId );
 						if ( indexToCheck.getKey().equals( key ) )
 						{
-							return propertyMap.get( indexToCheck.getKeyId() );
+							return propertyMap.get( 
+								indexToCheck.getKeyId() ).getValue();
 						}
 					}
 				}

@@ -521,7 +521,8 @@ class NodeImpl implements Node, Comparable
 							keyId );
 						if ( indexToCheck.getKey().equals( key ) )
 						{
-							return propertyMap.get( indexToCheck.getKeyId() );
+							return propertyMap.get( 
+								indexToCheck.getKeyId() ).getValue();
 						}
 					}
 				}
@@ -575,7 +576,8 @@ class NodeImpl implements Node, Comparable
 							keyId );
 						if ( indexToCheck.getKey().equals( key ) )
 						{
-							return propertyMap.get( indexToCheck.getKeyId() );
+							return propertyMap.get( 
+								indexToCheck.getKeyId() ).getValue();
 						}
 					}
 				}
@@ -787,7 +789,8 @@ class NodeImpl implements Node, Comparable
 							keyId );
 						if ( indexToCheck.getKey().equals( key ) )
 						{
-							property = propertyMap.remove( indexToCheck.getKeyId() );
+							property = propertyMap.remove( 
+								indexToCheck.getKeyId() );
 							break;
 						}
 					}
