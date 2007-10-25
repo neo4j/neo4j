@@ -25,7 +25,7 @@ public class NeoModule
 	private boolean startIsOk = true;
 	private Class<? extends RelationshipType> relTypeClass;
 	
-	private static final int INDEX_COUNT = 1500;
+	private static final int INDEX_COUNT = 2500;
 	
 	public void init()
 	{
