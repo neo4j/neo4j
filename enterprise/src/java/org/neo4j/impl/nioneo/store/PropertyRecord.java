@@ -69,19 +69,13 @@ public class PropertyRecord extends AbstractRecord
 	
 	public Collection<DynamicRecord> getValueRecords()
 	{
-		if ( isLight )
-		{
-			throw new RuntimeException( "light property" );
-		}
+		assert !isLight;
 		return valueRecords;
 	}
 	
 	public void addValueRecord( DynamicRecord record )
 	{
-		if ( isLight )
-		{
-			throw new RuntimeException( "light property" );
-		}
+		assert !isLight;
 		valueRecords.add( record );
 	}
 	

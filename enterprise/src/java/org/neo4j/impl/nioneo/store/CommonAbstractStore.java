@@ -455,7 +455,7 @@ public abstract class CommonAbstractStore
 		fileChannel.position( ((long) highId) * recordSize );
 		ByteBuffer buffer = ByteBuffer.wrap(
 			getTypeAndVersionDescriptor().getBytes() );
-		int bytes = fileChannel.write( buffer );
+		fileChannel.write( buffer );
 		fileChannel.truncate( fileChannel.position() );
 		fileChannel.force( false );
 		fileLock.release();
