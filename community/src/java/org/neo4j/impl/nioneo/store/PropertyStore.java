@@ -617,8 +617,9 @@ public class PropertyStore extends AbstractStore implements Store
 				int newStringBlockId = -1;
 				if ( type == 2 ) // old string
 				{
+					int oldStartId = (int) buf.getLong();
 					String oldString = getOldStringFromStore( 
-						(int) buf.getLong(), stringPropertyStore );
+						oldStartId, stringPropertyStore );
 					newStringBlockId = newStringStore.nextId();
 					int length = oldString.length();
 					char[] chars = new char[length];
@@ -660,6 +661,7 @@ public class PropertyStore extends AbstractStore implements Store
 				}
 			}
 		}
+		propertyIndexStore.close();
 		newStringStore.close();
 		stringPropertyStore.close();
 		File oldStringStore = new File( getStorageFileName() + ".strings" );
