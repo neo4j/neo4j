@@ -241,6 +241,7 @@ public class TestRelationship extends TestCase
 		}
 		catch ( NotFoundException e )
 		{
+			e.printStackTrace();
 			fail( "" + e );
 		}
 		catch ( javax.transaction.SystemException e )
