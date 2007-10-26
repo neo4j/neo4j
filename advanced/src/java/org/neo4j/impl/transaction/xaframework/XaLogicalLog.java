@@ -92,6 +92,7 @@ public class XaLogicalLog
 			buffer.flip();
 			fileChannel.write( buffer ); 
 		}
+		buffer = null;
 		writeBuffer = new LogBuffer( fileChannel );
 	}
 	
@@ -336,6 +337,65 @@ public class XaLogicalLog
 		long truncateAt = writeBuffer.getFileChannelPosition();
 		writeBuffer.releaseMemoryMapped();
 		fileChannel.truncate( truncateAt );
+	}
+	
+	public synchronized void makeNewLog()
+	{
+		// save recovered log
+		if ( xidIdentMap.size() > 0 )
+		{
+			throw new RuntimeException( "Active transactions found: " 
+				+ xidIdentMap.size() + ", can't make new log file" );
+		}
+		writeBuffer = null;
+		try
+		{
+			fileChannel.close();
+		}
+		catch ( IOException e )
+		{
+			throw new RuntimeException( "Unable to close log[" + fileName + 
+				"]", e );
+		}
+		File file = new File( fileName );
+		if ( !file.exists() )
+		{
+			throw new RuntimeException( "Logical log[" + fileName + 
+				"] not found" );
+		}
+		// TODO: if store old logs save them here
+		try
+		{
+			String saveName = fileName + ".recovered-" + 
+				System.currentTimeMillis();
+			file.renameTo( new File( saveName ) );
+		}
+		catch ( Exception e )
+		{
+			try
+			{
+				Thread.sleep( 500 );
+				// try again
+				String saveName = fileName + ".recovered-" + 
+					System.currentTimeMillis();
+				file.renameTo( new File( saveName ) );
+			}
+			catch ( Throwable t )
+			{
+				throw new RuntimeException( "Unable to rename recovered " + 
+					"log file[" + fileName + "]", t );
+			}
+		}
+		// create a new one
+		try
+		{
+			this.open();
+		}
+		catch ( IOException e )
+		{
+			throw new RuntimeException( "Unable to open new log[" + 
+				fileName + "]", e );
+		}
 	}
 	
 	public synchronized void close() throws IOException
