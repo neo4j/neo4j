@@ -252,7 +252,7 @@ public class XaResourceManager
 
 	private static class TransactionStatus
 	{
-		private boolean commit = false;
+		private boolean prepared = false;
 		private boolean commitStarted = false;
 		private boolean rollback = false;
 		private final XaTransaction xaTransaction;
@@ -262,15 +262,13 @@ public class XaResourceManager
 			this.xaTransaction = xaTransaction;
 		}
 
-		void markAsCommit()
+		void markAsPrepared()
 		{
-			rollback = false;
-			commit = true;
+			prepared = true;
 		}
 		
 		void markAsRollback()
 		{
-			commit = false;
 			rollback = true;
 		}
 		
@@ -279,9 +277,9 @@ public class XaResourceManager
 			commitStarted = true;
 		}
 		
-		boolean commit()
+		boolean prepared()
 		{
-			return commit;
+			return prepared;
 		}
 		
 		boolean rollback()
@@ -324,7 +322,7 @@ public class XaResourceManager
 		{
 			xaTransaction.prepare();
 			log.prepare( xaTransaction.getIdentifier() );
-			txStatus.markAsCommit();
+			txStatus.markAsPrepared();
 			return XAResource.XA_OK;
 		}
 	}
@@ -353,7 +351,7 @@ public class XaResourceManager
 		else
 		{
 			txOrderMap.put( xid, nextTxOrder++ );
-			txStatus.markAsCommit();
+			txStatus.markAsPrepared();
 			return false;
 		}
 	}
@@ -372,6 +370,7 @@ public class XaResourceManager
 		}
 		TransactionStatus txStatus = status.getTransactionStatus();
 		txOrderMap.put( xid, nextTxOrder++ );
+		txStatus.markAsPrepared();
 		txStatus.markCommitStarted();
 	}
 	
@@ -395,9 +394,9 @@ public class XaResourceManager
 				}
 				log.commitOnePhase( xaTransaction.getIdentifier() );
 			}
-			txStatus.markAsCommit();
+			txStatus.markAsPrepared();
 		}
-		if ( !txStatus.commit() && txStatus.rollback() )
+		if ( !txStatus.prepared() || txStatus.rollback() )
 		{
 			throw new XAException( "Transaction not prepared or " + 
 				"(marked as) rolledbacked" );
@@ -407,7 +406,7 @@ public class XaResourceManager
 			txStatus.markCommitStarted();
 			xaTransaction.commit();
 		}
-		if ( lazyDone && !xaTransaction.isReadOnly() )
+		if ( lazyDone && !xaTransaction.isRecovered() )
 		{
 			lazyDoneRecords.add( xaTransaction.getIdentifier() );
 			if ( lazyDoneRecords.size() >= 100 )
@@ -555,7 +554,7 @@ public class XaResourceManager
 			{
 				if ( txStatus.commitStarted() )
 				{
-					System.out.println( "Committing 1PC tx " + identifier );
+					System.out.println( "(Re-)committing tx " + identifier );
 					try
 					{
 						xaTransaction.commit();
@@ -571,8 +570,11 @@ public class XaResourceManager
 					xidMap.remove( xid );
 					recoveredTxCount--;
 				}
-				else if ( !txStatus.commit() )
+				// else if ( !txStatus.commit() )
+				else if ( !txStatus.prepared() )
 				{
+					System.out.println( "Rolling back non prepared tx " + 
+						identifier );
 					log.doneInternal( xaTransaction.getIdentifier() );
 					xidMap.remove( xid );
 					recoveredTxCount--;
@@ -586,6 +588,7 @@ public class XaResourceManager
 	{
 		if ( log.scanIsComplete() && recoveredTxCount == 0 )
 		{
+			log.makeNewLog();
 			tf.recoveryComplete();
 		}
 	}

@@ -9,7 +9,7 @@ class XidImpl implements Xid
 	// hardcoded for now, we don't have distribution yet but
 	// this should change later
 	private static final byte INSTANCE_ID[] = new byte[]  
-		{ 'N', 'E', 'O', 'K', 'E', 'R', 'N', 'L' };
+		{ 'N', 'E', 'O', 'K', 'E', 'R', 'N', 'L', '\0' };
 		
 	private static long nextSequenceId = 0;
 
