@@ -145,6 +145,12 @@ public class TestXa extends TestCase
 		}
 	}
 
+	private void renameCopiedLogicalLog() throws IOException
+	{
+		File file = new File( "nioneo_logical.log.bak" );
+		file.renameTo( new File( "nioneo_logical.log" ) );
+	}
+	
 	private void copyLogicalLog() throws IOException
 	{
 		FileChannel source = new RandomAccessFile( "nioneo_logical.log", 
@@ -190,7 +196,7 @@ public class TestXa extends TestCase
 			int n1prop1 = ds.nextId( PropertyStore.class );
 			xaCon.getNodeConsumer().addProperty( node1, n1prop1, 
 				index( "prop1" ), "string1" );
-//			xaCon.getNodeConsumer().getProperties( node1 );
+			xaCon.getNodeConsumer().getProperties( node1 );
 			int relType1 = ds.nextId( RelationshipType.class ); 
 			xaCon.getRelationshipTypeConsumer().addRelationshipType(
 				relType1, "relationshiptype1" );
@@ -211,9 +217,10 @@ public class TestXa extends TestCase
 			xaCon.getNodeConsumer().deleteNode( node2 );
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.commit( xid, true );
+			copyLogicalLog();
 			ds.close();
 			xaCon.clearAllTransactions();
-			renameLogicalLog();
+			renameCopiedLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
 			xaRes = xaCon.getXaResource();
@@ -256,9 +263,10 @@ public class TestXa extends TestCase
 				"string2" );
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.prepare( xid );
+			copyLogicalLog();
 			ds.close();
+			renameCopiedLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
-			// fileChannel.close();
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
 			xaRes = xaCon.getXaResource();
 			assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -301,8 +309,9 @@ public class TestXa extends TestCase
 				"string2" );
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaCon.clearAllTransactions();
+			copyLogicalLog();
 			ds.close();
-			renameLogicalLog();
+			renameCopiedLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
 			xaRes = xaCon.getXaResource();
@@ -364,8 +373,9 @@ public class TestXa extends TestCase
 			fileChannel.truncate( fileChannel.size() - 3 );
 			fileChannel.force( false );
 			fileChannel.close();
+			copyLogicalLog();
 			ds.close();
-			renameLogicalLog();
+			renameCopiedLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
 			xaRes = xaCon.getXaResource();
@@ -396,14 +406,15 @@ public class TestXa extends TestCase
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.prepare( xid );
 			xaCon.clearAllTransactions();
+			copyLogicalLog();
 			java.nio.channels.FileChannel fileChannel = 
 				new java.io.RandomAccessFile( 
-					"nioneo_logical.log", "rw" ).getChannel();
-			fileChannel.truncate( fileChannel.size() - 3 );
+					"nioneo_logical.log.bak", "rw" ).getChannel();
+			fileChannel.truncate( 187 );
 			fileChannel.force( false );
 			fileChannel.close();
 			ds.close();
-			renameLogicalLog();
+			renameCopiedLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
 			xaRes = xaCon.getXaResource();
@@ -438,7 +449,7 @@ public class TestXa extends TestCase
 			ds.truncateLogicalLog();
 			copyLogicalLog();
 			ds.close();
-			renameLogicalLog();
+			renameCopiedLogicalLog();
 //			java.nio.channels.FileChannel fileChannel = 
 //				new java.io.RandomAccessFile( 
 //					"nioneo_logical.log", "rw" ).getChannel();

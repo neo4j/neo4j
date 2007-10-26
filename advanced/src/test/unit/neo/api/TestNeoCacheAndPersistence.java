@@ -293,4 +293,19 @@ public class TestNeoCacheAndPersistence extends TestCase
 			fail( "" + e );
 		}
 	}
+	
+	public void testGetDirectedRelationship()
+	{
+		try
+		{
+			Node node1 = NodeManager.getManager().getNodeById( node1Id );
+			Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST, 
+				Direction.OUTGOING );
+			assertEquals( int1, rel.getProperty( key1 ) );
+		}
+		catch ( Exception e )
+		{
+			fail( "" + e );
+		}
+	}
 }
