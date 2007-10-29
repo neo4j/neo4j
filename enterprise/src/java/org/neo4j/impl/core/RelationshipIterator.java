@@ -61,6 +61,8 @@ class RelationshipIterator implements Iterable<Relationship>,
 				}
 				catch ( Throwable t )
 				{ // ok unable to get that relationship
+					// TODO: add logging here so user knows he is doing 
+					// something wrong
 				}
 			}
 		} while ( nextElement == null && nextPosition < relIds.length );

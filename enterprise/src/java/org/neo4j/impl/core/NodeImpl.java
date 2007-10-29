@@ -262,39 +262,38 @@ class NodeImpl implements Node, Comparable
 
 	public Iterable<Relationship> getRelationships( RelationshipType... types )
 	{
-/*		List<Relationship> rels = new LinkedList<Relationship>();
-		for ( RelationshipType type : types )
+		acquireLock( this, LockType.READ );
+		try
 		{
-			for ( Relationship rel : getRelationships( type ) )
+			ensureFullRelationships();
+			int size = 0;
+			for ( RelationshipType type : types )
 			{
-				rels.add( rel );
-			}
-		}
-		return rels;*/
-		int size = 0;
-		for ( RelationshipType type : types )
-		{
-			ArrayIntSet relTypeSet = relationshipMap.get( type.name() );
-			if ( relTypeSet != null )
-			{
-				size += relTypeSet.size();
-			}
-		}
-		int[] ids = new int[size];
-		int position = 0;
-		for ( RelationshipType type : types )
-		{
-			ArrayIntSet relTypeSet = relationshipMap.get( type.name() );
-			if ( relTypeSet != null )
-			{
-				for ( int relId : relTypeSet.values() )
+				ArrayIntSet relTypeSet = relationshipMap.get( type.name() );
+				if ( relTypeSet != null )
 				{
-					ids[position++] = relId;
+					size += relTypeSet.size();
 				}
 			}
+			int[] ids = new int[size];
+			int position = 0;
+			for ( RelationshipType type : types )
+			{
+				ArrayIntSet relTypeSet = relationshipMap.get( type.name() );
+				if ( relTypeSet != null )
+				{
+					for ( int relId : relTypeSet.values() )
+					{
+						ids[position++] = relId;
+					}
+				}
+			}
+			return new RelationshipIterator( ids, this, Direction.BOTH );
 		}
-		return new RelationshipIterator( ids, this, Direction.BOTH );
-		
+		finally
+		{
+			releaseLock( this, LockType.READ );
+		}
 	}
 	
 	public Relationship getSingleRelationship( RelationshipType type, 
