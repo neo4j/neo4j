@@ -85,6 +85,11 @@ class RelationshipProxy implements Relationship
 		return nm.getRelForProxy( relId ).removeProperty( key );
 	}
 	
+	public boolean isType( RelationshipType type )
+    {
+		return nm.getRelForProxy( relId ).isType( type );
+    }
+	
 	public int compareTo( Object rel )
 	{
 		Relationship r = (Relationship) rel;

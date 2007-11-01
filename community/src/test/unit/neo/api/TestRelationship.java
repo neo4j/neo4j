@@ -11,6 +11,7 @@ import junit.framework.TestSuite;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
+import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.core.IllegalValueException;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.core.NotFoundException;
@@ -603,4 +604,23 @@ public class TestRelationship extends TestCase
 			fail( "" + e );
 		}
 	}
+	
+	public void testRelationshipIsType()
+	{
+		Node node1 = NodeManager.getManager().createNode();
+		Node node2 = NodeManager.getManager().createNode();
+		Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+		assertTrue( rel.isType( MyRelTypes.TEST ) );
+		assertTrue( rel.isType( new RelationshipType()
+		{
+			public String name()
+            {
+				return MyRelTypes.TEST.name();
+            }			
+		} ) );
+		assertFalse( rel.isType( MyRelTypes.TEST_TRAVERSAL ) );
+		rel.delete();
+		node1.delete();
+		node2.delete();
+	}	
 }
