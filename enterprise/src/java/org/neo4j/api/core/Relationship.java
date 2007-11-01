@@ -101,12 +101,27 @@ public interface Relationship
 	/**
 	 * Returns the type of this relationship. A relationship's type is an
 	 * immutable property that is specified at Relationship
-	 *  {@link Node#createRelationshipTo creation}. It will always be one of
-	 * the elements of the {@link RelationshipType RelationshipType} enumeration
-	 * passed in to {@link EmbeddedNeo#EmbeddedNeo EmbeddedNeo} at startup.
+	 *  {@link Node#createRelationshipTo creation}. Remember that relationship
+	 *  types are semantically equivalent if their
+	 *  {@link RelationshipType#name() names} are
+	 *  {@link Object#equals(Object) equal}. This is NOT the same as checking
+	 *  for identity equality using the == operator. If you want to know
+	 *  whether this relationship is of a certain type, use the
+	 *  {@link #isType(RelationshipType) isType()} operation.
 	 * @return the type of this relationship
 	 */	
-	public RelationshipType getType();	
+	public RelationshipType getType();
+	
+	/**
+	 * Indicates whether this relationship is of the type <code>type</code>.
+	 * This is a convenience method that checks for equality using the
+	 * contract specified by RelationshipType, i.e. by checking for equal
+	 * {@link RelationshipType#name() names}.
+	 * @param type the type to check
+	 * @return <code>true</code> if this relationship is of the type
+	 * <code>type</code>, <code>false</code> otherwise
+	 */
+	public boolean isType( RelationshipType type );
 	
 	// Property operations
 	/**

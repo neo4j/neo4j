@@ -212,6 +212,17 @@ class RelationshipImpl
 	{
 		return type;
 	}
+
+	/**
+	 * Indicates whether this relationship is of the type 'type.'
+	 * @param type the type to check
+	 * @return <code>true</code> if this relationship is of the type
+	 * <code>type</code>, <code>false</code> otherwise
+	 */
+	public boolean isType( RelationshipType type )
+    {
+		return type != null && type.name().equals( this.getType().name() );
+    }
 	
 	/**
 	 * Returns the property for <CODE>key</CODE>.

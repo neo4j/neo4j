@@ -1341,6 +1341,11 @@ class NeoTransaction extends XaTransaction
         {
 			throw new UnsupportedOperationException( "Lockable rel" );
         }
+		
+		public boolean isType( RelationshipType type )
+		{
+			throw new UnsupportedOperationException( "Lockable rel" );			
+		}
 
 		public boolean hasProperty( String key )
         {

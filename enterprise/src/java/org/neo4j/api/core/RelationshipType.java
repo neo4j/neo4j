@@ -4,6 +4,9 @@ package org.neo4j.api.core;
  * Interface that should be implemented by enum class that defines your
  * relationship types.
  */
+// TODO: not enum anymore
+// TODO: semantic equivalence defined by name equality
+// TODO: see Relationship#isType() for some documentation hints
 public interface RelationshipType
 {
 	public String name();
