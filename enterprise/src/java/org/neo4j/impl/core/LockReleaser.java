@@ -118,7 +118,7 @@ public class LockReleaser
 	}
 
 	/**
-	 * Releases all commands that participated in the successfully commited
+	 * Releases all commands that participated in the successfully committed
 	 * transaction.
 	 *
 	 * @throws InvalidTransactionException if this method is invoked when 
@@ -157,7 +157,7 @@ public class LockReleaser
 	public synchronized void dumpLocks()
 	{
 		System.out.print( "Locks held: " );
-		java.util.Iterator itr = lockMap.keySet().iterator();
+		java.util.Iterator<?> itr = lockMap.keySet().iterator();
 		if ( !itr.hasNext() )
 		{
 			System.out.println( "NONE" );

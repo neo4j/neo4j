@@ -28,7 +28,7 @@ public class TestLruCache extends TestCase
 	{
 		try
 		{
-			new LruCache( "TestCache", 0 );
+			new LruCache<Object,Object>( "TestCache", 0 );
 			fail( "Illegal maxSize should throw exception" );
 		}
 		catch ( IllegalArgumentException e )

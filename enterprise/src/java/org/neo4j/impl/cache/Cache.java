@@ -2,10 +2,10 @@ package org.neo4j.impl.cache;
 
 /**
  * Simple cache interface with add, remove, get, clear and size methods.
- * If null is passed as parameter an {@link IllegalArgumentException} is thown.
+ * If null is passed as parameter an {@link IllegalArgumentException} is thrown.
  * <p>
  * If the cache cleans it self (for example a LIFO cache with maximum size) the 
- * <CODE>elementCleaned</CODE> method is invoked. Overide the default 
+ * <CODE>elementCleaned</CODE> method is invoked. Override the default 
  * implementation (that does nothing) if needed.  
  * <p>
  * TODO: Create a pluggable, scalable, configurable, self analyzing/adaptive, 
@@ -62,7 +62,7 @@ public abstract class Cache<K,E>
 	
 	/**
 	 * If cache is self cleaning this method will be invoked with the element 
-	 * cleaned. Overide this implementation (that does nothing) if needed.
+	 * cleaned. Override this implementation (that does nothing) if needed.
 	 *
 	 * @param element cache element that has been removed
 	 */

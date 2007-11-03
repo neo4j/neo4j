@@ -4,11 +4,11 @@ import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 
 /**
- * Wrapps a <CODE>ByteBuffer</CODE> and is tied to a {@link PersistenceWindow}. 
+ * Wraps a <CODE>ByteBuffer</CODE> and is tied to a {@link PersistenceWindow}. 
  * Using the {@link #setOffset(int)} method one can offset the buffer (within 
  * the limits of the persistence window.
  * <p>
- * All the <CODE>put</CODE> and <CODE>get</CODE> methos of this class works
+ * All the <CODE>put</CODE> and <CODE>get</CODE> methods of this class works
  * the same way as in <CODE>ByteBuffer</CODE>.
  *  
  *  @see ByteBuffer, PersistenceWindow
@@ -41,7 +41,7 @@ public class Buffer
 	}
 	
 	/**
-	 * Returnes the underlying byte buffer.
+	 * Returns the underlying byte buffer.
 	 * 
 	 * @return The byte buffer wrapped by this buffer
 	 */

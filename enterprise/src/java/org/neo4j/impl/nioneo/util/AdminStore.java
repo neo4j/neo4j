@@ -100,7 +100,7 @@ public class AdminStore
 	{
 		private static final String VERSION = "StringPropertyStore v0.9";
 		
-		public DynamicStringStore( String fileName, Map config ) 
+		public DynamicStringStore( String fileName, Map<?,?> config ) 
 			throws IOException
 		{
 			super( fileName, config );
@@ -394,7 +394,6 @@ public class AdminStore
 				records = recordsCol.iterator();
 			}
 		}
-		StringBuffer buf = new StringBuffer();
 		byte[] allBytes = new byte[totalSize];
 		int position = 0;
 		for ( byte[] bytes : byteList )
@@ -506,7 +505,7 @@ public class AdminStore
 		return relTypeSet;
 	}
 
-	private static Set checkPropertyStore( String storeName, 
+	private static Set<Integer> checkPropertyStore( String storeName, 
 		Set<Integer> propertyIndex ) throws IOException
 	{
 		File propStore = new File( storeName );
@@ -520,8 +519,10 @@ public class AdminStore
 		{
 			idGenerator.delete();
 		}
-		Set arrayStartBlocks = checkDynamicStore( storeName + ".arrays" );
-		Set stringStartBlocks = checkDynamicStore( storeName + ".strings" );
+		Set<Integer> arrayStartBlocks = checkDynamicStore( storeName + 
+			".arrays" );
+		Set<Integer> stringStartBlocks = checkDynamicStore( storeName + 
+			".strings" );
 		// in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
 		// prev_prop_id(int)+next_prop_id(int)
 		int recordSize = 25;
@@ -661,7 +662,7 @@ public class AdminStore
 		{
 			idGenerator.delete();
 		}
-		Set keyStartBlocks = checkDynamicStore( storeName + ".keys" );
+		Set<Integer> keyStartBlocks = checkDynamicStore( storeName + ".keys" );
 		// in_use(byte)+prop_count(int)+key_block_id(int)
 		int recordSize = 9;
 		System.out.print( storeName );
@@ -684,7 +685,7 @@ public class AdminStore
 			if ( inUse == RECORD_IN_USE )
 			{
 				inUseCount++;
-				int count = buffer.getInt();
+				buffer.getInt(); // count
 				int key = buffer.getInt();
 				if ( !keyStartBlocks.remove( key ) )
 				{
@@ -714,7 +715,7 @@ public class AdminStore
 		return startBlocks;
 	}
 
-	private static Set checkNodeStore( String storeName, 
+	private static Set<Integer> checkNodeStore( String storeName, 
 		Set<Integer> propertySet ) throws IOException
 	{
 		File nodeStore = new File( storeName );
@@ -975,7 +976,8 @@ public class AdminStore
 	private static final byte BLOCK_IN_USE = (byte) 1;
 	private static final byte BLOCK_NOT_IN_USE = (byte) 0;
 
-	private static Set checkDynamicStore( String storeName ) throws IOException
+	private static Set<Integer> checkDynamicStore( String storeName ) 
+		throws IOException
 	{
 		File dynamicStore = new File( storeName );
 		if ( !dynamicStore.exists() )

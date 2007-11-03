@@ -133,7 +133,7 @@ class NodeProxy implements Node
 
 	public String toString()
 	{
-		return "Proxy#" + "Node[" + this.getId() + "]";
+		return "Node[" + this.getId() + "]";
 	}
 
 	public Relationship createRelationshipTo( Node otherNode, 

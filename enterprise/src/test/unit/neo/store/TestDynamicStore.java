@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import org.neo4j.impl.nioneo.store.AbstractDynamicStore;
+import org.neo4j.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 
 public class TestDynamicStore extends TestCase
@@ -60,7 +63,7 @@ public class TestDynamicStore extends TestCase
 			catch ( IOException e )
 			{ // good
 			}
-			ByteStore.createStore( "testDynamicStore.db", 30 );
+			ByteStore store = ByteStore.createStore( "testDynamicStore.db", 30 );
 			try
 			{
 				ByteStore.createStore( "testDynamicStore.db", 15 );
@@ -69,6 +72,7 @@ public class TestDynamicStore extends TestCase
 			catch ( IOException e )
 			{ // good
 			}
+			store.close();
 		}
 		catch ( IOException e )
 		{
@@ -80,34 +84,34 @@ public class TestDynamicStore extends TestCase
 			File file = new File( "testDynamicStore.db" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 			file = new File( "testDynamicStore.db.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
 			
 	public void testStickyStore()
 	{
+		Logger log = Logger.getLogger( 
+			CommonAbstractStore.class.getName() );
+		Level level = log.getLevel();
 		try
 		{
+			log.setLevel( Level.OFF );
 			ByteStore.createStore( "testDynamicStore.db", 
 				30 ).close();
 			java.nio.channels.FileChannel fileChannel = 
 				new java.io.RandomAccessFile( 
 					"testDynamicStore.db", "rw" ).getChannel();
 			fileChannel.truncate( fileChannel.size() - 2 );
-			try
-			{
-				new ByteStore( "testDynamicStore.db" );
-				// assertTrue( !store.isStoreOk() );
-			}
-			catch ( IOException e )
-			{ // good
-			}
+			fileChannel.close();
+			ByteStore store = new ByteStore( "testDynamicStore.db" );
+			store.makeStoreOk();
+			store.close();
 		}
 		catch ( IOException e )
 		{
@@ -115,15 +119,16 @@ public class TestDynamicStore extends TestCase
 		}
 		finally
 		{
+			log.setLevel( level );
 			File file = new File( "testDynamicStore.db" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 			file = new File( "testDynamicStore.db.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -177,12 +182,12 @@ public class TestDynamicStore extends TestCase
 			File file = new File( "testDynamicStore.db" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 			file = new File( "testDynamicStore.db.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -217,12 +222,12 @@ public class TestDynamicStore extends TestCase
 			File file = new File( "testDynamicStore.db" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 			file = new File( "testDynamicStore.db.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -230,8 +235,7 @@ public class TestDynamicStore extends TestCase
 	public void testRandomTest() throws IOException
 	{
 		Random random =	new Random( System.currentTimeMillis() );
-			ByteStore store = ByteStore.createStore( "testDynamicStore.db", 
-				30 );
+		ByteStore store = ByteStore.createStore( "testDynamicStore.db", 30 );
 		java.util.ArrayList<Integer> idsTaken = 
 			new java.util.ArrayList<Integer>();
 		java.util.Map<Integer,byte[]> byteData = 
@@ -293,15 +297,16 @@ public class TestDynamicStore extends TestCase
 		}
 		finally
 		{
+			store.close();
 			File file = new File( "testDynamicStore.db" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 			file = new File( "testDynamicStore.db.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}

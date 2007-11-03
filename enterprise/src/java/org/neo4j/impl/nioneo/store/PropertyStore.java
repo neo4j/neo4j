@@ -35,7 +35,7 @@ public class PropertyStore extends AbstractStore implements Store
 	/**
 	 * See {@link AbstractStore#AbstractStore(String, Map)}
 	 */
-	public PropertyStore( String fileName, Map config ) 
+	public PropertyStore( String fileName, Map<?,?> config ) 
 		throws IOException
 	{
 		super( fileName, config );
@@ -179,6 +179,13 @@ public class PropertyStore extends AbstractStore implements Store
 				finally 
 				{
 					releaseWindow( window );
+				}
+			}
+			else
+			{
+				if ( !record.inUse()&& !isInRecoveryMode() )
+				{
+					freeId( record.getId() );
 				}
 			}
 		}
@@ -714,7 +721,6 @@ public class PropertyStore extends AbstractStore implements Store
 			null );
 		Iterator<DynamicRecord> records = allRecords.iterator();
 		List<byte[]> byteList = new LinkedList<byte[]>();
-		int totalSize = 0;
 		int recordToFind = oldKeyId;
 		while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
 			records.hasNext() )

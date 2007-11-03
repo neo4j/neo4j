@@ -3,11 +3,11 @@ package org.neo4j.impl.nioneo.xa;
 import javax.transaction.xa.Xid;
 
 /**
- * Xid implementation, made public only for testing purpouse.  
+ * Xid implementation, made public only for testing purpose.  
  */
 public class XidImpl implements Xid
 {
-	private static final int FORMAT_ID = 0x4E454E31; // NEO format identidier
+	private static final int FORMAT_ID = 0x4E454E31; // NEO format identifier
 	
 	private final byte globalId[]; 
 	private final byte branchId[];

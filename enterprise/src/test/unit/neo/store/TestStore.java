@@ -49,7 +49,7 @@ public class TestStore extends TestCase
 			catch ( IOException e )
 			{ // good
 			}
-			Store.createStore( "testStore.db" );
+			Store store = Store.createStore( "testStore.db" );
 			try
 			{
 				Store.createStore( "testStore.db" );
@@ -58,6 +58,7 @@ public class TestStore extends TestCase
 			catch ( IOException e )
 			{ // good
 			}
+			store.close();
 		}
 		catch ( IOException e )
 		{
@@ -69,12 +70,12 @@ public class TestStore extends TestCase
 			File file = new File( "testStore.db" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 			file = new File( "testStore.db.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -89,14 +90,9 @@ public class TestStore extends TestCase
 					"testStore.db", "rw" ).getChannel();
 			fileChannel.truncate( fileChannel.size() - 2 );
 			fileChannel.close();
-			try
-			{
-				new Store( "testStore.db" );
-				// assertTrue( !store.isStoreOk() );
-			}
-			catch ( IOException e )
-			{ // good
-			}
+			Store store = new Store( "testStore.db" );
+			store.makeStoreOk();
+			store.close();
 		}
 		catch ( IOException e )
 		{
@@ -107,12 +103,12 @@ public class TestStore extends TestCase
 			File file = new File( "testStore.db" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 			file = new File( "testStore.db.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -133,12 +129,12 @@ public class TestStore extends TestCase
 			File file = new File( "testStore.db" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 			file = new File( "testStore.db.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}

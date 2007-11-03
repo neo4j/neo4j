@@ -28,7 +28,7 @@ import org.neo4j.impl.transaction.TransactionFactory;
  * <p>
  * A loaded node (from persistence storage when not found in cache) will start 
  * in first phase only knowing about node id.
- * A relationship may become shallow if one of the nodes aren't in chache. See 
+ * A relationship may become shallow if one of the nodes aren't in cache. See 
  * {@link NodeImpl} and {@link RelationshipImpl} for more information about 
  * different phases.
  * <p>
@@ -108,7 +108,7 @@ public class NodeManager
 	}
 	
 	/**
-	 * Create a realtionship, see class javadoc.
+	 * Create a relationship, see class javadoc.
 	 *
 	 * @param startNode the start node if directed or just one of the nodes
 	 * two nodes if not directed
@@ -724,12 +724,12 @@ public class NodeManager
 		return rth.addValidRelationshipType( name, create );
     }
 	
-	public int getHighestPossibleIdInUse( Class clazz )
+	public int getHighestPossibleIdInUse( Class<?> clazz )
 	{
 		return IdGenerator.getGenerator().getHighestPossibleIdInUse( clazz );
 	}
 	
-	public int getNumberOfIdsInUse( Class clazz )
+	public int getNumberOfIdsInUse( Class<?> clazz )
 	{
 		return IdGenerator.getGenerator().getNumberOfIdsInUse( clazz );
 	}

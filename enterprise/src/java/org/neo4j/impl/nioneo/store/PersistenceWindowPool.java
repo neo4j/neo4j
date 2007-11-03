@@ -240,11 +240,11 @@ class PersistenceWindowPool
 	{
 		synchronized ( activeRowWindows )
 		{
-			for ( Set windowSet : txIdentifiers.values() )
+			for ( Set<LockableWindow> windowSet : txIdentifiers.values() )
 			{
 				if ( windowSet != null )
 				{
-					Iterator itr = windowSet.iterator();
+					Iterator<LockableWindow> itr = windowSet.iterator();
 					while ( itr.hasNext() )
 					{
 						( ( MappedPersistenceWindow ) itr.next() ).force();
@@ -269,10 +269,11 @@ class PersistenceWindowPool
 		{
 			if ( identifier != -1 )
 			{
-				Set windowSet = txIdentifiers.remove( identifier );
+				Set<LockableWindow> windowSet = 
+					txIdentifiers.remove( identifier );
 				if ( windowSet != null )
 				{
-					Iterator itr = windowSet.iterator();
+					Iterator<LockableWindow> itr = windowSet.iterator();
 					while ( itr.hasNext() )
 					{
 						( ( MappedPersistenceWindow ) itr.next() ).force();

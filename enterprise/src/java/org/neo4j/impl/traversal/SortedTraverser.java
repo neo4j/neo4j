@@ -20,14 +20,14 @@ import java.util.Iterator;
  */
 class SortedTraverser implements Traverser
 {
-	private Iterator nodesIterator = null;
+	private Iterator<Node> nodesIterator = null;
 	
 	/**
 	 * Creates a sorted traverser from the sorted list of <CODE>nodes</CODE>
 	 * 
 	 * @param nodes the list of sorted nodes
 	 */
-	SortedTraverser( List nodes )
+	SortedTraverser( List<Node> nodes )
 	{
 		this.nodesIterator = nodes.iterator();
 	}

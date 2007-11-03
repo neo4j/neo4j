@@ -132,7 +132,7 @@ public class TestXaFramework extends TestCase
 	{
 		private XaContainer xaContainer = null;
 		
-		public DummyXaDataSource( java.util.Map map ) 
+		public DummyXaDataSource( java.util.Map<?,?> map ) 
 			throws InstantiationException
 		{
 			super( map );
@@ -238,7 +238,7 @@ public class TestXaFramework extends TestCase
 		try
 		{
 			xaDsMgr.registerDataSource( "dummy_datasource", 
-				new DummyXaDataSource( new java.util.HashMap() ), 
+				new DummyXaDataSource( new java.util.HashMap<Object,Object>() ), 
 				"DDDDDD".getBytes() );
 		}
 		catch ( Exception e )
@@ -309,7 +309,7 @@ public class TestXaFramework extends TestCase
 		try
 		{
 			xaDsMgr.registerDataSource( "dummy_datasource1", 
-				new DummyXaDataSource( new java.util.HashMap() ), 
+				new DummyXaDataSource( new java.util.HashMap<Object,Object>() ), 
 				"DDDDDD".getBytes() );
 			xaDs1 = ( DummyXaDataSource ) xaDsMgr.getXaDataSource( 
 				"dummy_datasource1" );

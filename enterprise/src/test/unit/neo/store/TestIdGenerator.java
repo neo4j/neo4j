@@ -104,7 +104,7 @@ public class TestIdGenerator extends TestCase
 			File file = new File( "testIdGenerator.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -114,7 +114,7 @@ public class TestIdGenerator extends TestCase
 		try
 		{
 			IdGenerator.createGenerator( "testIdGenerator.id" );
-			new IdGenerator( "testIdGenerator.id", 3 );
+			IdGenerator idGen = new IdGenerator( "testIdGenerator.id", 3 );
 			try
 			{
 				new IdGenerator( "testIdGenerator.id", 3 );
@@ -123,6 +123,7 @@ public class TestIdGenerator extends TestCase
 			catch ( IOException e )
 			{ // good
 			}
+			idGen.close();
 		}
 		catch ( IOException e )
 		{
@@ -133,7 +134,7 @@ public class TestIdGenerator extends TestCase
 			File file = new File( "testIdGenerator.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -182,6 +183,7 @@ public class TestIdGenerator extends TestCase
 			assertEquals( 9, idGenerator.nextId() );
 			assertEquals( 10, idGenerator.nextId() );
 			assertEquals( 11, idGenerator.nextId() );
+			idGenerator.close();
 		}
 		catch ( IOException e )
 		{
@@ -192,7 +194,7 @@ public class TestIdGenerator extends TestCase
 			File file = new File( "testIdGenerator.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -239,6 +241,7 @@ public class TestIdGenerator extends TestCase
 			assertEquals( 5, idGenerator.nextId() );
 			assertEquals( 6, idGenerator.nextId() );
 			assertEquals( 3, idGenerator.nextId() );
+			idGenerator.close();
 		}
 		catch ( IOException e )
 		{
@@ -249,7 +252,7 @@ public class TestIdGenerator extends TestCase
 			File file = new File( "testIdGenerator.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -309,7 +312,7 @@ public class TestIdGenerator extends TestCase
 			File file = new File( "testIdGenerator.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -347,6 +350,7 @@ public class TestIdGenerator extends TestCase
 				oldId = id;
 			}
 			assertTrue( freedIds.values().size() == 0 );
+			idGenerator.close();
 		}
 		catch ( IOException e )
 		{
@@ -357,7 +361,7 @@ public class TestIdGenerator extends TestCase
 			File file = new File( "testIdGenerator.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 		try
@@ -384,6 +388,7 @@ public class TestIdGenerator extends TestCase
 					freedIds.remove( new Integer( idGenerator.nextId() ) ) );
 			}
 			assertEquals( 0, freedIds.values().size() );
+			idGenerator.close();
 		}
 		catch ( IOException e )
 		{
@@ -394,7 +399,7 @@ public class TestIdGenerator extends TestCase
 			File file = new File( "testIdGenerator.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 	}
@@ -439,6 +444,7 @@ public class TestIdGenerator extends TestCase
 					numberOfCloses++;
 				}
 			}
+			idGenerator.close();
 		}
 		catch ( IOException e )
 		{
@@ -450,7 +456,7 @@ public class TestIdGenerator extends TestCase
 			File file = new File( "testIdGenerator.id" );
 			if ( file.exists() )
 			{
-				file.delete();
+				assertTrue( file.delete() );
 			}
 		}
 		

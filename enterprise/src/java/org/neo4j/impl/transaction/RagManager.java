@@ -17,7 +17,7 @@ import org.neo4j.impl.util.ArrayMap;
  * if a wait of this thread will lead to a deadlock. 
  * <p>
  * The <CODE>checkWaitOn</CODE> throws a {@link DeadlockDetectedException} if 
- * a deadlock would occur when the thread would wait for the resouce. 
+ * a deadlock would occur when the thread would wait for the resource. 
  * That will guarantee that a deadlock never occurs on a RWLock basis.
  * <p>
  * Think of the resource allocation graph as a node space. We have two node 
@@ -27,13 +27,13 @@ import org.neo4j.impl.util.ArrayMap;
  * is added from the thread to the resource (T->R). The only thing we need to 
  * do to see if a deadlock occurs when some thread waits for a resource 
  * is to traverse node nodespace starting on the resource and see if we can get 
- * back to the thread ( T1 wanna wait on R1 and R1->T2->R2->T3->R8->T1 <==> 
+ * back to the thread ( T1 wants to wait on R1 and R1->T2->R2->T3->R8->T1 <==> 
  * deadlock!).
  */
 class RagManager
 {
 	// if a runtime exception is thrown from any method it means that the 
-	// RWLock class hasn't keept the contract to the RagManager
+	// RWLock class hasn't kept the contract to the RagManager
 	// The contract is:
 	// o When a thread gets a lock on a resource and both the readCount and 
 	//   writeCount for that thread on the resource was 0  
@@ -134,7 +134,7 @@ class RagManager
 		{
 			Thread lockingThread = itr.next();
 			// the if statement bellow is valid because:
-			// t1 -> r1 -> t1 (can happend with RW locks) is ok but,
+			// t1 -> r1 -> t1 (can happened with RW locks) is ok but,
 			// t1 -> r1 -> t1&t2 where t2 -> r1 is a deadlock
 			// think like this, we have two threads and one resource
 			// o t1 takes read lock on r1
@@ -199,8 +199,8 @@ class RagManager
 			// if the resource doesn't exist in resorceMap that means all the
 			// locks on the resource has been released
 			// it is possible when this thread was in RWLock.acquire and 
-			// saw it hade to wait for the lock the scheduler changes to some 
-			// other thread that will relsease the locks on the resource and 
+			// saw it had to wait for the lock the scheduler changes to some 
+			// other thread that will release the locks on the resource and 
 			// remove it from the map
 			// this is ok since current thread or any other thread will wake
 			// in the synchronized block and will be forced to do the deadlock 
@@ -229,8 +229,8 @@ class RagManager
 	synchronized void dumpStack()
 	{
 		System.out.print( "Waiting list: " );
-		Iterator itr = waitingThreadMap.keySet().iterator();
-		if ( !itr.hasNext() )
+		Iterator<Thread> threads = waitingThreadMap.keySet().iterator();
+		if ( !threads.hasNext() )
 		{
 			System.out.println( "No threads waiting on resources" );
 		}
@@ -238,15 +238,15 @@ class RagManager
 		{
 			System.out.println();
 		}
-		while ( itr.hasNext() )
+		while ( threads.hasNext() )
 		{
-			Thread thread = (Thread) itr.next();
+			Thread thread = (Thread) threads.next();
 			System.out.println( "" + thread + "->" + 
 				waitingThreadMap.get( thread ) );
 		}
 		System.out.print( "Resource lock list: " );
-		itr = resourceMap.keySet().iterator();
-		if ( !itr.hasNext() )
+		Iterator<?> resources = resourceMap.keySet().iterator();
+		if ( !resources.hasNext() )
 		{
 			System.out.println( "No locked resources found" );
 		}
@@ -254,20 +254,19 @@ class RagManager
 		{
 			System.out.println();
 		}
-		while ( itr.hasNext() )
+		while ( resources.hasNext() )
 		{
-			Object resource = itr.next();
+			Object resource = resources.next();
 			System.out.print( "" + resource + "->" );
-			java.util.Iterator itr2 = 
-				((List) resourceMap.get( resource )).iterator();
-			if ( !itr2.hasNext() )
+			Iterator<Thread> itr = resourceMap.get( resource ).iterator();
+			if ( !itr.hasNext() )
 			{
 				System.out.println( " Error empty list found" );
 			}
-			while ( itr2.hasNext() )
+			while ( itr.hasNext() )
 			{
-				System.out.print( "" + itr2.next() );
-				if ( itr2.hasNext() )
+				System.out.print( "" + itr.next() );
+				if ( itr.hasNext() )
 				{
 					System.out.print( "," );
 				}
