@@ -32,9 +32,9 @@ public interface PersistenceSource
 	 * @param clazz the data structure to get next free unique id for
 	 * @return the next free unique id for <CODE>clazz</CODE>
 	 */
-	public int nextId( Class clazz );
+	public int nextId( Class<?> clazz );
 	
-	public int getHighestPossibleIdInUse( Class clazz );
+	public int getHighestPossibleIdInUse( Class<?> clazz );
 	
-	public int getNumberOfIdsInUse( Class clazz );
+	public int getNumberOfIdsInUse( Class<?> clazz );
 }

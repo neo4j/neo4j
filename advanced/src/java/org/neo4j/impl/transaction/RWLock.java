@@ -1,5 +1,6 @@
 package org.neo4j.impl.transaction;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -9,16 +10,16 @@ import org.neo4j.impl.util.ArrayMap;
  * <p>
  * When a thread has write lock no other thread is allowed to acquire read
  * or write lock on that resource but the thread holding the write lock. If
- * one thread has aqcuired write lock and another thread needs a lock on the
+ * one thread has acquired write lock and another thread needs a lock on the
  * same resource that thread must wait. When the lock is released the waiting
  * thread is notified and wakes up so it can acquire the lock.
  * <p>
  * Waiting for locks may lead to a deadlock. Consider the following scenario.
  * Thread T1 acquires write lock on resource R1. T2 acquires write lock on R2.
- * Now T1 tries to acuire read lock on R2 but has to wait since R2 is locked
+ * Now T1 tries to acquire read lock on R2 but has to wait since R2 is locked
  * by T2. If T2 now tries to acquire a lock on R1 it also has to wait because
  * R1 is locked by T1. T2 cannot wait on R1 because that would lead to a 
- * deadock where T1 and T2 waits forever. 
+ * deadlock where T1 and T2 waits forever. 
  * <p>
  * Avoiding deadlocks can be done by keeping a resource allocation graph. 
  * This class works together with the {@link RagManager} to make sure no 
@@ -27,7 +28,7 @@ import org.neo4j.impl.util.ArrayMap;
  * Waiting threads are put into a queue and when some thread releases the 
  * lock the queue is checked for waiting threads. This implementation tries to 
  * avoid lock starvation and increase performance since only waiting threads 
- * that can aquire the lock are notified.
+ * that can acquire the lock are notified.
  */
 class RWLock
 {
@@ -360,14 +361,14 @@ class RWLock
 			" writeCount=" + writeCount + " for " + resource );
 		
 		System.out.println( "Waiting list:" );
-		java.util.Iterator itr = waitingThreadList.iterator();
-		while ( itr.hasNext() )
+		Iterator<WaitElement> wElements = waitingThreadList.iterator();
+		while ( wElements.hasNext() )
 		{
-			WaitElement we = (WaitElement) itr.next();
+			WaitElement we = wElements.next();
 			System.out.print( "[" + we.element.thread + "(" +
 				we.element.readCount + "r," + we.element.writeCount + "w)," +
 				we.lockType + "]" );
-			if ( itr.hasNext() )
+			if ( wElements.hasNext() )
 			{
 				System.out.print( "," );
 			}
@@ -378,10 +379,11 @@ class RWLock
 		}
 		
 		System.out.println( "Locking threads:" );
-		itr = threadLockElementMap.values().iterator();
-		while ( itr.hasNext() )
+		Iterator<ThreadLockElement> lElements = 
+			threadLockElementMap.values().iterator();
+		while ( lElements.hasNext() )
 		{
-			ThreadLockElement tle = (ThreadLockElement) itr.next();
+			ThreadLockElement tle = (ThreadLockElement) lElements.next();
 			System.out.println( "" + tle.thread + "(" +
 				tle.readCount + "r," + tle.writeCount + "w)" );
 		}

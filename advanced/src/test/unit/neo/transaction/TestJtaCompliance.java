@@ -683,7 +683,7 @@ public class TestJtaCompliance extends TestCase
 	{
 		private XAResource xaResource = null;
 		
-		public DummyXaDataSource( java.util.Map map ) 
+		public DummyXaDataSource( java.util.Map<?,?> map ) 
 			throws InstantiationException
 		{
 			super( map );

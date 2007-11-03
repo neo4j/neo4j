@@ -116,7 +116,7 @@ public class LruCache<K,E> extends Cache<K,E>
 	 * greater then <CODE>maxSize()</CODE> next invoke to <CODE>maxSize()</CODE>
 	 * will return <CODE>newMaxSize</CODE> and the entries in cache will not be 
 	 * modified. If <CODE>newMaxSize</CODE> is less then <CODE>size()</CODE> 
-	 * the cache will shrink itself removing least recently used element untill 
+	 * the cache will shrink itself removing least recently used element until 
 	 * <CODE>size()</CODE> equals <CODE>newMaxSize</CODE>. 
 	 * For each element removed the {@link #elementCleaned} method is invoked.
 	 * <p>

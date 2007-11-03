@@ -16,7 +16,7 @@ import org.xml.sax.SAXException;
 
 /**
  * Can reads a XA data source configuration file and registers all the 
- * data sources defiend there or be used to manually add XA data sources.
+ * data sources defined there or be used to manually add XA data sources.
  * <p>
  * This module will create a instance of each {@link XaDataSource} once 
  * started and will close them once stopped.

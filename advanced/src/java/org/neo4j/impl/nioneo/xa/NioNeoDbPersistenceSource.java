@@ -29,7 +29,7 @@ import org.neo4j.impl.transaction.XaDataSourceManager;
 /**
  * The NioNeo persistence source implementation. If this class is registered
  * as persistence source for Neo operations that are performed on the node
- * space will be forwared to this class {@link ResourceConnection} 
+ * space will be forwarded to this class {@link ResourceConnection} 
  * implementation. 
  */
 public class NioNeoDbPersistenceSource implements PersistenceSource
@@ -396,7 +396,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 			dataSourceName + "]";
 	}
 
-	public int nextId( Class clazz )
+	public int nextId( Class<?> clazz )
 	{
 		return xaDs.nextId( clazz );
 	}
@@ -417,12 +417,12 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 		return this.dataSourceName;
 	}
 
-	public int getHighestPossibleIdInUse( Class clazz )
+	public int getHighestPossibleIdInUse( Class<?> clazz )
 	{
 		return xaDs.getHighestPossibleIdInUse( clazz );
     }
 
-	public int getNumberOfIdsInUse( Class clazz )
+	public int getNumberOfIdsInUse( Class<?> clazz )
     {
 		return xaDs.getNumberOfIdsInUse( clazz );
     }

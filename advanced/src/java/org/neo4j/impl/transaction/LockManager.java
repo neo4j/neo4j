@@ -6,11 +6,11 @@ import java.util.Map;
 
 /**
  * The LockManager can lock resources for reading or writing. By doing this one
- * may achive different transaction isolation levels. A resource can for now  
+ * may achieve different transaction isolation levels. A resource can for now  
  * be any object (but null).
  * <p>
  * When acquiring a lock you have to release it. Failure to do so will result
- * in the resource beeing blocked to all other threads. Put all locks in a 
+ * in the resource being blocked to all other threads. Put all locks in a 
  * try - finally block.
  * <p>
  * Multiple locks on the same resource held by the same thread requires the
@@ -179,7 +179,7 @@ public class LockManager
 	}
 	
 	/**
-	 * Utility method for debuging. Dumps info to console of threads having
+	 * Utility method for debugging. Dumps info to console of threads having
 	 * locks on resources.
 	 * 
 	 * @param resource
@@ -200,7 +200,7 @@ public class LockManager
 	}
 	
 	/**
-	 * Utility method for debuging. Dumps the resource allocation graph
+	 * Utility method for debugging. Dumps the resource allocation graph
 	 * to console.
 	 */
 	public void dumpRagStack()
@@ -209,7 +209,7 @@ public class LockManager
 	}
 	
 	/**
-	 * Utility method for debugin. Dumps info about each lock to console.
+	 * Utility method for debuggin. Dumps info about each lock to console.
 	 */
 	public void dumpAllLocks()
 	{

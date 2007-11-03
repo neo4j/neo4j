@@ -23,7 +23,7 @@ public class NeoStore extends AbstractStore
 	private RelationshipStore relStore;
 	private RelationshipTypeStore relTypeStore;
 
-	public NeoStore( Map config ) throws IOException
+	public NeoStore( Map<?,?> config ) throws IOException
 	{
 		super( ( String ) config.get( "neo_store" ), config );
 	}

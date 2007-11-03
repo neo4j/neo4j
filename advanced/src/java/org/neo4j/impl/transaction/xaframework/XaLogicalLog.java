@@ -217,6 +217,10 @@ public class XaLogicalLog
 		buffer.flip();
 		int identifier = buffer.getInt();
 		Xid xid = xidIdentMap.get( identifier );
+		if ( xid == null )
+		{
+			return false;
+		}
 		if ( xaRm.injectPrepare( xid ) )
 		{
 			// read only we can remove
@@ -253,6 +257,10 @@ public class XaLogicalLog
 		buffer.flip();
 		int identifier = buffer.getInt();
 		Xid xid = xidIdentMap.get( identifier );
+		if ( xid == null )
+		{
+			return false;
+		}
 		xaRm.injectOnePhaseCommit( xid );
 		return true;
 	}
@@ -294,6 +302,10 @@ public class XaLogicalLog
 		buffer.flip();
 		int identifier = buffer.getInt();
 		Xid xid = xidIdentMap.get( identifier );
+		if ( xid == null )
+		{
+			return false;
+		}
 		xaRm.pruneXid( xid );
 		xidIdentMap.remove( identifier );
 		recoveredTxMap.remove( identifier );
@@ -404,11 +416,18 @@ public class XaLogicalLog
 		{
 			log.info( "Active transactions: " + xidIdentMap.size() );
 			log.info( "Closing dirty log: " + fileName );
-			writeBuffer.force();
+			if ( writeBuffer != null )
+			{
+				writeBuffer.force();
+			}
+			writeBuffer = null;
 			fileChannel.close();
 			return;
 		}
-		writeBuffer.force();
+		if ( writeBuffer != null )
+		{
+			writeBuffer.force();
+		}
 		writeBuffer = null;
 		fileChannel.close();
 		File file = new File( fileName );
@@ -417,25 +436,26 @@ public class XaLogicalLog
 			throw new IOException( "Logical log[" + fileName + "] not found" );
 		}
 		// TODO: if store old logs save them here
+		boolean deleted = false;
 		try
 		{
-			file.delete();
-		}
-		catch ( Exception e )
+			deleted = file.delete();
+		} catch ( Exception e ) {}
+		if ( !deleted )
 		{
+			// hack for WINBLOWS
 			try
 			{
-				Thread.sleep( 500 );
-				// try again
-				file.delete();
-			}
-			catch ( Throwable t )
-			{
-				log.warning( "Unable to delete clean logical log[" +  
-					fileName + "]" + e );
+				System.gc();
+				deleted = file.delete();
+			} catch ( Exception ee ) {}
+		}
+		if ( !deleted )
+		{
+			log.warning( "Unable to delete clean logical log[" +  
+					fileName + "]" );
 				log.info( "Since you're not using a real operating system " + 
 					"you will be punished for it at next startup" );
-			}
 		}
 	}
 	

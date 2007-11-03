@@ -66,7 +66,7 @@ class TransactionImpl implements Transaction
 		StringBuffer txString = new StringBuffer( "Transaction[Status=" + 
 			TxManager.getManager().getTxStatusAsString( status ) + 
 			",ResourceList=" );
-		Iterator itr = resourceList.iterator();
+		Iterator<ResourceElement> itr = resourceList.iterator();
 		while ( itr.hasNext() )
 		{
 			txString.append( itr.next().toString() );

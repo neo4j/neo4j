@@ -124,4 +124,9 @@ public class XaContainer
 	{
 		rm.setLazyDoneRecords( true );
 	}
+	
+	public void writeOutLazyDoneRecords() throws XAException
+	{
+		rm.writeOutLazyDoneRecords();
+	}
 }

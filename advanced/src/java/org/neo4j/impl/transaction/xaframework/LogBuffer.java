@@ -17,9 +17,10 @@ public class LogBuffer
 	private long mappedStartPosition;
 	private final ByteBuffer fallbackBuffer;
 	
-	LogBuffer( FileChannel fileChannel )
+	LogBuffer( FileChannel fileChannel ) throws IOException
 	{
 		this.fileChannel = fileChannel;
+		mappedStartPosition = fileChannel.position();
 		getNewMappedBuffer();
 		fallbackBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + 
 			Xid.MAXBQUALSIZE * 10 );
@@ -31,18 +32,24 @@ public class LogBuffer
 		{
 			if ( mappedBuffer != null )
 			{
+				mappedStartPosition += mappedBuffer.position();
 				mappedBuffer.force();
-				fileChannel.position( mappedStartPosition + 
-					mappedBuffer.position() );
+				mappedBuffer = null;
+//				fileChannel.position( mappedStartPosition );
+//				fileChannel.position( mappedStartPosition + 
+//					mappedBuffer.position() );
 			}
 			mappedBuffer = fileChannel.map( MapMode.READ_WRITE, 
-				fileChannel.position(), MAPPED_SIZE );
-			mappedStartPosition = fileChannel.position();
+					mappedStartPosition, MAPPED_SIZE );
+//			fileChannel.position( mappedStartPosition );
+//			mappedBuffer = fileChannel.map( MapMode.READ_WRITE, 
+//				fileChannel.position(), MAPPED_SIZE );
+//			mappedStartPosition = fileChannel.position();
 		}
 		catch ( Throwable t )
 		{
-			mappedBuffer = null;
-			mappedStartPosition = -1;
+//			mappedBuffer = null;
+//			mappedStartPosition = -1;
 			t.printStackTrace();
 		}
 	}
@@ -58,7 +65,8 @@ public class LogBuffer
 				fallbackBuffer.clear();
 				fallbackBuffer.put( b );
 				fallbackBuffer.flip();
-				fileChannel.write( fallbackBuffer );
+				fileChannel.write( fallbackBuffer, mappedStartPosition );
+				mappedStartPosition += 1;
 				return this;
 			}
 		}
@@ -77,7 +85,8 @@ public class LogBuffer
 				fallbackBuffer.clear();
 				fallbackBuffer.putInt( i );
 				fallbackBuffer.flip();
-				fileChannel.write( fallbackBuffer );
+				fileChannel.write( fallbackBuffer, mappedStartPosition );
+				mappedStartPosition += 4;
 				return this;
 			}
 		}
@@ -96,7 +105,8 @@ public class LogBuffer
 				fallbackBuffer.clear();
 				fallbackBuffer.putLong( l );
 				fallbackBuffer.flip();
-				fileChannel.write( fallbackBuffer );
+				fileChannel.write( fallbackBuffer, mappedStartPosition );
+				mappedStartPosition += 8;
 				return this;
 			}
 		}
@@ -115,7 +125,8 @@ public class LogBuffer
 				fallbackBuffer.clear();
 				fallbackBuffer.put( bytes );
 				fallbackBuffer.flip();
-				fileChannel.write( fallbackBuffer );
+				fileChannel.write( fallbackBuffer, mappedStartPosition );
+				mappedStartPosition += bytes.length;
 				return this;
 			}
 		}
@@ -134,7 +145,8 @@ public class LogBuffer
 				fallbackBuffer.clear();
 				fallbackBuffer.asCharBuffer().put( chars );
 				fallbackBuffer.flip();
-				fileChannel.write( fallbackBuffer );
+				fileChannel.write( fallbackBuffer, mappedStartPosition );
+				mappedStartPosition += (chars.length * 2);
 				return this;
 			}
 		}
@@ -168,7 +180,8 @@ public class LogBuffer
 		{
 			return mappedStartPosition + mappedBuffer.position();
 		}
-		return fileChannel.position();
+		return mappedStartPosition;
+		// return fileChannel.position();
 	}
 	
 	public FileChannel getFileChannel()

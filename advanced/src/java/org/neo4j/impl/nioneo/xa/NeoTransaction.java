@@ -41,7 +41,7 @@ import org.neo4j.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.impl.transaction.xaframework.XaTransaction;
 
 /**
- * Transaction containing {@link MemCommand commads} reflecting the operations
+ * Transaction containing {@link Command commands} reflecting the operations
  * performed in the transaction.
  */
 class NeoTransaction extends XaTransaction

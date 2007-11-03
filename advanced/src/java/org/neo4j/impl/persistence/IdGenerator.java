@@ -35,17 +35,17 @@ public class IdGenerator
 	 * a registered entity type or if communication with persistent
 	 * storage failed
 	 */
-	public int nextId( Class clazz )
+	public int nextId( Class<?> clazz )
 	{
 		return getPersistenceSource().nextId( clazz );
 	}
 	
-	public int getHighestPossibleIdInUse( Class clazz )
+	public int getHighestPossibleIdInUse( Class<?> clazz )
 	{
 		return getPersistenceSource().getHighestPossibleIdInUse( clazz );
 	}
 	
-	public int getNumberOfIdsInUse( Class clazz )
+	public int getNumberOfIdsInUse( Class<?> clazz )
 	{
 		return getPersistenceSource().getNumberOfIdsInUse( clazz );
 	}

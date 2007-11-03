@@ -319,7 +319,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 			return true;
 		}
 		
-		private boolean validatePropertyType( Object entity, Object prop )
+/*		private boolean validatePropertyType( Object entity, Object prop )
 		{
 			if ( prop instanceof String || prop instanceof Boolean || 
 				prop instanceof Byte || prop instanceof Integer || 
@@ -371,7 +371,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 				return true;
 			}
 			return false;
-		}
+		}*/
 
 		public void afterCompletion( int arg0 )
 		{

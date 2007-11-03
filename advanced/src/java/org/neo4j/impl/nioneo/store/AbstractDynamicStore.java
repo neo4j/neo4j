@@ -25,16 +25,16 @@ import java.util.Map;
  * record can't be calculated just by knowing the id. 
  * Instead one should use a {@link AbstractStore} and store the start  
  * block of the record located in the dynamic store.
- * Note: This class makes use of an id generator internaly for managing 
+ * Note: This class makes use of an id generator internally for managing 
  * free and non free blocks.    
  * <p>
- * Note, the first block of a dynamic store is reservered and contains 
+ * Note, the first block of a dynamic store is reserved and contains 
  * information about the store. 
  */
 public abstract class AbstractDynamicStore extends CommonAbstractStore
 {
 	/**
-	 * Creates a new empty store. A facotry method returning an 
+	 * Creates a new empty store. A factory method returning an 
 	 * implementation should make use of this method to initialize an empty 
 	 * store. Block size must be greater than zero. Not that the first block 
 	 * will be marked as reserved (contains info about the block size). There
@@ -90,7 +90,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	
 	private int blockSize;
 	
-	public AbstractDynamicStore( String fileName, Map config ) 
+	public AbstractDynamicStore( String fileName, Map<?,?> config ) 
 		throws IOException
 	{
 		super( fileName, config );
@@ -165,7 +165,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	}
 	
 	/**
-	 * Makes a previously used block availible again.
+	 * Makes a previously used block available again.
 	 *
 	 * @param blockId The id of the block to free
 	 * @throws IOException If id generator closed or illegal block id 
@@ -190,6 +190,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 			if ( count == record.getFromChannel().transferTo( 
 				record.getTransferStartPosition(), count, fileChannel ) )
 			{
+				if ( !record.inUse()&& !isInRecoveryMode() )
+				{
+					freeBlockId( record.getId() );
+				}
 				return;
 			}
 		}

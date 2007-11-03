@@ -14,7 +14,7 @@ class DynamicStringStore extends AbstractDynamicStore
 	// store version, each store ends with this string (byte encoded)
 	private static final String VERSION = "StringPropertyStore v0.9";
 	
-	public DynamicStringStore( String fileName, Map config ) 
+	public DynamicStringStore( String fileName, Map<?,?> config ) 
 		throws IOException
 	{
 		super( fileName, config );
