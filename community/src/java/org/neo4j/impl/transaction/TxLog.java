@@ -84,7 +84,7 @@ public class TxLog
 	}
 	
 	/**
-	 * Forces the log file (with metadata). Useful when logswitching.
+	 * Forces the log file (with metadata). Useful when switching log.
 	 */
 	public void force() throws IOException
 	{
@@ -283,7 +283,7 @@ public class TxLog
 		buffer.flip();
 		// next record position
 		long nextPosition = 0;
-		// holds possible randling records
+		// holds possible dangling records
 		int seqNr = 0;
 		Map<Xid,List<Record>> recordMap = 
 			new HashMap<Xid,List<Record>>();
@@ -371,7 +371,7 @@ public class TxLog
 	}
 	
 	/**
-	 * Switches log file. Copies the dandling records in current log file  
+	 * Switches log file. Copies the dangling records in current log file  
 	 * to the <CODE>newFile</CODE> and the makes the switch closing the
 	 * old log file.
 	 * 

@@ -15,7 +15,7 @@ import org.neo4j.impl.transaction.xaframework.XaDataSource;
 /**
  * All datasources that have been defined in the XA data source configuration 
  * file or manually added will be created and registered here. A mapping 
- * between "name", "data source" and "branch id" is keept by this manager.
+ * between "name", "data source" and "branch id" is kept by this manager.
  * <p>
  * Use the {@link #getXaDataSource} to obtain the instance of a datasource 
  * that has been defined in the XA data source configuration.
@@ -55,11 +55,11 @@ public class XaDataSourceManager
 		InstantiationException, IllegalAccessException, 
 		InvocationTargetException  
 	{
-		Class clazz = Class.forName( className );
-		Constructor[] constructors = clazz.getConstructors();
-		for ( Constructor constructor : constructors )
+		Class<?> clazz = Class.forName( className );
+		Constructor<?>[] constructors = clazz.getConstructors();
+		for ( Constructor<?> constructor : constructors )
 		{
-			Class[] parameters = constructor.getParameterTypes();
+			Class<?>[] parameters = constructor.getParameterTypes();
 			if ( parameters.length == 1 && parameters[0].equals( Map.class ) )
 			{
 				return ( XaDataSource ) constructor.newInstance( 
@@ -71,7 +71,7 @@ public class XaDataSourceManager
 	}
 	
 	/**
-	 * Convinience method since {@link #getXaDataSource} returns null if name
+	 * Convenience method since {@link #getXaDataSource} returns null if name
 	 * doesn't exist.
 	 * 
 	 * @return True if name exists

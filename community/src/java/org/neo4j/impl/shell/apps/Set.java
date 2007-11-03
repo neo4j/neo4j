@@ -27,7 +27,7 @@ public class Set extends NeoApp
 	{
 		String key = parser.arguments().get( 0 );
 		
-		Class type = this.getValueType( parser );
+		Class<?> type = this.getValueType( parser );
 		Object value = null;
 		try
 		{
@@ -43,11 +43,12 @@ public class Set extends NeoApp
 		return null;
 	}
 	
-	private Class getValueType( AppCommandParser parser ) throws ShellException
+	private Class<?> getValueType( AppCommandParser parser ) 
+		throws ShellException
 	{
 		String type = parser.options().containsKey( "t" ) ?
 			parser.options().get( "t" ) : String.class.getName();
-		Class cls = null;
+		Class<?> cls = null;
 		try
 		{
 			cls = Class.forName( type );

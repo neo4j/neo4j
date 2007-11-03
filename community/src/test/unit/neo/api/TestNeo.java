@@ -271,7 +271,7 @@ public class TestNeo extends TestCase
 		n1.delete();
 		n2.delete();
 		UserTransaction ut = TransactionFactory.getUserTransaction();
-		// must commit so ids are put a resuable
+		// must commit for ids to be reused
 		try
 		{
 			ut.commit();

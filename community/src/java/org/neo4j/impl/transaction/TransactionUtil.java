@@ -81,7 +81,7 @@ public class TransactionUtil
 	 * Tries to commit a transaction if <code>txStarted</code>
 	 * is <code>true</code>. <code>txStarted</code> should be the value returned
 	 * by beginTx() i.e. if beginTx() started a transaction that needs to be
-	 * commited.
+	 * committed.
 	 *
 	 * @param txStarted decides whether to actually commit or not.
 	 */

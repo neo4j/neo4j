@@ -26,8 +26,8 @@ public class AdaptiveCacheManager
 	{
 	}
 
-	public synchronized void registerCache( Cache cache, float ratio, 
-		int minSize )
+	public synchronized void registerCache( Cache<?,?> cache, 
+		float ratio, int minSize )
 	{
 		if ( cache == null || ratio >= 1 || ratio <= 0 || 
 			minSize < 0 )
@@ -48,7 +48,7 @@ public class AdaptiveCacheManager
 			"minSize=" + minSize + " registered." );
 	}
 	
-	public synchronized void unregisterCache( Cache cache )
+	public synchronized void unregisterCache( Cache<?,?> cache )
 	{
 		if ( cache == null )
 		{
@@ -63,7 +63,7 @@ public class AdaptiveCacheManager
 		log.fine( "Cache[" + cache.getName() + "] removed." );
 	}
 	
-	int getAdaptiveCacheElementIndex( Cache cache )
+	int getAdaptiveCacheElementIndex( Cache<?,?> cache )
 	{
 		int i = 0;
 		for ( AdaptiveCacheElement element : caches )
@@ -133,7 +133,7 @@ public class AdaptiveCacheManager
 		}
 	}
 	
-	public void adaptCache( Cache cache )
+	public void adaptCache( Cache<?,?> cache )
 	{
 		if ( cache == null )
 		{
@@ -167,8 +167,8 @@ public class AdaptiveCacheManager
 		{
 			// decrease cache size
 			// after decrease we resize again with +1000 to avoid
-			// spamming of this method
-			Cache cache = element.getCache();
+			// spam of this method
+			Cache<?,?> cache = element.getCache();
 			int newCacheSize = (int) ( cache.maxSize() / 1.15 );
 			int minSize = element.minSize();
 			if ( newCacheSize < minSize )
@@ -209,7 +209,7 @@ public class AdaptiveCacheManager
 		else
 		{
 			// increase cache size
-			Cache cache = element.getCache();
+			Cache<?,?> cache = element.getCache();
 			if ( cache.size() / 
 					(float) cache.maxSize() < 0.9f )
 			{
@@ -227,11 +227,11 @@ public class AdaptiveCacheManager
 	
 	private static class AdaptiveCacheElement
 	{
-		private final Cache cache;
+		private final Cache<?,?> cache;
 		private final float ratio;
 		private final int minSize;
 		
-		AdaptiveCacheElement( Cache cache, float ratio, 
+		AdaptiveCacheElement( Cache<?,?> cache, float ratio, 
 			int minSize )
 		{
 			this.cache = cache;
@@ -244,7 +244,7 @@ public class AdaptiveCacheManager
 			return cache.getName();
 		}
 		
-		Cache getCache()
+		Cache<?,?> getCache()
 		{
 			return cache;
 		}

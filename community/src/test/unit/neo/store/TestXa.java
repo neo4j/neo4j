@@ -75,6 +75,7 @@ public class TestXa extends TestCase
 	
 	public void tearDown()
 	{
+		ds.close();
 		log.setLevel( level );
 		log = Logger.getLogger( 
 			"org.neo4j.impl.transaction.xaframework.XaLogicalLog/" + 
@@ -84,71 +85,144 @@ public class TestXa extends TestCase
 			"org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource" );
 		log.setLevel( level );
 		File file = new File( "neo" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.id" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.nodestore.db" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.nodestore.db.id" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.propertystore.db" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.propertystore.db.id" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.propertystore.db.index" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.propertystore.db.index.id" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.propertystore.db.index.keys" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.propertystore.db.index.keys.id" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.propertystore.db.strings" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.propertystore.db.strings.id" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.propertystore.db.arrays" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.propertystore.db.arrays.id" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.relationshipstore.db" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.relationshipstore.db.id" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.relationshiptypestore.db" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.relationshiptypestore.db.id" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.relationshiptypestore.db.names" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "neo.relationshiptypestore.db.names.id" );
-		file.delete();
+		if ( file.exists() )
+		{
+			assertTrue( file.delete() );
+		}
 		file = new File( "." );
 		for ( File nioFile : file.listFiles() )
 		{
 			if ( nioFile.getName().startsWith( "nioneo_logical.log" ) )
 			{
-				nioFile.delete();
+				assertTrue( nioFile.delete() );
 			}
 		}
 	}
 	
-	private void renameLogicalLog()
+	private void deleteLogicalLogIfExist()
+	{
+		File file = new File( "nioneo_logical.log" );
+		if ( file.exists() )
+		{
+			if( !file.delete() && file.exists() )
+			{
+				System.gc();
+				assertTrue( file.delete() );
+			}
+		}
+	}
+	
+	/*private void renameLogicalLog()
 	{
 		File file = new File( "." );
 		for ( File nioFile : file.listFiles() )
 		{
 			if ( nioFile.getName().startsWith( "nioneo_logical.log" ) )
 			{
-				nioFile.renameTo( new File( "nioneo_logical.log" ) );
+				assertTrue( nioFile.renameTo( new File( "nioneo_logical.log" ) ) );
 			}
 		}
-	}
+	}*/
 
 	private void renameCopiedLogicalLog() throws IOException
 	{
 		File file = new File( "nioneo_logical.log.bak" );
-		file.renameTo( new File( "nioneo_logical.log" ) );
+		assertTrue( file.renameTo( new File( "nioneo_logical.log" ) ) );
 	}
 	
 	private void copyLogicalLog() throws IOException
@@ -166,6 +240,8 @@ public class TestXa extends TestCase
 			dest.write( buffer );
 			buffer.clear();
 		} while ( read == 1024 );
+		source.close();
+		dest.close();
 	}
 	
 	private PropertyIndex index( String key ) throws IOException
@@ -217,9 +293,11 @@ public class TestXa extends TestCase
 			xaCon.getNodeConsumer().deleteNode( node2 );
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.commit( xid, true );
+			ds.writeOutLazyRecords();
 			copyLogicalLog();
-			ds.close();
 			xaCon.clearAllTransactions();
+			ds.close();
+			deleteLogicalLogIfExist();
 			renameCopiedLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
@@ -264,7 +342,9 @@ public class TestXa extends TestCase
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.prepare( xid );
 			copyLogicalLog();
+			xaCon.clearAllTransactions();
 			ds.close();
+			deleteLogicalLogIfExist();
 			renameCopiedLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
@@ -311,6 +391,7 @@ public class TestXa extends TestCase
 			xaCon.clearAllTransactions();
 			copyLogicalLog();
 			ds.close();
+			deleteLogicalLogIfExist();
 			renameCopiedLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
@@ -366,16 +447,17 @@ public class TestXa extends TestCase
 			int n1prop1 = ds.nextId( PropertyStore.class );
 			xaCon.getNodeConsumer().addProperty( node1, n1prop1, 
 				index( "prop1" ), "string1" );
+			copyLogicalLog();
 			xaCon.clearAllTransactions();
+			ds.close();
+			deleteLogicalLogIfExist();
+			renameCopiedLogicalLog();
 			java.nio.channels.FileChannel fileChannel = 
 				new java.io.RandomAccessFile( 
 					"nioneo_logical.log", "rw" ).getChannel();
 			fileChannel.truncate( fileChannel.size() - 3 );
 			fileChannel.force( false );
 			fileChannel.close();
-			copyLogicalLog();
-			ds.close();
-			renameCopiedLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
 			xaRes = xaCon.getXaResource();
@@ -405,16 +487,17 @@ public class TestXa extends TestCase
 				index( "prop1" ), "string1" );
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.prepare( xid );
-			xaCon.clearAllTransactions();
 			copyLogicalLog();
+			xaCon.clearAllTransactions();
+			ds.close();
+			deleteLogicalLogIfExist();
+			renameCopiedLogicalLog();
 			java.nio.channels.FileChannel fileChannel = 
 				new java.io.RandomAccessFile( 
-					"nioneo_logical.log.bak", "rw" ).getChannel();
+					"nioneo_logical.log", "rw" ).getChannel();
 			fileChannel.truncate( 187 );
 			fileChannel.force( false );
 			fileChannel.close();
-			ds.close();
-			renameCopiedLogicalLog();
 			ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log" );
 			xaCon = ( NeoStoreXaConnection ) ds.getXaConnection();
 			xaRes = xaCon.getXaResource();
@@ -444,11 +527,10 @@ public class TestXa extends TestCase
 				index( "prop1" ), "string1" );
 			xaRes.end( xid, XAResource.TMSUCCESS );
 			xaRes.prepare( xid );
-			copyLogicalLog();
 			xaRes.commit( xid, false );
-			ds.truncateLogicalLog();
 			copyLogicalLog();
 			ds.close();
+			deleteLogicalLogIfExist();
 			renameCopiedLogicalLog();
 //			java.nio.channels.FileChannel fileChannel = 
 //				new java.io.RandomAccessFile( 

@@ -51,9 +51,9 @@ public class TestTxLog extends TestCase
 			txLog.addBranch( globalId, branchId );
 			assertEquals( 2, txLog.getRecordCount() );
 			// List lists[] = txLog.getDanglingRecords();
-			List lists[] = getRecordLists( txLog.getDanglingRecords() );
+			List<?> lists[] = getRecordLists( txLog.getDanglingRecords() );
 			assertEquals( 1, lists.length );
-			List records = lists[0];
+			List<?> records = lists[0];
 			assertEquals( 2, records.size() );
 			TxLog.Record record = ( TxLog.Record ) records.get( 0 );
 			assertEquals( TxLog.TX_START, record.getType() );
@@ -104,9 +104,9 @@ public class TestTxLog extends TestCase
 		}
 	}
 	
-	private List[] getRecordLists( Iterator<List<Record>> danglingRecords )
+	private List<?>[] getRecordLists( Iterator<List<Record>> danglingRecords )
 	{
-		List<List> list = new ArrayList<List>();
+		List<List<?>> list = new ArrayList<List<?>>();
 		while ( danglingRecords.hasNext() )
 		{
 			list.add( danglingRecords.next() );

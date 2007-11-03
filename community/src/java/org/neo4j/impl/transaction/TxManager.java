@@ -179,7 +179,7 @@ public class TxManager implements TransactionManager
 		try
 		{
 			System.out.println( "Found uncompleted global transactions" );
-			// contains NonCompletedTransaction that needs to be commited
+			// contains NonCompletedTransaction that needs to be committed
 			List<NonCompletedTransaction> commitList = 
 				new ArrayList<NonCompletedTransaction>();
 			
@@ -350,7 +350,7 @@ public class TxManager implements TransactionManager
 				xids.add( new XidImpl( startRecord.getGlobalId(), 
 					resource.getResourceId() ) );
 			}
-			if ( markedCommit != -1 ) // this xid needs to be commited
+			if ( markedCommit != -1 ) // this xid needs to be committed
 			{
 				commitList.add( new NonCompletedTransaction( markedCommit, 
 					xids ) );
@@ -823,7 +823,7 @@ public class TxManager implements TransactionManager
 	
 	public synchronized void dumpTransactions()
 	{
-		Iterator itr = txThreadMap.values().iterator();
+		Iterator<TransactionImpl> itr = txThreadMap.values().iterator();
 		if ( !itr.hasNext() )
 		{
 			System.out.println( "No uncompleted transactions" );

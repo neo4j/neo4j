@@ -20,7 +20,7 @@ public class NodeStore extends AbstractStore implements Store
 	/**
 	 * See {@link AbstractStore#AbstractStore(String, Map)}
 	 */
-	public NodeStore( String fileName, Map config ) 
+	public NodeStore( String fileName, Map<?,?> config ) 
 		throws IOException
 	{
 		super( fileName, config );
@@ -106,6 +106,10 @@ public class NodeStore extends AbstractStore implements Store
 		{
 			if ( transferRecord( record ) )
 			{
+				if ( !record.inUse()&& !isInRecoveryMode() )
+				{
+					freeId( record.getId() );
+				}
 				return;
 			}
 		}

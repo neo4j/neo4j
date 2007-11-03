@@ -44,7 +44,7 @@ public abstract class XaDataSource
 	 *
 	 * @param params A map containing configuration parameters
 	 */
-	public XaDataSource( Map params ) 
+	public XaDataSource( Map<?,?> params ) 
 		throws InstantiationException
 	{
 	}

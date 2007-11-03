@@ -31,7 +31,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	/**
 	 * See {@link AbstractStore#AbstractStore(String, Map)}
 	 */
-	public RelationshipTypeStore( String fileName, Map config ) 
+	public RelationshipTypeStore( String fileName, Map<?,?> config ) 
 		throws IOException
 	{
 		super( fileName, config );
@@ -146,6 +146,13 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 				finally 
 				{
 					releaseWindow( window );
+				}
+			}
+			else
+			{
+				if ( !record.inUse()&& !isInRecoveryMode() )
+				{
+					freeId( record.getId() );
 				}
 			}
 		}

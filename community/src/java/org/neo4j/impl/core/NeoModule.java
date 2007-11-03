@@ -9,8 +9,8 @@ import org.neo4j.impl.transaction.TransactionFactory;
 import java.util.logging.Logger;
 
 /**
- * The neo module handles valid relationship types and manages the 
- * reference node. Alose the Node and Relationship caches sizes can be
+ * The Neo module handles valid relationship types and manages the 
+ * reference node. Also the Node and Relationship caches sizes can be
  * configured here. 
  * <p>
  * The reference node is a reference point in the node space. See it as a 

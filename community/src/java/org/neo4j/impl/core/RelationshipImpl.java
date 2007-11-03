@@ -30,7 +30,7 @@ import org.neo4j.impl.util.ArrayMap;
  * <p>
  * All public methods must be invoked within a transaction context, 
  * failure to do so will result in an exception. 
- * Modifing methods will create a command that can execute and undo the desired
+ * Modifying methods will create a command that can execute and undo the desired
  * operation. The command will be associated with the transaction and
  * if the transaction fails all the commands participating in the transaction 
  * will be undone.
@@ -43,11 +43,11 @@ import org.neo4j.impl.util.ArrayMap;
  * If the event fails (false is returned)  the transaction is marked as 
  * rollback only and if the command will be undone.
  * <p>
- * This implementaiton of node does not rely on persistence storage to 
- * enforce contraints. This is done by the {@link NeoConstraintsListener}. 
+ * This implementation of node does not rely on persistence storage to 
+ * enforce constrains. This is done by the {@link NeoConstraintsListener}. 
  */
 class RelationshipImpl 
-	implements Relationship, Comparable
+	implements Relationship, Comparable<Relationship>
 {
 	private static enum RelationshipPhase { NORMAL, FULL }
 	
@@ -129,7 +129,7 @@ class RelationshipImpl
 	/**
 	 * Returns the two nodes for this relationship. If the node is directed
 	 * the starting node is in first and the ending node is last, however
-	 * this can only be asumed on {@link Direction directed} nodes.
+	 * this can only be assumed on {@link Direction directed} nodes.
 	 * <p>
 	 * If the relationship has a shallow node that node will be loaded and
 	 * phase changed to normal.
@@ -229,7 +229,7 @@ class RelationshipImpl
 	 * <p>
 	 * First the existing cache is checked for property <CODE>key</CODE>
 	 * if the property is found it is returned at once. If not the full
-	 * relaitonship is loaded and then the cache is checked again.
+	 * relationship is loaded and then the cache is checked again.
 	 *
 	 * @param key the property name
 	 * @return the property object
@@ -635,7 +635,7 @@ class RelationshipImpl
 	 * The phase is never changed during this operation. The relationship will 
 	 * be removed from cache and invoking any method on this relationship after 
 	 * delete is invalid. Doing so might result in a checked or runtime 
-	 * exception beeing thrown. 
+	 * exception being thrown. 
 	 *
 	 * @throws DeleteException if unable to delete
 	 */
@@ -751,9 +751,8 @@ class RelationshipImpl
 	 * @param rel the relationship to compare this node with
 	 * @return 0 if equal id, 1 if this id is greater else -1
 	 */
-	public int compareTo( Object rel )
+	public int compareTo( Relationship r )
 	{
-		Relationship r = (Relationship) rel;
 		int ourId = (int) this.getId(), theirId = (int) r.getId();
 		
 		if ( ourId < theirId )

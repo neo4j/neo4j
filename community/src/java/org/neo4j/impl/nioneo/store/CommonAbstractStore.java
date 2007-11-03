@@ -74,7 +74,7 @@ public abstract class CommonAbstractStore
 	private boolean storeOk = true;
 	private FileLock fileLock;
 	
-	private Map config = null;
+	private Map<?,?> config = null;
 
 	/**
 	 * Opens and validates the store contained in <CODE>fileName</CODE> 
@@ -94,7 +94,7 @@ public abstract class CommonAbstractStore
 	 * @param config The configuration for store (may be null)
 	 * @throws IOException If store doesn't exist
 	 */
-	public CommonAbstractStore( String fileName, Map config )
+	public CommonAbstractStore( String fileName, Map<?,?> config )
 		throws IOException
 	{
 		this.storageFileName = fileName;
@@ -166,7 +166,7 @@ public abstract class CommonAbstractStore
 	}
 	
 	/**
-	 * Sets the {@link PersistenceWindowPool} for this store to use. Normaly
+	 * Sets the {@link PersistenceWindowPool} for this store to use. Normally
 	 * this is set in the {@link #loadStorage()} method. This method must
 	 * be invoked with a valid "pool" before any of the 
 	 * {@link #acquireWindow(int, OperationType)} 
@@ -269,7 +269,7 @@ public abstract class CommonAbstractStore
 
 	/**
 	 * If store is not ok a call to this method will rebuild the {@link 
-	 * IdGenerator} used by this store and if successfull mark it as 
+	 * IdGenerator} used by this store and if successful mark it as 
 	 * <CODE>ok</CODE>.
 	 * 
 	 * @throws IOException If unable to rebuild id generator
@@ -289,7 +289,7 @@ public abstract class CommonAbstractStore
 	 * @return A map containing configuration or <CODE>null<CODE> if no 
 	 * configuration map set.
 	 */
-	public Map getConfig()
+	public Map<?,?> getConfig()
 	{
 		return config;
 	}
@@ -301,7 +301,7 @@ public abstract class CommonAbstractStore
 	 * 
 	 * @param position The record position
 	 * @param type The operation type
-	 * @return presistence A window encapsulating the record 
+	 * @return a persistence window encapsulating the record 
 	 * @throws IOException If unable to acquire window
 	 */
 	protected PersistenceWindow acquireWindow( int position, 

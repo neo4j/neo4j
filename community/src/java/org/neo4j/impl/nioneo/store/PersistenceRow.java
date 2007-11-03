@@ -7,7 +7,7 @@ import java.nio.channels.FileChannel;
 /**
  * PersistenRow only encapsulates one record in a store. It is used as a light-
  * weight window when no other (larger window) is found that encapsulates the 
- * required record/block and it would be unefficient to create a large new 
+ * required record/block and it would be non efficient to create a large new 
  * window to perform the required operation.
  */
 class PersistenceRow extends LockableWindow

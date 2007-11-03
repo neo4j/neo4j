@@ -24,7 +24,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	 
 	private DynamicStringStore keyPropertyStore;
 	
-	public PropertyIndexStore( String fileName, Map config ) 
+	public PropertyIndexStore( String fileName, Map<?,?> config ) 
 		throws IOException
 	{
 		super( fileName, config );

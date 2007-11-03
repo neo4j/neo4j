@@ -39,7 +39,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 		}
 	}
 	
-	public DynamicArrayStore( String fileName, Map config ) 
+	public DynamicArrayStore( String fileName, Map<?,?> config ) 
 		throws IOException
 	{
 		super( fileName, config );

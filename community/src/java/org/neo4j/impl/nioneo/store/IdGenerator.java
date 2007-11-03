@@ -9,23 +9,23 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 /**
- * This class generates unique ids for a resource type. For exmaple, nodes 
- * in a nodes space are connected to eachother via relationships. On nodes 
+ * This class generates unique ids for a resource type. For example, nodes 
+ * in a nodes space are connected to each other via relationships. On nodes 
  * and relationship one can add properties. We have three different resource 
  * types here (nodes, relationships and properties) where each resource needs 
- * a unique id to be able to differ resources of the same type from eachother. 
+ * a unique id to be able to differ resources of the same type from each other. 
  * Creating three id generators (one for each resource type ) will do the trick.
  * <p>  
- * <CODE>IdGenerator</CODE> makes use of so called "defraged" ids. A 
- * defraged id is an id that has been in use one or many times but the 
+ * <CODE>IdGenerator</CODE> makes use of so called "defragged" ids. A 
+ * defragged id is an id that has been in use one or many times but the 
  * resource that was using it doesn't exist anymore. This makes it possible to 
  * reuse the id and that in turn makes it possible to write a resource store 
  * with fixed records and size (you can calculate the position of a record by 
  * knowing the id without using indexes or a translation table).
  * <p> 
  * The int value returned by the {@link #nextId} may not be the lowest  
- * avialable id but will be one of the defraged ids if such exist or the next 
- * new free id that has never been used. 
+ * you available id but will be one of the defragged ids if such exist or the 
+ * next new free id that has never been used. 
  * <p>
  * The {@link #freeId} will not check if the id passed in to it really is 
  * free. Passing a non free id will corrupt the id generator and 
@@ -33,7 +33,7 @@ import java.nio.channels.FileChannel;
  * <p>
  * The {@link #close()} method must always be invoked when done using an 
  * generator (for this time). Failure to do will render the generator as 
- * "sticky" and unsuable next time you try to initilize a generator using the 
+ * "sticky" and unusable next time you try to initialize a generator using the 
  * same file. Also you can only have one <CODE>IdGenerator</CODE> instance per 
  * id generator file at the same time. 
  * <p>
@@ -45,11 +45,11 @@ public class IdGenerator
 	private static final int HEADER_SIZE 		= 5;
 
 	// if sticky the id generator wasn't closed properly so it has to be 
-	// rebuilt (go throu the node, relationship, property, rel type etc files)
+	// rebuilt (go through the node, relationship, property, rel type etc files)
 	private static final byte CLEAN_GENERATOR 	= (byte) 0;
 	private static final byte STICKY_GENERATOR 	= (byte) 1;
 
-	//  number of defraged ids to grab form file in batch (also used for write)
+	//  number of defragged ids to grab form file in batch (also used for write)
 	private int grabSize 				= -1;
 	private int nextFreeId 				= -1;
 	// total bytes read from file, used in writeIdBatch() and close() 
@@ -63,10 +63,10 @@ public class IdGenerator
 
 	private final String fileName;
 	private FileChannel fileChannel = null; 
-	// in memory defraged ids read from file (and from freeId)
+	// in memory defragged ids read from file (and from freeId)
 	private final LinkedList<Integer> defragedIdList = 
 		new LinkedList<Integer>();
-	// in memory newly free defraged ids that havn't been flushed to disk yet
+	// in memory newly free defragged ids that havn't been flushed to disk yet
 	private final LinkedList<Integer> releasedIdList = 
 		new LinkedList<Integer>();
 	// buffer used in readIdBatch()
@@ -77,11 +77,11 @@ public class IdGenerator
 	
 	/**
 	 * Opens the id generator represented by <CODE>fileName</CODE>. The  
-	 * <CODE>grabSize</CODE> means how many defraged ids we should keep in 
+	 * <CODE>grabSize</CODE> means how many defragged ids we should keep in 
 	 * memory and is also the size (x4) of the two buffers used for reading 
 	 * and writing to the id generator file. The highest returned id will be 
 	 * read from file and if <CODE>grabSize</CODE> number of ids exist they  
-	 * will be read into memory (if less exist all defraged ids will be in 
+	 * will be read into memory (if less exist all defragged ids will be in 
 	 * memory).
 	 * <p>
 	 * If this id generator hasn't been closed properly since the previous 
@@ -91,7 +91,7 @@ public class IdGenerator
 	 * 
 	 * @param fileName The file name (and path if needed) for the id generator 
 	 * to be opened
-	 * @param grabSize The number of defraged ids to keep in memory
+	 * @param grabSize The number of defragged ids to keep in memory
 	 * @throws IOException If no such file exist or if the id generator is 
 	 * sticky
 	 */
@@ -110,13 +110,13 @@ public class IdGenerator
 	}
 	
 	/**
-	 * Returns the next "free" id. If a defraged id exist it will be returned 
+	 * Returns the next "free" id. If a defragged id exist it will be returned 
 	 * else the next free id that hasn't been used yet is returned. If no  
-	 * id exist the capacity is exeeded (all int values >= 0 are taken) and a 
+	 * id exist the capacity is exceeded (all int values >= 0 are taken) and a 
 	 * <CODE>IOException</CODE> will be thrown.
 	 *
 	 * @return The next free id
-	 * @throws IOException If the capcity is exceeded or closed generator
+	 * @throws IOException If the capacity is exceeded or closed generator
 	 */
 	public synchronized int nextId() throws IOException
 	{
@@ -153,7 +153,7 @@ public class IdGenerator
 	}
 	
 	/**
-	 * Returns the next "high" id that will be returned if no defraged ids
+	 * Returns the next "high" id that will be returned if no defragged ids
 	 * exist.
 	 * 
 	 * @return The next free "high" id
@@ -164,7 +164,7 @@ public class IdGenerator
 	}
 	
 	/**
-	 * Frees the <CODE>id</CODE> making it a defraged id that will be returned 
+	 * Frees the <CODE>id</CODE> making it a defragged id that will be returned 
 	 * by next id before any new id (that hasn't been used yet) is returned.
 	 * <p>
 	 * This method will throw an <CODE>IOException</CODE> if id is negative 
@@ -172,7 +172,7 @@ public class IdGenerator
 	 * However as stated in the class documentation above the id isn't 
 	 * validated to see if it really is free.
 	 *
-	 * @param id The id to be made avilable again
+	 * @param id The id to be made available again
 	 * @throws IOException If id is negative or greater than the highest 
 	 * returned id
 	 */
@@ -191,9 +191,9 @@ public class IdGenerator
 	}
 	
 	/**
-	 * Closes the id generator flushing defraged ids in memory to file. The 
-	 * file willl be truncated to the minimal size required to hold all 
-	 * defraged ids and it will be marked as clean (not sticky).
+	 * Closes the id generator flushing defragged ids in memory to file. The 
+	 * file will be truncated to the minimal size required to hold all 
+	 * defragged ids and it will be marked as clean (not sticky).
 	 * <p>
 	 * An invoke to the <CODE>nextId</CODE> or <CODE>freeId</CODE> after this 
 	 * method has been invoked will result in an <CODE>IOException</CODE> since
@@ -264,7 +264,7 @@ public class IdGenerator
 		fileChannel.force( false );
 		fileChannel.close();
 		fileChannel = null;
-		// make this generator unsuable
+		// make this generator unusable
 		nextFreeId = -1;
 	}
 
@@ -304,9 +304,10 @@ public class IdGenerator
 		buffer.put( CLEAN_GENERATOR ).putInt( 0 ).flip();
 		channel.write( buffer );
 		channel.force( false );
+		channel.close();
 	}
 	
-	// initilize the id generator and performs a simple validation
+	// initialize the id generator and performs a simple validation
 	private void initGenerator() 
 		throws IOException
 	{
@@ -376,7 +377,7 @@ public class IdGenerator
 		}
 	}
 	
-	// writes a batch of defraged ids to file
+	// writes a batch of defragged ids to file
 	private void writeIdBatch() throws IOException
 	{
 		// position at end
@@ -399,10 +400,10 @@ public class IdGenerator
 	}
 
 	/**
-	 * Utility method that will dump all defraged id's and the "high id" to 
+	 * Utility method that will dump all defragged id's and the "high id" to 
 	 * console. Do not  call while running store using this id generator since
 	 * it could corrupt the id generator (not thread safe). This method will 
-	 * close the id generator after beeing invoked.
+	 * close the id generator after being invoked.
 	 * 
 	 * @throws IOException If problem dumping free ids
 	 */
@@ -412,7 +413,7 @@ public class IdGenerator
 		{
 			readIdBatch();
 		}
-		java.util.Iterator itr = defragedIdList.iterator();
+		java.util.Iterator<Integer> itr = defragedIdList.iterator();
 		while ( itr.hasNext() )
 		{
 			System.out.print( " " + itr.next() );

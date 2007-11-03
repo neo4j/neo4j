@@ -26,7 +26,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 	public abstract int getRecordSize();
 	
 	/**
-	 * Creates a new empty store. The facotry method returning an 
+	 * Creates a new empty store. The factory method returning an 
 	 * implementation of some store type should make use of this method 
 	 * to initialize an empty store.
 	 * <p>
@@ -34,8 +34,8 @@ public abstract class AbstractStore extends CommonAbstractStore
 	 * returned by the <CODE>getTypeAndVersionDescriptor()</CODE>. The id 
 	 * generator used by this store will also be created
 	 *
-	 * @param fileName Ihe file name of the store that will be created
-	 * @param typeAndVersionDescriptor Ihe type and version descriptor that 
+	 * @param fileName The file name of the store that will be created
+	 * @param typeAndVersionDescriptor The type and version descriptor that 
 	 * identifies this store
 	 * @throws IOException If fileName is null or if file exists
 	 */
@@ -66,7 +66,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 		IdGenerator.createGenerator( fileName + ".id" ); 
 	}
 	
-	public AbstractStore( String fileName, Map config )
+	public AbstractStore( String fileName, Map<?,?> config )
 		throws IOException
 	{
 		super( fileName, config );

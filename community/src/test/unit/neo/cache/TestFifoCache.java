@@ -28,7 +28,7 @@ public class TestFifoCache extends TestCase
 	{
 		try
 		{
-			new FifoCache( "TestCache", 0 );
+			new FifoCache<Object,Object>( "TestCache", 0 );
 			fail( "Illegal maxSize should throw exception" );
 		}
 		catch ( IllegalArgumentException e )

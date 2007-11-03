@@ -126,6 +126,6 @@ class RelationshipProxy implements Relationship
 	
 	public String toString()
 	{
-		return "Proxy#" + "Relationship[" + this.getId() + "]";
+		return "Relationship[" + this.getId() + "]";
 	}
 }

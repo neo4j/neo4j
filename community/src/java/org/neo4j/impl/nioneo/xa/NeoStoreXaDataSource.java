@@ -30,7 +30,7 @@ import org.neo4j.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.impl.util.ArrayMap;
 
 /**
- * A <CODE>NeoStoreXaDataSource</CODE> is a facotry for 
+ * A <CODE>NeoStoreXaDataSource</CODE> is a factory for 
  * {@link NeoStoreXaConnection NeoStoreXaConnections}. 
  * <p>
  * The {@link NioNeoDbPersistenceSource} will create a 
@@ -45,7 +45,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 	
 	private final NeoStore neoStore;
 	private final XaContainer xaContainer;
-	private final ArrayMap<Class,Store> idGenerators;
+	private final ArrayMap<Class<?>,Store> idGenerators;
 	
 
 	/**
@@ -65,7 +65,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 	 * configuration file.
 	 * @throws IOException If unable to create data source
 	 */
-	public NeoStoreXaDataSource( Map params ) throws IOException, 
+	public NeoStoreXaDataSource( Map<?,?> params ) throws IOException, 
 		InstantiationException
 	{
 		super( params );
@@ -128,7 +128,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 			logger.info(  
 				"Waiting for TM to take care of recovered transactions." );
 		}
-		idGenerators = new ArrayMap<Class,Store>( 5, false, false );
+		idGenerators = new ArrayMap<Class<?>,Store>( 5, false, false );
 		this.idGenerators.put( Node.class, neoStore.getNodeStore() );
 		this.idGenerators.put( Relationship.class, 
 			neoStore.getRelationshipStore() );
@@ -190,7 +190,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 			logger.info( 
 				"Waiting for TM to take care of recovered transactions." );
 		}
-		idGenerators = new ArrayMap<Class,Store>( 5, false, false );
+		idGenerators = new ArrayMap<Class<?>,Store>( 5, false, false );
 		this.idGenerators.put( Node.class, neoStore.getNodeStore() );
 		this.idGenerators.put( Relationship.class, 
 			neoStore.getRelationshipStore() );
@@ -203,12 +203,6 @@ public class NeoStoreXaDataSource extends XaDataSource
 			neoStore.getPropertyStore().getIndexStore() );
 	}
 
-	// used for testing
-	public void truncateLogicalLog() throws IOException
-	{
-		xaContainer.getLogicalLog().truncate();
-	}
-	
 	NeoStore getNeoStore()
 	{
 		return neoStore;
@@ -299,7 +293,7 @@ public class NeoStoreXaDataSource extends XaDataSource
         }
 	}
 
-	public int nextId( Class clazz )
+	public int nextId( Class<?> clazz )
 	{
 		Store store = idGenerators.get( clazz );
 		
@@ -318,7 +312,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 		}
 	}
 
-	public int getHighestPossibleIdInUse( Class clazz )
+	public int getHighestPossibleIdInUse( Class<?> clazz )
     {
 		Store store = idGenerators.get( clazz );
 		if ( store == null )
@@ -329,7 +323,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 		return store.getHighestPossibleIdInUse();
     }
 
-	public int getNumberOfIdsInUse( Class clazz )
+	public int getNumberOfIdsInUse( Class<?> clazz )
     {
 		Store store = idGenerators.get( clazz );
 		if ( store == null )
@@ -339,4 +333,9 @@ public class NeoStoreXaDataSource extends XaDataSource
 		}
 		return store.getNumberOfIdsInUse();
     }
+	
+	public void writeOutLazyRecords() throws XAException
+	{
+		xaContainer.writeOutLazyDoneRecords();
+	}
 }
