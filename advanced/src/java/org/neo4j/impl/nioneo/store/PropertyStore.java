@@ -773,6 +773,7 @@ public class PropertyStore extends AbstractStore implements Store
 			System.arraycopy( array, 0, byteArrayStr, position, array.length );
 			position += array.length;
 		}
-		return new String( byteArrayStr, "ISO-8859-1" );
+		// return new String( byteArrayStr, "ISO-8859-1" );
+		return new String( byteArrayStr );
     }
 }
