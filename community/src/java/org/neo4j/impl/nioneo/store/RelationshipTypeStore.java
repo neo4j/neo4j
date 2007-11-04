@@ -43,6 +43,15 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		System.out.println( "Found version: " + version );
 		if ( "RelationshipTypeStore v0.9.1".endsWith( version ) )
 		{
+			// check if use of early beta 6 snappshot
+			String base = getStorageFileName().substring( 0, 
+				getStorageFileName().lastIndexOf( 
+					"relationshiptypestore.db" ) );
+			if ( new File( base + "propertystore.db.index").exists() )
+			{
+				return;
+			}
+			// else convert releationship types
 			try
 			{
 				convertRelTypes();

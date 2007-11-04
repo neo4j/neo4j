@@ -71,6 +71,13 @@ public class EmbeddedNeo
 		// TODO
 	}
 
+	public EmbeddedNeo( String dir, RelationshipType[] relationshipTypes, 
+		Map<String,String> params )
+	{
+		this.shellServer = null;
+		NeoJvmInstance.start( null, dir, true, params );
+	}
+	
 	public EmbeddedNeo( String dir, Iterable<RelationshipType> relationshipTypes )
 	{
 		this( null, dir, true );
