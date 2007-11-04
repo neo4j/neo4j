@@ -27,6 +27,19 @@ class NeoJvmInstance
 		return config;
 	}
 	
+	public static void start( Class<? extends RelationshipType> clazz, 
+		String storeDir, boolean create ) 
+	{
+		Map<String,String> params = new java.util.HashMap<String,String>();
+		params.put( "neostore.nodestore.db.mapped_memory", "20M" );
+		params.put( "neostore.propertystore.db.mapped_memory", "90M" );
+		params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
+		params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
+		params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
+		params.put( "neostore.propertystore.db.arrays.mapped_memory", "1M" );
+		params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
+		start( clazz, storeDir, create, params );
+	}
 	/**
 	 * Starts Neo with default configuration using NioNeo DB as persistence 
 	 * store. 
@@ -34,10 +47,11 @@ class NeoJvmInstance
 	 * @param storeDir path to directory where NionNeo DB store is located
 	 * @param create if true a new NioNeo DB store will be created if no
 	 * store exist at <CODE>storeDir</CODE>
+	 * @param configuration parameters
 	 * @throws StartupFailedException if unable to start
 	 */
 	public static void start( Class<? extends RelationshipType> clazz, 
-		String storeDir, boolean create ) 
+		String storeDir, boolean create, Map<String,String> params ) 
 	{
 		if ( started )
 		{
@@ -47,7 +61,6 @@ class NeoJvmInstance
 		config = new Config();
 		config.getTxModule().setTxLogDirectory( storeDir );
 		// create NioNeo DB persistence source
-		Map<String,String> params = new java.util.HashMap<String,String>();
 		storeDir = convertFileSeparators( storeDir );
 		String separator = System.getProperty( "file.separator" );
 		String store = storeDir + separator + "neostore";		
@@ -55,13 +68,6 @@ class NeoJvmInstance
 		params.put( "create", String.valueOf( create ) );
 		String logicalLog = storeDir + separator + "nioneo_logical.log";
 		params.put( "logical_log", logicalLog );
-		params.put( "neostore.nodestore.db.mapped_memory", "20M" );
-		params.put( "neostore.propertystore.db.mapped_memory", "90M" );
-		params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
-		params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
-		params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-		params.put( "neostore.propertystore.db.arrays.mapped_memory", "1M" );
-		params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
 		byte resourceId[] = "414141".getBytes();
 		config.getTxModule().registerDataSource( DEFAULT_DATA_SOURCE_NAME,
 			NIO_NEO_DB_CLASS, resourceId, params );
