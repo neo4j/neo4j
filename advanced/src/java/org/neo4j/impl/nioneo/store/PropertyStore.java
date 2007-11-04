@@ -639,6 +639,19 @@ public class PropertyStore extends AbstractStore implements Store
 						newStringStore.updateRecord( record );
 					}
 				}
+				else if ( type == 0 )
+				{
+					// bug in old store that wrote bytes as type 0
+					// rewrite as 7
+					buf.clear();
+					buf.putInt( PropertyType.BYTE.intValue() );
+					buf.flip();
+					getFileChannel().position( position + 1 );
+					if (  getFileChannel().write( buf ) != 4 )
+					{
+						throw new IOException( "did not write 4 bytes..." );
+					}
+				}
 				String oldKey = getOldStringFromStore( oldKeyId, oldKeyStore );
 				int newIndexKeyId = -1;
 				if ( !keyToIndex.containsKey( oldKey ) )
@@ -676,17 +689,28 @@ public class PropertyStore extends AbstractStore implements Store
 		oldStringStore = new File( getStorageFileName() + ".strings.blockid" );
 		if ( oldStringStore.exists() )
 		{
-			oldStringStore.delete();
+			if ( !oldStringStore.delete() )
+			{
+				System.out.println( "Unable to delete old string store: " + 
+					oldStringStore.getName() );
+			}
 		}
 		oldStringStore = new File( getStorageFileName() + ".strings.id" );
 		if ( oldStringStore.exists() )
 		{
-			oldStringStore.delete();
+			if ( !oldStringStore.delete() )
+			{
+				System.out.println( "Unable to delete old string store: " + 
+					oldStringStore.getName() );
+			}
 		}
 		File newStringStoreFile = new File( 
 			newStringStore.getStorageFileName() );
-		newStringStoreFile.renameTo( new File( 
-			stringPropertyStore.getStorageFileName() ) );
+		if ( !newStringStoreFile.renameTo( new File( 
+			stringPropertyStore.getStorageFileName() ) ) )
+		{
+			throw new RuntimeException( "Unable to move new string store" );
+		}
 		new File( "new_string_store.id" ).delete();
 		stringPropertyStore = new DynamicStringStore( getStorageFileName() 
 			+ ".strings" );
@@ -749,6 +773,6 @@ public class PropertyStore extends AbstractStore implements Store
 			System.arraycopy( array, 0, byteArrayStr, position, array.length );
 			position += array.length;
 		}
-		return new String( byteArrayStr );
+		return new String( byteArrayStr, "ISO-8859-1" );
     }
 }

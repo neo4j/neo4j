@@ -95,6 +95,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 		getFileChannel().read( buffer );
 		if ( !expectedVersion.equals( new String( version ) ) )
 		{
+			versionFound( new String( version ) );
 			setStoreNotOk();
 		}
 		if ( getRecordSize() != 0 && 

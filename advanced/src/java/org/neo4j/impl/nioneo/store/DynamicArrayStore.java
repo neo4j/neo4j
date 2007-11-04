@@ -12,7 +12,7 @@ import java.util.Map;
 class DynamicArrayStore extends AbstractDynamicStore
 {
 	// store version, each store ends with this string (byte encoded)
-	private static final String VERSION = "ArrayPropertyStore v0.9.2";
+	private static final String VERSION = "ArrayPropertyStore v0.9.3";
 	
 	private static enum ArrayType
 	{
