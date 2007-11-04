@@ -98,7 +98,7 @@ public class AdminStore
 	
 	private static class DynamicStringStore extends AbstractDynamicStore
 	{
-		private static final String VERSION = "StringPropertyStore v0.9";
+		private static final String VERSION = "StringPropertyStore v0.9.3";
 		
 		public DynamicStringStore( String fileName, Map<?,?> config ) 
 			throws IOException

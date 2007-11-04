@@ -12,7 +12,7 @@ import org.neo4j.impl.nioneo.store.AbstractDynamicStore;
 class DynamicStringStore extends AbstractDynamicStore
 {
 	// store version, each store ends with this string (byte encoded)
-	private static final String VERSION = "StringPropertyStore v0.9";
+	private static final String VERSION = "StringPropertyStore v0.9.3";
 	
 	public DynamicStringStore( String fileName, Map<?,?> config ) 
 		throws IOException

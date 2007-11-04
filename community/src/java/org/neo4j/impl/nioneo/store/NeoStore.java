@@ -14,7 +14,7 @@ public class NeoStore extends AbstractStore
 {
 	// neo store version, store should end with this string
 	// (byte encoded)
-	private static final String VERSION = "NeoStore v0.9";
+	private static final String VERSION = "NeoStore v0.9.3";
 	 
 	private static final int RECORD_SIZE = 0;
 	 

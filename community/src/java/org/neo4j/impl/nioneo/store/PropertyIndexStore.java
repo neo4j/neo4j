@@ -16,7 +16,7 @@ import org.neo4j.impl.core.RawPropertyIndex;
 public class PropertyIndexStore extends AbstractStore implements Store
 {
 	// store version, should end with this string (byte encoded)
-	private static final String VERSION = "PropertyIndex v0.9.2";
+	private static final String VERSION = "PropertyIndex v0.9.3";
 	private static final int KEY_STORE_BLOCK_SIZE = 30;
 	 
 	// in_use(byte)+prop_count(int)+key_block_id(int)
