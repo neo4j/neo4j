@@ -12,7 +12,7 @@ public class NodeStore extends AbstractStore implements Store
 {
 	// node store version, each node store should end with this string
 	// (byte encoded)
-	private static final String VERSION = "NodeStore v0.9.1";
+	private static final String VERSION = "NodeStore v0.9.3";
 	 
 	// in_use(byte)+next_rel_id(int)+next_prop_id(int)
 	private static final int RECORD_SIZE = 9;

@@ -38,6 +38,8 @@ public abstract class CommonAbstractStore
 	protected void initStorage() throws IOException {}
 	 
 
+	protected void versionFound( String version ) {};
+	
 	/**
 	 * This method should close/release all resources that the implementation 
 	 * of this store has allocated and is called just before the 
