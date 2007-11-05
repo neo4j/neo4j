@@ -108,19 +108,20 @@ public interface Node
 	 * another node. Typically this invariant is maintained by the rest of the
 	 * code: if at any time more than one such relationships exist, it is a
 	 * fatal error that should generate an unchecked exception. This method
-	 * reflects that semantics and returns either <code>null</code> if there
-	 * are zero relationships of the given type and direction, the single
-	 * relationship if exactly one exists or throws an unchecked exception in
-	 * all other cases.
-	 * <p>
+	 * reflects that semantics and returns either:
+     * <p>
+     * <ol>
+     * <li><code>null</code> if there are zero relationships of the given type
+     * and direction,</li>
+     * <li>the relationship if there's exactly one, or
+     * <li>throws an unchecked exception in
+     * all other cases.</li>
+     * </ol>
+     * <p>
 	 * This method should be used only in situations with an invariant as
 	 * described above. In those situations, a "state-checking" method (e.g.
 	 * <code>hasSingleRelationship(...)</code>)
 	 * is not required, because this method behaves correctly "out of the box."
-	 * If, for some reason, a state-checking method is needed, one can always
-	 * use the usual "hasRelationship"-idiom:
-	 * <code>if ( node.getRelationships( type, dir ).iterator().hasNext() )
-	 * { ... }</code>
 	 * @param type the type of the wanted relationship
 	 * @param dir the direction of the wanted relationship (where
 	 * <code>Direction.OUTGOING</code> means a relationship that has this node

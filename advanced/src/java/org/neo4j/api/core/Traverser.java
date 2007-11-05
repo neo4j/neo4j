@@ -33,5 +33,8 @@ public interface Traverser extends Iterable<Node>
 	 * 
 	 * @return An iterator for this traverser
 	 */
+	// Doc: does it create a new iterator or reuse the existing one? This is
+	// very important! It must be re-use, how else would currentPosition()
+    // make sense?
 	public Iterator<Node> iterator();
 }
