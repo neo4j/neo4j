@@ -384,18 +384,32 @@ public class XaLogicalLog
 		}
 		catch ( Exception e )
 		{
+			boolean renamed = false;
+			String saveName = fileName + ".recovered-" + 
+				System.currentTimeMillis();
 			try
 			{
-				Thread.sleep( 500 );
-				// try again
-				String saveName = fileName + ".recovered-" + 
-					System.currentTimeMillis();
-				file.renameTo( new File( saveName ) );
+				renamed = file.renameTo( new File( saveName ) );
+			} catch ( Exception ee ) {}
+			if ( !renamed )
+			{
+				// hack for WINBLOWS
+				try
+				{
+					Thread.sleep( 700 );
+				} catch ( InterruptedException ee ) 
+				{ } // ok
+				try
+				{
+					System.gc();
+					renamed = file.delete();
+				} 
+				catch ( Exception ee ) {} // ok...
 			}
-			catch ( Throwable t )
+			if ( !renamed )
 			{
 				throw new RuntimeException( "Unable to rename recovered " + 
-					"log file[" + fileName + "]", t );
+					"log file[" + fileName + "]" );
 			}
 		}
 		// create a new one
@@ -446,22 +460,27 @@ public class XaLogicalLog
 			// hack for WINBLOWS
 			try
 			{
+				Thread.sleep( 700 );
+			} catch ( InterruptedException e ) 
+			{ } // ok
+			try
+			{
 				System.gc();
 				deleted = file.delete();
-			} catch ( Exception ee ) {}
+			} 
+			catch ( Exception ee ) {} // ok...
 		}
 		if ( !deleted )
 		{
 			log.warning( "Unable to delete clean logical log[" +  
 					fileName + "]" );
-				log.info( "Since you're not using a real operating system " + 
-					"you will be punished for it at next startup" );
 		}
 	}
 	
 	private void doInternalRecovery() throws IOException
 	{
-		log.info( "Logical log is dirty, recovering..." ); 
+		log.info( "Logical log is dirty, this means Neo hasn't been " + 
+			"shutdown properly. Recovering..." ); 
 		// get log creation time
 		buffer.clear(); buffer.limit( 8 ); 
 		if ( fileChannel.read( buffer ) != 8 )
@@ -476,19 +495,22 @@ public class XaLogicalLog
 		}
 		buffer.flip();
 		logCreated = buffer.getLong();
-		log.info( "Logical log created " + 
-			new java.util.Date( logCreated ) );
+		log.fine( "Logical log created " + new java.util.Date( logCreated ) );
 		long logEntriesFound = 0;
 		while ( readEntry() )
 		{ 
 			logEntriesFound++;
 		}
 		scanIsComplete = true;
-		log.info( "Internal recovery completed, scanned " + 
+		log.fine( "Internal recovery completed, scanned " + 
 			logEntriesFound + " log entries." );
-		log.info( xidIdentMap.size() + " uncompleted transactions found " );
+		log.fine( xidIdentMap.size() + " uncompleted transactions found " );
 		xaRm.checkXids();
-		log.info( "Prepared 2PC transactions: " + xidIdentMap.size() ); 
+		if ( xidIdentMap.size() > 0 )
+		{
+			log.info( "Found " + xidIdentMap.size() + 
+				" prepared 2PC transactions." );
+		}
 		recoveredTxMap.clear();
 	}
 	

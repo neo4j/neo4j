@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -543,6 +544,7 @@ public class XaResourceManager
                 }
 			} );
 		txOrderMap = null;
+		Logger logger = Logger.getLogger( tf.getClass().getName() );
 		while ( !xids.isEmpty() )
 		{
 			Xid xid = xids.removeFirst();
@@ -554,7 +556,7 @@ public class XaResourceManager
 			{
 				if ( txStatus.commitStarted() )
 				{
-					System.out.println( "(Re-)committing tx " + identifier );
+					logger.fine( "(Re-)committing tx " + identifier );
 					try
 					{
 						xaTransaction.commit();
@@ -570,10 +572,9 @@ public class XaResourceManager
 					xidMap.remove( xid );
 					recoveredTxCount--;
 				}
-				// else if ( !txStatus.commit() )
 				else if ( !txStatus.prepared() )
 				{
-					System.out.println( "Rolling back non prepared tx " + 
+					logger.fine( "Rolling back non prepared tx " + 
 						identifier );
 					log.doneInternal( xaTransaction.getIdentifier() );
 					xidMap.remove( xid );

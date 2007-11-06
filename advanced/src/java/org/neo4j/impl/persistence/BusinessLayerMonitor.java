@@ -1,5 +1,6 @@
 package org.neo4j.impl.persistence;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.impl.event.Event;
@@ -70,50 +71,44 @@ class BusinessLayerMonitor implements	ProActiveEventListener,
 		}
 		catch ( IllegalArgumentException iae )
 		{
-			iae.printStackTrace();
-			log.severe(	"Unable to persist the operation represented by " +
-						event + " with data '" + data + "' due to bad " +
-						"arguments." );
+			log.log( Level.SEVERE, "Unable to persist the operation " + 
+				"represented by " + event + " with data '" + data + 
+				"' due to bad arguments.", iae );
 		}
 		catch ( UnsupportedPersistenceTypeException upte )
 		{
-			upte.printStackTrace();
-			log.severe(	"Unable to persist the operation represented by " +
-						event + " with data '" + data + "' because a " +
-						"component reported that the persistence type was " +
-						"unsupported." );
+			log.log( Level.SEVERE, "Unable to persist the operation " + 
+				"represented by " + event + " with data '" + data + 
+				"' because a component reported that the persistence type was" +
+				" unsupported",	upte );
 		}
 		catch ( ResourceAcquisitionFailedException rafe )
 		{
-			rafe.printStackTrace();
-			log.severe(	"Unable to persist the operation represented by " +
-						event + " with data '" + data + "' because we " +
-						"were unable to acquire a resource connection for " +
-						"the operation." );
+			log.log( Level.SEVERE, 	"Unable to persist the operation " + 
+				"represented by " + event + " with data '" + data + 
+				"' because we were unable to acquire a resource connection " +
+				"for the operation", rafe );
 		}
 		catch ( NotInTransactionException nite )
 		{
-			nite.printStackTrace();
-			log.warning(	"Unable to persist the operation represented by " +
-						event + " with data '" + data + "' because the " +
-						"current thread is not participating in a " +
-						"transaction." );
+			log.log( Level.WARNING, "Unable to persist the operation " + 
+				"represented by " + event + " with data '" + data + 
+				"' because the current thread is not participating in a " +
+				"transaction.", nite );
 		}
 		catch ( PersistenceUpdateFailedException pufe )
 		{
-			pufe.printStackTrace();
-			log.severe(	"Unable to persist the operation represented by " +
-						event + " with data '" + data + "' because " +
-						"something went wrong when attempting to update " +
-						"the persistence source." );
+			log.log( Level.SEVERE, "Unable to persist the operation " + 
+				"represented by " + event + " with data '" + data + 
+				"' because something went wrong when attempting to update " +
+				"the persistence source.", pufe );
 			
 		}
 		catch ( Throwable t )
 		{
-			t.printStackTrace();
-			log.severe(	"Caught an unknown exception while attempting to " +
-						"persist " + event + " with data '" + data + ".' " +
-						"Operation not persisted." );
+			log.log( Level.SEVERE, "Caught an exception while attempting to " +
+				"persist " + event + " with data '" + data + ".' " +
+				"Operation not persisted.", t );
 		}
 		return success;
 	}
