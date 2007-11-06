@@ -171,7 +171,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 		// TODO: fix this hardcoding
 		final byte RECORD_NOT_IN_USE = 0;
 		
-		logger.info( "Rebuilding id generator for[" + getStorageFileName() + 
+		logger.fine( "Rebuilding id generator for[" + getStorageFileName() + 
 			"] ..." );
 		closeIdGenerator();
 		File file = new File( getStorageFileName() + ".id" );
@@ -216,7 +216,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 //			}
 		}
 		setHighId( highId + 1 );
-		logger.info( "[" + getStorageFileName() + "] high id=" + getHighId() + 
+		logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId() + 
 			" (defragged=" + defraggedCount + ")" );  
 		closeIdGenerator();
 		openIdGenerator();

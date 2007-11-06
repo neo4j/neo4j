@@ -40,7 +40,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	@Override
 	protected void versionFound( String version )
 	{
-		System.out.println( "Found version: " + version );
 		if ( "RelationshipTypeStore v0.9.1".endsWith( version ) )
 		{
 			// check if use of early beta 6 snappshot
@@ -349,7 +348,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	@Override
 	protected void rebuildIdGenerator() throws IOException
 	{
-		logger.info( "Rebuilding id generator for[" + getStorageFileName() + 
+		logger.fine( "Rebuilding id generator for[" + getStorageFileName() + 
 		"] ..." );
 		closeIdGenerator();
 		File file = new File( getStorageFileName() + ".id" );
@@ -394,7 +393,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		highId++;
 		setHighId( highId );
 		fileChannel.truncate( highId * recordSize ); 
-		logger.info( "[" + getStorageFileName() + "] high id=" + getHighId() );  
+		logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId() );  
 		closeIdGenerator();
 		openIdGenerator();
 	}
