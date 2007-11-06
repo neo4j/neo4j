@@ -33,7 +33,7 @@ public class Main
 		
 		public void run()
 		{
-				// Then dump lock information
+			// Then dump lock information
 			try
 			{
 				LockReleaser.getManager().dumpLocks();

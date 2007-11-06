@@ -266,8 +266,10 @@ public class NeoStoreXaDataSource extends XaDataSource
 		
 		public void recoveryComplete()
 		{
-			logger.info( "Logical log recovery complete, " + 
+			logger.info( "Recovery complete, " + 
 				"all transactions have been resolved" );
+			logger.info( "Rebuilding id generators as needed. " + 
+				"This can take a while for large stores..." );
 			try
 			{
 				neoStore.makeStoreOk();
@@ -276,6 +278,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 			{
 				throw new RuntimeException( "Unable to make stores ok", e );
 			}
+			logger.info( "Rebuild of id generators complete." );
 		}
 
 		@Override

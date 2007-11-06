@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -97,9 +98,9 @@ public class EventManager
 				}
 				catch ( Throwable t )
 				{
-					t.printStackTrace();
-					log.severe( "Exception sending pro-active event to " + 
-						listener );
+					log.log( Level.SEVERE, 
+						"Exception sending pro-active event to " + listener, 
+						t );
 					result = false;
 				}
 			}
