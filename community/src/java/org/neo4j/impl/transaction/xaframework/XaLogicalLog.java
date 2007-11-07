@@ -11,6 +11,7 @@ import java.nio.channels.FileChannel;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.HashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.transaction.xa.XAException;
@@ -358,7 +359,7 @@ public class XaLogicalLog
 		fileChannel.truncate( truncateAt );
 	}
 	
-	public synchronized void makeNewLog()
+	synchronized void makeNewLog()
 	{
 		// save recovered log
 		if ( xidIdentMap.size() > 0 )
@@ -366,10 +367,18 @@ public class XaLogicalLog
 			throw new RuntimeException( "Active transactions found: " 
 				+ xidIdentMap.size() + ", can't make new log file" );
 		}
-		WeakReference<MappedByteBuffer> bufferWeakRef = 
-			new WeakReference<MappedByteBuffer>( 
-					writeBuffer.getMappedBuffer() );
-		writeBuffer = null;
+		WeakReference<MappedByteBuffer> bufferWeakRef = null;
+		if ( writeBuffer != null )
+		{
+			MappedByteBuffer mappedBuffer = writeBuffer.getMappedBuffer();
+			if ( mappedBuffer != null )
+			{
+				bufferWeakRef = new WeakReference<MappedByteBuffer>( 
+					mappedBuffer );
+				mappedBuffer = null;
+			}
+			writeBuffer = null;
+		}
 		try
 		{
 			fileChannel.close();
@@ -416,7 +425,7 @@ public class XaLogicalLog
 				} 
 				catch ( Exception ee ) {} // ok...
 			}
-			if ( !renamed )
+			if ( !renamed && bufferWeakRef != null )
 			{
 				try
 				{
@@ -458,14 +467,19 @@ public class XaLogicalLog
 			fileChannel.close();
 			return;
 		}
+		WeakReference<MappedByteBuffer> bufferWeakRef = null;
 		if ( writeBuffer != null )
 		{
 			writeBuffer.force();
+			MappedByteBuffer mappedBuffer = writeBuffer.getMappedBuffer();
+			if ( mappedBuffer != null )
+			{
+				bufferWeakRef = new WeakReference<MappedByteBuffer>( 
+					mappedBuffer );
+				mappedBuffer = null;
+			}
+			writeBuffer = null;
 		}
-		WeakReference<MappedByteBuffer> bufferWeakRef = 
-			new WeakReference<MappedByteBuffer>( 
-					writeBuffer.getMappedBuffer() );
-		writeBuffer = null;
 		fileChannel.close();
 		File file = new File( fileName );
 		if ( !file.exists() )
@@ -494,7 +508,7 @@ public class XaLogicalLog
 			} 
 			catch ( Exception e ) {} // ok...
 		}
-		if ( !deleted )
+		if ( !deleted && bufferWeakRef != null )
 		{
 			try
 			{
@@ -617,24 +631,30 @@ public class XaLogicalLog
 	
 	// workaround suggested at sun bug database
 	// see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4724038
-	private void clean( final MappedByteBuffer buffer ) throws Exception 
+	private void clean( final MappedByteBuffer mappedBuffer ) throws Exception 
 	{
 		AccessController.doPrivileged( new PrivilegedAction<Object>() 
 		{
 			public Object run() 
 			{
+				if ( mappedBuffer == null )
+				{
+					return null;
+				}
 				try 
 				{
-					Method getCleanerMethod = buffer.getClass().getMethod( 
+					Method getCleanerMethod = mappedBuffer.getClass().getMethod( 
 						"cleaner", new Class[0]);
 					getCleanerMethod.setAccessible(true);
 					sun.misc.Cleaner cleaner = (sun.misc.Cleaner)
-						getCleanerMethod.invoke( buffer, new Object[0] );
+						getCleanerMethod.invoke( mappedBuffer, new Object[0] );
 					cleaner.clean();
 				} 
 				catch(Exception e) 
 				{
-					e.printStackTrace();
+					log.log( Level.INFO, 
+						"Unable to invoke cleaner method on " + mappedBuffer, 
+						e );
 				}
 				return null;
 			}
