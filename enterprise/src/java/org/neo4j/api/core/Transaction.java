@@ -41,10 +41,7 @@ public class Transaction
 		@Override
 		public void failure()
 		{
-			// If a "nested" transaction fails, invoke parent's failure()
-			// method, which causes the current transaction to be marked for
-			// rollback
-			super.failure();
+			TransactionUtil.markAsRollbackOnly();
 		}
 
 		@Override
