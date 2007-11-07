@@ -3,12 +3,19 @@ package org.neo4j.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.logging.Logger;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
+
 import org.neo4j.impl.util.ArrayMap;
 
 /**
@@ -359,6 +366,9 @@ public class XaLogicalLog
 			throw new RuntimeException( "Active transactions found: " 
 				+ xidIdentMap.size() + ", can't make new log file" );
 		}
+		WeakReference<MappedByteBuffer> bufferWeakRef = 
+			new WeakReference<MappedByteBuffer>( 
+					writeBuffer.getMappedBuffer() );
 		writeBuffer = null;
 		try
 		{
@@ -391,12 +401,12 @@ public class XaLogicalLog
 			{
 				renamed = file.renameTo( new File( saveName ) );
 			} catch ( Exception ee ) {}
-			if ( !renamed )
+			for ( int i = 0; i < 3 && !renamed; i++ )
 			{
 				// hack for WINBLOWS
 				try
 				{
-					Thread.sleep( 700 );
+					Thread.sleep( 500 );
 				} catch ( InterruptedException ee ) 
 				{ } // ok
 				try
@@ -406,6 +416,16 @@ public class XaLogicalLog
 				} 
 				catch ( Exception ee ) {} // ok...
 			}
+			if ( !renamed )
+			{
+				try
+				{
+					clean( bufferWeakRef.get() );
+					renamed = file.delete();
+				}
+				catch ( Exception ee ) {} // at least we tried...
+			}
+			
 			if ( !renamed )
 			{
 				throw new RuntimeException( "Unable to rename recovered " + 
@@ -442,6 +462,9 @@ public class XaLogicalLog
 		{
 			writeBuffer.force();
 		}
+		WeakReference<MappedByteBuffer> bufferWeakRef = 
+			new WeakReference<MappedByteBuffer>( 
+					writeBuffer.getMappedBuffer() );
 		writeBuffer = null;
 		fileChannel.close();
 		File file = new File( fileName );
@@ -455,12 +478,13 @@ public class XaLogicalLog
 		{
 			deleted = file.delete();
 		} catch ( Exception e ) {}
-		if ( !deleted )
+		
+		// hack for WINBLOWS
+		for ( int i = 0; i < 3 && !deleted; i++ )
 		{
-			// hack for WINBLOWS
 			try
 			{
-				Thread.sleep( 700 );
+				Thread.sleep( 500 );
 			} catch ( InterruptedException e ) 
 			{ } // ok
 			try
@@ -468,8 +492,18 @@ public class XaLogicalLog
 				System.gc();
 				deleted = file.delete();
 			} 
-			catch ( Exception ee ) {} // ok...
+			catch ( Exception e ) {} // ok...
 		}
+		if ( !deleted )
+		{
+			try
+			{
+				clean( bufferWeakRef.get() );
+				deleted = file.delete();
+			}
+			catch ( Exception e ) {} // at least we tried...
+		}
+		
 		if ( !deleted )
 		{
 			log.warning( "Unable to delete clean logical log[" +  
@@ -579,5 +613,31 @@ public class XaLogicalLog
 			return intValue;
 		}
 		return -1;
+	}
+	
+	// workaround suggested at sun bug database
+	// see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4724038
+	private void clean( final MappedByteBuffer buffer ) throws Exception 
+	{
+		AccessController.doPrivileged( new PrivilegedAction<Object>() 
+		{
+			public Object run() 
+			{
+				try 
+				{
+					Method getCleanerMethod = buffer.getClass().getMethod( 
+						"cleaner", new Class[0]);
+					getCleanerMethod.setAccessible(true);
+					sun.misc.Cleaner cleaner = (sun.misc.Cleaner)
+						getCleanerMethod.invoke( buffer, new Object[0] );
+					cleaner.clean();
+				} 
+				catch(Exception e) 
+				{
+					e.printStackTrace();
+				}
+				return null;
+			}
+		} );
 	}	
 }
