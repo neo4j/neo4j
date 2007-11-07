@@ -26,6 +26,11 @@ public class LogBuffer
 			Xid.MAXBQUALSIZE * 10 );
 	}
 	
+	MappedByteBuffer getMappedBuffer()
+	{
+		return mappedBuffer;
+	}
+	
 	private void getNewMappedBuffer()
 	{
 		try
