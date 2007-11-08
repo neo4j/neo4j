@@ -1,6 +1,8 @@
 package org.neo4j.impl.shell.apps;
 
 import java.rmi.RemoteException;
+import java.util.regex.Pattern;
+
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
@@ -26,6 +28,8 @@ public class Ls extends NeoApp
 			"Lists properties" ) );
 		this.addValueType( "r", new OptionContext( OptionValueType.NONE,
 			"Lists relationships" ) );
+		this.addValueType( "f", new OptionContext( OptionValueType.MUST,
+			"Filters property keys/relationship types (regexp string)" ) );
 	}
 	
 	@Override
@@ -45,6 +49,7 @@ public class Ls extends NeoApp
 			verbose || parser.options().containsKey( "p" );
 		boolean displayRelationships =
 			verbose || parser.options().containsKey( "r" );
+		String filter = parser.options().get( "f" );
 		if ( !displayProperties && !displayRelationships )
 		{
 			displayProperties = true;
@@ -63,22 +68,31 @@ public class Ls extends NeoApp
 		}
 		
 		this.displayProperties( node, out, displayProperties, displayValues,
-			verbose );
-		this.displayRelationships( parser, node, out, displayRelationships );
+			verbose, filter );
+		this.displayRelationships( parser, node, out, displayRelationships,
+			filter );
 		return null;
 	}
 	
 	private void displayProperties( Node node, Output out,
-		boolean displayProperties, boolean displayValues, boolean verbose)
-		throws ShellException, RemoteException
+		boolean displayProperties, boolean displayValues, boolean verbose,
+		String filter ) throws ShellException, RemoteException
 	{
 		if ( !displayProperties )
 		{
 			return;
 		}
 		int longestKey = this.findLongestKey( node );
+		Pattern propertyKeyPattern = filter == null ? null :
+			Pattern.compile( filter );
 		for ( String key : node.getPropertyKeys() )
 		{
+			if ( propertyKeyPattern != null &&
+				!propertyKeyPattern.matcher( key ).matches() )
+			{
+				continue;
+			}
+			
 			out.print( "*" + key );
 			if ( displayValues )
 			{
@@ -95,8 +109,8 @@ public class Ls extends NeoApp
 	}
 	
 	private void displayRelationships( AppCommandParser parser, Node node,
-		Output out, boolean displayRelationships ) throws ShellException,
-		RemoteException
+		Output out, boolean displayRelationships, String filter )
+		throws ShellException, RemoteException
 	{
 		if ( !displayRelationships )
 		{
@@ -108,11 +122,18 @@ public class Ls extends NeoApp
 			direction == Direction.OUTGOING;
 		boolean displayIncoming = directionFilter == null ||
 			direction == Direction.INCOMING;
+		Pattern filterPattern = filter == null ? null :
+			Pattern.compile( filter );
 		if ( displayOutgoing )
 		{
 			for ( Relationship rel :
 				node.getRelationships( Direction.OUTGOING ) )
 			{
+				if ( filterPattern != null && !filterPattern.matcher(
+					rel.getType().name() ).matches() )
+				{
+					continue;
+				}
 				out.println(
 					getDisplayNameForCurrentNode() +
 					" --[" + rel.getType() + ", " + rel.getId() + "]--> " +
@@ -124,6 +145,11 @@ public class Ls extends NeoApp
 			for ( Relationship rel :
 				node.getRelationships( Direction.INCOMING ) )
 			{
+				if ( filterPattern != null && !filterPattern.matcher(
+					rel.getType().name() ).matches() )
+				{
+					continue;
+				}
 				out.println(
 					getDisplayNameForCurrentNode() +
 					" <--[" + rel.getType() + ", " + rel.getId() + "]-- " +

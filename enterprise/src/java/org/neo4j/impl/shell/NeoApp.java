@@ -93,7 +93,7 @@ public abstract class NeoApp extends AbstractApp
 		if ( result == null )
 		{
 			throw new ShellException( "Unknown direction " + direction +
-				" (may be OUTGOING, INCOMING, o, i)" );
+				" (may be " + directionAlternatives() + ")" );
 		}
 		return result;
 	}
@@ -125,7 +125,7 @@ public abstract class NeoApp extends AbstractApp
 	
 	protected String directionAlternatives()
 	{
-		return "[OUTGOING], INCOMING, o, i";
+		return "OUTGOING, INCOMING, o, i";
 	}
 	
 	protected abstract String exec( AppCommandParser parser, Session session,
