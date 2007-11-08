@@ -11,7 +11,7 @@ public class Export extends NeoApp
 	@Override
 	public String getDescription()
 	{
-		return "Sets an environmentt variable. Usage: export <key>=<value>";
+		return "Sets an environment variable. Usage: export <key>=<value>";
 	}
 
 	@Override
