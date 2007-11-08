@@ -250,6 +250,10 @@ public class NodeManager
 	 */
 	public Node getNodeById( int nodeId ) throws NotFoundException
 	{
+		if ( nodeId < 0 )
+		{
+			throw new IllegalArgumentException( "Negative node id " + nodeId );
+		}
 		Node node = nodeCache.get( nodeId );
 		if ( node != null )
 		{
