@@ -2,6 +2,7 @@ package org.neo4j.api.core;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.neo4j.impl.core.NodeManager;
@@ -159,7 +160,8 @@ public class EmbeddedNeo
 	 * be bound in the RMI registry, defaults to <code>neoshell</code>
 	 * </ul>
 	 * @param initialProperties a set of properties that will be used to
-	 * configure the remote shell
+	 * configure the remote shell, or <code>null</code> if the default
+     * properties should be used
 	 * @return <code>true</code> if the shell has been enabled,
 	 * <code>false</code> otherwise (<code>false</code> usually indicates that
 	 * the <code>shell</code> jar dependency is not on the classpath)
@@ -173,6 +175,10 @@ public class EmbeddedNeo
 	{
 		try
 		{
+            if ( initialProperties == null )
+            {
+                initialProperties = Collections.emptyMap();
+            }
 			if ( shellDependencyAvailable() )
 			{
 				this.shellServer = new NeoShellServer( this );
