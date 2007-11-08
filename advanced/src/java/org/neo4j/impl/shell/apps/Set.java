@@ -12,7 +12,7 @@ public class Set extends NeoApp
 	public Set()
 	{
 		this.addValueType( "t", new OptionContext( OptionValueType.MUST,
-			"Value type, [String], Integer, Long, Byte a.s.o." ) );
+			"Value type, String, Integer, Long, Byte a.s.o." ) );
 	}
 
 	@Override
