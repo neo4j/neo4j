@@ -158,6 +158,7 @@ public interface Node
 	 * through the given key, <code>false</code> otherwise
 	 */
 	public boolean hasProperty( String key );
+	
 	/**
 	 * Returns the property value associated with the given key. The value
 	 * is of one of the valid property types, i.e. a Java primitive, a
