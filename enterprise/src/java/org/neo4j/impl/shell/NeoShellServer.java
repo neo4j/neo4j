@@ -17,7 +17,7 @@ public class NeoShellServer extends SimpleAppServer
 		super();
 		this.addPackage( Ls.class.getPackage().getName() );
 		this.neo = neo;
-		this.setProperty( AbstractClient.PROMPT_KEY, "neo-sh$[0] " );
+		this.setProperty( AbstractClient.PROMPT_KEY, "neo-sh [0] $ " );
 	}
 	
 	@Override
