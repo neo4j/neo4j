@@ -76,8 +76,8 @@ public class Cd extends NeoApp
 		}
 		
 		this.setCurrentNode( session, newNode );
-		session.set( AbstractClient.PROMPT_KEY, "neo-sh$[" + newNode.getId() + 
-			"] " );
+		session.set( AbstractClient.PROMPT_KEY, "neo-sh [" + newNode.getId() + 
+			"] $" );
 		session.set( WORKING_DIR_KEY, this.makePath( paths ) );
 		return null;
 	}

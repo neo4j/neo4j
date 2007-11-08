@@ -58,11 +58,11 @@ public class PropertyIndex
 				list.add( index );
 			}
 		}
-		if ( list != null )
+		if ( list == null )
 		{
-			return list;
+			list = Collections.emptyList();
 		}
-		return Collections.EMPTY_LIST;
+		return list;
 	}
 	
 	static void setHasAll( boolean status )
