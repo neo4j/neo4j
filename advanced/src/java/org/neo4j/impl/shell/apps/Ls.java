@@ -69,8 +69,8 @@ public class Ls extends NeoApp
 		
 		this.displayProperties( node, out, displayProperties, displayValues,
 			verbose, filter );
-		this.displayRelationships( parser, node, out, displayRelationships,
-			filter );
+		this.displayRelationships( parser, node, out, displayRelationships, 
+			verbose, filter );
 		return null;
 	}
 	
@@ -109,8 +109,8 @@ public class Ls extends NeoApp
 	}
 	
 	private void displayRelationships( AppCommandParser parser, Node node,
-		Output out, boolean displayRelationships, String filter )
-		throws ShellException, RemoteException
+		Output out, boolean displayRelationships, boolean verbose, 
+		String filter ) throws ShellException, RemoteException
 	{
 		if ( !displayRelationships )
 		{
@@ -134,10 +134,16 @@ public class Ls extends NeoApp
 				{
 					continue;
 				}
-				out.println(
-					getDisplayNameForCurrentNode() +
-					" --[" + rel.getType() + ", " + rel.getId() + "]--> " +
-					getDisplayNameForNode( rel.getEndNode() ) );
+				StringBuffer buf = new StringBuffer( 
+					getDisplayNameForCurrentNode() );
+				buf.append( " --[" ).append( rel.getType() );
+				if ( verbose )
+				{
+					buf.append( ", " ).append( rel.getId() );
+				}
+				buf.append( "]--> " );
+				buf.append( getDisplayNameForNode( rel.getEndNode() ) );
+				out.println( buf );
 			}
 		}
 		if ( displayIncoming )
@@ -150,10 +156,15 @@ public class Ls extends NeoApp
 				{
 					continue;
 				}
-				out.println(
-					getDisplayNameForCurrentNode() +
-					" <--[" + rel.getType() + ", " + rel.getId() + "]-- " +
-					getDisplayNameForNode( rel.getStartNode() ) );
+				StringBuffer buf = 
+					new StringBuffer( getDisplayNameForCurrentNode() );
+				buf.append( " <--[" ).append( rel.getType() );
+				if ( verbose )
+				{
+					buf.append( ", " ).append( rel.getId() );
+				}
+				buf.append(  "]-- " );
+				buf.append( getDisplayNameForNode( rel.getStartNode() ) );
 			}
 		}
 	}
