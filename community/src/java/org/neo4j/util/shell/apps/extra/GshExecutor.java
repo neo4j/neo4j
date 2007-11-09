@@ -72,16 +72,17 @@ public class GshExecutor
 		}
 		catch ( Exception e )
 		{
+			// Don't pass the exception on because the client most certainly
+			// doesn't have groovy in the classpath.
 			throw new ShellException( "Groovy exception: " +
-				this.findProperMessage( e ), e );
+				this.findProperMessage( e ) );
 		}
 	}
 	
 	private String findProperMessage( Throwable e )
 	{
 		String message = e.getMessage();
-		if ( ( message == null || message.length() == 0 ) &&
-			e.getCause() != null )
+		if ( e.getCause() != null )
 		{
 			message = this.findProperMessage( e.getCause() );
 		}
