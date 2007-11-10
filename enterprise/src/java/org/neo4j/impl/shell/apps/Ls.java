@@ -165,6 +165,7 @@ public class Ls extends NeoApp
 				}
 				buf.append(  "]-- " );
 				buf.append( getDisplayNameForNode( rel.getStartNode() ) );
+				out.println( buf );
 			}
 		}
 	}
