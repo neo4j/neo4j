@@ -1,6 +1,9 @@
 package org.neo4j.util.shell;
 
 import java.rmi.RemoteException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ShellLobby
 {
@@ -10,6 +13,9 @@ public class ShellLobby
 	{
 		return INSTANCE;
 	}
+	
+	private Map<Thread, RmiLocation> lastServerLookups =
+		Collections.synchronizedMap( new HashMap<Thread, RmiLocation>() );
 	
 	private ShellLobby()
 	{
@@ -36,6 +42,7 @@ public class ShellLobby
 	{
 		try
 		{
+			lastServerLookups.put( Thread.currentThread(), location );
 			return ( ShellServer ) location.getBoundObject();
 		}
 		catch ( RemoteException e )
@@ -72,5 +79,10 @@ public class ShellLobby
 			new SameJvmClient( server ) : new RemoteClient( server );
 		client.grabPrompt();
 		return client;
+	}
+	
+	RmiLocation getLastServerLookup()
+	{
+		return lastServerLookups.get( Thread.currentThread() );
 	}
 }

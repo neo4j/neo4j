@@ -2,6 +2,7 @@ package org.neo4j.util.shell;
 
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
 public class RemoteClient extends AbstractClient
@@ -24,6 +25,35 @@ public class RemoteClient extends AbstractClient
 
 	public ShellServer getServer()
 	{
+		// Poke the server by calling a method, f.ex. the welcome() method.
+		// If the connection is lost then try to reconnect, using the last
+		// server lookup address.
+		try
+		{
+			this.server.welcome();
+		}
+		catch ( RemoteException e )
+		{
+			RmiLocation lastLookup =
+				ShellLobby.getInstance().getLastServerLookup();
+			if ( lastLookup != null )
+			{
+				try
+				{
+					this.server = ShellLobby.getInstance().findRemoteServer(
+						lastLookup );
+					getOutput().println( "[Reconnected to server]" );
+				}
+				catch ( ShellException ee )
+				{
+					// Ok
+				}
+				catch ( RemoteException ee )
+				{
+					// Ok
+				}
+			}
+		}
 		return this.server;
 	}
 
