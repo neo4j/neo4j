@@ -1,5 +1,6 @@
 package org.neo4j.util.shell.apps;
 
+import java.io.Serializable;
 import java.rmi.RemoteException;
 
 import org.neo4j.util.shell.AbstractApp;
@@ -23,7 +24,8 @@ public class Env extends AbstractApp
 		{
 			for ( String key : session.keys() )
 			{
-				out.println( key + "=" + session.get( key ) );
+				Serializable value = session.get( key );
+				out.println( key + "=" + ( value == null ? "" : value ) );
 			}
 			return null;
 		}
