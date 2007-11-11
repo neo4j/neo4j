@@ -11,7 +11,8 @@ public class Rm extends NeoApp
 	@Override
 	public String getDescription()
 	{
-		return "Removes a property";
+		return "Removes a property from the current node. " +
+			"Usage: rm <key>";
 	}
 
 	@Override
