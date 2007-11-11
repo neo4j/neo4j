@@ -19,6 +19,11 @@ public abstract class AbstractAppServer extends AbstractServer
 	{
 		this.packages.add( pkg );
 	}
+	
+	public Set<String> getPackages()
+	{
+		return new HashSet<String>( packages );
+	}
 
 	public App findApp( String command ) throws RemoteException
 	{
