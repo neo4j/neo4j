@@ -6,13 +6,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 import org.neo4j.api.core.EmbeddedNeo;
+import org.neo4j.api.core.NeoService;
 import org.neo4j.api.core.RelationshipType;
 
 public class StandaloneWithShell
 {
 	private static Logger log = Logger.getLogger(
 		StandaloneWithShell.class.getName() );	
-	private EmbeddedNeo embeddedNeo;
+	private NeoService embeddedNeo;
 	private AtomicBoolean shutdownInitiated = new AtomicBoolean( false );
 	
 	private static enum RelTypes implements RelationshipType
@@ -20,7 +21,7 @@ public class StandaloneWithShell
 		A_RELATIONSHIP_TYPE,
 	}
 	
-	private EmbeddedNeo getNeo()
+	private NeoService getNeo()
 	{
 		return this.embeddedNeo;
 	}

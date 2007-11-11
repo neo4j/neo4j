@@ -1,7 +1,7 @@
 package org.neo4j.impl.shell;
 
 import java.rmi.RemoteException;
-import org.neo4j.api.core.EmbeddedNeo;
+import org.neo4j.api.core.NeoService;
 import org.neo4j.impl.shell.apps.Ls;
 import org.neo4j.util.shell.AbstractClient;
 import org.neo4j.util.shell.SimpleAppServer;
@@ -9,9 +9,9 @@ import org.neo4j.util.shell.apps.Help;
 
 public class NeoShellServer extends SimpleAppServer
 {
-	private EmbeddedNeo neo;
+	private NeoService neo;
 	
-	public NeoShellServer( EmbeddedNeo neo ) 
+	public NeoShellServer( NeoService neo ) 
 		throws RemoteException
 	{
 		super();
@@ -27,7 +27,7 @@ public class NeoShellServer extends SimpleAppServer
 			Help.getHelpString( this );
 	}
 	
-	public EmbeddedNeo getNeo()
+	public NeoService getNeo()
 	{
 		return this.neo;
 	}	

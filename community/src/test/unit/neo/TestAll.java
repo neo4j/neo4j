@@ -4,6 +4,7 @@ import junit.extensions.TestSetup;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import org.neo4j.api.core.EmbeddedNeo;
+import org.neo4j.api.core.NeoService;
 
 public class TestAll extends TestSuite
 {
@@ -27,7 +28,7 @@ public class TestAll extends TestSuite
 		return suite;
 	}
 	
-	private static EmbeddedNeo neo;
+	private static NeoService neo;
 	
 	private static void startupNeo()
 	{

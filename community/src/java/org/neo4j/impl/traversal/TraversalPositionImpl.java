@@ -57,6 +57,11 @@ class TraversalPositionImpl implements TraversalPosition
 	{
 		return this.returnedNodesCount;
 	}
+
+	public boolean notStartNode()
+    {
+	    return this.depth() > 0;
+    }
 	
 	boolean isValid()
 	{

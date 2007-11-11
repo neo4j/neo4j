@@ -2,6 +2,7 @@ package org.neo4j.impl.shell;
 
 import java.rmi.RemoteException;
 import org.neo4j.api.core.EmbeddedNeo;
+import org.neo4j.api.core.NeoService;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.util.shell.AbstractServer;
 import org.neo4j.util.shell.ShellException;
@@ -24,7 +25,7 @@ public class NeoShellLobby
 		Class<? extends RelationshipType> relTypes, String neoPath )
 		throws ShellException
 	{
-		final EmbeddedNeo neo = new EmbeddedNeo( relTypes, neoPath );
+		final NeoService neo = new EmbeddedNeo( relTypes, neoPath );
 		try
 		{
 			final ShellServer server = new NeoShellServer( neo ); //, relTypes );
