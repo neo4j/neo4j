@@ -1,6 +1,7 @@
 package org.neo4j.impl;
 
 import org.neo4j.api.core.EmbeddedNeo;
+import org.neo4j.api.core.NeoService;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.transaction.LockManager;
@@ -11,7 +12,7 @@ public class Main
 	{
 	}
 	
-	private static EmbeddedNeo neo;
+	private static NeoService neo;
 	
 	private static void startupNeo()
 	{

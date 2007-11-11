@@ -46,7 +46,7 @@ public interface ReturnableEvaluator
 	{
 		public boolean isReturnableNode( TraversalPosition currentPosition )
 		{
-			return currentPosition.depth() != 0;
+			return currentPosition.notStartNode();
 		}
 	};
 	
@@ -54,8 +54,8 @@ public interface ReturnableEvaluator
 	 * Method invoked by traverser to see if current position is a returnable 
 	 * node. 
 	 * 
-	 * @param currentPosition The traversal position
+	 * @param currentPos The traversal position
 	 * @return True if current position is a returnable node
 	 */
-	public boolean isReturnableNode( TraversalPosition currentPosition );
+	public boolean isReturnableNode( TraversalPosition currentPos );
 }

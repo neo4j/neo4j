@@ -13,7 +13,7 @@ import org.neo4j.impl.shell.NeoShellServer;
  * and get nodes and define valid relationship types. This class is typically
  * used in the outer loop in a Neo-enabled application, for example as follows:
  * <pre><code>
- * EmbeddedNeo neo = new EmbeddedNeo( MyRelationshipTypes.class, "var/neo", true );
+ * NeoService neo = new EmbeddedNeo( MyRelationshipTypes.class, "var/neo" );
  * // ... use neo
  * neo.shutdown();
  * </code></pre>
@@ -28,7 +28,7 @@ import org.neo4j.impl.shell.NeoShellServer;
  * that read or write to the node space must be invoked in a {@link Transaction
  * transactional context}.
  */
-public class EmbeddedNeo
+public class EmbeddedNeo implements NeoService
 {
 	private static Logger log = Logger.getLogger( EmbeddedNeo.class.getName() );
 	private NeoShellServer shellServer;
@@ -90,41 +90,34 @@ public class EmbeddedNeo
 		return this.shellServer;
 	}
 	
-	/**
-	 * Creates a {@link Node}.
-	 * @return the created node.
-	 */
+	/* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#createNode()
+     */
 	public Node createNode()
 	{
 		return NodeManager.getManager().createNode();
 	}
 	
-	/**
-	 * Looks up a node by id.
-	 * @param id the id of the node 
-	 * @return the node with id <code>id</code> if found
-	 * @throws RuntimeException if not found
-	 */
+	/* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#getNodeById(long)
+     */
 	public Node getNodeById( long id )
 	{
 		return NodeManager.getManager().getNodeById( (int) id );
 	}
 	
-	/**
-	 * Returns the reference node.
-	 * @return the reference node
-	 * @throws RuntimeException if unable to get the reference node
-	 */
+	/* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#getReferenceNode()
+     */
 	// TODO: Explain this concept
 	public Node getReferenceNode()
 	{
 		return NodeManager.getManager().getReferenceNode();
 	}
 	
-	/**
-	 * Shuts down Neo. After this method has been invoked, it's invalid to
-	 * invoke any methods in the Neo API.
-	 */
+	/* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#shutdown()
+     */
 	public void shutdown()
 	{
 		if ( getShellServer() != null )
@@ -141,35 +134,17 @@ public class EmbeddedNeo
 		NeoJvmInstance.shutdown();
 	}
 	
-	/**
-	 * Enables remote shell access to this Neo instance, if the Neo4j
-	 * <code>shell</code> project is available on the classpath. This will
-	 * publish a shell access interface on an RMI registry on localhost (with
-	 * configurable port and RMI binding name). It can be accessed by a
-	 * client that implements <code>org.neo4j.util.shell.ShellClient</code>
-	 * from the Neo4J <code>shell</code> project. Typically, the
-	 * <code>neoshell</code> binary package is used (see
-	 * <a href="http://neo4j.org/download">neo4j.org/download</a>).
-	 * <p>
-	 * The shell is parameterized by a map of properties passed in to this
-	 * method. Currently, two properties are used:
-	 * <ul>
-	 *	<li><code>port</code>, an {@link Integer} describing the port of the RMI
-	 * registry where the Neo shell will be bound, defaults to <code>1337</code>
-	 *	<li><code>name</code>, the {@link String} under which the Neo shell will
-	 * be bound in the RMI registry, defaults to <code>neoshell</code>
-	 * </ul>
-	 * @param initialProperties a set of properties that will be used to
-	 * configure the remote shell, or <code>null</code> if the default
-     * properties should be used
-	 * @return <code>true</code> if the shell has been enabled,
-	 * <code>false</code> otherwise (<code>false</code> usually indicates that
-	 * the <code>shell</code> jar dependency is not on the classpath)
-	 * @throws ClassCastException if the shell library is available, but one
-	 * (or more) of the configuration properties have an unexpected type
-	 * @throws IllegalStateException if the shell library is available, but
-	 * the remote shell can't be enabled anyway
-	 */
+	/* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#enableRemoteShell()
+     */
+	public boolean enableRemoteShell()
+	{
+		return this.enableRemoteShell( null );
+	}
+	
+	/* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#enableRemoteShell(java.util.Map)
+     */
 	public boolean enableRemoteShell( Map<String, Serializable>
 		initialProperties )
 	{
@@ -217,38 +192,59 @@ public class EmbeddedNeo
 		}
 	}
 
+	/* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#registerEnumRelationshipTypes(java.lang.Class)
+     */
 	public void registerEnumRelationshipTypes( 
 		Class<? extends RelationshipType> relationshipTypes )
 	{
 		NeoJvmInstance.addEnumRelationshipTypes( relationshipTypes );
 	}
 
+    /* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#getRelationshipTypes()
+     */
     public Iterable<RelationshipType> getRelationshipTypes()
     {
     	return NeoJvmInstance.getRelationshipTypes();
     }
     
+    /* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#getRelationshipType(java.lang.String)
+     */
     public RelationshipType getRelationshipType( String name )
     {
 		return NeoJvmInstance.getRelationshipTypeByName( name );
     }
     
+    /* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#hasRelationshipType(java.lang.String)
+     */
     public boolean hasRelationshipType( String name )
     {
     	return NeoJvmInstance.hasRelationshipType( name );
     	
     }
      
+    /* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#createAndRegisterRelationshipType(java.lang.String)
+     */
     public RelationshipType createAndRegisterRelationshipType( String name )
     {
     	return NeoJvmInstance.registerRelationshipType( name, true );
     }
     
+    /* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#registerRelationshipType(java.lang.String)
+     */
     public RelationshipType registerRelationshipType( String name )
     {
     	return NeoJvmInstance.registerRelationshipType( name, false );
     }
     
+    /* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#registerRelationshipTypes(java.lang.Iterable)
+     */
     public void registerRelationshipTypes( Iterable<RelationshipType> types )
     {
     	for ( RelationshipType type : types )
@@ -257,6 +253,9 @@ public class EmbeddedNeo
     	}
     }
     
+    /* (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#registerRelationshipTypes(org.neo4j.api.core.RelationshipType[])
+     */
     public void registerRelationshipTypes( RelationshipType[] types )
     {
        	for ( RelationshipType type : types )

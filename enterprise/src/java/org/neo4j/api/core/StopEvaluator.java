@@ -58,8 +58,8 @@ public interface StopEvaluator
 	/**
 	 * Method invoked by traverser to see if current position is a stop node. 
 	 * 
-	 * @param currentPosition The traversal position
+	 * @param currentPos The traversal position
 	 * @return True if current position is a stop node
 	 */
-	public boolean isStopNode( TraversalPosition currentPosition );
+	public boolean isStopNode( TraversalPosition currentPos );
 }

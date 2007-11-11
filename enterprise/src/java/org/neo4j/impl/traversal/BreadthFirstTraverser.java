@@ -11,10 +11,10 @@ import org.neo4j.api.core.StopEvaluator;
  * means that it visits all the end-nodes of the current node's relationships
  * before it visits the end-nodes of those nodes' relationships. This class
  * is package private: any documentation interesting to a client programmer
- * should reside in {@link Traverser}. For some implementation documentation,
+ * should reside in {@link InternalTraverser}. For some implementation documentation,
  * see {@link AbstractTraverser}.
  *
- * @see Traverser
+ * @see InternalTraverser
  * @see AbstractTraverser
  * @see DepthFirstTraverser
  */

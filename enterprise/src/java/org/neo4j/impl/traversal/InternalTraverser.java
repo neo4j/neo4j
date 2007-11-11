@@ -20,7 +20,7 @@ import org.neo4j.api.core.Node;
  * in a concurrent environment, they are strongly adviced to synchronize
  * externally.
  */
-public interface Traverser extends org.neo4j.api.core.Traverser
+public interface InternalTraverser extends org.neo4j.api.core.Traverser
 {
 	/**
 	 * Returns the next node in the traversal.
@@ -78,5 +78,5 @@ public interface Traverser extends org.neo4j.api.core.Traverser
 	 * @param nsi encapsulates how the nodes should be sorted
 	 * @return a sorted traverser for all remaining nodes
 	 */
-	public Traverser sort( NodeSortInfo<Node> nsi );
+	public InternalTraverser sort( NodeSortInfo<Node> nsi );
 }

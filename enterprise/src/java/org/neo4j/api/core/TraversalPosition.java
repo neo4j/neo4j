@@ -17,12 +17,14 @@ public interface TraversalPosition
 	 * 
 	 * @return The previous node
 	 */
+	// null if start node
 	public Node previousNode();
 	/**
 	 * Return the last relationship traversed, may be null.
 	 * 
 	 * @return The last relationship traversed
 	 */
+	// null if start node
 	public Relationship lastRelationshipTraversed();
 	
 	/**
@@ -33,9 +35,52 @@ public interface TraversalPosition
 	public int depth();
 	
 	/**
-	 * Return the number of nodes returned by traverser so far.
+	 * Returns the number of nodes returned by traverser so far.
 	 * 
 	 * @return The number of returned nodes.
 	 */
 	public int returnedNodesCount();
+	
+	/**
+	 * Returns <code>true</code> if the current position is anywhere except on
+	 * the start node, <code>false</code> if it is on the start node. This is
+	 * useful because code in {@link StopEvaluator the}
+	 * {@link ReturnableEvaluator evaluators} usually have to treat the edge
+	 * case of the start node separately and using this method makes that code a
+	 * lot cleaner. For example, old code would be:
+	 * 
+	 * <pre>
+	 * <code>
+	 * public boolean isReturnableNode( TraversalPosition currentPos )
+	 * {
+	 * 	if ( currentPos.lastRelationshipTraversed() == null )
+	 * 	{
+	 * 		return false;
+	 * 	}
+	 * 	else
+	 * 	{
+	 * 		return currentPos.lastRelationshipTraversed().isType(
+	 * 		    MyRelationshipTypes.SOME_REL );
+	 * 	}
+	 * }
+	 * </code>
+	 * </pre>
+	 * 
+	 * But using <code>notStartNode()</code>:
+	 * 
+	 * <pre>
+	 * <code>
+	 * public boolean isReturnableNode( TraversalPosition currentPos )
+	 * {
+	 * 	return currentPos.notStartNode()
+	 * 	    &amp;&amp; currentPos.lastRelationshipTraversed().isType(
+	 * 	        MyRelationshipTypes.SOME_REL );
+	 * }
+	 * </code>
+	 * </pre>
+	 * 
+	 * @return <code>true</code> if the traversal is not currently positioned
+	 * on the start node, <code>false</code> if it is
+	 */
+	public boolean notStartNode();
 }
