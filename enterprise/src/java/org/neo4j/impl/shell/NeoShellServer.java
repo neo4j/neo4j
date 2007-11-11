@@ -15,6 +15,7 @@ public class NeoShellServer extends SimpleAppServer
 		throws RemoteException
 	{
 		super();
+		this.addExtraPackage();
 		this.addPackage( Ls.class.getPackage().getName() );
 		this.neo = neo;
 		this.setProperty( AbstractClient.PROMPT_KEY, "neo-sh [0] $ " );
