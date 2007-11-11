@@ -118,24 +118,25 @@ public class GshExecutor
 	{
 		try
 		{
-			String env = ( String ) session.get( PATH_STRING );
 			List<String> list = new ArrayList<String>();
-			if ( env != null && env.trim().length() > 0 )
-			{
-				for ( String path : env.split( ":" ) )
-				{
-					list.add( path );
-				}
-			}
-			// Some default paths
-			list.add( "." );
-			list.add( "script" );
-			list.add( "src/script" );
+			collectPaths( list, ( String ) session.get( PATH_STRING ) );
+			collectPaths( list, Gsh.DEFAULT_PATHS );
 			return list;
 		}
 		catch ( RemoteException e )
 		{
 			throw new ShellException( e );
+		}
+	}
+	
+	private void collectPaths( List<String> paths, String pathString )
+	{
+		if ( pathString != null && pathString.trim().length() > 0 )
+		{
+			for ( String path : pathString.split( ":" ) )
+			{
+				paths.add( path );
+			}
 		}
 	}
 	

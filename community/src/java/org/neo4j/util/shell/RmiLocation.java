@@ -68,7 +68,7 @@ public class RmiLocation
 		return new RmiLocation( host, port, name );
 	}
 	
-	public static RmiLocation location( Map data )
+	public static RmiLocation location( Map<String, Object> data )
 	{
 		String host = ( String ) data.get( "host" );
 		Integer port = ( Integer ) data.get( "port" );

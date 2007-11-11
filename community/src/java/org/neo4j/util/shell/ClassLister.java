@@ -11,8 +11,15 @@ import java.util.StringTokenizer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+/**
+ * Well, since Class#getExtendingClasses doesn't exist, use this instead.
+ * @author mattias
+ *
+ */
 public class ClassLister
 {
+	private static final String CLASS_NAME_ENDING = ".class";
+	
 	public static <T> Collection<Class<? extends T>>
 		listClassesExtendingOrImplementing( Class<T> superClass,
 		Collection<String> lookInThesePackages )
@@ -44,7 +51,8 @@ public class ClassLister
 		{
 			if ( directory.isDirectory() )
 			{
-				// TODO
+				collectFromDirectory( classes, superClass, lookInThesePackages,
+					"", directory );
 			}
 			else
 			{
@@ -66,16 +74,81 @@ public class ClassLister
 		}
 	}
 	
+	private static <T> void collectFromDirectory(
+		Collection<Class<? extends T>> classes, Class<T> superClass,
+		Collection<String> lookInThesePackages, String prefix, File directory )
+	{
+		// Should we even bother walking through these directories?
+		// Check with lookInThesePackages if there's a package matching this.
+		boolean botherToBrowseFurtherDown = false;
+		if ( lookInThesePackages != null )
+		{
+			for ( String packageName : lookInThesePackages )
+			{
+				if ( packageName.startsWith( prefix ) )
+				{
+					botherToBrowseFurtherDown = true;
+					break;
+				}
+			}
+		}
+		else
+		{
+			botherToBrowseFurtherDown = true;
+		}
+		if ( !botherToBrowseFurtherDown )
+		{
+			return;
+		}
+		
+		File[] files = directory.listFiles();
+		if ( files == null )
+		{
+			return;
+		}
+		
+		for ( File file : files )
+		{
+			if ( file.isDirectory() )
+			{
+				collectFromDirectory( classes, superClass, lookInThesePackages,
+					addToPrefix( prefix, file.getName() ), file );
+			}
+			else
+			{
+				String className = addToPrefix( prefix, file.getName() );
+				className = trimFromClassEnding( className );
+				tryCollectClass( classes, superClass, lookInThesePackages,
+					className );
+			}
+		}
+	}
+	
+	private static String addToPrefix( String prefix, String toAdd )
+	{
+		prefix = prefix == null ? "" : prefix;
+		if ( prefix.length() > 0 )
+		{
+			prefix += ".";
+		}
+		prefix += toAdd;
+		return prefix;
+	}
+	
+	private static String trimFromClassEnding( String className )
+	{
+		if ( className.endsWith( CLASS_NAME_ENDING ) )
+		{
+			className = className.substring( 0,
+				className.length() - CLASS_NAME_ENDING.length() );
+		}
+		return className;
+	}
+	
 	private static String fixJarEntryClassName( String entryName )
 	{
 		entryName = entryName.replace( File.separatorChar, '.' );
-		String ending = ".class";
-		if ( entryName.endsWith( ending ) )
-		{
-			entryName = entryName.substring( 0,
-				entryName.length() - ending.length() );
-		}
-		return entryName;
+		return trimFromClassEnding( entryName );
 	}
 	
 	private static <T> void tryCollectClass(

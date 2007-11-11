@@ -186,7 +186,7 @@ public class AppCommandParser
 		{
 			string = string.trim();
 		}
-		ArrayList < String > result = new ArrayList();
+		ArrayList<String> result = new ArrayList<String>();
 		string = string.trim();
 		boolean inside = string.startsWith( "\"" );
 		StringTokenizer quoteTokenizer = new StringTokenizer( string, "\"" );

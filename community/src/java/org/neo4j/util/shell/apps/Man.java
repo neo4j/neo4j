@@ -25,8 +25,10 @@ public class Man extends AbstractApp
 			out.println( "" );
 			out.println( this.fixDesciption( app.getDescription() ) );
 			println( out, "" );
+			boolean hasOptions = false;
 			for ( String option : app.getAvailableOptions() )
 			{
+				hasOptions = true;
 				String description = this.fixDesciption(
 					app.getDescription( option ) );
 				OptionValueType type = app.getOptionValueType( option );
@@ -35,7 +37,10 @@ public class Man extends AbstractApp
 				( type == OptionValueType.MAY ? "(may have value)" : "" ) +
 				( type == OptionValueType.MUST ? "(must have value)" : "" ) );
 			}
-			println( out, "" );
+			if ( hasOptions )
+			{
+				println( out, "" );
+			}
 		}
 		catch ( RemoteException e )
 		{
@@ -46,7 +51,11 @@ public class Man extends AbstractApp
 	
 	private String fixDesciption( String description )
 	{
-		if ( description != null && !description.endsWith( "." ) )
+		if ( description == null )
+		{
+			description = "";
+		}
+		else if ( !description.endsWith( "." ) )
 		{
 			description = description + ".";
 		}
