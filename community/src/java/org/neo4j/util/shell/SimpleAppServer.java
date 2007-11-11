@@ -2,6 +2,7 @@ package org.neo4j.util.shell;
 
 import java.rmi.RemoteException;
 import org.neo4j.util.shell.apps.Man;
+import org.neo4j.util.shell.apps.extra.Gsh;
 
 public class SimpleAppServer extends AbstractAppServer
 {
@@ -9,6 +10,11 @@ public class SimpleAppServer extends AbstractAppServer
 	{
 		super();
 		this.addPackage( Man.class.getPackage().getName() );
+	}
+	
+	protected void addExtraPackage()
+	{
+		this.addPackage( Gsh.class.getPackage().getName() );
 	}
 	
 	private App findBuiltInApp( String command )
