@@ -1218,15 +1218,34 @@ class NodeImpl implements Node, Comparable<Node>
 		ReturnableEvaluator returnableEvaluator, 
 		Object... relationshipTypesAndDirections )
 	{
+		int length = relationshipTypesAndDirections.length;
+		if ( (length % 2) != 0 || length == 0 )
+		{
+			throw new IllegalArgumentException( "Variable argument should " + 
+				" consist of [RelationshipType,Direction] pairs" ); 
+		}
 		int elements = relationshipTypesAndDirections.length / 2; 
 		RelationshipType[] types = new RelationshipType[ elements ];
 		Direction[] dirs = new Direction[ elements ];
 		int j = 0;
 		for ( int i = 0; i < elements; i++ )
 		{
-			types[i] = ( RelationshipType ) 
-				relationshipTypesAndDirections[j++];
-			dirs[i] = ( Direction ) relationshipTypesAndDirections[j++];
+			Object relType = relationshipTypesAndDirections[j++];
+			if ( !(relType instanceof RelationshipType) )
+			{
+				throw new IllegalArgumentException( 
+					"Expected RelationshipType at var args pos " + (j - 1) + 
+					", found " + relType );
+			}
+			types[i] = ( RelationshipType ) relType;
+			Object direction = relationshipTypesAndDirections[j++];
+			if ( !(direction instanceof Direction) )
+			{
+				throw new IllegalArgumentException( 
+					"Expected Direction at var args pos " + (j - 1) + 
+					", found " + direction );
+			}
+			dirs[i] = ( Direction ) direction;
 		}
 		return travFactory.createTraverser( traversalOrder, this, types, dirs, 
 			stopEvaluator, returnableEvaluator );
