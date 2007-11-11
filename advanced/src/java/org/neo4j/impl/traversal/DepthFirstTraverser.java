@@ -11,10 +11,10 @@ import org.neo4j.api.core.StopEvaluator;
  * that it fully visits the end-node of the first relationship before it visits
  * the end-nodes of the second and subsequent relationships. This class is
  * package private: any documentation interesting to a client programmer should
- * reside in {@link Traverser}. For some implementation documentation, see
+ * reside in {@link InternalTraverser}. For some implementation documentation, see
  * {@link AbstractTraverser}.
  *
- * @see Traverser
+ * @see InternalTraverser
  * @see AbstractTraverser
  * @see BreadthFirstTraverser
  */

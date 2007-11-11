@@ -32,7 +32,7 @@ import java.util.Comparator;
  * 	}
  * </PRE></CODE>
  * <p>
- * @see Traverser
+ * @see InternalTraverser
  * @see java.util.Comparator
  * @see java.util.Collections
  */
