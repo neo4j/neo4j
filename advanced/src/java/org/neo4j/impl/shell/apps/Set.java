@@ -18,12 +18,12 @@ public class Set extends NeoApp
 	@Override
 	public String getDescription()
 	{
-		return "Sets a property. Usage: set <key> <value>";
+		return "Sets a property on the current node. Usage: set <key> <value>";
 	}
 
 	@Override
-	protected String exec( AppCommandParser parser, Session session, Output out )
-		throws ShellException
+	protected String exec( AppCommandParser parser, Session session,
+		Output out ) throws ShellException
 	{
 		String key = parser.arguments().get( 0 );
 		
