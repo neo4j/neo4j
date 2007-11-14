@@ -21,14 +21,14 @@ public abstract class NeoApp extends AbstractApp
 {
 	private static final String NODE_KEY = "CURRENT_NODE";
 	
-	protected Node getCurrentNode( Session session )
+	protected static Node getCurrentNode( Session session )
 	{
-		Number id = ( Number ) this.safeGet( session, NODE_KEY );
+		Number id = ( Number ) safeGet( session, NODE_KEY );
 		Node node = null;
 		if ( id == null )
 		{
 			node = NodeManager.getManager().getReferenceNode();
-			this.setCurrentNode( session, node );
+			setCurrentNode( session, node );
 		}
 		else
 		{
@@ -37,9 +37,9 @@ public abstract class NeoApp extends AbstractApp
 		return node;
 	}
 	
-	protected void setCurrentNode( Session session, Node node )
+	protected static void setCurrentNode( Session session, Node node )
 	{
-		this.safeSet( session, NODE_KEY, node.getId() );
+		safeSet( session, NODE_KEY, node.getId() );
 	}
 	
 	private NeoShellServer getNeoServer()
