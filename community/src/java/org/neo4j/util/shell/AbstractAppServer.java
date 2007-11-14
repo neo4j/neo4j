@@ -25,7 +25,7 @@ public abstract class AbstractAppServer extends AbstractServer
 		return new HashSet<String>( packages );
 	}
 
-	public App findApp( String command ) throws RemoteException
+	public App findApp( String command )
 	{
 		for ( String pkg : this.packages )
 		{
@@ -46,7 +46,7 @@ public abstract class AbstractAppServer extends AbstractServer
 	}
 
 	public String interpretLine( String line, Session session, Output out )
-		throws ShellException, RemoteException
+		throws ShellException
 	{
 		if ( line == null || line.trim().length() == 0 )
 		{

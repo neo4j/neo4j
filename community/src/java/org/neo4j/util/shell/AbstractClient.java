@@ -1,5 +1,6 @@
 package org.neo4j.util.shell;
 
+import java.io.Serializable;
 import java.rmi.RemoteException;
 
 public abstract class AbstractClient implements ShellClient
@@ -16,8 +17,8 @@ public abstract class AbstractClient implements ShellClient
 		{
 			try
 			{
-				this.console.format(
-					( String ) this.session().get( PROMPT_KEY ) );
+				this.console.format( ( String )
+					getSessionVariable( PROMPT_KEY, null, true ) );
 				String line = this.readLine();
 				String result = this.getServer().interpretLine(
 					line, this.session(), this.getOutput() );
@@ -72,14 +73,55 @@ public abstract class AbstractClient implements ShellClient
 	{
 		try
 		{
-			if ( this.session().get( PROMPT_KEY ) == null )
-			{
-				String fromServer =
-					( String ) this.getServer().getProperty( PROMPT_KEY );
-				this.session().set( PROMPT_KEY, fromServer != null ?
-					fromServer : "# " );
-			}
+			possiblyGrabDefaultVariableFromServer( PROMPT_KEY, "# " );
 			this.getOutput().println( this.getServer().welcome() );
+		}
+		catch ( RemoteException e )
+		{
+			throw new RuntimeException( e );
+		}
+	}
+	
+	protected void possiblyGrabDefaultVariableFromServer( String key,
+		Serializable defaultValue )
+	{
+		try
+		{
+			if ( this.session().get( key ) == null )
+			{
+				Serializable value = this.getServer().getProperty( key );
+				if ( value == null )
+				{
+					value = defaultValue;
+				}
+				if ( value != null )
+				{
+					this.session().set( key, value );
+				}
+			}
+		}
+		catch ( RemoteException e )
+		{
+			throw new RuntimeException( e );
+		}
+	}
+	
+	protected Serializable getSessionVariable( String key,
+		Serializable defaultValue, boolean interpret )
+	{
+		try
+		{
+			Serializable result = this.session().get( key );
+			if ( result == null )
+			{
+				result = defaultValue;
+			}
+			if ( interpret && result != null )
+			{
+				result = this.getServer().interpretVariable( key, result,
+					session() );
+			}
+			return result;
 		}
 		catch ( RemoteException e )
 		{

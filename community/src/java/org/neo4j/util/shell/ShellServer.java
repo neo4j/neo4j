@@ -13,6 +13,19 @@ public interface ShellServer extends Remote
 	 */
 	String interpretLine( String line, Session session, Output out )
 		throws ShellException, RemoteException;
+	
+	/**
+	 * Typical use is the PS1 environment variable, where the server converts
+	 * "neo-sh[\W]$ " into
+	 * "neo-sh[23]$ " (where 23 is the current node id).
+	 * @param key the variable key.
+	 * @param value the variable value.
+	 * @param session the client session to get necessary values from to
+	 * help the interpretation.
+	 * @return the interpreted value.
+	 */
+	Serializable interpretVariable( String key, Serializable value,
+		Session session ) throws RemoteException;
  
 	String welcome() throws RemoteException;
 	

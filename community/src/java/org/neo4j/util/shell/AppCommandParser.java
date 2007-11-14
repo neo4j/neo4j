@@ -193,7 +193,10 @@ public class AppCommandParser
 		while ( quoteTokenizer.hasMoreTokens() )
 		{
 			String token = quoteTokenizer.nextToken();
-			token = token.trim();
+			if ( trim )
+			{
+				token = token.trim();
+			}
 			if ( token.length() == 0 )
 			{
 				// Skip it

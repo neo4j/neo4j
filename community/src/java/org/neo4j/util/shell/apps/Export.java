@@ -20,10 +20,6 @@ public class Export extends AbstractApp
 		StringBuffer buffer = new StringBuffer();
 		for ( String string : parser.arguments() )
 		{
-			if ( buffer.length() > 0 )
-			{
-				buffer.append( " " );
-			}
 			buffer.append( string );
 		}
 		
@@ -38,11 +34,11 @@ public class Export extends AbstractApp
 		String value = string.substring( index + 1 );
 		if ( value == null || value.trim().length() == 0 )
 		{
-			this.safeRemove( session, key );
+			safeRemove( session, key );
 		}
 		else
 		{
-			this.safeSet( session, key, value );
+			safeSet( session, key, value );
 		}
 		return null;
 	}

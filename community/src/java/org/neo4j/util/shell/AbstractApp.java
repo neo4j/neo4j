@@ -66,7 +66,7 @@ public abstract class AbstractApp implements App
 		}
 	}
 
-	protected Serializable safeGet( Session session, String key )
+	protected static Serializable safeGet( Session session, String key )
 	{
 		try
 		{
@@ -78,7 +78,8 @@ public abstract class AbstractApp implements App
 		}
 	}
 	
-	protected void safeSet( Session session, String key, Serializable value )
+	protected static void safeSet( Session session, String key,
+		Serializable value )
 	{
 		try
 		{
@@ -90,7 +91,7 @@ public abstract class AbstractApp implements App
 		}
 	}
 
-	protected Serializable safeRemove( Session session, String key )
+	protected static Serializable safeRemove( Session session, String key )
 	{
 		try
 		{

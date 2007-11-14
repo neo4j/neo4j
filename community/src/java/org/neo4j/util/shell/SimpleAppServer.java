@@ -27,7 +27,7 @@ public class SimpleAppServer extends AbstractAppServer
 	}
 	
 	@Override
-	public App findApp( String command ) throws RemoteException
+	public App findApp( String command )
 	{
 		App app = this.findBuiltInApp( command );
 		return app != null ? app : super.findApp( command );

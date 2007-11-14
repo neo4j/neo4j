@@ -12,7 +12,7 @@ public abstract class AbstractServer extends UnicastRemoteObject
 {
 	public static final String DEFAULT_NAME = "shell";
 	public static final int DEFAULT_PORT = 1337;
-
+	
 	private Map<String, Serializable> properties =
 		new HashMap<String, Serializable>();
 	
@@ -27,17 +27,22 @@ public abstract class AbstractServer extends UnicastRemoteObject
 		return DEFAULT_NAME;
 	}
 
-	public Serializable getProperty( String key ) throws RemoteException
+	public Serializable getProperty( String key )
 	{
 		return this.properties.get( key );
 	}
 
 	public void setProperty( String key, Serializable value )
-		throws RemoteException
 	{
 		this.properties.put( key, value );
 	}
 	
+	public Serializable interpretVariable( String key, Serializable value,
+		Session session ) throws RemoteException
+	{
+		return session.get( key );
+	}
+
 	public String welcome()
 	{
 		return "Welcome to the shell";
