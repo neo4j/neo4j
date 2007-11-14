@@ -353,6 +353,10 @@ public class TxLog
 				recordMap.remove( xid );
 				nextPosition += 2 + globalId.length;
 			}
+			else if ( recordType == 0 )
+			{
+				continue;
+			}
 			else
 			{
 				throw new IOException( "Unkown type: " + recordType );
