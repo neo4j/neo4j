@@ -3,11 +3,11 @@ package org.neo4j.impl.shell.apps;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoApp;
-import org.neo4j.util.shell.AbstractClient;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -36,7 +36,7 @@ public class Cd extends NeoApp
 	{
 		List<Long> paths = readPaths( session );
 		
-		Node currentNode = this.getCurrentNode( session );
+		Node currentNode = getCurrentNode( session );
 		Node newNode = null;
 		if ( parser.arguments().isEmpty() )
 		{
@@ -75,9 +75,7 @@ public class Cd extends NeoApp
 			newNode = this.getNodeById( newId );
 		}
 		
-		this.setCurrentNode( session, newNode );
-		session.set( AbstractClient.PROMPT_KEY, "neo-sh [" + newNode.getId() + 
-			"] $ " );
+		setCurrentNode( session, newNode );
 		session.set( WORKING_DIR_KEY, this.makePath( paths ) );
 		return null;
 	}
