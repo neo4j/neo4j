@@ -1,5 +1,7 @@
 package org.neo4j.util.shell.apps.extra;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -32,7 +34,7 @@ public class GshExecutor
 		Object groovyScriptEngine = this.newGroovyScriptEngine(
 			pathList.toArray( new String[ pathList.size() ] ) );
 		Map<String, Object> properties = new HashMap<String, Object>();
-		properties.put( "out", out );
+		properties.put( "out", new GshOutput( out ) );
 		properties.put( "session", session );
 		this.runGroovyScripts( groovyScriptEngine, properties, line );
 	}
@@ -243,6 +245,52 @@ public class GshExecutor
 			}
 			this.index = this.mark;
 			this.mark = null;
+		}
+	}
+	
+	public static class GshOutput implements Output
+	{
+		private Output source;
+		
+		GshOutput( Output output )
+		{
+			this.source = output;
+		}
+
+		public void print( Serializable object ) throws RemoteException
+		{
+			source.print( object );
+		}
+		
+		public void println( Serializable object ) throws RemoteException
+		{
+			source.println( object );
+		}
+		
+		public Appendable append( char c ) throws IOException
+		{
+			return source.append( c );
+		}
+		
+		public Appendable append( CharSequence csq, int start, int end )
+		    throws IOException
+		{
+			return source.append( csq, start, end );
+		}
+		
+		public Appendable append( CharSequence csq ) throws IOException
+		{
+			return source.append( csq );
+		}
+		
+		public void print( Object object ) throws RemoteException
+		{
+			source.print( object.toString() );
+		}
+
+		public void println( Object object ) throws RemoteException
+		{
+			source.println( object.toString() );
 		}
 	}
 }
