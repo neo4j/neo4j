@@ -27,6 +27,11 @@ public class RemoteOutput extends UnicastRemoteObject implements Output
 	{
 		System.out.print( object );
 	}
+	
+	public void println()
+	{
+		System.out.println();
+	}
 
 	public void println( Serializable object )
 	{

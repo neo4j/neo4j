@@ -8,5 +8,7 @@ public interface Output extends Appendable, Remote
 {
 	void print( Serializable object ) throws RemoteException;
 	
+	void println() throws RemoteException;
+	
 	void println( Serializable object ) throws RemoteException;
 }

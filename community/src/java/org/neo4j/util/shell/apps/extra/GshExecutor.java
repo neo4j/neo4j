@@ -287,7 +287,12 @@ public class GshExecutor
 		{
 			source.print( object.toString() );
 		}
-
+		
+		public void println() throws RemoteException
+		{
+			source.println();
+		}
+		
 		public void println( Object object ) throws RemoteException
 		{
 			source.println( object.toString() );
