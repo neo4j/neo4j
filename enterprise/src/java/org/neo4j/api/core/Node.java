@@ -52,22 +52,28 @@ public interface Node
 	public void delete();
 	
 	// Relationships
+	
 	/**
 	 * Returns all the relationships attached to this node. If no relationships
 	 * are attached to this node, an empty iterable will be returned.
 	 * @return all relationships attached to this node
 	 */
 	public Iterable<Relationship> getRelationships();
+	
+	public boolean hasRelationship();
+	
 	/**
 	 * Returns all the relationships of type <code>type</code> that are
 	 * attached to this node, regardless of direction. If no relationships
 	 * of the given type are attached to this node, an empty iterable will be
 	 * returned.
-	 * @param type the given relationship type(s)
+	 * @param types the given relationship type(s)
 	 * @return all relationships of the given type(s) that are attached to this
 	 * node
 	 */
-	public Iterable<Relationship> getRelationships( RelationshipType... type );
+	public Iterable<Relationship> getRelationships( RelationshipType... types );
+	
+	public boolean hasRelationship( RelationshipType... types );
 	
 	/**
 	 * Returns all {@link Direction#OUTGOING OUTGOING} or {@link
@@ -85,6 +91,9 @@ public interface Node
 	 * this node
 	 */
 	public Iterable<Relationship> getRelationships( Direction dir );
+	
+	public boolean hasRelationship( Direction dir );
+	
 	/**
 	 * Returns all relationships with the given type and direction that are
 	 * attached to this node. If there are no matching relationships, an empty
@@ -100,6 +109,9 @@ public interface Node
 	 */
 	public Iterable<Relationship> getRelationships( RelationshipType type,
 		Direction dir );
+	
+	public boolean hasRelationship( RelationshipType type, Direction dir ); 
+	
 	/**
 	 * Returns the only relationship of a given type and direction that
 	 * is attached to this node, or <code>null</code>. This is a convenience
