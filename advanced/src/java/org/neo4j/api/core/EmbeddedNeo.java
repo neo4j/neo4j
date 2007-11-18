@@ -9,30 +9,56 @@ import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoShellServer;
 
 /**
- * The main Neo factory, with functionality to start and shutdown Neo, create
- * and get nodes and define valid relationship types. This class is typically
- * used in the outer loop in a Neo-enabled application, for example as follows:
- * <pre><code>
+ * An implementation of {@link NeoService} that is used to embed Neo
+ * in an application. There are two ways to instantiate this class:
+ * <ul>
+ * <li>A {@link #EmbeddedNeo(String) single argument constructor} that takes
+ * a path to a directory where Neo will store its data files. This will start
+ * Neo with an empty set of valid relationship types, and the client must
+ * subsequently invoke {@link NeoService#registerRelationshipType
+ * registerRelationshipType} to declare the valid relationship types.
+ * <li> A {@link #EmbeddedNeo(Class, String) two argument constructor}
+ * that in addition to the store file location takes an enum class that
+ * implements {@link RelationshipType RelationshipType} as an initial set of
+ * valid relationship types. 
+ * </ul>
+ * 
+ * The second case is more common, since most applications deal with a static
+ * set of relationship types and then prefer to gather them in an enum to
+ * provide compile-time safety (see the {@link RelationshipType
+ * RelationshipType docs} for more information). Here's how you would do that:
+ * <code><pre> enum MyRelationshipTypes implements RelationshipType
+ * {
+ *     CONTAINED_IN, KNOWS
+ * }
+ * 
+ * // ... later in some main() method
  * NeoService neo = new EmbeddedNeo( MyRelationshipTypes.class, "var/neo" );
  * // ... use neo
- * neo.shutdown();
- * </code></pre>
- * Neo is started when this class is instantiated. It provides operations to
- * {@link #createNode() create notes}, {@link #getNodeById(long) get nodes
- * given an id}, get the {@link #getReferenceNode() reference node} and
- * ultimately {@link #shutdown() shutdown Neo}. Typically, once instantiated
- * the reference to EmbeddedNeo is stored away in a service registry or in
- * a singleton instance.
+ * neo.shutdown();</pre>
+ * </code>
+ * (Please note that the constructor signatures may change slightly in upcoming
+ * 1.0-betas.)
  * <p>
- * Please note that after startup (i.e. constructor invocation), all operations
- * that read or write to the node space must be invoked in a {@link Transaction
- * transactional context}.
+ * Typically, once instantiated the reference to NeoService is stored away in a
+ * service registry or in a singleton instance.
+ * <p>
+ * For more information, see {@link NeoService}.
  */
 public final class EmbeddedNeo implements NeoService
 {
 	private static Logger log = Logger.getLogger( EmbeddedNeo.class.getName() );
 	private NeoShellServer shellServer;
 	
+	/**
+	 * Creates an embedded {@link NeoService} with an empty set of valid
+	 * relationship types. It will use the store located in
+	 * <code>storeDir</code>, which will be created if it doesn't already exist.
+	 * With this constructor, the client is expected to {@link
+	 * #registerRelationshipType register relationship types} in order to set
+	 * up a valid set of relationship types.
+	 * @param storeDir the store directory for the neo db files
+	 */
 	public EmbeddedNeo( String storeDir )
 	{
 		this.shellServer = null;
@@ -40,14 +66,17 @@ public final class EmbeddedNeo implements NeoService
 	}
 	
 	/**
-	 * Creates an embedded neo instance with a given set of relationship types.
-	 * It will use the store specified by <code>storeDir</code>, which will 
-	 * be created if it doesn't already exist.
+	 * Creates an embedded {@link NeoService} with a set of valid relationship
+	 * types defined by the supplied enum class. It will use the store located in
+	 * <code>storeDir</code>, which will be created if it doesn't already exist.
 	 * @param validRelationshipTypesEnum an enum class containing your
-	 * relationship types
+	 * relationship types, as described in the documentation of
+	 * {@link RelationshipType}
 	 * @param storeDir the store directory for the neo db files
- 	 * @throws NullPointerException if clazz is <code>null</code>
- 	 * @throws IllegalArgumentException if clazz not an enum
+ 	 * @throws NullPointerException if validRelationshipTypesEnum is
+ 	 * <code>null</code>
+ 	 * @throws IllegalArgumentException if validRelationshipTypesEnum is not an
+ 	 * enum that implements <code>RelationshipType</code>
 	 */
 	public EmbeddedNeo( Class<? extends RelationshipType>
 		validRelationshipTypesEnum, String storeDir )
@@ -56,7 +85,6 @@ public final class EmbeddedNeo implements NeoService
 		NeoJvmInstance.start( validRelationshipTypesEnum, storeDir, true );
 	}
 	
-	// TODO: fix
 //	public EmbeddedNeo( String dir, RelationshipType[] relationshipTypes, 
 //		Map<String,String> params )
 //	{
@@ -89,7 +117,6 @@ public final class EmbeddedNeo implements NeoService
 	/* (non-Javadoc)
      * @see org.neo4j.api.core.NeoService#getReferenceNode()
      */
-	// TODO: Explain this concept
 	public Node getReferenceNode()
 	{
 		return NodeManager.getManager().getReferenceNode();
@@ -172,9 +199,8 @@ public final class EmbeddedNeo implements NeoService
 		}
 	}
 
-	/* (non-Javadoc)
-     * @see org.neo4j.api.core.NeoService#registerEnumRelationshipTypes(java.lang.Class)
-     */
+    // TODO: doc: kept for backwards compat
+	// TODO: prio 1
 	public void registerEnumRelationshipTypes( 
 		Class<? extends RelationshipType> relationshipTypes )
 	{
@@ -206,9 +232,8 @@ public final class EmbeddedNeo implements NeoService
     	
     }
      
-    /* (non-Javadoc)
-     * @see org.neo4j.api.core.NeoService#createAndRegisterRelationshipType(java.lang.String)
-     */
+    // TODO: doc: kept for backwards compat
+    // TODO: prio 1
     public RelationshipType createAndRegisterRelationshipType( String name )
     {
     	return NeoJvmInstance.registerRelationshipType( name, true );
@@ -221,10 +246,9 @@ public final class EmbeddedNeo implements NeoService
     {
     	return NeoJvmInstance.registerRelationshipType( name, false );
     }
-    
-    /* (non-Javadoc)
-     * @see org.neo4j.api.core.NeoService#registerRelationshipTypes(java.lang.Iterable)
-     */
+
+    // TODO: doc: kept for backwards compat
+    // TODO: prio 1
     public void registerRelationshipTypes( Iterable<RelationshipType> types )
     {
     	for ( RelationshipType type : types )
