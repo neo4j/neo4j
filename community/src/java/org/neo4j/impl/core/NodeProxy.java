@@ -37,7 +37,7 @@ class NodeProxy implements Node
 	
 	public boolean hasRelationship()
     {
-		return nm.getNodeForProxy( nodeId ).hasRelationships();
+		return nm.getNodeForProxy( nodeId ).hasRelationship();
     }
 
 	public Iterable<Relationship> getRelationships( Direction dir )
