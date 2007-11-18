@@ -639,6 +639,7 @@ abstract class Command extends XaCommand
 			case 7: return PropertyType.BYTE;
 			case 8: return PropertyType.CHAR;
 			case 9: return PropertyType.ARRAY;
+			case 10: return PropertyType.SHORT;
 			}
 			throw new RuntimeException( "Unkown property type:" + type );
 		}
