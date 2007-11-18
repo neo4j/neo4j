@@ -32,7 +32,7 @@ public class TestAll extends TestSuite
 	
 	private static void startupNeo()
 	{
-		neo = new EmbeddedNeo( MyRelTypes.class, "var/neo", true );
+		neo = new EmbeddedNeo( MyRelTypes.class, "var/neo" );
 	}
 	
 	private static void shutdownNeo()

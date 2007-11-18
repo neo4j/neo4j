@@ -4,11 +4,18 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * The main access point to a running Neo instance. The only implementation
- * today is the {@link EmbeddedNeo EmbeddedNeo} class, which is used to
+ * The main access point to a running Neo instance. The only current
+ * implementation is the {@link EmbeddedNeo EmbeddedNeo} class, which is used to
  * embed Neo intra-VM in an application. Typically, you would create an
  * <code>EmbeddedNeo</code> once and from then on access it through the
- * <code>NeoService</code> interface. For more information, see the class
+ * <code>NeoService</code> interface, as follows:
+ * <pre><code>
+ * NeoService neo = new EmbeddedNeo( MyRelationshipTypes.class, "var/neo" );
+ * // ... use neo
+ * neo.shutdown();
+ * </code></pre>
+ *  
+ *  For more information, see the class
  * documentation of {@link EmbeddedNeo EmbeddedNeo}.
  */
 public interface NeoService
@@ -42,9 +49,9 @@ public interface NeoService
     public void shutdown();
     
     /**
-     * Enables remote shell access to this Neo instance, if the Neo4j
-     * <code>shell</code> project is available on the classpath. This method
-     * passed no configuration parameters and is identical to invoking
+     * Enables remote shell access (with default configuration) to this Neo
+     * instance, if the Neo4j <code>shell</code> project is available on the
+     * classpath. This method is identical to invoking
      * {@link #enableRemoteShell(Map) enableRemoteShell( null )}.
      * @return <code>true</code> if the shell has been enabled,
      * <code>false</code> otherwise (<code>false</code> usually indicates that
@@ -84,20 +91,22 @@ public interface NeoService
     public boolean enableRemoteShell(
         Map<String, Serializable> initialProperties );
 
-    public void registerEnumRelationshipTypes(
-        Class<? extends RelationshipType> relationshipTypes );
-
-    public Iterable<RelationshipType> getRelationshipTypes();
-
-    public RelationshipType getRelationshipType( String name );
+    // ok to register multiple times
+    public RelationshipType registerRelationshipType( String name );
+    // document that it's typically used with enums
+    public void registerRelationshipTypes( RelationshipType[] types );
+    
+    // TODO: add later
+//    public void unregisterRelationshipType( RelationshipType type );
+//    public void unregisterRelationshipTypes( RelationshipType[] types );
 
     public boolean hasRelationshipType( String name );
+    public RelationshipType getRelationshipType( String name );
+    public Iterable<RelationshipType> getRelationshipTypes();
 
-    public RelationshipType createAndRegisterRelationshipType( String name );
-
-    public RelationshipType registerRelationshipType( String name );
-
-    public void registerRelationshipTypes( Iterable<RelationshipType> types );
-
-    public void registerRelationshipTypes( RelationshipType[] types );
+    // TODO: these three have been removed
+//    public void registerRelationshipTypes( Iterable<RelationshipType> types );
+//    public RelationshipType createAndRegisterRelationshipType( String name );
+//    public void registerEnumRelationshipTypes(
+//        Class<? extends RelationshipType> relationshipTypes );
 }

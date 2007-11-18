@@ -28,63 +28,42 @@ import org.neo4j.impl.shell.NeoShellServer;
  * that read or write to the node space must be invoked in a {@link Transaction
  * transactional context}.
  */
-public class EmbeddedNeo implements NeoService
+public final class EmbeddedNeo implements NeoService
 {
 	private static Logger log = Logger.getLogger( EmbeddedNeo.class.getName() );
 	private NeoShellServer shellServer;
 	
-	/**
-	 * Creates an embedded neo instance with a given set of relationship types
-	 * and that reads data from a given store.
-	 * @param validRelationshipTypes an enum class containing your relationship types
-	 * @param storeDir the store directory for the neo db files
-	 * @param create whether a new store directory will be created if it doesn't
-	 * already exist
- 	 * @throws NullPointerException if clazz is <code>null</code>
- 	 * @throws IllegalArgumentException if clazz is not an enum
-	 */
-	public EmbeddedNeo( Class<? extends RelationshipType> validRelationshipTypes,
-		String storeDir, boolean create )
-	{	    
-		this.shellServer = null;
-		NeoJvmInstance.start( validRelationshipTypes, storeDir, create );
+	public EmbeddedNeo( String storeDir )
+	{
+		// TODO: implement
 	}
 	
 	/**
-	 * Creates an embedded neo instance with a given set of relationship types,
-	 * that reads data from a given store which will be created if it doesn't
-	 * already exist. Invoking this constructor is equivalent to invoke
-	 * <code>new EmbeddedNeo( clazz, storeDir, true )</code>.
-	 * @param validRelationshipTypes an enum class containing your relationship types
+	 * Creates an embedded neo instance with a given set of relationship types.
+	 * It will use the store specified by <code>storeDir</code>, which will 
+	 * be created if it doesn't already exist.
+	 * @param validRelationshipTypesEnum an enum class containing your
+	 * relationship types
 	 * @param storeDir the store directory for the neo db files
  	 * @throws NullPointerException if clazz is <code>null</code>
  	 * @throws IllegalArgumentException if clazz not an enum
 	 */
-	public EmbeddedNeo( Class<? extends RelationshipType> validRelationshipTypes,
-		String storeDir )
-	{
-		this( validRelationshipTypes, storeDir, true );
-	}
-	
-	public EmbeddedNeo( String dir, RelationshipType[] relationshipTypes )
-	{
-		this( null, dir, true );
-		// TODO
-	}
-
-	public EmbeddedNeo( String dir, RelationshipType[] relationshipTypes, 
-		Map<String,String> params )
+	public EmbeddedNeo( Class<? extends RelationshipType>
+		validRelationshipTypesEnum, String storeDir )
 	{
 		this.shellServer = null;
-		NeoJvmInstance.start( null, dir, true, params );
+		NeoJvmInstance.start( validRelationshipTypesEnum, storeDir, true );
 	}
 	
-	public EmbeddedNeo( String dir, Iterable<RelationshipType> relationshipTypes )
-	{
-		this( null, dir, true );
-	}
-	    
-	 	// Private accessor for the remote shell (started with enableRemoteShell())
+	// TODO: fix
+//	public EmbeddedNeo( String dir, RelationshipType[] relationshipTypes, 
+//		Map<String,String> params )
+//	{
+//		this.shellServer = null;
+//		NeoJvmInstance.start( null, dir, true, params );
+//	}
+	
+ 	// private accessor for the remote shell (started with enableRemoteShell())
 	private NeoShellServer getShellServer()
 	{
 		return this.shellServer;

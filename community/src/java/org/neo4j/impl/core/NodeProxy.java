@@ -29,32 +29,48 @@ class NodeProxy implements Node
 	{
 		nm.getNodeForProxy( nodeId ).delete();
 	}
-
+	
 	public Iterable<Relationship> getRelationships()
 	{
 		return nm.getNodeForProxy( nodeId ).getRelationships();
 	}
 	
+	public boolean hasRelationship()
+    {
+		return nm.getNodeForProxy( nodeId ).hasRelationships();
+    }
+
 	public Iterable<Relationship> getRelationships( Direction dir )
 	{
 		return nm.getNodeForProxy( nodeId ).getRelationships( dir );
 	}
 	
-	public Iterable<Relationship> getRelationships( RelationshipType type )
-	{
-		return nm.getNodeForProxy( nodeId ).getRelationships( type );
-	}
+	public boolean hasRelationship( Direction dir )
+    {
+		return nm.getNodeForProxy( nodeId ).hasRelationship( dir );
+    }
 
 	public Iterable<Relationship> getRelationships( RelationshipType... types )
 	{
 		return nm.getNodeForProxy( nodeId ).getRelationships( types );
 	}
 	
-	public Iterable<Relationship> getRelationships( RelationshipType type, Direction dir )
+	public boolean hasRelationship( RelationshipType... types )
+    {
+		return nm.getNodeForProxy( nodeId ).hasRelationship( types );
+    }
+
+	public Iterable<Relationship> getRelationships( RelationshipType type,
+		Direction dir )
 	{
 		return nm.getNodeForProxy( nodeId ).getRelationships( type, dir );
 	}
 
+	public boolean hasRelationship( RelationshipType type, Direction dir )
+    {
+		return nm.getNodeForProxy( nodeId ).hasRelationship( type, dir );
+    }
+	
 	public Relationship getSingleRelationship( RelationshipType type, 
 		Direction dir )
 	{

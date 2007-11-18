@@ -40,6 +40,7 @@ package org.neo4j.api.core;
  */
 public interface Relationship
 {
+	// TODO: document
 	public long getId();
 	
 	/**
@@ -119,7 +120,7 @@ public interface Relationship
 	 * {@link RelationshipType#name() names}.
 	 * @param type the type to check
 	 * @return <code>true</code> if this relationship is of the type
-	 * <code>type</code>, <code>false</code> otherwise
+	 * <code>type</code>, <code>false</code> otherwise or if <code>null</code>
 	 */
 	public boolean isType( RelationshipType type );
 	
