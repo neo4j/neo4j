@@ -398,7 +398,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 				while ( itr.hasNext() )
 				{
 					NodeImpl node = itr.next();
-					if ( node.hasRelationships() )
+					if ( node.internalHasRelationships() )
 					{
 						log.severe( "Deleted Node[" + node + 
 							"] still has relationship." );

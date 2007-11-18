@@ -983,7 +983,7 @@ class NodeImpl implements Node, Comparable<Node>
 		}
 	}
 	
-	boolean hasRelationships()
+	boolean internalHasRelationships()
 	{
 		ensureFullRelationships();
 		return ( relationshipMap.size() > 0 );
@@ -1253,25 +1253,21 @@ class NodeImpl implements Node, Comparable<Node>
 
 	public boolean hasRelationship()
     {
-	    // TODO JS: implement
-	    return false;
+		return getRelationships().iterator().hasNext();
     }
 
 	public boolean hasRelationship( RelationshipType... types )
     {
-	    // TODO JS: implement
-	    return false;
+		return getRelationships( types ).iterator().hasNext();
     }
 
 	public boolean hasRelationship( Direction dir )
     {
-	    // TODO JS: implement
-	    return false;
+		return getRelationships( dir ).iterator().hasNext();
     }
 
 	public boolean hasRelationship( RelationshipType type, Direction dir )
     {
-	    // TODO JS: implement
-	    return false;
+		return getRelationships( type, dir ).iterator().hasNext();
     }
 }
