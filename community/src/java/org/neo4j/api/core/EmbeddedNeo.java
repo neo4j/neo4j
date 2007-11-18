@@ -35,7 +35,8 @@ public final class EmbeddedNeo implements NeoService
 	
 	public EmbeddedNeo( String storeDir )
 	{
-		// TODO: implement
+		this.shellServer = null;
+		NeoJvmInstance.start( null, storeDir, true );
 	}
 	
 	/**
