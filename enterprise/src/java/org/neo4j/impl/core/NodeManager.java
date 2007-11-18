@@ -134,8 +134,8 @@ public class NodeManager
 			type ) )
 		{
 			setRollbackOnly();
-			throw new IllegalArgumentException( "Relationship type: " + type 
-				+ " not valid" );
+			throw new IllegalArgumentException( type + " relationship type " + 
+				"not valid, must be registered with NeoService first." );
 		}
 		
 		NodeImpl firstNode = getLightNode( (int) startNode.getId() );
