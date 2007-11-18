@@ -6,22 +6,29 @@ import java.util.Map;
 /**
  * The main access point to a running Neo instance. The only current
  * implementation is the {@link EmbeddedNeo EmbeddedNeo} class, which is used to
- * embed Neo intra-VM in an application. Typically, you would create an
- * <code>EmbeddedNeo</code> once and from then on access it through the
- * <code>NeoService</code> interface, as follows:
- * <pre><code>
- * NeoService neo = new EmbeddedNeo( MyRelationshipTypes.class, "var/neo" );
+ * embed Neo in an application. Typically, you would create an
+ * <code>EmbeddedNeo</code> instance as follows:
+ * <code>
+ * <pre>NeoService neo = new EmbeddedNeo( MyRelationshipTypes.class, "var/neo" );
  * // ... use neo
- * neo.shutdown();
- * </code></pre>
- *  
- *  For more information, see the class
- * documentation of {@link EmbeddedNeo EmbeddedNeo}.
+ * neo.shutdown();</pre>
+ * </code>
+ * (Please note that the constructor interface to {@link EmbeddedNeo} may change
+ * slightly in upcoming 1.0-betas.)
+ * <p>
+ * NeoService provides operations to {@link #registerRelationshipType
+ * register relationship types}, {@link #enableRemoteShell enable the shell},
+ * {@link #createNode() create nodes}, {@link #getNodeById(long) get nodes
+ * given an id}, get the {@link #getReferenceNode() reference node} and
+ * ultimately {@link #shutdown() shutdown Neo}.
+ * <p>
+ * Please note that all operations that read or write to the node space must be
+ * invoked in a {@link Transaction transactional context}.
  */
 public interface NeoService
 {
     /**
-     * Creates a {@link Node}.
+     * Creates a new node.
      * @return the created node.
      */
     public Node createNode();
@@ -39,18 +46,21 @@ public interface NeoService
      * @return the reference node
      * @throws RuntimeException if unable to get the reference node
      */
-    // TODO: Explain this concept
+	// TODO: prio 2
+	// TODO: Explain this concept
+    // TODO: remember that we now can't delete the reference node
     public Node getReferenceNode();
 
     /**
-     * Shuts down Neo. After this method has been invoked, it's invalid to
-     * invoke any methods in the Neo API.
+     * Shuts down Neo. After this method has been invoked,  it's invalid to
+     * invoke any methods in the Neo API and all references to this instance of
+     * NeoService should be discarded.
      */
     public void shutdown();
     
     /**
      * Enables remote shell access (with default configuration) to this Neo
-     * instance, if the Neo4j <code>shell</code> project is available on the
+     * instance, if the Neo4j <code>shell</code> component is available on the
      * classpath. This method is identical to invoking
      * {@link #enableRemoteShell(Map) enableRemoteShell( null )}.
      * @return <code>true</code> if the shell has been enabled,
@@ -61,7 +71,7 @@ public interface NeoService
 
     /**
      * Enables remote shell access to this Neo instance, if the Neo4j
-     * <code>shell</code> project is available on the classpath. This will
+     * <code>shell</code> component is available on the classpath. This will
      * publish a shell access interface on an RMI registry on localhost (with
      * configurable port and RMI binding name). It can be accessed by a
      * client that implements <code>org.neo4j.util.shell.ShellClient</code>
@@ -92,19 +102,24 @@ public interface NeoService
         Map<String, Serializable> initialProperties );
 
     // ok to register multiple times
+    // TODO: prio 1
     public RelationshipType registerRelationshipType( String name );
     // document that it's typically used with enums
+    // TODO: prio 1
     public void registerRelationshipTypes( RelationshipType[] types );
     
     // TODO: add later
 //    public void unregisterRelationshipType( RelationshipType type );
 //    public void unregisterRelationshipTypes( RelationshipType[] types );
 
+    // TODO: prio 1
     public boolean hasRelationshipType( String name );
+    // TODO: prio 1
     public RelationshipType getRelationshipType( String name );
+    // TODO: prio 1
     public Iterable<RelationshipType> getRelationshipTypes();
 
-    // TODO: these three have been removed
+    // these three have been removed from the b6-SNAPSHOT API
 //    public void registerRelationshipTypes( Iterable<RelationshipType> types );
 //    public RelationshipType createAndRegisterRelationshipType( String name );
 //    public void registerEnumRelationshipTypes(
