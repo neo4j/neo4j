@@ -24,7 +24,8 @@ class DynamicArrayStore extends AbstractDynamicStore
 		FLOAT(5), 
 		LONG(6), 	
 		BYTE(7),
-		CHAR(8);
+		CHAR(8),
+		SHORT(10);
 		
 		private int type;
 		
@@ -84,6 +85,32 @@ class DynamicArrayStore extends AbstractDynamicStore
 		for ( int i : array )
 		{
 			buf.putInt( i );
+		}
+		return allocateRecords( startBlock, buf.array() );
+	}
+	
+	private Collection<DynamicRecord> allocateFromShort( int startBlock, 
+		short[] array ) throws IOException
+	{
+		int size = array.length * 2 + 1;
+		ByteBuffer buf = ByteBuffer.allocate( size );
+		buf.put( ArrayType.SHORT.byteValue() );
+		for ( short i : array )
+		{
+			buf.putShort( i );
+		}
+		return allocateRecords( startBlock, buf.array() );
+	}
+
+	private Collection<DynamicRecord> allocateFromShort( int startBlock, 
+		Short[] array ) throws IOException
+	{
+		int size = array.length * 2 + 1;
+		ByteBuffer buf = ByteBuffer.allocate( size );
+		buf.put( ArrayType.SHORT.byteValue() );
+		for ( short i : array )
+		{
+			buf.putShort( i );
 		}
 		return allocateRecords( startBlock, buf.array() );
 	}
@@ -371,6 +398,14 @@ class DynamicArrayStore extends AbstractDynamicStore
 		{
 			return allocateFromChar( startBlock, (Character[]) array );
 		}
+		if ( array instanceof short[] )
+		{
+			return allocateFromShort( startBlock, (short[]) array );
+		}
+		if ( array instanceof Short[] )
+		{
+			return allocateFromShort( startBlock, (Short[]) array );
+		}
 		throw new RuntimeException( array + " not a valid array type." );
 	}
 	
@@ -470,6 +505,17 @@ class DynamicArrayStore extends AbstractDynamicStore
 			for ( int i = 0; i < size; i++ )
 			{
 				array[i] = buf.getChar();
+			}
+			return array;
+		}
+		if ( type == ArrayType.SHORT.byteValue() )
+		{
+			int size = ( bArray.length - 1 ) / 2;
+			assert ( bArray.length - 1 ) % 2 == 0;
+			short[] array = new short[size];
+			for ( short i = 0; i < size; i++ )
+			{
+				array[i] = buf.getShort();
 			}
 			return array;
 		}

@@ -606,7 +606,7 @@ public class AdminStore
 							previous + ",(next don't match)] at record " + i );
 					}
 				}
-				if ( type < 1 || type > 9 )
+				if ( type < 1 || type > 10 )
 				{
 					throw new IOException( "Bad property type[" + type + 
 						"] at record " + i );

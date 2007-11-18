@@ -838,6 +838,10 @@ class NeoTransaction extends XaTransaction
 			return getPropertyStore().getArrayFor( propertyRecord, 
 				readFromBuffer );
 		}
+		if ( type == PropertyType.SHORT )
+		{
+			return (short) propertyRecord.getPropBlock();
+		}
 		throw new RuntimeException( "Unkown type: " + type );
     }
 	

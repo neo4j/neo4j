@@ -14,7 +14,8 @@ public enum PropertyType
 	LONG(6), 	
 	BYTE(7),
 	CHAR(8),
-	ARRAY(9);
+	ARRAY(9),
+	SHORT(10);
 	
 	private int type;
 	

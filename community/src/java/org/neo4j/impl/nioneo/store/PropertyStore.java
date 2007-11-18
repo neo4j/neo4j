@@ -416,6 +416,7 @@ public class PropertyStore extends AbstractStore implements Store
 			case 7: return PropertyType.BYTE;
 			case 8: return PropertyType.CHAR;
 			case 9: return PropertyType.ARRAY;
+			case 10: return PropertyType.SHORT;
 			default: throw new IOException( "Unkown enum type:" +
 				type );
 		}
@@ -521,6 +522,11 @@ public class PropertyStore extends AbstractStore implements Store
 				record.addValueRecord( valueRecord );
 			}
 			record.setType( PropertyType.ARRAY );
+		}
+		else if ( value instanceof Short )
+		{
+			record.setPropBlock( ( ( Short ) value ).shortValue() );
+			record.setType( PropertyType.SHORT );
 		}
 		else
 		{

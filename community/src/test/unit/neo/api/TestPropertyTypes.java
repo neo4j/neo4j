@@ -222,6 +222,46 @@ public class TestPropertyTypes extends TestCase
 		}
 	}
 	
+	public void testShortType()
+	{
+		try
+		{
+			ut.begin();
+			short value = 453;
+			Short sValue = new Short( value );
+			String key = "testshort";
+			node1.setProperty( key, sValue );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			Short propertyValue = null; 
+			propertyValue = ( Short ) node1.getProperty( key );
+			assertEquals( sValue, propertyValue );
+
+			sValue = new Short( (short) 5335 ); 
+			node1.setProperty( key, sValue );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( Short ) node1.getProperty( key );
+			assertEquals( sValue, propertyValue );
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			fail( "" + e );
+		}
+	}
+	
 	public void testCharType()
 	{
 		try
@@ -310,6 +350,54 @@ public class TestPropertyTypes extends TestCase
 		}
 	}
 
+	public void testShortArray()
+	{
+		try
+		{
+			ut.begin();
+			short[] array1 = new short[] { 1, 2, 3, 4, 5 };
+			Short[] array2 = new Short[] { 6, 7, 8 };
+			String key = "testintarray";
+			node1.setProperty( key, array1 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			short propertyValue[] = null; 
+			propertyValue = ( short[] ) node1.getProperty( key );
+			assertEquals( array1.length, propertyValue.length );
+			for ( int i = 0; i < array1.length; i++ )
+			{
+				assertEquals( array1[i], propertyValue[i] );
+			}
+
+			node1.setProperty( key, array2 );
+			ut.commit();
+
+			nm.clearCache();
+			ut.begin();
+			propertyValue = ( short[] ) node1.getProperty( key );
+			assertEquals( array2.length, propertyValue.length );
+			for ( int i = 0; i < array2.length; i++ )
+			{
+				assertEquals( array2[i], new Short( propertyValue[i] ) );
+			}
+			
+			node1.removeProperty( key );
+			ut.commit();
+			
+			nm.clearCache();
+			ut.begin();
+			assertTrue( !node1.hasProperty( key ) );
+			ut.commit();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			fail( "" + e );
+		}
+	}
+	
 	public void testStringArray()
 	{
 		try
