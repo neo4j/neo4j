@@ -16,7 +16,7 @@ public class Main
 	
 	private static void startupNeo()
 	{
-		neo = new EmbeddedNeo( MyRelTypes.class, "var/nioneo", true );
+		neo = new EmbeddedNeo( MyRelTypes.class, "var/nioneo" );
 	}
 	
 	

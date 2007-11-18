@@ -1250,4 +1250,28 @@ class NodeImpl implements Node, Comparable<Node>
 		return travFactory.createTraverser( traversalOrder, this, types, dirs, 
 			stopEvaluator, returnableEvaluator );
 	}
+
+	public boolean hasRelationship()
+    {
+	    // TODO JS: implement
+	    return false;
+    }
+
+	public boolean hasRelationship( RelationshipType... types )
+    {
+	    // TODO JS: implement
+	    return false;
+    }
+
+	public boolean hasRelationship( Direction dir )
+    {
+	    // TODO JS: implement
+	    return false;
+    }
+
+	public boolean hasRelationship( RelationshipType type, Direction dir )
+    {
+	    // TODO JS: implement
+	    return false;
+    }
 }
