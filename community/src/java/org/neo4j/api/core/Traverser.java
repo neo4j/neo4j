@@ -20,7 +20,26 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * See {@link Node#traverse Node.traverse(...)}.
+ * Represents a traversal in the node space. A Traverser is an {@link Iterable}
+ * that encapsulates a number of traversal parameters (defined at traverser
+ * creation) and returns a list of nodes that match those parameters. It is
+ * created by invoking {@link Node#traverse Node.traverse(...)}. Upon creation,
+ * the traverser is positioned at the start node, but it doesn't actually start
+ * traversing until its {@link #iterator() iterator().next()} method is invoked.
+ * Typically it's used in a for-each loop as follows:
+ * <code><pre>
+ * Traverser friends = node.traverse(
+ *     Order.BREADTH_FIRST,
+ *     StopEvaluator.END_OF_NETWORK,
+ *     ReturnableEvaluator.ALL_BUT_START_NODE,
+ *     MyRelationshipTypes.KNOWS, Direction.OUTGOING );
+ *     
+ * for ( Node friend : friends )
+ * {
+ *     // ...
+ * }
+ * </pre></code>
+ * @see Node#traverse
  */
 public interface Traverser extends Iterable<Node>
 {
@@ -31,14 +50,12 @@ public interface Traverser extends Iterable<Node>
 	
 	/**
 	 * Returns the current traversal postion.
-	 * 
 	 * @return The current traversal position
 	 */
 	public TraversalPosition currentPosition();
 	
 	/**
 	 * Returns a collection of all nodes returned by this traverser.
-	 * 
 	 * @return A collection of all node returned by this traverser
 	 */
 	public Collection<Node> getAllNodes();
@@ -46,7 +63,6 @@ public interface Traverser extends Iterable<Node>
 	// Doc: especially remove() thing
 	/**
 	 * Returns an iterator for this traverser.
-	 * 
 	 * @return An iterator for this traverser
 	 */
 	// Doc: does it create a new iterator or reuse the existing one? This is
