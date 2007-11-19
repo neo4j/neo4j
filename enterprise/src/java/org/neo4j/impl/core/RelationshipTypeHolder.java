@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import org.neo4j.api.core.RelationshipType;
+import org.neo4j.api.core.Transaction;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.persistence.IdGenerator;
-import org.neo4j.impl.transaction.TransactionFactory;
-import org.neo4j.impl.transaction.TransactionUtil;
 import org.neo4j.impl.util.ArrayMap;
 
 class RelationshipTypeHolder
@@ -23,7 +23,7 @@ class RelationshipTypeHolder
 	
 	private ArrayMap<String,Integer> relTypes = new ArrayMap<String,Integer>();
 	private Map<Integer,String> relTranslation =
-		new HashMap<Integer,String>();
+		new ConcurrentHashMap<Integer,String>();
 	
 	private RelationshipTypeHolder()
 	{
@@ -128,49 +128,101 @@ class RelationshipTypeHolder
 			return name.hashCode();
 		}
 	}
-
-	private int createRelationshipType( String name )
+	
+	// temporary hack for b6 that will be changed to property index like 
+	// implementation
+	private static class RelTypeCreater extends Thread
 	{
-		boolean txStarted = TransactionUtil.beginTx();
-		boolean success = false;
-		int id = IdGenerator.getGenerator().nextId( 
-			RelationshipType.class );
-		try
+		private boolean success = false;
+		private String name;
+		private int id = -1;
+		
+		RelTypeCreater( String name )
 		{
-			addRelType( name, id );
-			EventManager em = EventManager.getManager();
-			EventData eventData = new EventData( new RelTypeOpData( id, 
-				name ) );
-			if ( !em.generateProActiveEvent( Event.RELATIONSHIPTYPE_CREATE, 
-				eventData ) )
-			{
-				setRollbackOnly();
-				throw new RuntimeException( 
-					"Generate pro-active event failed." );
-			}
-			log.fine( "Created relationship type: " + name + "(" + id + ")" );
-			em.generateReActiveEvent( Event.RELATIONSHIPTYPE_CREATE, 
-				eventData );
-			success = true;
+			super();
+			this.name = name;
+		}
+		
+		synchronized boolean succeded()
+		{
+			return success;
+		}
+		
+		synchronized int getRelTypeId()
+		{
 			return id;
 		}
-		finally
+		
+		public synchronized void run()
 		{
-			TransactionUtil.finishTx( success, txStarted );
+			Transaction tx = Transaction.begin();
+			try
+			{
+				id = IdGenerator.getGenerator().nextId( 
+					RelationshipType.class );
+				EventManager em = EventManager.getManager();
+				EventData eventData = new EventData( new RelTypeOpData( id, 
+					name ) );
+				if ( !em.generateProActiveEvent( Event.RELATIONSHIPTYPE_CREATE, 
+					eventData ) )
+				{
+					throw new RuntimeException( 
+						"Generate pro-active event failed." );
+				}
+				em.generateReActiveEvent( Event.RELATIONSHIPTYPE_CREATE, 
+					eventData );
+				tx.success();
+				tx.finish();
+				success = true;
+				System.out.println( "Created relationship type " + name );
+			} 
+			finally
+			{
+				if ( !success )
+				{
+					try
+					{
+						tx.failure();
+						tx.finish();
+					}
+					catch ( Throwable t ) 
+					{ // ok
+					}
+				}
+				this.notify();
+			}
 		}
 	}
 
-	private void setRollbackOnly()
+	private synchronized int createRelationshipType( String name )
 	{
-		try
+		Integer id = relTypes.get( name );
+		if ( id != null )
 		{
-			TransactionFactory.getTransactionManager().setRollbackOnly();
+			return id;
 		}
-		catch ( javax.transaction.SystemException se )
+		RelTypeCreater createrThread = new RelTypeCreater( name );
+		synchronized ( createrThread )
 		{
-			se.printStackTrace();
-			log.severe( "Failed to set transaction rollback only" );
+			createrThread.start();
+			while( createrThread.isAlive() )
+			{
+				try
+                {
+	                createrThread.wait( 50 );
+                }
+                catch ( InterruptedException e )
+                { // ok
+                }
+			}
 		}
+		if ( createrThread.succeded() )
+		{
+			addRelType( name, createrThread.getRelTypeId() );
+			return createrThread.getRelTypeId();
+		}
+		throw new RuntimeException( "Unable to create relationship type " + 
+			name );
 	}
 
 	static class RelTypeOpData implements RelationshipTypeOperationEventData

@@ -133,9 +133,11 @@ public class NodeManager
 		if ( !RelationshipTypeHolder.getHolder().isValidRelationshipType( 
 			type ) )
 		{
-			setRollbackOnly();
-			throw new IllegalArgumentException( type + " relationship type " + 
-				"not valid, must be registered with NeoService first." );
+			RelationshipTypeHolder.getHolder().addValidRelationshipType( 
+				type.name(), true );
+//			setRollbackOnly();
+//			throw new IllegalArgumentException( type + " relationship type " + 
+//				"not valid, must be registered with NeoService first." );
 		}
 		
 		NodeImpl firstNode = getLightNode( (int) startNode.getId() );
