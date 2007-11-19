@@ -174,7 +174,6 @@ class RelationshipTypeHolder
 				tx.success();
 				tx.finish();
 				success = true;
-				System.out.println( "Created relationship type " + name );
 			} 
 			finally
 			{
