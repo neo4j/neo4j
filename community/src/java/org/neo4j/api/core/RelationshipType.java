@@ -5,7 +5,7 @@ package org.neo4j.api.core;
  * relationships that is used for navigating the node space. RelationshipType is
  * in particular a key part
  *  of the {@link Traverser traverser framework} but it's also used in
- * various {@link Node#getRelationships() relationship accessors} on Node.
+ * various {@link Node#getRelationships() relationship operations} on Node.
  * <p>
  * Relationship types are declared by the client and can be handled either
  * dynamically or statically in a Neo-based application. Internally,
