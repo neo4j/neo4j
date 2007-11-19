@@ -9,15 +9,14 @@ import java.util.Map;
  * embed Neo in an application. Typically, you would create an
  * <code>EmbeddedNeo</code> instance as follows:
  * <code>
- * <pre>NeoService neo = new EmbeddedNeo( MyRelationshipTypes.class, "var/neo" );
+ * <pre>NeoService neo = new EmbeddedNeo( "var/neo" );
  * // ... use neo
  * neo.shutdown();</pre>
  * </code>
- * (Please note that the constructor interface to {@link EmbeddedNeo} may change
- * slightly in upcoming 1.0-betas.)
+ * (Please note that the constructor interface to {@link EmbeddedNeo} may evolve
+ * in upcoming 1.0-betas.)
  * <p>
- * NeoService provides operations to {@link #registerRelationshipType
- * register relationship types}, {@link #enableRemoteShell enable the shell},
+ * NeoService provides operations to {@link #enableRemoteShell enable the shell},
  * {@link #createNode() create nodes}, {@link #getNodeById(long) get nodes
  * given an id}, get the {@link #getReferenceNode() reference node} and
  * ultimately {@link #shutdown() shutdown Neo}.
@@ -100,28 +99,4 @@ public interface NeoService
      */
     public boolean enableRemoteShell(
         Map<String, Serializable> initialProperties );
-
-    // ok to register multiple times
-    // TODO: prio 1
-    public RelationshipType registerRelationshipType( String name );
-    // document that it's typically used with enums
-    // TODO: prio 1
-    public void registerRelationshipTypes( RelationshipType[] types );
-    
-    // TODO: add later
-//    public void unregisterRelationshipType( RelationshipType type );
-//    public void unregisterRelationshipTypes( RelationshipType[] types );
-
-    // TODO: prio 1
-    public boolean hasRelationshipType( String name );
-    // TODO: prio 1
-    public RelationshipType getRelationshipType( String name );
-    // TODO: prio 1
-    public Iterable<RelationshipType> getRelationshipTypes();
-
-    // these three have been removed from the b6-SNAPSHOT API
-//    public void registerRelationshipTypes( Iterable<RelationshipType> types );
-//    public RelationshipType createAndRegisterRelationshipType( String name );
-//    public void registerEnumRelationshipTypes(
-//        Class<? extends RelationshipType> relationshipTypes );
 }

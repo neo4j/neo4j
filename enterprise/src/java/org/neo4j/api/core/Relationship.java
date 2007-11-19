@@ -2,8 +2,8 @@ package org.neo4j.api.core;
 
 /**
  * Represents a relationship between two nodes in the network. A relationship
- * has a start node, an end node and a type. You can attach properties to
- * relationships with the exact same API as with nodes.
+ * has a start node, an end node and a {@link RelationshipType type}. You can
+ * attach properties to relationships with the exact same API as with nodes.
  * <p>
  * Relationships are created by invoking the {@link Node#createRelationshipTo
  * Node.createRelationshipTo()} method on a node as follows:
