@@ -4,7 +4,7 @@ package org.neo4j.api.core;
  * Represents a node in the network with properties and relationships to other
  * entities. Along with {@link Relationship relationships}, nodes are the
  * core building blocks of the Neo data representation model. Nodes are
- * created by invoking the {@link EmbeddedNeo#createNode} method.
+ * created by invoking the {@link NeoService#createNode} method.
  * <p>
  * Node has three major groups of operations: operations that deal with 
  * relationships, operations that deal with properties and operations that
