@@ -1,9 +1,8 @@
 package org.neo4j.impl.shell;
 
 import java.rmi.RemoteException;
-// import java.util.HashMap;
-// import java.util.Map;
 import org.neo4j.api.core.Direction;
+import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
@@ -50,8 +49,8 @@ public abstract class NeoApp extends AbstractApp
 	protected RelationshipType getRelationshipType( String name )
 	{
 		// this.ensureRelTypesInitialized();
-		RelationshipType result = this.getNeoServer().getNeo().
-			getRelationshipType( name );
+		RelationshipType result = ( ( EmbeddedNeo ) this.getNeoServer().
+			getNeo() ).getRelationshipType( name );
 		if ( result == null )
 		{
 			throw new RuntimeException( "No relationship type '" + name +
