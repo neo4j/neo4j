@@ -1,3 +1,19 @@
+/*
+ * Copyright 2002-2007 Network Engine for Objects in Lund AB (neotechnology.com)
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.api.core;
 
 import java.io.Serializable;
@@ -38,13 +54,14 @@ public interface NeoService
     public Node getNodeById( long id );
 
     /**
-     * Returns the reference node.
+     * Returns the reference node, which is a "starting point" in the node
+     * space. Usually, a client attaches relationships to this node that leads
+     * into various parts of the node space. For more information about common
+     * node space organizational patterns, see the design guide at
+     * http://neo4j.org/doc.
      * @return the reference node
      * @throws RuntimeException if unable to get the reference node
      */
-	// TODO: prio 2
-	// TODO: Explain this concept
-    // TODO: remember that we now can't delete the reference node
     public Node getReferenceNode();
 
     /**
