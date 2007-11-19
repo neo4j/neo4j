@@ -39,6 +39,16 @@ as networks rather than tables. For more information, please see neo4j.org.
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>clirr-maven-plugin</artifactId>
+				<configuration>
+					<includes>
+						<include>org/neo4j/api/**</include>
+					</includes>
+<!--					<comparisonVersion>1.0-b5</comparisonVersion> -->
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -74,7 +84,24 @@ as networks rather than tables. For more information, please see neo4j.org.
 					</links>
 					<quiet>true</quiet>
 				</configuration>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>javadoc</report>
+						</reports>
+					</reportSet>
+				</reportSets>
 			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>clirr-maven-plugin</artifactId>
+				<configuration>
+					<includes>
+						<include>org/neo4j/api/**</include>
+					</includes>
+<!--					<comparisonVersion>1.0-b5</comparisonVersion> -->
+				</configuration>
+			</plugin>			
 		</plugins>
 	</reporting>
                         
