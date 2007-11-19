@@ -16,11 +16,7 @@ package org.neo4j.api.core;
  * createRelationshipTo(...)} that connects two nodes with a relationship.
  * It also includes the convenience method {@link
  * #getSingleRelationship getSingleRelationship(...)} for accessing the
- * commonly occuring one-to-zero-or-one association. Of particular interest
- * might be that there are no <code>hasRelationship(...)</code> methods.
- * The idiomatic way to check if a node has any relationships matching
- * a "filter" of type and direction is:
- * <code>if ( node.getRelationships(filter).iterator().hasNext() ) { ... } </code>
+ * commonly occuring one-to-zero-or-one association.
  * <p>
  * The property operations give access to the key-value property pairs. Property
  * keys are always strings. Valid property value types are all the Java
@@ -59,20 +55,35 @@ public interface Node
 	 * @return all relationships attached to this node
 	 */
 	public Iterable<Relationship> getRelationships();
-	
+
+	/**
+	 * Returns <code>true</code> if there are any relationships attached to
+	 * this node, <code>false</code> otherwise.
+	 * @return <code>true</code> if there are any relationships attached to
+	 * this node, <code>false</code> otherwise
+	 */
 	public boolean hasRelationship();
 	
 	/**
-	 * Returns all the relationships of type <code>type</code> that are
-	 * attached to this node, regardless of direction. If no relationships
-	 * of the given type are attached to this node, an empty iterable will be
-	 * returned.
+	 * Returns all the relationships of any of the types in <code>types</code>
+	 * that are attached to this node, regardless of direction. If no
+	 * relationships of the given type are attached to this node, an empty
+	 * iterable will be returned.
 	 * @param types the given relationship type(s)
 	 * @return all relationships of the given type(s) that are attached to this
 	 * node
 	 */
 	public Iterable<Relationship> getRelationships( RelationshipType... types );
 	
+	/**
+	 * Returns <code>true</code> if there are any relationships of any of the
+	 * types in <code>types</code> attached to this node (regardless of
+	 * direction), <code>false</code> otherwise.
+	 * @param types the given relationship type(s)
+	 * @return <code>true</code> if there are any relationships of any of the
+	 * types in <code>types</code> attached to this node, <code>false</code>
+	 * otherwise
+	 */
 	public boolean hasRelationship( RelationshipType... types );
 	
 	/**
@@ -92,6 +103,20 @@ public interface Node
 	 */
 	public Iterable<Relationship> getRelationships( Direction dir );
 	
+	/**
+	 * Returns <code>true</code> if there are any relationships in the given
+	 * direction attached to this node, <code>false</code> otherwise. If
+	 * {@link Direction#BOTH BOTH} is passed in as a direction, relationships
+	 * of both directions are matched (effectively turning this into
+	 * <code>hasRelationships()</code>).
+	 * @param dir the given direction, where <code>Direction.OUTGOING</code>
+	 * means all relationships that have this node as
+	 * {@link Relationship#getStartNode() start node} and <code>
+	 * Direction.INCOMING</code> means all relationships that have this
+	 * node as {@link Relationship#getEndNode() end node}
+	 * @return <code>true</code> if there are any relationships in the given
+	 * direction attached to this node, <code>false</code> otherwise
+	 */
 	public boolean hasRelationship( Direction dir );
 	
 	/**
@@ -110,6 +135,20 @@ public interface Node
 	public Iterable<Relationship> getRelationships( RelationshipType type,
 		Direction dir );
 	
+	/**
+	 * Returns <code>true</code> if there are any relationships of the given
+	 * relationship type and direction attached to this node, <code>false</code>
+	 * otherwise.
+	 * @param type the given type
+	 * @param dir the given direction, where <code>Direction.OUTGOING</code>
+	 * means all relationships that have this node as
+	 * {@link Relationship#getStartNode() start node} and <code>
+	 * Direction.INCOMING</code> means all relationships that have this
+	 * node as {@link Relationship#getEndNode() end node}
+	 * @return <code>true</code> if there are any relationships of the given
+	 * relationship type and direction attached to this node, <code>false</code>
+	 * otherwise
+	 */
 	public boolean hasRelationship( RelationshipType type, Direction dir ); 
 	
 	/**
@@ -211,12 +250,13 @@ public interface Node
 	 * <li><code>char</code> or <code>char[]</code></li>
 	 * <li><code>java.lang.String</code> or <code>String[]</code></li>
 	 * </ul>
+	 * <p>
+	 * This means that <code>null</code> is not an accepted property value.
 	 * @param key the key with which the new property value will be associated
 	 * @param value the new property value, of one of the valid property types
 	 * @throws IllegalArgumentException if <code>value</code> is of an
-	 * unsuppoprted type
+	 * unsuppoprted type (including <code>null</code>)
 	 */
-	// TODO: figure out semantics for setProp( blah, null );
 	public void setProperty( String key, Object value );
 	/**
 	 * Removes and returns the property associated with the given key. If
