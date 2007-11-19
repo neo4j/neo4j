@@ -244,7 +244,7 @@ public class TestNeoConstrains extends TestCase
 			try
 			{
 				TransactionFactory.getUserTransaction().commit();
-				fail( "Should not validate" );
+				// fail( "Should not validate" ); will validate now
 			}
 			catch (  Exception e )
 			{
