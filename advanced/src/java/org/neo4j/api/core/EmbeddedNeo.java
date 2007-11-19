@@ -12,8 +12,12 @@ import org.neo4j.impl.shell.NeoShellServer;
  * An implementation of {@link NeoService} that is used to embed Neo
  * in an application. You typically instantiate it by invoking the
  * {@link #EmbeddedNeo(String) single argument constructor} that takes
- * a path to a directory where Neo will store its data files.
- * <p>
+ * a path to a directory where Neo will store its data files, as such:
+ * <code>
+ * <pre>NeoService neo = new EmbeddedNeo( "var/neo" );
+ * // ... use neo
+ * neo.shutdown();</pre>
+ * </code>
  * There's a {@link #EmbeddedNeo(Class, String) legacy constructor} which
  * was used in earlier versions to define valid {@link RelationshipType
  * relationship types}. Since version <code>1.0-b6</code>, relationship types

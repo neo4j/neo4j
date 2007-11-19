@@ -13,9 +13,6 @@ import java.util.Map;
  * // ... use neo
  * neo.shutdown();</pre>
  * </code>
- * (Please note that the constructor interface to {@link EmbeddedNeo} may evolve
- * in upcoming 1.0-betas.)
- * <p>
  * NeoService provides operations to {@link #enableRemoteShell enable the shell},
  * {@link #createNode() create nodes}, {@link #getNodeById(long) get nodes
  * given an id}, get the {@link #getReferenceNode() reference node} and
