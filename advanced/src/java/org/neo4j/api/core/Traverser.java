@@ -46,7 +46,19 @@ public interface Traverser extends Iterable<Node>
 	/**
 	 * Enum defining the two types of traversals.
 	 */
-	public static enum Order { DEPTH_FIRST, BREADTH_FIRST }
+	public static enum Order { 
+		/**
+		 * Sets a depth first traversal meaning the traverser will 
+		 * go as deep as possible (increasing depth for each traversal) before 
+		 * traversing next relationship on same depth.
+		 */
+		DEPTH_FIRST, 
+		
+		/**
+		 * Sets a breadth first traversal meaning the traverser will traverse
+		 * all relationships on the current depth before going deeper.
+		 */
+		BREADTH_FIRST }
 	
 	/**
 	 * Returns the current traversal postion.
