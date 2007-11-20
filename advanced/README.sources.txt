@@ -9,10 +9,11 @@ To run the unit tests make sure you have some version of junit in your
 classpath (3.x+ should do), import the src/test sources and run 
 unit.neo.TestAll as a java application.
 
-To get started here is a short description of some of the importand packages:
+To get started here is a short description of some of the important packages:
 
 o impl.core, implementation of the Neo API
 o impl.event, event framework (used to decouple persistence layer)
 o impl.nioneo, native store implementation
 o impl.transaction, TM + RWLocks implementation
-o impl.transaction.xaframework, XA framework to make non XA resources XA enabled 
+o impl.transaction.xaframework, XA framework to make non XA resources XA enabled
+
