@@ -17,27 +17,27 @@
 package org.neo4j.api.core;
 
 /**
- * Represents a node in the network with properties and relationships to other
- * entities. Along with {@link Relationship relationships}, nodes are the
- * core building blocks of the Neo data representation model. Nodes are
- * created by invoking the {@link NeoService#createNode} method.
+ * A node in the network with properties and relationships to other entities.
+ * Along with {@link Relationship relationships}, nodes are the core building
+ * blocks of the Neo data representation model. Nodes are created by invoking
+ * the {@link NeoService#createNode} method.
  * <p>
- * Node has three major groups of operations: operations that deal with 
+ * Node has three major groups of operations: operations that deal with
  * relationships, operations that deal with properties and operations that
  * create {@link Traverser traversers}.
  * <p>
  * The relationship operations provide a number of overloaded accessors (such as
- * <code>getRelationships(...)</code> with "filters" for type, direction, etc),
- * as well as the factory method {@link #createRelationshipTo
- * createRelationshipTo(...)} that connects two nodes with a relationship.
- * It also includes the convenience method {@link
- * #getSingleRelationship getSingleRelationship(...)} for accessing the
- * commonly occuring one-to-zero-or-one association.
+ * <code>getRelationships(...)</code> with "filters" for type, direction,
+ * etc), as well as the factory method {@link #createRelationshipTo
+ * createRelationshipTo(...)} that connects two nodes with a relationship. It
+ * also includes the convenience method {@link #getSingleRelationship
+ * getSingleRelationship(...)} for accessing the commonly occuring
+ * one-to-zero-or-one association.
  * <p>
  * The property operations give access to the key-value property pairs. Property
  * keys are always strings. Valid property value types are all the Java
- * primitives (<code>int</code>, <code>byte</code>, <code>float</code>, etc),
- * <code>java.lang.String</code>s and arrays of primitives and Strings.
+ * primitives (<code>int</code>, <code>byte</code>, <code>float</code>,
+ * etc), <code>java.lang.String</code>s and arrays of primitives and Strings.
  * <b>Please note</b> that Neo does NOT accept arbitrary objects as property
  * values. {@link #setProperty(String, Object) setProperty()} takes a
  * <code>java.lang.Object</code> for design reasons only.
