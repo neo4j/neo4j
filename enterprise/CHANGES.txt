@@ -1,0 +1,28 @@
+1.0-b6 (2007-11-19)
+-------------------
+
+o API: Added a NeoService interface that EmbededNeo implements. Left a number
+  of methods in EmbeddedNeo for backwards compatibility. They will be removed
+  the next release.
+o API: Changed relationship types to be dynamic, i.e. created in underlying
+  store when they are first used. This means that clients won't have to
+  register them with EmbeddedNeo at startup.
+o API: The semantics of relationship type equivalence has changed from being
+  based strictly on object identity to being based on name() equality.
+o API: A a new method isType() has been added to Relatinship. Due to the less
+  intuitive ways to check reltype equivalence, it's the prefered way to check
+  whether a relationship is of a particular type.
+o API: Added convenience methods hasRelationship(...) to Node.
+o API: Added a convenience method notStartNode() to TraversalPositions to
+  clean up the code (less cumbersome null-checks for edge cases) for evaluator
+  implementations.
+o Shell: Now detects and lists all available commands dynamically.
+o Shell: Integration with Groovy for easy evaluation of Groovy scripts.
+o Shell: Now auto-reconnects to server.
+o Shell: Polish like cleaner output, filters to ls and bash-style prompt with
+  variable expansion.
+o Core: Lots of performance tweaks and improvements.
+o Core: Testing and robustification on Windows.
+o Core: Now fully supports array properties for all primitives and Strings.
+
+
