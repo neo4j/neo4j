@@ -17,9 +17,9 @@
 package org.neo4j.api.core;
 
 /**
- * Represents a relationship between two nodes in the network. A relationship
- * has a start node, an end node and a {@link RelationshipType type}. You can
- * attach properties to relationships with the exact same API as with nodes.
+ * A relationship between two nodes in the network. A relationship has a start
+ * node, an end node and a {@link RelationshipType type}. You can attach
+ * properties to relationships with the exact same API as with nodes.
  * <p>
  * Relationships are created by invoking the {@link Node#createRelationshipTo
  * Node.createRelationshipTo()} method on a node as follows:
@@ -30,33 +30,36 @@ package org.neo4j.api.core;
  * <p>
  * The fact that the relationship API gives meaning to {@link #getStartNode()
  * start} and {@link #getEndNode() end} nodes implicitly means that all
- * relationships have a direction. In the example above, <code>rel</code> would
- * be directed <i>from</i> <code>node</code> <i>to</i> <code>otherNode</code>.
- * A relationship's start node and end node and their relation to
- * {@link Direction#OUTGOING} and {@link Direction#INCOMING} are defined so that
- * the assertions in the following code are <code>true</code>:
+ * relationships have a direction. In the example above, <code>rel</code>
+ * would be directed <i>from</i> <code>node</code> <i>to</i>
+ * <code>otherNode</code>. A relationship's start node and end node and their
+ * relation to {@link Direction#OUTGOING} and {@link Direction#INCOMING} are
+ * defined so that the assertions in the following code are <code>true</code>:
  * <code><pre>
  * Node a = neo.createNode(), b = neo.createNode();
  * Relationship rel = a.createRelationshipTo( b, MyRels.REL_TYPE );
- * // Now we have: (a) --- REL_TYPE ---> (b)
+ * // Now we have: (a) --- REL_TYPE ---&gt; (b)
  * 
  * assert rel.getStartNode().equals( a );
  * assert rel.getEndNode().equals( b );
- * assert rel.getNodes()[0].equals( a ) && rel.getNodes()[1].equals( b );
- * 
- * rel = b.getSingleRelationship( MyRels.REL_TYPE, Direction.INCOMING ) ;
- * assert rel.getStartNode().equals( b );
- * assert rel.getEndNode().equals( a );
- * assert rel.getNodes()[0].equals( b ) && rel.getNodes()[1].equals( a );
+ * assert rel.getNodes()[0].equals( a ) &amp;&amp; rel.getNodes()[1].equals( b );
  * </code></pre>
+ * 
  * Furthermore, Neo guarantees that a relationship is never "hanging freely,"
- * i.e. {@link #getStartNode()}, {@link #getEndNode()}, {@link #getOtherNode(Node)}
- * and {@link #getNodes()} are guaranteed to always return valid, non-null
- * nodes.
+ * i.e. {@link #getStartNode()}, {@link #getEndNode()},
+ * {@link #getOtherNode(Node)} and {@link #getNodes()} are guaranteed to always
+ * return valid, non-null nodes.
  */
 public interface Relationship
 {
-	// TODO: document
+	/**
+	 * Returns the unique id of this relationship. Ids are garbage collected
+	 * over time so are only guaranteed to be unique at a specific set of time:
+	 * if the relationship is deleted, it's likely that a new relationship at
+	 * some point will get the old id. This make relationship ids brittle as
+	 * public APIs.
+	 * @return the id of this node
+	 */
 	public long getId();
 	
 	/**

@@ -20,23 +20,20 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * Represents a traversal in the node space. A Traverser is an {@link Iterable}
- * that encapsulates a number of traversal parameters (defined at traverser
- * creation) and returns a list of nodes that match those parameters. It is
- * created by invoking {@link Node#traverse Node.traverse(...)}. Upon creation,
- * the traverser is positioned at the start node, but it doesn't actually start
+ * A traversal in the node space. A Traverser is an {@link Iterable} that
+ * encapsulates a number of traversal parameters (defined at traverser creation)
+ * and returns a list of nodes that match those parameters. It is created by
+ * invoking {@link Node#traverse Node.traverse(...)}. Upon creation, the
+ * traverser is positioned at the start node, but it doesn't actually start
  * traversing until its {@link #iterator() iterator().next()} method is invoked.
  * Typically it's used in a for-each loop as follows:
  * <code><pre>
- * Traverser friends = node.traverse(
- *     Order.BREADTH_FIRST,
- *     StopEvaluator.END_OF_NETWORK,
- *     ReturnableEvaluator.ALL_BUT_START_NODE,
+ * Traverser friends = node.traverse( Order.BREADTH_FIRST,
+ *     StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL_BUT_START_NODE,
  *     MyRelationshipTypes.KNOWS, Direction.OUTGOING );
- *     
  * for ( Node friend : friends )
  * {
- *     // ...
+ * 	// ...
  * }
  * </pre></code>
  * @see Node#traverse
@@ -44,9 +41,10 @@ import java.util.Iterator;
 public interface Traverser extends Iterable<Node>
 {
 	/**
-	 * Enum defining the two types of traversals.
+	 * Defines a traversal order as used by the traversal framework.
 	 */
-	public static enum Order { 
+	public static enum Order
+	{ 
 		/**
 		 * Sets a depth first traversal meaning the traverser will 
 		 * go as deep as possible (increasing depth for each traversal) before 
@@ -58,7 +56,8 @@ public interface Traverser extends Iterable<Node>
 		 * Sets a breadth first traversal meaning the traverser will traverse
 		 * all relationships on the current depth before going deeper.
 		 */
-		BREADTH_FIRST }
+		BREADTH_FIRST
+	}
 	
 	/**
 	 * Returns the current traversal postion.
