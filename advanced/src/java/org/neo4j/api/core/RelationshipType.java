@@ -17,10 +17,10 @@
 package org.neo4j.api.core;
 
 /**
- * A relationship's type, which is a mandatory property on all relationships
- * that is used for navigating the node space. RelationshipType is in particular
- * a key part of the {@link Traverser traverser framework} but it's also used in
- * various {@link Node#getRelationships() relationship operations} on Node.
+ * A relationship type is a mandatory property on all relationships that is used
+ * to navigate the node space. RelationshipType is in particular a key part of
+ * the {@link Traverser traverser framework} but it's also used in various
+ * {@link Node#getRelationships() relationship operations} on Node.
  * <p>
  * Relationship types are declared by the client and can be handled either
  * dynamically or statically in a Neo-based application. Internally,
@@ -58,8 +58,7 @@ package org.neo4j.api.core;
  * using Java's identity operator (<code>==</code>). However, you usually
  * want to check whether a specific relationship <i>instance</i> is of a
  * certain type and that is best done with the
- * {@link Relationship#isType Relationship.isType} method, such as:
- * <code><pre>
+ * {@link Relationship#isType Relationship.isType} method, such as: <code><pre>
  *  if ( rel.isType( MyRelationshipTypes.CONTAINED_IN ) )
  * {
  *     ...
