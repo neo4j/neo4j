@@ -38,31 +38,6 @@ import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.transaction.TransactionFactory;
 
 
-/**
- * Use this class to create and find {@link Node nodes} and to create 
- * {@link Relationship relationships}. 
- * <p>
- * A loaded node (from persistence storage when not found in cache) will start 
- * in first phase only knowing about node id.
- * A relationship may become shallow if one of the nodes aren't in cache. See 
- * {@link NodeImpl} and {@link RelationshipImpl} for more information about 
- * different phases.
- * <p>
- * All public methods must be invoked within a transaction context, failure to 
- * do so will result in an exception. <CODE>createNode</CODE> and 
- * <CODE>createRelationship</CODE> methods will create a command that can 
- * execute and undo the desired operation. The command will be associated with 
- * the transaction and if the transaction fails all the commands participating 
- * in the transaction will be undone.
- * <p>
- * Methods that uses commands will first create a command and verify that
- * we're in a transaction context. To persist operations a pro-active event 
- * is generated and will cause the 
- * {@link org.neo4j.impl.persistence.BusinessLayerMonitor} to persist the 
- * then operation. 
- * If the event fails (false is returned)  the transaction is marked as 
- * rollback only and if the command will be undone.
- */
 public class NodeManager
 {
 	private static Logger log = Logger.getLogger( NodeManager.class.getName() );
@@ -92,12 +67,6 @@ public class NodeManager
 		return instance;
 	}
 	
-	/**
-	 * Creates a node, see class javadoc
-	 *
-	 * @return the created node
-	 * @throws CreateException if not in transaction or unable to create node
-	 */
 	public Node createNode() // throws CreateException
 	{
 		int id = IdGenerator.getGenerator().nextId( Node.class );
@@ -123,21 +92,6 @@ public class NodeManager
 		}
 	}
 	
-	/**
-	 * Create a relationship, see class javadoc.
-	 *
-	 * @param startNode the start node if directed or just one of the nodes
-	 * two nodes if not directed
-	 * @param endNode the end node if directed or just the other node if not
-	 * directed
-	 * @param type the relationship type
-	 * @param directed whether the relationship should be directed
-	 * @return the created relationship
-	 * @throws IllegalArgumentException If null param or invalid relationship
-	 * type
-	 * @throws CreateException if not in transaction or unable to create 
-	 * relationship
-	 */
 	public Relationship createRelationship( Node startNode, Node endNode, 
 		RelationshipType type )
 	{
@@ -151,9 +105,6 @@ public class NodeManager
 		{
 			RelationshipTypeHolder.getHolder().addValidRelationshipType( 
 				type.name(), true );
-//			setRollbackOnly();
-//			throw new IllegalArgumentException( type + " relationship type " + 
-//				"not valid, must be registered with NeoService first." );
 		}
 		
 		NodeImpl firstNode = getLightNode( (int) startNode.getId() );
