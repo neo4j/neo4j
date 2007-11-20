@@ -59,7 +59,7 @@ package org.neo4j.api.core;
  * want to check whether a specific relationship <i>instance</i> is of a
  * certain type and that is best done with the
  * {@link Relationship#isType Relationship.isType} method, such as: <code><pre>
- *  if ( rel.isType( MyRelationshipTypes.CONTAINED_IN ) )
+ * if ( rel.isType( MyRelationshipTypes.CONTAINED_IN ) )
  * {
  *     ...
  * }
