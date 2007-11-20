@@ -17,7 +17,7 @@
 			</includes>
 		</fileSet>
 		
-		<!-- source:target/*.jar -> assembly:/lib/bundles -->
+		<!-- source:target/*.jar -> assembly:/ -->
 		<fileSet>
 			<directory>target</directory>
 			<outputDirectory>/</outputDirectory>
