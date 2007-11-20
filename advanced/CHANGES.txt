@@ -22,6 +22,10 @@ o Shell: Now auto-reconnects to server.
 o Shell: Polish like cleaner output, filters to ls and bash-style prompt with
   variable expansion.
 o Core: Lots of performance tweaks and improvements.
+o Core: The internal version of the datastores have been changed. This release
+  will transparently upgrade old versions of the store files so there's nothing
+  manual involved. But after that, previous releases of Neo won't be able to
+  read the store files.
 o Core: Testing and robustification on Windows.
 o Core: Now fully supports array properties for all primitives and Strings.
 
