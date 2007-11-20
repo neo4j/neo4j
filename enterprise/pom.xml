@@ -21,7 +21,6 @@ as networks rather than tables. For more information, please see neo4j.org.
 		<testSourceDirectory>src/test</testSourceDirectory>
 		<plugins>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<skip>true</skip> <!-- TODO: set this to false after unit tests have been fixed -->
@@ -32,11 +31,11 @@ as networks rather than tables. For more information, please see neo4j.org.
 				<configuration>
 					<descriptors>
 						<descriptor>src/main/assembly/binary-release.xml</descriptor>
+						<descriptor>src/main/assembly/source-release.xml</descriptor>
 					</descriptors>
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
 			</plugin>
 			<plugin>
@@ -75,7 +74,6 @@ as networks rather than tables. For more information, please see neo4j.org.
 	<reporting>
 		<plugins>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<configuration>
 					<subpackages>org.neo4j.api</subpackages>
@@ -104,5 +102,26 @@ as networks rather than tables. For more information, please see neo4j.org.
 			</plugin>			
 		</plugins>
 	</reporting>
+
+	<profiles>
+    	<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
                         
 </project>
