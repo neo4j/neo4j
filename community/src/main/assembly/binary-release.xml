@@ -5,13 +5,15 @@
 		<format>zip</format>
 	</formats>
 	<fileSets>
-		<!-- source:{README,LICENSE}.txt -> assembly:/ -->
+		<!-- source:{README,LICENSE,COPYRIGHT,CHANGES}.txt -> assembly:/ -->
 		<fileSet>
 			<directory>.</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
 				<include>README.txt</include>
 				<include>LICENSE.txt</include>
+				<include>COPYRIGHT.txt</include>
+				<include>CHANGES.txt</include>
 			</includes>
 		</fileSet>
 		
