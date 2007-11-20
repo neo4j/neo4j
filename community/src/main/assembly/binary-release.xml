@@ -24,6 +24,10 @@
 			<includes>
 				<include>*.jar</include>
 			</includes>
+			<excludes>
+				<exclude>*-javadoc.jar</exclude>
+				<exclude>*-sources.jar</exclude>
+			</excludes>
 		</fileSet>
 		<!-- source:lib/*.jar -> assembly:/ -->
 		<fileSet>
