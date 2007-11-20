@@ -1,0 +1,50 @@
+<assembly>
+	<id>source</id>
+	<formats>
+		<format>tar.gz</format>
+		<format>zip</format>
+	</formats>
+	<fileSets>
+		<!-- source:{README,README-SOURCES,LICENSE,COPYRIGHT,CHANGES}.txt -> assembly:/ -->
+		<fileSet>
+			<directory>.</directory>
+			<outputDirectory>/</outputDirectory>
+			<includes>
+				<include>README.txt</include>
+				<include>README.sources.txt</include>
+				<include>LICENSE.txt</include>
+				<include>COPYRIGHT.txt</include>
+				<include>CHANGES.txt</include>
+			</includes>
+		</fileSet>
+		<!-- source:src/java -> assembly:/src/java -->
+		<fileSet>
+			<directory>src/java</directory>
+			<outputDirectory>/src/java</outputDirectory>
+		</fileSet>		
+		<!-- source:src/test -> assembly:/src/test -->
+		<fileSet>
+			<directory>src/test</directory>
+			<outputDirectory>/src/test</outputDirectory>
+		</fileSet>		
+		<!-- source:lib/*.jar -> assembly:/ -->
+		<fileSet>
+			<directory>lib</directory>
+			<outputDirectory>/</outputDirectory>
+			<includes>
+				<include>*.jar</include>
+			</includes>
+			<excludes>
+				<exclude>junit*.jar</exclude>
+			</excludes>
+		</fileSet>
+		<!-- source:src/main/assembly/*.txt -> assembly:/ -->
+		<fileSet>
+		    <directory>src/main/assembly/</directory>
+		    <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.txt</include>
+            </includes>		    
+		</fileSet>
+	</fileSets>
+</assembly>
