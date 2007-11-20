@@ -58,7 +58,7 @@ public interface NeoService
      * space. Usually, a client attaches relationships to this node that leads
      * into various parts of the node space. For more information about common
      * node space organizational patterns, see the design guide at
-     * http://neo4j.org/doc.
+     * <a href="http://neo4j.org/doc">http://neo4j.org/doc</a>.
      * @return the reference node
      * @throws RuntimeException if unable to get the reference node
      */
