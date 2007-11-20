@@ -19,7 +19,6 @@ package org.neo4j.impl.core;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
@@ -35,33 +34,6 @@ import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
 
-
-/**
- * This is the implementation of {@link Relationship}. Class 
- * <CODE>Relationship</CODE> has two different states/phases and lazy 
- * initialization to increase performance and decrease memory and resource 
- * In first phase (normal) it might have properties cached. 
- * Second phase (full) the whole relationship with all properties is loaded. 
- * Changes in phases are completely transparent to the user.
- * <p>
- * All public methods must be invoked within a transaction context, 
- * failure to do so will result in an exception. 
- * Modifying methods will create a command that can execute and undo the desired
- * operation. The command will be associated with the transaction and
- * if the transaction fails all the commands participating in the transaction 
- * will be undone.
- * <p>
- * Methods that uses commands will first create a command and verify that
- * we're in a transaction context. To persist operations a pro-active event 
- * is generated and will cause the 
- * {@link org.neo4j.impl.persistence.BusinessLayerMonitor} to persist the 
- * then operation. 
- * If the event fails (false is returned)  the transaction is marked as 
- * rollback only and if the command will be undone.
- * <p>
- * This implementation of node does not rely on persistence storage to 
- * enforce constrains. This is done by the {@link NeoConstraintsListener}. 
- */
 class RelationshipImpl 
 	implements Relationship, Comparable<Relationship>
 {
@@ -82,10 +54,8 @@ class RelationshipImpl
 		// new ArrayMap<Integer,Property>( 9, false, true );
 	private boolean isDeleted = false;
 	
-	/**
-	 * Dummy constructor for NodeManager to acquire read lock on relationship
-	 * when loading from PL.
-	 */
+	// Dummy constructor for NodeManager to acquire read lock on relationship
+	// when loading from PL.
 	RelationshipImpl( int id )
 	{
 		// when using this constructor only equals and hashCode methods are 
@@ -97,19 +67,6 @@ class RelationshipImpl
 		isDeleted = true;
 	}
 	
-	/**
-	 * Creates a node in second phase so both nodes are referenced. If  
-	 * <CODE>newRel</CODE> is <CODE>true</CODE> the phase will be set to 
-	 * full.
-	 *
-	 * @param id the relationship id
-	 * @param startNodeId the start node
-	 * @param endNodeId the end node
-	 * @param type relationship type
-	 * @param directed <CODE>true</CODE> if directed relationship
-	 * @param newRel true if this is a new relationship
-	 * @throws IllegalArgumentException if null parameter or startNode == endNode
-	 */
 	RelationshipImpl( int id, int startNodeId, int endNodeId, 
 		RelationshipType type, boolean newRel ) 
 	{
@@ -132,34 +89,17 @@ class RelationshipImpl
 		this.type = type;
 	}
 	
-	/**
-	 * Returns the relationship id.
-	 *
-	 * @return the unique relationship id
-	 */
 	public long getId()
 	{
 		return this.id;
 	}
 	
-	/**
-	 * Returns the two nodes for this relationship. If the node is directed
-	 * the starting node is in first and the ending node is last, however
-	 * this can only be assumed on {@link Direction directed} nodes.
-	 * <p>
-	 * If the relationship has a shallow node that node will be loaded and
-	 * phase changed to normal.
-	 *
-	 * @return the two nodes for this relationship
-	 */
 	public Node[] getNodes()
 	{
 		try
 		{
 			return new Node[]
 			{ 
-//				nodeManager.getNodeById( startNodeId ), 
-//				nodeManager.getNodeById( endNodeId )
 				new NodeProxy( startNodeId ),
 				new NodeProxy( endNodeId )
 			};
@@ -170,17 +110,6 @@ class RelationshipImpl
 		}
 	}
 	
-	/**
-	 * If <CODE>node</CODE> is one of the nodes in this relationship
-	 * the other node is returned. If <CODE>node</CODE> is not in this
-	 * relationship <CODE>null</CODE> is returned.
-	 * <p>
-	 * If the relationship has a shallow node that node will be loaded and
-	 * phase changed to normal.
-	 *
-	 * @param node a node in this relationship
-	 * @return the other node in this relationship
-	 */
 	public Node getOtherNode( Node node )
 	{
 		if ( startNodeId == (int) node.getId() )
@@ -219,38 +148,16 @@ class RelationshipImpl
 		return endNodeId;
 	}
 
-	/**
-	 * Returns the {@link RelationshipType} of this relationship.
-	 *
-	 * @return the relationship type
-	 */
 	public RelationshipType getType()
 	{
 		return type;
 	}
 
-	/**
-	 * Indicates whether this relationship is of the type 'type.'
-	 * @param type the type to check
-	 * @return <code>true</code> if this relationship is of the type
-	 * <code>type</code>, <code>false</code> otherwise
-	 */
 	public boolean isType( RelationshipType type )
     {
 		return type != null && type.name().equals( this.getType().name() );
     }
 	
-	/**
-	 * Returns the property for <CODE>key</CODE>.
-	 * <p>
-	 * First the existing cache is checked for property <CODE>key</CODE>
-	 * if the property is found it is returned at once. If not the full
-	 * relationship is loaded and then the cache is checked again.
-	 *
-	 * @param key the property name
-	 * @return the property object
-	 * @throws NotFoundException if this property doesn't exist
-	 */
 	public Object getProperty( String key ) throws NotFoundException
 	{
 		if ( key == null )
@@ -358,13 +265,6 @@ class RelationshipImpl
 		return defaultValue;	
 	}
 	
-	/**
-	 * Returns all properties on <CODE>this</CODE> relationship. The whole 
-	 * relationship will be loaded (if not full phase already) to make sure 
-	 * that all properties are present. 
-	 *
-	 * @return an object array containing all properties.
-	 */
 	public Iterable<Object> getPropertyValues()
 	{
 		acquireLock( this, LockType.READ );
@@ -385,13 +285,6 @@ class RelationshipImpl
 		}
 	}
 	
-	/**
-	 * Returns all property keys on <CODE>this</CODE> relationship. The whole 
-	 * relationship will be loaded (if not full phase already) to make sure 
-	 * that all properties are present.
-	 *
-	 * @return a string array containing all property keys.
-	 */
 	public Iterable<String> getPropertyKeys()
 	{
 		acquireLock( this, LockType.READ );
@@ -411,16 +304,6 @@ class RelationshipImpl
 		}			
 	}
 
-	/** 
-	 * Returns true if this relationship has the property <CODE>key</CODE>.
-	 * <p>
-	 * First the existing cache is checked for property <CODE>key</CODE>
-	 * if the property is found it is returned at once. If not the full
-	 * relationship is loaded and then the cache is checked again.
-	 *
-	 * @param key the property name
-	 * @return true if <CODE>key</CODE> property exists, else false
-	 */
 	public boolean hasProperty( String key )
 	{
 		acquireLock( this, LockType.READ );
@@ -462,17 +345,6 @@ class RelationshipImpl
 		}			
 	}
 	
-	/**
-	 * Adds a new property. Throws IllegalValueException if null parameter or 
-	 * a property with <CODE>key</CODE> already exists.
-	 * <p>
-	 * The relationship will enter full phase since we must make sure that no 
-	 * property <CODE>key</CODE> already exist.
-	 *
-	 * @param key the property name
-	 * @param value the value of the property
-	 * @throws IllegalValueException
-	 */
 	public void setProperty( String key, Object value ) 
 		throws IllegalValueException
 	{
@@ -559,14 +431,6 @@ class RelationshipImpl
 		}
 	}
 	
-	/**
-	 * Removes the property <CODE>key</CODE>. If null property <CODE>key</CODE> 
-	 * a <CODE>NotFoundException</CODE> is thrown. If property doesn't exist
-	 * <CODE>null</CODE> is returned. 
-	 *
-	 * @param key the property name
-	 * @return the removed property value
-	 */
 	public Object removeProperty( String key )
 	{
 		if ( key == null )
@@ -644,17 +508,6 @@ class RelationshipImpl
 		}
 	}
 	
-	/**
-	 * Deletes this relationship removing it from cache and persistent storage. 
-	 * If unable to delete a <CODE>DeleteException</CODE> is thrown.
-	 * <p>
-	 * The phase is never changed during this operation. The relationship will 
-	 * be removed from cache and invoking any method on this relationship after 
-	 * delete is invalid. Doing so might result in a checked or runtime 
-	 * exception being thrown. 
-	 *
-	 * @throws DeleteException if unable to delete
-	 */
 	public void delete() //throws DeleteException
 	{
 		NodeImpl startNode = null;
@@ -745,11 +598,6 @@ class RelationshipImpl
 		}
 	}
 
-	/**
-	 * To string method.
-	 *
-	 * return a string representation of this relationship
-	 */
 	public String toString()
 	{
 		return	"Relationship #" + this.getId() + " of type " + type + 
