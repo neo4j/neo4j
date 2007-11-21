@@ -1142,6 +1142,11 @@ class NodeImpl implements Node, Comparable<Node>
 		StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator, 
 		RelationshipType relationshipType, Direction direction )
 	{
+		if ( direction == null )
+		{
+			throw new IllegalArgumentException( "Null direction" );
+		}
+		// rest of parameters will be validated in traverser package
 		return travFactory.createTraverser( traversalOrder, this, 
 			relationshipType, direction, stopEvaluator, returnableEvaluator );
 	}
@@ -1151,6 +1156,13 @@ class NodeImpl implements Node, Comparable<Node>
 		RelationshipType firstRelationshipType, Direction firstDirection, 
 		RelationshipType secondRelationshipType, Direction secondDirection )
 	{
+		if ( firstDirection == null || secondDirection == null )
+		{
+			throw new IllegalArgumentException( "Null direction, " + 
+				"firstDirection=" + firstDirection + "secondDirection=" +
+				secondDirection );
+		}
+		// rest of parameters will be validated in traverser package
 		RelationshipType[] types = new RelationshipType[2];
 		Direction[] dirs = new Direction[2];
 		types[0] = firstRelationshipType;
