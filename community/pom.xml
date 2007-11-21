@@ -9,7 +9,7 @@
 	<modelVersion>4.0.0</modelVersion>	
 	<groupId>org.neo4j</groupId>
 	<artifactId>neo</artifactId>
-	<version>1.0-b6-SNAPSHOT</version>
+	<version>1.0-rc1-SNAPSHOT</version>
 	<name>Neo</name>
 	<description>
 Neo is a lightweight, embedded Java database designed to store data structured
@@ -81,7 +81,7 @@ as networks rather than tables. For more information, please see neo4j.org.
 		<dependency> 
 			<groupId>org.neo4j</groupId>
 			<artifactId>shell</artifactId>
-			<version>1.0-b6-SNAPSHOT</version>
+			<version>1.0-rc1-SNAPSHOT</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
