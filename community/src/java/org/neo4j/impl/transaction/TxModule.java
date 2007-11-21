@@ -89,6 +89,7 @@ public class TxModule
 	public void stop()
 	{
 		XaDataSourceManager.getManager().unregisterAllDataSources();
+		TxManager.getManager().stop();
 	}
 	
 	public void destroy()
