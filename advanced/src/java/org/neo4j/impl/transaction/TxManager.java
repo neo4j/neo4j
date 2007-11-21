@@ -69,6 +69,22 @@ public class TxManager implements TransactionManager
 	{
 	}
 	
+	void stop()
+	{
+		if ( txLog != null )
+		{
+			try
+			{
+				txLog.close();
+			}
+			catch ( IOException e )
+			{
+				log.warning( "Unable to close tx log[" + txLog.getName() + "]" + 
+					", " + e );
+			}
+		}
+	}
+	
 	void init()
 	{
 		txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
