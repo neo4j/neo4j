@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+import javax.transaction.TransactionManager;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Transaction;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
@@ -32,8 +32,8 @@ import org.neo4j.impl.util.ArrayMap;
 
 class RelationshipTypeHolder
 {
-	private static final RelationshipTypeHolder holder = 
-		new RelationshipTypeHolder();
+//	private static final RelationshipTypeHolder holder = 
+//		new RelationshipTypeHolder();
 	private static Logger log = 
 		Logger.getLogger( RelationshipTypeHolder.class.getName() );
 	
@@ -41,14 +41,22 @@ class RelationshipTypeHolder
 	private Map<Integer,String> relTranslation =
 		new ConcurrentHashMap<Integer,String>();
 	
-	private RelationshipTypeHolder()
+	private final TransactionManager transactionManager;
+	private final EventManager eventManager;
+	private final IdGenerator idGenerator;
+	
+	RelationshipTypeHolder( TransactionManager transactionManager, 
+		EventManager eventManager, IdGenerator idGenerator )
 	{
+		this.transactionManager = transactionManager;
+		this.eventManager = eventManager;
+		this.idGenerator = idGenerator;
 	}
 	
-	static RelationshipTypeHolder getHolder()
-	{
-		return holder;
-	}
+//	static RelationshipTypeHolder getHolder()
+//	{
+//		return holder;
+//	}
 	
 	void addRawRelationshipTypes( RawRelationshipTypeData[] types )
 	{
@@ -147,7 +155,7 @@ class RelationshipTypeHolder
 	
 	// temporary hack for b6 that will be changed to property index like 
 	// implementation
-	private static class RelTypeCreater extends Thread
+	private class RelTypeCreater extends Thread
 	{
 		private boolean success = false;
 		private String name;
@@ -171,39 +179,35 @@ class RelationshipTypeHolder
 		
 		public synchronized void run()
 		{
-			Transaction tx = Transaction.begin();
 			try
 			{
-				id = IdGenerator.getGenerator().nextId( 
-					RelationshipType.class );
-				EventManager em = EventManager.getManager();
+				transactionManager.begin();
+				id = idGenerator.nextId( RelationshipType.class );
 				EventData eventData = new EventData( new RelTypeOpData( id, 
 					name ) );
-				if ( !em.generateProActiveEvent( Event.RELATIONSHIPTYPE_CREATE, 
-					eventData ) )
+				if ( !eventManager.generateProActiveEvent( 
+					Event.RELATIONSHIPTYPE_CREATE, eventData ) )
 				{
 					throw new RuntimeException( 
 						"Generate pro-active event failed." );
 				}
-				em.generateReActiveEvent( Event.RELATIONSHIPTYPE_CREATE, 
-					eventData );
-				tx.success();
-				tx.finish();
+				eventManager.generateReActiveEvent( 
+					Event.RELATIONSHIPTYPE_CREATE, eventData );
+				transactionManager.commit();
 				success = true;
-			} 
+			}
+			catch ( Throwable t )
+			{
+				try
+				{
+					transactionManager.rollback();
+				}
+				catch ( Throwable tt )
+				{
+				}
+			}
 			finally
 			{
-				if ( !success )
-				{
-					try
-					{
-						tx.failure();
-						tx.finish();
-					}
-					catch ( Throwable t ) 
-					{ // ok
-					}
-				}
 				this.notify();
 			}
 		}

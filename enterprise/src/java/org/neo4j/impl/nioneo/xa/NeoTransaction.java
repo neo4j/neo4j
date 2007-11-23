@@ -30,9 +30,11 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.core.LockReleaser;
-import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.core.RawPropertyIndex;
+import org.neo4j.impl.event.Event;
+import org.neo4j.impl.event.EventData;
+import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeRecord;
@@ -64,8 +66,8 @@ class NeoTransaction extends XaTransaction
 {
 	private static Logger logger = 
 		Logger.getLogger( NeoTransaction.class.getName() );
-	private static final LockManager lockManager = LockManager.getManager();
-	private static final LockReleaser lockReleaser = LockReleaser.getManager();
+//	private static final LockManager lockManager = LockManager.getManager();
+//	private static final LockReleaser lockReleaser = LockReleaser.getManager();
 	
 	private Map<Integer,NodeRecord> nodeRecords = 
 		new HashMap<Integer,NodeRecord>();
@@ -94,11 +96,20 @@ class NeoTransaction extends XaTransaction
 	private boolean committed = false;
 	private boolean prepared = false;
 	
-	NeoTransaction( int identifier, XaLogicalLog log, NeoStore neoStore )
+	private final LockReleaser lockReleaser;
+	private final LockManager lockManager;
+	private final EventManager eventManager;
+	
+	NeoTransaction( int identifier, XaLogicalLog log, NeoStore neoStore, 
+		LockReleaser lockReleaser, LockManager lockManager, 
+		EventManager eventManager )
 	{
 		super( identifier, log );
 		this.neoStore = neoStore;
 		this.readFromBuffer = neoStore.getNewReadFromBuffer();
+		this.lockReleaser = lockReleaser;
+		this.lockManager = lockManager;
+		this.eventManager = eventManager;
 	}
 	
 	public boolean isReadOnly()
@@ -226,7 +237,7 @@ class NeoTransaction extends XaTransaction
 		}
 		try
 		{
-			NodeManager nm = NodeManager.getManager();
+			// NodeManager nm = NodeManager.getManager();
 			for ( RelationshipTypeRecord record : relTypeRecords.values() )
 			{
 				if ( record.isCreated() )
@@ -241,7 +252,7 @@ class NeoTransaction extends XaTransaction
 						}
 					}
 				}
-				nm.removeRelationshipTypeFromCache( record.getId() );
+				removeRelationshipTypeFromCache( record.getId() );
 			}
 			for ( NodeRecord record : nodeRecords.values() )
 			{
@@ -249,7 +260,7 @@ class NeoTransaction extends XaTransaction
 				{
 					getNodeStore().freeId( record.getId() );
 				}
-				nm.removeNodeFromCache( record.getId() );
+				removeNodeFromCache( record.getId() );
 			}
 			for ( RelationshipRecord record : relRecords.values() )
 			{
@@ -257,7 +268,7 @@ class NeoTransaction extends XaTransaction
 				{
 					getRelationshipStore().freeId( record.getId() );
 				}
-				nm.removeRelationshipFromCache( record.getId() );
+				removeRelationshipFromCache( record.getId() );
 			}
 			for ( PropertyIndexRecord record : propIndexRecords.values() )
 			{
@@ -272,17 +283,18 @@ class NeoTransaction extends XaTransaction
 								dynamicRecord.getId() );
 						}
 					}
+					// removePropertyIndexFromCache( record.getId() );
 				}
 			}
 			for ( PropertyRecord record : propertyRecords.values() )
 			{
 				if ( record.getNodeId() != -1 )
 				{
-					nm.removeNodeFromCache( record.getNodeId() );
+					removeNodeFromCache( record.getNodeId() );
 				}
 				else if ( record.getRelId() != -1 )
 				{
-					nm.removeRelationshipFromCache( record.getRelId() );
+					removeRelationshipFromCache( record.getRelId() );
 				}
 				if ( record.isCreated() )
 				{
@@ -320,6 +332,30 @@ class NeoTransaction extends XaTransaction
 				getIdentifier() + "], " + e);
 		}
 	}
+	
+	private void removeRelationshipTypeFromCache( int id )
+    {
+		eventManager.generateProActiveEvent( Event.PURGE_REL_TYPE, 
+			new EventData( id ) );
+    }
+
+	private void removeRelationshipFromCache( int id )
+    {
+		eventManager.generateProActiveEvent( Event.PURGE_REL, 
+			new EventData( id ) );
+    }
+	
+	private void removeNodeFromCache( int id )
+    {
+		eventManager.generateProActiveEvent( Event.PURGE_NODE, 
+			new EventData( id ) );
+    }
+
+	private void removePropertyIndexFromCache( int id )
+    {
+		eventManager.generateProActiveEvent( Event.PURGE_PROP_INDEX, 
+			new EventData( id ) );
+    }
 	
 	public void doCommit() throws XAException
 	{

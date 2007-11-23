@@ -23,7 +23,6 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import org.neo4j.impl.transaction.NotInTransactionException;
-import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.util.ArrayMap;
 
 /**
@@ -48,8 +47,9 @@ class ResourceBroker
 {
 	private static Logger log = Logger.getLogger( 
 		ResourceBroker.class.getName() );
-	private static final PersistenceSourceDispatcher dispatcher =
-		PersistenceSourceDispatcher.getDispatcher();
+
+	private final PersistenceSourceDispatcher dispatcher; // =
+		// PersistenceSourceDispatcher.getDispatcher();
 
 	private ArrayMap<Transaction,ResourceConnection> txConnectionMap = 
 		new ArrayMap<Transaction,ResourceConnection>( 5, true, true );
@@ -57,17 +57,25 @@ class ResourceBroker
 	// A hook that releases resources after tx.commit
 	private final Synchronization txCommitHook = new TxCommitHook();
 	
-	private static final ResourceBroker instance = new ResourceBroker();
-	private ResourceBroker() { }
+//	private static final ResourceBroker instance = new ResourceBroker();
 	
-	/**
-	 * Singleton accessor.
-	 * @return the singleton resource broker
-	 */
-	static ResourceBroker getBroker()
+	private final TransactionManager transactionManager;
+	
+	ResourceBroker( TransactionManager transactionManager ) 
 	{
-		return instance;
+		this.transactionManager = transactionManager;
+		dispatcher = new PersistenceSourceDispatcher();
 	}
+	
+	PersistenceSourceDispatcher getDispatcher()
+	{
+		return dispatcher;
+	}
+	
+//	static ResourceBroker getBroker()
+//	{
+//		return instance;
+//	}
 	
 	/**
 	 * Acquires the resource connection that should be used to persist
@@ -211,8 +219,7 @@ class ResourceBroker
 		try
 		{
 			// Get transaction for current thread
-			TransactionManager tm = TransactionFactory.getTransactionManager();
-			Transaction tx = tm.getTransaction();
+			Transaction tx = transactionManager.getTransaction();
 
 			// If none found, yell about it
 			if ( tx == null )
@@ -230,7 +237,7 @@ class ResourceBroker
 		}
 	}
 	
-	private static class TxCommitHook implements Synchronization
+	private class TxCommitHook implements Synchronization
 	{
 		public void afterCompletion( int param )
 		{
@@ -249,7 +256,7 @@ class ResourceBroker
 		{
 			try
 			{
-				getBroker().delistResourcesForTransaction();
+				delistResourcesForTransaction();
 			}
 			catch ( Throwable t )
 			{
@@ -262,7 +269,7 @@ class ResourceBroker
 		{
 			try
 			{
-				getBroker().releaseResourceConnectionsForTransaction();
+				releaseResourceConnectionsForTransaction();
 			}
 			catch ( Throwable t )
 			{

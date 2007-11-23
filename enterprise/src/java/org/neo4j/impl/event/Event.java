@@ -86,6 +86,14 @@ public class Event
 	public static final Event TX_IMMEDIATE_COMMIT =
 		new Event( "TX_IMMEDIATE_COMMIT" );
 	
+	// remove element from cache
+	public static final Event PURGE_NODE = new Event( "PURGE_NODE" );
+	public static final Event PURGE_REL = new Event( "PURGE_REL" );
+	public static final Event PURGE_REL_TYPE = new Event( "PURGE_REL_TYPE" );
+	public static final Event PURGE_PROP_INDEX = 
+		new Event( "PURGE_PROP_INDEX" );
+	
+	
 	protected Event( String name )
 	{
 		this.name = name;

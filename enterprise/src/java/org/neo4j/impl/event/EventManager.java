@@ -51,7 +51,7 @@ public class EventManager
 	private static Logger log =
 		Logger.getLogger( EventManager.class.getName() );
 	
-	private static final EventManager instance = new EventManager();
+//	private static final EventManager instance = new EventManager();
 	
 	private Map<Event,List<ProActiveEventListener>> proActiveEventListeners = 
 		new HashMap<Event,List<ProActiveEventListener>>();
@@ -62,21 +62,17 @@ public class EventManager
 	private boolean startIsOk = true;
 	private boolean destroyed = true;	
 
-	private EventQueue eventQueue = new EventQueue();
+	private EventQueue eventQueue;
 	
-	private EventManager()
+	public EventManager()
 	{
+		eventQueue = new EventQueue( this );
 	}
 	
-	/**
-	 * Returns the single instance of this class.
-	 *
-	 * @return the <CODE>EventManager</CODE> instance
-	 */
-	public static EventManager getManager()
-	{
-		return instance;
-	}
+//	public static EventManager getManager()
+//	{
+//		return instance;
+//	}
 	
 	/**
 	 * Generates a pro-active event to all pro-active event listeners 
@@ -395,11 +391,11 @@ public class EventManager
 		{
 			startIsOk = true;
 			eventQueue.shutdown();
-			eventQueue = new EventQueue();
+			eventQueue = new EventQueue( this );
 		}
 		else
 		{
-			log.warning( "EventModule already stoped" );
+			log.warning( "EventModule already stopped" );
 		}
 	}
 	

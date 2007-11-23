@@ -19,10 +19,8 @@ package org.neo4j.impl.shell.apps;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
@@ -56,8 +54,9 @@ public class Cd extends NeoApp
 		Node newNode = null;
 		if ( parser.arguments().isEmpty() )
 		{
-			newNode = NodeManager.getManager().getReferenceNode();
-			paths.clear();
+			throw new RuntimeException( "fix this" );
+			// newNode = NodeManager.getManager().getReferenceNode();
+			// paths.clear();
 		}
 		else
 		{

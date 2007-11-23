@@ -42,6 +42,9 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+import org.neo4j.impl.event.Event;
+import org.neo4j.impl.event.EventData;
+import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.util.ArrayMap;
 
 /**
@@ -52,7 +55,7 @@ import org.neo4j.impl.util.ArrayMap;
 public class TxManager implements TransactionManager
 {
 	private static Logger log = Logger.getLogger( TxManager.class.getName() );
-	private static final TxManager manager = new TxManager();
+	// private static final TxManager manager = new TxManager();
 	
 	private ArrayMap<Thread,TransactionImpl> txThreadMap; 
 	
@@ -60,13 +63,23 @@ public class TxManager implements TransactionManager
 	private String txLog1FileName = "var/tm/tm_tx_log.1"; 
 	private String txLog2FileName = "var/tm/tm_tx_log.2";
 	private int maxTxLogRecordCount = 1000;
+	private int eventIdentifierCounter = 0;
 	
 	private TxLog txLog = null;
-	
+	private XaDataSourceManager xaDsManager = null;
 	private boolean tmOk = false;
 	
-	private TxManager()
+	private final EventManager eventManager;
+	
+	TxManager( EventManager eventManager )
 	{
+		this.eventManager = eventManager;
+	}
+
+	
+	synchronized int getNextEventIdentifier()
+	{
+		return eventIdentifierCounter++;
 	}
 	
 	void stop()
@@ -85,8 +98,9 @@ public class TxManager implements TransactionManager
 		}
 	}
 	
-	void init()
+	void init( XaDataSourceManager xaDsManager )
 	{
+		this.xaDsManager = xaDsManager;
 		txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
 		String txLogDir = System.getProperty( "neo.tx_log_directory" );
 		if ( txLogDir == null )
@@ -157,10 +171,10 @@ public class TxManager implements TransactionManager
 		}
 	}
 	
-	public static TxManager getManager()
-	{
-		return manager;
-	}
+//	public static TxManager getManager()
+//	{
+//		return manager;
+//	}
 	
 	synchronized TxLog getTxLog() throws IOException
 	{
@@ -490,7 +504,7 @@ public class TxManager implements TransactionManager
 			throw new NotSupportedException( 
 				"Nested transactions not supported" );
 		}
-		tx = new TransactionImpl();
+		tx = new TransactionImpl( this );
 		txThreadMap.put( thread, tx );
 		try
 		{
@@ -504,6 +518,19 @@ public class TxManager implements TransactionManager
 			throw new SystemException( "TM encountered a problem, " +
 				" error writing transaction log," + e );
 		}
+		eventManager.generateReActiveEvent(
+			Event.TX_BEGIN, new EventData( tx.getEventIdentifier() ) );
+		try
+		{
+			tx.registerSynchronization( 
+				new TxEventGenerator( eventManager, tx ) );
+		}
+		catch ( Exception e )
+		{
+			throw new SystemException( "" + e );
+		}
+		eventManager.generateProActiveEvent( Event.TX_IMMEDIATE_BEGIN, 
+			new EventData( tx.getEventIdentifier() ) );
 	}
 
 	public void commit() throws RollbackException, HeuristicMixedException,
@@ -532,10 +559,16 @@ public class TxManager implements TransactionManager
 		if ( tx.getStatus() == Status.STATUS_ACTIVE )
 		{
 			commit( thread, tx );
+			Event event = Event.TX_IMMEDIATE_COMMIT;
+			eventManager.generateProActiveEvent(
+				event, new EventData( tx.getEventIdentifier() ) );
 		}
 		else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
 		{
 			rollbackCommit( thread, tx );
+			Event event = Event.TX_IMMEDIATE_ROLLBACK;
+			eventManager.generateProActiveEvent(
+				event, new EventData( tx.getEventIdentifier() ) );
 		}
 		else
 		{
@@ -723,6 +756,9 @@ public class TxManager implements TransactionManager
 					" error writing transaction log," + e );
 			}
 			tx.setStatus( Status.STATUS_NO_TRANSACTION );
+			Event event = Event.TX_IMMEDIATE_ROLLBACK;
+			eventManager.generateProActiveEvent(
+				event, new EventData( tx.getEventIdentifier() ) );
 		}
 		else 
 		{
@@ -816,12 +852,12 @@ public class TxManager implements TransactionManager
 	
 	byte[] getBranchId( XAResource xaRes )
 	{
-		return XaDataSourceManager.getManager().getBranchId( xaRes );
+		return xaDsManager.getBranchId( xaRes );
 	}
 	
 	XAResource getXaResource( byte branchId[] )
 	{
-		return XaDataSourceManager.getManager().getXaResource( branchId );
+		return xaDsManager.getXaResource( branchId );
 	}
 	
 	String getTxStatusAsString( int status )

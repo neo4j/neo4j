@@ -36,7 +36,17 @@ public class IdGeneratorModule
 	
 	// -- Attributes
 	private PersistenceSource	persistenceSource	= null;
+	private final IdGenerator idGenerator;
 	
+	public IdGeneratorModule()
+	{
+		this.idGenerator = new IdGenerator();
+	}
+	
+	public IdGenerator getIdGenerator()
+	{
+		return idGenerator;
+	}
 	
 	public synchronized void init()
 	{
@@ -46,7 +56,7 @@ public class IdGeneratorModule
 	public synchronized void start()
 	{
 		// Configure the IdGenerator
-		IdGenerator.getGenerator().configure( this.getPersistenceSource() );
+		idGenerator.configure( this.getPersistenceSource() );
 	}
 	
 	public synchronized void reload()

@@ -22,13 +22,13 @@ import org.neo4j.api.core.RelationshipType;
 
 class RelationshipProxy implements Relationship
 {
-	private static final NodeManager nm = NodeManager.getManager();
-
 	private final int relId;
+	private final NodeManager nm;
 	
-	RelationshipProxy( int relId )
+	RelationshipProxy( int relId, NodeManager nodeManager )
 	{
 		this.relId = relId;
+		this.nm = nodeManager;
 	}
 	
 	public long getId()
