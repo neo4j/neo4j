@@ -234,6 +234,7 @@ public class XaLogicalLog
 	{
 		// get the neo tx identifier
 		buffer.clear(); buffer.limit( 4 );
+		long position = fileChannel.position();
 		if ( fileChannel.read( buffer ) != buffer.limit() )
 		{
 			return false;

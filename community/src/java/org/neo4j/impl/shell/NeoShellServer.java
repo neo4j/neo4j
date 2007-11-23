@@ -72,8 +72,9 @@ public class NeoShellServer extends SimpleAppServer
 	{
 		public String getReplacement( ShellServer server, Session session )
 		{
-			return "" + NeoApp.getDisplayNameForNode(
-				NeoApp.getCurrentNode( session ) );
+			throw new RuntimeException( "Fix this" );
+//			return "" + NeoApp.getDisplayNameForNode(
+//				NeoApp.getCurrentNode( session ) );
 		}
 	}
 }

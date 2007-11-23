@@ -28,14 +28,13 @@ package org.neo4j.impl.persistence;
 public class IdGenerator
 {
 	// -- Singleton stuff
-	private static final IdGenerator instance = new IdGenerator();
-	private IdGenerator() {}
+//	private static final IdGenerator instance = new IdGenerator();
 	
-	/**
-	 * Singleton accessor.
-	 * @return the singleton id generator
-	 */
-	public static IdGenerator getGenerator() { return instance; }
+	IdGenerator()
+	{
+	}
+	
+//	public static IdGenerator getGenerator() { return instance; }
 	
 	
 	// -- Attributes

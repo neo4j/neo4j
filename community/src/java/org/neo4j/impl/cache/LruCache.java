@@ -30,6 +30,8 @@ public class LruCache<K,E> extends Cache<K,E>
 	private final String name;
 	int maxSize = 1000;
 	private boolean resizing = false;
+	
+	private final AdaptiveCacheManager cacheManager;
 
 	private Map<K,E> cache = new LinkedHashMap<K,E>( 500, 0.75f, true )
 	{
@@ -53,7 +55,10 @@ public class LruCache<K,E> extends Cache<K,E>
 	
 	void adaptCache()
 	{
-		AdaptiveCacheManager.getManager().adaptCache( this );
+		if ( cacheManager != null )
+		{
+			cacheManager.adaptCache( this );
+		}
 	}
 	
 	/**
@@ -63,8 +68,10 @@ public class LruCache<K,E> extends Cache<K,E>
 	 * @param name name of cache
 	 * @param maxSize maximum size of this cache
 	 */
-	public LruCache( String name, int maxSize )
+	public LruCache( String name, int maxSize, 
+		AdaptiveCacheManager cacheManager )
 	{
+		this.cacheManager = cacheManager;
 		if ( name == null || maxSize < 1 )
 		{
 			throw new IllegalArgumentException( "maxSize=" + maxSize + 

@@ -19,11 +19,10 @@ package org.neo4j.impl.traversal;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.TraversalPosition;
-import org.neo4j.impl.core.NodeManager;
 
 class TraversalPositionImpl implements TraversalPosition
 {
-	private static NodeManager nodeManager = NodeManager.getManager();
+//	private static NodeManager nodeManager = NodeManager.getManager();
 	
 	private Node				currentNode			= null;
 	private Node				previousNode		= null;
@@ -79,12 +78,12 @@ class TraversalPositionImpl implements TraversalPosition
 	    return this.depth() > 0;
     }
 	
-	boolean isValid()
+/*	boolean isValid()
 	{
 		if ( lastRelTraversed == null )
 		{
 			return true;
 		}
-		return nodeManager.isValidRelationship( lastRelTraversed );
-	}
+		// return nodeManager.isValidRelationship( lastRelTraversed );
+	}*/
 }

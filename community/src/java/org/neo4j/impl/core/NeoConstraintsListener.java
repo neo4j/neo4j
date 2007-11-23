@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.event.Event;
@@ -34,8 +35,6 @@ import org.neo4j.impl.event.EventListenerNotRegisteredException;
 import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.event.ProActiveEventListener;
 import org.neo4j.impl.persistence.PersistenceMetadata;
-import org.neo4j.impl.transaction.TransactionFactory;
-import org.neo4j.impl.transaction.TxManager;
 import org.neo4j.impl.util.ArrayMap;
 
 /**
@@ -49,46 +48,51 @@ class NeoConstraintsListener implements ProActiveEventListener
 {
 	static Logger log = Logger.getLogger( 
 		NeoConstraintsListener.class.getName() );
-	private static final NeoConstraintsListener listener = 
-		new NeoConstraintsListener();
+//	private static final NeoConstraintsListener listener = 
+//		new NeoConstraintsListener();
 	
 	// evaluator for each running transaction
 	private final ArrayMap<Thread,NeoConstraintsEvaluator> evaluators = 
 		new ArrayMap<Thread,NeoConstraintsEvaluator>( 5, true, true );
 
-	private NeoConstraintsListener()
+	private final TransactionManager transactionManager;
+	private final EventManager eventManager;
+	
+	NeoConstraintsListener( TransactionManager transactionManager, 
+		EventManager eventManager )
 	{
+		this.transactionManager = transactionManager;
+		this.eventManager = eventManager;
 	}
 	
-	static NeoConstraintsListener getListener()
-	{
-		return listener;
-	}
+//	static NeoConstraintsListener getListener()
+//	{
+//		return listener;
+//	}
 	
 	void registerEventListeners()
 	{
-		EventManager evtMgr = EventManager.getManager();
 		try
 		{
-			evtMgr.registerProActiveEventListener( this, 
+			eventManager.registerProActiveEventListener( this, 
 				Event.NODE_CREATE );
-			evtMgr.registerProActiveEventListener( this, 
+			eventManager.registerProActiveEventListener( this, 
 				Event.NODE_DELETE );
-			evtMgr.registerProActiveEventListener( this, 
+			eventManager.registerProActiveEventListener( this, 
 				Event.NODE_ADD_PROPERTY );
-			evtMgr.registerProActiveEventListener( this, 
+			eventManager.registerProActiveEventListener( this, 
 				Event.NODE_CHANGE_PROPERTY );
-			evtMgr.registerProActiveEventListener( this, 
+			eventManager.registerProActiveEventListener( this, 
 				Event.NODE_REMOVE_PROPERTY );
-			evtMgr.registerProActiveEventListener( this, 
+			eventManager.registerProActiveEventListener( this, 
 				Event.RELATIONSHIP_CREATE );
-			evtMgr.registerProActiveEventListener( this, 
+			eventManager.registerProActiveEventListener( this, 
 				Event.RELATIONSHIP_DELETE );
-			evtMgr.registerProActiveEventListener( this, 
+			eventManager.registerProActiveEventListener( this, 
 				Event.RELATIONSHIP_ADD_PROPERTY );
-			evtMgr.registerProActiveEventListener( this, 
+			eventManager.registerProActiveEventListener( this, 
 				Event.RELATIONSHIP_CHANGE_PROPERTY );
-			evtMgr.registerProActiveEventListener( this, 
+			eventManager.registerProActiveEventListener( this, 
 				Event.RELATIONSHIP_REMOVE_PROPERTY );
 		}
 		catch ( EventListenerNotRegisteredException e )
@@ -105,28 +109,27 @@ class NeoConstraintsListener implements ProActiveEventListener
 	
 	void unregisterEventListeners()
 	{
-		EventManager evtMgr = EventManager.getManager();
 		try
 		{
-			evtMgr.unregisterProActiveEventListener( this, 
+			eventManager.unregisterProActiveEventListener( this, 
 				Event.NODE_CREATE );
-			evtMgr.unregisterProActiveEventListener( this, 
+			eventManager.unregisterProActiveEventListener( this, 
 				Event.NODE_DELETE );
-			evtMgr.unregisterProActiveEventListener( this, 
+			eventManager.unregisterProActiveEventListener( this, 
 				Event.NODE_ADD_PROPERTY );
-			evtMgr.unregisterProActiveEventListener( this, 
+			eventManager.unregisterProActiveEventListener( this, 
 				Event.NODE_CHANGE_PROPERTY );
-			evtMgr.unregisterProActiveEventListener( this, 
+			eventManager.unregisterProActiveEventListener( this, 
 				Event.NODE_REMOVE_PROPERTY );
-			evtMgr.unregisterProActiveEventListener( this, 
+			eventManager.unregisterProActiveEventListener( this, 
 				Event.RELATIONSHIP_CREATE );
-			evtMgr.unregisterProActiveEventListener( this, 
+			eventManager.unregisterProActiveEventListener( this, 
 				Event.RELATIONSHIP_DELETE );
-			evtMgr.unregisterProActiveEventListener( this, 
+			eventManager.unregisterProActiveEventListener( this, 
 				Event.RELATIONSHIP_ADD_PROPERTY );
-			evtMgr.unregisterProActiveEventListener( this, 
+			eventManager.unregisterProActiveEventListener( this, 
 				Event.RELATIONSHIP_CHANGE_PROPERTY );
-			evtMgr.unregisterProActiveEventListener( this, 
+			eventManager.unregisterProActiveEventListener( this, 
 				Event.RELATIONSHIP_REMOVE_PROPERTY );
 		}
 		catch ( EventListenerNotRegisteredException e )
@@ -141,7 +144,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 		Transaction tx = null;
 		try
 		{
-			int status = TxManager.getManager().getStatus();
+			int status = transactionManager.getStatus();
 			if ( status == Status.STATUS_NO_TRANSACTION || 
 				status == Status.STATUS_MARKED_ROLLBACK )
 			{
@@ -154,8 +157,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 				currentThread );
 			if ( evaluator == null )
 			{
-				tx = TransactionFactory.getTransactionManager().
-					getTransaction();
+				tx = transactionManager.getTransaction();
 				evaluator = new NeoConstraintsEvaluator();
 				tx.registerSynchronization( evaluator );
 				evaluators.put( currentThread, evaluator );
@@ -169,7 +171,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 		return false;
 	}
 	
-	private static class NeoConstraintsEvaluator implements Synchronization
+	private class NeoConstraintsEvaluator implements Synchronization
 	{
 		private Map<Integer,NodeImpl> deletedNodes = null;
 		private Set<RelationshipImpl> deletedRelationships = null;
@@ -253,14 +255,14 @@ class NeoConstraintsListener implements ProActiveEventListener
 			// but since we have write lock on them they are valid?
 
 			// verify relationship type
-			RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
-			if ( ! rth.isValidRelationshipType( rel.getType() ) )
-			{
-				log.severe( "Illegal relationship type[" + 
-					rel.getType() + "] for created relationship[" + 
-					rel + "]" );
-				return false;
-			}
+//			RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
+//			if ( ! rth.isValidRelationshipType( rel.getType() ) )
+//			{
+//				log.severe( "Illegal relationship type[" + 
+//					rel.getType() + "] for created relationship[" + 
+//					rel + "]" );
+//				return false;
+//			}
 			
 			return true;
 		}
@@ -401,7 +403,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 			// no harm done but will get the "severe" log message
 			try
 			{
-			getListener().removeThisEvaluator();
+			removeThisEvaluator();
 			if ( getTransactionStatus() == Status.STATUS_MARKED_ROLLBACK )
 			{
 				// no need to evaluate
@@ -446,7 +448,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 		{
 			try
 			{
-				TransactionFactory.getTransactionManager().setRollbackOnly();
+				transactionManager.setRollbackOnly();
 			}
 			catch ( javax.transaction.SystemException se )
 			{
@@ -458,7 +460,7 @@ class NeoConstraintsListener implements ProActiveEventListener
 		{
 			try
 			{
-				return TransactionFactory.getTransactionManager().getStatus();
+				return transactionManager.getStatus();
 			}
 			catch ( javax.transaction.SystemException se )
 			{

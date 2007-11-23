@@ -16,13 +16,13 @@
  */
 package org.neo4j.api.core;
 
-import org.neo4j.impl.transaction.TransactionUtil;
+import javax.transaction.TransactionManager;
 
 /**
  * A utility class to manage transactions in Neo. All operations that work with
  * the node space (even read operations) must be wrapped in a transaction.
  * Fortunately, the Transaction class makes this very easy. Here's the idiomatic
- * use of transactions in Neo:<pre><code> Transaction tx = Transaction.begin();
+ * use of transactions in Neo:<pre><code> Transaction tx = neo.beginTx();
  * try
  * {
  * 	... // any operation that works with the node space
@@ -34,12 +34,12 @@ import org.neo4j.impl.transaction.TransactionUtil;
  * } </code></pre>
  * <p>
  * Let's walk through this example line by line. First we retrieve a Transaction
- * object by invoking the static {@link #begin()} factory method. This creates
- * a new Transaction instance which has internal state to keep track of whether
- * the current transaction is successful. Then we wrap all operations that work
- * with the node space in a try-finally block. At the end of the block, we
- * invoke the {@link #finish() tx.success()} method to indicate that the
- * transaction is successful. As we exit the block, the finally clause will
+ * object by invoking the {@link NeoService#begin()} factory method. This 
+ * creates a new Transaction instance which has internal state to keep track of 
+ * whether the current transaction is successful. Then we wrap all operations 
+ * that work with the node space in a try-finally block. At the end of the 
+ * block, we invoke the {@link #finish() tx.success()} method to indicate that 
+ * the transaction is successful. As we exit the block, the finally clause will
  * kick in and {@link #finish() tx.finish} will commit the transaction if the
  * internal state indicates success or else mark it for rollback.
  * <p>
@@ -52,7 +52,7 @@ import org.neo4j.impl.transaction.TransactionUtil;
  */
 public class Transaction
 {
-	private static final Transaction PLACEBO_TRANSACTION = new Transaction()
+/*	private static final Transaction PLACEBO_TRANSACTION = new Transaction( null )
 	{
 		@Override
 		public void failure()
@@ -71,31 +71,15 @@ public class Transaction
 		{
 			// Do nothing
 		}
-	};
+	};*/
 	
 	private boolean success = false;
+
+	private final TransactionManager transactionManager;
 	
-	/**
-	 * Private constructor.
-	 */
-	private Transaction()
+	Transaction( TransactionManager transactionManager )
 	{
-	}
-	
-	/**
-	 * Starts a new transaction.
-	 * @return a transaction object representing the current transaction
-	 */
-	public static Transaction begin()
-	{
-		if ( TransactionUtil.beginTx() )
-		{
-			return new Transaction();			
-		}
-		else
-		{
-			return PLACEBO_TRANSACTION;
-		}		
+		this.transactionManager = transactionManager;
 	}
 	
 	/**
@@ -107,7 +91,14 @@ public class Transaction
 	public void failure()
 	{
 		this.success = false;
-		TransactionUtil.markAsRollbackOnly();
+		try
+		{
+			transactionManager.getTransaction().setRollbackOnly();
+		}
+		catch ( Exception e )
+		{
+			throw new RuntimeException( e );
+		}
 	}
 	
 	/**
@@ -126,6 +117,26 @@ public class Transaction
 	 */
 	public void finish()
 	{
-		TransactionUtil.finishTx( success, true );
+		try
+		{
+			if ( success )
+			{
+				if ( transactionManager.getTransaction() != null )
+				{
+					transactionManager.getTransaction().commit();
+				}
+			}
+			else
+			{
+				if ( transactionManager.getTransaction() != null )
+				{
+					transactionManager.getTransaction().rollback();
+				}
+			}
+		}
+		catch ( Exception e )
+		{
+			throw new RuntimeException( e );
+		}
 	}
 }

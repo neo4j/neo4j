@@ -16,7 +16,9 @@
  */
 package org.neo4j.impl.persistence;
 
+import javax.transaction.TransactionManager;
 import org.neo4j.impl.event.EventListenerNotRegisteredException;
+import org.neo4j.impl.event.EventManager;
 
 /**
  *
@@ -27,18 +29,34 @@ import org.neo4j.impl.event.EventListenerNotRegisteredException;
 public class PersistenceModule
 {
 	// -- Constants
-	private static final String	MODULE_NAME			= "PersistenceModule";
+	private static final String	MODULE_NAME	= "PersistenceModule";
+	
+	private final PersistenceManager persistenceManager;
+	private final PersistenceLayerMonitor persistenceMonitor;
+	
+	private PersistenceSource source;
+	
+	public PersistenceModule( EventManager eventManager, 
+		TransactionManager transactionManager )
+	{
+		persistenceManager = new PersistenceManager( transactionManager );
+		ResourceBroker broker = persistenceManager.getResourceBroker();
+		persistenceMonitor = new PersistenceLayerMonitor( eventManager, 
+			broker );
+	}
 	
 	public synchronized void init()
 	{
 		// Do nothing
 	}
 	
-	public synchronized void start()
+	public synchronized void start( PersistenceSource persistenceSource )
 	{
+		this.source = persistenceSource;
+		persistenceMonitor.registerPersistenceSource( source );
 		try
 		{
-			BusinessLayerMonitor.getMonitor().registerEvents();
+			persistenceMonitor.registerEvents();
 		}
 		catch ( EventListenerNotRegisteredException elnre )
 		{
@@ -46,7 +64,7 @@ public class PersistenceModule
 			//			Neo engine if something messes up during the startup of
 			//			the persistence module. How do we tell the module
 			//			framework to request emergency shutdown?
-			throw new RuntimeException( "The business layer monitor was " +
+			throw new RuntimeException( "The persistence layer monitor was " +
 										  "unable to register on one or more " +
 										  "event types. This can seriously " +
 										  "impact persistence operations.",
@@ -57,12 +75,12 @@ public class PersistenceModule
 	public synchronized void reload()
 	{
 		this.stop();
-		this.start();
+		persistenceMonitor.removePersistenceSource( source );
 	}
 	
 	public synchronized void stop()
 	{
-		BusinessLayerMonitor.getMonitor().unregisterEvents();
+		persistenceMonitor.unregisterEvents();
 	}
 	
 	public synchronized void destroy()
@@ -73,5 +91,10 @@ public class PersistenceModule
 	public String getModuleName()
 	{
 		return MODULE_NAME;
+	}
+	
+	public PersistenceManager getPersistenceManager()
+	{
+		return persistenceManager;
 	}
 }

@@ -31,11 +31,14 @@ import javax.transaction.xa.XAException;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
+import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.PropertyIndex;
+import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.Store;
 import org.neo4j.impl.persistence.IdGenerationFailedException;
+import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.xaframework.XaCommand;
 import org.neo4j.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.impl.transaction.xaframework.XaConnection;
@@ -63,6 +66,9 @@ public class NeoStoreXaDataSource extends XaDataSource
 	private final XaContainer xaContainer;
 	private final ArrayMap<Class<?>,Store> idGenerators;
 	
+	private final LockManager lockManager;
+	private final LockReleaser lockReleaser;
+	private final EventManager eventManager;
 
 	/**
 	 * Creates a <CODE>NeoStoreXaDataSource</CODE> using configuration from
@@ -85,6 +91,9 @@ public class NeoStoreXaDataSource extends XaDataSource
 		InstantiationException
 	{
 		super( params );
+		this.lockManager = (LockManager) params.get( LockManager.class );
+		this.lockReleaser = (LockReleaser) params.get( LockReleaser.class );
+		this.eventManager = (EventManager) params.get( EventManager.class );
 		String configFileName = ( String ) params.get( "config" );
 		Properties config = new Properties();
 		if ( configFileName != null )
@@ -180,9 +189,14 @@ public class NeoStoreXaDataSource extends XaDataSource
 	 * @throws IOException If unable to open store
 	 */
 	public NeoStoreXaDataSource( String neoStoreFileName, 
-		String logicalLogPath ) throws IOException, InstantiationException
+		String logicalLogPath, LockManager lockManager, 
+		LockReleaser lockReleaser, EventManager eventManager ) 
+	throws IOException, InstantiationException
 	{
 		super( null );
+		this.lockManager = lockManager;
+		this.lockReleaser = lockReleaser;
+		this.eventManager = eventManager;
 		neoStore = new NeoStore( neoStoreFileName );
 		xaContainer = XaContainer.create( logicalLogPath, 
 			new CommandFactory( neoStore ), 
@@ -266,7 +280,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 		}
 	}
 	
-	private static class TransactionFactory extends XaTransactionFactory
+	private class TransactionFactory extends XaTransactionFactory
 	{
 		private NeoStore neoStore;
 		
@@ -277,7 +291,8 @@ public class NeoStoreXaDataSource extends XaDataSource
 		
 		public XaTransaction create( int identifier )
 		{
-			return new NeoTransaction( identifier, getLogicalLog(), neoStore );
+			return new NeoTransaction( identifier, getLogicalLog(), neoStore,
+				lockReleaser, lockManager, eventManager );
 		}
 		
 		public void recoveryComplete()

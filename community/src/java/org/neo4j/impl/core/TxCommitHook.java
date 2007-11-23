@@ -16,14 +16,16 @@
  */
 package org.neo4j.impl.core;
 
-import java.util.logging.Logger;
-
 import javax.transaction.Synchronization;
 
 class TxCommitHook implements Synchronization
 {
-	private static Logger log = Logger.getLogger( 
-		TxCommitHook.class.getName() );
+	private final LockReleaser lockReleaser;
+	
+	TxCommitHook( LockReleaser lockReleaser )
+	{
+		this.lockReleaser = lockReleaser;
+	}
 	
 	public void beforeCompletion()
 	{
@@ -38,13 +40,12 @@ class TxCommitHook implements Synchronization
 		catch ( Throwable t )
 		{
 			t.printStackTrace();
-			log.severe( "Unable to release commands" );
 		}
 	}
 	
 	private void releaseLocks( int param )
 	{
-		LockReleaser.getManager().releaseLocks();
+		lockReleaser.releaseLocks();
 	}
 }
 

@@ -16,13 +16,15 @@
  */
 package org.neo4j.impl.core;
 
+import java.util.logging.Logger;
+import javax.transaction.TransactionManager;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.cache.AdaptiveCacheManager;
+import org.neo4j.impl.event.EventManager;
+import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
-import org.neo4j.impl.transaction.TransactionFactory;
-
-import java.util.logging.Logger;
+import org.neo4j.impl.transaction.LockManager;
 
 /**
  * The Neo module handles valid relationship types and manages the 
@@ -39,9 +41,27 @@ public class NeoModule
 	private static Logger log = Logger.getLogger( NeoModule.class.getName() );
 
 	private boolean startIsOk = true;
-	private Class<? extends RelationshipType> relTypeClass;
 	
 	private static final int INDEX_COUNT = 2500;
+	
+	private final TransactionManager transactionManager;
+	private final NodeManager nodeManager;
+	private final NeoConstraintsListener neoConstraintsListener;
+	private final PersistenceManager persistenceManager;
+	
+	public NeoModule( AdaptiveCacheManager cacheManager, LockManager lockManager, 
+		TransactionManager transactionManager, LockReleaser lockReleaser, 
+		EventManager eventManager, PersistenceManager persistenceManager, 
+		IdGenerator idGenerator )
+	{
+		this.transactionManager = transactionManager;
+		this.persistenceManager = persistenceManager;
+		this.neoConstraintsListener = new NeoConstraintsListener( 
+			transactionManager, eventManager );
+		nodeManager = new NodeManager( cacheManager, lockManager, 
+			transactionManager, lockReleaser, eventManager, 
+			persistenceManager, idGenerator );
+	}
 	
 	public void init()
 	{
@@ -58,20 +78,18 @@ public class NeoModule
 		RawPropertyIndex propertyIndexes[] = null;
 		try
 		{
-			NeoConstraintsListener.getListener().registerEventListeners();
-			TransactionFactory.getUserTransaction().begin();
-			relTypes = 
-				PersistenceManager.getManager().loadAllRelationshipTypes();
-			propertyIndexes = 
-				PersistenceManager.getManager().loadPropertyIndexes( 
-					INDEX_COUNT );
-			TransactionFactory.getUserTransaction().commit();
+			neoConstraintsListener.registerEventListeners();
+			transactionManager.begin();
+			relTypes = persistenceManager.loadAllRelationshipTypes();
+			propertyIndexes = persistenceManager.loadPropertyIndexes( 
+				INDEX_COUNT );
+			transactionManager.commit();
 		}
 		catch ( Exception e )
 		{
 			try
 			{
-				TransactionFactory.getUserTransaction().rollback();
+				transactionManager.rollback();
 			}
 			catch ( Exception ee )
 			{
@@ -81,42 +99,33 @@ public class NeoModule
 			throw new RuntimeException( "Unable to load all relationships", 
 				e );
 		}
-		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
-		rth.addRawRelationshipTypes( relTypes );
-		if ( relTypeClass != null )
-		{
-			rth.addValidRelationshipTypes( relTypeClass );
-		}
-		PropertyIndex.addPropertyIndexes( propertyIndexes );
+		// RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
+		nodeManager.addRawRelationshipTypes( relTypes );
+		nodeManager.addPropertyIndexes( propertyIndexes );
 		if ( propertyIndexes.length < INDEX_COUNT )
 		{
-			PropertyIndex.setHasAll( true );
+			nodeManager.setHasAllpropertyIndexes( true );
 		}
-		AdaptiveCacheManager.getManager().start();
+		nodeManager.start();
 		startIsOk = false;
 	}
 	
-	public void setRelationshipTypes( Class<? extends RelationshipType> clazz )
-	{
-		this.relTypeClass = clazz;
-	}
-
 	public int getNodeCacheSize()
 	{
-		return NodeManager.getManager().getNodeMaxCacheSize();
+		return nodeManager.getNodeMaxCacheSize();
 	}
 	
 	public int getRelationshipCacheSize()
 	{
-		return NodeManager.getManager().getRelationshipMaxCacheSize();
+		return nodeManager.getRelationshipMaxCacheSize();
 	}
 	
 	public void setReferenceNodeId( Integer nodeId )
 	{
-		NodeManager.getManager().setReferenceNodeId( nodeId.intValue() );
+		nodeManager.setReferenceNodeId( nodeId.intValue() );
 		try
 		{
-			NodeManager.getManager().getReferenceNode();
+			nodeManager.getReferenceNode();
 		}
 		catch ( NotFoundException e )
 		{
@@ -128,7 +137,7 @@ public class NeoModule
 	{
 		try
 		{
-			return (int) NodeManager.getManager().getReferenceNode().getId();
+			return (int) nodeManager.getReferenceNode().getId();
 		}
 		catch ( NotFoundException e )
 		{
@@ -140,8 +149,8 @@ public class NeoModule
 	{
 		try
 		{
-			Node node = NodeManager.getManager().createNode();
-			NodeManager.getManager().setReferenceNodeId( (int) node.getId() );
+			Node node = nodeManager.createNode();
+			nodeManager.setReferenceNodeId( (int) node.getId() );
 			log.info( "Created a new reference node. " + 
 				"Current reference node is now " + node );
 		}
@@ -160,47 +169,45 @@ public class NeoModule
 	
 	public void stop()
 	{
-		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
-		rth.clear();
-		PropertyIndex.clear();
-		NodeManager.getManager().clearCache();
-		NeoConstraintsListener.getListener().unregisterEventListeners();
-		AdaptiveCacheManager.getManager().stop();
+		nodeManager.clearPropertyIndexes();
+		neoConstraintsListener.unregisterEventListeners();
+		nodeManager.clearCache();
+		nodeManager.stop();
 	}
 	
 	public void destroy()
 	{
 	}
-
+	
+	public NodeManager getNodeManager()
+	{
+		return this.nodeManager;
+	}
+	
 	public RelationshipType getRelationshipTypeByName( String name )
     {
-		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
-		return rth.getRelationshipTypeByName( name );
+		return nodeManager.getRelationshipTypeByName( name );
     }
 
 	public void addEnumRelationshipTypes( 
 		Class<? extends RelationshipType> relationshipTypes )
     {
-		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
-		rth.addValidRelationshipTypes( relationshipTypes );
+		nodeManager.addValidRelationshipTypes( relationshipTypes );
     }
 
 	public Iterable<RelationshipType> getRelationshipTypes()
     {
-		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
-		return rth.getRelationshipTypes();
+		return nodeManager.getRelationshipTypes();
     }
 
 	public boolean hasRelationshipType( String name )
     {
-		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
-		return rth.hasRelationshipType( name );
+		return nodeManager.hasRelationshipType( name );
     }
 
 	public RelationshipType registerRelationshipType( String name, 
 		boolean create )
     {
-		RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
-		return rth.addValidRelationshipType( name, create );
+		return nodeManager.addValidRelationshipType( name, create );
     }
 }

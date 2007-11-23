@@ -25,25 +25,26 @@ import org.neo4j.api.core.Relationship;
 class RelationshipIterator implements Iterable<Relationship>, 
 	Iterator<Relationship>
 {
-	private static final NodeManager nm = NodeManager.getManager();
-	
 	private int[] relIds;
 	private Node fromNode;
 	private Direction direction = null;
 	private Relationship nextElement = null;
 	private int nextPosition = 0;
+	private final NodeManager nodeManager;
 	
 	RelationshipIterator( int[] relIds, Node fromNode, 
-		Direction direction )
+		Direction direction, NodeManager nodeManager )
 	{
 		this.relIds = relIds;
 		this.fromNode = fromNode;
 		this.direction = direction;
+		this.nodeManager = nodeManager;
 	}
 
 	public Iterator<Relationship> iterator()
 	{
-		return new RelationshipIterator( relIds, fromNode, direction );
+		return new RelationshipIterator( relIds, fromNode, direction, 
+			nodeManager );
 	}
 
 	public boolean hasNext()
@@ -58,8 +59,9 @@ class RelationshipIterator implements Iterable<Relationship>,
 			{
 				try
 				{
-					Relationship possibleElement = nm.getRelationshipById( 
-						relIds[nextPosition++] );
+					Relationship possibleElement = 
+						nodeManager.getRelationshipById( 
+							relIds[nextPosition++] );
 					if ( direction == Direction.INCOMING && 
 						possibleElement.getEndNode().equals( fromNode ) )
 					{

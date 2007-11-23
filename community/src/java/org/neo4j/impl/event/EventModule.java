@@ -25,29 +25,34 @@ public class EventModule
 {
 	private static final String	MODULE_NAME			= "EventModule";
 	
+	
+	private final EventManager eventManager = new EventManager();
+	
+	
+	
 	public void init()
 	{
 	}
 	
 	public void start()
 	{
-		EventManager.getManager().start();
+		eventManager.start();
 	}
 	
 	public void reload()
 	{
-		EventManager.getManager().stop();
-		EventManager.getManager().start();
+		eventManager.stop();
+		eventManager.start();
 	}
 	
 	public void stop()
 	{
-		EventManager.getManager().stop();
+		eventManager.stop();
 	}
 	
 	public void destroy()
 	{
-		EventManager.getManager().destroy();
+		eventManager.destroy();
 	}
 	
 	public String getModuleName()
@@ -57,21 +62,26 @@ public class EventModule
 	
 	public void setReActiveEventQueueWaitTime( int time )
 	{
-		EventManager.getManager().setReActiveEventQueueWaitTime( time );
+		eventManager.setReActiveEventQueueWaitTime( time );
 	}
 	
 	public int getReActiveEventQueueWaitTime()
 	{
-		return EventManager.getManager().getReActiveEventQueueWaitTime();
+		return eventManager.getReActiveEventQueueWaitTime();
 	}
 	
 	public void setReActiveEventQueueNotifyOnCount( int count )
 	{
-		EventManager.getManager().setReActiveEventQueueNotifyOnCount( count );
+		eventManager.setReActiveEventQueueNotifyOnCount( count );
 	}
 	
 	public int getReActiveEventQueueNotifyOnCount()
 	{
-		return EventManager.getManager().getReActiveEventQueueNotifyOnCount();
+		return eventManager.getReActiveEventQueueNotifyOnCount();
 	}
+
+	public EventManager getEventManager()
+    {
+		return eventManager;
+    }
 }

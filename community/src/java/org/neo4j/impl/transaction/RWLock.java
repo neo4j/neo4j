@@ -48,7 +48,7 @@ import org.neo4j.impl.util.ArrayMap;
  */
 class RWLock
 {
-	private static final RagManager ragManager = RagManager.getManager();
+//	private static final RagManager ragManager = RagManager.getManager();
 	
 	private int writeCount = 0; // total writeCount
 	private int readCount = 0; // total readCount
@@ -62,9 +62,12 @@ class RWLock
 	private final ArrayMap<Thread,ThreadLockElement> threadLockElementMap = 
 		new ArrayMap<Thread,ThreadLockElement>( 5, false, true );
 	
-	RWLock( Object resource )
+	private final RagManager ragManager;
+	
+	RWLock( Object resource, RagManager ragManager )
 	{
 		this.resource = resource;
+		this.ragManager = ragManager;
 	}
 				
 	// keeps track a threads read and write lock count on this RWLock

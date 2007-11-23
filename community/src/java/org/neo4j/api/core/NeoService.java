@@ -113,4 +113,6 @@ public interface NeoService
      */
     public boolean enableRemoteShell(
         Map<String, Serializable> initialProperties );
+    
+    public Transaction beginTx();
 }

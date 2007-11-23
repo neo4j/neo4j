@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.RelationshipType;
 
 public class StandaloneWithShell
 {
@@ -31,11 +30,6 @@ public class StandaloneWithShell
 		StandaloneWithShell.class.getName() );	
 	private NeoService embeddedNeo;
 	private AtomicBoolean shutdownInitiated = new AtomicBoolean( false );
-	
-	private static enum RelTypes implements RelationshipType
-	{
-		A_RELATIONSHIP_TYPE,
-	}
 	
 	private NeoService getNeo()
 	{
@@ -56,7 +50,7 @@ public class StandaloneWithShell
 	
 	private void initialize()
 	{
-		this.embeddedNeo = new EmbeddedNeo( RelTypes.class, "var" );
+		this.embeddedNeo = new EmbeddedNeo( "var/neo" );
 		Map<String, Serializable> shellProperties = Collections.emptyMap();
 		getNeo().enableRemoteShell( shellProperties );
 		log.info( "Neo started" );

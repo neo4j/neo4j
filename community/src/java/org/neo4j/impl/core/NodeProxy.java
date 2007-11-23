@@ -27,13 +27,14 @@ import org.neo4j.api.core.Traverser.Order;
 
 class NodeProxy implements Node
 {
-	private static final NodeManager nm = NodeManager.getManager();
+	private final NodeManager nm;
 	
 	private final int nodeId;
 	
-	NodeProxy( int nodeId )
+	NodeProxy( int nodeId, NodeManager nodeManager )
 	{
 		this.nodeId = nodeId;
+		this.nm = nodeManager;
 	}
 		
 	public long getId()

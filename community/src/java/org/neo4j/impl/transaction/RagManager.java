@@ -62,7 +62,7 @@ class RagManager
 	// o When the thread wakes up from waiting on a resource the 
 	//   stopWaitOn( resource ) method must be invoked
 	
-	private static final RagManager instance = new RagManager();
+//	private static final RagManager instance = new RagManager();
 	
 	private final Map<Object,List<Thread>> resourceMap = 
 		new HashMap<Object,List<Thread>>();
@@ -72,12 +72,12 @@ class RagManager
 	private final ArrayMap<Thread,Object> waitingThreadMap = 
 		new ArrayMap<Thread,Object>( 5, false, true );
 	
-	private RagManager() {}
+	RagManager() {}
 	
-	static RagManager getManager()
-	{
-		return instance;
-	}
+//	static RagManager getManager()
+//	{
+//		return instance;
+//	}
 	
 	synchronized void lockAcquired( Object resource )
 	{
