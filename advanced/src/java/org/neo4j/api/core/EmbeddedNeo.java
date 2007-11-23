@@ -21,6 +21,8 @@ import java.rmi.RemoteException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Logger;
+import javax.transaction.TransactionManager;
+import org.neo4j.api.core.NeoJvmInstance.Config;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoShellServer;
 
@@ -34,19 +36,16 @@ import org.neo4j.impl.shell.NeoShellServer;
  * // ... use neo
  * neo.shutdown();</pre>
  * </code>
- * There's a {@link #EmbeddedNeo(Class, String) legacy constructor} which
- * was used in earlier versions to define valid {@link RelationshipType
- * relationship types}. Since version <code>1.0-b6</code>, relationship types
- * are {@link RelationshipType dynamically created} so it's now been marked
- * deprecated. The same goes for all the relationship type management
- * operations. Expect them to be removed in future releases.
- * <p>
  * For more information, see {@link NeoService}.
  */
 public final class EmbeddedNeo implements NeoService
 {
 	private static Logger log = Logger.getLogger( EmbeddedNeo.class.getName() );
 	private NeoShellServer shellServer;
+	private Transaction placeboTransaction = null; 
+	
+	private final NeoJvmInstance neoJvmInstance;
+	private final NodeManager nodeManager;
 	
 	/**
 	 * Creates an embedded {@link NeoService} with a store located in
@@ -56,40 +55,12 @@ public final class EmbeddedNeo implements NeoService
 	public EmbeddedNeo( String storeDir )
 	{
 		this.shellServer = null;
-		NeoJvmInstance.start( null, storeDir, true );
+		neoJvmInstance = new NeoJvmInstance( storeDir, true );
+		neoJvmInstance.start();
+		nodeManager = 
+			neoJvmInstance.getConfig().getNeoModule().getNodeManager();
 	}
 	
-	/**
-	 * Creates an embedded {@link NeoService} that uses the store located in
-	 * <code>storeDir</code>. This constructor is kept for backwards
-	 * compatibility. It accepted an enum which defined a valid set of
-	 * relationship types. Relationship types are now {@link RelationshipType
-	 * dynamically created}, so this constructor is deprecated. Invoking it
-	 * is identical to invoking <code>EmbeddedNeo(storeDir)</code>.
-	 * @param validRelationshipTypesEnum an enum class containing your
-	 * relationship types, as described in the documentation of
-	 * {@link RelationshipType}
-	 * @param storeDir the store directory for the neo db files
- 	 * @throws NullPointerException if validRelationshipTypesEnum is
- 	 * <code>null</code>
- 	 * @throws IllegalArgumentException if validRelationshipTypesEnum is not an
- 	 * enum that implements <code>RelationshipType</code>
-     * @deprecated Not required now that relationship types are {@link
-     * RelationshipType created dynamically}. Will be removed in next release.
-	 */
-	public EmbeddedNeo( Class<? extends RelationshipType>
-		validRelationshipTypesEnum, String storeDir )
-	{
-		this.shellServer = null;
-		NeoJvmInstance.start( validRelationshipTypesEnum, storeDir, true );
-	}
-	
-//	public EmbeddedNeo( String dir, RelationshipType[] relationshipTypes, 
-//		Map<String,String> params )
-//	{
-//		this.shellServer = null;
-//		NeoJvmInstance.start( null, dir, true, params );
-//	}
 	
  	// private accessor for the remote shell (started with enableRemoteShell())
 	private NeoShellServer getShellServer()
@@ -102,7 +73,7 @@ public final class EmbeddedNeo implements NeoService
      */
 	public Node createNode()
 	{
-		return NodeManager.getManager().createNode();
+		return nodeManager.createNode();
 	}
 	
 	/* (non-Javadoc)
@@ -110,7 +81,7 @@ public final class EmbeddedNeo implements NeoService
      */
 	public Node getNodeById( long id )
 	{
-		return NodeManager.getManager().getNodeById( (int) id );
+		return nodeManager.getNodeById( (int) id );
 	}
 	
 	/* (non-Javadoc)
@@ -118,7 +89,7 @@ public final class EmbeddedNeo implements NeoService
      */
 	public Node getReferenceNode()
 	{
-		return NodeManager.getManager().getReferenceNode();
+		return nodeManager.getReferenceNode();
 	}
 	
 	/* (non-Javadoc)
@@ -137,7 +108,7 @@ public final class EmbeddedNeo implements NeoService
 				log.warning( "Error shutting down shell server: " + t );
 			}
 		}
-		NeoJvmInstance.shutdown();
+		neoJvmInstance.shutdown();
 	}
 	
 	/* (non-Javadoc)
@@ -208,84 +179,69 @@ public final class EmbeddedNeo implements NeoService
      */
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-    	return NeoJvmInstance.getRelationshipTypes();
+    	return neoJvmInstance.getRelationshipTypes();
     }
     
-    /**
-     * Returns a relationship type with the same name if it exists in the
-     * underlying store, or <code>null</code>. A new relationship type is
-     * added to the underlying store the first time a relationship with the
-     * new type is {@link Node#createRelationshipTo(Node, RelationshipType)
-     * created}.
-     * @param name the name of the relationship type
-     * @return a relationship type with the given name, or <code>null</code>
-     * if there's no such relationship type in the underlying store
-     * @deprecated Might not be needed now that relationship types are {@link
-     * RelationshipType created dynamically}.
-     */
-    public RelationshipType getRelationshipType( String name )
+    public Transaction beginTx()
     {
-		return NeoJvmInstance.getRelationshipTypeByName( name );
-    }
-    
-	/**
-     * @deprecated Not required now that relationship types are {@link
-     * RelationshipType created dynamically}. Will be removed in next release.
-	 */
-    public boolean hasRelationshipType( String name )
-    {
-    	return NeoJvmInstance.hasRelationshipType( name );    	
-    }
-     
-	/**
-     * @deprecated Not required now that relationship types are {@link
-     * RelationshipType created dynamically}. Will be removed in next release.
-	 */
-	public void registerEnumRelationshipTypes( 
-		Class<? extends RelationshipType> relationshipTypes )
-	{
-		NeoJvmInstance.addEnumRelationshipTypes( relationshipTypes );
-	}
-
-	/**
-     * @deprecated Not required now that relationship types are {@link
-     * RelationshipType created dynamically}. Will be removed in next release.
-	 */
-    public RelationshipType createAndRegisterRelationshipType( String name )
-    {
-    	return NeoJvmInstance.registerRelationshipType( name, true );
-    }
-    
-	/**
-     * @deprecated Not required now that relationship types are {@link
-     * RelationshipType created dynamically}. Will be removed in next release.
-	 */
-    public RelationshipType registerRelationshipType( String name )
-    {
-    	return NeoJvmInstance.registerRelationshipType( name, false );
-    }
-
-	/**
-     * @deprecated Not required now that relationship types are {@link
-     * RelationshipType created dynamically}. Will be removed in next release.
-	 */
-    public void registerRelationshipTypes( Iterable<RelationshipType> types )
-    {
-    	for ( RelationshipType type : types )
+    	if ( neoJvmInstance.transactionRunning() )
     	{
-    		NeoJvmInstance.registerRelationshipType( type.name(), true );
+    		if ( placeboTransaction == null )
+    		{
+    			placeboTransaction = new PlaceboTransaction( 
+    				neoJvmInstance.getTransactionManager() );
+    		}
+    		return placeboTransaction;
     	}
+    	TransactionManager txManager = neoJvmInstance.getTransactionManager();
+    	try
+    	{
+    		txManager.begin();
+    	}
+    	catch ( Exception e )
+    	{
+    		throw new RuntimeException( e );
+    	}
+    	return new Transaction( txManager );
     }
     
-	/**
-     * @deprecated Not required now that relationship types are {@link
-     * RelationshipType created dynamically}. Will be removed in next release.
-	 */
-    public void registerRelationshipTypes( RelationshipType[] types )
+    private static class PlaceboTransaction extends Transaction
     {
-       	for ( RelationshipType type : types )
-    	{
-    		NeoJvmInstance.registerRelationshipType( type.name(), true );
-    	}
+    	private final TransactionManager transactionManager;
+
+		PlaceboTransaction( TransactionManager transactionManager )
+        {
+			// we should override all so null is ok
+	        super( null );
+	        this.transactionManager = transactionManager;
+        }
+
+		@Override
+		public void failure()
+		{
+			try
+			{
+				transactionManager.getTransaction().setRollbackOnly();
+			}
+			catch ( Exception e )
+			{
+				throw new RuntimeException( e );
+			}
+		}
+
+		@Override
+		public void success()
+		{
+		}
+	
+		@Override
+		public void finish()
+		{
+		}
+    }
+    
+    public Config getConfig()
+    {
+    	return neoJvmInstance.getConfig();
     }
 }

@@ -16,10 +16,7 @@
  */
 package org.neo4j.impl.shell.apps;
 
-import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
@@ -56,7 +53,8 @@ public class Mkrel extends NeoApp
 		Node node = null;
 		if ( createNode )
 		{
-			node = NodeManager.getManager().createNode();
+			throw new RuntimeException( "fix this" );
+			// node = NodeManager.getManager().createNode();
 		}
 		else if ( suppliedNode )
 		{
@@ -73,7 +71,8 @@ public class Mkrel extends NeoApp
 			throw new ShellException( "Must supply relationship type " +
 				"(-t <relationship-type-name>)" );
 		}
-		RelationshipType type = this.getRelationshipType(
+		throw new RuntimeException( "fix this " );
+/*		RelationshipType type = null; this.getRelationshipType(
 			parser.options().get( "t" ) );
 		Direction direction = this.getDirection( parser.options().get( "d" ) );
 		Node startNode = direction == Direction.OUTGOING ?
@@ -81,6 +80,6 @@ public class Mkrel extends NeoApp
 		Node endNode = direction == Direction.OUTGOING ?
 			node : this.getCurrentNode( session );
 		startNode.createRelationshipTo( endNode, type );
-		return null;
+		return null;*/
 	}
 }

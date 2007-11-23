@@ -18,7 +18,7 @@ package org.neo4j.impl.core;
 
 class Property
 {
-	private static NodeManager nodeManager = NodeManager.getManager();
+//	private static NodeManager nodeManager = NodeManager.getManager();
 	
 	private final int id;
 	private Object value = null;
@@ -34,12 +34,8 @@ class Property
 		return id;
 	}
 	
-	synchronized Object getValue()
+	Object getValue()
 	{
-		if ( value == null )
-		{
-			value = nodeManager.loadPropertyValue( id );
-		}
 		return value;
 	}
 	

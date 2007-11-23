@@ -16,6 +16,7 @@
  */
 package org.neo4j.impl.persistence;
 
+import javax.transaction.TransactionManager;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.core.NotFoundException;
@@ -31,14 +32,24 @@ import org.neo4j.impl.transaction.NotInTransactionException;
  * operations. In reality, only <B>load</B> operations are accessible via the
  * PersistenceManager due to Neo's incremental persistence architecture
  * -- updates, additions and deletions are handled via the event framework and
- * the {@link BusinessLayerMonitor}.
+ * the {@link PersistenceLayerMonitor}.
  */
 public class PersistenceManager
 {
-	private static final PersistenceManager instance = new PersistenceManager();
-	private PersistenceManager() { }
+	private final ResourceBroker broker;
+	
+	// private static final PersistenceManager instance = new PersistenceManager();
+	public PersistenceManager( TransactionManager transactionManager ) 
+	{ 
+		broker = new ResourceBroker( transactionManager );
+	}
+	
+	ResourceBroker getResourceBroker()
+	{
+		return broker;
+	}
 
-	public static PersistenceManager getManager() {	return instance; }
+	// public static PersistenceManager getManager() {	return instance; }
 	
 	public RawNodeData loadLightNode( int id ) throws PersistenceException
 	{
@@ -107,7 +118,6 @@ public class PersistenceManager
 	{
 		try
 		{
-			ResourceBroker broker = ResourceBroker.getBroker();
 			return broker.acquireResourceConnection(); // dummyMeta );
 		}
 		catch ( NotInTransactionException nite )

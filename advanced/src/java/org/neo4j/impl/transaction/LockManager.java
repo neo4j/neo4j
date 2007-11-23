@@ -39,22 +39,26 @@ import java.util.Map;
  */
 public class LockManager
 {
-	private static final LockManager instance = new LockManager();
+	// private static final LockManager instance = new LockManager();
 	
 	private final Map<Object,RWLock> resourceLockMap = 
 		new HashMap<Object,RWLock>();
 	
-	private LockManager() {}
+	private RagManager ragManager = new RagManager();
+	
+	public LockManager() 
+	{
+	}
 	
 	/**
 	 * Returns the single instance of this class.
 	 *
 	 * @return the lock manager
 	 */
-	public static LockManager getManager()
-	{
-		return instance;
-	}
+//	public static LockManager getManager()
+//	{
+//		return instance;
+//	}
 	
 	/**
 	 * Tries to acquire read lock on <CODE>resource</CODE> for the current 
@@ -80,7 +84,7 @@ public class LockManager
 			lock = resourceLockMap.get( resource );
 			if ( lock == null )
 			{
-				lock = new RWLock( resource );
+				lock = new RWLock( resource, ragManager );
 				resourceLockMap.put( resource, lock );
 			}
 			lock.mark();
@@ -112,7 +116,7 @@ public class LockManager
 			lock = resourceLockMap.get( resource );
 			if ( lock == null )
 			{
-				lock = new RWLock( resource );
+				lock = new RWLock( resource, ragManager );
 				resourceLockMap.put( resource, lock );
 			}
 			lock.mark();
@@ -221,7 +225,7 @@ public class LockManager
 	 */
 	public void dumpRagStack()
 	{
-		RagManager.getManager().dumpStack();
+		ragManager.dumpStack();
 	}
 	
 	/**

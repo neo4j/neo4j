@@ -53,18 +53,14 @@ class TransactionImpl implements Transaction
 		new ArrayList<Synchronization>();
 	
 	private final int eventIdentifier;
+		
+	private final TxManager txManager;
 	
-	private static int eventIdentifierCounter = 0;
-	
-	private static synchronized int getNextEventIdentifier()
+	TransactionImpl( TxManager txManager )
 	{
-		return eventIdentifierCounter++;
-	}
-	
-	TransactionImpl()
-	{
+		this.txManager = txManager;
 		globalId = XidImpl.getNewGlobalId();
-		eventIdentifier = getNextEventIdentifier();
+		eventIdentifier = txManager.getNextEventIdentifier();
 	}
 	
 	Integer getEventIdentifier()
@@ -80,8 +76,7 @@ class TransactionImpl implements Transaction
 	public synchronized String toString()
 	{
 		StringBuffer txString = new StringBuffer( "Transaction[Status=" + 
-			TxManager.getManager().getTxStatusAsString( status ) + 
-			",ResourceList=" );
+			txManager.getTxStatusAsString( status ) + ",ResourceList=" );
 		Iterator<ResourceElement> itr = resourceList.iterator();
 		while ( itr.hasNext() )
 		{
@@ -99,14 +94,14 @@ class TransactionImpl implements Transaction
 		IllegalStateException, SystemException
 	{
 		// make sure tx not suspended 
-		TxManager.getManager().commit();
+		txManager.commit();
 	}
 
 	public synchronized void rollback() throws IllegalStateException, 
 		SystemException 
 	{
 		// make sure tx not suspended
-		TxManager.getManager().rollback();
+		txManager.rollback();
 	}
 
 	public synchronized boolean enlistResource( XAResource xaRes ) 
@@ -124,22 +119,21 @@ class TransactionImpl implements Transaction
 				if ( resourceList.size() == 0 )
 				{
 					// 
-					byte branchId[] = 
-						TxManager.getManager().getBranchId( xaRes ); 
+					byte branchId[] = txManager.getBranchId( xaRes ); 
 					Xid xid = new XidImpl( globalId, branchId );
 					resourceList.add( new ResourceElement( xid, xaRes ) );
 					xaRes.start( xid, XAResource.TMNOFLAGS );
 					try
 					{
-						TxManager.getManager().getTxLog().addBranch( 
-							globalId, branchId );
+						txManager.getTxLog().addBranch( globalId, branchId );
 					}
 					catch ( IOException e )
 					{
 						e.printStackTrace();
 						log.severe( "Error writing transaction log" );
-						TxManager.getManager().setTmNotOk();
-						throw new SystemException( "TM encountered a problem, " +
+						txManager.setTmNotOk();
+						throw new SystemException( 
+							"TM encountered a problem, " +
 							" error writing transaction log," + e );
 					}
 					return true;
@@ -179,21 +173,19 @@ class TransactionImpl implements Transaction
 				else // new branch
 				{
 					// ResourceElement re = resourceList.getFirst();
-					byte branchId[] =
-						TxManager.getManager().getBranchId( xaRes ); 
+					byte branchId[] = txManager.getBranchId( xaRes ); 
 					Xid xid = new XidImpl( globalId, branchId );
 					resourceList.add( new ResourceElement( xid, xaRes ) );
 					xaRes.start( xid, XAResource.TMNOFLAGS );
 					try
 					{
-						TxManager.getManager().getTxLog().addBranch( 
-							globalId, branchId );
+						txManager.getTxLog().addBranch( globalId, branchId );
 					}
 					catch ( IOException e )
 					{
 						e.printStackTrace();
 						log.severe( "Error writing transaction log" );
-						TxManager.getManager().setTmNotOk();
+						txManager.setTmNotOk();
 						throw new SystemException( "TM encountered a problem, " +
 							" error writing transaction log," + e );
 					}
@@ -213,10 +205,10 @@ class TransactionImpl implements Transaction
 			status == Status.STATUS_MARKED_ROLLBACK )
 		{
             throw new RollbackException("Tx status is: " + 
-				TxManager.getManager().getTxStatusAsString( status ) );
+            	txManager.getTxStatusAsString( status ) );
 		}
 		throw new IllegalStateException( "Tx status is: " + 
-			TxManager.getManager().getTxStatusAsString( status ) );
+			txManager.getTxStatusAsString( status ) );
 	}
 
 	public synchronized boolean delistResource( XAResource xaRes, int flag )
@@ -272,7 +264,7 @@ class TransactionImpl implements Transaction
 			}
 		}
 		throw new IllegalStateException( "Tx status is: " + 
-			TxManager.getManager().getTxStatusAsString( status ) );
+			txManager.getTxStatusAsString( status ) );
 	}
 
 	// TODO: figure out if this needs syncrhonization or make status volatile
@@ -315,12 +307,12 @@ class TransactionImpl implements Transaction
 			status == Status.STATUS_ROLLEDBACK )
 		{
             throw new RollbackException("Tx status is: " + 
-				TxManager.getManager().getTxStatusAsString( status ) );
+            	txManager.getTxStatusAsString( status ) );
 		}
 		else
 		{
 			throw new IllegalStateException( "Tx status is: " + 
-				TxManager.getManager().getTxStatusAsString( status ) );
+				txManager.getTxStatusAsString( status ) );
 		}
 	}
 	
@@ -337,8 +329,8 @@ class TransactionImpl implements Transaction
 				}
 				catch ( Throwable t )
 				{
-					log.warning( "Caught exception from tx syncronization[" + s + 
-						"] beforeCompletion()" );
+					log.warning( "Caught exception from tx syncronization[" + 
+						s + "] beforeCompletion()" );
 				}
 			}
 			// execute any hooks added since we entered doBeforeCompletion
@@ -389,7 +381,7 @@ class TransactionImpl implements Transaction
 		else
 		{
 			throw new IllegalStateException( "Tx status is: " + 
-				TxManager.getManager().getTxStatusAsString( status ) );
+				txManager.getTxStatusAsString( status ) );
 		}
 	}
 	
@@ -505,14 +497,13 @@ class TransactionImpl implements Transaction
 		{
 			try
 			{
-				TxManager.getManager().getTxLog().markAsCommitting( 
-					getGlobalId() );
+				txManager.getTxLog().markAsCommitting( getGlobalId() );
 			}
 			catch ( IOException e )
 			{
 				e.printStackTrace();
 				log.severe( "Error writing transaction log" );
-				TxManager.getManager().setTmNotOk();
+				txManager.setTmNotOk();
 				throw new SystemException( "TM encountered a problem, " +
 					" error writing transaction log," + e );
 			}

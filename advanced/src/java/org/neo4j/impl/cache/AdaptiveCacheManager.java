@@ -25,23 +25,25 @@ public class AdaptiveCacheManager
 {
 	private static Logger log = 
 		Logger.getLogger( AdaptiveCacheManager.class.getName() );
-	private static final AdaptiveCacheManager instance = 
-		new AdaptiveCacheManager();
+
+//	private static final AdaptiveCacheManager instance = 
+//		new AdaptiveCacheManager();
+//	
+//	
+//	public static AdaptiveCacheManager getManager()
+//	{
+//		return instance;
+//	}
 	
-	
-	public static AdaptiveCacheManager getManager()
+	public AdaptiveCacheManager()
 	{
-		return instance;
+		
 	}
 	
 	private final List<AdaptiveCacheElement> caches = 
 		new CopyOnWriteArrayList<AdaptiveCacheElement>();
 	private AdaptiveCacheWorker workerThread;
 	
-	private AdaptiveCacheManager()
-	{
-	}
-
 	public synchronized void registerCache( Cache<?,?> cache, 
 		float ratio, int minSize )
 	{
@@ -110,7 +112,7 @@ public class AdaptiveCacheManager
 		return caches;
 	}
 	
-	private static class AdaptiveCacheWorker extends Thread
+	private class AdaptiveCacheWorker extends Thread
 	{
 		private boolean done = false;
 		
@@ -136,10 +138,9 @@ public class AdaptiveCacheManager
 
 		private void adaptCaches()
 		{
-			for ( AdaptiveCacheElement element : 
-				getManager().getCaches() )
+			for ( AdaptiveCacheElement element : getCaches() )
 			{
-				getManager().adaptCache( element.getCache() );
+				adaptCache( element.getCache() );
 			}
 		}
 		

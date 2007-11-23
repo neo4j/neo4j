@@ -20,13 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import javax.transaction.InvalidTransactionException;
-import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.NotInTransactionException;
-import org.neo4j.impl.transaction.TransactionFactory;
 import org.neo4j.impl.transaction.TransactionIsolationLevel;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -42,29 +40,30 @@ public class LockReleaser
 	private static Logger log = Logger.getLogger( 
 		LockReleaser.class.getName() );
 	
-	private static final LockReleaser instance = new LockReleaser();
-	private static final LockManager lockManager = LockManager.getManager();
-	private static final TransactionManager transactionManager = 
-		TransactionFactory.getTransactionManager();
+//	private static final LockReleaser instance = new LockReleaser();
+//	private static final LockManager lockManager = LockManager.getManager();
+//	private static final TransactionManager transactionManager = 
+//		TransactionFactory.getTransactionManager();
 	
 	private final ArrayMap<Thread,List<LockElement>> lockMap =  
 			new ArrayMap<Thread,List<LockElement>>( 5, true, true );
 
-	private final Synchronization txCommitHook = new TxCommitHook();
+	//private final Synchronization txCommitHook = new TxCommitHook();
 	
-	private LockReleaser()
+	private final LockManager lockManager;
+	private final TransactionManager transactionManager;
+	
+	public LockReleaser( LockManager lockManager, 
+		TransactionManager transactionManager )
 	{
+		this.lockManager = lockManager;
+		this.transactionManager = transactionManager;
 	}
 	
-	/**
-	 * Returns the single instance of this class.
-	 * 
-	 * @return The command manager
-	 */
-	public static LockReleaser getManager()
-	{
-		return instance;
-	}
+//	public static LockReleaser getManager()
+//	{
+//		return instance;
+//	}
 	
 	private static class LockElement
 	{
@@ -117,7 +116,7 @@ public class LockReleaser
 					}
 					throw new NotInTransactionException();
 				}
-				tx.registerSynchronization( txCommitHook );
+				tx.registerSynchronization( new TxCommitHook( this ) );
 			}
 			catch ( javax.transaction.SystemException e )
 			{

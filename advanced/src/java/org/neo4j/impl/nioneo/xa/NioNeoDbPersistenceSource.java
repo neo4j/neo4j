@@ -30,7 +30,6 @@ import org.neo4j.impl.core.RelationshipOperationEventData;
 import org.neo4j.impl.core.RelationshipTypeOperationEventData;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
-import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.RelationshipData;
@@ -60,20 +59,20 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 		// Do nothing
 	}
 
-	public synchronized void start()
+	public synchronized void start( XaDataSourceManager xaDsManager )
 	{
-		xaDs = ( NeoStoreXaDataSource ) 
-			XaDataSourceManager.getManager().getXaDataSource( "nioneodb" );
+		xaDs = ( NeoStoreXaDataSource ) xaDsManager.getXaDataSource( 
+			"nioneodb" );
 		if ( xaDs == null )
 		{
 			throw new RuntimeException( "Unable to get nioneodb datasource" );
 		}
-		if ( !EventManager.getManager().generateProActiveEvent(
-			Event.DATA_SOURCE_ADDED, new EventData( this ) ) )
-		{
-			throw new RuntimeException( 
-				"Unable to register NioNeoDbPersistenceSource" );
-		}
+//		if ( !EventManager.getManager().generateProActiveEvent(
+//			Event.DATA_SOURCE_ADDED, new EventData( this ) ) )
+//		{
+//			throw new RuntimeException( 
+//				"Unable to register NioNeoDbPersistenceSource" );
+//		}
 	}
 
 	public synchronized void reload()
@@ -87,8 +86,8 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 		{			
 			xaDs.close();
 		}
-		EventManager.getManager().generateReActiveEvent(
-			Event.DATA_SOURCE_REMOVED, new EventData( this ) );
+//		EventManager.getManager().generateReActiveEvent(
+//			Event.DATA_SOURCE_REMOVED, new EventData( this ) );
 	}
 
 	public synchronized void destroy()

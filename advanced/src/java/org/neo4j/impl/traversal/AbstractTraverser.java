@@ -197,7 +197,7 @@ abstract class AbstractTraverser implements Traverser,Iterator<Node>
 				
 				// If we're not stopping, then add related nodes to the list
 				// or current position not valid (last trav rel deleted)
-				if ( !currentPos.isValid() || 
+				if ( // !currentPos.isValid() || 
 					!this.stopEvaluator.isStopNode(currentPos) )
 				{
 					// Add the nodes at the end of all traversable- and
@@ -211,7 +211,7 @@ abstract class AbstractTraverser implements Traverser,Iterator<Node>
 				}
 				
 				// Check if we should return currentPos
-				if ( currentPos.isValid() && 
+				if ( // currentPos.isValid() && 
 					this.returnableEvaluator.isReturnableNode(currentPos) )
 				{
 					this.returnedNodesCount++;

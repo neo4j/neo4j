@@ -59,15 +59,15 @@ import org.neo4j.api.core.Traverser.Order;
 public final class TraverserFactory
 {
 	// -- Singleton stuff
-	private static TraverserFactory instance = new TraverserFactory();
-	private TraverserFactory() {}
+//	private static TraverserFactory instance = new TraverserFactory();
+//	private TraverserFactory() {}
 	
-	/**
-	 * Singleton accessor.
-	 * @return the singleton traverser factory
-	 */
-	public static TraverserFactory getFactory() { return instance; }
+//	public static TraverserFactory getFactory() { return instance; }
 
+	public TraverserFactory()
+	{
+	}
+	
 	/**
 	 * Creates a parameterized traverser, using non-default values on all
 	 * parameters.

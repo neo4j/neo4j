@@ -26,28 +26,22 @@ import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
 
 
-/**
- * A transaction hook that generates an event upon transaction completion.
- * The {@link Event#TX_BEGIN TX_BEGIN} event is generated in
- * {@link UserTransactionImpl#begin} and this class generates
- * {@link Event#TX_COMMIT} or {@link Event#TX_ROLLBACK} depending on
- * whether the transaction is successful.
- */
 class TxEventGenerator implements Synchronization
 {
 	private static Logger log = 
 		Logger.getLogger( TxEventGenerator.class.getName() );
-	private static final TxEventGenerator instance = new TxEventGenerator();
 	
-	static TxEventGenerator getInstance()
+	private final EventManager eventManager;
+	private final TransactionImpl tx;
+	
+	TxEventGenerator( EventManager eventManager, TransactionImpl tx )
 	{
-		return instance;
+		this.eventManager = eventManager;
+		this.tx = tx;
 	}
 
 	public void afterCompletion( int param )
 	{
-		TransactionImpl tx = ( TransactionImpl ) 
-			TxManager.getManager().getTransaction();
 		if ( tx == null )
 		{
 			log.severe( "Unable to get transaction after " +
@@ -59,11 +53,11 @@ class TxEventGenerator implements Synchronization
 		switch ( param )
 		{
 			case Status.STATUS_COMMITTED:
-				EventManager.getManager().generateReActiveEvent(
+				eventManager.generateReActiveEvent(
 					Event.TX_COMMIT, new EventData( eventIdentifier ) );
 				break;
 			case Status.STATUS_ROLLEDBACK:
-				EventManager.getManager().generateReActiveEvent(
+				eventManager.generateReActiveEvent(
 					Event.TX_ROLLBACK, new EventData( eventIdentifier ) );
 				break;
 			default:

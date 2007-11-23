@@ -34,10 +34,13 @@ class EventQueue extends Thread
 	private boolean run = true;
 	private boolean destroyed = false;
 	private int elementCount = 0;
+	
+	private final EventManager eventManager;
 
-	EventQueue()
+	EventQueue( EventManager eventManager )
 	{
 		super( "EventQueueConsumer" );
+		this.eventManager = eventManager;
 	}
 	
 	private void queue( EventElement eventElement )
@@ -66,7 +69,7 @@ class EventQueue extends Thread
 
 	private void sendEvent( EventElement eventElement )
 	{
-		EventManager.getManager().sendReActiveEvent( eventElement.getEvent(), 
+		eventManager.sendReActiveEvent( eventElement.getEvent(), 
 			eventElement.getEventData() );
 	}
 	
@@ -74,12 +77,11 @@ class EventQueue extends Thread
 	{
 		try
 		{
-			EventManager evtMgr = EventManager.getManager();
-			EventElement eventElement = evtMgr.getNextEventElement();
+			EventElement eventElement = eventManager.getNextEventElement();
 			while ( eventElement != null )
 			{
 				queue( eventElement );
-				eventElement = evtMgr.getNextEventElement();
+				eventElement = eventManager.getNextEventElement();
 			}
 
 			while ( run || queueList.size() > 0 )
@@ -95,18 +97,18 @@ class EventQueue extends Thread
 				{ // ok
 				}
 
-				eventElement = evtMgr.getNextEventElement();
+				eventElement = eventManager.getNextEventElement();
 				while ( eventElement != null )
 				{
 					this.queue( eventElement );
-					eventElement = evtMgr.getNextEventElement();
+					eventElement = eventManager.getNextEventElement();
 				}
 			}
-			eventElement = evtMgr.getNextEventElement();
+			eventElement = eventManager.getNextEventElement();
 			while ( eventElement != null )
 			{
 				queueList.add( eventElement );
-				eventElement = evtMgr.getNextEventElement();
+				eventElement = eventManager.getNextEventElement();
 			}
 		}
 		catch ( Throwable t )

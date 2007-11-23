@@ -19,10 +19,12 @@ package org.neo4j.impl.transaction;
 import java.io.IOException;
 import java.util.Map;
 
+import javax.transaction.TransactionManager;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -46,6 +48,15 @@ public class TxModule
 	private boolean startIsOk = true;
 	private String dataSourceConfigFile = null;
 	private String txLogDir = "var/tm";
+	
+	private final TxManager txManager;
+	private final XaDataSourceManager xaDsManager;
+	
+	public TxModule( EventManager eventManager )
+	{
+		this.txManager = new TxManager( eventManager );
+		this.xaDsManager = new XaDataSourceManager();
+	}
 
 	public void init()
 	{
@@ -61,7 +72,7 @@ public class TxModule
 		{
 			new XaDataSourceConfigFileParser().parse( dataSourceConfigFile );
 		}
-		TxManager.getManager().init();
+		txManager.init( xaDsManager );
 		startIsOk = false;
 	}
 	
@@ -88,8 +99,8 @@ public class TxModule
 	
 	public void stop()
 	{
-		XaDataSourceManager.getManager().unregisterAllDataSources();
-		TxManager.getManager().stop();
+		xaDsManager.unregisterAllDataSources();
+		txManager.stop();
 	}
 	
 	public void destroy()
@@ -101,7 +112,7 @@ public class TxModule
 		return MODULE_NAME;
 	}
 	
-	private static class XaDataSourceConfigFileParser
+	private class XaDataSourceConfigFileParser
 	{
 		void parse( String file )
 		{
@@ -136,7 +147,7 @@ public class TxModule
 
 		private void parseXaDataSourceElement( Element element )
 		{
-			XaDataSourceManager xaDsMgr = XaDataSourceManager.getManager();
+			XaDataSourceManager xaDsMgr = xaDsManager;
 			NamedNodeMap attributes = element.getAttributes();
 			String name	= attributes.getNamedItem( "name" ).getNodeValue();
 			name = name.toLowerCase();
@@ -206,9 +217,9 @@ public class TxModule
 	 * @throws LifecycleException
 	 */
 	public XaDataSource registerDataSource( String name, String className, 
-		byte resourceId[], Map<String,String> params )
+		byte resourceId[], Map<?,?> params )
 	{
-		XaDataSourceManager xaDsMgr = XaDataSourceManager.getManager();
+		XaDataSourceManager xaDsMgr = xaDsManager;
 		name = name.toLowerCase();
 		if ( xaDsMgr.hasDataSource( name ) )
 		{
@@ -236,5 +247,15 @@ public class TxModule
 	public void setTxLogDirectory( String dir )
 	{
 		txLogDir = dir;
+	}
+
+	public TransactionManager getTxManager()
+    {
+		return txManager;
+    }
+	
+	public XaDataSourceManager getXaDataSourceManager()
+	{
+		return xaDsManager;
 	}
 }

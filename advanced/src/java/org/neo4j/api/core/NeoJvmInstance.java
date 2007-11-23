@@ -17,11 +17,16 @@
 package org.neo4j.api.core;
 
 import java.util.Map;
+import javax.transaction.TransactionManager;
+import org.neo4j.impl.cache.AdaptiveCacheManager;
+import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.NeoModule;
+import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.event.EventModule;
 import org.neo4j.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.impl.persistence.IdGeneratorModule;
 import org.neo4j.impl.persistence.PersistenceModule;
+import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.TxModule;
 
 class NeoJvmInstance
@@ -32,21 +37,28 @@ class NeoJvmInstance
 	private static final String DEFAULT_DATA_SOURCE_NAME = 
 		"nioneodb";
 	
-	private static boolean started = false;
+	private boolean started = false;
+	private boolean create;
+	private String storeDir;
 	
-	private static Config config = null;
-	private static NioNeoDbPersistenceSource persistenceSource = null; 
+	NeoJvmInstance( String storeDir, boolean create )
+	{
+		this.storeDir = storeDir;
+		this.create = create;
+	}
+	
+	private Config config = null;
+	private NioNeoDbPersistenceSource persistenceSource = null; 
 	
 	
-	public static Config getConfig()
+	public Config getConfig()
 	{
 		return config;
 	}
 	
-	public static void start( Class<? extends RelationshipType> clazz, 
-		String storeDir, boolean create ) 
+	public void start() 
 	{
-		Map<String,String> params = new java.util.HashMap<String,String>();
+		Map<Object,Object> params = new java.util.HashMap<Object,Object>();
 		params.put( "neostore.nodestore.db.mapped_memory", "20M" );
 		params.put( "neostore.propertystore.db.mapped_memory", "90M" );
 		params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
@@ -54,8 +66,9 @@ class NeoJvmInstance
 		params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
 		params.put( "neostore.propertystore.db.arrays.mapped_memory", "1M" );
 		params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
-		start( clazz, storeDir, create, params );
+		start( params );
 	}
+	
 	/**
 	 * Starts Neo with default configuration using NioNeo DB as persistence 
 	 * store. 
@@ -66,8 +79,7 @@ class NeoJvmInstance
 	 * @param configuration parameters
 	 * @throws StartupFailedException if unable to start
 	 */
-	public static void start( Class<? extends RelationshipType> clazz, 
-		String storeDir, boolean create, Map<String,String> params ) 
+	public void start( Map<Object,Object> params ) 
 	{
 		if ( started )
 		{
@@ -85,12 +97,15 @@ class NeoJvmInstance
 		String logicalLog = storeDir + separator + "nioneo_logical.log";
 		params.put( "logical_log", logicalLog );
 		byte resourceId[] = "414141".getBytes();
+		params.put( EventManager.class, 
+			config.getEventModule().getEventManager() );
+		params.put( LockManager.class, config.getLockManager() );
+		params.put( LockReleaser.class, config.getLockReleaser() );
 		config.getTxModule().registerDataSource( DEFAULT_DATA_SOURCE_NAME,
 			NIO_NEO_DB_CLASS, resourceId, params );
 		System.setProperty( "neo.tx_log_directory", storeDir );
 		persistenceSource = new NioNeoDbPersistenceSource();
 		config.setNeoPersistenceSource( DEFAULT_DATA_SOURCE_NAME, create );
-		config.getNeoModule().setRelationshipTypes( clazz );
 		config.getIdGeneratorModule().setPersistenceSourceInstance( 
 			persistenceSource );
 		config.getEventModule().init();
@@ -102,14 +117,15 @@ class NeoJvmInstance
 		
 		config.getEventModule().start();
 		config.getTxModule().start();
-		config.getPersistenceModule().start();
-		persistenceSource.start();
+		config.getPersistenceModule().start( persistenceSource );
+		persistenceSource.start( 
+			config.getTxModule().getXaDataSourceManager() );
 		config.getIdGeneratorModule().start();
 		config.getNeoModule().start();
 		started = true;
 	}
 
-    private static String convertFileSeparators( String fileName )
+    private String convertFileSeparators( String fileName )
     {
 		String fileSeparator = System.getProperty( "file.separator" );
 		if ( "\\".equals( fileSeparator ) )
@@ -129,7 +145,7 @@ class NeoJvmInstance
 	 * 
 	 * @return True if Neo started
 	 */
-	public static boolean started()
+	public boolean started()
 	{
 		return started;
 	}
@@ -137,7 +153,7 @@ class NeoJvmInstance
 	/**
 	 * Shut down Neo. 
 	 */
-	public static void shutdown()
+	public void shutdown()
 	{
 		if ( started )
 		{
@@ -160,20 +176,32 @@ class NeoJvmInstance
 	public static class Config
 	{
 		private EventModule eventModule;
+		private AdaptiveCacheManager cacheManager;
 		private TxModule txModule;
+		private LockManager lockManager;
+		private LockReleaser lockReleaser;
 		private PersistenceModule persistenceModule;
 		private boolean create = false; 
 		private String persistenceSourceName;
 		private IdGeneratorModule idGeneratorModule;
 		private NeoModule neoModule;
-		
+				
 		Config()
 		{
 			eventModule = new EventModule();
-			txModule = new TxModule();
-			persistenceModule = new PersistenceModule();
+			cacheManager = new AdaptiveCacheManager();
+			txModule = new TxModule( eventModule.getEventManager() );
+			lockManager = new LockManager();
+			lockReleaser = new LockReleaser( lockManager, 
+				txModule.getTxManager() );
+			persistenceModule = new PersistenceModule( 
+				eventModule.getEventManager(), txModule.getTxManager() );
 			idGeneratorModule = new IdGeneratorModule();
-			neoModule = new NeoModule();
+			neoModule = new NeoModule( cacheManager, lockManager, 
+				txModule.getTxManager(), lockReleaser, 
+				eventModule.getEventManager(), 
+				persistenceModule.getPersistenceManager(),
+				idGeneratorModule.getIdGenerator() );
 		}
 		
 		/**
@@ -203,7 +231,7 @@ class NeoJvmInstance
 			return eventModule;
 		}
 		
-		TxModule getTxModule()
+		public TxModule getTxModule()
 		{
 			return txModule;
 		}
@@ -222,32 +250,59 @@ class NeoJvmInstance
 		{
 			return idGeneratorModule;
 		}
+
+		public LockManager getLockManager()
+		{
+			return lockManager;
+		}
+		
+		public LockReleaser getLockReleaser()
+		{
+			return lockReleaser;
+		}
 	}
 
-	public static RelationshipType getRelationshipTypeByName( String name )
+	public RelationshipType getRelationshipTypeByName( String name )
     {
 	    return config.getNeoModule().getRelationshipTypeByName( name );
     }
 
-	public static void addEnumRelationshipTypes( 
+	public void addEnumRelationshipTypes( 
 		Class<? extends RelationshipType> relationshipTypes )
     {
 	    config.getNeoModule().addEnumRelationshipTypes( relationshipTypes );
     }
 
-	public static Iterable<RelationshipType> getRelationshipTypes()
+	public Iterable<RelationshipType> getRelationshipTypes()
     {
 	    return config.getNeoModule().getRelationshipTypes();
     }
 
-	public static boolean hasRelationshipType( String name )
+	public boolean hasRelationshipType( String name )
     {
 	    return config.getNeoModule().hasRelationshipType( name );
     }
 
-	public static RelationshipType registerRelationshipType( String name, 
+	public RelationshipType registerRelationshipType( String name, 
 		boolean create )
     {
 	    return config.getNeoModule().registerRelationshipType( name, create );
     }
+	
+	public boolean transactionRunning()
+	{
+		try
+		{
+			return config.getTxModule().getTxManager().getTransaction() != null;
+		}
+		catch ( Exception e )
+		{
+			throw new RuntimeException( e );
+		}
+	}
+	
+	public TransactionManager getTransactionManager()
+	{
+		return config.getTxModule().getTxManager();
+	}	
 }

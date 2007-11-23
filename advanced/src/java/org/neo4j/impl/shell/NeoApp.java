@@ -18,11 +18,8 @@ package org.neo4j.impl.shell;
 
 import java.rmi.RemoteException;
 import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.Node;
-import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
-import org.neo4j.impl.core.NodeManager;
 import org.neo4j.util.shell.AbstractApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
@@ -36,18 +33,18 @@ public abstract class NeoApp extends AbstractApp
 {
 	private static final String NODE_KEY = "CURRENT_NODE";
 	
-	protected static Node getCurrentNode( Session session )
+	protected Node getCurrentNode( Session session )
 	{
 		Number id = ( Number ) safeGet( session, NODE_KEY );
 		Node node = null;
 		if ( id == null )
 		{
-			node = NodeManager.getManager().getReferenceNode();
+			node =  this.getNeoServer().getNeo().getReferenceNode();
 			setCurrentNode( session, node );
 		}
 		else
 		{
-			node = NodeManager.getManager().getNodeById( id.intValue() );
+			node = getNeoServer().getNeo().getNodeById( id.intValue() );
 		}
 		return node;
 	}
@@ -62,7 +59,7 @@ public abstract class NeoApp extends AbstractApp
 		return ( NeoShellServer ) this.getServer();
 	}
 	
-	protected RelationshipType getRelationshipType( String name )
+/*	protected RelationshipType getRelationshipType( String name )
 	{
 		// this.ensureRelTypesInitialized();
 		RelationshipType result = ( ( EmbeddedNeo ) this.getNeoServer().
@@ -73,7 +70,7 @@ public abstract class NeoApp extends AbstractApp
 				"' found" );
 		}
 		return result;
-	}
+	}*/
 	
 	protected Direction getDirection( String direction ) throws ShellException
 	{
@@ -121,7 +118,7 @@ public abstract class NeoApp extends AbstractApp
 	public final String execute( AppCommandParser parser, Session session,
 		Output out ) throws ShellException
 	{
-		Transaction tx = Transaction.begin();
+		Transaction tx = getNeoServer().getNeo().beginTx();
 		try
 		{
 			String result = this.exec( parser, session, out );

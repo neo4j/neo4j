@@ -23,7 +23,7 @@ as networks rather than tables. For more information, please see neo4j.org.
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-					<skip>true</skip> <!-- TODO: set this to false after unit tests have been fixed -->
+					<skip>false</skip>
 				</configuration>
 			</plugin>
 			<plugin>

@@ -42,19 +42,18 @@ class PersistenceSourceDispatcher
 	private PersistenceSource ourOnlyPersistenceSource = null;
 	
 	
-	private static final PersistenceSourceDispatcher instance =
-		new PersistenceSourceDispatcher();
+//	private static final PersistenceSourceDispatcher instance =
+//		new PersistenceSourceDispatcher();
 	
-	private PersistenceSourceDispatcher() { }
-	
-	/**
-	 * Singleton accessor.
-	 * @return the singleton persistence source dispatcher
-	 */
-	static PersistenceSourceDispatcher getDispatcher()
-	{
-		return instance;
+	PersistenceSourceDispatcher() 
+	{ 
+		
 	}
+	
+//	static PersistenceSourceDispatcher getDispatcher()
+//	{
+//		return instance;
+//	}
 	
 	/**
 	 * Returns the persistence source that should be used to persist
