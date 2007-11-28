@@ -77,7 +77,8 @@ class MappedPersistenceWindow extends LockableWindow
 		return windowSize;
 	}
 
-	void force()
+    @Override
+	public void force()
 	{
 		( ( java.nio.MappedByteBuffer ) buffer.getBuffer() ).force();
 	}

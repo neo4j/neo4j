@@ -87,12 +87,12 @@ public class PropertyIndexStore extends AbstractStore implements Store
 		keyPropertyStore = null;
 	}
 	
-	@Override
-	public void flush( int txIdentifier ) throws IOException
-	{
-		keyPropertyStore.flush( txIdentifier );
-		super.flush( txIdentifier );
-	}
+//	@Override
+//	public void flush( int txIdentifier ) throws IOException
+//	{
+//		keyPropertyStore.flush( txIdentifier );
+//		super.flush( txIdentifier );
+//	}
 	
 	@Override
 	public void flushAll() throws IOException

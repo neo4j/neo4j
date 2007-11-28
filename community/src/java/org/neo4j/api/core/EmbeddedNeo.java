@@ -59,6 +59,7 @@ public final class EmbeddedNeo implements NeoService
 		neoJvmInstance.start();
 		nodeManager = 
 			neoJvmInstance.getConfig().getNeoModule().getNodeManager();
+        Transaction.neo = this;
 	}
 	
 	

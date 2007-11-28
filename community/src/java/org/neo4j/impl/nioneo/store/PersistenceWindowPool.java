@@ -22,13 +22,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
-import org.neo4j.impl.nioneo.xa.TxInfoManager;
-import org.neo4j.impl.util.ArrayMap;
 
 
 /**
@@ -48,8 +43,8 @@ class PersistenceWindowPool
 	private FileChannel fileChannel;
 	private Map<Integer,LockableWindow> activeRowWindows = 
 		new HashMap<Integer,LockableWindow>();
-	private ArrayMap<Integer,Set<LockableWindow>> txIdentifiers = 
-		new ArrayMap<Integer,Set<LockableWindow>>( 4, false, true );
+//	private ArrayMap<Integer,Set<LockableWindow>> txIdentifiers = 
+//		new ArrayMap<Integer,Set<LockableWindow>>( 4, false, true );
 	private int mappedMem = 0;
 	private int memUsed = 0;
 	private int brickCount = 0;
@@ -146,18 +141,18 @@ class PersistenceWindowPool
 		LockableWindow window = null;
 		synchronized ( activeRowWindows )
 		{
-			int txIdentifier = 
-				TxInfoManager.getManager().getCurrentTxIdentifier();
-			Set<LockableWindow> windowSet = null;
-			if ( txIdentifier != -1 && operationType == OperationType.WRITE )
-			{
-				windowSet = txIdentifiers.get( txIdentifier );
-				if ( windowSet == null )
-				{
-					windowSet = new HashSet<LockableWindow>();
-					txIdentifiers.put( txIdentifier, windowSet );
-				}
-			}
+//			int txIdentifier = 
+//				TxInfoManager.getManager().getCurrentTxIdentifier();
+//			Set<LockableWindow> windowSet = null;
+//			if ( txIdentifier != -1 && operationType == OperationType.WRITE )
+//			{
+//				windowSet = txIdentifiers.get( txIdentifier );
+//				if ( windowSet == null )
+//				{
+//					windowSet = new HashSet<LockableWindow>();
+//					txIdentifiers.put( txIdentifier, windowSet );
+//				}
+//			}
 			if ( brickMiss >= REFRESH_BRICK_COUNT )
 			{
 				brickMiss = 0;
@@ -178,10 +173,10 @@ class PersistenceWindowPool
 						throw new RuntimeException( "assssert" );
 					}
 					brickArray[brickIndex].setHit();
-					if ( window != null && windowSet != null )
-					{
-						windowSet.add( window );
-					}
+//					if ( window != null && windowSet != null )
+//					{
+//						windowSet.add( window );
+//					}
 				}
 				else
 				{
@@ -245,7 +240,7 @@ class PersistenceWindowPool
 		flushAll();
 		synchronized ( activeRowWindows )
 		{
-			txIdentifiers = null;
+//			txIdentifiers = null;
 			fileChannel = null;
 			activeRowWindows = null;
 		}
@@ -256,7 +251,14 @@ class PersistenceWindowPool
 	{
 		synchronized ( activeRowWindows )
 		{
-			for ( Set<LockableWindow> windowSet : txIdentifiers.values() )
+            for ( BrickElement element : brickArray )
+            {
+                if ( element.getWindow() != null )
+                {
+                    element.getWindow().force();
+                }
+            }
+/*			for ( Set<LockableWindow> windowSet : txIdentifiers.values() )
 			{
 				if ( windowSet != null )
 				{
@@ -267,7 +269,7 @@ class PersistenceWindowPool
 					}
 				}
 			}
-			txIdentifiers.clear();
+			txIdentifiers.clear();*/
 		}
 		fileChannel.force( false );
 	}
@@ -279,42 +281,42 @@ class PersistenceWindowPool
 	 * @param identifier The (transaction) identifier
 	 * @throws IOException If unable to flush
 	 */
-	void flush( int identifier ) throws IOException
-	{
-		synchronized ( activeRowWindows )
-		{
-			if ( identifier != -1 )
-			{
-				Set<LockableWindow> windowSet = 
-					txIdentifiers.remove( identifier );
-				if ( windowSet != null )
-				{
-					Iterator<LockableWindow> itr = windowSet.iterator();
-					while ( itr.hasNext() )
-					{
-						( ( MappedPersistenceWindow ) itr.next() ).force();
-					}
-				}
-			}
-		}
-		fileChannel.force( false );
-	}
+//	void flush( int identifier ) throws IOException
+//	{
+//		synchronized ( activeRowWindows )
+//		{
+//			if ( identifier != -1 )
+//			{
+//				Set<LockableWindow> windowSet = 
+//					txIdentifiers.remove( identifier );
+//				if ( windowSet != null )
+//				{
+//					Iterator<LockableWindow> itr = windowSet.iterator();
+//					while ( itr.hasNext() )
+//					{
+//						( ( MappedPersistenceWindow ) itr.next() ).force();
+//					}
+//				}
+//			}
+//		}
+//		fileChannel.force( false );
+//	}
 
 	/**
 	 * Removes the mapping between windows and <CODE>identifier</CODE>.
 	 * 
 	 * @param identifier The (transaction) identifier
 	 */
-	void forget( int identifier )
-	{
-		synchronized ( activeRowWindows )
-		{
-			if ( identifier != -1 )
-			{
-				txIdentifiers.remove( identifier );
-			}
-		}
-	}
+//	void forget( int identifier )
+//	{
+//		synchronized ( activeRowWindows )
+//		{
+//			if ( identifier != -1 )
+//			{
+//				txIdentifiers.remove( identifier );
+//			}
+//		}
+//	}
 
 	private static class BrickElement
 	{

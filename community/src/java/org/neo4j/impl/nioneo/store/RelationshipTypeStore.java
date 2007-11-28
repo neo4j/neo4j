@@ -103,12 +103,12 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		typeNameStore = null;
 	}
 
-	@Override
-	public void flush( int txIdentifier ) throws IOException
-	{
-		typeNameStore.flush( txIdentifier );
-		super.flush( txIdentifier );
-	}
+//	@Override
+//	public void flush( int txIdentifier ) throws IOException
+//	{
+//		typeNameStore.flush( txIdentifier );
+//		super.flush( txIdentifier );
+//	}
 	
 	public void flushAll() throws IOException
 	{
@@ -116,12 +116,12 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		super.flushAll();
 	}
 	
-	@Override
-	public void forget( int txIdentifier )
-	{
-		typeNameStore.forget( txIdentifier );
-		super.forget( txIdentifier );
-	}
+//	@Override
+//	public void forget( int txIdentifier )
+//	{
+//		typeNameStore.forget( txIdentifier );
+//		super.forget( txIdentifier );
+//	}
 
 	public String getTypeAndVersionDescriptor()
 	{

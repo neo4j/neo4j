@@ -368,10 +368,10 @@ public abstract class CommonAbstractStore
 	 * @throws IOException If some I/O error occurs flushing the file channel
 	 * of this store
 	 */
-	public void flush( int identifier ) throws IOException
-	{
-		windowPool.flush( identifier );
-	}
+//	public void flush( int identifier ) throws IOException
+//	{
+//		windowPool.flush( identifier );
+//	}
 	
 	public void flushAll() throws IOException
 	{
@@ -386,10 +386,10 @@ public abstract class CommonAbstractStore
 	 * 
 	 * @param identifier The (transaction) identifier
 	 */
-	public void forget( int identifier )
-	{
-		windowPool.forget( identifier );
-	}
+//	public void forget( int identifier )
+//	{
+//		windowPool.forget( identifier );
+//	}
 
 	/**
 	 * Utility method to determine if we are in recovery mode. Asks the 

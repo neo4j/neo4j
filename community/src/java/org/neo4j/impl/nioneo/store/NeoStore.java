@@ -85,14 +85,14 @@ public class NeoStore extends AbstractStore
 	 * Passes a flush to the node,relationship,property and relationship type
 	 * store.
 	 */
-	@Override
-	public void flush( int txIdentifier ) throws IOException
-	{
-		relTypeStore.flush( txIdentifier );
-		propStore.flush( txIdentifier );
-		relStore.flush( txIdentifier );
-		nodeStore.flush( txIdentifier );
-	}
+//	@Override
+//	public void flush( int txIdentifier ) throws IOException
+//	{
+//		relTypeStore.flush( txIdentifier );
+//		propStore.flush( txIdentifier );
+//		relStore.flush( txIdentifier );
+//		nodeStore.flush( txIdentifier );
+//	}
 	
 	public void flushAll() throws IOException
 	{
@@ -106,14 +106,14 @@ public class NeoStore extends AbstractStore
 	 * Passes a forget to the node,relationship,property and relationship type
 	 * store.
 	 */
-	@Override
-	public void forget( int txIdentifier )
-	{
-		relTypeStore.forget( txIdentifier );
-		propStore.forget( txIdentifier );
-		relStore.forget( txIdentifier );
-		nodeStore.forget( txIdentifier );
-	}
+//	@Override
+//	public void forget( int txIdentifier )
+//	{
+//		relTypeStore.forget( txIdentifier );
+//		propStore.forget( txIdentifier );
+//		relStore.forget( txIdentifier );
+//		nodeStore.forget( txIdentifier );
+//	}
 
 	public String getTypeAndVersionDescriptor()
 	{
