@@ -21,9 +21,6 @@ public class BashVariableInterpreter
 		REPLACERS.put( "T", new DateReplacer( "KK:mm:ss" ) );
 		REPLACERS.put( "@", new DateReplacer( "KK:mm aa" ) );
 		REPLACERS.put( "A", new DateReplacer( "HH:mm" ) );
-		REPLACERS.put( "u", new StaticReplacer( "user" ) );
-		REPLACERS.put( "v", new StaticReplacer( "1.0-b6" ) );
-		REPLACERS.put( "V", new StaticReplacer( "1.0-b6" ) );
 	}
 	
 	public void addReplacer( String key, Replacer replacer )
