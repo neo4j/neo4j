@@ -16,9 +16,9 @@
  */
 package org.neo4j.impl.core;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.transaction.Status;
@@ -80,7 +80,7 @@ public class PropertyIndexManager
 			{
 				if ( list == null )
 				{
-					list = new LinkedList<PropertyIndex>();
+					list = new ArrayList<PropertyIndex>();
 				}
 				list.add( index );
 			}
@@ -100,11 +100,6 @@ public class PropertyIndexManager
 	boolean hasAll()
 	{
 		return hasAll;
-	}
-	
-	public static PropertyIndex createDummyIndex( int id, String key )
-	{
-		return new PropertyIndex( key, id );
 	}
 	
 	public boolean hasIndexFor( int keyId )
@@ -152,7 +147,7 @@ public class PropertyIndexManager
 		List<PropertyIndex> list = indexMap.get( index.getKey() );
 		if ( list == null )
 		{
-			list = new LinkedList<PropertyIndex>();
+			list = new ArrayList<PropertyIndex>();
 			indexMap.put( index.getKey(), list );
 		}
 		// indexMap.put( index.getKey(), index );

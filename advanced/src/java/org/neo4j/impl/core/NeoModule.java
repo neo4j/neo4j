@@ -87,6 +87,7 @@ public class NeoModule
 		}
 		catch ( Exception e )
 		{
+            e.printStackTrace();
 			try
 			{
 				transactionManager.rollback();

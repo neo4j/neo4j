@@ -81,6 +81,23 @@ public class Transaction
 	{
 		this.transactionManager = transactionManager;
 	}
+    
+    static EmbeddedNeo neo = null;
+    
+    /**
+     * This static method will only work if a single neo service is running.
+     * If you start multiple neo services this method will start transaction
+     * on the last neo service started. For more information see 
+     * {@link NeoService#beginTx()}.
+     */
+    public static Transaction begin()
+    {
+        if ( neo == null )
+        {
+            throw new RuntimeException( "No neo service started" );
+        }
+        return neo.beginTx();
+    }
 	
 	/**
 	 * Marks this transaction as failed, which means that it will inexplicably be

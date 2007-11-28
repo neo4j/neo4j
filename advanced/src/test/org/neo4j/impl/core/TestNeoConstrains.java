@@ -177,16 +177,15 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 		try
 		{
 			node.removeProperty( key );
-			Transaction tx = getTransaction();
-			tx.success();
-			tx.finish();
-			fail( "Remove property on deleted node should not validate" );
+            Transaction tx = getTransaction();
+            tx.success();
+            tx.finish();
+            fail( "Change property on deleted node should not validate" );
 		}
 		catch ( Exception e )
 		{
 			// ok
 		}
-		setTransaction( getNeo().beginTx() );
 	}
 
 	public void testChangePropertyDeletedNode()
@@ -206,7 +205,6 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 		{
 			// ok
 		}
-		setTransaction( getNeo().beginTx() );
 	}
 
 	public void testAddPropertyDeletedRelationship()
@@ -226,7 +224,6 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 		catch ( Exception e )
 		{ // good
 		}
-		setTransaction( getNeo().beginTx() );
 		node1.delete();
 		node2.delete();
 	}
@@ -250,7 +247,6 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 		{
 			// ok
 		}
-		setTransaction( getNeo().beginTx() );
 		node1.delete();
 		node2.delete();
 	}
@@ -274,7 +270,6 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 		{
 			// ok
 		}
-		setTransaction( getNeo().beginTx() );
 		node1.delete();
 		node2.delete();
 	}
@@ -317,7 +312,6 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 		{
 			// ok
 		}
-		setTransaction( getNeo().beginTx() );
 	}
 	
 	public void testIllegalPropertyType()

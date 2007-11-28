@@ -48,16 +48,13 @@ class ResourceBroker
 	private static Logger log = Logger.getLogger( 
 		ResourceBroker.class.getName() );
 
-	private final PersistenceSourceDispatcher dispatcher; // =
-		// PersistenceSourceDispatcher.getDispatcher();
+	private final PersistenceSourceDispatcher dispatcher;
 
-	private ArrayMap<Transaction,ResourceConnection> txConnectionMap = 
-		new ArrayMap<Transaction,ResourceConnection>( 5, true, true );
+	private ArrayMap<Thread,ResourceConnection> txConnectionMap = 
+		new ArrayMap<Thread,ResourceConnection>( 5, true, true );
 
 	// A hook that releases resources after tx.commit
 	private final Synchronization txCommitHook = new TxCommitHook();
-	
-//	private static final ResourceBroker instance = new ResourceBroker();
 	
 	private final TransactionManager transactionManager;
 	
@@ -71,11 +68,6 @@ class ResourceBroker
 	{
 		return dispatcher;
 	}
-	
-//	static ResourceBroker getBroker()
-//	{
-//		return instance;
-//	}
 	
 	/**
 	 * Acquires the resource connection that should be used to persist
@@ -103,12 +95,13 @@ class ResourceBroker
 		PersistenceSource source	= null;
 		
 		source = dispatcher.getPersistenceSource();
-		Transaction tx = this.getCurrentTransaction();
-		con = txConnectionMap.get( tx );
+        Thread currentThread = Thread.currentThread();
+        con = txConnectionMap.get( currentThread );
 		if ( con == null )
 		{
 			try
 			{
+                Transaction tx = this.getCurrentTransaction();
 				con = source.createResourceConnection();
 				if ( !tx.enlistResource( con.getXAResource() ) )
 				{
@@ -117,7 +110,7 @@ class ResourceBroker
 						"transaction" );
 				}
 				tx.registerSynchronization( txCommitHook );
-				txConnectionMap.put( tx, con );
+                txConnectionMap.put( currentThread, con );
 			}
 			catch ( ConnectionCreationFailedException ccfe )
 			{
@@ -149,8 +142,8 @@ class ResourceBroker
 	 */
 	void releaseResourceConnectionsForTransaction() throws NotInTransactionException
 	{
-		Transaction tx = getCurrentTransaction();
-		ResourceConnection con = txConnectionMap.remove( tx );
+        ResourceConnection con = txConnectionMap.remove( 
+            Thread.currentThread() );
 		if ( con != null )
 		{
 			try
@@ -175,7 +168,7 @@ class ResourceBroker
 	void delistResourcesForTransaction() throws NotInTransactionException
 	{
 		Transaction tx = this.getCurrentTransaction();
-		ResourceConnection con = txConnectionMap.get( tx );
+        ResourceConnection con = txConnectionMap.get( Thread.currentThread() );
 		if ( con != null )
 		{
 			this.delistCon( tx, con );
@@ -279,4 +272,3 @@ class ResourceBroker
 		}
 	}
 }
-
