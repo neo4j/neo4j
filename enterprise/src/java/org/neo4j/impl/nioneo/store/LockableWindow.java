@@ -32,6 +32,8 @@ abstract class LockableWindow implements PersistenceWindow
 	public abstract long position();
 	
 	public abstract int size();
+    
+    public abstract void force() throws IOException;
 	
 	private OperationType type = null;
 	private final FileChannel fileChannel;
@@ -51,7 +53,7 @@ abstract class LockableWindow implements PersistenceWindow
 		return position() <= position && position < position() + size();
 	}
 
-	FileChannel getFileChannel() throws IOException
+	FileChannel getFileChannel()
 	{
 		return fileChannel;
 	}

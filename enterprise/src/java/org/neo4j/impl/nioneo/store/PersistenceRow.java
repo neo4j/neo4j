@@ -94,6 +94,11 @@ class PersistenceRow extends LockableWindow
 	{
 		return 1;
 	}
+    
+    public void force() throws IOException
+    {
+        writeOut();
+    }
 	
 	public boolean equals( Object o )
 	{

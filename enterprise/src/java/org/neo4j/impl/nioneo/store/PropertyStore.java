@@ -99,14 +99,14 @@ public class PropertyStore extends AbstractStore implements Store
 		arrayPropertyStore = null;
 	}
 	
-	@Override
-	public void flush( int txIdentifier ) throws IOException
-	{
-		stringPropertyStore.flush( txIdentifier );
-		propertyIndexStore.flush( txIdentifier );
-		arrayPropertyStore.flush( txIdentifier );
-		super.flush( txIdentifier );
-	}
+//	@Override
+//	public void flush( int txIdentifier ) throws IOException
+//	{
+//		stringPropertyStore.flush( txIdentifier );
+//		propertyIndexStore.flush( txIdentifier );
+//		arrayPropertyStore.flush( txIdentifier );
+//		super.flush( txIdentifier );
+//	}
 	
 	@Override
 	public void flushAll() throws IOException
@@ -117,14 +117,14 @@ public class PropertyStore extends AbstractStore implements Store
 		super.flushAll();
 	}
 	
-	@Override
-	public void forget( int txIdentifier )
-	{
-		stringPropertyStore.forget( txIdentifier );
-		propertyIndexStore.forget( txIdentifier );
-		arrayPropertyStore.forget( txIdentifier );
-		super.forget( txIdentifier );
-	}
+//	@Override
+//	public void forget( int txIdentifier )
+//	{
+//		stringPropertyStore.forget( txIdentifier );
+//		propertyIndexStore.forget( txIdentifier );
+//		arrayPropertyStore.forget( txIdentifier );
+//		super.forget( txIdentifier );
+//	}
 
 	public String getTypeAndVersionDescriptor()
 	{
