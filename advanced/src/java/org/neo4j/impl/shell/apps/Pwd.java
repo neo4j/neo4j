@@ -25,6 +25,10 @@ import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Mimics the POSIX application with the same name, i.e. prints the current
+ * working directory "walked by" the "cd" application.
+ */
 public class Pwd extends NeoApp
 {
 	@Override

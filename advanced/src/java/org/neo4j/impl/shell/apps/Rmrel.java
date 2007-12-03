@@ -17,26 +17,35 @@
 package org.neo4j.impl.shell.apps;
 
 import java.rmi.RemoteException;
-// import java.util.ArrayList;
-// import java.util.List;
-// import org.neo4j.api.core.Direction;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.api.core.Direction;
+import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
-//import org.neo4j.api.core.RelationshipType;
-//import org.neo4j.api.core.ReturnableEvaluator;
-//import org.neo4j.api.core.StopEvaluator;
-//import org.neo4j.api.core.Traverser;
-//import org.neo4j.api.core.Traverser.Order;
-//import org.neo4j.impl.core.NodeManager;
+import org.neo4j.api.core.RelationshipType;
+import org.neo4j.api.core.ReturnableEvaluator;
+import org.neo4j.api.core.StopEvaluator;
+import org.neo4j.api.core.Traverser;
+import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.shell.NeoApp;
+import org.neo4j.impl.shell.NeoShellServer;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Mimics the POSIX application "rmdir", but neo has relationships instead
+ * of directories (if you look at neo in a certain perspective).
+ */
 public class Rmrel extends NeoApp
 {
+	/**
+	 * Constructs a new application which can delete relationships in neo.
+	 */
 	public Rmrel()
 	{
 		this.addValueType( "r", new OptionContext( OptionValueType.MUST,
@@ -81,24 +90,24 @@ public class Rmrel extends NeoApp
 				throw new ShellException( "Since the node " + 
 					getDisplayNameForNode( otherNode ) +
 					" would be decoupled after this, you must supply the" +
-					" -d (for delete-when-decoupled) so that it may be " +
-					"removed" ); 
+					" -d (for delete-when-decoupled) so that the other node " +
+					"(" + otherNode + ") may be deleted" ); 
 			}
 			otherNode.delete();
 		}
-//		else
-//		{
-//			 if ( !this.hasPathToRefNode( otherNode ) )
-//			 {
-//				 throw new ShellException( "It would result in " + otherNode +
-//					 " to be recursively decoupled with the reference node" );
-//			 }
-//			 if ( !this.hasPathToRefNode( currentNode ) )
-//			 {
-//				 throw new ShellException( "It would result in " + currentNode +
-//					 " to be recursively decoupled with the reference node" );
-//			 }
-//		}
+		else
+		{
+			 if ( !this.hasPathToRefNode( otherNode ) )
+			 {
+				 throw new ShellException( "It would result in " + otherNode +
+					 " to be recursively decoupled with the reference node" );
+			 }
+			 if ( !this.hasPathToRefNode( currentNode ) )
+			 {
+				 throw new ShellException( "It would result in " + currentNode +
+					 " to be recursively decoupled with the reference node" );
+			 }
+		}
 		return null;
 	}
 
@@ -116,26 +125,33 @@ public class Rmrel extends NeoApp
 			" connected to " + currentNode );
 	}
 	
-//	private boolean hasPathToRefNode( Node node )
-//	{
-//		List<Object> filterList = new ArrayList<Object>(); 
-//		for ( RelationshipType rel : this.getAllRelationshipTypes() )
-//		{
-//			filterList.add( rel );
-//			filterList.add( Direction.BOTH );
-//		}
-//		
-//		Node refNode = NodeManager.getManager().getReferenceNode();
-//		Traverser traverser = node.traverse( Order.DEPTH_FIRST,
-//			StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL,
-//			filterList.toArray() );
-//		for ( Node testNode : traverser )
-//		{
-//			if ( refNode.equals( testNode ) )
-//			{
-//				return true;
-//			}
-//		}
-//		return false;
-//	}
+	private Iterable<RelationshipType> getAllRelationshipTypes()
+	{
+		return ( ( EmbeddedNeo ) this.getNeoServer().getNeo()
+			).getRelationshipTypes();
+	}
+	
+	private boolean hasPathToRefNode( Node node )
+	{
+		List<Object> filterList = new ArrayList<Object>(); 
+		for ( RelationshipType rel : this.getAllRelationshipTypes() )
+		{
+			filterList.add( rel );
+			filterList.add( Direction.BOTH );
+		}
+		
+		Node refNode = ( ( NeoShellServer )
+			this.getServer() ).getNeo().getReferenceNode();
+		Traverser traverser = node.traverse( Order.DEPTH_FIRST,
+			StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL,
+			filterList.toArray() );
+		for ( Node testNode : traverser )
+		{
+			if ( refNode.equals( testNode ) )
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 }

@@ -25,14 +25,13 @@ import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Wraps a {@link org.neo4j.util.shell.apps.extra.Gsh} in a {@link NeoApp}
+ * to be wrapped in a transaction among other things.
+ */
 public class Gsh extends NeoApp
 {
-	private App sh;
-	
-	public Gsh()
-	{
-		this.sh = new org.neo4j.util.shell.apps.extra.Gsh();
-	}
+	private App sh = new org.neo4j.util.shell.apps.extra.Gsh();
 	
 	@Override
 	public String getDescription()
