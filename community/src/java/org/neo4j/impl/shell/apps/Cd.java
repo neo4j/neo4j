@@ -28,10 +28,20 @@ import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Mimics the POSIX application with the same name, i.e. traverses to a node.
+ */
 public class Cd extends NeoApp
 {
+	/**
+	 * The {@link Session} key to use to store the current node and working
+	 * directory (i.e. the path which the client got to it).
+	 */
 	public static final String WORKING_DIR_KEY = "WORKING_DIR";
 	
+	/**
+	 * Constructs a new application.
+	 */
 	public Cd()
 	{
 		this.addValueType( "a", new OptionContext( OptionValueType.NONE,
@@ -54,9 +64,8 @@ public class Cd extends NeoApp
 		Node newNode = null;
 		if ( parser.arguments().isEmpty() )
 		{
-			throw new RuntimeException( "fix this" );
-			// newNode = NodeManager.getManager().getReferenceNode();
-			// paths.clear();
+			newNode = getNeoServer().getNeo().getReferenceNode();
+			paths.clear();
 		}
 		else
 		{
@@ -107,6 +116,13 @@ public class Cd extends NeoApp
 		return false;
 	}
 
+	/**
+	 * Reads the session variable specified in {@link #WORKING_DIR_KEY} and
+	 * returns it as a list of node ids.
+	 * @param session the session to read from.
+	 * @return the working directory as a list.
+	 * @throws RemoteException if an RMI error occurs.
+	 */
 	public static List<Long> readPaths( Session session ) throws RemoteException
 	{
 		List<Long> list = new ArrayList<Long>();

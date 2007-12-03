@@ -24,8 +24,15 @@ import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Mimics the POSIX application with the same name, i.e. renames a property.
+ * It could also (regarding POSIX) move nodes, but it doesn't).
+ */
 public class Mv extends NeoApp
 {
+	/**
+	 * Constructs a new "mv" application.
+	 */
 	public Mv()
 	{
 		this.addValueType( "o", new OptionContext( OptionValueType.NONE,

@@ -23,8 +23,14 @@ import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Sets a property for the current node.
+ */
 public class Set extends NeoApp
 {
+	/**
+	 * Constructs a new "set" application.
+	 */
 	public Set()
 	{
 		this.addValueType( "t", new OptionContext( OptionValueType.MUST,

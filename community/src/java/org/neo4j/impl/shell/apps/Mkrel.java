@@ -16,7 +16,9 @@
  */
 package org.neo4j.impl.shell.apps;
 
+import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
@@ -24,8 +26,15 @@ import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Mimics the POSIX application "mkdir", but neo has relationships instead
+ * of directories (if you look at neo in a certain perspective).
+ */
 public class Mkrel extends NeoApp
 {
+	/**
+	 * Constructs a new application which can create relationships in neo.
+	 */
 	public Mkrel()
 	{
 		this.addValueType( "t", new OptionContext( OptionValueType.MUST,
@@ -53,8 +62,7 @@ public class Mkrel extends NeoApp
 		Node node = null;
 		if ( createNode )
 		{
-			throw new RuntimeException( "fix this" );
-			// node = NodeManager.getManager().createNode();
+			node = getNeoServer().getNeo().createNode();
 		}
 		else if ( suppliedNode )
 		{
@@ -71,8 +79,7 @@ public class Mkrel extends NeoApp
 			throw new ShellException( "Must supply relationship type " +
 				"(-t <relationship-type-name>)" );
 		}
-		throw new RuntimeException( "fix this " );
-/*		RelationshipType type = null; this.getRelationshipType(
+		RelationshipType type = this.getRelationshipType(
 			parser.options().get( "t" ) );
 		Direction direction = this.getDirection( parser.options().get( "d" ) );
 		Node startNode = direction == Direction.OUTGOING ?
@@ -80,6 +87,6 @@ public class Mkrel extends NeoApp
 		Node endNode = direction == Direction.OUTGOING ?
 			node : this.getCurrentNode( session );
 		startNode.createRelationshipTo( endNode, type );
-		return null;*/
+		return null;
 	}
 }

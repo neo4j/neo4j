@@ -17,36 +17,46 @@
 package org.neo4j.impl.shell;
 
 import java.rmi.RemoteException;
+
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
 import org.neo4j.util.shell.AbstractApp;
+import org.neo4j.util.shell.App;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
 /**
- * Completely server-side
+ * An implementation of {@link App} which has common methods and functionality
+ * to use with neo.
  */
 public abstract class NeoApp extends AbstractApp
 {
 	private static final String NODE_KEY = "CURRENT_NODE";
 	
-	protected Node getCurrentNode( Session session )
+	protected static Node getCurrentNode( NeoShellServer server,
+		Session session )
 	{
 		Number id = ( Number ) safeGet( session, NODE_KEY );
 		Node node = null;
 		if ( id == null )
 		{
-			node =  this.getNeoServer().getNeo().getReferenceNode();
+			node = server.getNeo().getReferenceNode();
 			setCurrentNode( session, node );
 		}
 		else
 		{
-			node = getNeoServer().getNeo().getNodeById( id.intValue() );
+			node = server.getNeo().getNodeById( id.longValue() );
 		}
 		return node;
+	}
+	
+	protected Node getCurrentNode( Session session )
+	{
+		return getCurrentNode( getNeoServer(), session );
 	}
 	
 	protected static void setCurrentNode( Session session, Node node )
@@ -54,23 +64,15 @@ public abstract class NeoApp extends AbstractApp
 		safeSet( session, NODE_KEY, node.getId() );
 	}
 	
-	private NeoShellServer getNeoServer()
+	protected NeoShellServer getNeoServer()
 	{
 		return ( NeoShellServer ) this.getServer();
 	}
 	
-/*	protected RelationshipType getRelationshipType( String name )
+	protected RelationshipType getRelationshipType( String name )
 	{
-		// this.ensureRelTypesInitialized();
-		RelationshipType result = ( ( EmbeddedNeo ) this.getNeoServer().
-			getNeo() ).getRelationshipType( name );
-		if ( result == null )
-		{
-			throw new RuntimeException( "No relationship type '" + name +
-				"' found" );
-		}
-		return result;
-	}*/
+		return new NeoAppRelationshipType( name );
+	}
 	
 	protected Direction getDirection( String direction ) throws ShellException
 	{
@@ -149,6 +151,11 @@ public abstract class NeoApp extends AbstractApp
 		return "(me)";
 	}
 
+	/**
+	 * Returns the display name for a {@link Node}.
+	 * @param node the node to get the name-representation for.
+	 * @return the display name for a {@link Node}.
+	 */
 	public static String getDisplayNameForNode( Node node )
 	{
 		return node != null
@@ -156,8 +163,28 @@ public abstract class NeoApp extends AbstractApp
 			: getDisplayNameForNode( (Long) null );
 	}
 	
+	/**
+	 * Returns the display name for a {@link Node}.
+	 * @param nodeId the node id to get the name-representation for.
+	 * @return the display name for a {@link Node}.
+	 */
 	public static String getDisplayNameForNode( Long nodeId )
 	{
 		return "(" + nodeId + ")";
+	}
+	
+	private static class NeoAppRelationshipType implements RelationshipType
+	{
+		private String name;
+		
+		private NeoAppRelationshipType( String name )
+		{
+			this.name = name;
+		}
+		
+		public String name()
+		{
+			return this.name;
+		}
 	}
 }

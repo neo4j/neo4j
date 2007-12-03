@@ -29,8 +29,15 @@ import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Mimics the POSIX application with the same name, i.e. lists
+ * properties/relationships on a node.
+ */
 public class Ls extends NeoApp
 {
+	/**
+	 * Constructs a new "ls" application.
+	 */
 	public Ls()
 	{
 		this.addValueType( "d", new OptionContext( OptionValueType.MUST,
@@ -152,7 +159,7 @@ public class Ls extends NeoApp
 				}
 				StringBuffer buf = new StringBuffer( 
 					getDisplayNameForCurrentNode() );
-				buf.append( " --[" ).append( rel.getType() );
+				buf.append( " --[" ).append( rel.getType().name() );
 				if ( verbose )
 				{
 					buf.append( ", " ).append( rel.getId() );
