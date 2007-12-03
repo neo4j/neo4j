@@ -19,6 +19,7 @@ package org.neo4j.impl.shell;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import org.neo4j.api.core.NeoService;
+import org.neo4j.api.core.Transaction;
 import org.neo4j.impl.shell.apps.Ls;
 import org.neo4j.util.shell.AbstractClient;
 import org.neo4j.util.shell.BashVariableInterpreter;
@@ -28,11 +29,18 @@ import org.neo4j.util.shell.SimpleAppServer;
 import org.neo4j.util.shell.BashVariableInterpreter.Replacer;
 import org.neo4j.util.shell.apps.Help;
 
+/**
+ * A {@link ShellServer} which contains common methods to use with neo.
+ */
 public class NeoShellServer extends SimpleAppServer
 {
 	private NeoService neo;
 	private BashVariableInterpreter bashInterpreter;
 	
+	/**
+	 * @param neo the {@link NeoService} instance to use with the shell server.
+	 * @throws RemoteException if an RMI error occurs.
+	 */
 	public NeoShellServer( NeoService neo ) 
 		throws RemoteException
 	{
@@ -55,26 +63,42 @@ public class NeoShellServer extends SimpleAppServer
 	public Serializable interpretVariable( String key, Serializable value,
 		Session session ) throws RemoteException
 	{
-		if ( key.equals( AbstractClient.PROMPT_KEY ) )
+		Transaction tx = getNeo().beginTx();
+		try
 		{
-			return this.bashInterpreter.interpret( ( String ) value,
-				this, session );
+			Serializable result = value;
+			if ( key.equals( AbstractClient.PROMPT_KEY ) )
+			{
+				result = this.bashInterpreter.interpret( ( String ) value,
+					this, session );
+			}
+			tx.success();
+			return result;
 		}
-		return value;
+		finally
+		{
+			tx.finish();
+		}
 	}
 	
+	/**
+	 * @return the {@link NeoService} instance given in the constructor.
+	 */
 	public NeoService getNeo()
 	{
 		return this.neo;
 	}
 	
+	/**
+	 * A {@link Replacer} for the variable "w"/"W" which returns the current
+	 * working directory (Bash), i.e. the current node.
+	 */
 	public static class WorkingDirReplacer implements Replacer
 	{
 		public String getReplacement( ShellServer server, Session session )
 		{
-			throw new RuntimeException( "Fix this" );
-//			return "" + NeoApp.getDisplayNameForNode(
-//				NeoApp.getCurrentNode( session ) );
+			return "" + NeoApp.getDisplayNameForNode(
+				NeoApp.getCurrentNode( ( NeoShellServer ) server, session ) );
 		}
 	}
 }

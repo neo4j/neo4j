@@ -16,12 +16,18 @@
  */
 package org.neo4j.impl.shell.apps;
 
+import java.rmi.RemoteException;
+
 import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Mimics the POSIX application with the same name, i.e. removes a property
+ * from a node. It could also (regarding POSIX) delete nodes, but it doesn't.
+ */
 public class Rm extends NeoApp
 {
 	@Override
@@ -32,11 +38,21 @@ public class Rm extends NeoApp
 	}
 
 	@Override
-	protected String exec( AppCommandParser parser, Session session, Output out )
-		throws ShellException
+	protected String exec( AppCommandParser parser, Session session,
+		Output out ) throws ShellException
 	{
-		String key = parser.arguments().get( 0 );
-		this.getCurrentNode( session ).removeProperty( key );
-		return null;
+		try
+		{
+			String key = parser.arguments().get( 0 );
+			if ( this.getCurrentNode( session ).removeProperty( key ) == null )
+			{
+				out.println( "Property '" + key + "' not found" );
+			}
+			return null;
+		}
+		catch ( RemoteException e )
+		{
+			throw new ShellException( e );
+		}
 	}
 }
