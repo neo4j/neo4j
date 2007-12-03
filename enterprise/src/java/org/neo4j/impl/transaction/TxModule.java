@@ -72,6 +72,8 @@ public class TxModule
 		{
 			new XaDataSourceConfigFileParser().parse( dataSourceConfigFile );
 		}
+        UserTransactionImpl.tm = txManager;
+        SpringTransactionManager.tm = txManager;
 		txManager.init( xaDsManager );
 		startIsOk = false;
 	}
