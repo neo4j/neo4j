@@ -2,6 +2,10 @@ package org.neo4j.util.shell;
 
 import java.io.Serializable;
 
+/**
+ * An implementation of {@link Output} optimized to use with a
+ * {@link SameJvmClient}.
+ */
 public class SystemOutput implements Output
 {
 	public void print( Serializable object )

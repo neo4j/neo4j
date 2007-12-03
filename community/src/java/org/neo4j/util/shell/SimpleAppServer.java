@@ -4,8 +4,16 @@ import java.rmi.RemoteException;
 import org.neo4j.util.shell.apps.Man;
 import org.neo4j.util.shell.apps.extra.Gsh;
 
+/**
+ * A common concrete implement of an {@link AppShellServer} which contains
+ * default packages and exit app.
+ */
 public class SimpleAppServer extends AbstractAppServer
 {
+	/**
+	 * Creates a new simple app server and adds default packages.
+	 * @throws RemoteException RMI error.
+	 */
 	public SimpleAppServer() throws RemoteException
 	{
 		super();

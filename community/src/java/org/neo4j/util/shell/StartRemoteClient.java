@@ -1,15 +1,21 @@
 package org.neo4j.util.shell;
 
+/**
+ * Convenience main class for starting a client which connects to a remote
+ * server. Which port/name to connect to may be specified as arguments.
+ */
 public class StartRemoteClient
 {
+	/**
+	 * Starts a client and connects to a remote server.
+	 * @param args may contain RMI port/name to the server.
+	 */
 	public static void main( String[] args )
 	{
 		try
 		{
 			printGreeting( args );
-			ShellServer server = ShellLobby.getInstance().findRemoteServer(
-				getPort( args ), getShellName( args ) );
-			ShellLobby.getInstance().startClient( server );
+			ShellLobby.startClient( getPort( args ), getShellName( args ) );
 		}
 		catch ( Exception e )
 		{

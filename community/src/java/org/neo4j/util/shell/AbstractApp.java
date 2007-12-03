@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Common implementation of an {@link App}.
+ */
 public abstract class AbstractApp implements App
 {
 	private Map<String, OptionContext> typeExceptions =
@@ -103,22 +106,35 @@ public abstract class AbstractApp implements App
 		}
 	}
 	
+	/**
+	 * Groups an {@link OptionValueType} and a description.
+	 */
 	public static class OptionContext
 	{
 		private OptionValueType type;
 		private String description;
 		
+		/**
+		 * @param type the type for the option.
+		 * @param description the description of the option.
+		 */
 		public OptionContext( OptionValueType type, String description )
 		{
 			this.type = type;
 			this.description = description;
 		}
 		
+		/**
+		 * @return the option value type.
+		 */
 		public OptionValueType getType()
 		{
 			return this.type;
 		}
 		
+		/**
+		 * @return the description.
+		 */
 		public String getDescription()
 		{
 			return this.description;

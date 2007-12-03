@@ -7,21 +7,34 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 /**
- * Completely server-side
+ * Parses a line from the client with the intention of interpreting it as
+ * an "app" command, f.ex. like:
+ * 
+ * "ls -pf title.* 12"
+ * 
+ * o ls is the app.
+ * o p and f are options, p w/o value and f has the value "title.*"
+ *   (defined in {@link App#getOptionValueType(String)}.
+ * o 12 is an argument.
  */
 public class AppCommandParser
 {
-	private AppShellServer ui;
+	private AppShellServer server;
 	private String line;
 	private String appName;
 	private App app;
 	private Map<String, String> options = new HashMap<String, String>();
 	private List<String> arguments = new ArrayList<String>();
 	
-	public AppCommandParser( AppShellServer ui, String line )
+	/**
+	 * @param server the server used to find apps.
+	 * @param line the line from the client to interpret.
+	 * @throws ShellException if there's something wrong with the line.
+	 */
+	public AppCommandParser( AppShellServer server, String line )
 		throws ShellException
 	{
-		this.ui = ui;
+		this.server = server;
 		if ( line != null )
 		{
 			line = line.trim();
@@ -48,7 +61,7 @@ public class AppCommandParser
 			this.line : this.line.substring( 0, index );
 		try
 		{
-			this.app = this.ui.findApp( this.appName );
+			this.app = this.server.findApp( this.appName );
 		}
 		catch ( Exception e )
 		{
@@ -144,41 +157,70 @@ public class AppCommandParser
 		return index == -1 ? line.indexOf( '\t', fromIndex ) : index;
 	}
 	
+	/**
+	 * @return the name of the app (from {@link #getLine()}).
+	 */
 	public String getAppName()
 	{
 		return this.appName;
 	}
 	
+	/**
+	 * @return the app corresponding to the {@link #getAppName()}.
+	 */
 	public App app()
 	{
 		return this.app;
 	}
-	
+
+	/**
+	 * @return the supplied options (from {@link #getLine()}).
+	 */
 	public Map<String, String> options()
 	{
 		return this.options;
 	}
 	
+	/**
+	 * @return the arguments (from {@link #getLine()}).
+	 */
 	public List<String> arguments()
 	{
 		return this.arguments;
 	}
 	
+	/**
+	 * @return the entire line from the client.
+	 */
 	public String getLine()
 	{
 		return this.line;
 	}
 	
+	/**
+	 * @return the line w/o the app (just the options and arguments).
+	 */
 	public String getLineWithoutCommand()
 	{
 		return this.line.substring( this.appName.length() ).trim();
 	}
 
+	/**
+	 * Tokenizes a string, regarding quotes.
+	 * @param string the string to tokenize.
+	 * @return the tokens from the line.
+	 */
 	public static String[] tokenizeStringWithQuotes( String string )
 	{
 		return tokenizeStringWithQuotes( string, true );
 	}
 
+	/**
+	 * Tokenizes a string, regarding quotes.
+	 * @param string the string to tokenize.
+	 * @param trim wether or not to trim each token or not.
+	 * @return the tokens from the line.
+	 */
 	public static String[] tokenizeStringWithQuotes( String string,
 		boolean trim )
 	{

@@ -6,6 +6,10 @@ import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Mimics the Bash application "export" and uses the client session
+ * {@link Session} as the data container.
+ */
 public class Export extends AbstractApp
 {
 	@Override

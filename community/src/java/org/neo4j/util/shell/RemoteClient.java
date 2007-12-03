@@ -5,17 +5,39 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
+/**
+ * A {@link ShellClient} implementation which uses a remote server,
+ * where the output and session are remote also.
+ */
 public class RemoteClient extends AbstractClient
 {
 	private ShellServer server;
+	private RmiLocation serverLocation;
 	private Session session;
 	private Output out;
 	
-	public RemoteClient( ShellServer server )
+	/**
+	 * @param serverLocation the RMI location of the server to connect to.
+	 * @throws ShellException if no server was found at the RMI location.
+	 */
+	public RemoteClient( RmiLocation serverLocation ) throws ShellException
 	{
-		this.server = server;
+		this.serverLocation = serverLocation;
+		this.server = findRemoteServer();
 		this.session = RemoteSession.newSession();
 		this.out = RemoteOutput.newOutput();
+	}
+	
+	private ShellServer findRemoteServer() throws ShellException
+	{
+		try
+		{
+			return ( ShellServer ) this.serverLocation.getBoundObject();
+		}
+		catch ( RemoteException e )
+		{
+			throw new ShellException( e );
+		}
 	}
 	
 	public Output getOutput()
@@ -28,32 +50,36 @@ public class RemoteClient extends AbstractClient
 		// Poke the server by calling a method, f.ex. the welcome() method.
 		// If the connection is lost then try to reconnect, using the last
 		// server lookup address.
+		boolean shouldTryToReconnect = this.server == null;
 		try
 		{
-			this.server.welcome();
+			if ( !shouldTryToReconnect )
+			{
+				this.server.welcome();
+			}
 		}
 		catch ( RemoteException e )
 		{
-			RmiLocation lastLookup =
-				ShellLobby.getInstance().getLastServerLookup();
-			if ( lastLookup != null )
+			shouldTryToReconnect = true;
+		}
+		
+		if ( shouldTryToReconnect )
+		{
+			try
 			{
-				try
-				{
-					this.server = ShellLobby.getInstance().findRemoteServer(
-						lastLookup );
-					getOutput().println( "[Reconnected to server]" );
-				}
-				catch ( ShellException ee )
-				{
-					// Ok
-				}
-				catch ( RemoteException ee )
-				{
-					// Ok
-				}
+				this.server = findRemoteServer();
+				getOutput().println( "[Reconnected to server]" );
+			}
+			catch ( ShellException ee )
+			{
+				// Ok
+			}
+			catch ( RemoteException ee )
+			{
+				// Ok
 			}
 		}
+		
 		return this.server;
 	}
 

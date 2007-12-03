@@ -1,5 +1,6 @@
 package org.neo4j.util.shell.apps.extra;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -15,12 +16,41 @@ import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Executes groovy scripts purely via reflection
+ */
 public class GshExecutor
 {
+	/**
+	 * The {@link Session} key used to read which paths (folders on disk) to
+	 * list groovy scripts from.
+	 */
 	public static final String PATH_STRING = "GSH_PATH";
+	
+	/**
+	 * The class name which represents the Binding class in groovy.
+	 */
 	public static final String BINDING_CLASS = "groovy.lang.Binding";
+	
+	/**
+	 * The class name which represents the GroovyScriptEngine class.
+	 */
 	public static final String ENGINE_CLASS = "groovy.util.GroovyScriptEngine";
 	
+	/**
+	 * Default paths to use if no paths are specified by the
+	 * {@link #PATH_STRING}.
+	 */
+	public static final String DEFAULT_PATHS =
+		".:script:src" + File.separator + "script";
+
+	/**
+	 * Executes a groovy script (with arguments) defined in {@code line}. 
+	 * @param line the line which defines the groovy script with arguments.
+	 * @param session the {@link Session} to include as argument in groovy.
+	 * @param out the {@link Output} to include as argument in groovy.
+	 * @throws ShellException if the execution of a groovy script fails.
+	 */
 	public void execute( String line, Session session, Output out )
 		throws ShellException
 	{
@@ -54,7 +84,7 @@ public class GshExecutor
 				String[] scriptArgs = getScriptArgs( reader );
 				String scriptName = arg.substring( 2 );
 				Map<String, Object> props =
-					( Map<String, Object> ) hashMap.clone();
+					new HashMap<String, Object>( hashMap );
 				props.put( "args", scriptArgs );
 				this.runGroovyScript( groovyScriptEngine, scriptName,
 					this.newGroovyBinding( props ) );
@@ -122,7 +152,7 @@ public class GshExecutor
 		{
 			List<String> list = new ArrayList<String>();
 			collectPaths( list, ( String ) session.get( PATH_STRING ) );
-			collectPaths( list, Gsh.DEFAULT_PATHS );
+			collectPaths( list, DEFAULT_PATHS );
 			return list;
 		}
 		catch ( RemoteException e )
@@ -147,7 +177,7 @@ public class GshExecutor
 	{
 		try
 		{
-			Class cls = Class.forName( BINDING_CLASS );
+			Class<?> cls = Class.forName( BINDING_CLASS );
 			Object binding = cls.newInstance();
 			Method setPropertyMethod =
 				cls.getMethod( "setProperty", String.class, Object.class );
@@ -168,7 +198,7 @@ public class GshExecutor
 	{
 		try
 		{
-			Class cls = Class.forName( ENGINE_CLASS );
+			Class<?> cls = Class.forName( ENGINE_CLASS );
 			return cls.getConstructor( String[].class ).newInstance(
 				new Object[] { paths } );
 		}
@@ -218,6 +248,9 @@ public class GshExecutor
 			return this.args[ this.index ];
 		}
 		
+		/**
+		 * Goes to the previous argument.
+		 */
 		public void previous()
 		{
 			this.index--;
@@ -232,11 +265,18 @@ public class GshExecutor
 			throw new UnsupportedOperationException();
 		}
 		
+		/**
+		 * Marks the position so that a call to {@link #flip()} returns to that
+		 * position.
+		 */
 		public void mark()
 		{
 			this.mark = this.index;
 		}
 		
+		/**
+		 * Flips back to the position defined in {@link #mark()}.
+		 */
 		public void flip()
 		{
 			if ( this.mark == null )
@@ -248,6 +288,11 @@ public class GshExecutor
 		}
 	}
 	
+	/**
+	 * A wrapper for a supplied {@link Output} to correct a bug where a call
+	 * to "println" or "print" with a GString or another object would use
+	 * System.out instead of the right output instance.
+	 */
 	public static class GshOutput implements Output
 	{
 		private Output source;
@@ -283,6 +328,11 @@ public class GshExecutor
 			return source.append( csq );
 		}
 		
+		/**
+		 * Prints an object to the wrapped {@link Output}.
+		 * @param object the object to print.
+		 * @throws RemoteException RMI error.
+		 */
 		public void print( Object object ) throws RemoteException
 		{
 			source.print( object.toString() );
@@ -293,6 +343,11 @@ public class GshExecutor
 			source.println();
 		}
 		
+		/**
+		 * Prints an object to the wrapped {@link Output}.
+		 * @param object the object to print.
+		 * @throws RemoteException RMI error.
+		 */
 		public void println( Object object ) throws RemoteException
 		{
 			source.println( object.toString() );

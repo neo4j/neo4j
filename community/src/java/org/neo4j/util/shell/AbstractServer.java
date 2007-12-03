@@ -7,15 +7,31 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A common implementation of a {@link ShellServer}.
+ */
 public abstract class AbstractServer extends UnicastRemoteObject
 	implements ShellServer
 {
+	/**
+	 * The default RMI name for a shell server,
+	 * see {@link #makeRemotelyAvailable(int, String)}.
+	 */
 	public static final String DEFAULT_NAME = "shell";
+	
+	/**
+	 * The default RMI port for a shell server,
+	 * see {@link #makeRemotelyAvailable(int, String)}.
+	 */
 	public static final int DEFAULT_PORT = 1337;
 	
 	private Map<String, Serializable> properties =
 		new HashMap<String, Serializable>();
 	
+	/**
+	 * Constructs a new server.
+	 * @throws RemoteException if an RMI exception occurs.
+	 */
 	public AbstractServer()
 		throws RemoteException
 	{

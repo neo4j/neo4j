@@ -12,32 +12,13 @@ import java.util.Map;
 
 /**
  * Class for specifying a location of an RMI object
- * Consists of host, port and name, as in. rmi://<host>:<port>/<name>
+ * Consists of host, port and name, as in. "rmi://<host>:<port>/<name>"
  */
 public class RmiLocation
 {
-	private static String defaultHost;
-	private static int defaultPort;
-	private static String defaultName;
-	
 	private String host;
 	private int port;
 	private String name;
-	
-	public static void setDefaultHost( String host )
-	{
-		defaultHost = host;
-	}
-	
-	public static void setDefaultport( int port )
-	{
-		defaultPort = port;
-	}
-
-	public static void setDefaultName( String name )
-	{
-		defaultName = name;
-	}
 	
 	private RmiLocation()
 	{
@@ -50,9 +31,13 @@ public class RmiLocation
 		this.name = name;
 	}
 	
+	/**
+	 * Creates a new RMI location instance.
+	 * @param url the RMI URL.
+	 * @return the {@link RmiLocation} instance for {@code url}.
+	 */
 	public static RmiLocation location( String url )
 	{
-		// Parse the url
 		int protocolIndex = url.indexOf( "://" );
 		int portIndex = url.lastIndexOf( ':' );
 		int nameIndex = url.indexOf( "/", portIndex );
@@ -63,33 +48,51 @@ public class RmiLocation
 		return location( host, port, name );
 	}
 	
+	/**
+	 * Creates a new RMI location instance.
+	 * @param host the RMI host, f.ex. "localhost".
+	 * @param port the RMI port.
+	 * @param name the RMI name, f.ex. "shell".
+	 * @return a new {@link RmiLocation} instance.
+	 */
 	public static RmiLocation location( String host, int port, String name )
 	{
 		return new RmiLocation( host, port, name );
 	}
 	
+	/**
+	 * Creates a new RMI location instance.
+	 * @param data a map with data, should contain "host", "port" and "name".
+	 * See {@link #location(String, int, String)}.
+	 * @return a new {@link RmiLocation} instance.
+	 */
 	public static RmiLocation location( Map<String, Object> data )
 	{
 		String host = ( String ) data.get( "host" );
 		Integer port = ( Integer ) data.get( "port" );
 		String name = ( String ) data.get( "name" );
-
-		return location(
-			host == null ? defaultHost : host,
-			port == null ? defaultPort : port,
-			name == null ? defaultName : name );
+		return location( host, port, name );
 	}
 	
+	/**
+	 * @return the host of this RMI location.
+	 */
 	public String getHost()
 	{
 		return this.host;
 	}
 	
+	/**
+	 * @return the port of this RMI location.
+	 */
 	public int getPort()
 	{
 		return this.port;
 	}
 	
+	/**
+	 * @return the name of this RMI location.
+	 */
 	public String getName()
 	{
 		return this.name;
@@ -100,16 +103,28 @@ public class RmiLocation
 		return "rmi://";
 	}
 	
+	/**
+	 * @return "short" URL, consisting of protocol, host and port, f.ex.
+	 * "rmi://localhost:8080".
+	 */
 	public String toShortUrl()
 	{
 		return getProtocol() + getHost() + ":" + getPort();
 	}
 	
+	/**
+	 * @return the full RMI URL, f.ex.
+	 * "rmi://localhost:8080/the/shellname".
+	 */
 	public String toUrl()
 	{
 		return getProtocol() + getHost() + ":" + getPort() + "/" + getName();
 	}
 	
+	/**
+	 * @return whether or not the RMI registry is created in this JVM for the
+	 * given port, see {@link #getPort()}.
+	 */
 	public boolean hasRegistry()
 	{
 		try
@@ -127,6 +142,12 @@ public class RmiLocation
 		}
 	}
 	
+	/**
+	 * Ensures that the RMI registry is created for this JVM instance and port,
+	 * see {@link #getPort()}.
+	 * @return the registry for the port. 
+	 * @throws RemoteException RMI error.
+	 */
 	public Registry ensureRegistryCreated()
 		throws RemoteException
 	{
@@ -145,6 +166,11 @@ public class RmiLocation
 		}
 	}
 	
+	/**
+	 * Binds an object to the RMI location defined by this instance.
+	 * @param object the object to bind.
+	 * @throws RemoteException RMI error.
+	 */
 	public void bind( Remote object ) throws RemoteException
 	{
 		ensureRegistryCreated();
@@ -158,6 +184,11 @@ public class RmiLocation
 		}
 	}
 	
+	/**
+	 * Unbinds an object from the RMI location defined by this instance.
+	 * @param object the object to bind.
+	 * @throws RemoteException RMI error.
+	 */
 	public void unbind( Remote object ) throws RemoteException
 	{
 		try
@@ -175,6 +206,10 @@ public class RmiLocation
 		}
 	}
 	
+	/**
+	 * @return whether or not there's an object bound to the RMI location
+	 * defined by this instance.
+	 */
 	public boolean isBound()
 	{
 		try
@@ -188,6 +223,10 @@ public class RmiLocation
 		}
 	}
 	
+	/**
+	 * @return the bound object for the RMI location defined by this instance.
+	 * @throws RemoteException if there's no object bound for the RMI location.
+	 */
 	public Remote getBoundObject() throws RemoteException
 	{
 		try

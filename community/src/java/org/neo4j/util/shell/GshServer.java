@@ -3,8 +3,16 @@ package org.neo4j.util.shell;
 import java.rmi.RemoteException;
 import org.neo4j.util.shell.apps.extra.GshExecutor;
 
+/**
+ * A common {@link ShellServer} implementation which is specialized in just
+ * executing groovy scripts.
+ */
 public class GshServer extends AbstractServer
 {
+	/**
+	 * Constructs a new groovy shell server.
+	 * @throws RemoteException if an RMI exception occurs.
+	 */
 	public GshServer() throws RemoteException
 	{
 		super();

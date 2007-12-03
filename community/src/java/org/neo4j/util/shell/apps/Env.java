@@ -9,6 +9,10 @@ import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
+/**
+ * Mimics the Bash application "env" and uses the client session {@link Session}
+ * as the data container.
+ */
 public class Env extends AbstractApp
 {
 	@Override

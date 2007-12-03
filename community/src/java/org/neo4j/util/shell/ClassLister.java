@@ -13,13 +13,21 @@ import java.util.jar.JarFile;
 
 /**
  * Well, since Class#getExtendingClasses doesn't exist, use this instead.
- * @author mattias
- *
+ * @author Mattias Persson
  */
 public class ClassLister
 {
 	private static final String CLASS_NAME_ENDING = ".class";
 	
+	/**
+	 * @param <T> the class type.
+	 * @param superClass the class which the resulting classes must implement
+	 * or extend.
+	 * @param lookInThesePackages an optional collection of which java packages
+	 * to search in. If null is specified then all packages are searched.
+	 * @return all classes (in the class path) which extends or implements
+	 * a certain class.
+	 */
 	public static <T> Collection<Class<? extends T>>
 		listClassesExtendingOrImplementing( Class<T> superClass,
 		Collection<String> lookInThesePackages )

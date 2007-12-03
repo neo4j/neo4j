@@ -7,6 +7,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Can replace the prompt string (PS1) with common Bash variable interpretation,
+ * f.ex. "\h [\t] \W $ " would result in "shell [10:05:30] 1243 $" 
+ */
 public class BashVariableInterpreter
 {
 	private static final Map<String, Replacer> REPLACERS =
@@ -21,13 +25,29 @@ public class BashVariableInterpreter
 		REPLACERS.put( "T", new DateReplacer( "KK:mm:ss" ) );
 		REPLACERS.put( "@", new DateReplacer( "KK:mm aa" ) );
 		REPLACERS.put( "A", new DateReplacer( "HH:mm" ) );
+		REPLACERS.put( "u", new StaticReplacer( "user" ) );
+		REPLACERS.put( "v", new StaticReplacer( "1.0-b6" ) );
+		REPLACERS.put( "V", new StaticReplacer( "1.0-b6" ) );
 	}
 	
+	/**
+	 * Adds a customized replacer for a certain variable.
+	 * @param key the variable key, f.ex. "t".
+	 * @param replacer the replacer which gives a replacement for the variable.
+	 */
 	public void addReplacer( String key, Replacer replacer )
 	{
 		REPLACERS.put( key, replacer );
 	}
 	
+	/**
+	 * Interprets a string with variables in it and replaces those variables
+	 * with values from replacers, see {@link Replacer}.
+	 * @param string the string to interpret.
+	 * @param server the server which runs the interpretation.
+	 * @param session the session (or environment) of the interpretation.
+	 * @return the interpreted string.
+	 */
 	public String interpret( String string, ShellServer server,
 		Session session )
 	{
@@ -40,15 +60,33 @@ public class BashVariableInterpreter
 		return string;
 	}
 	
+	/**
+	 * A replacer which can return a string to replace a variable.
+	 */
 	public static interface Replacer
 	{
+		/**
+		 * Returns a string to replace something else.
+		 * @param server the server which runs the interpretation.
+		 * @param session the environment of the interpretation.
+		 * @return the replacement.
+		 */
 		String getReplacement( ShellServer server, Session session );
 	}
 	
+	/**
+	 * A {@link Replacer} which gets instantiated with a string representing the
+	 * replacement, which means that the value returned from
+	 * {@link #getReplacement(ShellServer, Session)} is always the same.
+	 */
 	public static class StaticReplacer implements Replacer
 	{
 		private String value;
 		
+		/**
+		 * @param value the value to return from
+		 * {@link #getReplacement(ShellServer, Session)}.
+		 */
 		public StaticReplacer( String value )
 		{
 			this.value = value;
@@ -60,10 +98,16 @@ public class BashVariableInterpreter
 		}
 	}
 	
+	/**
+	 * A {@link Replacer} which returns a date string in a certain format.
+	 */
 	public static class DateReplacer implements Replacer
 	{
 		private DateFormat format;
-		
+	
+		/**
+		 * @param format the date format, see {@link SimpleDateFormat}.
+		 */
 		public DateReplacer( String format )
 		{
 			this.format = new SimpleDateFormat( format );
@@ -75,6 +119,9 @@ public class BashVariableInterpreter
 		}
 	}
 	
+	/**
+	 * Returns the name of the server (or "host").
+	 */
 	public static class HostReplacer implements Replacer
 	{
 		public String getReplacement( ShellServer server, Session session )

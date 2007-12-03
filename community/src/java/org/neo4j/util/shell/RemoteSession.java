@@ -6,6 +6,10 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * An implementation of {@link Session} optimized to use with a
+ * {@link RemoteClient}.
+ */
 public class RemoteSession extends UnicastRemoteObject implements Session
 {
 	private Map<String, Serializable> properties =
@@ -16,6 +20,11 @@ public class RemoteSession extends UnicastRemoteObject implements Session
 		super();
 	}
 	
+	/**
+	 * Convenient method for creating a new {@link RemoteSession} without
+	 * catching the {@link RemoteException}.
+	 * @return a new {@link RemoteSession}.
+	 */
 	public static RemoteSession newSession()
 	{
 		try

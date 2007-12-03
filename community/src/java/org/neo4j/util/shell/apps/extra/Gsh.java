@@ -1,7 +1,5 @@
 package org.neo4j.util.shell.apps.extra;
 
-import java.io.File;
-
 import org.neo4j.util.shell.AbstractApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
@@ -24,12 +22,6 @@ import org.neo4j.util.shell.ShellException;
  */
 public class Gsh extends AbstractApp
 {
-	public static final String BINDING_CLASS = "groovy.lang.Binding";
-	public static final String ENGINE_CLASS = "groovy.util.GroovyScriptEngine";
-	public static final String PATH_STRING = "GSH_PATH";
-	public static final String DEFAULT_PATHS =
-		".:script:src" + File.separator + "script";
-	
 	public String execute( AppCommandParser parser, Session session,
 		Output out ) throws ShellException
 	{
@@ -46,7 +38,7 @@ public class Gsh extends AbstractApp
 			"--doSomethingElse arg1\n" +
 			"Where the groovy script doSomething.groovy and " +
 			"doSomethingElse.groovy exists in one of " +
-			"environment variable\n" + PATH_STRING + " paths (default is " +
-			DEFAULT_PATHS + ")";
+			"environment variable\n" + GshExecutor.PATH_STRING +
+			" paths (default is " + GshExecutor.DEFAULT_PATHS + ")";
 	}
 }

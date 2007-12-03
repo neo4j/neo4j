@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A {@link Session} optimized to use with a {@link SameJvmClient}.
+ */
 public class SameJvmSession implements Session
 {
 	private Map<String, Serializable> properties =

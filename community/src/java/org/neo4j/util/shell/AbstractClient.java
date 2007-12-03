@@ -3,9 +3,19 @@ package org.neo4j.util.shell;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 
+/**
+ * A common implementation of a {@link ShellClient}.
+ */
 public abstract class AbstractClient implements ShellClient
 {
+	/**
+	 * The session key for the prompt key, just like in Bash.
+	 */
 	public static final String PROMPT_KEY = "PS1";
+	
+	/**
+	 * The session key for whether or not to print stack traces for exceptions. 
+	 */
 	public static final String STACKTRACES_KEY = "STACKTRACES";
 	
 	private Console console = new Console();
@@ -17,8 +27,7 @@ public abstract class AbstractClient implements ShellClient
 		{
 			try
 			{
-				this.console.format( ( String )
-					getSessionVariable( PROMPT_KEY, null, true ) );
+				this.console.format( tryGetProperPromptString() );
 				String line = this.readLine();
 				String result = this.getServer().interpretLine(
 					line, this.session(), this.getOutput() );
@@ -41,6 +50,20 @@ public abstract class AbstractClient implements ShellClient
 			}
 		}
 		this.shutdown();
+	}
+	
+	protected String tryGetProperPromptString()
+	{
+		String result = null;
+		try
+		{
+			result = ( String ) getSessionVariable( PROMPT_KEY, null, true );
+		}
+		catch ( Exception e )
+		{
+			result = ( String ) getSessionVariable( PROMPT_KEY, null, false );
+		}
+		return result;
 	}
 	
 	protected void shutdown()

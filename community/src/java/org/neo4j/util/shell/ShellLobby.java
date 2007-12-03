@@ -1,30 +1,18 @@
 package org.neo4j.util.shell;
 
-import java.rmi.RemoteException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-public class ShellLobby
+/**
+ * A convenience class for creating servers clients as well as finding remote
+ * servers.
+ */
+public abstract class ShellLobby
 {
-	private static final ShellLobby INSTANCE = new ShellLobby();
-	
-	public static ShellLobby getInstance()
-	{
-		return INSTANCE;
-	}
-	
-	private Map<Thread, RmiLocation> lastServerLookups =
-		Collections.synchronizedMap( new HashMap<Thread, RmiLocation>() );
-	
-	private ShellLobby()
-	{
-	}
-	
 	/**
-	 * To get rid of the RemoteException, uses a constructor without arguments
+	 * To get rid of the RemoteException, uses a constructor without arguments.
+	 * @param cls the class of the server to instantiate.
+	 * @throws ShellException if the object couldn't be instantiated.
+	 * @return a new shell server.
 	 */
-	public ShellServer newServer( Class<? extends ShellServer> cls )
+	public static ShellServer newServer( Class<? extends ShellServer> cls )
 		throws ShellException
 	{
 		try
@@ -37,52 +25,45 @@ public class ShellLobby
 		}
 	}
 
-	public ShellServer findRemoteServer( RmiLocation location )
-		throws ShellException
-	{
-		try
-		{
-			lastServerLookups.put( Thread.currentThread(), location );
-			return ( ShellServer ) location.getBoundObject();
-		}
-		catch ( RemoteException e )
-		{
-			throw new RuntimeException( e );
-		}
-	}
-	
-	public ShellServer findRemoteServer( int port, String name )
-		throws ShellException
-	{
-		return this.findRemoteServer(
-			RmiLocation.location( "localhost", port, name ) );
-	}
-	
-	public ShellClient startClient( ShellServer server )
-	{
-		return this.startClient( server, null );
-	}
-
 	/**
-	 * Instantiates a ShellClient and grabs the prompt.
-	 * @param server the server to use
-	 * @param sameJvmOrNullForAuto <code>true</code> for a client which is
-	 * optimized for use in the same JVM as the server. <code>false</code> for
-	 * a client which handles a remote server and <code>null</code> for
-	 * auto-detect.
-	 * @return the new shell client
+	 * Creates a client and "starts" it, i.e. grabs the console prompt.
+	 * @param server the server (in the same JVM) which the client will
+	 * communicate with.
+	 * @return the new shell client.
 	 */
-	public ShellClient startClient( ShellServer server,
-		Boolean sameJvmOrNullForAuto )
+	public static ShellClient startClient( ShellServer server )
 	{
-		ShellClient client = sameJvmOrNullForAuto == Boolean.TRUE ?
-			new SameJvmClient( server ) : new RemoteClient( server );
+		ShellClient client = new SameJvmClient( server );
 		client.grabPrompt();
 		return client;
 	}
 	
-	RmiLocation getLastServerLookup()
+	/**
+	 * Creates a client and "starts" it, i.e. grabs the console prompt.
+	 * It will try to find a remote server on "localhost".
+	 * @param port the RMI port.
+	 * @param name the RMI name.
+	 * @throws ShellException if no server was found at the RMI location.
+	 * @return the new shell client.
+	 */
+	public static ShellClient startClient( int port, String name )
+		throws ShellException
 	{
-		return lastServerLookups.get( Thread.currentThread() );
+		return startClient( RmiLocation.location( "localhost", port, name ) );
+	}
+
+	/**
+	 * Creates a client and "starts" it, i.e. grabs the console prompt.
+	 * It will try to find a remote server specified by {@code serverLocation}.
+	 * @param serverLocation the RMI location of the server to connect to.
+	 * @throws ShellException if no server was found at the RMI location.
+	 * @return the new shell client.
+	 */
+	public static ShellClient startClient( RmiLocation serverLocation )
+		throws ShellException
+	{
+		ShellClient client = new RemoteClient( serverLocation );
+		client.grabPrompt();
+		return client;
 	}
 }

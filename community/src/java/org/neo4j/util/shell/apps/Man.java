@@ -9,6 +9,7 @@ import org.neo4j.util.shell.AbstractApp;
 import org.neo4j.util.shell.AbstractAppServer;
 import org.neo4j.util.shell.App;
 import org.neo4j.util.shell.AppCommandParser;
+import org.neo4j.util.shell.AppShellServer;
 import org.neo4j.util.shell.ClassLister;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -16,6 +17,9 @@ import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 import org.neo4j.util.shell.ShellServer;
 
+/**
+ * Prints a short manual for an {@link App}.
+ */
 public class Man extends AbstractApp
 {
 	private static Collection<String> availableCommands;
@@ -110,6 +114,13 @@ public class Man extends AbstractApp
 			"Usage: " + getShortUsageString();
 	}
 
+	/**
+	 * Utility method for getting a short help string for a server.
+	 * Basically it contains an introductory message and also lists all
+	 * available apps for the server.
+	 * @param server the server to ask for 
+	 * @return the short introductory help string.
+	 */
 	public static String getHelpString( ShellServer server )
 	{
 		return "Available commands: " +
@@ -117,6 +128,12 @@ public class Man extends AbstractApp
 			"Use " + getShortUsageString() + " for info about each command.";
 	}
 	
+	/**
+	 * Uses {@link ClassLister} to list apps available at the server.
+	 * @param server the {@link ShellServer}.
+	 * @return a list of available commands a client can execute, whre the
+	 * server is an {@link AppShellServer}.
+	 */
 	public static synchronized Collection<String> getAvailableCommands(
 		ShellServer server )
 	{
