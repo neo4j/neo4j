@@ -43,8 +43,6 @@ class PersistenceWindowPool
 	private FileChannel fileChannel;
 	private Map<Integer,LockableWindow> activeRowWindows = 
 		new HashMap<Integer,LockableWindow>();
-//	private ArrayMap<Integer,Set<LockableWindow>> txIdentifiers = 
-//		new ArrayMap<Integer,Set<LockableWindow>>( 4, false, true );
 	private int mappedMem = 0;
 	private int memUsed = 0;
 	private int brickCount = 0;
@@ -71,7 +69,7 @@ class PersistenceWindowPool
 	 * @throws IOException If unable to create pool
 	 */
 	PersistenceWindowPool( String storeName, int blockSize, 
-		FileChannel fileChannel, int mappedMem ) throws IOException
+		FileChannel fileChannel, int mappedMem )
 	{
 		this.storeName = storeName;
 		this.blockSize = blockSize;
@@ -81,7 +79,7 @@ class PersistenceWindowPool
 		dumpStatus();
 	}
 	
-	public boolean hasWindow( long position ) throws IOException
+	public boolean hasWindow( long position )
 	{
 		synchronized ( activeRowWindows )
 		{
@@ -136,23 +134,10 @@ class PersistenceWindowPool
 	 * @throws IOException If unable to acquire the window
 	 */
 	PersistenceWindow acquire( long position, OperationType operationType ) 
-		throws IOException
 	{
 		LockableWindow window = null;
 		synchronized ( activeRowWindows )
 		{
-//			int txIdentifier = 
-//				TxInfoManager.getManager().getCurrentTxIdentifier();
-//			Set<LockableWindow> windowSet = null;
-//			if ( txIdentifier != -1 && operationType == OperationType.WRITE )
-//			{
-//				windowSet = txIdentifiers.get( txIdentifier );
-//				if ( windowSet == null )
-//				{
-//					windowSet = new HashSet<LockableWindow>();
-//					txIdentifiers.put( txIdentifier, windowSet );
-//				}
-//			}
 			if ( brickMiss >= REFRESH_BRICK_COUNT )
 			{
 				brickMiss = 0;
@@ -173,10 +158,6 @@ class PersistenceWindowPool
 						throw new RuntimeException( "assssert" );
 					}
 					brickArray[brickIndex].setHit();
-//					if ( window != null && windowSet != null )
-//					{
-//						windowSet.add( window );
-//					}
 				}
 				else
 				{
@@ -217,7 +198,7 @@ class PersistenceWindowPool
 	 * @param window The window to be released
 	 * @throws IOException If unable to release window
 	 */
-	void release( PersistenceWindow window ) throws IOException
+	void release( PersistenceWindow window )
 	{
 		synchronized ( activeRowWindows )
 		{
@@ -235,19 +216,18 @@ class PersistenceWindowPool
 		}
 	}
 	
-	void close() throws IOException
+	void close()
 	{
 		flushAll();
 		synchronized ( activeRowWindows )
 		{
-//			txIdentifiers = null;
 			fileChannel = null;
 			activeRowWindows = null;
 		}
 		dumpStatistics();
 	}
 	
-	void flushAll() throws IOException
+	void flushAll()
 	{
 		synchronized ( activeRowWindows )
 		{
@@ -258,65 +238,17 @@ class PersistenceWindowPool
                     element.getWindow().force();
                 }
             }
-/*			for ( Set<LockableWindow> windowSet : txIdentifiers.values() )
-			{
-				if ( windowSet != null )
-				{
-					Iterator<LockableWindow> itr = windowSet.iterator();
-					while ( itr.hasNext() )
-					{
-						( ( MappedPersistenceWindow ) itr.next() ).force();
-					}
-				}
-			}
-			txIdentifiers.clear();*/
 		}
-		fileChannel.force( false );
+        try
+        {
+            fileChannel.force( false );
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Failed to flush file channel " + 
+                storeName, e );
+        }
 	}
-
-	/**
-	 * Flushes all windows that has had anything to do with 
-	 * <CODE>identifier</CODE>.
-	 * 
-	 * @param identifier The (transaction) identifier
-	 * @throws IOException If unable to flush
-	 */
-//	void flush( int identifier ) throws IOException
-//	{
-//		synchronized ( activeRowWindows )
-//		{
-//			if ( identifier != -1 )
-//			{
-//				Set<LockableWindow> windowSet = 
-//					txIdentifiers.remove( identifier );
-//				if ( windowSet != null )
-//				{
-//					Iterator<LockableWindow> itr = windowSet.iterator();
-//					while ( itr.hasNext() )
-//					{
-//						( ( MappedPersistenceWindow ) itr.next() ).force();
-//					}
-//				}
-//			}
-//		}
-//		fileChannel.force( false );
-//	}
-
-	/**
-	 * Removes the mapping between windows and <CODE>identifier</CODE>.
-	 * 
-	 * @param identifier The (transaction) identifier
-	 */
-//	void forget( int identifier )
-//	{
-//		synchronized ( activeRowWindows )
-//		{
-//			if ( identifier != -1 )
-//			{
-//				txIdentifiers.remove( identifier );
-//			}
-//		}
-//	}
 
 	private static class BrickElement
 	{
@@ -376,9 +308,18 @@ class PersistenceWindowPool
 		}
 	}
 
-	private void setupBricks() throws IOException
+	private void setupBricks()
 	{
-		long fileSize = fileChannel.size();
+		long fileSize = -1;
+        try
+        {
+            fileSize = fileChannel.size();
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to get file size for " + 
+                storeName, e );
+        }
 		if ( blockSize == 0 )
 		{
 			return;
@@ -439,7 +380,7 @@ class PersistenceWindowPool
 		}
 	}
 
-	private void refreshBricks() throws IOException
+	private void refreshBricks()
 	{
 		if ( brickSize <= 0 )
 		{
@@ -481,7 +422,6 @@ class PersistenceWindowPool
 					((long) nonMappedBrick.index()) * brickSize / blockSize, 
 					blockSize, brickSize, fileChannel ) );
 				memUsed += brickSize;
-				// nonMappedBricks.remove( nonMappedIndex );
 			}
 			catch ( MappedMemException e )
 			{
@@ -489,7 +429,6 @@ class PersistenceWindowPool
 				ooe++;
 				logWarn( "Unable to memory map" );
 			}
-			//nonMappedIndex--;
 		}
 //		System.out.println( storeName + " memUsed=" + memUsed + " brickSize=" + 
 //			brickSize + " mappedMem=" + mappedMem + " brickCount=" + 
@@ -531,7 +470,7 @@ class PersistenceWindowPool
 		}
 	}
 	
-	private void expandBricks( int newBrickCount ) throws IOException
+	private void expandBricks( int newBrickCount )
 	{
 		if ( newBrickCount > brickCount )
 		{
@@ -584,11 +523,19 @@ class PersistenceWindowPool
 		}
 	}	
 
-	private void dumpStatus() throws IOException
+	private void dumpStatus()
 	{
-		log.finest( "[" + storeName + "] brickCount=" + brickCount + 
-			" brickSize=" + brickSize + "b mappedMem=" + mappedMem + 
-			"b (storeSize=" + fileChannel.size() + "b)" );
+        try
+        {
+    		log.finest( "[" + storeName + "] brickCount=" + brickCount + 
+    			" brickSize=" + brickSize + "b mappedMem=" + mappedMem + 
+    			"b (storeSize=" + fileChannel.size() + "b)" );
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to get file size for " + 
+                storeName, e );
+        }
 	}
 	
 	private void logWarn( String logMessage )

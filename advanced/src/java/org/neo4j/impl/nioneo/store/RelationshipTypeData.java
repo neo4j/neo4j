@@ -44,4 +44,3 @@ public class RelationshipTypeData
 		return name;
 	}
 }
-

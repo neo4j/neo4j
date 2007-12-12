@@ -68,7 +68,7 @@ public class TestDynamicStore extends TestCase
 				ByteStore.createStore( null, 1 );
 				fail( "Null fileName should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalArgumentException e )
 			{ // good
 			}
 			try
@@ -76,7 +76,7 @@ public class TestDynamicStore extends TestCase
 				ByteStore.createStore( "testDynamicStore.db", 0 );
 				fail( "Illegal blocksize should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalArgumentException e )
 			{ // good
 			}
 			ByteStore store = ByteStore.createStore( "testDynamicStore.db", 30 );
@@ -85,15 +85,10 @@ public class TestDynamicStore extends TestCase
 				ByteStore.createStore( "testDynamicStore.db", 15 );
 				fail( "Creating existing store should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalStateException e )
 			{ // good
 			}
 			store.close();
-		}
-		catch ( IOException e )
-		{
-			e.printStackTrace();
-			fail( "" + e );
 		}
 		finally
 		{
@@ -163,20 +158,20 @@ public class TestDynamicStore extends TestCase
 				store.updateRecord( record );
 			}
 			store.close();
-			try
+/*			try
 			{
 				store.allocateRecords( blockId, new byte[10] );
 				fail( "Closed store should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( RuntimeException e )
 			{ // good
-			}
+			}*/
 			try
 			{
 				store.getBytes( 0 );
 				fail( "Closed store should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( RuntimeException e )
 			{ // good
 			}
 			try
@@ -184,14 +179,9 @@ public class TestDynamicStore extends TestCase
 				store.getLightRecords( 0, null );
 				fail( "Closed store should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( RuntimeException e )
 			{ // good
 			}
-		}
-		catch ( IOException e )
-		{
-			e.printStackTrace();
-			fail( "" + e );
 		}
 		finally
 		{
@@ -228,11 +218,6 @@ public class TestDynamicStore extends TestCase
 //			assertEquals( STR, new String( store.getChars( blockId ) ) );
 			store.close();
 		}
-		catch ( IOException e )
-		{
-			e.printStackTrace();
-			fail( "" + e );
-		}
 		finally
 		{
 			File file = new File( "testDynamicStore.db" );
@@ -248,7 +233,7 @@ public class TestDynamicStore extends TestCase
 		}
 	}
 	
-	public void testRandomTest() throws IOException
+	public void testRandomTest()
 	{
 		Random random =	new Random( System.currentTimeMillis() );
 		ByteStore store = ByteStore.createStore( "testDynamicStore.db", 30 );
@@ -333,7 +318,6 @@ public class TestDynamicStore extends TestCase
 		private static final String VERSION = "DynamicTestVersion v0.1";
 		
 		public ByteStore( String fileName ) 
-			throws IOException
 		{
 			super( fileName );
 		}
@@ -344,13 +328,13 @@ public class TestDynamicStore extends TestCase
 		}
 		
 		public static ByteStore createStore( String fileName, 
-			int blockSize ) throws IOException
+			int blockSize )
 		{
 			createEmptyStore( fileName, blockSize, VERSION );
 			return new ByteStore( fileName ); 
 		}
 		
-		public byte[] getBytes( int blockId ) throws IOException
+		public byte[] getBytes( int blockId )
 		{
 			return get( blockId );
 		}

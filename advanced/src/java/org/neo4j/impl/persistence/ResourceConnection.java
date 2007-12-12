@@ -18,28 +18,18 @@ package org.neo4j.impl.persistence;
 
 
 import javax.transaction.xa.XAResource;
-
-import org.neo4j.impl.event.Event;
-import org.neo4j.impl.event.EventData;
+import org.neo4j.impl.core.PropertyIndex;
+import org.neo4j.impl.core.RawNodeData;
+import org.neo4j.impl.core.RawPropertyData;
+import org.neo4j.impl.core.RawPropertyIndex;
+import org.neo4j.impl.core.RawRelationshipData;
+import org.neo4j.impl.core.RawRelationshipTypeData;
 
 /**
  * A connection to a {@link PersistenceSource}. <CODE>ResourceConnection</CODE>
  * contains operations to retrieve the {@link javax.transaction.xa.XAResource}
  * for this connection and to close the connection, optionally returning it to
  * a connection pool.
- * <P>
- * The most important method in a <CODE>ResourceConnection</CODE> --
- * the accessor for the actual connection -- is notably lacking from this
- * interface definition. It is provided by the classes that implement
- * <CODE>ResourceConnection</CODE>. For example, an
- * <CODE>SqlResourceConnection</CODE> provides a method that returns
- * a {@link javax.sql.XAConnection}, an <CODE>LDAPResourceConnection</CODE>
- * provides a method that returns whatever custom LDAP API connection it
- * uses, etc.
- * <P>
- * This interface definition does not imply any thread safety. It is custom
- * for clients to synchronize all resource operations on the
- * <CODE>ResourceConnection</CODE> instance.
  */
 public interface ResourceConnection
 {
@@ -50,20 +40,48 @@ public interface ResourceConnection
 	 */	
 	public XAResource getXAResource();
 	
-	/**
-	 * <CODE>destroy()</CODE> is invoked before this connection will
-	 * be disposed of by the {@link ResourceBroker}. This method should
-	 * perform any {@link PersistenceSource}-specific cleanups, which
-	 * generally means calling things like
-	 * {@link java.sql.Connection#close}.
-	 * @throws ConnectionDestructionFailedException if the
-	 * <CODE>PersistenceSource</CODE> failed to destroy the connection
-	 */	
-	public void destroy() throws ConnectionDestructionFailedException;
+	public void destroy();
 	
-	public Object performOperation( Operation operation, 
-		Object param ) throws PersistenceException;
-	
-	public void performUpdate( Event event, EventData data ) 
-		throws PersistenceUpdateFailedException;
+    public void nodeDelete( int nodeId );
+
+    public int nodeAddProperty( int nodeId, PropertyIndex index, Object value );
+
+    public void nodeChangeProperty( int nodeId, int propertyId, Object value );
+
+    public void nodeRemoveProperty( int nodeId, int propertyId );
+
+    public void nodeCreate( int id );
+
+    public void relationshipCreate( int id, int typeId, int startNodeId, 
+        int endNodeId );
+
+    public void relDelete( int relId );
+
+    public int relAddProperty( int relId, PropertyIndex index, Object value );
+
+    public void relChangeProperty( int relId, int propertyId, Object value );
+
+    public void relRemoveProperty( int relId, int propertyId );
+
+    public RawNodeData nodeLoadLight( int id );
+
+    public Object loadPropertyValue( int id );
+
+    public String loadIndex( int id );
+
+    public RawPropertyIndex[] loadPropertyIndexes( int maxCount );
+
+    public RawRelationshipData[] nodeLoadRelationships( int nodeId );
+
+    public RawPropertyData[] nodeLoadProperties( int nodeId );
+
+    public RawPropertyData[] relLoadProperties( int relId );
+
+    public RawRelationshipData relLoadLight( int id );
+
+    public RawRelationshipTypeData[] loadRelationshipTypes();
+
+    public void createPropertyIndex( String key, int id );
+
+    public void createRelationshipType( int id, String name );
 }

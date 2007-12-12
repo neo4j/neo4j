@@ -46,7 +46,6 @@ public class NeoModule
 	
 	private final TransactionManager transactionManager;
 	private final NodeManager nodeManager;
-	private final NeoConstraintsListener neoConstraintsListener;
 	private final PersistenceManager persistenceManager;
 	
 	public NeoModule( AdaptiveCacheManager cacheManager, LockManager lockManager, 
@@ -56,8 +55,6 @@ public class NeoModule
 	{
 		this.transactionManager = transactionManager;
 		this.persistenceManager = persistenceManager;
-		this.neoConstraintsListener = new NeoConstraintsListener( 
-			transactionManager, eventManager );
 		nodeManager = new NodeManager( cacheManager, lockManager, 
 			transactionManager, lockReleaser, eventManager, 
 			persistenceManager, idGenerator );
@@ -78,7 +75,6 @@ public class NeoModule
 		RawPropertyIndex propertyIndexes[] = null;
 		try
 		{
-			neoConstraintsListener.registerEventListeners();
 			transactionManager.begin();
 			relTypes = persistenceManager.loadAllRelationshipTypes();
 			propertyIndexes = persistenceManager.loadPropertyIndexes( 
@@ -100,7 +96,6 @@ public class NeoModule
 			throw new RuntimeException( "Unable to load all relationships", 
 				e );
 		}
-		// RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
 		nodeManager.addRawRelationshipTypes( relTypes );
 		nodeManager.addPropertyIndexes( propertyIndexes );
 		if ( propertyIndexes.length < INDEX_COUNT )
@@ -171,7 +166,6 @@ public class NeoModule
 	public void stop()
 	{
 		nodeManager.clearPropertyIndexes();
-		neoConstraintsListener.unregisterEventListeners();
 		nodeManager.clearCache();
 		nodeManager.stop();
 	}

@@ -34,7 +34,7 @@ import javax.transaction.TransactionManager;
  * } </code></pre>
  * <p>
  * Let's walk through this example line by line. First we retrieve a Transaction
- * object by invoking the {@link NeoService#begin()} factory method. This 
+ * object by invoking the {@link NeoService#beginTx()} factory method. This 
  * creates a new Transaction instance which has internal state to keep track of 
  * whether the current transaction is successful. Then we wrap all operations 
  * that work with the node space in a try-finally block. At the end of the 

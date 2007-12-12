@@ -55,7 +55,6 @@ import org.neo4j.impl.util.ArrayMap;
 public class TxManager implements TransactionManager
 {
 	private static Logger log = Logger.getLogger( TxManager.class.getName() );
-	// private static final TxManager manager = new TxManager();
 	
 	private ArrayMap<Thread,TransactionImpl> txThreadMap; 
 	
@@ -778,13 +777,13 @@ public class TxManager implements TransactionManager
 		return Status.STATUS_NO_TRANSACTION;
 	}
 
-	public Transaction getTransaction() // throws SystemException
+	public Transaction getTransaction()
 	{
 		return txThreadMap.get( Thread.currentThread() );
 	}
 
-	public void resume( Transaction tx ) throws //InvalidTransactionException, 
-		IllegalStateException, SystemException
+	public void resume( Transaction tx ) throws IllegalStateException, 
+        SystemException
 	{
 		if ( !tmOk )
 		{

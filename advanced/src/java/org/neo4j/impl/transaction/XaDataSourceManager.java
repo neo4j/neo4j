@@ -40,8 +40,6 @@ import org.neo4j.impl.transaction.xaframework.XaDataSource;
  */
 public class XaDataSourceManager
 {
-//	private static XaDataSourceManager manager = new XaDataSourceManager();
-	
 	// key = data source name, value = data source
 	private final Map<String,XaDataSource> dataSources = 
 		new HashMap<String,XaDataSource>();
@@ -55,11 +53,6 @@ public class XaDataSourceManager
 	XaDataSourceManager()
 	{
 	}
-	
-//	public static XaDataSourceManager getManager()
-//	{
-//		return manager;
-//	}
 	
 	XaDataSource create( String className, Map<?,?> params ) 
 		throws ClassNotFoundException, //NoSuchMethodException, 

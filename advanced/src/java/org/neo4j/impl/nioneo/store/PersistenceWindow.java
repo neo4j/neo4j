@@ -16,8 +16,6 @@
  */
 package org.neo4j.impl.nioneo.store;
 
-import java.io.IOException;
-
 /**
  * A persistence window encapsulates a part of the records (or blocks) in
  * a store and makes it possible to read and write data to those records. 
@@ -46,6 +44,6 @@ public interface PersistenceWindow
 	 */
 	public int size();
     
-    public void force() throws IOException;
+    public void force();
 }
 

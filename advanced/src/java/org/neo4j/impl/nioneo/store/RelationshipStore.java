@@ -18,7 +18,6 @@ package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Map;
 
 /**
@@ -40,7 +39,6 @@ public class RelationshipStore extends AbstractStore implements Store
 	 * See {@link AbstractStore#AbstractStore(String, Map)}
 	 */
 	public RelationshipStore( String fileName, Map<?,?> config ) 
-		throws IOException
 	{
 		super( fileName, config );
 	}
@@ -48,7 +46,7 @@ public class RelationshipStore extends AbstractStore implements Store
 	/**
 	 * See {@link AbstractStore#AbstractStore(String)}
 	 */
-	public RelationshipStore( String fileName ) throws IOException
+	public RelationshipStore( String fileName )
 	{
 		super( fileName );
 	}
@@ -64,7 +62,7 @@ public class RelationshipStore extends AbstractStore implements Store
 	}
 	
 	@Override
-	public void close() throws IOException
+	public void close()
 	{
 		super.close();
 	}
@@ -78,20 +76,16 @@ public class RelationshipStore extends AbstractStore implements Store
 	 * @throws IOException If unable to create relationship store or name null
 	 */
 	public static void createStore( String fileName ) 
-		throws IOException
 	{
 		createEmptyStore( fileName, VERSION );
 	}
 	
 	public RelationshipRecord getRecord( int id, ReadFromBuffer buffer ) 
-		throws IOException
 	{
 		RelationshipRecord record;
-		if ( buffer != null && !hasWindow( id ) )
+		if ( buffer != null && !hasWindow( id ) && 
+            transferToBuffer( id, buffer ) )
 		{
-			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
-				RECORD_SIZE, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			byte inUse = buf.get();
 			assert inUse == Record.IN_USE.byteValue();
@@ -117,7 +111,7 @@ public class RelationshipStore extends AbstractStore implements Store
 		}
 	}
 	
-	public void updateRecord( RelationshipRecord record ) throws IOException
+	public void updateRecord( RelationshipRecord record )
 	{
 		if ( record.isTransferable() && !hasWindow( record.getId() ) )
 		{
@@ -142,23 +136,7 @@ public class RelationshipStore extends AbstractStore implements Store
 		}
 	}
 	
-	private boolean transferRecord( RelationshipRecord record ) 
-		throws IOException
-	{
-		long id = record.getId();
-		long count = record.getTransferCount();
-		FileChannel fileChannel = getFileChannel();
-		fileChannel.position( id * getRecordSize() );
-		if ( count != record.getFromChannel().transferTo( 
-			record.getTransferStartPosition(), count, fileChannel ) )
-		{
-			return false;
-		}
-		return true;
-	}
-	
 	private void updateRecord( RelationshipRecord record, Buffer buffer )
-		throws IOException
 	{
 		int id = record.getId();
 		int offset = (int) ( id - buffer.position() ) * getRecordSize();
@@ -184,7 +162,6 @@ public class RelationshipStore extends AbstractStore implements Store
 	}
 	
 	private RelationshipRecord getRecord( int id, Buffer buffer ) 
-		throws IOException
 	{
 		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
@@ -193,7 +170,7 @@ public class RelationshipStore extends AbstractStore implements Store
 			Record.IN_USE.byteValue() );
 		if ( !inUseFlag )
 		{
-			throw new IOException( "Record[" + id + "] not in use" );
+			throw new StoreFailureException( "Record[" + id + "] not in use" );
 		}
 		RelationshipRecord record = new RelationshipRecord( id, 
 			buffer.getInt(), buffer.getInt(), buffer.getInt() );

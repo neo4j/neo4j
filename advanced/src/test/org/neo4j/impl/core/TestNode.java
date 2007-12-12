@@ -79,7 +79,7 @@ public class TestNode extends AbstractNeoTestCase
 			node1.setProperty( null, null );
 			fail( "Null argument should result in exception." );
 		}
-		catch ( IllegalValueException e )
+		catch ( IllegalArgumentException e )
 		{}
 		String key1 = "key1";
 		String key2 = "key2";
@@ -192,7 +192,7 @@ public class TestNode extends AbstractNeoTestCase
 			node1.setProperty( null, null );
 			fail( "Null argument should result in exception." );
 		}
-		catch ( IllegalValueException e )
+		catch ( IllegalArgumentException e )
 		{}
 		catch ( NotFoundException e )
 		{

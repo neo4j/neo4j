@@ -325,8 +325,9 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 			try
 			{
 				node1.setProperty( key, new Object() );
+                fail( "Shouldn't validate" );
 			}
-			catch ( IllegalValueException e )
+			catch ( Exception e )
 			{ // good
 			}
 			try
@@ -355,8 +356,9 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 			try
 			{
 				rel.setProperty( key, new Object() );
+                fail( "Shouldn't validate" );
 			}
-			catch ( IllegalValueException e )
+			catch ( Exception e )
 			{ // good
 			}
 			try

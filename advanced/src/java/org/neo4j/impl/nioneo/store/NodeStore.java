@@ -18,7 +18,6 @@ package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Map;
 
 /**
@@ -37,7 +36,6 @@ public class NodeStore extends AbstractStore implements Store
 	 * See {@link AbstractStore#AbstractStore(String, Map)}
 	 */
 	public NodeStore( String fileName, Map<?,?> config ) 
-		throws IOException
 	{
 		super( fileName, config );
 	}
@@ -46,7 +44,6 @@ public class NodeStore extends AbstractStore implements Store
 	 * See {@link AbstractStore#AbstractStore(String)}
 	 */
 	public NodeStore( String fileName ) 
-		throws IOException
 	{
 		super( fileName );
 	}
@@ -61,12 +58,6 @@ public class NodeStore extends AbstractStore implements Store
 		return RECORD_SIZE;
 	}
 	
-	@Override
-	public void close() throws IOException
-	{
-		super.close();
-	}
-	
 	/**
 	 * Creates a new node store contained in <CODE>fileName</CODE> 
 	 * If filename is <CODE>null</CODE> or the file already exists an 
@@ -76,7 +67,6 @@ public class NodeStore extends AbstractStore implements Store
 	 * @throws IOException If unable to create node store or name null
 	 */
 	public static void createStore( String fileName ) 
-		throws IOException
 	{
 		createEmptyStore( fileName, VERSION );
 		NodeStore store = new NodeStore( fileName );
@@ -87,14 +77,11 @@ public class NodeStore extends AbstractStore implements Store
 	}
 	
 	public NodeRecord getRecord( int id, ReadFromBuffer buffer ) 
-		throws IOException
 	{
 		NodeRecord record;
-		if ( buffer != null && !hasWindow( id ) )
-		{
-			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
-				RECORD_SIZE, buffer.getFileChannel() );
+		if ( buffer != null && !hasWindow( id ) && 
+            transferToBuffer( id, buffer ) )
+        {
 			ByteBuffer buf = buffer.getByteBuffer();
 			record = new NodeRecord( id );
 			byte inUse = buf.get();
@@ -103,7 +90,7 @@ public class NodeStore extends AbstractStore implements Store
 			record.setNextRel( buf.getInt() );
 			record.setNextProp( buf.getInt() );
 			return record;
-		}
+        }
 		PersistenceWindow window = acquireWindow( id, OperationType.READ );
 		try
 		{
@@ -116,7 +103,7 @@ public class NodeStore extends AbstractStore implements Store
 		}
 	}
 
-	public void updateRecord( NodeRecord record ) throws IOException
+	public void updateRecord( NodeRecord record )
 	{
 		if ( record.isTransferable() && !hasWindow( record.getId() ) )
 		{
@@ -142,14 +129,11 @@ public class NodeStore extends AbstractStore implements Store
 	}
 	
 	public boolean loadLightNode( int id, ReadFromBuffer buffer ) 
-		throws IOException 
 	{
 		NodeRecord record;
-		if ( buffer != null && !hasWindow( id ) )
+		if ( buffer != null && !hasWindow( id ) && 
+            transferToBuffer( id, buffer ) )
 		{
-			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
-				RECORD_SIZE, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			record = new NodeRecord( id );
 			byte inUse = buf.get();
@@ -160,7 +144,6 @@ public class NodeStore extends AbstractStore implements Store
 			record.setInUse( true );
 			record.setNextRel( buf.getInt() );
 			record.setNextProp( buf.getInt() );
-			// cache.add( id, record );
 			return true;
 		}
 		PersistenceWindow window = acquireWindow( id, OperationType.READ );
@@ -180,14 +163,13 @@ public class NodeStore extends AbstractStore implements Store
 	}
 	
 	private NodeRecord getRecord( int id, Buffer buffer, boolean check ) 
-		throws IOException
 	{
 		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		boolean inUse = ( buffer.get() == Record.IN_USE.byteValue() );
 		if ( !inUse && !check )
 		{
-			throw new IOException( "Record[" + id + "] not in use" );
+			throw new StoreFailureException( "Record[" + id + "] not in use" );
 		}
 		NodeRecord nodeRecord = new NodeRecord( id );
 		nodeRecord.setInUse( inUse );
@@ -195,23 +177,8 @@ public class NodeStore extends AbstractStore implements Store
 		nodeRecord.setNextProp( buffer.getInt() );
 		return nodeRecord;
 	}
-	
-	private boolean transferRecord( NodeRecord record ) throws IOException
-	{
-		long id = record.getId();
-		long count = record.getTransferCount();
-		FileChannel fileChannel = getFileChannel();
-		fileChannel.position( id * getRecordSize() );
-		if ( count != record.getFromChannel().transferTo( 
-			record.getTransferStartPosition(), count, fileChannel ) )
-		{
-			return false;
-		}
-		return true;
-	}
-	
+    
 	private void updateRecord( NodeRecord record, Buffer buffer )
-		throws IOException
 	{
 		int id = record.getId();
 		int offset = (int) ( id - buffer.position() ) * getRecordSize();

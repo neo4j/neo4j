@@ -28,8 +28,6 @@ public class EventModule
 	
 	private final EventManager eventManager = new EventManager();
 	
-	
-	
 	public void init()
 	{
 	}

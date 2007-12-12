@@ -54,24 +54,4 @@ public class PropertyIndex
 		}
 		return false;
 	}
-
-	static class PropIndexOpData implements PropertyIndexOperationEventData
-	{
-		private final PropertyIndex index;
-		
-		PropIndexOpData( PropertyIndex index )
-		{
-			this.index = index;
-		}
-		
-		public PropertyIndex getIndex()
-        {
-			return index;
-        }
-
-		public Object getEntity()
-        {
-			return index;
-        }
-	}
 }

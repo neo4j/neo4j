@@ -27,17 +27,9 @@ package org.neo4j.impl.persistence;
  */
 public class IdGenerator
 {
-	// -- Singleton stuff
-//	private static final IdGenerator instance = new IdGenerator();
-	
 	IdGenerator()
 	{
 	}
-	
-//	public static IdGenerator getGenerator() { return instance; }
-	
-	
-	// -- Attributes
 	
 	// the persistence source used to store the HIGH keys
 	private PersistenceSource persistenceSource		= null;
@@ -46,9 +38,6 @@ public class IdGenerator
 	 * Returns the next unique ID for the entity type represented by
 	 * <CODE>clazz</CODE>.
 	 * @return the next ID for <CODE>clazz</CODE>'s entity type
-	 * @throws IdGenerationFailedException if <CODE>clazz</CODE> is not
-	 * a registered entity type or if communication with persistent
-	 * storage failed
 	 */
 	public int nextId( Class<?> clazz )
 	{
@@ -65,8 +54,6 @@ public class IdGenerator
 		return getPersistenceSource().getNumberOfIdsInUse( clazz );
 	}
 	
-	
-	// -- Configuration and attribute accessors
 	
 	/**
 	 * Configures the IdGenerator. <B>WARNING</B>: This method should

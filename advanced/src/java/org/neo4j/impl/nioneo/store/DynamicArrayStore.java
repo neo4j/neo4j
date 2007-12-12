@@ -17,7 +17,6 @@
 package org.neo4j.impl.nioneo.store;
 
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
@@ -57,13 +56,11 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	public DynamicArrayStore( String fileName, Map<?,?> config ) 
-		throws IOException
 	{
 		super( fileName, config );
 	}
 
 	public DynamicArrayStore( String fileName ) 
-		throws IOException
 	{
 		super( fileName );
 	}
@@ -73,14 +70,13 @@ class DynamicArrayStore extends AbstractDynamicStore
 		return VERSION;
 	}
 	
-	public static void createStore( String fileName, 
-		int blockSize ) throws IOException
+	public static void createStore( String fileName, int blockSize )
 	{
 		createEmptyStore( fileName, blockSize, VERSION );
 	}
 	
 	private Collection<DynamicRecord> allocateFromInt( int startBlock, 
-		int[] array ) throws IOException
+		int[] array )
 	{
 		int size = array.length * 4 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -93,7 +89,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 
 	private Collection<DynamicRecord> allocateFromInt( int startBlock, 
-		Integer[] array ) throws IOException
+		Integer[] array )
 	{
 		int size = array.length * 4 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -106,7 +102,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	private Collection<DynamicRecord> allocateFromShort( int startBlock, 
-		short[] array ) throws IOException
+		short[] array )
 	{
 		int size = array.length * 2 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -119,7 +115,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 
 	private Collection<DynamicRecord> allocateFromShort( int startBlock, 
-		Short[] array ) throws IOException
+		Short[] array )
 	{
 		int size = array.length * 2 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -132,7 +128,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	private Collection<DynamicRecord> allocateFromString( int startBlock, 
-		String[] array ) throws IOException
+		String[] array )
 	{
 		int size = 5; 
 		for ( String str : array )
@@ -157,7 +153,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	private Collection<DynamicRecord> allocateFromBool( int startBlock, 
-		boolean[] array ) throws IOException
+		boolean[] array )
 	{
 		int size = 5 + array.length / 8;
 		if ( array.length % 8 > 0 )
@@ -191,7 +187,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	private Collection<DynamicRecord> allocateFromBool( int startBlock, 
-		Boolean[] array ) throws IOException
+		Boolean[] array )
 	{
 		int size = 5 + array.length / 8;
 		if ( array.length % 8 > 0 )
@@ -225,7 +221,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	private Collection<DynamicRecord> allocateFromDouble( int startBlock, 
-		double[] array ) throws IOException
+		double[] array )
 	{
 		int size = array.length * 8 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -238,7 +234,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 
 	private Collection<DynamicRecord> allocateFromDouble( int startBlock, 
-		Double[] array ) throws IOException
+		Double[] array )
 	{
 		int size = array.length * 8 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -251,7 +247,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	private Collection<DynamicRecord> allocateFromFloat( int startBlock, 
-		float[] array ) throws IOException
+		float[] array )
 	{
 		int size = array.length * 4 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -264,7 +260,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 
 	private Collection<DynamicRecord> allocateFromFloat( int startBlock, 
-		Float[] array ) throws IOException
+		Float[] array )
 	{
 		int size = array.length * 4 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -277,7 +273,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	private Collection<DynamicRecord> allocateFromLong( int startBlock, 
-		long[] array ) throws IOException
+		long[] array )
 	{
 		int size = array.length * 8 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -290,7 +286,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 
 	private Collection<DynamicRecord> allocateFromLong( int startBlock, 
-		Long[] array ) throws IOException
+		Long[] array )
 	{
 		int size = array.length * 8 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -303,7 +299,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	private Collection<DynamicRecord> allocateFromByte( int startBlock, 
-		byte[] array ) throws IOException
+		byte[] array )
 	{
 		int size = array.length + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -313,7 +309,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 
 	private Collection<DynamicRecord> allocateFromByte( int startBlock, 
-		Byte[] array ) throws IOException
+		Byte[] array )
 	{
 		int size = array.length + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -326,7 +322,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	private Collection<DynamicRecord> allocateFromChar( int startBlock, 
-		char[] array ) throws IOException
+		char[] array )
 	{
 		int size = array.length * 2 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -339,7 +335,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 
 	private Collection<DynamicRecord> allocateFromChar( int startBlock, 
-		Character[] array ) throws IOException
+		Character[] array )
 	{
 		int size = array.length * 2 + 1;
 		ByteBuffer buf = ByteBuffer.allocate( size );
@@ -352,7 +348,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 	}
 	
 	public Collection<DynamicRecord> allocateRecords( int startBlock, 
-		Object array ) throws IOException
+		Object array )
 	{
 		if ( array instanceof int[] )
 		{
@@ -425,7 +421,7 @@ class DynamicArrayStore extends AbstractDynamicStore
 		throw new RuntimeException( array + " not a valid array type." );
 	}
 	
-	public Object getArray( int blockId ) throws IOException
+	public Object getArray( int blockId )
 	{
 		byte bArray[] = get( blockId );
 		ByteBuffer buf = ByteBuffer.wrap( bArray );

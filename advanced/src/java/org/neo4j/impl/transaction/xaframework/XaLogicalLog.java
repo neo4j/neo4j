@@ -88,7 +88,7 @@ public class XaLogicalLog
 	private final XaTransactionFactory xaTf;
 	
 	XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,   
-		XaTransactionFactory xaTf ) // throws IOException
+		XaTransactionFactory xaTf )
 	{
 		this.fileName = fileName;
 		this.xaRm = xaRm;
@@ -234,7 +234,6 @@ public class XaLogicalLog
 	{
 		// get the neo tx identifier
 		buffer.clear(); buffer.limit( 4 );
-		long position = fileChannel.position();
 		if ( fileChannel.read( buffer ) != buffer.limit() )
 		{
 			return false;

@@ -14,29 +14,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.impl.core;
+package org.neo4j.impl.nioneo.store;
 
-
-public class IllegalValueException extends RuntimeException
+public class StoreFailureException extends RuntimeException
 {
-	public IllegalValueException()
-	{
-		super();
-	}
-	
-	public IllegalValueException( String message )
-	{
-		super( message );
-	}
-
-	public IllegalValueException( String message, Throwable cause)
-	{
-		super( message, cause );
-	}
-
-	public IllegalValueException( Throwable cause )
+    public StoreFailureException( String msg )
+    {
+        super( msg );
+    }
+    
+	public StoreFailureException( Throwable cause )
 	{
 		super( cause );
 	}
-	
+
+    public StoreFailureException( String msg, Throwable cause )
+    {
+        super( msg, cause );
+    }
 }

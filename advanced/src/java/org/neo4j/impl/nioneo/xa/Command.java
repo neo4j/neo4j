@@ -184,14 +184,7 @@ abstract class Command extends XaCommand
 			{
 				logger.fine( this.toString() );
 			}
-			try
-			{
-				store.updateRecord( record );
-			}
-			catch ( IOException e )
-			{
-				throw new RuntimeException( e );
-			}
+			store.updateRecord( record );
 		}
 		
 		public String toString()
@@ -288,14 +281,7 @@ abstract class Command extends XaCommand
 			{
 				logger.fine( this.toString() );
 			}
-			try
-			{
-				store.updateRecord( record );
-			}
-			catch ( IOException e )
-			{
-				throw new RuntimeException( e );
-			}
+			store.updateRecord( record );
 		}
 
 		@Override
@@ -410,14 +396,7 @@ abstract class Command extends XaCommand
 			{
 				logger.fine( this.toString() );
 			}
-			try
-			{
-				store.updateRecord( record );
-			}
-			catch ( IOException e )
-			{
-				throw new RuntimeException( e );
-			}
+			store.updateRecord( record );
 		}
 
 		@Override
@@ -526,14 +505,7 @@ abstract class Command extends XaCommand
 			{
 				logger.fine( this.toString() );
 			}
-			try
-			{
-				store.updateRecord( record );
-			}
-			catch ( IOException e )
-			{
-				throw new RuntimeException( e );
-			}
+			store.updateRecord( record );
 		}
 
 		@Override

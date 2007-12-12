@@ -18,8 +18,6 @@ package org.neo4j.impl.core;
 
 class Property
 {
-//	private static NodeManager nodeManager = NodeManager.getManager();
-	
 	private final int id;
 	private Object value = null;
 	

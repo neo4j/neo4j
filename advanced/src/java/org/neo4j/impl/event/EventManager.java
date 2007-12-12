@@ -51,8 +51,6 @@ public class EventManager
 	private static Logger log =
 		Logger.getLogger( EventManager.class.getName() );
 	
-//	private static final EventManager instance = new EventManager();
-	
 	private Map<Event,List<ProActiveEventListener>> proActiveEventListeners = 
 		new HashMap<Event,List<ProActiveEventListener>>();
 	private Map<Event,List<ReActiveEventListener>> reActiveEventListeners = 
@@ -68,11 +66,6 @@ public class EventManager
 	{
 		eventQueue = new EventQueue( this );
 	}
-	
-//	public static EventManager getManager()
-//	{
-//		return instance;
-//	}
 	
 	/**
 	 * Generates a pro-active event to all pro-active event listeners 

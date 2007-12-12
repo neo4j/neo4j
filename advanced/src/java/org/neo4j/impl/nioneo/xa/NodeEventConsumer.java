@@ -16,8 +16,6 @@
  */
 package org.neo4j.impl.nioneo.xa;
 
-import java.io.IOException;
-
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
@@ -34,7 +32,7 @@ public interface NodeEventConsumer
 	 * @param nodeId The id of the node
 	 * @throws IOException If unable to create or if node already exist
 	 */
-	public void createNode( int nodeId ) throws IOException;
+	public void createNode( int nodeId );
 	
 	/**
 	 * Deletes a node. The <CODE>nodeId</CODE> is the position of the record
@@ -43,7 +41,7 @@ public interface NodeEventConsumer
 	 * @param nodeId The id of the node
 	 * @throws IOException If 
 	 */
-	public void deleteNode( int nodeId ) throws IOException;
+	public void deleteNode( int nodeId );
 
 	/**
 	 * Checks if a node exists. If the record <CODE>nodeId</CODE> is in use
@@ -53,7 +51,7 @@ public interface NodeEventConsumer
 	 * @return True if node exists
 	 * @throws IOException If unable to check for node 
 	 */
-	public boolean loadLightNode( int nodeId ) throws IOException;
+	public boolean loadLightNode( int nodeId );
 
 	/**
 	 * Adds a property to the node.
@@ -65,7 +63,7 @@ public interface NodeEventConsumer
 	 * @throws IOException If unable to add property
 	 */
 	public void addProperty( int nodeId, int propertyId, PropertyIndex index, 
-		Object value ) throws IOException;
+		Object value );
 
 	/**
 	 * Changes the value of a property on a node.
@@ -74,8 +72,7 @@ public interface NodeEventConsumer
 	 * @param value The new value
 	 * @throws IOException If unable to change property
 	 */
-	public void changeProperty( int nodeId, int propertyId, Object value ) 
-		throws IOException;
+	public void changeProperty( int nodeId, int propertyId, Object value ); 
 	
 	/**
 	 * Removed a property from a node.
@@ -84,8 +81,7 @@ public interface NodeEventConsumer
 	 * @param propertyId The id of the property
 	 * @throws IOException If unable to remove property
 	 */
-	public void removeProperty( int nodeId, int propertyId ) 
-		throws IOException;
+	public void removeProperty( int nodeId, int propertyId ); 
 	
 	/**
 	 * Returns all properties connected to a node.
@@ -94,7 +90,7 @@ public interface NodeEventConsumer
 	 * @return An array containing all properties connected to the node 
 	 * @throws IOException If unable to get the properties
 	 */
-	public PropertyData[] getProperties( int nodeId ) throws IOException;
+	public PropertyData[] getProperties( int nodeId );
 	
 	/**
 	 * Returns all relationships connected to the node.
@@ -103,6 +99,5 @@ public interface NodeEventConsumer
 	 * @return An array containing all relationships connected to the node
 	 * @throws IOException If unable to get the relationships
 	 */
-	public RelationshipData[] getRelationships( int nodeId ) 
-		throws IOException;
+	public RelationshipData[] getRelationships( int nodeId ); 
 }

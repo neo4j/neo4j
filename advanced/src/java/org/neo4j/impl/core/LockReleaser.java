@@ -40,16 +40,9 @@ public class LockReleaser
 	private static Logger log = Logger.getLogger( 
 		LockReleaser.class.getName() );
 	
-//	private static final LockReleaser instance = new LockReleaser();
-//	private static final LockManager lockManager = LockManager.getManager();
-//	private static final TransactionManager transactionManager = 
-//		TransactionFactory.getTransactionManager();
-	
 	private final ArrayMap<Thread,List<LockElement>> lockMap =  
 			new ArrayMap<Thread,List<LockElement>>( 5, true, true );
 
-	//private final Synchronization txCommitHook = new TxCommitHook();
-	
 	private final LockManager lockManager;
 	private final TransactionManager transactionManager;
 	
@@ -59,11 +52,6 @@ public class LockReleaser
 		this.lockManager = lockManager;
 		this.transactionManager = transactionManager;
 	}
-	
-//	public static LockReleaser getManager()
-//	{
-//		return instance;
-//	}
 	
 	private static class LockElement
 	{
@@ -188,5 +176,4 @@ public class LockReleaser
 				lockMap.get( thread ).size() );
 		}
 	}
-}
-		
+}		

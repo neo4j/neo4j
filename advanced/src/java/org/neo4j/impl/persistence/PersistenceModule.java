@@ -17,8 +17,6 @@
 package org.neo4j.impl.persistence;
 
 import javax.transaction.TransactionManager;
-import org.neo4j.impl.event.EventListenerNotRegisteredException;
-import org.neo4j.impl.event.EventManager;
 
 /**
  *
@@ -32,17 +30,14 @@ public class PersistenceModule
 	private static final String	MODULE_NAME	= "PersistenceModule";
 	
 	private final PersistenceManager persistenceManager;
-	private final PersistenceLayerMonitor persistenceMonitor;
 	
 	private PersistenceSource source;
+    private final ResourceBroker broker;
 	
-	public PersistenceModule( EventManager eventManager, 
-		TransactionManager transactionManager )
+	public PersistenceModule( TransactionManager transactionManager )
 	{
 		persistenceManager = new PersistenceManager( transactionManager );
-		ResourceBroker broker = persistenceManager.getResourceBroker();
-		persistenceMonitor = new PersistenceLayerMonitor( eventManager, 
-			broker );
+		broker = persistenceManager.getResourceBroker();
 	}
 	
 	public synchronized void init()
@@ -53,34 +48,17 @@ public class PersistenceModule
 	public synchronized void start( PersistenceSource persistenceSource )
 	{
 		this.source = persistenceSource;
-		persistenceMonitor.registerPersistenceSource( source );
-		try
-		{
-			persistenceMonitor.registerEvents();
-		}
-		catch ( EventListenerNotRegisteredException elnre )
-		{
-			// TODO:	This is a fatal thing. We really should shut down the
-			//			Neo engine if something messes up during the startup of
-			//			the persistence module. How do we tell the module
-			//			framework to request emergency shutdown?
-			throw new RuntimeException( "The persistence layer monitor was " +
-										  "unable to register on one or more " +
-										  "event types. This can seriously " +
-										  "impact persistence operations.",
-										  elnre );
-		}
+        broker.getDispatcher().persistenceSourceAdded( source );
 	}
 	
 	public synchronized void reload()
 	{
 		this.stop();
-		persistenceMonitor.removePersistenceSource( source );
+        broker.getDispatcher().persistenceSourceRemoved( source );
 	}
 	
 	public synchronized void stop()
 	{
-		persistenceMonitor.unregisterEvents();
 	}
 	
 	public synchronized void destroy()
