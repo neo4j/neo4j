@@ -33,24 +33,16 @@ class PersistenceRow extends LockableWindow
 	private Buffer buffer = null;
 	
 	PersistenceRow( long position, int recordSize, FileChannel channel ) 
-		throws IOException
 	{
 		super( channel );
-		if ( position < 0 )
-		{
-			throw new IOException( "Illegal position[" + position + "]" );
-		}
-		if ( recordSize <= 0 )
-		{
-			throw new IOException( "Illegal recordSize[" + recordSize + "]" );
-		}
-		if ( channel == null )
-		{
-			throw new IOException( "Null file channel" );
-		}
+        assert position >= 0 : "Illegal position[" + position + "]";
+        assert recordSize > 0 : "Illegal recordSize[" + recordSize + "]";
+        assert channel != null : "Null file channel";
+        
 		this.position = position;
 		this.recordSize = recordSize;
 		this.buffer = new Buffer( this );
+        
 		goToPosition();
 	}
 	
@@ -64,29 +56,50 @@ class PersistenceRow extends LockableWindow
 		return position;
 	}
 	
-	private void goToPosition() throws IOException
+	private void goToPosition()
 	{
-		long fileSize = getFileChannel().size();
-		int recordCount = ( int ) (fileSize / recordSize);
-		this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
-		if ( position > recordCount )
-		{
-			// use new buffer since it will contain only zeros
-			return;
-		}
-		ByteBuffer byteBuffer = buffer.getBuffer();
-		byteBuffer.clear();
-		getFileChannel().read( byteBuffer, position * recordSize );
-		byteBuffer.rewind();
+        try
+        {
+            long fileSize = getFileChannel().size();
+    		int recordCount = ( int ) (fileSize / recordSize);
+    		this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
+    		if ( position >= recordCount )
+    		{
+    			// use new buffer since it will contain only zeros
+    			return;
+    		}
+    		ByteBuffer byteBuffer = buffer.getBuffer();
+    		byteBuffer.clear();
+    		int count = getFileChannel().read( byteBuffer, 
+                position * recordSize );
+            assert count == recordSize;
+    		byteBuffer.rewind();
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( 
+                "Unable to load position[" + position + "] @[" +
+                position * recordSize + "]", e );
+        }
 	}
 	
-	void writeOut() throws IOException
+	void writeOut()
 	{
 		if ( getOperationType() == OperationType.WRITE )
 		{
 			ByteBuffer byteBuffer = buffer.getBuffer();
 			byteBuffer.clear();
-			getFileChannel().write( byteBuffer, position * recordSize );
+            try
+            {
+                int count = getFileChannel().write( byteBuffer, 
+                    position * recordSize );
+                assert count == recordSize;
+            }
+            catch ( IOException e )
+            {
+                throw new StoreFailureException( "Unable to write record[" + 
+                    position + "] @[" + position * recordSize + "]", e );
+            }
 		}
 	}
 	
@@ -95,7 +108,7 @@ class PersistenceRow extends LockableWindow
 		return 1;
 	}
     
-    public void force() throws IOException
+    public void force()
     {
         writeOut();
     }

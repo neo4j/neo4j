@@ -84,12 +84,8 @@ class ResourceBroker
 	 * the entity that is wrapped <CODE>meta</CODE>.
 	 * @throws NotInTransactionException if the resource broker is unable to
 	 * fetch a transaction for the current thread
-	 * @throws ResourceAcquisitionFailedException if the resource broker is
-	 * unable to acquire a resource connection for any reason other than
-	 * <CODE>NotInTransaction</CODE>
 	 */
 	ResourceConnection acquireResourceConnection()
-		throws ResourceAcquisitionFailedException, NotInTransactionException
 	{
 		ResourceConnection con		= null;
 		PersistenceSource source	= null;
@@ -111,11 +107,6 @@ class ResourceBroker
 				}
 				tx.registerSynchronization( txCommitHook );
                 txConnectionMap.put( currentThread, con );
-			}
-			catch ( ConnectionCreationFailedException ccfe )
-			{
-				String msg = "Failed to create connection using " + source;
-				throw new ResourceAcquisitionFailedException( msg, ccfe );
 			}
 			catch ( javax.transaction.RollbackException re )
 			{
@@ -146,16 +137,7 @@ class ResourceBroker
             Thread.currentThread() );
 		if ( con != null )
 		{
-			try
-			{
-				this.destroyCon( con );
-			}
-			catch ( ConnectionDestructionFailedException cdfe )
-			{
-				cdfe.printStackTrace();
-				log.severe(	"Unable to close connection. Will continue " +
-							"anyway." );
-			}
+			this.destroyCon( con );
 		}
 	}
 	
@@ -199,7 +181,6 @@ class ResourceBroker
 	// which is a hook for the resource manager to close() the underlying
 	// connection (and, if pooling, return it to a connection pool).
 	private void destroyCon( ResourceConnection con )
-		throws ConnectionDestructionFailedException
 	{
 		con.destroy();
 	}

@@ -16,28 +16,18 @@
  */
 package org.neo4j.impl.nioneo.xa;
 
-import java.io.IOException;
 import javax.transaction.xa.XAResource;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.impl.core.NodeOperationEventData;
-import org.neo4j.impl.core.PropertyIndexOperationEventData;
+import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.core.RawNodeData;
 import org.neo4j.impl.core.RawPropertyData;
+import org.neo4j.impl.core.RawPropertyIndex;
 import org.neo4j.impl.core.RawRelationshipData;
 import org.neo4j.impl.core.RawRelationshipTypeData;
-import org.neo4j.impl.core.RelationshipOperationEventData;
-import org.neo4j.impl.core.RelationshipTypeOperationEventData;
-import org.neo4j.impl.event.Event;
-import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
-import org.neo4j.impl.persistence.Operation;
-import org.neo4j.impl.persistence.PersistenceException;
 import org.neo4j.impl.persistence.PersistenceSource;
-import org.neo4j.impl.persistence.PersistenceUpdateFailedException;
 import org.neo4j.impl.persistence.ResourceConnection;
 import org.neo4j.impl.transaction.XaDataSourceManager;
 
@@ -67,12 +57,6 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 		{
 			throw new RuntimeException( "Unable to get nioneodb datasource" );
 		}
-//		if ( !EventManager.getManager().generateProActiveEvent(
-//			Event.DATA_SOURCE_ADDED, new EventData( this ) ) )
-//		{
-//			throw new RuntimeException( 
-//				"Unable to register NioNeoDbPersistenceSource" );
-//		}
 	}
 
 	public synchronized void reload()
@@ -86,8 +70,6 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 		{			
 			xaDs.close();
 		}
-//		EventManager.getManager().generateReActiveEvent(
-//			Event.DATA_SOURCE_REMOVED, new EventData( this ) );
 	}
 
 	public synchronized void destroy()
@@ -140,270 +122,169 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 			propIndexConsumer = null;
 		}
 		
-		public Object performOperation( Operation operation, 
-			Object param ) throws PersistenceException
-		{
-			try
-			{
-				if ( operation == Operation.LOAD_ALL_RELATIONSHIP_TYPES )
-				{
-					RelationshipTypeData relTypeData[] = 
-						relTypeConsumer.getRelationshipTypes();
-					RawRelationshipTypeData rawRelTypeData[] = 
-						new RawRelationshipTypeData[ relTypeData.length ];
-					for ( int i = 0; i < relTypeData.length; i++ )
-					{
-						rawRelTypeData[i] = new RawRelationshipTypeData( 
-							relTypeData[i].getId(), 
-							relTypeData[i].getName() );
-					}
-					return rawRelTypeData;
-				}
-				else if ( operation == Operation.LOAD_LIGHT_NODE )
-				{
-					if ( nodeConsumer.loadLightNode( 
-							( ( Integer ) param ).intValue() ) )
-					{
-						return new RawNodeData();
-					}
-					else
-					{
-						return null;
-					}
-				}
-				else if ( operation == Operation.LOAD_PROPERTY_INDEX )
-				{
-					return propIndexConsumer.getKeyFor( (Integer) param  );
-				}
-				else if ( operation == Operation.LOAD_PROPERTY_INDEXES )
-				{
-					return propIndexConsumer.getPropertyIndexes( 
-						(Integer) param  );
-				}
-				else if ( operation == Operation.LOAD_NODE_PROPERTIES )
-				{
-					int id = (int) ( ( Node ) param ).getId();
-					PropertyData propData[] = nodeConsumer.getProperties( id );
-					RawPropertyData properties[] = 
-						new RawPropertyData[ propData.length ];
-					for ( int i = 0; i < propData.length; i++ )
-					{
-						properties[i] = new RawPropertyData(
-							propData[i].getId(), 
-							propData[i].getIndex(), 
-							propData[i].getValue() );
-					}
-					return properties;
-					
-				}
-				else if ( operation == Operation.LOAD_RELATIONSHIPS )
-				{
-					int id = (int) ( ( Node ) param ).getId();
-					RelationshipData relData[] = 
-						nodeConsumer.getRelationships( id );
-					RawRelationshipData relationships[] = 
-						new RawRelationshipData[ relData.length ];
-					for ( int i = 0; i < relData.length; i++ )
-					{
-						relationships[i] = new RawRelationshipData( 
-							relData[i].getId(), 
-							relData[i].firstNode(), 
-							relData[i].secondNode(),
-							relData[i].relationshipType() );
-					}
-					return relationships;
-				}
-				else if ( operation == Operation.LOAD_LIGHT_REL )
-				{
-					int id = ( ( Integer ) param ).intValue();
-					RelationshipData relData = 
-						relConsumer.getRelationship( id );
-					
-					return new RawRelationshipData( id, relData.firstNode(), 
-						relData.secondNode(), relData.relationshipType() );
-				}
-				else if ( operation == Operation.LOAD_REL_PROPERTIES )
-				{
-					int id = (int) ( ( Relationship ) param ).getId();
-					PropertyData propData[] = relConsumer.getProperties( id );
-					RawPropertyData properties[] = 
-						new RawPropertyData[ propData.length ];
-					for ( int i = 0; i < propData.length; i++ )
-					{
-						properties[i] = new RawPropertyData( 
-							propData[i].getId(), 
-							propData[i].getIndex(), 
-							propData[i].getValue() );
-					}
-					return properties;
-				}
-				else if ( operation == Operation.LOAD_PROPERTY_VALUE )
-				{
-					int id = ( ( Integer ) param ).intValue();
-					// return propStore.getPropertyValue( id );
-					return xaCon.getNeoTransaction().propertyGetValue( id );
-				}
-				else
-				{
-					throw new PersistenceException( 
-						"Unkown operation[" + operation + "]" );
-				}
-			}
-			catch ( IOException t )
-			{
-				throw new PersistenceException( t );
-			}
-		}
-		
-		public void performUpdate( Event event, EventData eventData ) 
-			throws PersistenceUpdateFailedException
-		{
-			Object data = eventData.getData();
-			try
-			{
-				if ( data instanceof NodeOperationEventData )
-				{
-					performNodeUpdate( event, (NodeOperationEventData) data );
-				}
-				else if ( data instanceof RelationshipOperationEventData )
-				{
-					performRelationshipUpdate( event, 
-						(RelationshipOperationEventData) data );
-				}
-				else if ( data instanceof PropertyIndexOperationEventData )
-				{
-					performPropertyIndexUpdate( event, 
-						(PropertyIndexOperationEventData) data );
-				}
-				else if ( data instanceof RelationshipTypeOperationEventData )
-				{
-					performRelationshipTypeUpdate( event, 
-						(RelationshipTypeOperationEventData) data );
-				}
-				else
-				{
-					throw new PersistenceUpdateFailedException( 
-						"Unkown event/data " + "type:[" + event + "]/[" + 
-						data + "]" );
-				}
-			}
-			catch ( IOException e )
-			{
-				throw new PersistenceUpdateFailedException( "Event[" + 
-					event + "]", e );
-			}
-		}
-		
-		private void performNodeUpdate( Event event, 
-			NodeOperationEventData data ) 
-			throws IOException, PersistenceUpdateFailedException
-		{
-			if ( event == Event.NODE_ADD_PROPERTY )
-			{
-				int propertyId = propStore.nextId();
-				nodeConsumer.addProperty( data.getNodeId(), propertyId, 
-					data.getPropertyIndex(), data.getProperty() ); 
-				data.setNewPropertyId( propertyId );
-			}
-			else if ( event == Event.NODE_CHANGE_PROPERTY )
-			{
-				nodeConsumer.changeProperty( data.getNodeId(), 
-					data.getPropertyId(), data.getProperty() );
-			}
-			else if ( event == Event.NODE_REMOVE_PROPERTY )
-			{
-				nodeConsumer.removeProperty( data.getNodeId(), 
-					data.getPropertyId() );
-			}
-			else if ( event == Event.NODE_DELETE )
-			{
-				int nodeId = data.getNodeId();
-				nodeConsumer.deleteNode( nodeId );
-			}
-			else if ( event == Event.NODE_CREATE )
-			{
-				int nodeId = data.getNodeId();
-				nodeConsumer.createNode( nodeId );
-			}
-			else
-			{
-				throw new PersistenceUpdateFailedException( 
-					"Unkown event: " + event );
-			}
-		}
-		
-		private void performRelationshipUpdate( Event event, 
-			RelationshipOperationEventData data ) 
-			throws PersistenceUpdateFailedException, IOException
-		{
-			if ( event == Event.RELATIONSHIP_ADD_PROPERTY )
-			{
-				int propertyId = propStore.nextId();
-				relConsumer.addProperty( data.getRelationshipId(), propertyId, 
-					data.getPropertyIndex(), data.getProperty() );
-				data.setNewPropertyId( propertyId ); 
-			}
-			else if ( event == Event.RELATIONSHIP_CHANGE_PROPERTY )
-			{
-				relConsumer.changeProperty( data.getRelationshipId(),  
-					data.getPropertyId(), data.getProperty() );
-			}
-			else if ( event == Event.RELATIONSHIP_REMOVE_PROPERTY )
-			{
-				relConsumer.removeProperty( data.getRelationshipId(), 
-					data.getPropertyId() );
-			}
-			else if ( event == Event.RELATIONSHIP_DELETE )
-			{
-				int relId = data.getRelationshipId();
-				relConsumer.deleteRelationship( relId );
-			}
-			else if ( event == Event.RELATIONSHIP_CREATE )
-			{
-				int firstNodeId = data.getStartNodeId(); 
-				int secondNodeId = data.getEndNodeId();
-				relConsumer.createRelationship( data.getRelationshipId(), 
-					firstNodeId, secondNodeId, data.getTypeId() );
-			}
-			else
-			{
-				throw new PersistenceUpdateFailedException( 
-					"Unkown event: " + event );
-			}
-		}
-	
-		private void performPropertyIndexUpdate( Event event, 
-			PropertyIndexOperationEventData data ) 
-			throws PersistenceUpdateFailedException, IOException
-		{
-			if ( event == Event.PROPERTY_INDEX_CREATE )
-			{
-				propIndexConsumer.createPropertyIndex( 
-					data.getIndex().getKeyId(), data.getIndex().getKey() );
-			}
-			else
-			{
-				throw new PersistenceUpdateFailedException( 
-					"Unkown event: " + event );
-			}
-		}
-		
-		private void performRelationshipTypeUpdate( Event event, 
-			RelationshipTypeOperationEventData data ) 
-			throws PersistenceUpdateFailedException, IOException
-		{
-			if ( event == Event.RELATIONSHIPTYPE_CREATE )
-			{
-				relTypeConsumer.addRelationshipType( data.getId(), 
-					data.getName() );
-			}
-			else
-			{
-				throw new PersistenceUpdateFailedException( 
-					"Unkown event: " + event );
-			}
-		}
-	}	
+        public void nodeDelete( int nodeId )
+        {
+            nodeConsumer.deleteNode( nodeId );
+        }
+
+        public int nodeAddProperty( int nodeId, PropertyIndex index, 
+            Object value )
+        {
+            int propertyId = propStore.nextId();
+            nodeConsumer.addProperty( nodeId, propertyId, index, value );
+            return propertyId;
+        }
+
+        public void nodeChangeProperty( int nodeId, int propertyId, 
+            Object value )
+        {
+            nodeConsumer.changeProperty( nodeId, propertyId, value );
+        }
+
+        public void nodeRemoveProperty( int nodeId, int propertyId )
+        {
+            nodeConsumer.removeProperty( nodeId, propertyId );
+        }
+        
+        public void nodeCreate( int nodeId )
+        {
+            nodeConsumer.createNode( nodeId );
+        }
+        
+        public void relationshipCreate( int id, int typeId, int startNodeId, 
+            int endNodeId )
+        {
+            relConsumer.createRelationship( id, startNodeId, endNodeId, 
+                typeId );
+        }
+
+        public void relDelete( int relId )
+        {
+            relConsumer.deleteRelationship( relId );
+        }
+
+        public int relAddProperty( int relId, PropertyIndex index, 
+            Object value )
+        {
+            int propertyId = propStore.nextId();
+            relConsumer.addProperty( relId, propertyId, index, value );
+            return propertyId;
+        }
+
+        public void relChangeProperty( int relId, int propertyId, 
+            Object value )
+        {
+            relConsumer.changeProperty( relId, propertyId, value );
+        }
+
+        public void relRemoveProperty( int relId, int propertyId )
+        {
+            relConsumer.removeProperty( relId, propertyId );
+        }
+
+        public String loadIndex( int id )
+        {
+            return propIndexConsumer.getKeyFor( id );
+        }
+
+        public RawPropertyIndex[] loadPropertyIndexes( int maxCount )
+        {
+            return propIndexConsumer.getPropertyIndexes( maxCount );
+        }
+
+        public Object loadPropertyValue( int id )
+        {
+            return xaCon.getNeoTransaction().propertyGetValue( id );
+        }
+
+        public RawRelationshipTypeData[] loadRelationshipTypes()
+        {
+            RelationshipTypeData relTypeData[] = 
+                relTypeConsumer.getRelationshipTypes();
+            RawRelationshipTypeData rawRelTypeData[] = 
+                new RawRelationshipTypeData[ relTypeData.length ];
+            for ( int i = 0; i < relTypeData.length; i++ )
+            {
+                rawRelTypeData[i] = new RawRelationshipTypeData( 
+                    relTypeData[i].getId(), 
+                    relTypeData[i].getName() );
+            }
+            return rawRelTypeData;
+        }
+
+        public RawNodeData nodeLoadLight( int id )
+        {
+            if ( nodeConsumer.loadLightNode( id ) )
+            {
+                return new RawNodeData();
+            }
+            return null;
+        }
+
+        public RawPropertyData[] nodeLoadProperties( int nodeId )
+        {
+            PropertyData propData[] = nodeConsumer.getProperties( nodeId );
+            RawPropertyData properties[] = 
+                new RawPropertyData[ propData.length ];
+            for ( int i = 0; i < propData.length; i++ )
+            {
+                properties[i] = new RawPropertyData(
+                    propData[i].getId(), 
+                    propData[i].getIndex(), 
+                    propData[i].getValue() );
+            }
+            return properties;
+        }
+
+        public RawRelationshipData[] nodeLoadRelationships( int nodeId )
+        {
+            RelationshipData relData[] = 
+                nodeConsumer.getRelationships( nodeId );
+            RawRelationshipData relationships[] = 
+                new RawRelationshipData[ relData.length ];
+            for ( int i = 0; i < relData.length; i++ )
+            {
+                relationships[i] = new RawRelationshipData( 
+                    relData[i].getId(), 
+                    relData[i].firstNode(), 
+                    relData[i].secondNode(),
+                    relData[i].relationshipType() );
+            }
+            return relationships;
+        }
+
+        public RawRelationshipData relLoadLight( int id )
+        {
+            RelationshipData relData = relConsumer.getRelationship( id );
+            return new RawRelationshipData( id, relData.firstNode(), 
+                relData.secondNode(), relData.relationshipType() );
+        }
+
+        public RawPropertyData[] relLoadProperties( int relId )
+        {
+            PropertyData propData[] = relConsumer.getProperties( relId );
+            RawPropertyData properties[] = 
+                new RawPropertyData[ propData.length ];
+            for ( int i = 0; i < propData.length; i++ )
+            {
+                properties[i] = new RawPropertyData( 
+                    propData[i].getId(), 
+                    propData[i].getIndex(), 
+                    propData[i].getValue() );
+            }
+            return properties;
+        }
+
+        public void createPropertyIndex( String key, int id )
+        {
+            propIndexConsumer.createPropertyIndex( id, key );
+        }
+
+        public void createRelationshipType( int id, String name )
+        {
+            relTypeConsumer.addRelationshipType( id, name );
+        }
+    }	
 
 	public String toString()
 	{

@@ -16,15 +16,12 @@
  */
 package org.neo4j.impl.nioneo.xa;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
@@ -52,6 +49,7 @@ import org.neo4j.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.impl.nioneo.store.StoreFailureException;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.xaframework.XaCommand;
@@ -64,31 +62,26 @@ import org.neo4j.impl.transaction.xaframework.XaTransaction;
  */
 class NeoTransaction extends XaTransaction
 {
-	private static Logger logger = 
-		Logger.getLogger( NeoTransaction.class.getName() );
-//	private static final LockManager lockManager = LockManager.getManager();
-//	private static final LockReleaser lockReleaser = LockReleaser.getManager();
-	
-	private Map<Integer,NodeRecord> nodeRecords = 
+	private final Map<Integer,NodeRecord> nodeRecords = 
 		new HashMap<Integer,NodeRecord>();
-	private Map<Integer,PropertyRecord> propertyRecords = 
+	private final Map<Integer,PropertyRecord> propertyRecords = 
 		new HashMap<Integer,PropertyRecord>();
-	private Map<Integer,RelationshipRecord> relRecords = 
+	private final Map<Integer,RelationshipRecord> relRecords = 
 		new HashMap<Integer,RelationshipRecord>();
-	private Map<Integer,RelationshipTypeRecord> relTypeRecords =
+	private final Map<Integer,RelationshipTypeRecord> relTypeRecords =
 		new HashMap<Integer,RelationshipTypeRecord>();
-	private Map<Integer,PropertyIndexRecord> propIndexRecords =
+	private final Map<Integer,PropertyIndexRecord> propIndexRecords =
 		new HashMap<Integer,PropertyIndexRecord>();
 	
-	private ArrayList<Command.NodeCommand> nodeCommands = 
+	private final ArrayList<Command.NodeCommand> nodeCommands = 
 		new ArrayList<Command.NodeCommand>();
-	private ArrayList<Command.PropertyCommand> propCommands = 
+	private final ArrayList<Command.PropertyCommand> propCommands = 
 		new ArrayList<Command.PropertyCommand>();
-	private ArrayList<Command.PropertyIndexCommand> propIndexCommands = 
+	private final ArrayList<Command.PropertyIndexCommand> propIndexCommands = 
 		new ArrayList<Command.PropertyIndexCommand>();
-	private ArrayList<Command.RelationshipCommand> relCommands = 
+	private final ArrayList<Command.RelationshipCommand> relCommands = 
 		new ArrayList<Command.RelationshipCommand>();
-	private ArrayList<Command.RelationshipTypeCommand> relTypeCommands = 
+	private final ArrayList<Command.RelationshipTypeCommand> relTypeCommands = 
 		new ArrayList<Command.RelationshipTypeCommand>();
 	
 	private final NeoStore neoStore;
@@ -237,7 +230,6 @@ class NeoTransaction extends XaTransaction
 		}
 		try
 		{
-			// NodeManager nm = NodeManager.getManager();
 			for ( RelationshipTypeRecord record : relTypeRecords.values() )
 			{
 				if ( record.isCreated() )
@@ -283,7 +275,6 @@ class NeoTransaction extends XaTransaction
 								dynamicRecord.getId() );
 						}
 					}
-					// removePropertyIndexFromCache( record.getId() );
 				}
 			}
 			for ( PropertyRecord record : propertyRecords.values() )
@@ -325,12 +316,20 @@ class NeoTransaction extends XaTransaction
 				}
 			}
 		}
-		catch ( IOException e )
-		{
-			logger.log( Level.SEVERE, "Unable to rollback", e ); 
-			throw new XAException( "Unable to rollback transaction[" + 
-				getIdentifier() + "], " + e);
-		}
+        finally
+        {
+            nodeRecords.clear();
+            propertyRecords.clear();
+            relRecords.clear();
+            relTypeRecords.clear();
+            propIndexRecords.clear();
+            
+            nodeCommands.clear();
+            propCommands.clear();
+            propIndexCommands.clear();
+            relCommands.clear();
+            relTypeCommands.clear();
+        }
 	}
 	
 	private void removeRelationshipTypeFromCache( int id )
@@ -351,12 +350,6 @@ class NeoTransaction extends XaTransaction
 			new EventData( id ) );
     }
 
-	private void removePropertyIndexFromCache( int id )
-    {
-		eventManager.generateProActiveEvent( Event.PURGE_PROP_INDEX, 
-			new EventData( id ) );
-    }
-	
 	public void doCommit() throws XAException
 	{
 		if ( !isRecovered() && !prepared )
@@ -399,15 +392,20 @@ class NeoTransaction extends XaTransaction
 				command.execute();
 			}
 		}
-		catch ( Throwable t )
-		{
-			logger.log( Level.SEVERE, "Unable to commit tx[" + 
-				getIdentifier() + "]", t );
-			throw new XAException( "Unable to commit" + t );
-		}
 		finally
 		{
 			TxInfoManager.getManager().unregisterMode();
+            nodeRecords.clear();
+            propertyRecords.clear();
+            relRecords.clear();
+            relTypeRecords.clear();
+            propIndexRecords.clear();
+            
+            nodeCommands.clear();
+            propCommands.clear();
+            propIndexCommands.clear();
+            relCommands.clear();
+            relTypeCommands.clear();
 		}
 	}
 	
@@ -431,7 +429,7 @@ class NeoTransaction extends XaTransaction
 		return neoStore.getPropertyStore();
 	}
 	
-	public boolean nodeLoadLight( int nodeId ) throws IOException
+	public boolean nodeLoadLight( int nodeId )
     {
 	    NodeRecord nodeRecord = getNodeRecord( nodeId );
 	    if ( nodeRecord != null )
@@ -441,14 +439,15 @@ class NeoTransaction extends XaTransaction
 		return getNodeStore().loadLightNode( nodeId, readFromBuffer );
     }
 
-	public RelationshipData relationshipLoad( int id ) throws IOException
+	public RelationshipData relationshipLoad( int id )
     {
 	    RelationshipRecord relRecord = getRelationshipRecord( id );
 	    if ( relRecord != null )
 	    {
 	    	if ( !relRecord.inUse() )
 	    	{
-	    		throw new IOException( "relationship " + id + " not in use" );
+	    		throw new StoreFailureException( "Relationship[" + id + 
+                    "] not in use" );
 	    	}
 	    	return new RelationshipData( id, relRecord.getFirstNode(), 
 	    		relRecord.getSecondNode(), relRecord.getType() );
@@ -458,7 +457,7 @@ class NeoTransaction extends XaTransaction
     		relRecord.getSecondNode(), relRecord.getType() );
     }
 	
-	void nodeDelete( int nodeId ) throws IOException
+	void nodeDelete( int nodeId )
 	{
 		NodeRecord nodeRecord = getNodeRecord( nodeId );
 		if ( nodeRecord == null )
@@ -492,7 +491,7 @@ class NeoTransaction extends XaTransaction
 		}
 	}
 
-	void relDelete( int id ) throws IOException
+	void relDelete( int id )
 	{
 		RelationshipRecord record = getRelationshipRecord( id );
 		if ( record == null )
@@ -528,7 +527,6 @@ class NeoTransaction extends XaTransaction
 	}
 	
 	private void disconnectRelationship( RelationshipRecord rel )
-		throws IOException
 	{
 		// update first node prev
 		if ( rel.getFirstPrevRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -647,20 +645,10 @@ class NeoTransaction extends XaTransaction
 	private void getWriteLock( Relationship lockableRel )
 	{
 		lockManager.getWriteLock( lockableRel );
-		try
-		{
-			lockReleaser.addLockToTransaction( lockableRel, LockType.WRITE );
-		}
-		catch ( Throwable t )
-		{
-			lockManager.releaseWriteLock( lockableRel );
-			throw new RuntimeException( "Unable add lock of relationship[" + 
-				lockableRel + "] to lock releaser", t );
-		}
+		lockReleaser.addLockToTransaction( lockableRel, LockType.WRITE );
 	}
 	
 	public RelationshipData[] nodeGetRelationships( int nodeId )
-		throws IOException
     {
 		NodeRecord nodeRecord = getNodeRecord( nodeId );
 		if ( nodeRecord == null )
@@ -697,7 +685,7 @@ class NeoTransaction extends XaTransaction
 		return rels.toArray( new RelationshipData[rels.size()] );
     }
 	
-	private void updateNodes( RelationshipRecord rel ) throws IOException
+	private void updateNodes( RelationshipRecord rel )
 	{
 		if ( rel.getFirstPrevRel() == Record.NO_PREV_RELATIONSHIP.intValue() )
 		{
@@ -723,7 +711,7 @@ class NeoTransaction extends XaTransaction
 		}
 	}
 	
-	void relRemoveProperty( int relId, int propertyId ) throws IOException
+	void relRemoveProperty( int relId, int propertyId )
 	{
 		RelationshipRecord relRecord = getRelationshipRecord( relId );
 		if ( relRecord == null )
@@ -785,7 +773,7 @@ class NeoTransaction extends XaTransaction
 		}
 	}
 	
-	public PropertyData[] relGetProperties( int relId ) throws IOException
+	public PropertyData[] relGetProperties( int relId )
     {
 		RelationshipRecord relRecord = getRelationshipRecord( relId );
 		if ( relRecord == null )
@@ -810,7 +798,7 @@ class NeoTransaction extends XaTransaction
 		return properties.toArray( new PropertyData[properties.size()] );
     }
 	
-	public PropertyData[] nodeGetProperties( int nodeId ) throws IOException
+	public PropertyData[] nodeGetProperties( int nodeId )
     {
 		NodeRecord nodeRecord = getNodeRecord( nodeId );
 		if ( nodeRecord == null )
@@ -834,7 +822,7 @@ class NeoTransaction extends XaTransaction
 		return properties.toArray( new PropertyData[properties.size()] );
     }
 	
-	public Object propertyGetValue( int id ) throws IOException
+	public Object propertyGetValue( int id )
     {
 		PropertyRecord propertyRecord = getPropertyRecord( id );
 		if ( propertyRecord == null )
@@ -897,7 +885,7 @@ class NeoTransaction extends XaTransaction
 		throw new RuntimeException( "Unkown type: " + type );
     }
 	
-	void nodeRemoveProperty( int nodeId, int propertyId ) throws IOException
+	void nodeRemoveProperty( int nodeId, int propertyId )
 	{
 		NodeRecord nodeRecord = getNodeRecord( nodeId );
 		if ( nodeRecord == null )
@@ -959,7 +947,6 @@ class NeoTransaction extends XaTransaction
 	}
 
 	void relChangeProperty( int relId, int propertyId, Object value ) 
-		throws IOException
 	{
 		PropertyRecord propertyRecord = getPropertyRecord( propertyId );
 		if ( propertyRecord == null )
@@ -998,7 +985,6 @@ class NeoTransaction extends XaTransaction
 	}
 	
 	void nodeChangeProperty( int nodeId, int propertyId, Object value )
-		throws IOException
 	{
 		PropertyRecord propertyRecord = getPropertyRecord( propertyId );
 		if ( propertyRecord == null )
@@ -1037,7 +1023,7 @@ class NeoTransaction extends XaTransaction
 	}
 
 	void relAddProperty( int relId, int propertyId, PropertyIndex index, 
-		Object value ) throws IOException
+		Object value )
 	{
 		RelationshipRecord relRecord = getRelationshipRecord( relId );
 		if ( relRecord == null )
@@ -1072,7 +1058,7 @@ class NeoTransaction extends XaTransaction
 	}
 	
 	void nodeAddProperty( int nodeId, int propertyId, PropertyIndex index, 
-		Object value ) throws IOException
+		Object value )
 	{
 		NodeRecord nodeRecord = getNodeRecord( nodeId );
 		if ( nodeRecord == null )
@@ -1084,6 +1070,10 @@ class NeoTransaction extends XaTransaction
 		PropertyRecord propertyRecord = new PropertyRecord( propertyId );
 		propertyRecord.setInUse( true );
 		propertyRecord.setCreated();
+        // encoding has to be set here before anything is change
+        // (exception is thrown in encodeValue now and tx not marked
+        // rollback only
+        getPropertyStore().encodeValue( propertyRecord, value );
 		if ( nodeRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
 		{
 			PropertyRecord prevProp = getPropertyRecord( 
@@ -1101,13 +1091,12 @@ class NeoTransaction extends XaTransaction
 		}
 		int keyIndexId = index.getKeyId();
 		propertyRecord.setKeyIndexId( keyIndexId );
-		getPropertyStore().encodeValue( propertyRecord, value );
 		nodeRecord.setNextProp( propertyId );
 		addPropertyRecord( propertyRecord );
 	}
 
 	void relationshipCreate( int id, int firstNode, 
-		int secondNode, int type ) throws IOException
+		int secondNode, int type )
 	{
 		RelationshipRecord record = new RelationshipRecord( id, 
 			firstNode, secondNode, type );
@@ -1118,7 +1107,6 @@ class NeoTransaction extends XaTransaction
 	}
 	
 	private void connectRelationship( RelationshipRecord rel ) 
-		throws IOException 
 	{
 		NodeRecord firstNode = getNodeRecord( rel.getFirstNode() );
 		if ( firstNode == null )
@@ -1204,7 +1192,7 @@ class NeoTransaction extends XaTransaction
 		addNodeRecord( nodeRecord );
 	}
 
-	String getPropertyIndex( int id ) throws IOException
+	String getPropertyIndex( int id )
     {
 		PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
 		PropertyIndexRecord index = getPropertyIndexRecord( id );
@@ -1219,13 +1207,13 @@ class NeoTransaction extends XaTransaction
 		return indexStore.getStringFor( index, readFromBuffer );
     }
 	
-	RawPropertyIndex[] getPropertyIndexes( int count ) throws IOException
+	RawPropertyIndex[] getPropertyIndexes( int count )
     {
 		PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
 		return indexStore.getPropertyIndexes( count );
     }
 	
-	void createPropertyIndex( int id, String key ) throws IOException
+	void createPropertyIndex( int id, String key )
 	{
 		PropertyIndexRecord record = new PropertyIndexRecord( id );
 		record.setInUse( true );
@@ -1245,7 +1233,7 @@ class NeoTransaction extends XaTransaction
 		addPropertyIndexRecord( record );
 	}
 	
-	void relationshipTypeAdd( int id, String name ) throws IOException
+	void relationshipTypeAdd( int id, String name )
 	{
 		RelationshipTypeRecord record = new RelationshipTypeRecord( id );
 		record.setInUse( true );

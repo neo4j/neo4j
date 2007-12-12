@@ -95,7 +95,6 @@ class NodeProxy implements Node
 	}
 	
 	public void setProperty( String key, Object value ) 
-		throws IllegalValueException
 	{
 		nm.getNodeForProxy( nodeId ).setProperty( key, value );
 	}

@@ -25,12 +25,7 @@ import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
-import org.neo4j.impl.core.PropertyIndex.PropIndexOpData;
-import org.neo4j.impl.event.Event;
-import org.neo4j.impl.event.EventData;
-import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.persistence.IdGenerator;
-import org.neo4j.impl.persistence.PersistenceException;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.util.ArrayMap;
@@ -46,18 +41,15 @@ public class PropertyIndexManager
 		new ArrayMap<Thread,TxCommitHook>( 5, true, false );
 
 	private final TransactionManager transactionManager; 
-	private final EventManager eventManager;
 	private final PersistenceManager persistenceManager;
 	private final IdGenerator idGenerator;
 	
 	private boolean hasAll = false;
 	
-	PropertyIndexManager( TransactionManager transactionManager, EventManager
-		eventManager, PersistenceManager persistenceManager, 
-		IdGenerator idGenerator )
+	PropertyIndexManager( TransactionManager transactionManager, 
+        PersistenceManager persistenceManager, IdGenerator idGenerator )
 	{
 		this.transactionManager = transactionManager;
-		this.eventManager = eventManager;
 		this.persistenceManager = persistenceManager;
 		this.idGenerator = idGenerator;
 	}
@@ -121,22 +113,22 @@ public class PropertyIndexManager
 		PropertyIndex index = idToIndexMap.get( keyId );
 		if ( index == null )
 		{
+            TxCommitHook commitHook = txCommitHooks.get( 
+                Thread.currentThread() );
+            index = commitHook.getIndex( keyId );
+            if ( index != null )
+            {
+                return index;
+            }
 			String indexString;
-	        try
-	        {
-	            indexString = persistenceManager.loadIndex( keyId );
-				if ( indexString == null )
-				{
-					throw new NotFoundException( "Index not found [" + keyId + 
-						"]" );
-				}
-				index = new PropertyIndex( indexString, keyId );
-				addPropertyIndex( index );
-	        }
-	        catch ( PersistenceException e )
-	        {
-	            e.printStackTrace();
-	        }
+            indexString = persistenceManager.loadIndex( keyId );
+			if ( indexString == null )
+			{
+				throw new NotFoundException( "Index not found [" + keyId + 
+					"]" );
+			}
+			index = new PropertyIndex( indexString, keyId );
+			addPropertyIndex( index );
 		}
 		return index;
 	}
@@ -150,7 +142,6 @@ public class PropertyIndexManager
 			list = new ArrayList<PropertyIndex>();
 			indexMap.put( index.getKey(), list );
 		}
-		// indexMap.put( index.getKey(), index );
 		list.add( index );
 		idToIndexMap.put( index.getKeyId(), index );
 	}
@@ -190,16 +181,7 @@ public class PropertyIndexManager
 		int id = idGenerator.nextId( PropertyIndex.class );
 		index = new PropertyIndex( key, id );
 		hook.addIndex( index );
-		EventData eventData = new EventData( new PropIndexOpData( index ) );
-		if ( !eventManager.generateProActiveEvent( Event.PROPERTY_INDEX_CREATE, 
-			eventData ) )
-		{
-			setRollbackOnly();
-			throw new CreateException( "Unable to create property index, " +
-				"pro-active event failed." );
-		}
-		eventManager.generateReActiveEvent( Event.PROPERTY_INDEX_CREATE, 
-			eventData );
+        persistenceManager.createPropertyIndex( key, id );
 		return index;
 	}
 	
@@ -219,11 +201,14 @@ public class PropertyIndexManager
 	{
 		private Map<String,PropertyIndex> createdIndexes = 
 			new HashMap<String,PropertyIndex>();
+        private Map<Integer,PropertyIndex> idToIndex = 
+            new HashMap<Integer,PropertyIndex>();
 		
 		void addIndex( PropertyIndex index )
 		{
 			assert !createdIndexes.containsKey( index.getKey() );
 			createdIndexes.put( index.getKey(), index );
+            idToIndex.put( index.getKeyId(), index );
 		}
 		
 		PropertyIndex getIndex( String key )
@@ -231,6 +216,11 @@ public class PropertyIndexManager
 			return createdIndexes.get( key );
 		}
 		
+        PropertyIndex getIndex( int keyId )
+        {
+            return idToIndex.get( keyId );
+        }
+        
 		public void afterCompletion( int status )
 	    {
 			try

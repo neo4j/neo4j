@@ -29,8 +29,6 @@ import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.AbstractNeoTestCase;
 import org.neo4j.impl.MyRelTypes;
-import org.neo4j.impl.core.CreateException;
-import org.neo4j.impl.core.DeleteException;
 import org.neo4j.impl.core.NotFoundException;
 
 public class TestTraversal extends AbstractNeoTestCase
@@ -917,18 +915,17 @@ public class TestTraversal extends AbstractNeoTestCase
 		}
 		catch ( Exception e )
 		{
-			throw new CreateException( "Failed to create population", e );
+			throw new RuntimeException( "Failed to create population", e );
 		}
 	}
 	
 	// Deletes a tree-like structure of nodes, starting with 'currentNode'.
 	// Works fine with trees, dies horribly on cyclic structures.
 	private void deleteNodeTreeRecursively( Node currentNode, int depth )
-		throws DeleteException
 	{
 		if ( depth > 100 )
 		{
-			throw new DeleteException( "Recursive guard: depth = " + depth );
+			throw new RuntimeException( "Recursive guard: depth = " + depth );
 		}
 		
 		if ( currentNode == null )
@@ -944,41 +941,27 @@ public class TestTraversal extends AbstractNeoTestCase
 				continue;
 			}
 			Node endNode = rel.getEndNode();
-			try
-			{
-				rel.delete();
-			}
-			catch ( DeleteException de )
-			{
-				System.err.println( "Unable to delete rel: " + rel );
-			}
+			rel.delete();
 			this.deleteNodeTreeRecursively( endNode, depth + 1 );
 		}
 		try
 		{
-			try
-			{
-				String msg = "Deleting " + currentNode + "\t[";
-				String id = (String) currentNode.getProperty(
-										"node.test.id" );
-				msg += id + "]";
-			}
-			catch ( Exception e ) 
-			{ 
-				System.err.println( "Err gen msg: " + e ); 
-			}
-			
-			Iterable<Relationship> allRels = currentNode.getRelationships();
-			for ( Relationship rel : allRels )
-			{
-				rel.delete();
-			}
-			currentNode.delete();
+			String msg = "Deleting " + currentNode + "\t[";
+			String id = (String) currentNode.getProperty(
+									"node.test.id" );
+			msg += id + "]";
 		}
-		catch ( DeleteException de )
+		catch ( Exception e ) 
+		{ 
+			System.err.println( "Err gen msg: " + e ); 
+		}
+		
+		Iterable<Relationship> allRels = currentNode.getRelationships();
+		for ( Relationship rel : allRels )
 		{
-			System.err.println( "Unable to delete node " + currentNode + ": " + de );
+			rel.delete();
 		}
+		currentNode.delete();
 	}
 
 	private void assertNextNodeId( Traverser traverser, String property )

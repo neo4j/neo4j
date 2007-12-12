@@ -19,21 +19,6 @@ package org.neo4j.impl.persistence;
 // JTA imports
 import java.util.logging.Logger;
 
-/**
- * The persistence layer component responsible for demarcating the
- * persistent entity space and dispatching persistent state to
- * designated persistence sources.
- * <P>
- * It's the PersistenceSourceDispatcher's job to ensure that, for
- * example, node <CODE>42</CODE> is persisted in persistence source
- * <CODE>A</CODE> while node <CODE>43</CODE> is persisted in persistence
- * source <CODE>B</CODE>.
- * <P>
- * The present implementation, however, only supports one persistence source.
- * <P>
- * Normally, the only component that interacts with the
- * PersistenceSourceDispatcher is the {@link ResourceBroker}.
- */
 class PersistenceSourceDispatcher
 {
 	private static Logger log = Logger.getLogger(
@@ -42,18 +27,10 @@ class PersistenceSourceDispatcher
 	private PersistenceSource ourOnlyPersistenceSource = null;
 	
 	
-//	private static final PersistenceSourceDispatcher instance =
-//		new PersistenceSourceDispatcher();
-	
 	PersistenceSourceDispatcher() 
 	{ 
 		
 	}
-	
-//	static PersistenceSourceDispatcher getDispatcher()
-//	{
-//		return instance;
-//	}
 	
 	/**
 	 * Returns the persistence source that should be used to persist
@@ -61,7 +38,7 @@ class PersistenceSourceDispatcher
 	 * @param obj the soon-to-be-persisted entity
 	 * @return the persistence source for <CODE>obj</CODE>
 	 */
-	PersistenceSource getPersistenceSource() // Object obj )
+	PersistenceSource getPersistenceSource()
 	{
 		return this.ourOnlyPersistenceSource;
 	}

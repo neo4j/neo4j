@@ -48,8 +48,6 @@ import org.neo4j.impl.util.ArrayMap;
  */
 class RWLock
 {
-//	private static final RagManager ragManager = RagManager.getManager();
-	
 	private int writeCount = 0; // total writeCount
 	private int readCount = 0; // total readCount
 	private int marked = 0; //synch helper in LockManager

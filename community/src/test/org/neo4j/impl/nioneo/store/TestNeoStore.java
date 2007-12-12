@@ -859,7 +859,7 @@ public class TestNeoStore extends AbstractNeoTestCase
 				rStore.getRelationship( relIds[i] );
 				fail( "Got deleted relationship[" + relIds[i] + "]" );
 			}
-			catch ( IOException e )
+			catch ( RuntimeException e )
 			{ // good
 			}
 		}

@@ -62,7 +62,7 @@ public class TestStore extends TestCase
 				Store.createStore( null );
 				fail( "Null fileName should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalArgumentException e )
 			{ // good
 			}
 			Store store = Store.createStore( "testStore.db" );
@@ -71,7 +71,7 @@ public class TestStore extends TestCase
 				Store.createStore( "testStore.db" );
 				fail( "Creating existing store should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalStateException e )
 			{ // good
 			}
 			store.close();

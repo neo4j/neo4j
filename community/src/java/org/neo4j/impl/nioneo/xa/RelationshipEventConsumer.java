@@ -16,8 +16,6 @@
  */
 package org.neo4j.impl.nioneo.xa;
 
-import java.io.IOException;
-
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
@@ -38,7 +36,7 @@ public interface RelationshipEventConsumer
 	 * @throws IOException If unable to create the relationship
 	 */
 	public void createRelationship( int id, int firstNode, int secondNode, 
-		int type ) throws IOException;
+		int type );
 
 	/**
 	 * Deletes relationship with the given id.
@@ -46,7 +44,7 @@ public interface RelationshipEventConsumer
 	 * @param id The id of the relationship
 	 * @throws IOException If unable to delete the relationship
 	 */
-	public void deleteRelationship( int id ) throws IOException;
+	public void deleteRelationship( int id );
 
 	/**
 	 * Adds a property to the relationship.
@@ -58,7 +56,7 @@ public interface RelationshipEventConsumer
 	 * @throws IOException If unable to add property
 	 */
 	public void addProperty( int relId, int propertyId, PropertyIndex index, 
-		Object value ) throws IOException;
+		Object value );
 
 	/**
 	 * Changes the value of a property on a relationship.
@@ -67,8 +65,7 @@ public interface RelationshipEventConsumer
 	 * @param value The new value
 	 * @throws IOException If unable to change property
 	 */
-	public void changeProperty( int relId, int propertyId, Object value ) 
-		throws IOException;
+	public void changeProperty( int relId, int propertyId, Object value ); 
 	
 	/**
 	 * Removed a property from a relationship.
@@ -77,8 +74,7 @@ public interface RelationshipEventConsumer
 	 * @param propertyId The id of the property
 	 * @throws IOException If unable to remove property
 	 */
-	public void removeProperty( int relId, int propertyId ) 
-		throws IOException;
+	public void removeProperty( int relId, int propertyId ); 
 	
 	/**
 	 * Returns all properties connected to a relationship.
@@ -88,8 +84,7 @@ public interface RelationshipEventConsumer
 	 * relationship 
 	 * @throws IOException If unable to get the properties
 	 */
-	public PropertyData[] getProperties( int relId )
-		throws IOException;
+	public PropertyData[] getProperties( int relId );
 
 	/**
 	 * Gets a relationship with a given id.
@@ -98,6 +93,5 @@ public interface RelationshipEventConsumer
 	 * @return The relationship data 
 	 * @throws IOException if unable to get the relationship
 	 */
-	public RelationshipData getRelationship( int id ) throws IOException;
-
+	public RelationshipData getRelationship( int id );
 }

@@ -57,77 +57,90 @@ public abstract class AbstractStore extends CommonAbstractStore
 	 */
 	protected static void createEmptyStore( String fileName, 
 		String typeAndVersionDescriptor ) 
-		throws IOException
 	{
 		// sanity checks
 		if ( fileName == null )
 		{
-			throw new IOException( "Null filename" );
+			throw new IllegalArgumentException( "Null filename" );
 		}
 		File file = new File( fileName );
 		if ( file.exists() )
 		{
-			throw new IOException( "Can't create store[" + fileName + 
+			throw new IllegalStateException( "Can't create store[" + fileName + 
 				"], file already exists" );
 		}
 
 		// write the header
-		FileChannel channel = new FileOutputStream( fileName ).getChannel();
-		int endHeaderSize = typeAndVersionDescriptor.getBytes().length;
-		ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
-		buffer.put( typeAndVersionDescriptor.getBytes() ).flip();
-		channel.write( buffer );
-		channel.force( false );
-		channel.close();
+        try
+        {
+    		FileChannel channel = new FileOutputStream( fileName ).getChannel();
+    		int endHeaderSize = typeAndVersionDescriptor.getBytes().length;
+    		ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
+    		buffer.put( typeAndVersionDescriptor.getBytes() ).flip();
+    		channel.write( buffer );
+    		channel.force( false );
+    		channel.close();
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to create store " + 
+                fileName, e );
+        }
 		IdGenerator.createGenerator( fileName + ".id" ); 
 	}
 	
 	public AbstractStore( String fileName, Map<?,?> config )
-		throws IOException
 	{
 		super( fileName, config );
 	}
 	
 	public AbstractStore( String fileName )
-		throws IOException
 	{
 		super( fileName );
 	}
 	
-	protected void loadStorage() throws IOException
+	protected void loadStorage()
 	{
-		long fileSize = getFileChannel().size();
-		String expectedVersion = getTypeAndVersionDescriptor();
-		byte version[] = new byte[ expectedVersion.getBytes().length ];
-		ByteBuffer buffer = ByteBuffer.wrap( version );
-		if ( fileSize >= version.length )
-		{
-			getFileChannel().position( fileSize - version.length );
-		}
-		else
-		{
-			setStoreNotOk();
-		}
-		getFileChannel().read( buffer );
-		if ( !expectedVersion.equals( new String( version ) ) )
-		{
-			versionFound( new String( version ) );
-			setStoreNotOk();
-		}
-		if ( getRecordSize() != 0 && 
-			( fileSize - version.length ) % getRecordSize() != 0 )
-		{
-			setStoreNotOk();
-		}
-		if ( getStoreOk() )
-		{
-			getFileChannel().truncate( fileSize - version.length );
-		}
+        try
+        {
+    		long fileSize = getFileChannel().size();
+    		String expectedVersion = getTypeAndVersionDescriptor();
+    		byte version[] = new byte[ expectedVersion.getBytes().length ];
+    		ByteBuffer buffer = ByteBuffer.wrap( version );
+    		if ( fileSize >= version.length )
+    		{
+    			getFileChannel().position( fileSize - version.length );
+    		}
+    		else
+    		{
+    			setStoreNotOk();
+    		}
+    		getFileChannel().read( buffer );
+    		if ( !expectedVersion.equals( new String( version ) ) )
+    		{
+    			versionFound( new String( version ) );
+    			setStoreNotOk();
+    		}
+    		if ( getRecordSize() != 0 && 
+    			( fileSize - version.length ) % getRecordSize() != 0 )
+    		{
+    			setStoreNotOk();
+    		}
+    		if ( getStoreOk() )
+    		{
+    			getFileChannel().truncate( fileSize - version.length );
+    		}
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to load store " + 
+                getStorageFileName(), e );
+        }
 		try
 		{
 			openIdGenerator();
 		}
-		catch ( IOException e )
+		catch ( StoreFailureException e )
 		{
 			setStoreNotOk();
 		}
@@ -140,7 +153,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 	 *
 	 * @return The id generator for this storage
 	 */
-	public int nextId() throws IOException
+	public int nextId()
 	{
 		return super.nextId();
 	}
@@ -171,7 +184,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 	 *
 	 * @param id The id to free
 	 */
-	public void freeId( int id ) throws IOException
+	public void freeId( int id )
 	{
 		super.freeId( id );
 	}
@@ -182,7 +195,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 	 * 
 	 * @throws IOException if unable to rebuild the id generator
 	 */
-	protected void rebuildIdGenerator() throws IOException
+	protected void rebuildIdGenerator()
 	{
 		// TODO: fix this hardcoding
 		final byte RECORD_NOT_IN_USE = 0;
@@ -198,43 +211,88 @@ public abstract class AbstractStore extends CommonAbstractStore
 		IdGenerator.createGenerator( getStorageFileName() + ".id" );
 		openIdGenerator();
 		FileChannel fileChannel = getFileChannel();
-		long fileSize = fileChannel.size();
-		int recordSize = getRecordSize();
-//		long dot = fileSize / recordSize / 20;
-		long defraggedCount = 0;
-		ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
-		LinkedList<Integer> freeIdList = new LinkedList<Integer>();
-		int highId = -1;
-		for ( long i = 0; i * recordSize < fileSize && recordSize > 0; i++ )
-		{
-			fileChannel.position( i * recordSize );
-			fileChannel.read( byteBuffer );
-			byteBuffer.flip();
-			byte inUse = byteBuffer.get();
-			byteBuffer.flip();
-			nextId();
-			if ( inUse == RECORD_NOT_IN_USE )
-			{
-				freeIdList.add( (int) i );
-			}
-			else
-			{
-				highId = (int) i;
-				while ( !freeIdList.isEmpty() )
-				{
-					freeId( freeIdList.removeFirst() );
-					defraggedCount++;
-				}
-			}
-//			if ( dot != 0 && i % dot == 0 )
-//			{
-//				System.out.print( "." );
-//			}
-		}
+        int highId = 1;
+        long defraggedCount = 0;
+        try
+        {
+    		long fileSize = fileChannel.size();
+    		int recordSize = getRecordSize();
+    		ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
+    		LinkedList<Integer> freeIdList = new LinkedList<Integer>();
+    		for ( long i = 0; i * recordSize < fileSize && recordSize > 0; i++ )
+    		{
+    			fileChannel.position( i * recordSize );
+    			fileChannel.read( byteBuffer );
+    			byteBuffer.flip();
+    			byte inUse = byteBuffer.get();
+    			byteBuffer.flip();
+    			nextId();
+    			if ( inUse == RECORD_NOT_IN_USE )
+    			{
+    				freeIdList.add( (int) i );
+    			}
+    			else
+    			{
+    				highId = (int) i;
+    				while ( !freeIdList.isEmpty() )
+    				{
+    					freeId( freeIdList.removeFirst() );
+    					defraggedCount++;
+    				}
+    			}
+    		}
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to rebuild id generator " + 
+                getStorageFileName(), e );
+        }
 		setHighId( highId + 1 );
 		logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId() + 
 			" (defragged=" + defraggedCount + ")" );  
 		closeIdGenerator();
 		openIdGenerator();
 	}	
+
+    protected boolean transferToBuffer( int id, ReadFromBuffer buffer )
+    {
+        buffer.makeReadyForTransfer();
+        try
+        {
+            if ( getRecordSize() != getFileChannel().transferTo( 
+                ((long) id) * getRecordSize(), getRecordSize(), 
+                buffer.getFileChannel() ) )
+            {
+                return false;
+            }
+            return true;
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( 
+                "Failed to transfer data to read from buffer", e );
+        }
+    }
+    
+    protected boolean transferRecord( AbstractRecord record )
+    {
+        long id = record.getId();
+        long count = record.getTransferCount();
+        FileChannel fileChannel = getFileChannel();
+        try
+        {
+            fileChannel.position( id * getRecordSize() );
+            if ( count != record.getFromChannel().transferTo( 
+                record.getTransferStartPosition(), count, fileChannel ) )
+            {
+                return false;
+            }
+            return true;
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to transfer record from " +
+                "other file channel, " + getStorageFileName(), e );
+        }
+    }
 }

@@ -56,21 +56,12 @@ public class LogBuffer
 				mappedStartPosition += mappedBuffer.position();
 				mappedBuffer.force();
 				mappedBuffer = null;
-//				fileChannel.position( mappedStartPosition );
-//				fileChannel.position( mappedStartPosition + 
-//					mappedBuffer.position() );
 			}
 			mappedBuffer = fileChannel.map( MapMode.READ_WRITE, 
 					mappedStartPosition, MAPPED_SIZE );
-//			fileChannel.position( mappedStartPosition );
-//			mappedBuffer = fileChannel.map( MapMode.READ_WRITE, 
-//				fileChannel.position(), MAPPED_SIZE );
-//			mappedStartPosition = fileChannel.position();
 		}
 		catch ( Throwable t )
 		{
-//			mappedBuffer = null;
-//			mappedStartPosition = -1;
 			t.printStackTrace();
 		}
 	}
@@ -177,7 +168,7 @@ public class LogBuffer
 		return this;
 	}
 	
-	void releaseMemoryMapped() throws IOException
+	void releaseMemoryMapped()
 	{
 		if ( mappedBuffer != null )
 		{
@@ -195,14 +186,13 @@ public class LogBuffer
 		fileChannel.force( false );
 	}
 	
-	public long getFileChannelPosition() throws IOException
+	public long getFileChannelPosition()
 	{
 		if ( mappedBuffer != null )
 		{
 			return mappedStartPosition + mappedBuffer.position();
 		}
 		return mappedStartPosition;
-		// return fileChannel.position();
 	}
 	
 	public FileChannel getFileChannel()

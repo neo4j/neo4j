@@ -39,12 +39,12 @@ public class NeoStore extends AbstractStore
 	private RelationshipStore relStore;
 	private RelationshipTypeStore relTypeStore;
 
-	public NeoStore( Map<?,?> config ) throws IOException
+	public NeoStore( Map<?,?> config )
 	{
 		super( ( String ) config.get( "neo_store" ), config );
 	}
 
-	public NeoStore( String fileName ) throws IOException
+	public NeoStore( String fileName )
 	{
 		super( fileName );
 	}
@@ -53,7 +53,7 @@ public class NeoStore extends AbstractStore
 	 * Initializes the node,relationship,property and relationship type stores.
 	 */
 	@Override
-	protected void initStorage() throws IOException
+	protected void initStorage()
 	{
 		relTypeStore = new RelationshipTypeStore( 
 			getStorageFileName() + ".relationshiptypestore.db", getConfig() );
@@ -69,7 +69,7 @@ public class NeoStore extends AbstractStore
 	 * Closes the node,relationship,property and relationship type stores.
 	 */
 	@Override
-	protected void closeStorage() throws IOException
+	protected void closeStorage()
 	{
 		relTypeStore.close();
 		relTypeStore = null;
@@ -81,20 +81,7 @@ public class NeoStore extends AbstractStore
 		nodeStore = null;
 	}
 	
-	/**
-	 * Passes a flush to the node,relationship,property and relationship type
-	 * store.
-	 */
-//	@Override
-//	public void flush( int txIdentifier ) throws IOException
-//	{
-//		relTypeStore.flush( txIdentifier );
-//		propStore.flush( txIdentifier );
-//		relStore.flush( txIdentifier );
-//		nodeStore.flush( txIdentifier );
-//	}
-	
-	public void flushAll() throws IOException
+	public void flushAll()
 	{
 		relTypeStore.flushAll();
 		propStore.flushAll();
@@ -102,19 +89,6 @@ public class NeoStore extends AbstractStore
 		nodeStore.flushAll();
 	}
 	
-	/**
-	 * Passes a forget to the node,relationship,property and relationship type
-	 * store.
-	 */
-//	@Override
-//	public void forget( int txIdentifier )
-//	{
-//		relTypeStore.forget( txIdentifier );
-//		propStore.forget( txIdentifier );
-//		relStore.forget( txIdentifier );
-//		nodeStore.forget( txIdentifier );
-//	}
-
 	public String getTypeAndVersionDescriptor()
 	{
 		return VERSION;
@@ -132,7 +106,6 @@ public class NeoStore extends AbstractStore
 	 * @throws IOException If unable to create stores or name null
 	 */
 	public static void createStore( String fileName ) 
-		throws IOException
 	{
 		createEmptyStore( fileName, VERSION );
 		NodeStore.createStore( fileName + ".nodestore.db" );
@@ -184,7 +157,7 @@ public class NeoStore extends AbstractStore
 	}
 	
 	@Override
-	public void makeStoreOk() throws IOException
+	public void makeStoreOk()
 	{
 		relTypeStore.makeStoreOk();
 		propStore.makeStoreOk();
@@ -192,10 +165,6 @@ public class NeoStore extends AbstractStore
 		nodeStore.makeStoreOk();
 		super.makeStoreOk();
 	}
-	
-	// validation not needed on this store
-	@Override
-	public void validate() {}
 	
 	public ReadFromBuffer getNewReadFromBuffer()
 	{

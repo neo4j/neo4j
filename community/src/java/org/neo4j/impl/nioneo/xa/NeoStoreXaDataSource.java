@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
 import org.neo4j.api.core.Node;
@@ -133,7 +132,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 		xaContainer = XaContainer.create( 
 			( String ) config.get( "logical_log" ), 
 			new CommandFactory( neoStore ), 
-			new TransactionFactory( neoStore ) );
+			new TransactionFactory() );
 		try
 		{
 			xaContainer.setLazyDoneRecords();
@@ -200,7 +199,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 		neoStore = new NeoStore( neoStoreFileName );
 		xaContainer = XaContainer.create( logicalLogPath, 
 			new CommandFactory( neoStore ), 
-			new TransactionFactory( neoStore ) );
+			new TransactionFactory() );
 		try
 		{
 			xaContainer.setLazyDoneRecords();
@@ -241,15 +240,8 @@ public class NeoStoreXaDataSource extends XaDataSource
 	public void close()
 	{
 		xaContainer.close();
-		try
-		{
-			neoStore.close();
-			logger.fine( "NeoStore closed" );
-		}
-		catch ( IOException e )
-		{
-			logger.log( Level.SEVERE, "Unable to close NeoStore ", e );
-		}
+		neoStore.close();
+		logger.fine( "NeoStore closed" );
 	}	
 	
 	public XaConnection getXaConnection()
@@ -282,11 +274,8 @@ public class NeoStoreXaDataSource extends XaDataSource
 	
 	private class TransactionFactory extends XaTransactionFactory
 	{
-		private NeoStore neoStore;
-		
-		TransactionFactory( NeoStore neoStore )
+		TransactionFactory()
 		{
-			this.neoStore = neoStore;
 		}
 		
 		public XaTransaction create( int identifier )
@@ -301,29 +290,14 @@ public class NeoStoreXaDataSource extends XaDataSource
 				"all transactions have been resolved" );
 			logger.info( "Rebuilding id generators as needed. " + 
 				"This can take a while for large stores..." );
-			try
-			{
-				neoStore.makeStoreOk();
-			}
-			catch ( IOException e )
-			{
-				throw new RuntimeException( "Unable to make stores ok", e );
-			}
+			neoStore.makeStoreOk();
 			logger.info( "Rebuild of id generators complete." );
 		}
 
 		@Override
         public void lazyDoneWrite( List<Integer> identifiers ) throws XAException
         {
-			try
-            {
-                neoStore.flushAll();
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-                throw new XAException( "Unable to flush neo store." );
-            }
+            neoStore.flushAll();
         }
 	}
 
@@ -336,14 +310,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 			throw new IdGenerationFailedException( "No IdGenerator for: " + 
 				clazz );
 		}
-		try
-		{
-			return store.nextId();
-		}
-		catch ( IOException e )
-		{
-			throw new IdGenerationFailedException( e );
-		}
+		return store.nextId();
 	}
 
 	public int getHighestPossibleIdInUse( Class<?> clazz )

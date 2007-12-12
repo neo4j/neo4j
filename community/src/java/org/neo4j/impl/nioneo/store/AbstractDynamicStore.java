@@ -70,50 +70,56 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	 */
 	protected static void createEmptyStore( String fileName, int blockSize,  
 		String typeAndVersionDescriptor ) 
-		throws IOException
 	{
 		// sanity checks
 		if ( fileName == null )
 		{
-			throw new IOException( "Null filename" );
+			throw new IllegalArgumentException( "Null filename" );
 		}
 		File file = new File( fileName );
 		if ( file.exists() )
 		{
-			throw new IOException( "Can't create store[" + fileName + 
+			throw new IllegalStateException( "Can't create store[" + fileName + 
 				"], file already exists" );
 		}
 		if ( blockSize < 1 )
 		{
-			throw new IOException( "Illegal block size[" + blockSize + "]" );
+			throw new IllegalArgumentException( "Illegal block size[" + 
+                blockSize + "]" );
 		}
 		blockSize += 13; // in_use(1)+length(4)+prev_block(4)+next_block(4)
 		// write the header
-		FileChannel channel = new FileOutputStream( fileName ).getChannel();
-		int endHeaderSize = blockSize + typeAndVersionDescriptor.getBytes().length;
-		ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
-		buffer.putInt( blockSize );
-		buffer.position( endHeaderSize - typeAndVersionDescriptor.length() );
-		buffer.put( typeAndVersionDescriptor.getBytes() ).flip();
-		channel.write( buffer );
-		channel.force( false );
-		channel.close();
+        try
+        {
+    		FileChannel channel = new FileOutputStream( fileName ).getChannel();
+    		int endHeaderSize = blockSize + typeAndVersionDescriptor.getBytes().length;
+    		ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
+    		buffer.putInt( blockSize );
+    		buffer.position( endHeaderSize - typeAndVersionDescriptor.length() );
+    		buffer.put( typeAndVersionDescriptor.getBytes() ).flip();
+    		channel.write( buffer );
+    		channel.force( false );
+    		channel.close();
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to create store " + 
+                fileName, e );
+        }
 		IdGenerator.createGenerator( fileName + ".id" );
 		IdGenerator idGenerator = new IdGenerator( fileName + ".id", 1 );
 		idGenerator.nextId(); // reserv first for blockSize
-		idGenerator.close(); 
+		idGenerator.close();
 	}
 	
 	private int blockSize;
 	
 	public AbstractDynamicStore( String fileName, Map<?,?> config ) 
-		throws IOException
 	{
 		super( fileName, config );
 	}
 
 	public AbstractDynamicStore( String fileName ) 
-		throws IOException
 	{
 		super( fileName );
 	}
@@ -122,36 +128,44 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	 * Loads this store validating version and id generator. Also the block
 	 * size is loaded (contained in first block)
 	 */
-	protected void loadStorage() throws IOException
+	protected void loadStorage()
 	{
-		long fileSize = getFileChannel().size();
-		String expectedVersion = getTypeAndVersionDescriptor();
-		byte version[] = new byte[ expectedVersion.getBytes().length ];
-		ByteBuffer buffer = ByteBuffer.wrap( version );
-		getFileChannel().position( fileSize - version.length ); 
-		getFileChannel().read( buffer );
-		if ( !expectedVersion.equals( new String( version ) ) )
-		{
-			setStoreNotOk();
+        try
+        {
+    		long fileSize = getFileChannel().size();
+    		String expectedVersion = getTypeAndVersionDescriptor();
+    		byte version[] = new byte[ expectedVersion.getBytes().length ];
+    		ByteBuffer buffer = ByteBuffer.wrap( version );
+    		getFileChannel().position( fileSize - version.length ); 
+    		getFileChannel().read( buffer );
+    		if ( !expectedVersion.equals( new String( version ) ) )
+    		{
+    			setStoreNotOk();
+    		}
+    		buffer = ByteBuffer.allocate( 4 );
+    		getFileChannel().position( 0 );
+    		getFileChannel().read( buffer );
+    		buffer.flip();
+    		blockSize = buffer.getInt();
+    		if ( ( fileSize - version.length ) % blockSize != 0 )
+    		{
+    			setStoreNotOk();
+    		}
+    		if ( getStoreOk() )
+    		{
+    			getFileChannel().truncate( fileSize - version.length );
+    		}
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to load storage " + 
+                getStorageFileName(), e );
+        }
+        try
+        {
+		    openIdGenerator();
 		}
-		buffer = ByteBuffer.allocate( 4 );
-		getFileChannel().position( 0 );
-		getFileChannel().read( buffer );
-		buffer.flip();
-		blockSize = buffer.getInt();
-		if ( ( fileSize - version.length ) % blockSize != 0 )
-		{
-			setStoreNotOk();
-		}
-		if ( getStoreOk() )
-		{
-			getFileChannel().truncate( fileSize - version.length );
-		}
-		try
-		{
-			openIdGenerator();
-		}
-		catch ( IOException e )
+		catch ( StoreFailureException e )
 		{
 			setStoreNotOk();
 		}
@@ -175,7 +189,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	 * @return The next free block
 	 * @throws IOException If capacity exceeded or closed id generator
 	 */
-	public int nextBlockId() throws IOException
+	public int nextBlockId()
 	{
 		return nextId();
 	}
@@ -186,7 +200,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	 * @param blockId The id of the block to free
 	 * @throws IOException If id generator closed or illegal block id 
 	 */
-	public void freeBlockId( int blockId ) throws IOException
+	public void freeBlockId( int blockId )
 	{
 		freeId( blockId );
 	}
@@ -195,23 +209,16 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	private static final int BLOCK_HEADER_SIZE = 1 + 4 + 4 + 4;
 
 	
-	public void updateRecord( DynamicRecord record ) throws IOException
+	public void updateRecord( DynamicRecord record )
 	{
-		if ( record.isTransferable() && !hasWindow( record.getId() ) )
+		if ( record.isTransferable() && !hasWindow( record.getId() ) &&
+            transferRecord( record ) )
 		{
-			long id = record.getId();
-			long count = record.getTransferCount();
-			FileChannel fileChannel = getFileChannel();
-			fileChannel.position( id * getBlockSize() );
-			if ( count == record.getFromChannel().transferTo( 
-				record.getTransferStartPosition(), count, fileChannel ) )
+			if ( !record.inUse()&& !isInRecoveryMode() )
 			{
-				if ( !record.inUse()&& !isInRecoveryMode() )
-				{
-					freeBlockId( record.getId() );
-				}
-				return;
+				freeBlockId( record.getId() );
 			}
+			return;
 		}
 		int blockId = record.getId();
 		PersistenceWindow window = acquireWindow( blockId, 
@@ -256,17 +263,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	}
 
 	public Collection<DynamicRecord> allocateRecords( int startBlock, 
-		byte src[] ) throws IOException
+		byte src[] )
 	{
-		if ( getFileChannel() == null )
-		{
-			throw new IOException( "Store closed" );
-		}
+        assert getFileChannel() != null : "Store closed, null file channel";
+        assert src != null : "Null src argument";
 		List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
-		if ( src == null )
-		{
-			throw new IOException( "Null source" );
-		}
 		int nextBlock = startBlock;
 		int prevBlock = Record.NO_PREV_BLOCK.intValue();
 		int srcOffset = 0;
@@ -303,17 +304,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	}
 	
 	public Collection<DynamicRecord> allocateRecords( int startBlock, 
-		char src[] ) throws IOException
+		char src[] )
 	{
-		if ( getFileChannel() == null )
-		{
-			throw new IOException( "Store closed" );
-		}
+        assert getFileChannel() != null : "Store closed, null file channel";
+        assert src != null : "Null src argument";
 		List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
-		if ( src == null )
-		{
-			throw new IOException( "Null source" );
-		}
 		int nextBlock = startBlock;
 		int prevBlock = Record.NO_PREV_BLOCK.intValue();
 		int srcOffset = 0;
@@ -359,18 +354,16 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	}
 	
 	public Collection<DynamicRecord> getLightRecords( int startBlockId, 
-		ReadFromBuffer buffer ) throws IOException
+		ReadFromBuffer buffer )
 	{
 		List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
 		int blockId = startBlockId;
 		while ( blockId != Record.NO_NEXT_BLOCK.intValue() )
 		{
 			DynamicRecord record;
-			if ( buffer != null && !hasWindow( blockId ) )
+			if ( buffer != null && !hasWindow( blockId ) && transferToBuffer( 
+                blockId, buffer ) )
 			{
-				buffer.makeReadyForTransfer();
-				getFileChannel().transferTo( ((long) blockId) * getBlockSize(), 
-					BLOCK_HEADER_SIZE, buffer.getFileChannel() );
 				ByteBuffer buf = buffer.getByteBuffer();
 				record = new DynamicRecord( blockId );
 				byte inUse = buf.get();
@@ -383,8 +376,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
 						nrOfBytes < dataSize || nrOfBytes > dataSize )
 				{
-					throw new IOException( "Next block set[" + nextBlock + 
-						"] current block illegal size[" +
+					throw new StoreFailureException( "Next block set[" + 
+                        nextBlock + "] current block illegal size[" +
 						nrOfBytes + "/" + dataSize + "]" );
 				}
 				record.setLength( nrOfBytes );
@@ -413,15 +406,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	}
 	
 	public void makeHeavy( DynamicRecord record, ReadFromBuffer buffer )
-		throws IOException
 	{
 		int blockId = record.getId();
-		if ( buffer != null && !hasWindow( blockId ) )
+		if ( buffer != null && !hasWindow( blockId ) && 
+            transferToBuffer( blockId, buffer ) )
 		{
 			int nrOfBytes = record.getLength();
-			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( ((long) blockId) * getBlockSize() + 
-				BLOCK_HEADER_SIZE, nrOfBytes, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			byte bytes[] = new byte[nrOfBytes];
 			buf.get( bytes );
@@ -449,7 +439,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	}
 	
 	private DynamicRecord getLightRecord( int blockId, Buffer buffer )
-		throws IOException
 	{
 		DynamicRecord record = new DynamicRecord( blockId );
 		int offset = (int) ( blockId - buffer.position() ) * getBlockSize();
@@ -457,7 +446,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		byte inUse = buffer.get();
 		if ( inUse != Record.IN_USE.byteValue() )
 		{
-			throw new IOException( "Not in use [" + inUse + 
+			throw new StoreFailureException( "Block not inUse[" + inUse + 
 				"] blockId[" + blockId + "]" );
 		}
 		record.setInUse( true );
@@ -469,7 +458,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
 				nrOfBytes < dataSize || nrOfBytes > dataSize )
 		{
-			throw new IOException( "Next block set[" + nextBlock + 
+			throw new StoreFailureException( "Next block set[" + nextBlock + 
 				"] current block illegal size[" +
 				nrOfBytes + "/" + dataSize + "]" );
 		}
@@ -480,7 +469,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	}
 	
 	private DynamicRecord getRecord( int blockId, Buffer buffer )
-		throws IOException
 	{
 		DynamicRecord record = new DynamicRecord( blockId );
 		int offset = (int) ( blockId - buffer.position() ) * getBlockSize();
@@ -488,7 +476,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		byte inUse = buffer.get();
 		if ( inUse != Record.IN_USE.byteValue() )
 		{
-			throw new IOException( "Not in use [" + inUse + 
+			throw new StoreFailureException( "Not in use [" + inUse + 
 				"] blockId[" + blockId + "]" );
 		}
 		record.setInUse( true );
@@ -500,7 +488,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
 				nrOfBytes < dataSize || nrOfBytes > dataSize )
 		{
-			throw new IOException( "Next block set[" + nextBlock + 
+			throw new StoreFailureException( "Next block set[" + nextBlock + 
 				"] current block illegal size[" +
 				nrOfBytes + "/" + dataSize + "]" );
 		}
@@ -513,18 +501,16 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	}
 	
 	public Collection<DynamicRecord> getRecords( int startBlockId, 
-		ReadFromBuffer buffer ) throws IOException
+		ReadFromBuffer buffer )
 	{
 		List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
 		int blockId = startBlockId;
 		while ( blockId != Record.NO_NEXT_BLOCK.intValue() )
 		{
 			DynamicRecord record;
-			if ( buffer != null && !hasWindow( blockId ) )
+			if ( buffer != null && !hasWindow( blockId ) && 
+                transferToBuffer( blockId, buffer ) )
 			{
-				buffer.makeReadyForTransfer();
-				getFileChannel().transferTo( (long) blockId * getBlockSize(), 
-					getBlockSize(), buffer.getFileChannel() );
 				ByteBuffer buf = buffer.getByteBuffer();
 				record = new DynamicRecord( blockId );
 				byte inUse = buf.get();
@@ -537,8 +523,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
 						nrOfBytes < dataSize || nrOfBytes > dataSize )
 				{
-					throw new IOException( "Next block set[" + nextBlock + 
-						"] current block illegal size[" +
+					throw new StoreFailureException( "Next block set[" + 
+                        nextBlock + "] current block illegal size[" +
 						nrOfBytes + "/" + dataSize + "]" );
 				}
 				record.setLength( nrOfBytes );
@@ -576,7 +562,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	 * @return The <CODE>byte array</CODE> stored 
 	 * @throws IOException If unable to read the data
 	 */
-	protected byte[] get( int blockId ) throws IOException
+	protected byte[] get( int blockId )
 	{
 		LinkedList<byte[]> byteArrayList = new LinkedList<byte[]>();
 		PersistenceWindow window = acquireWindow( blockId, 
@@ -590,13 +576,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 			byte inUse = buffer.get();
 			if ( inUse != Record.IN_USE.byteValue() )
 			{
-				throw new IOException( "Not in use [" + inUse + 
+				throw new StoreFailureException( "Not in use [" + inUse + 
 					"] blockId[" + blockId + "]" );
 			}
 			int prevBlock = buffer.getInt();
 			if ( prevBlock != Record.NO_PREV_BLOCK.intValue() )
 			{
-				throw new IOException( "Start block has previous block set" );
+				throw new StoreFailureException( 
+                    "Start block has previous block set" );
 			}
 			int nextBlock = blockId;
 			int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
@@ -608,7 +595,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
 						nrOfBytes < dataSize || nrOfBytes > dataSize )
 				{
-					throw new IOException( "Next block set[" + nextBlock + 
+					throw new StoreFailureException( 
+                        "Next block set[" + nextBlock + 
 						"] current block illegal size[" +
 						nrOfBytes + "/" + dataSize + "]" );
 				}
@@ -626,12 +614,13 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 					inUse = buffer.get();
 					if ( inUse != Record.IN_USE.byteValue() )
 					{
-						throw new IOException( "Next block[" + nextBlock + 
-							"] not in use [" + inUse + "]" );
+						throw new StoreFailureException( "Next block[" + 
+                            nextBlock + "] not in use [" + inUse + "]" );
 					}
 					if ( buffer.getInt() != prevBlock )
 					{
-						throw new IOException( "Previous block don't match" );
+						throw new StoreFailureException( 
+                            "Previous block don't match" );
 					}
 				}
 			} while ( nextBlock != Record.NO_NEXT_BLOCK.intValue() );
@@ -665,7 +654,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	 * 
 	 * @throws IOException If unable to rebuild the id generator
 	 */
-	protected void rebuildIdGenerator() throws IOException
+	protected void rebuildIdGenerator()
 	{
 		logger.fine( "Rebuilding id generator for[" + getStorageFileName() + 
 			"] ..." );
@@ -679,42 +668,87 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		openIdGenerator();
 		nextBlockId(); // reserved first block containing blockSize
 		FileChannel fileChannel = getFileChannel();
-		long fileSize = fileChannel.size();
-		// long dot = fileSize / getBlockSize() / 20;
-		long defraggedCount = 0;
-		ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
-		LinkedList<Integer> freeIdList = new LinkedList<Integer>();
-		int highId = 0;
-		for ( long i = 1; i * getBlockSize() < fileSize; i++ )
-		{
-			fileChannel.position( i * getBlockSize() );
-			fileChannel.read( byteBuffer );
-			byteBuffer.flip();
-			byte inUse = byteBuffer.get();
-			byteBuffer.flip();
-			nextBlockId();
-			if ( inUse == Record.NOT_IN_USE.byteValue() )
-			{
-				freeIdList.add( (int) i );
-			}
-			else
-			{
-				highId = (int) i;
-				while ( !freeIdList.isEmpty() )
-				{
-					freeBlockId( freeIdList.removeFirst() );
-					defraggedCount++;
-				}
-			}
-//			if ( dot != 0 && i % dot == 0 )
-//			{
-//				System.out.print( "." );
-//			}
-		}
+        int highId = 0;
+        long defraggedCount = 0;
+        try
+        {
+    		long fileSize = fileChannel.size();
+    		ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
+    		LinkedList<Integer> freeIdList = new LinkedList<Integer>();
+    		for ( long i = 1; i * getBlockSize() < fileSize; i++ )
+    		{
+    			fileChannel.position( i * getBlockSize() );
+    			fileChannel.read( byteBuffer );
+    			byteBuffer.flip();
+    			byte inUse = byteBuffer.get();
+    			byteBuffer.flip();
+    			nextBlockId();
+    			if ( inUse == Record.NOT_IN_USE.byteValue() )
+    			{
+    				freeIdList.add( (int) i );
+    			}
+    			else
+    			{
+    				highId = (int) i;
+    				while ( !freeIdList.isEmpty() )
+    				{
+    					freeBlockId( freeIdList.removeFirst() );
+    					defraggedCount++;
+    				}
+    			}
+    		}
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to rebuild id generator " +
+                getStorageFileName(), e );
+        }
 		setHighId( highId + 1 );
 		logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId() + 
 			" (defragged=" + defraggedCount + ")" );  
 		closeIdGenerator();
 		openIdGenerator();
 	}
+
+    protected boolean transferToBuffer( int id, ReadFromBuffer buffer )
+    {
+        buffer.makeReadyForTransfer();
+        try
+        {
+            if ( getBlockSize() != getFileChannel().transferTo( 
+                ((long) id) * getBlockSize(), getBlockSize(), 
+                buffer.getFileChannel() ) )
+            {
+                return false;
+            }
+            return true;
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( 
+                "Failed to transfer data to read from buffer", e );
+        }
+    }
+    
+    protected boolean transferRecord( AbstractRecord record )
+    {
+        long id = record.getId();
+        long count = record.getTransferCount();
+        FileChannel fileChannel = getFileChannel();
+        try
+        {
+            fileChannel.position( id * getBlockSize() );
+            if ( count != record.getFromChannel().transferTo( 
+                record.getTransferStartPosition(), count, fileChannel ) )
+            {
+                return false;
+            }
+            return true;
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to transfer record from " +
+                "other file channel", e );
+        }
+    }
 }

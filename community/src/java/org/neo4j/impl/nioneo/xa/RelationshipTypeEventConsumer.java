@@ -29,8 +29,7 @@ public interface RelationshipTypeEventConsumer
 	 * @param name The name of the relationship type
 	 * @throws IOException If unable to add the relationship type
 	 */
-	public void addRelationshipType( int id, String name ) 
-		throws IOException;
+	public void addRelationshipType( int id, String name );
 
 	/**
 	 * Gets a relationship type with a given id.
@@ -39,8 +38,7 @@ public interface RelationshipTypeEventConsumer
 	 * @return The relationship type data
 	 * @throws IOException If unable to get relationship type
 	 */
-	public RelationshipTypeData getRelationshipType( int id ) 
-		throws IOException;
+	public RelationshipTypeData getRelationshipType( int id );
 
 	/**
 	 * Gets all relationship types.
@@ -48,6 +46,5 @@ public interface RelationshipTypeEventConsumer
 	 * @return An array containing the relationship type data
 	 * @throws IOException If unable to get the relationship types
 	 */
-	public RelationshipTypeData[] getRelationshipTypes()
-		throws IOException;
+	public RelationshipTypeData[] getRelationshipTypes();
 }

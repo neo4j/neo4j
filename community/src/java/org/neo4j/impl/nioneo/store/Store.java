@@ -30,14 +30,8 @@ public interface Store
 	 * @return The id of the next free record
 	 * @throws IOException If unable to 
 	 */
-	public int nextId() throws IOException;
+	public int nextId(); // throws IOException;
 	
-	/**
-	 * Throws a <CODE>RuntimeException</CODE> if store not ok or
-	 * an IOException if something wrong with current transaction. 
-	 */
-	public void validate() throws IOException;
-
 	public int getHighestPossibleIdInUse();
 	
 	public int getNumberOfIdsInUse();

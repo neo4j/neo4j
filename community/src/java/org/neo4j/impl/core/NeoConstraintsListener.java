@@ -20,21 +20,15 @@ package org.neo4j.impl.core;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
+import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
-import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.impl.event.Event;
-import org.neo4j.impl.event.EventData;
-import org.neo4j.impl.event.EventListenerAlreadyRegisteredException;
-import org.neo4j.impl.event.EventListenerNotRegisteredException;
-import org.neo4j.impl.event.EventManager;
-import org.neo4j.impl.event.ProActiveEventListener;
-import org.neo4j.impl.persistence.PersistenceMetadata;
+import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.util.ArrayMap;
 
 /**
@@ -44,353 +38,31 @@ import org.neo4j.impl.util.ArrayMap;
  * o Make sure no changes are made to a deleted node/relationship
  * o Make sure a deleted node has no relationships
  */
-class NeoConstraintsListener implements ProActiveEventListener
+class NeoConstraintsListener // implements ProActiveEventListener
 {
 	static Logger log = Logger.getLogger( 
 		NeoConstraintsListener.class.getName() );
-//	private static final NeoConstraintsListener listener = 
-//		new NeoConstraintsListener();
 	
 	// evaluator for each running transaction
 	private final ArrayMap<Thread,NeoConstraintsEvaluator> evaluators = 
 		new ArrayMap<Thread,NeoConstraintsEvaluator>( 5, true, true );
 
 	private final TransactionManager transactionManager;
-	private final EventManager eventManager;
 	
-	NeoConstraintsListener( TransactionManager transactionManager, 
-		EventManager eventManager )
+	NeoConstraintsListener( TransactionManager transactionManager )
 	{
 		this.transactionManager = transactionManager;
-		this.eventManager = eventManager;
-	}
-	
-//	static NeoConstraintsListener getListener()
-//	{
-//		return listener;
-//	}
-	
-	void registerEventListeners()
-	{
-		try
-		{
-			eventManager.registerProActiveEventListener( this, 
-				Event.NODE_CREATE );
-			eventManager.registerProActiveEventListener( this, 
-				Event.NODE_DELETE );
-			eventManager.registerProActiveEventListener( this, 
-				Event.NODE_ADD_PROPERTY );
-			eventManager.registerProActiveEventListener( this, 
-				Event.NODE_CHANGE_PROPERTY );
-			eventManager.registerProActiveEventListener( this, 
-				Event.NODE_REMOVE_PROPERTY );
-			eventManager.registerProActiveEventListener( this, 
-				Event.RELATIONSHIP_CREATE );
-			eventManager.registerProActiveEventListener( this, 
-				Event.RELATIONSHIP_DELETE );
-			eventManager.registerProActiveEventListener( this, 
-				Event.RELATIONSHIP_ADD_PROPERTY );
-			eventManager.registerProActiveEventListener( this, 
-				Event.RELATIONSHIP_CHANGE_PROPERTY );
-			eventManager.registerProActiveEventListener( this, 
-				Event.RELATIONSHIP_REMOVE_PROPERTY );
-		}
-		catch ( EventListenerNotRegisteredException e )
-		{
-			throw new RuntimeException( 
-				"Unable to register Neo constraints event listener", e );
-		}
-		catch ( EventListenerAlreadyRegisteredException e )
-		{
-			throw new RuntimeException( 
-				"Unable to register Neo constraints event listener", e );
-		}
-	}
-	
-	void unregisterEventListeners()
-	{
-		try
-		{
-			eventManager.unregisterProActiveEventListener( this, 
-				Event.NODE_CREATE );
-			eventManager.unregisterProActiveEventListener( this, 
-				Event.NODE_DELETE );
-			eventManager.unregisterProActiveEventListener( this, 
-				Event.NODE_ADD_PROPERTY );
-			eventManager.unregisterProActiveEventListener( this, 
-				Event.NODE_CHANGE_PROPERTY );
-			eventManager.unregisterProActiveEventListener( this, 
-				Event.NODE_REMOVE_PROPERTY );
-			eventManager.unregisterProActiveEventListener( this, 
-				Event.RELATIONSHIP_CREATE );
-			eventManager.unregisterProActiveEventListener( this, 
-				Event.RELATIONSHIP_DELETE );
-			eventManager.unregisterProActiveEventListener( this, 
-				Event.RELATIONSHIP_ADD_PROPERTY );
-			eventManager.unregisterProActiveEventListener( this, 
-				Event.RELATIONSHIP_CHANGE_PROPERTY );
-			eventManager.unregisterProActiveEventListener( this, 
-				Event.RELATIONSHIP_REMOVE_PROPERTY );
-		}
-		catch ( EventListenerNotRegisteredException e )
-		{
-			throw new RuntimeException( 
-				"Unable to register Neo constraints event listener", e );
-		}
 	}
 
-	public boolean proActiveEventReceived( Event event, EventData data )
-	{
-		Transaction tx = null;
-		try
-		{
-			int status = transactionManager.getStatus();
-			if ( status == Status.STATUS_NO_TRANSACTION || 
-				status == Status.STATUS_MARKED_ROLLBACK )
-			{
-				// no transaction or already marked for rollback
-				return false;
-			}
-			
-			Thread currentThread = Thread.currentThread();
-			NeoConstraintsEvaluator evaluator = evaluators.get( 
-				currentThread );
-			if ( evaluator == null )
-			{
-				tx = transactionManager.getTransaction();
-				evaluator = new NeoConstraintsEvaluator();
-				tx.registerSynchronization( evaluator );
-				evaluators.put( currentThread, evaluator );
-			}
-			return evaluator.evaluate( event, data );
-		}
-		catch ( Throwable t )
-		{
-			log.log( Level.SEVERE, "Unable to proccess event " + event, t );
-		}
-		return false;
-	}
-	
 	private class NeoConstraintsEvaluator implements Synchronization
 	{
 		private Map<Integer,NodeImpl> deletedNodes = null;
-		private Set<RelationshipImpl> deletedRelationships = null;
+		private Set<Integer> deletedRelationships = null;
 		
 		NeoConstraintsEvaluator()
 		{
 		}
 		
-		boolean evaluate( Event event, EventData eventData )
-		{
-			if ( event == Event.NODE_CREATE )
-			{
-				// just for evaluator to register tx commit hook
-				return true;
-			}
-			else if ( event == Event.RELATIONSHIP_CREATE )
-			{
-				RelationshipImpl rel = ( RelationshipImpl ) 
-					( ( PersistenceMetadata ) eventData.getData() 
-						).getEntity();
-				return evaluateCreateRelationship( rel );
-			}
-			else if ( event == Event.NODE_DELETE )
-			{
-				NodeImpl node = ( NodeImpl ) (( PersistenceMetadata ) 
-					eventData.getData()).getEntity();
-				return evaluateDeleteNode( node );
-			}
-			else if ( event == Event.RELATIONSHIP_DELETE )
-			{
-				RelationshipImpl rel = ( RelationshipImpl ) 
-					( ( PersistenceMetadata ) eventData.
-						getData()).getEntity();
-				return evaluateDeleteRelationship( rel );
-			}
-			else if (	event == Event.NODE_ADD_PROPERTY || 
-						event == Event.NODE_CHANGE_PROPERTY ||
-						event == Event.NODE_REMOVE_PROPERTY )
-			{
-				// check if node deleted
-				Node node = ( Node ) (( PersistenceMetadata ) 
-					eventData.getData()).getEntity();
-				return evaluateNodePropertyOperation( node, event, eventData );
-			}
-			else if (	event == Event.RELATIONSHIP_ADD_PROPERTY ||
-						event == Event.RELATIONSHIP_CHANGE_PROPERTY ||
-						event == Event.RELATIONSHIP_REMOVE_PROPERTY )
-			{
-				// check if rel deleted
-				Relationship rel = ( Relationship ) 
-					( ( PersistenceMetadata ) eventData.
-						getData()).getEntity();
-				return evaluateRelationshipPropertyOperation( rel, event, 
-					eventData );
-			}
-			return false;
-		}
-	
-		private boolean evaluateCreateRelationship( RelationshipImpl rel )
-		{
-			// verify nodes not deleted
-			if ( deletedNodes != null )
-			{
-				if ( deletedNodes.containsKey( rel.getStartNodeId() ) )
-				{
-					log.severe( "Node[0] : " + rel.getStartNodeId() + 
-						", on created relationship[" + rel + "]" + 
-						" does not exist (deleted in same tx)" );
-					return false;
-				}
-				if ( deletedNodes.containsKey( rel.getEndNodeId() ) )
-				{
-					log.severe( "Node[1] : " + rel.getEndNodeId() + 
-						", on created relationship[" + rel + "]" + 
-						" does not exist (deleted in same tx)" );
-					return false;
-				}
-			}
-			// verify legal nodes so they aren't old references from 
-			// other tx where they where delted etc.
-			// but since we have write lock on them they are valid?
-
-			// verify relationship type
-//			RelationshipTypeHolder rth = RelationshipTypeHolder.getHolder();
-//			if ( ! rth.isValidRelationshipType( rel.getType() ) )
-//			{
-//				log.severe( "Illegal relationship type[" + 
-//					rel.getType() + "] for created relationship[" + 
-//					rel + "]" );
-//				return false;
-//			}
-			
-			return true;
-		}
-	
-		private boolean evaluateDeleteNode( NodeImpl node )
-		{
-			// we are not allowed to invoke multiple deletes on node
-			if ( deletedNodes != null &&  
-				deletedNodes.containsKey( (int) node.getId() ) )
-			{
-				log.severe( "Delete of node[" + node + 
-					"] illegal since it has already been deleted (in this tx)" );
-				return false;
-			}
-				
-			if ( deletedNodes == null )
-			{
-				deletedNodes = new java.util.HashMap<Integer,NodeImpl>();
-			}
-			deletedNodes.put( (int) node.getId(), node );
-			return true;
-		}
-	
-		private boolean evaluateDeleteRelationship( RelationshipImpl rel )
-		{
-			// we are not allowed to invoke multiple deletes on node
-			if ( deletedRelationships != null && 
-					deletedRelationships.contains( rel ) )
-			{
-				log.severe( "Delete of relationship[" + rel + 
-					"] illegal since it has already been deleted (in this tx)" 
-					);
-				return false;
-			}
-
-			if ( deletedRelationships == null )
-			{
-				deletedRelationships = 
-					new java.util.HashSet<RelationshipImpl>();
-			}
-			deletedRelationships.add( rel );
-			return true;
-		}
-		
-		private boolean evaluateNodePropertyOperation( Node node, Event event, 
-			EventData eventData )
-		{
-			if ( deletedNodes != null && 
-					deletedNodes.containsKey( (int) node.getId() ) )
-			{
-				log.severe( "Property operation[" + event + "] on node[" + 
-					node + 
-					"] illegal since it has already been deleted (in this tx)" );
-				return false;
-			}
-			return true;
-		}
-
-		private boolean evaluateRelationshipPropertyOperation( 
-			Relationship rel, Event event, EventData eventData )
-		{
-			// we are not allowed to change deleted relationship
-			if ( deletedRelationships != null && 
-					deletedRelationships.contains( rel ) )
-			{
-				log.severe( "Property operation[" + event + 
-					"] on relationship[" + rel + 
-					"] illegal since it has already been deleted (in this tx)" 
-					);
-				return false;
-			}
-			return true;
-		}
-		
-/*		private boolean validatePropertyType( Object entity, Object prop )
-		{
-			if ( prop instanceof String || prop instanceof Boolean || 
-				prop instanceof Byte || prop instanceof Integer || 
-				prop instanceof Long || prop instanceof Float || 
-				prop instanceof Double || prop instanceof Character )
-			{
-				return true;
-			}
-			if ( prop.getClass().isArray() )
-			{
-				return validateArrayType( prop );
-			}
-			log.severe( "Illegal property type added to[" + entity + "]" );
-			return false;
-		}
-		
-		private boolean validateArrayType( Object object )
-		{
-			if ( object instanceof int[] || object instanceof Integer[] )
-			{
-				return true;
-			}
-			if ( object instanceof String[] )
-			{
-				return true;
-			}
-			if ( object instanceof boolean[] || object instanceof Boolean[] )
-			{
-				return true; 
-			}
-			if ( object instanceof double[] || object instanceof Double[] )
-			{
-				return true;
-			}
-			if ( object instanceof float[] || object instanceof Float[] )
-			{
-				return true;
-			}
-			if ( object instanceof long[] || object instanceof Long[] )
-			{
-				return true;
-			}
-			if ( object instanceof byte[] || object instanceof Byte[] )
-			{
-				return true;
-			}
-			if ( object instanceof char[] || object instanceof Character[] )
-			{
-				return true;
-			}
-			return false;
-		}*/
-
 		public void afterCompletion( int arg0 )
 		{
 			// do nothing
@@ -468,11 +140,163 @@ class NeoConstraintsListener implements ProActiveEventListener
 			}
 			return -1;
 		}
+
+        void evaluateDeleteNode( NodeImpl node )
+        {
+            if ( deletedNodes == null )
+            {
+                deletedNodes = new java.util.HashMap<Integer,NodeImpl>();
+            }
+            if ( deletedNodes.put( (int) node.getId(), node ) != null )
+            {
+                throw new IllegalStateException( "Unable to delete " + node + 
+                    " since it has already been deleted in this transaction." );
+            }
+        }
+        
+        void evaluateNodeNotDeleted( int nodeId )
+        {
+            if ( deletedNodes != null && 
+                deletedNodes.containsKey( nodeId ) )
+            {
+                throw new IllegalStateException( "Property operation on node[" + 
+                    nodeId + "] illegal since it has already been deleted " + 
+                    "(in this tx)" );
+            }
+        }
+
+        boolean nodeIsDeleted( int nodeId )
+        {
+            if ( deletedNodes != null && 
+                deletedNodes.containsKey( nodeId ) )
+            {
+                return true;
+            }
+            return false;
+        }
 		
+        void evaluateDeleteRelationship( RelationshipImpl rel )
+        {
+            if ( deletedRelationships == null )
+            {
+                deletedRelationships = 
+                    new java.util.HashSet<Integer>();
+            }
+            if ( !deletedRelationships.add( (int) rel.getId() ) )
+            {
+                throw new IllegalStateException( "Unable to delete " + rel + 
+                " since it has already been deleted in this transaction." );
+            }
+        }
+        
+        void evaluateRelNotDeleted( int relId )
+        {
+            if ( deletedRelationships != null && 
+                deletedRelationships.contains( relId ) )
+            {
+                throw new IllegalStateException( "Property operation on rel[" + 
+                    relId + "] illegal since it has already been deleted " + 
+                    "(in this tx)" );
+            }
+        }
+
+        boolean relIsDeleted( int relId )
+        {
+            if ( deletedRelationships != null && 
+                deletedRelationships.contains( relId ) )
+            {
+                return true;
+            }
+            return false;
+        }
+        
+        NodeImpl getDeletedNode( int nodeId )
+        {
+            return deletedNodes.get( nodeId );
+        }
 	}
 	
 	void removeThisEvaluator()
 	{
 		evaluators.remove( Thread.currentThread() );
 	}
+
+    private NeoConstraintsEvaluator getEvaluator()
+    {
+        Transaction tx = null;
+        try
+        {
+            int status = transactionManager.getStatus();
+            if ( status == Status.STATUS_NO_TRANSACTION /* || 
+                status == Status.STATUS_MARKED_ROLLBACK */ )
+            {
+                // no transaction or already marked for rollback
+                // return null;
+                throw new NotInTransactionException( 
+                    "Neo API calls must be done in a transaction." );
+            }
+            
+            Thread currentThread = Thread.currentThread();
+            NeoConstraintsEvaluator evaluator = evaluators.get( 
+                currentThread );
+            if ( evaluator == null )
+            {
+                tx = transactionManager.getTransaction();
+                evaluator = new NeoConstraintsEvaluator();
+                tx.registerSynchronization( evaluator );
+                evaluators.put( currentThread, evaluator );
+            }
+            return evaluator;
+        }
+        catch ( SystemException e )
+        {
+            // TODO Auto-generated catch block
+            throw new RuntimeException( e );
+        }
+        catch ( IllegalStateException e )
+        {
+            // TODO Auto-generated catch block
+            throw new RuntimeException( e );
+        }
+        catch ( RollbackException e )
+        {
+            // TODO Auto-generated catch block
+            throw new RuntimeException( e );
+        }
+    }
+    
+    void deleteNode( NodeImpl node )
+    {
+        getEvaluator().evaluateDeleteNode( node );
+    }
+
+    void nodePropertyOperation( int nodeId )
+    {
+        getEvaluator().evaluateNodeNotDeleted( nodeId );
+    }
+
+    boolean nodeIsDeleted( int nodeId )
+    {
+        return getEvaluator().nodeIsDeleted( nodeId );
+    }
+
+    void deleteRelationship( RelationshipImpl rel )
+    {
+        getEvaluator().evaluateDeleteRelationship( rel );
+    }
+    
+    void relPropertyOperation( int relId )
+    {
+        getEvaluator().evaluateRelNotDeleted( relId );
+    }
+
+    boolean relIsDeleted( int relId )
+    {
+        return getEvaluator().relIsDeleted( relId );
+    }
+
+    NodeImpl getDeletedNode( int nodeId )
+    {
+        return getEvaluator().getDeletedNode( nodeId );
+    }
 }

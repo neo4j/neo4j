@@ -16,7 +16,6 @@
  */
 package org.neo4j.impl.nioneo.store;
 
-import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 
@@ -33,7 +32,7 @@ abstract class LockableWindow implements PersistenceWindow
 	
 	public abstract int size();
     
-    public abstract void force() throws IOException;
+    public abstract void force();
 	
 	private OperationType type = null;
 	private final FileChannel fileChannel;

@@ -195,7 +195,7 @@ class NeoJvmInstance
 			lockReleaser = new LockReleaser( lockManager, 
 				txModule.getTxManager() );
 			persistenceModule = new PersistenceModule( 
-				eventModule.getEventManager(), txModule.getTxManager() );
+                txModule.getTxManager() );
 			idGeneratorModule = new IdGeneratorModule();
 			neoModule = new NeoModule( cacheManager, lockManager, 
 				txModule.getTxManager(), lockReleaser, 

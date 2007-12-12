@@ -35,7 +35,6 @@ import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.event.ProActiveEventListener;
 import org.neo4j.impl.persistence.IdGenerator;
-import org.neo4j.impl.persistence.PersistenceException;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.transaction.IllegalResourceException;
 import org.neo4j.impl.transaction.LockManager;
@@ -48,17 +47,10 @@ public class NodeManager
 {
 	private static Logger log = Logger.getLogger( NodeManager.class.getName() );
 	
-//	private static final NodeManager instance = new NodeManager();
-	
-//	private static final LockManager lockManager = LockManager.getManager();
-//	private static final LockReleaser lockReleaser = LockReleaser.getManager();
-	
 	private int referenceNodeId = 0;
 	
 	private final LruCache<Integer,Node> nodeCache; 
-//		new LruCache<Integer,Node>( "NodeCache", 1500 );
 	private final LruCache<Integer,Relationship> relCache;
-//		new LruCache<Integer,Relationship>( "RelationshipCache", 3500 );
 	
 	private final AdaptiveCacheManager cacheManager;
 	private final LockManager lockManager;
@@ -71,6 +63,7 @@ public class NodeManager
 	private final PurgeEventListener purgeEventListener;
 	private final PersistenceManager persistenceManager;
 	private final IdGenerator idGenerator;
+    private final NeoConstraintsListener neoConstraintsListener;
 	
 	NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager, 
 		TransactionManager transactionManager, LockReleaser lockReleaser, 
@@ -85,15 +78,17 @@ public class NodeManager
 		this.persistenceManager = persistenceManager;
 		this.idGenerator = idGenerator;
 		this.propertyIndexManager = new PropertyIndexManager( 
-			transactionManager, eventManager, persistenceManager, idGenerator );
+			transactionManager, persistenceManager, idGenerator );
 		this.traverserFactory = new TraverserFactory();
 		this.relTypeHolder = new RelationshipTypeHolder( transactionManager, 
-			eventManager, idGenerator );
+			persistenceManager, idGenerator );
 		nodeCache = new LruCache<Integer, Node>( "NodeCache", 1500, 
 			this.cacheManager );
 		relCache = new LruCache<Integer, Relationship>( "RelationshipCache", 
 			3500, this.cacheManager );
 		this.purgeEventListener = new PurgeEventListener();
+        this.neoConstraintsListener = new NeoConstraintsListener( 
+            transactionManager );
 	}
 	
 	public void start()
@@ -139,45 +134,29 @@ public class NodeManager
 		}
 	}
 	
-//	public static NodeManager getManager()
-//	{
-//		return instance;
-//	}
-	
 	public Node createNode() // throws CreateException
 	{
 		int id = idGenerator.nextId( Node.class );
 		NodeImpl node = new NodeImpl( id, true, this );
 		acquireLock( node, LockType.WRITE );
+        boolean success = false;
 		try
 		{
-			EventData eventData = new EventData( new NodeOpData( node, id ) );
-			if ( !generateProActiveEvent( Event.NODE_CREATE, eventData ) )
-			{
-				setRollbackOnly();
-				throw new CreateException( "Unable to create node, " +
-					"pro-active event failed." );
-			}
-			addNodeToCache( node );
-			generateReActiveEvent( Event.NODE_CREATE, eventData );
+            persistenceManager.nodeCreate( id );
+            nodeCache.add( (int) node.getId(), node );
+            success = true;
 			return new NodeProxy( id, this );
 		}
 		finally
 		{
 			releaseLock( node, LockType.WRITE );
+            if ( !success )
+            {
+                setRollbackOnly();
+            }
 		}
 	}
 	
-	void generateReActiveEvent( Event event, EventData eventData )
-	{
-		eventManager.generateReActiveEvent( event, eventData );
-	}
-
-	boolean generateProActiveEvent( Event event, EventData eventData )
-	{
-		return eventManager.generateProActiveEvent( event, eventData );
-	}
-
 	public Relationship createRelationship( Node startNode, Node endNode, 
 		RelationshipType type )
 	{
@@ -210,10 +189,10 @@ public class NodeManager
 		int endNodeId = (int) endNode.getId();
 		RelationshipImpl rel = new RelationshipImpl( id, startNodeId, 
 			endNodeId, type, true, this );
-		// RelationshipCommands relationshipCommand = null;
 		boolean firstNodeTaken = false;
 		boolean secondNodeTaken = false;
 		acquireLock( rel, LockType.WRITE );
+        boolean success = false;
 		try
 		{
 			acquireLock( firstNode, LockType.WRITE );
@@ -221,7 +200,7 @@ public class NodeManager
 			if ( firstNode.isDeleted() )
 			{
 				setRollbackOnly();
-				throw new CreateException( "" + startNode + 
+				throw new IllegalStateException( "" + startNode + 
 					" has been deleted in other transaction" );
 			}
 			acquireLock( secondNode, LockType.WRITE );
@@ -229,26 +208,16 @@ public class NodeManager
 			if ( secondNode.isDeleted() )
 			{
 				setRollbackOnly();
-				throw new CreateException( "" + endNode + 
+				throw new IllegalStateException( "" + endNode + 
 					" has been deleted in other transaction" );
 			}
 			int typeId = getRelationshipTypeIdFor( type ); 
-			EventData eventData =
-				new EventData( new RelationshipOpData( rel, id, typeId, 
-					startNodeId, endNodeId ) );
-			if ( !generateProActiveEvent( Event.RELATIONSHIP_CREATE, 
-				eventData ) )
-			{
-				setRollbackOnly();
-				throw new CreateException( "Unable to create relationship, " +
-					"pro-active event failed." );
-			}
-
+			persistenceManager.relationshipCreate( id, typeId, startNodeId, 
+                endNodeId );
 			firstNode.addRelationship( type, id );
 			secondNode.addRelationship( type, id );
-			addRelationshipToCache( rel );
-			
-			generateReActiveEvent( Event.RELATIONSHIP_CREATE, eventData );
+            relCache.add( (int) rel.getId(), rel );
+            success = true;
 			return new RelationshipProxy( id, this );
 		}
 		finally
@@ -281,6 +250,10 @@ public class NodeManager
 				}
 			}
 			releaseLock( rel, LockType.WRITE );
+            if ( !success )
+            {
+                setRollbackOnly();
+            }
 			if ( releaseFailed )
 			{
 				throw new RuntimeException( "Unable to release locks [" + 
@@ -315,26 +288,20 @@ public class NodeManager
 		acquireLock( node, LockType.READ );
 		try
 		{
-			if ( nodeCache.get( nodeId ) != null )
-			{
-				node = nodeCache.get( nodeId );
-				return new NodeProxy( nodeId, this );
-			}
-			if ( persistenceManager.loadLightNode( nodeId ) == null )
-			{
-				throw new NotFoundException( "Node[" + nodeId + "]" );
-			}
-			
-			// If we get here, loadLightNode didn't throw exception and
-			// a node with the given id does exist... good.
-			nodeCache.add( nodeId, node );
-			return new NodeProxy( nodeId, this );
-		}
-		catch ( PersistenceException pe )
-		{
-			log.severe( "Persistence error while trying to get node #" +
-					   nodeId + " by id. " + pe );
-			throw new NotFoundException( pe );
+    		if ( nodeCache.get( nodeId ) != null )
+    		{
+    			node = nodeCache.get( nodeId );
+    			return new NodeProxy( nodeId, this );
+    		}
+    		if ( persistenceManager.loadLightNode( nodeId ) == null )
+    		{
+    			throw new NotFoundException( "Node[" + nodeId + "]" );
+    		}
+    			
+    		// If we get here, loadLightNode didn't throw exception and
+    		// a node with the given id does exist... good.
+    		nodeCache.add( nodeId, node );
+    		return new NodeProxy( nodeId, this );
 		}
 		finally
 		{
@@ -360,16 +327,10 @@ public class NodeManager
 			}
 			if ( persistenceManager.loadLightNode( nodeId ) == null )
 			{
-				return null;
+                return neoConstraintsListener.getDeletedNode( nodeId );
 			}
 			nodeCache.add( nodeId, node );
 			return (NodeImpl) node;
-		}
-		catch ( PersistenceException pe )
-		{
-			log.severe( "Persistence error while trying to get node #" +
-					   nodeId + " by id. " + pe );
-			throw new RuntimeException( "Node deleted?", pe );
 		}
 		finally
 		{
@@ -395,16 +356,11 @@ public class NodeManager
 			}
 			if ( persistenceManager.loadLightNode( nodeId ) == null )
 			{
-				throw new NotFoundException( "Node[" + nodeId + "] not found" );
+				throw new NotFoundException( "Node[" + nodeId + 
+                    "] not found." );
 			}
 			nodeCache.add( nodeId, node );
 			return (NodeImpl) node;
-		}
-		catch ( PersistenceException pe )
-		{
-			log.severe( "Persistence error while trying to get node #" +
-					   nodeId + " by id. " + pe );
-			throw new RuntimeException( "Node deleted?", pe );
 		}
 		finally
 		{
@@ -464,19 +420,14 @@ public class NodeManager
 			RelationshipType type = getRelationshipTypeById( data.getType() );
 			if ( type == null )
 			{
-				throw new NotFoundException( "Relationship[" + data.getId() +
+				throw new RuntimeException( "Relationship[" + data.getId() +
 					"] exist but relationship type[" + data.getType() +
-					"] not registered." );
+					"] not found." );
 			}
 			relationship = new RelationshipImpl( relId, data.getFirstNode(), 
 				data.getSecondNode(), type, false, this );
 			relCache.add( relId, relationship );
 			return new RelationshipProxy( relId, this );
-		}
-		catch ( PersistenceException e )
-		{
-			throw new NotFoundException( "Could not get relationship[" + 
-				relId + "].", e );
 		}
 		finally
 		{
@@ -509,24 +460,20 @@ public class NodeManager
 				persistenceManager.loadLightRelationship( relId );
 			if ( data == null )
 			{
-				throw new RuntimeException( "Relationship[" + relId + 
-					"] deleted?" );
+				throw new NotFoundException( "Relationship[" + relId + 
+					"] not found, has been deleted?" );
 			}
 			RelationshipType type = getRelationshipTypeById( data.getType() );
 			if ( type == null )
 			{
-				throw new NotFoundException( "Relationship[" + data.getId() +
+				throw new RuntimeException( "Relationship[" + data.getId() +
 					"] exist but relationship type[" + data.getType() +
-					"] not registered." );
+					"] not found." );
 			}
 			relationship = new RelationshipImpl( relId, data.getFirstNode(), 
 				data.getSecondNode(), type, false, this );
 			relCache.add( relId, relationship );
 			return relationship;
-		}
-		catch ( PersistenceException e )
-		{
-			throw new RuntimeException( "Relationship deleted?", e );
 		}
 		finally
 		{
@@ -534,39 +481,19 @@ public class NodeManager
 		}
 	}
 	
-	public void removeNodeFromCache( int nodeId ) // throws DeleteException
+	public void removeNodeFromCache( int nodeId )
 	{
 		nodeCache.remove( nodeId );
 	}
 	
-	void addNodeToCache( NodeImpl node )//  throws CreateException
-	{
-		nodeCache.add( (int) node.getId(), node );
-	}
-
 	public void removeRelationshipFromCache( int id )
 	{
 		relCache.remove( id );
 	}
 
-	void addRelationshipToCache( Relationship rel )
-	{
-		relCache.add( (int) rel.getId(), rel );
-	}
-	
 	Object loadPropertyValue( int id )
 	{
-		try
-		{
-			return persistenceManager.loadPropertyValue( id );
-		}
-		catch ( PersistenceException e )
-		{
-			e.printStackTrace();
-			log.severe( "Failed loading property value[" +
-				id + "]" );
-		}
-		return null;
+		return persistenceManager.loadPropertyValue( id );
 	}
 	
 	List<Relationship> loadRelationships( NodeImpl node )
@@ -574,7 +501,7 @@ public class NodeManager
 		try
 		{
 			RawRelationshipData rawRels[] = 
-				persistenceManager.loadRelationships( node );
+				persistenceManager.loadRelationships( (int) node.getId() );
 			List<Relationship> relList = new ArrayList<Relationship>();
 			for ( RawRelationshipData rawRel : rawRels )
 			{
@@ -582,7 +509,8 @@ public class NodeManager
 				Relationship rel = relCache.get( relId );
 				if ( rel == null )
 				{
-					RelationshipType type = getRelationshipTypeById( rawRel.getType() ); 
+					RelationshipType type = getRelationshipTypeById( 
+                        rawRel.getType() ); 
 					if ( type == null )
 					{
 						// relationship with type that hasn't been registered
@@ -610,7 +538,7 @@ public class NodeManager
 		try
 		{
 			RawPropertyData properties[]  = 
-				persistenceManager.loadProperties( node );
+				persistenceManager.loadNodeProperties( (int) node.getId() );
 			return properties;
 		}
 		catch ( Exception e )
@@ -626,7 +554,8 @@ public class NodeManager
 		try
 		{
 			RawPropertyData properties[]  = 
-				persistenceManager.loadProperties( relationship );
+				persistenceManager.loadRelProperties( 
+                    (int) relationship.getId() );
 			return properties;
 		}
 		catch ( Exception e )
@@ -902,4 +831,72 @@ public class NodeManager
 	        return false;
         }
 	}
+
+    void deleteNode( NodeImpl node )
+    {
+        neoConstraintsListener.deleteNode( node );
+        int nodeId = (int) node.getId();
+        persistenceManager.nodeDelete( nodeId );
+        nodeCache.remove( nodeId );
+    }
+
+    int nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
+    {
+        int nodeId = (int) node.getId();
+        neoConstraintsListener.nodePropertyOperation( nodeId );
+        return persistenceManager.nodeAddProperty( nodeId, index, 
+            value );
+    }
+
+    void nodeChangeProperty( NodeImpl node, int propertyId, Object value )
+    {
+        int nodeId = (int) node.getId();
+        neoConstraintsListener.nodePropertyOperation( nodeId );
+        persistenceManager.nodeChangeProperty( nodeId, propertyId, value );
+    }
+
+    void nodeRemoveProperty( NodeImpl node, int propertyId )
+    {
+        int nodeId = (int) node.getId();
+        if ( neoConstraintsListener.nodeIsDeleted( nodeId ) )
+        {
+            // property will be deleted
+            return;
+        }
+        persistenceManager.nodeRemoveProperty( nodeId, propertyId );
+    }
+
+    public void deleteRelationship( RelationshipImpl rel )
+    {
+        neoConstraintsListener.deleteRelationship( rel );
+        int relId = (int) rel.getId();
+        persistenceManager.relDelete( relId );
+        relCache.remove( relId );
+    }
+
+    int relAddProperty( RelationshipImpl rel, PropertyIndex index, 
+        Object value )
+    {
+        int relId = (int) rel.getId();
+        neoConstraintsListener.relPropertyOperation( relId );
+        return persistenceManager.relAddProperty( relId, index, value );
+    }
+
+    void relChangeProperty( RelationshipImpl rel, int propertyId, Object value )
+    {
+        int relId = (int) rel.getId();
+        neoConstraintsListener.relPropertyOperation( relId );
+        persistenceManager.relChangeProperty( relId, propertyId, value );
+    }
+
+    void relRemoveProperty( RelationshipImpl rel, int propertyId )
+    {
+        int relId = (int) rel.getId();
+        if ( neoConstraintsListener.relIsDeleted( relId ) )
+        {
+            // property will be deleted
+            return;
+        }
+        persistenceManager.relRemoveProperty( relId, propertyId );
+    }
 }
