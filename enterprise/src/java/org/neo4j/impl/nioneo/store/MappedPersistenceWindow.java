@@ -32,19 +32,15 @@ class MappedPersistenceWindow extends LockableWindow
 	private int totalSize = -1;
 	
 	MappedPersistenceWindow( long position, int recordSize, int totalSize,  
-		FileChannel channel ) throws IOException
+		FileChannel channel )
 	{
 		super( channel );
-		if ( recordSize <= 0 || totalSize < recordSize )
-		{
-			throw new IOException( "Illegal record/window size: " + 
-				recordSize + "/" + totalSize );
-		}
-		if ( totalSize % recordSize != 0 )
-		{
-			throw new IOException( "Illegal mod size/window (" + totalSize + 
-				"/" + recordSize + ")" );
-		}
+        assert recordSize > 0 : "Record size[" + recordSize + 
+            "] must be greater then zero" ;
+        assert totalSize >= recordSize : "Total size[" + totalSize + 
+            "] cannot be less than record size[" + recordSize + "]";
+        assert totalSize >= recordSize : "Total size[" + totalSize + 
+        "] must mod to zero with record size[" + recordSize + "]";
 		this.totalSize = totalSize;
 		windowSize = totalSize / recordSize;
 		this.recordSize = recordSize;

@@ -20,7 +20,7 @@ package org.neo4j.impl.persistence;
  * Thrown if the {@link ResourceBroker} is unable to acquire a
  * resource for a certain set of parameters.
  */
-class ResourceAcquisitionFailedException extends java.lang.Exception
+class ResourceAcquisitionFailedException extends RuntimeException
 {
 	ResourceAcquisitionFailedException( String s )
 	{

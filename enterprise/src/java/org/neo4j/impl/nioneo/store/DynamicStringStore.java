@@ -17,7 +17,6 @@
 package org.neo4j.impl.nioneo.store;
 
 
-import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.impl.nioneo.store.AbstractDynamicStore;
@@ -31,13 +30,11 @@ class DynamicStringStore extends AbstractDynamicStore
 	private static final String VERSION = "StringPropertyStore v0.9.3";
 	
 	public DynamicStringStore( String fileName, Map<?,?> config ) 
-		throws IOException
 	{
 		super( fileName, config );
 	}
 
 	public DynamicStringStore( String fileName ) 
-		throws IOException
 	{
 		super( fileName );
 	}
@@ -47,10 +44,8 @@ class DynamicStringStore extends AbstractDynamicStore
 		return VERSION;
 	}
 	
-	public static void createStore( String fileName, 
-		int blockSize ) throws IOException
+	public static void createStore( String fileName, int blockSize )
 	{
 		createEmptyStore( fileName, blockSize, VERSION );
 	}	
 }
-

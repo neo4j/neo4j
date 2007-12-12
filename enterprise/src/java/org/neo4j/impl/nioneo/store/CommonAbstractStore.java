@@ -51,7 +51,7 @@ public abstract class CommonAbstractStore
 	 *
 	 * @throws IOException If unable to initialize 
 	 */
-	protected void initStorage() throws IOException {}
+	protected void initStorage(){}
 	 
 
 	protected void versionFound( String version ) {};
@@ -65,7 +65,7 @@ public abstract class CommonAbstractStore
 	 *
 	 * @throws IOException If unable to close
 	 */
-	protected void closeStorage() throws IOException {};
+	protected void closeStorage() {};
 
 	/**
 	 * Should do first validation on store validating stuff like version
@@ -73,14 +73,14 @@ public abstract class CommonAbstractStore
 	 * 
 	 * @throws IOException If unable to load store
 	 */
-	protected abstract void loadStorage() throws IOException;
+	protected abstract void loadStorage();
 	
 	/**
 	 * Should rebuild the id generator from scratch.
 	 * 
 	 * @throws IOException If unable to rebuild id generator.
 	 */
-	protected abstract void rebuildIdGenerator() throws IOException;
+	protected abstract void rebuildIdGenerator();
 	
 	// default node store id generator grab size
 	protected static final int DEFAULT_ID_GRAB_SIZE = 1024;
@@ -113,7 +113,6 @@ public abstract class CommonAbstractStore
 	 * @throws IOException If store doesn't exist
 	 */
 	public CommonAbstractStore( String fileName, Map<?,?> config )
-		throws IOException
 	{
 		this.storageFileName = fileName;
 		this.config = config;
@@ -139,7 +138,6 @@ public abstract class CommonAbstractStore
 	 * @throws IOException If store doesn't exist
 	 */
 	public CommonAbstractStore( String fileName )
-		throws IOException
 	{
 		this.storageFileName = fileName;
 		checkStorage();
@@ -147,21 +145,39 @@ public abstract class CommonAbstractStore
 		initStorage();
 	}
 	
-	private void checkStorage() throws IOException
+	private void checkStorage()
 	{
 		if ( !new File( storageFileName ).exists() )
 		{
-			throw new IOException( "No such store[" + storageFileName + "]" );
+			throw new IllegalStateException( "No such store[" + 
+                storageFileName + "]" );
 		}
-		this.fileChannel = 
-			new RandomAccessFile( storageFileName, "rw" ).getChannel();
-		this.fileLock = this.fileChannel.tryLock();
-		if ( fileLock == null )
-		{
-			fileChannel.close();
-			throw new IOException( "Unable to lock store [" + 
-				storageFileName + "], other program running?" );
-		}
+        try
+        {
+    		this.fileChannel = 
+    			new RandomAccessFile( storageFileName, "rw" ).getChannel();
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to open file " + 
+                storageFileName, e );
+        }
+        try
+        {
+    		this.fileLock = this.fileChannel.tryLock();
+    		if ( fileLock == null )
+    		{
+    			fileChannel.close();
+    			throw new IllegalStateException( "Unable to lock store [" + 
+    				storageFileName + "], this is usually a result of some " +
+                    "other Neo running using the same store." );
+    		}
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to lock store[" + 
+                storageFileName + "]" );
+        }
 	}
 	
 	/**
@@ -206,7 +222,7 @@ public abstract class CommonAbstractStore
 	 * @return The next free id
 	 * @throws IOException If unable to get next free id
 	 */
-	protected int nextId() throws IOException
+	protected int nextId()
 	{
 		return idGenerator.nextId();
 	}
@@ -217,7 +233,7 @@ public abstract class CommonAbstractStore
 	 * @param id The id to free
 	 * @throws IOException If unable to free the id
 	 */
-	protected void freeId( int id ) throws IOException
+	protected void freeId( int id )
 	{
 		idGenerator.freeId( id );
 	}
@@ -292,7 +308,7 @@ public abstract class CommonAbstractStore
 	 * 
 	 * @throws IOException If unable to rebuild id generator
 	 */
-	public void makeStoreOk() throws IOException
+	public void makeStoreOk()
 	{
 		if ( !storeOk )
 		{
@@ -323,26 +339,28 @@ public abstract class CommonAbstractStore
 	 * @throws IOException If unable to acquire window
 	 */
 	protected PersistenceWindow acquireWindow( int position, 
-		OperationType type ) throws IOException
+		OperationType type )
 	{
 		if ( !isInRecoveryMode() && ( position > idGenerator.getHighId() || 
 			!storeOk ) )
 		{
-			throw new IOException( "Position[" + position + 
-				"] high id[" + idGenerator.getHighId() + "] storeOk=" + 
-				storeOk );
+            throw new StoreFailureException( "Position[" + position + 
+                "] requested for operation is high id[" + 
+                idGenerator.getHighId() + "] or store is flagged as dirty[" +  
+                storeOk + "]" );
 		}	
 		return windowPool.acquire( position, type );
 	}
 	
-	protected boolean hasWindow( int position ) throws IOException
+	protected boolean hasWindow( int position )
 	{
 		if ( !isInRecoveryMode() && ( position > idGenerator.getHighId() || 
 			!storeOk ) )
 		{
-			throw new IOException( "Position[" + position + 
-				"] high id[" + idGenerator.getHighId() + "] storeOk=" + 
-				storeOk );
+			throw new StoreFailureException( "Position[" + position + 
+				"] requested for operation is high id[" + 
+                idGenerator.getHighId() + "] or store is flagged as dirty[" +  
+				storeOk + "]" );
 		}	
 		return windowPool.hasWindow( position );
 	}
@@ -355,42 +373,16 @@ public abstract class CommonAbstractStore
 	 * @throws IOException If window was a <CODE>DirectPersistenceRow</CODE> 
 	 * and unable to write out its data to the store
 	 */
-	protected void releaseWindow( PersistenceWindow window ) throws IOException
+	protected void releaseWindow( PersistenceWindow window )
 	{
 		windowPool.release( window );
 	}
 	
-	/**
-	 * Flush of all changes identified by <CODE>identifier</CODE> in this
-	 * store.
-	 * 
-	 * @param identifier The (transaction) identifier
-	 * @throws IOException If some I/O error occurs flushing the file channel
-	 * of this store
-	 */
-//	public void flush( int identifier ) throws IOException
-//	{
-//		windowPool.flush( identifier );
-//	}
-	
-	public void flushAll() throws IOException
+	public void flushAll()
 	{
 		windowPool.flushAll();
 	}
 	
-	/**
-	 * Forgets about all changes made by <CODE>identifier</CODE>. This does
-	 * not mean that the changes will be reverted. Instead the mapping between
-	 * <CODE>identifier</CODE> and {@link PersistenceWindow persistence 
-	 * windows} used is removed.
-	 * 
-	 * @param identifier The (transaction) identifier
-	 */
-//	public void forget( int identifier )
-//	{
-//		windowPool.forget( identifier );
-//	}
-
 	/**
 	 * Utility method to determine if we are in recovery mode. Asks the 
 	 * {@link TxInfoManager} if we are in recovery.
@@ -417,7 +409,7 @@ public abstract class CommonAbstractStore
 	 * 
 	 * @throws IOException If unable to open the id generator
 	 */
-	protected void openIdGenerator() throws IOException
+	protected void openIdGenerator()
 	{
 		idGenerator = 
 			new IdGenerator( storageFileName + ".id", DEFAULT_ID_GRAB_SIZE );
@@ -428,7 +420,7 @@ public abstract class CommonAbstractStore
 	 * 
 	 * @throws IOException If unable to close this store
 	 */
-	protected void closeIdGenerator() throws IOException
+	protected void closeIdGenerator()
 	{
 		if ( idGenerator != null )
 		{
@@ -447,7 +439,7 @@ public abstract class CommonAbstractStore
 	 * 
 	 *  @throws IOException If problem when invoking {@link #closeStorage()}
 	 */
-	public void close() throws IOException
+	public void close()
 	{
 		if ( fileChannel == null )
 		{
@@ -470,15 +462,23 @@ public abstract class CommonAbstractStore
 			recordSize = ( ( AbstractStore ) this ).getRecordSize();
         }
 		closeIdGenerator();
-		fileChannel.position( ((long) highId) * recordSize );
-		ByteBuffer buffer = ByteBuffer.wrap(
-			getTypeAndVersionDescriptor().getBytes() );
-		fileChannel.write( buffer );
-		fileChannel.truncate( fileChannel.position() );
-		fileChannel.force( false );
-		fileLock.release();
-		fileChannel.close();
-		fileChannel = null;
+        try
+        {
+    		fileChannel.position( ((long) highId) * recordSize );
+    		ByteBuffer buffer = ByteBuffer.wrap(
+    			getTypeAndVersionDescriptor().getBytes() );
+    		fileChannel.write( buffer );
+    		fileChannel.truncate( fileChannel.position() );
+    		fileChannel.force( false );
+    		fileLock.release();
+    		fileChannel.close();
+    		fileChannel = null;
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to close store " + 
+                getStorageFileName(), e );
+        }
 	}
 	
 	/**
@@ -491,18 +491,6 @@ public abstract class CommonAbstractStore
 	protected final FileChannel getFileChannel()
 	{
 		return fileChannel;
-	}
-	
-	/**
-	 * Throws a <CODE>RuntimeException</CODE> if store not ok, else does 
-	 * nothing. 
-	 */
-	public void validate()
-	{
-		if ( !storeOk )
-		{
-			throw new RuntimeException( "Store not valid" );
-		}
 	}
 	
 	/**

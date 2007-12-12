@@ -48,81 +48,38 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	 * See {@link AbstractStore#AbstractStore(String, Map)}
 	 */
 	public RelationshipTypeStore( String fileName, Map<?,?> config ) 
-		throws IOException
 	{
 		super( fileName, config );
 	}
 	
-	@Override
-	protected void versionFound( String version )
-	{
-		if ( "RelationshipTypeStore v0.9.1".endsWith( version ) )
-		{
-			// check if use of early beta 6 snappshot
-			String base = getStorageFileName().substring( 0, 
-				getStorageFileName().lastIndexOf( 
-					"relationshiptypestore.db" ) );
-			if ( new File( base + "propertystore.db.index").exists() )
-			{
-				return;
-			}
-			// else convert releationship types
-			try
-			{
-				convertRelTypes();
-			}
-			catch ( Exception e )
-			{
-				e.printStackTrace();
-				throw new RuntimeException( 
-					"Unable to convert encoding in relationship type store " );
-			}
-		}
-	}
-
 	/**
 	 * See {@link AbstractStore#AbstractStore(String)}
 	 */
-	public RelationshipTypeStore( String fileName ) throws IOException
+	public RelationshipTypeStore( String fileName )
 	{
 		super( fileName );
 	}
 	
 	@Override
 	protected void initStorage() 
-		throws IOException
 	{
 		typeNameStore = new DynamicStringStore( 
 			getStorageFileName() + ".names", getConfig() );
 	}
 	
 	@Override
-	protected void closeStorage() throws IOException
+	protected void closeStorage()
 	{
 		typeNameStore.close();
 		typeNameStore = null;
 	}
 
-//	@Override
-//	public void flush( int txIdentifier ) throws IOException
-//	{
-//		typeNameStore.flush( txIdentifier );
-//		super.flush( txIdentifier );
-//	}
-	
-	public void flushAll() throws IOException
+	public void flushAll()
 	{
 		typeNameStore.flushAll();
 		super.flushAll();
 	}
 	
-//	@Override
-//	public void forget( int txIdentifier )
-//	{
-//		typeNameStore.forget( txIdentifier );
-//		super.forget( txIdentifier );
-//	}
-
 	public String getTypeAndVersionDescriptor()
 	{
 		return VERSION;
@@ -142,7 +99,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	 * @throws IOException If unable to create store or name null
 	 */
 	public static void createStore( String fileName ) 
-		throws IOException
 	{
 		createEmptyStore( fileName, VERSION );
 		DynamicStringStore.createStore( fileName + ".names", 
@@ -154,7 +110,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		store.close();
 	}
 	
-	void markAsReserved( int id ) throws IOException
+	void markAsReserved( int id )
 	{
 		PersistenceWindow window = acquireWindow( id, OperationType.WRITE );
 		try
@@ -168,7 +124,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	}
 	
 	public Collection<DynamicRecord> allocateTypeNameRecords( int startBlock, 
-		char src[] ) throws IOException
+		char src[] )
 	{
 		return typeNameStore.allocateRecords( startBlock, src );
 	}
@@ -234,14 +190,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	}
 	
 	public RelationshipTypeRecord getRecord( int id, ReadFromBuffer buffer ) 
-		throws IOException
 	{
 		RelationshipTypeRecord record;
-		if ( buffer != null && !hasWindow( id ) )
+		if ( buffer != null && !hasWindow( id ) && 
+            transferToBuffer( id, buffer ) )
 		{
-			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
-				RECORD_SIZE, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			byte inUse = buf.get();
 			assert inUse == Record.IN_USE.byteValue();
@@ -255,7 +208,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 			try
 			{
 				record = getRecord( id, window.getBuffer() );
-				// cache.add( id, record );
 			}
 			finally 
 			{
@@ -272,7 +224,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	}
 	
 	public RelationshipTypeData getRelationshipType( int id ) 
-		throws IOException
 	{
 		RelationshipTypeRecord record = getRecord( id, 
 			(ReadFromBuffer) null );
@@ -281,7 +232,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	}
 	
 	public RelationshipTypeData[] getRelationshipTypes()
-		throws IOException
 	{
 		LinkedList<RelationshipTypeData> typeDataList = 
 			new LinkedList<RelationshipTypeData>();
@@ -293,7 +243,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 			{
 				record = getRecord( i, (ReadFromBuffer) null );
 			}
-			catch ( IOException e )
+			catch ( StoreFailureException e )
 			{
 				break;
 			}
@@ -307,23 +257,24 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 			new RelationshipTypeData[ typeDataList.size() ] );
 	}
 	
-	public int nextBlockId() throws IOException
+	public int nextBlockId()
 	{
 		return typeNameStore.nextBlockId();
 	}
 	
-	public void freeBlockId( int id ) throws IOException
+	public void freeBlockId( int id )
 	{
 		typeNameStore.freeBlockId( id );
 	}
 	
-	private void markAsReserved( int id, Buffer buffer ) throws IOException
+	private void markAsReserved( int id, Buffer buffer )
 	{
 		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		if ( buffer.get() != Record.NOT_IN_USE.byteValue() )
 		{
-			throw new IOException( "Record[" + id + "] already in use" );
+			throw new StoreFailureException( "Record[" + id + 
+                "] already in use" );
 		}
 		buffer.setOffset( offset );
 		buffer.put( Record.IN_USE.byteValue() ).putInt( 
@@ -331,13 +282,12 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	}
 	
 	private RelationshipTypeRecord getRecord( int id, Buffer buffer ) 
-		throws IOException
 	{
 		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		if ( buffer.get() != Record.IN_USE.byteValue() )
 		{
-			throw new IOException( "Record[" + id + "] not in use" );
+			throw new StoreFailureException( "Record[" + id + "] not in use" );
 		}
 		RelationshipTypeRecord record = new RelationshipTypeRecord( id );
 		record.setInUse( true );
@@ -362,7 +312,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	}
 	
 	@Override
-	protected void rebuildIdGenerator() throws IOException
+	protected void rebuildIdGenerator()
 	{
 		logger.fine( "Rebuilding id generator for[" + getStorageFileName() + 
 		"] ..." );
@@ -375,47 +325,50 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 		IdGenerator.createGenerator( getStorageFileName() + ".id" );
 		openIdGenerator();
 		FileChannel fileChannel = getFileChannel();
-		long fileSize = fileChannel.size();
-		int recordSize = getRecordSize();
-//		long dot = fileSize / recordSize / 20;
-		ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[ recordSize ] );
-		int highId = -1;
-		for ( int i = 0; i * recordSize < fileSize; i++ )
-		{
-			fileChannel.read( byteBuffer, i * recordSize );
-			byteBuffer.flip();
-			byte inUse = byteBuffer.get();
-			byteBuffer.flip();
-			if ( inUse != Record.IN_USE.byteValue() )
-			{
-				// hole found, marking as reserved
-				byteBuffer.clear();
-				byteBuffer.put( Record.IN_USE.byteValue() ).putInt( 
-					Record.RESERVED.intValue() );
-				byteBuffer.flip();
-				fileChannel.write( byteBuffer, i * recordSize );
-				byteBuffer.clear();
-			}
-			else
-			{
-				highId = i;
-			}
-			nextId();
-//			if ( dot != 0 && i % dot == 0 )
-//			{
-//				System.out.print( "." );
-//			}
-		}
-		highId++;
+        int highId = -1;
+        int recordSize = getRecordSize();
+        try
+        {
+    		long fileSize = fileChannel.size();
+    		ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[ recordSize ] );
+    		for ( int i = 0; i * recordSize < fileSize; i++ )
+    		{
+    			fileChannel.read( byteBuffer, i * recordSize );
+    			byteBuffer.flip();
+    			byte inUse = byteBuffer.get();
+    			byteBuffer.flip();
+    			if ( inUse != Record.IN_USE.byteValue() )
+    			{
+    				// hole found, marking as reserved
+    				byteBuffer.clear();
+    				byteBuffer.put( Record.IN_USE.byteValue() ).putInt( 
+    					Record.RESERVED.intValue() );
+    				byteBuffer.flip();
+    				fileChannel.write( byteBuffer, i * recordSize );
+    				byteBuffer.clear();
+    			}
+    			else
+    			{
+    				highId = i;
+    			}
+    			nextId();
+    		}
+            highId++;
+            fileChannel.truncate( highId * recordSize );
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to rebuild id generator " + 
+                getStorageFileName(), e );
+        }
 		setHighId( highId );
-		fileChannel.truncate( highId * recordSize ); 
 		logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId() );  
 		closeIdGenerator();
 		openIdGenerator();
 	}
 
 	public String getStringFor( RelationshipTypeRecord relTypeRecord, 
-		ReadFromBuffer buffer ) throws IOException
+		ReadFromBuffer buffer )
     {
 		int recordToFind = relTypeRecord.getTypeBlock();
 		Iterator<DynamicRecord> records = 
@@ -458,123 +411,9 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     }
 	
 	@Override
-	public void makeStoreOk() throws IOException
+	public void makeStoreOk()
 	{
 		typeNameStore.makeStoreOk();
 		super.makeStoreOk();
 	}
-	
-	@Override
-	public void validate()
-	{
-		typeNameStore.validate();
-		super.validate();
-	}
-	
-	private void convertRelTypes() throws IOException
-	{
-		FileChannel fileChannel = getFileChannel();
-		DynamicStringStore typeNameStore = new DynamicStringStore( 
-			getStorageFileName() + ".names" );
-		typeNameStore.makeStoreOk();
-		// in_use(byte)+type_blockId(int)
-		System.out.println( "Converting encoding on relationship type names" );
-		ByteBuffer buffer = ByteBuffer.allocate( 5 );
-		fileChannel.position( 0 );
-		int i = 0;
-		int reservedCount = 1;
-		int lastOkPos = 0;
-		while ( fileChannel.read( buffer ) == 5 )
-		{
-			buffer.flip();
-			byte inUse = buffer.get();
-			int block = buffer.getInt();
-			String name = "RESERVED";
-			if ( block == -1 )
-			{
-				name = name + reservedCount++;
-			}
-			else
-			{
-				try
-				{
-					Collection<DynamicRecord> records = 
-						typeNameStore.getRecords( block, null );
-					name = getOldStringFor( records, block );
-					for ( DynamicRecord record : records )
-					{
-						record.setInUse( false );
-						typeNameStore.updateRecord( record );
-					}
-					int nextId = typeNameStore.nextBlockId();
-					char[] chars = new char[ name.length() ];
-					name.getChars( 0, name.length(), chars, 0 );
-					records = typeNameStore.allocateRecords( nextId, chars );
-					for ( DynamicRecord record : records )
-					{
-						typeNameStore.updateRecord( record );
-					}
-					buffer.flip();
-					buffer.putInt( nextId );
-					buffer.flip();
-					fileChannel.position( i * 5 + 1 );
-					fileChannel.write( buffer );
-					lastOkPos = i;
-				}
-				catch ( IOException e )
-				{
-					// e.printStackTrace();
-					name = null;
-				}
-			}
-			System.out.println( "ID[" + i + "] use[" + inUse + 
-				"] blockId[" + block + "] name[" + name + "]" ); 
-			i++;
-			buffer.clear();
-		}
-		typeNameStore.close();
-		fileChannel.truncate( (lastOkPos + 1 ) * 5 );
-	}
-	
-	private static String getOldStringFor( 
-		Collection<DynamicRecord> recordsCol, int startBlock ) 
-		throws IOException
-    {
-		int recordToFind = startBlock;
-		Iterator<DynamicRecord> records = recordsCol.iterator();
-		List<byte[]> byteList = new LinkedList<byte[]>();
-		int totalSize = 0;
-		while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
-			records.hasNext() )
-		{
-			DynamicRecord record = records.next();
-			if ( record.inUse() && record.getId() == recordToFind )
-			{
-				if ( !record.isCharData() )
-				{
-					ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-					byte[] bytes = new byte[ record.getData().length ];
-					totalSize += bytes.length;
-					buf.get( bytes );
-					byteList.add( bytes );
-				}
-				else
-				{
-					throw new RuntimeException();
-					// charList.add( record.getDataAsChar() );
-				}
-				recordToFind = record.getNextBlock();
-				// TODO: make opti here, high chance next is right one
-				records = recordsCol.iterator();
-			}
-		}
-		byte[] allBytes = new byte[totalSize];
-		int position = 0;
-		for ( byte[] bytes : byteList )
-		{
-			System.arraycopy( bytes, 0, allBytes, position, bytes.length );
-			position += bytes.length;
-		}
-		return new String( allBytes );
-    }	
 }

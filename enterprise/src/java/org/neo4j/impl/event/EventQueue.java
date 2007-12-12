@@ -19,7 +19,6 @@ package org.neo4j.impl.event;
 import java.util.LinkedList;
 import java.util.logging.Logger;
 
-
 class EventQueue extends Thread
 {
 	private static Logger log =

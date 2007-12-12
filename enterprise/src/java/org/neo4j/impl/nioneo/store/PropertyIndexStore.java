@@ -18,7 +18,6 @@ package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -41,18 +40,16 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	private DynamicStringStore keyPropertyStore;
 	
 	public PropertyIndexStore( String fileName, Map<?,?> config ) 
-		throws IOException
 	{
 		super( fileName, config );
 	}
 
 	public PropertyIndexStore( String fileName ) 
-		throws IOException
 	{
 		super( fileName );
 	}
 
-	protected void initStorage() throws IOException
+	protected void initStorage()
 	{
 		keyPropertyStore = new DynamicStringStore( 
 			getStorageFileName() + ".keys", getConfig() );
@@ -69,40 +66,32 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	}
 	
 	@Override
-	public void makeStoreOk() throws IOException
+	public void makeStoreOk()
 	{
 		keyPropertyStore.makeStoreOk();
 		super.makeStoreOk();
 	}
 	
-	public void freeBlockId( int id ) throws IOException
+	public void freeBlockId( int id )
 	{
 		keyPropertyStore.freeBlockId( id );
 	}
 	
 	@Override
-	protected void closeStorage() throws IOException
+	protected void closeStorage()
 	{
 		keyPropertyStore.close();
 		keyPropertyStore = null;
 	}
 	
-//	@Override
-//	public void flush( int txIdentifier ) throws IOException
-//	{
-//		keyPropertyStore.flush( txIdentifier );
-//		super.flush( txIdentifier );
-//	}
-	
 	@Override
-	public void flushAll() throws IOException
+	public void flushAll()
 	{
 		keyPropertyStore.flushAll();
 		super.flushAll();
 	}
 	
 	public static void createStore( String fileName ) 
-		throws IOException
 	{
 		createEmptyStore( fileName, VERSION );
 		DynamicStringStore.createStore( fileName + ".keys", 
@@ -110,7 +99,6 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	}
 	
 	public RawPropertyIndex[] getPropertyIndexes( int count )
-		throws IOException
 	{
 		LinkedList<RawPropertyIndex> indexList = 
 			new LinkedList<RawPropertyIndex>();
@@ -123,7 +111,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 			{
 				record = getRecord( i, (ReadFromBuffer) null );
 			}
-			catch ( IOException e )
+			catch ( StoreFailureException t )
 			{
 				continue;
 			}
@@ -137,14 +125,11 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	
 			
 	public PropertyIndexRecord getRecord( int id, ReadFromBuffer buffer ) 
-		throws IOException
 	{
 		PropertyIndexRecord record;
-		if ( buffer != null && !hasWindow( id ) )
+		if ( buffer != null && !hasWindow( id ) && 
+            transferToBuffer( id, buffer ) )
 		{
-			buffer.makeReadyForTransfer();
-			getFileChannel().transferTo( ((long) id) * RECORD_SIZE, 
-				RECORD_SIZE, buffer.getFileChannel() );
 			ByteBuffer buf = buffer.getByteBuffer();
 			byte inUse = buf.get();
 			assert inUse == Record.IN_USE.byteValue();
@@ -159,7 +144,6 @@ public class PropertyIndexStore extends AbstractStore implements Store
 			try
 			{
 				record = getRecord( id, window.getBuffer() );
-				// cache.add( id, record );
 			}
 			finally 
 			{
@@ -209,7 +193,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 		return record;
 	}
 	
-	public void updateRecord( PropertyIndexRecord record ) throws IOException
+	public void updateRecord( PropertyIndexRecord record )
 	{
 		if ( record.isTransferable() && !hasWindow( record.getId() ) )
 		{
@@ -250,25 +234,24 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	}
 	
 	public Collection<DynamicRecord> allocateKeyRecords( int keyBlockId, 
-		char[] chars ) throws IOException
+		char[] chars )
 	{
 		return keyPropertyStore.allocateRecords( keyBlockId, chars );
 	}
 	
-	public int nextKeyBlockId() throws IOException
+	public int nextKeyBlockId()
 	{
 		return keyPropertyStore.nextBlockId();
 	}
 	
 	private PropertyIndexRecord getRecord( int id, Buffer buffer ) 
-		throws IOException
 	{
 		int offset = (int) ( id - buffer.position() ) * getRecordSize();
 		buffer.setOffset( offset );
 		boolean inUse = ( buffer.get() == Record.IN_USE.byteValue() );
 		if ( !inUse )
 		{
-			throw new IOException( "Record[" + id + "] not in use" );
+			throw new StoreFailureException( "Record[" + id + "] not in use" );
 		}
 		PropertyIndexRecord record = new PropertyIndexRecord( id );
 		record.setInUse( inUse );
@@ -277,24 +260,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 		return record;
 	}
 	
-	private boolean transferRecord( PropertyIndexRecord record ) throws IOException
-	{
-		int id = record.getId();
-		long count = record.getTransferCount();
-		FileChannel fileChannel = getFileChannel();
-		fileChannel.position( id * getRecordSize() );
-		if ( count != record.getFromChannel().transferTo( 
-			record.getTransferStartPosition(), count, fileChannel ) )
-		{
-//			throw new RuntimeException( "expected " + count + 
-//				" bytes transfered" );
-			return false;
-		}
-		return true;
-	}
-	
 	private void updateRecord( PropertyIndexRecord record, Buffer buffer )
-		throws IOException
 	{
 		int id = record.getId();
 		int offset = (int) ( id - buffer.position() ) * getRecordSize();
@@ -306,8 +272,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 		}
 		else
 		{
-			buffer.put( Record.NOT_IN_USE.byteValue() ); // .putInt( 0 ).putInt( 
-				// Record.NO_NEXT_BLOCK.intValue() );
+			buffer.put( Record.NOT_IN_USE.byteValue() );
 			if ( !isInRecoveryMode() )
 			{
 				freeId( id );
@@ -316,7 +281,6 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	}
 	
 	public void makeHeavy( PropertyIndexRecord record, ReadFromBuffer buffer ) 
-		throws IOException
 	{
 		record.setIsLight( false );
 		Collection<DynamicRecord> keyRecords = 
@@ -328,7 +292,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	}
 	
 	public String getStringFor( PropertyIndexRecord propRecord, 
-		ReadFromBuffer buffer ) throws IOException
+		ReadFromBuffer buffer )
     {
 		int recordToFind = propRecord.getKeyBlockId();
 		Iterator<DynamicRecord> records = 

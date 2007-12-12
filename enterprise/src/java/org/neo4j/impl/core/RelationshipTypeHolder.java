@@ -24,16 +24,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import javax.transaction.TransactionManager;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.impl.event.Event;
-import org.neo4j.impl.event.EventData;
-import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.persistence.IdGenerator;
+import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.util.ArrayMap;
 
 class RelationshipTypeHolder
 {
-//	private static final RelationshipTypeHolder holder = 
-//		new RelationshipTypeHolder();
 	private static Logger log = 
 		Logger.getLogger( RelationshipTypeHolder.class.getName() );
 	
@@ -42,21 +38,16 @@ class RelationshipTypeHolder
 		new ConcurrentHashMap<Integer,String>();
 	
 	private final TransactionManager transactionManager;
-	private final EventManager eventManager;
+	private final PersistenceManager persistenceManager;
 	private final IdGenerator idGenerator;
 	
 	RelationshipTypeHolder( TransactionManager transactionManager, 
-		EventManager eventManager, IdGenerator idGenerator )
+        PersistenceManager persistenceManager, IdGenerator idGenerator )
 	{
 		this.transactionManager = transactionManager;
-		this.eventManager = eventManager;
+        this.persistenceManager = persistenceManager;
 		this.idGenerator = idGenerator;
 	}
-	
-//	static RelationshipTypeHolder getHolder()
-//	{
-//		return holder;
-//	}
 	
 	void addRawRelationshipTypes( RawRelationshipTypeData[] types )
 	{
@@ -183,16 +174,7 @@ class RelationshipTypeHolder
 			{
 				transactionManager.begin();
 				id = idGenerator.nextId( RelationshipType.class );
-				EventData eventData = new EventData( new RelTypeOpData( id, 
-					name ) );
-				if ( !eventManager.generateProActiveEvent( 
-					Event.RELATIONSHIPTYPE_CREATE, eventData ) )
-				{
-					throw new RuntimeException( 
-						"Generate pro-active event failed." );
-				}
-				eventManager.generateReActiveEvent( 
-					Event.RELATIONSHIPTYPE_CREATE, eventData );
+                persistenceManager.createRelationshipType( id, name );
 				transactionManager.commit();
 				success = true;
 			}
@@ -244,33 +226,6 @@ class RelationshipTypeHolder
 			name );
 	}
 
-	static class RelTypeOpData implements RelationshipTypeOperationEventData
-	{
-		private int id = -1;
-		private String name = null;
-		
-		RelTypeOpData( int id, String name )
-		{
-			this.id = id;
-			this.name = name;
-		}
-	
-		public int getId()
-		{
-			return this.id;
-		}
-		
-		public String getName()
-		{
-			return this.name;
-		}
-		
-		public Object getEntity()
-		{
-			return this;
-		}
-	}
-	
 	void addRelType( String name, Integer id )
 	{
 		relTypes.put( name, id );

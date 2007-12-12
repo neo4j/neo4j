@@ -18,6 +18,8 @@ package org.neo4j.impl.core;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
@@ -25,6 +27,9 @@ import org.neo4j.api.core.Relationship;
 class RelationshipIterator implements Iterable<Relationship>, 
 	Iterator<Relationship>
 {
+    private Logger log = Logger.getLogger( 
+        RelationshipIterator.class.getName() );
+    
 	private int[] relIds;
 	private Node fromNode;
 	private Direction direction = null;
@@ -78,9 +83,9 @@ class RelationshipIterator implements Iterable<Relationship>,
 					}
 				}
 				catch ( Throwable t )
-				{ // ok unable to get that relationship
-					// TODO: add logging here so user knows he is doing 
-					// something wrong
+				{
+                    log.log( Level.INFO, "Unable to get relationship " + 
+                        relIds[nextPosition - 1], t );
 				}
 			}
 		} while ( nextElement == null && nextPosition < relIds.length );

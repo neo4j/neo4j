@@ -30,6 +30,7 @@ import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.impl.nioneo.store.StoreFailureException;
 import org.neo4j.impl.transaction.xaframework.XaConnection;
 import org.neo4j.impl.transaction.xaframework.XaConnectionHelpImpl;
 import org.neo4j.impl.transaction.xaframework.XaResourceHelpImpl;
@@ -131,7 +132,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		return this.xaResource;
 	}
 	
-	NeoTransaction getNeoTransaction() throws IOException
+	NeoTransaction getNeoTransaction()
 	{
 		if ( neoTransaction != null )
 		{
@@ -144,7 +145,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		}
 		catch ( XAException e )
 		{
-			throw new IOException( "Unable to get transaction, " + e );
+			throw new StoreFailureException( "Unable to get transaction.", e );
 		}
 	}
 	
@@ -177,49 +178,46 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 			nodeStore = getNodeStore();
 		}
 		
-		public void createNode( int nodeId ) throws IOException
+		public void createNode( int nodeId )
 		{
 			xaCon.getNeoTransaction().nodeCreate( nodeId );
 		}
 		
-		public void deleteNode( int nodeId ) throws IOException
+		public void deleteNode( int nodeId )
 		{
 			xaCon.getNeoTransaction().nodeDelete( nodeId );
 		}
 		
 		// checks for created in tx else get from store
-		public boolean loadLightNode( int nodeId ) throws IOException 
+		public boolean loadLightNode( int nodeId ) 
 		{
 			return xaCon.getNeoTransaction().nodeLoadLight( nodeId );
 		}
 		
 		public void addProperty( int nodeId, int propertyId, 
-			PropertyIndex index, Object value ) throws IOException
+			PropertyIndex index, Object value )
 		{
 			xaCon.getNeoTransaction().nodeAddProperty( nodeId, propertyId, 
 				index, value ); 
 		}
 	
 		public void changeProperty( int nodeId, int propertyId, Object value ) 
-			throws IOException
 		{
 			xaCon.getNeoTransaction().nodeChangeProperty( nodeId, propertyId, 
 				value );
 		}
 		
 		public void removeProperty( int nodeId, int propertyId ) 
-			throws IOException
 		{
 			xaCon.getNeoTransaction().nodeRemoveProperty( nodeId, propertyId ); 
 		}
 		
-		public PropertyData[] getProperties( int nodeId ) throws IOException
+		public PropertyData[] getProperties( int nodeId )
 		{
 			return xaCon.getNeoTransaction().nodeGetProperties( nodeId );			
 		}
 		
 		public RelationshipData[] getRelationships( int nodeId ) 
-			throws IOException
 		{
 			return xaCon.getNeoTransaction().nodeGetRelationships( nodeId );
 		}
@@ -248,49 +246,46 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		}
 		
 		public void createRelationship( int id, int firstNode, int secondNode, 
-			int type ) throws IOException
+			int type )
 		{
 			xaCon.getNeoTransaction().relationshipCreate( id, firstNode, 
 				secondNode, type );		
 		}
 		
-		public void deleteRelationship( int id ) throws IOException
+		public void deleteRelationship( int id )
 		{
 			xaCon.getNeoTransaction().relDelete( id );		
 		}
 	
 		public void addProperty( int relId, int propertyId, PropertyIndex index, 
-			Object value ) throws IOException
+			Object value )
 		{
 			xaCon.getNeoTransaction().relAddProperty( relId, propertyId, index, 
 				value );		
 		}
 	
 		public void changeProperty( int relId, int propertyId, Object value ) 
-			throws IOException
 		{
 			xaCon.getNeoTransaction().relChangeProperty( relId, propertyId, 
 				value );		
 		}
 		
 		public void removeProperty( int relId, int propertyId ) 
-			throws IOException
 		{
 			xaCon.getNeoTransaction().relRemoveProperty( relId, propertyId );		
 		}
 		
 		public PropertyData[] getProperties( int relId )
-			throws IOException
 		{
 			return xaCon.getNeoTransaction().relGetProperties( relId );
 		}
 	
-		public RelationshipData getRelationship( int id ) throws IOException
+		public RelationshipData getRelationship( int id )
 		{
 			return xaCon.getNeoTransaction().relationshipLoad( id );
 		}
 		
-		public int nextId() throws IOException
+		public int nextId()
 		{
 			return relStore.nextId();
 		}
@@ -314,24 +309,21 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		}
 		
 		public void addRelationshipType( int id, String name ) 
-			throws IOException
 		{
 			xaCon.getNeoTransaction().relationshipTypeAdd( id, name );		
 		}
 
 		public RelationshipTypeData getRelationshipType( int id ) 
-			throws IOException
 		{
 			return relTypeStore.getRelationshipType( id );
 		}
 	
 		public RelationshipTypeData[] getRelationshipTypes()
-			throws IOException
 		{
 			return relTypeStore.getRelationshipTypes();
 		}
 		
-		public int nextId() throws IOException
+		public int nextId()
 		{
 			return relTypeStore.nextId();
 		}
@@ -348,18 +340,16 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		}
 		
 		public void createPropertyIndex( int id, String key ) 
-			throws IOException
 		{
 			xaCon.getNeoTransaction().createPropertyIndex( id, key );		
 		}
 
-		public String getKeyFor( int id ) throws IOException
+		public String getKeyFor( int id )
 		{
 			return xaCon.getNeoTransaction().getPropertyIndex( id );
 		}
 	
 		public RawPropertyIndex[] getPropertyIndexes( int count ) 
-			throws IOException
 		{
 			return xaCon.getNeoTransaction().getPropertyIndexes( count );
 		}

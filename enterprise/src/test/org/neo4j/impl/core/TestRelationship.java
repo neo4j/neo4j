@@ -152,7 +152,7 @@ public class TestRelationship extends AbstractNeoTestCase
 			rel1.setProperty( null, null );
 			fail( "Null argument should result in exception." );
 		}
-		catch ( IllegalValueException e )
+		catch ( IllegalArgumentException e )
 		{}
 		Integer int1 = new Integer( 1 );
 		Integer int2 = new Integer( 2 );
@@ -268,7 +268,7 @@ public class TestRelationship extends AbstractNeoTestCase
 			rel1.setProperty( null, null );
 			fail( "Null argument should result in exception." );
 		}
-		catch ( IllegalValueException e )
+		catch ( IllegalArgumentException e )
 		{}
 		catch ( NotFoundException e )
 		{

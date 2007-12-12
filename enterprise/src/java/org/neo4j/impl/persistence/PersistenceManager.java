@@ -17,15 +17,12 @@
 package org.neo4j.impl.persistence;
 
 import javax.transaction.TransactionManager;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.impl.core.NotFoundException;
+import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.core.RawNodeData;
 import org.neo4j.impl.core.RawPropertyData;
 import org.neo4j.impl.core.RawPropertyIndex;
 import org.neo4j.impl.core.RawRelationshipData;
 import org.neo4j.impl.core.RawRelationshipTypeData;
-import org.neo4j.impl.transaction.NotInTransactionException;
 
 /**
  * The PersistenceManager is the front-end for all persistence related
@@ -38,7 +35,6 @@ public class PersistenceManager
 {
 	private final ResourceBroker broker;
 	
-	// private static final PersistenceManager instance = new PersistenceManager();
 	public PersistenceManager( TransactionManager transactionManager ) 
 	{ 
 		broker = new ResourceBroker( transactionManager );
@@ -49,85 +45,114 @@ public class PersistenceManager
 		return broker;
 	}
 
-	// public static PersistenceManager getManager() {	return instance; }
-	
-	public RawNodeData loadLightNode( int id ) throws PersistenceException
+	public RawNodeData loadLightNode( int id )
 	{
-		return (RawNodeData) getResource().performOperation( 
-			Operation.LOAD_LIGHT_NODE, id );
+        return getResource().nodeLoadLight( id );
 	}
 	
 	public Object loadPropertyValue( int id )
-		throws PersistenceException
 	{
-		return getResource().performOperation( Operation.LOAD_PROPERTY_VALUE, 
-			id );
+        return getResource().loadPropertyValue( id );
 	}
 	
 	public String loadIndex( int id )
-		throws PersistenceException
 	{
-		return (String) getResource().performOperation( 
-			Operation.LOAD_PROPERTY_INDEX, id );
+        return getResource().loadIndex( id );
 	}
 	
 	public RawPropertyIndex[] loadPropertyIndexes( int maxCount )
-		throws PersistenceException
 	{
-		return (RawPropertyIndex[]) getResource().performOperation( 
-			Operation.LOAD_PROPERTY_INDEXES, maxCount );
+        return getResource().loadPropertyIndexes( maxCount );
 	}
 	
-	public RawRelationshipData[] loadRelationships( Node node )
-		throws PersistenceException
+	public RawRelationshipData[] loadRelationships( int nodeId )
 	{
-		return ( RawRelationshipData[] ) getResource().performOperation( 
-			Operation.LOAD_RELATIONSHIPS, node );
+        return getResource().nodeLoadRelationships( nodeId );
 	}
 
-	public RawPropertyData[] loadProperties( Node node )
-		throws PersistenceException
+	public RawPropertyData[] loadNodeProperties( int nodeId )
 	{
-		return ( RawPropertyData[] ) getResource().performOperation( 
-			Operation.LOAD_NODE_PROPERTIES, node );
+        return getResource().nodeLoadProperties( nodeId );
 	}
 	
-	public RawPropertyData[] loadProperties( Relationship relationship )
-		throws PersistenceException
+	public RawPropertyData[] loadRelProperties( int relId )
 	{
-		return ( RawPropertyData[] ) getResource().performOperation( 
-			Operation.LOAD_REL_PROPERTIES, relationship );
+        return getResource().relLoadProperties( relId );
 	}
 
 	public RawRelationshipData loadLightRelationship( int id )
-		throws NotFoundException, PersistenceException
 	{
-		return (RawRelationshipData) getResource().performOperation( 
-			Operation.LOAD_LIGHT_REL, id );
+        return getResource().relLoadLight( id );
 	}
 	
 	public RawRelationshipTypeData[] loadAllRelationshipTypes()
-		throws PersistenceException
 	{
-		return (RawRelationshipTypeData[]) getResource().performOperation( 
-			Operation.LOAD_ALL_RELATIONSHIP_TYPES , null );
+        return getResource().loadRelationshipTypes();
 	}
 	
 	private ResourceConnection getResource()
-		throws PersistenceException
 	{
-		try
-		{
-			return broker.acquireResourceConnection(); // dummyMeta );
-		}
-		catch ( NotInTransactionException nite )
-		{
-			throw new PersistenceException( nite ); // this is enough info
-		}
-		catch ( ResourceAcquisitionFailedException rafe )
-		{
-			throw new PersistenceException( "Unable to acquire resource " +
-				"connection to persistence source", rafe );
-		}
-	}	
+		return broker.acquireResourceConnection();
+	}
+
+    public void nodeDelete( int nodeId )
+    {
+        getResource().nodeDelete( nodeId );
+    }
+
+    public int nodeAddProperty( int nodeId, PropertyIndex index, Object value )
+    {
+        return getResource().nodeAddProperty( nodeId, index, value );
+    }
+
+    public void nodeChangeProperty( int nodeId, int propertyId, Object value )
+    {
+        getResource().nodeChangeProperty( nodeId, propertyId, value );
+    }
+
+    public void nodeRemoveProperty( int nodeId, int propertyId )
+    {
+        getResource().nodeRemoveProperty( nodeId, propertyId );
+    }
+
+    public void nodeCreate( int id )
+    {
+        getResource().nodeCreate( id );
+    }
+
+    public void relationshipCreate( int id, int typeId, int startNodeId, 
+        int endNodeId )
+    {
+        getResource().relationshipCreate( id, typeId, startNodeId, endNodeId );
+    }	
+
+    public void relDelete( int relId )
+    {
+        getResource().relDelete( relId );
+    }
+
+    public int relAddProperty( int relId, PropertyIndex index, Object value )
+    {
+        return getResource().relAddProperty( relId, index, value );
+    }
+
+    public void relChangeProperty( int relId, int propertyId, Object value )
+    {
+        getResource().relChangeProperty( relId, propertyId, value );
+    }
+
+    public void relRemoveProperty( int relId, int propertyId )
+    {
+        getResource().relRemoveProperty( relId, propertyId );
+    }
+
+    public void createPropertyIndex( String key, int id )
+    {
+        getResource().createPropertyIndex( key, id );
+    }
+
+    public void createRelationshipType( int id, String name )
+    {
+        getResource().createRelationshipType( id, name );
+    }
 }

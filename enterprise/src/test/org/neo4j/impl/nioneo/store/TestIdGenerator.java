@@ -63,7 +63,7 @@ public class TestIdGenerator extends TestCase
 			IdGenerator.createGenerator( null );
 			fail( "Null filename should throw exception" );
 		}
-		catch ( IOException e )
+		catch ( IllegalArgumentException e )
 		{} // good
 		try
 		{
@@ -71,14 +71,14 @@ public class TestIdGenerator extends TestCase
 			new IdGenerator( "testIdGenerator.id", 0 ).close();
 			fail( "Zero grab size should throw exception" );
 		}
-		catch ( IOException e )
+		catch ( IllegalArgumentException e )
 		{} // good
 		try
 		{
 			new IdGenerator( "testIdGenerator.id", -1 ).close();
 			fail( "Negative grab size should throw exception" );
 		}
-		catch ( IOException e )
+		catch ( IllegalArgumentException e )
 		{} // good
 		
 		try
@@ -91,7 +91,7 @@ public class TestIdGenerator extends TestCase
 				fail( "Creating a id generator with existing file name " + 
 					"should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalStateException e )
 			{} // good
 			idGenerator.close();
 			// verify that id generator is ok
@@ -113,6 +113,7 @@ public class TestIdGenerator extends TestCase
 		}
 		catch ( IOException e )
 		{
+            e.printStackTrace();
 			fail( "" + e );
 		}
 		finally
@@ -136,14 +137,10 @@ public class TestIdGenerator extends TestCase
 				new IdGenerator( "testIdGenerator.id", 3 );
 				fail( "Opening sticky id generator should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( StoreFailureException e )
 			{ // good
 			}
 			idGen.close();
-		}
-		catch ( IOException e )
-		{
-			fail( "" + e );
 		}
 		finally
 		{
@@ -201,10 +198,6 @@ public class TestIdGenerator extends TestCase
 			assertEquals( 11, idGenerator.nextId() );
 			idGenerator.close();
 		}
-		catch ( IOException e )
-		{
-			fail( "" + e );
-		}
 		finally
 		{
 			File file = new File( "testIdGenerator.id" );
@@ -231,7 +224,7 @@ public class TestIdGenerator extends TestCase
 				idGenerator.freeId( -1 );
 				fail( "Negative id should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalArgumentException e )
 			{ // good
 			}
 			try
@@ -239,7 +232,7 @@ public class TestIdGenerator extends TestCase
 				idGenerator.freeId( 7 );
 				fail( "Greater id than ever returned should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalArgumentException e )
 			{ // good
 			}
 			for ( int i = 0; i < 7; i++ )
@@ -258,10 +251,6 @@ public class TestIdGenerator extends TestCase
 			assertEquals( 6, idGenerator.nextId() );
 			assertEquals( 3, idGenerator.nextId() );
 			idGenerator.close();
-		}
-		catch ( IOException e )
-		{
-			fail( "" + e );
 		}
 		finally
 		{
@@ -286,7 +275,7 @@ public class TestIdGenerator extends TestCase
 				idGenerator.nextId();
 				fail( "nextId after close should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalStateException e )
 			{ // good
 			}
 			try
@@ -294,7 +283,7 @@ public class TestIdGenerator extends TestCase
 				idGenerator.freeId( 0 );
 				fail( "freeId after close should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalArgumentException e )
 			{ // good
 			}
 			idGenerator = new IdGenerator( "testIdGenerator.id", 2 );
@@ -307,7 +296,7 @@ public class TestIdGenerator extends TestCase
 				idGenerator.nextId();
 				fail( "nextId after close should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalStateException e )
 			{ // good
 			}
 			try
@@ -315,13 +304,9 @@ public class TestIdGenerator extends TestCase
 				idGenerator.freeId( 0 );
 				fail( "freeId after close should throw exception" );
 			}
-			catch ( IOException e )
+			catch ( IllegalArgumentException e )
 			{ // good
 			}
-		}
-		catch ( IOException e )
-		{
-			fail( "" + e );
 		}
 		finally
 		{
@@ -368,10 +353,6 @@ public class TestIdGenerator extends TestCase
 			assertTrue( freedIds.values().size() == 0 );
 			idGenerator.close();
 		}
-		catch ( IOException e )
-		{
-			fail( "" + e );
-		}
 		finally
 		{
 			File file = new File( "testIdGenerator.id" );
@@ -406,10 +387,6 @@ public class TestIdGenerator extends TestCase
 			assertEquals( 0, freedIds.values().size() );
 			idGenerator.close();
 		}
-		catch ( IOException e )
-		{
-			fail( "" + e );
-		}
 		finally
 		{
 			File file = new File( "testIdGenerator.id" );
@@ -420,7 +397,7 @@ public class TestIdGenerator extends TestCase
 		}
 	}
 	
-	public void testRandomTest() throws IOException
+	public void testRandomTest()
 	{
 		int numberOfCloses = 0;
 			java.util.Random random = 
@@ -461,11 +438,6 @@ public class TestIdGenerator extends TestCase
 				}
 			}
 			idGenerator.close();
-		}
-		catch ( IOException e )
-		{
-			fail( "" + e );
-			
 		}
 		finally
 		{
