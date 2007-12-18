@@ -63,7 +63,9 @@ class PersistenceRow extends LockableWindow
             long fileSize = getFileChannel().size();
     		int recordCount = ( int ) (fileSize / recordSize);
     		this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
-    		if ( position >= recordCount )
+    		// possible last element not written completely, therefore if
+    		// fileSize % recordSize can be non 0 and we check > instead of >=
+    		if ( position > recordCount )
     		{
     			// use new buffer since it will contain only zeros
     			return;
@@ -72,8 +74,11 @@ class PersistenceRow extends LockableWindow
     		byteBuffer.clear();
     		int count = getFileChannel().read( byteBuffer, 
                 position * recordSize );
-            assert count == recordSize;
-    		byteBuffer.rewind();
+    		if ( position < recordCount )
+    		{
+    			assert count == recordSize;
+    		}
+    		byteBuffer.clear();
         }
         catch ( IOException e )
         {
@@ -130,5 +135,10 @@ class PersistenceRow extends LockableWindow
 	public String toString()
 	{
 		return "PersistenceRow[" + position + "]";
+	}
+	
+	public void close()
+	{
+		buffer.close();
 	}
 }

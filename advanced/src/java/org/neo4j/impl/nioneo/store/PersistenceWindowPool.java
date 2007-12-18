@@ -221,11 +221,20 @@ class PersistenceWindowPool
 		flushAll();
 		synchronized ( activeRowWindows )
 		{
+            for ( BrickElement element : brickArray )
+            {
+                if ( element.getWindow() != null )
+                {
+                	element.getWindow().close();
+                	element.setWindow( null );
+                }
+            }
 			fileChannel = null;
 			activeRowWindows = null;
 		}
 		dumpStatistics();
 	}
+	
 	
 	void flushAll()
 	{

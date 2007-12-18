@@ -108,4 +108,10 @@ class MappedPersistenceWindow extends LockableWindow
 		return "MappedPersistenceWindow[p=" + position + ",rs=" + recordSize + 
 			",ws=" + windowSize + ",ts=" + totalSize + "]";
 	}
+
+	@Override
+	public void close() 
+	{
+		buffer.close();
+	}
 }
