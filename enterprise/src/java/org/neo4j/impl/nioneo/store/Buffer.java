@@ -219,6 +219,11 @@ public class Buffer
 		return this;
 	}
 	
+	public void close()
+	{
+		buf = null;
+	}
+	
 	public String toString()
 	{
 		return "Buffer[" + buf + "," + persistenceWindow + "]"; 

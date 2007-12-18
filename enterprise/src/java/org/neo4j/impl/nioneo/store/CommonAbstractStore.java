@@ -270,8 +270,9 @@ public abstract class CommonAbstractStore
 	{
 		if ( getConfig() != null )
 		{
-			String realName = storageFileName.replace( '\\', '/' ).substring( 
-				storageFileName.lastIndexOf( '/' ) + 1 );
+			String convertSlash = storageFileName.replace( '\\', '/' );
+			String realName = convertSlash.substring( 
+					convertSlash.lastIndexOf( '/' ) + 1 );
 			String mem = ( String ) getConfig().get( 
 				realName + ".mapped_memory" );
 			if ( mem != null )
@@ -462,23 +463,35 @@ public abstract class CommonAbstractStore
 			recordSize = ( ( AbstractStore ) this ).getRecordSize();
         }
 		closeIdGenerator();
-        try
-        {
-    		fileChannel.position( ((long) highId) * recordSize );
-    		ByteBuffer buffer = ByteBuffer.wrap(
-    			getTypeAndVersionDescriptor().getBytes() );
-    		fileChannel.write( buffer );
-    		fileChannel.truncate( fileChannel.position() );
-    		fileChannel.force( false );
-    		fileLock.release();
-    		fileChannel.close();
-    		fileChannel = null;
-        }
-        catch ( IOException e )
-        {
-            throw new StoreFailureException( "Unable to close store " + 
-                getStorageFileName(), e );
-        }
+		boolean success = false;
+		IOException storedIoe = null;
+		for ( int i = 0; i < 10; i++ )
+		{
+		    try
+		    {
+				fileChannel.position( ((long) highId) * recordSize );
+				ByteBuffer buffer = ByteBuffer.wrap(
+					getTypeAndVersionDescriptor().getBytes() );
+				fileChannel.write( buffer );
+				fileChannel.truncate( fileChannel.position() );
+				fileChannel.force( false );
+				fileLock.release();
+				fileChannel.close();
+				fileChannel = null;
+				success = true;
+				break;
+		    }
+		    catch ( IOException e )
+		    {
+		    	storedIoe = e;
+		    	System.gc();
+		    }
+		}
+		if ( !success )
+		{
+	        throw new StoreFailureException( "Unable to close store " + 
+		            getStorageFileName(), storedIoe );
+		}
 	}
 	
 	/**

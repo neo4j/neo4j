@@ -33,6 +33,8 @@ abstract class LockableWindow implements PersistenceWindow
 	public abstract int size();
     
     public abstract void force();
+    
+    public abstract void close();
 	
 	private OperationType type = null;
 	private final FileChannel fileChannel;

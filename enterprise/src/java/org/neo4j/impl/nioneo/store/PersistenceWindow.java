@@ -45,5 +45,7 @@ public interface PersistenceWindow
 	public int size();
     
     public void force();
+    
+    public void close();
 }
 
