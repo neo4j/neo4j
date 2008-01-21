@@ -139,19 +139,18 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 		catch ( Exception e )
 		{ // ok
 		}
-// semantics changed... getNodeFromProxy will throw exception
-//		try
-//		{
-//			tx.success();
-//			tx.finish();
-//			fail( "Transaction should be marked rollback" );
-//		}
-//		catch ( Exception e )
-//		{ // good
-//		}
-//		setTransaction( getNeo().beginTx() );
+		try
+		{
+			tx.success();
+			tx.finish();
+			fail( "Transaction should be marked rollback" );
+		}
+		catch ( Exception e )
+		{ // good
+		}
+		setTransaction( getNeo().beginTx() );
 		node2.delete();
-//		node1.delete();
+		node1.delete();
 	}
 	
 	public void testAddPropertyDeletedNode()

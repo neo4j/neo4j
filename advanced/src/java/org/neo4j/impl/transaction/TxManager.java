@@ -902,4 +902,14 @@ public class TxManager implements TransactionManager
 			System.out.println( itr.next() );
 		}
 	}
+    
+    public int getEventIdentifier()
+    {
+        TransactionImpl tx = ( TransactionImpl ) getTransaction();
+        if ( tx != null )
+        {
+            return tx.getEventIdentifier();
+        }
+        return -1;
+    }
 }

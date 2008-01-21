@@ -153,6 +153,7 @@ public class Transaction
 		}
 		catch ( Exception e )
 		{
+//            e.printStackTrace();
 			throw new RuntimeException( e );
 		}
 	}
