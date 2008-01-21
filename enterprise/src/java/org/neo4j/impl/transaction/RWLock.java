@@ -137,7 +137,7 @@ class RWLock
 				}
 				catch ( InterruptedException e )
 				{
-				
+				    Thread.interrupted();
 				}
 				ragManager.stopWaitOn( this );
 			}
@@ -284,6 +284,7 @@ class RWLock
 				}
 				catch ( InterruptedException e )
 				{
+                    Thread.interrupted();
 				}
 				ragManager.stopWaitOn( this );
 			}

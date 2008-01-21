@@ -41,6 +41,7 @@ import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockNotFoundException;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.NotInTransactionException;
+import org.neo4j.impl.transaction.TxManager;
 import org.neo4j.impl.traversal.TraverserFactory;
 
 public class NodeManager
@@ -170,23 +171,26 @@ public class NodeManager
 			relTypeHolder.addValidRelationshipType( type.name(), true );
 		}
 		
-		NodeImpl firstNode = getLightNode( (int) startNode.getId() );
-		if ( firstNode == null )
+        int startNodeId = (int) startNode.getId();
+		NodeImpl firstNode = getLightNode( startNodeId );
+		if ( firstNode == null ||
+            neoConstraintsListener.nodeIsDeleted( startNodeId ) )
 		{
 			setRollbackOnly();
 			throw new RuntimeException( "First node[" + startNode.getId() + 
 				"] deleted" );
 		}
-		NodeImpl secondNode = getLightNode( (int) endNode.getId() );
-		if ( secondNode == null )
+        int endNodeId = (int) endNode.getId();
+		NodeImpl secondNode = getLightNode( endNodeId );
+		if ( secondNode == null || 
+            neoConstraintsListener.nodeIsDeleted( endNodeId ) )
 		{
 			setRollbackOnly();
 			throw new RuntimeException( "Second node[" + endNode.getId() + 
 				"] deleted" );
 		}
-		int id = idGenerator.nextId( Relationship.class );
-		int startNodeId = (int) startNode.getId();
-		int endNodeId = (int) endNode.getId();
+        
+        int id = idGenerator.nextId( Relationship.class );
 		RelationshipImpl rel = new RelationshipImpl( id, startNodeId, 
 			endNodeId, type, true, this );
 		boolean firstNodeTaken = false;
@@ -285,7 +289,7 @@ public class NodeManager
 			return new NodeProxy( nodeId, this );
 		}
 		node = new NodeImpl( nodeId, this );
-		acquireLock( node, LockType.READ );
+		acquireLock( node, LockType.WRITE );
 		try
 		{
     		if ( nodeCache.get( nodeId ) != null )
@@ -305,7 +309,7 @@ public class NodeManager
 		}
 		finally
 		{
-			forceReleaseReadLock( node );
+			forceReleaseWriteLock( node );
 		}
 	}
 	
@@ -317,7 +321,7 @@ public class NodeManager
 			return (NodeImpl) node;
 		}
 		node = new NodeImpl( nodeId, this );
-		acquireLock( node, LockType.READ );
+		acquireLock( node, LockType.WRITE );
 		try
 		{
 			if ( nodeCache.get( nodeId ) != null )
@@ -334,7 +338,7 @@ public class NodeManager
 		}
 		finally
 		{
-			forceReleaseReadLock( node );
+			forceReleaseWriteLock( node );
 		}
 	}
 	
@@ -346,7 +350,7 @@ public class NodeManager
 			return (NodeImpl) node;
 		}
 		node = new NodeImpl( nodeId, this );
-		acquireLock( node, LockType.READ );
+		acquireLock( node, LockType.WRITE );
 		try
 		{
 			if ( nodeCache.get( nodeId ) != null )
@@ -364,7 +368,7 @@ public class NodeManager
 		}
 		finally
 		{
-			forceReleaseReadLock( node );
+			forceReleaseWriteLock( node );
 		}
 	}
 	
@@ -401,7 +405,7 @@ public class NodeManager
 			return new RelationshipProxy( relId, this );
 		}
 		relationship = new RelationshipImpl( relId, this );
-		acquireLock( relationship, LockType.READ );
+		acquireLock( relationship, LockType.WRITE );
 		try
 		{
 			if ( relCache.get( relId ) != null )
@@ -431,7 +435,7 @@ public class NodeManager
 		}
 		finally
 		{
-			forceReleaseReadLock( relationship );
+			forceReleaseWriteLock( relationship );
 		}
 	}
 	
@@ -448,7 +452,7 @@ public class NodeManager
 			return relationship;
 		}
 		relationship = new RelationshipImpl( relId, this );
-		acquireLock( relationship, LockType.READ );
+		acquireLock( relationship, LockType.WRITE );
 		try
 		{
 			if ( relCache.get( relId ) != null )
@@ -477,7 +481,7 @@ public class NodeManager
 		}
 		finally
 		{
-			forceReleaseReadLock( relationship );
+			forceReleaseWriteLock( relationship );
 		}
 	}
 	
@@ -653,25 +657,43 @@ public class NodeManager
 		}
 	}
 	
-	// only used during creation/loading of nodes/rels
-	private void forceReleaseReadLock( Object resource )
-	{
-		try
-		{
-			lockManager.releaseReadLock( resource );
-		}
-		catch ( LockNotFoundException e )
-		{
-			throw new RuntimeException( 
-				"Unable to release lock.", e );
-		}
-		catch ( IllegalResourceException e )
-		{
-			throw new RuntimeException( 
-				"Unable to release lock.", e );
-		}
-	}
+//	private void forceReleaseReadLock( Object resource )
+//	{
+//		try
+//		{
+//			lockManager.releaseReadLock( resource );
+//		}
+//		catch ( LockNotFoundException e )
+//		{
+//			throw new RuntimeException( 
+//				"Unable to release lock.", e );
+//		}
+//		catch ( IllegalResourceException e )
+//		{
+//			throw new RuntimeException( 
+//				"Unable to release lock.", e );
+//		}
+//	}
 	
+    // used when loading nodes/rels to cache
+    private void forceReleaseWriteLock( Object resource )
+    {
+        try
+        {
+            lockManager.releaseWriteLock( resource );
+        }
+        catch ( LockNotFoundException e )
+        {
+            throw new RuntimeException( 
+                "Unable to release lock.", e );
+        }
+        catch ( IllegalResourceException e )
+        {
+            throw new RuntimeException( 
+                "Unable to release lock.", e );
+        }
+    }
+    
 	public boolean isValidRelationship( Relationship rel )
 	{
 		try
@@ -837,7 +859,7 @@ public class NodeManager
         neoConstraintsListener.deleteNode( node );
         int nodeId = (int) node.getId();
         persistenceManager.nodeDelete( nodeId );
-        nodeCache.remove( nodeId );
+//        nodeCache.remove( nodeId );
     }
 
     int nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
@@ -858,6 +880,7 @@ public class NodeManager
     void nodeRemoveProperty( NodeImpl node, int propertyId )
     {
         int nodeId = (int) node.getId();
+        neoConstraintsListener.nodePropertyOperation( nodeId );
         if ( neoConstraintsListener.nodeIsDeleted( nodeId ) )
         {
             // property will be deleted
@@ -871,7 +894,7 @@ public class NodeManager
         neoConstraintsListener.deleteRelationship( rel );
         int relId = (int) rel.getId();
         persistenceManager.relDelete( relId );
-        relCache.remove( relId );
+//        relCache.remove( relId );
     }
 
     int relAddProperty( RelationshipImpl rel, PropertyIndex index, 
@@ -892,11 +915,22 @@ public class NodeManager
     void relRemoveProperty( RelationshipImpl rel, int propertyId )
     {
         int relId = (int) rel.getId();
+        neoConstraintsListener.relPropertyOperation( relId );
         if ( neoConstraintsListener.relIsDeleted( relId ) )
         {
             // property will be deleted
             return;
         }
         persistenceManager.relRemoveProperty( relId, propertyId );
+    }
+
+    public int getTransactionId()
+    {
+        return ((TxManager) transactionManager).getEventIdentifier();
+    }
+
+    public void addCowToTxHook( NeoPrimitive primitive )
+    {
+        lockReleaser.addCowToTransaction( primitive );
     }
 }

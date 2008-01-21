@@ -27,7 +27,6 @@ import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
-import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -93,8 +92,8 @@ class NeoConstraintsListener // implements ProActiveEventListener
 						log.severe( "Deleted Node[" + node + 
 							"] still has relationship." );
 						StringBuffer buf = new StringBuffer( 
-							"Found relationships: " );
-						int count = 0;
+							"Found relationships " );
+/*						int count = 0;
 						for ( Relationship rel : node.getRelationships() )
 						{
 							if ( count == 10 )
@@ -103,7 +102,7 @@ class NeoConstraintsListener // implements ProActiveEventListener
 								break;
 							}
 							buf.append(  rel.getType() ).append( " " ); 
-						}
+						}*/
 						log.severe( buf.toString() );
 						setRollbackOnly();
 					}

@@ -91,6 +91,7 @@ abstract class LockableWindow implements PersistenceWindow
 			}
 			catch ( InterruptedException e )
 			{
+                Thread.interrupted();
 			}
 		}
 		lockCount++;
