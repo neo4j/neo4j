@@ -17,9 +17,11 @@
 package org.neo4j.impl.core;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import javax.transaction.InvalidTransactionException;
+import javax.transaction.Status;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import org.neo4j.impl.transaction.LockManager;
@@ -42,6 +44,8 @@ public class LockReleaser
 	
 	private final ArrayMap<Thread,List<LockElement>> lockMap =  
 			new ArrayMap<Thread,List<LockElement>>( 5, true, true );
+    private final ArrayMap<Thread,List<NeoPrimitive>> cowMap = 
+        new ArrayMap<Thread,List<NeoPrimitive>>( 5, true, true );
 
 	private final LockManager lockManager;
 	private final TransactionManager transactionManager;
@@ -119,6 +123,22 @@ public class LockReleaser
 			lockElements.add( new LockElement( resource, type ) );
 		}
 	}
+    
+    void addCowToTransaction( NeoPrimitive element )
+    {
+        Thread currentThread = Thread.currentThread();
+        List<NeoPrimitive> cowElements = cowMap.get( currentThread );
+        if ( cowElements != null )
+        {
+            cowElements.add( element );
+        }
+        else
+        {
+            cowElements = new LinkedList<NeoPrimitive>();
+            cowElements.add( element );
+            cowMap.put( currentThread, cowElements );
+        }
+    }
 
 	/**
 	 * Releases all commands that participated in the successfully committed
@@ -157,6 +177,30 @@ public class LockReleaser
 		}
 	}
 	
+    public void releaseCows( int param )
+    {
+        Thread currentThread = Thread.currentThread();
+        List<NeoPrimitive> cowElements = cowMap.remove( currentThread );
+        if ( cowElements != null )
+        {
+            for ( NeoPrimitive neoPrimitive : cowElements )
+            {
+                if ( param == Status.STATUS_COMMITTED )
+                {
+                    neoPrimitive.commitCowMaps();
+                }
+                else if ( param == Status.STATUS_ROLLEDBACK )
+                {
+                    neoPrimitive.rollbackCowMaps();
+                }
+                else
+                {
+                    throw new RuntimeException( "Unkown status: " + param );
+                }
+            }
+        }
+    }
+    
 	public synchronized void dumpLocks()
 	{
 		System.out.print( "Locks held: " );

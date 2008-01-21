@@ -165,6 +165,10 @@ class NeoTransaction extends XaTransaction
 				neoStore.getNodeStore(), record );
 			nodeCommands.add( command );
 			addCommand( command );
+            if ( !record.inUse() )
+            {
+                removeNodeFromCache( record.getId() );
+            }
 		}
 		for ( RelationshipRecord record : relRecords.values() )
 		{
@@ -173,6 +177,10 @@ class NeoTransaction extends XaTransaction
 					neoStore.getRelationshipStore(), record );
 			relCommands.add( command );
 			addCommand( command );
+            if ( !record.inUse() )
+            {
+                removeRelationshipFromCache( record.getId() );
+            }
 		}
 		for ( PropertyIndexRecord record : propIndexRecords.values() )
 		{

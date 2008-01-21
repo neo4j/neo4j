@@ -45,6 +45,7 @@ class TxCommitHook implements Synchronization
 	
 	private void releaseLocks( int param )
 	{
+        lockReleaser.releaseCows( param );
 		lockReleaser.releaseLocks();
 	}
 }
