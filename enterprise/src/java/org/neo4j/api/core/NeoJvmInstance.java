@@ -16,6 +16,7 @@
  */
 package org.neo4j.api.core;
 
+import java.util.HashMap;
 import java.util.Map;
 import javax.transaction.TransactionManager;
 import org.neo4j.impl.cache.AdaptiveCacheManager;
@@ -58,7 +59,7 @@ class NeoJvmInstance
 	
 	public void start() 
 	{
-		Map<Object,Object> params = new java.util.HashMap<Object,Object>();
+		Map<String,String> params = new HashMap<String,String>();
 		params.put( "neostore.nodestore.db.mapped_memory", "20M" );
 		params.put( "neostore.propertystore.db.mapped_memory", "90M" );
 		params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
@@ -68,7 +69,7 @@ class NeoJvmInstance
 		params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
 		start( params );
 	}
-	
+    
 	/**
 	 * Starts Neo with default configuration using NioNeo DB as persistence 
 	 * store. 
@@ -79,13 +80,17 @@ class NeoJvmInstance
 	 * @param configuration parameters
 	 * @throws StartupFailedException if unable to start
 	 */
-	public void start( Map<Object,Object> params ) 
+	public void start( Map<String,String> stringParams ) 
 	{
 		if ( started )
 		{
-			throw new RuntimeException( "A Neo instance already started" );
+			throw new IllegalStateException( "A Neo instance already started" );
 		}
-		
+		Map<Object,Object> params = new HashMap<Object,Object>();
+        for ( String key : stringParams.keySet() )
+        {
+            params.put( key, stringParams.get( key ) );
+        }
 		config = new Config();
 		config.getTxModule().setTxLogDirectory( storeDir );
 		// create NioNeo DB persistence source
@@ -304,5 +309,5 @@ class NeoJvmInstance
 	public TransactionManager getTransactionManager()
 	{
 		return config.getTxModule().getTxManager();
-	}	
+	}    
 }
