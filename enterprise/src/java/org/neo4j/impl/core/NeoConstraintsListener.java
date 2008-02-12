@@ -211,7 +211,11 @@ class NeoConstraintsListener // implements ProActiveEventListener
         
         NodeImpl getDeletedNode( int nodeId )
         {
-            return deletedNodes.get( nodeId );
+        	if ( deletedNodes != null )
+        	{
+        		return deletedNodes.get( nodeId );
+        	}
+        	return null;
         }
 	}
 	
