@@ -156,10 +156,13 @@ class NeoTransaction extends XaTransaction
 		}
 		for ( NodeRecord record : nodeRecords.values() )
 		{
-			if ( !record.inUse() )
+			if ( !record.inUse() && record.getNextRel() != 
+				Record.NO_NEXT_RELATIONSHIP.intValue() )
 			{
-				assert record.getNextRel() == 
-					Record.NO_NEXT_RELATIONSHIP.intValue();
+				throw new StoreFailureException( "Node record " + record + 
+					" still has relationships" );
+//				assert record.getNextRel() == 
+//					Record.NO_NEXT_RELATIONSHIP.intValue();
 			}
 			Command.NodeCommand command = new Command.NodeCommand( 
 				neoStore.getNodeStore(), record );
