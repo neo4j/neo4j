@@ -107,7 +107,7 @@ public class RelationshipRecord extends AbstractRecord
 	{
 		StringBuffer buf = new StringBuffer();
 		buf.append( "RelationshipRecord[" ).append( getId() ).append( 
-			"," ).append( inUse() ).append( "," ).append( "," ).append( 
+			"," ).append( inUse() ).append( "," ).append( 
 			firstNode ).append( "," ).append( secondNode ).append( 
 			"," ).append( type ).append( "," ).append( firstPrevRel ).append( 
 			",").append( firstNextRel ).append( "," ).append( 
