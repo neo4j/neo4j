@@ -100,7 +100,7 @@ public abstract class ScriptExecutor
 	
 	protected String findProperMessage( Throwable e )
 	{
-		String message = e.getMessage();
+		String message = e.toString();
 		if ( e.getCause() != null )
 		{
 			message = this.findProperMessage( e.getCause() );
