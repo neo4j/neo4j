@@ -186,5 +186,11 @@ public abstract class NeoApp extends AbstractApp
 		{
 			return this.name;
 		}
+		
+		@Override
+		public String toString()
+		{
+			return name();
+		}
 	}
 }
