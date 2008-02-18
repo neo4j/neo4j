@@ -156,6 +156,7 @@ public class ClassLister
 	private static String fixJarEntryClassName( String entryName )
 	{
 		entryName = entryName.replace( File.separatorChar, '.' );
+		entryName = entryName.replace( '/', '.' );
 		return trimFromClassEnding( entryName );
 	}
 	
