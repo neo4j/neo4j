@@ -1,5 +1,6 @@
 package org.neo4j.util.shell;
 
+import java.lang.reflect.Modifier;
 import java.rmi.RemoteException;
 import java.util.HashSet;
 import java.util.Set;
@@ -51,9 +52,14 @@ public abstract class AbstractAppServer extends AbstractServer
 				command.substring( 1, command.length() ).toLowerCase();
 			try
 			{
-				App theApp = ( App ) Class.forName( name ).newInstance();
-				theApp.setServer( this );
-				return theApp;
+				Class<?> cls = Class.forName( name );
+				if ( !cls.isInterface() && App.class.isAssignableFrom( cls ) &&
+					Modifier.isAbstract( cls.getModifiers() ) )
+				{
+					App theApp = ( App ) cls.newInstance();
+					theApp.setServer( this );
+					return theApp;
+				}
 			}
 			catch ( Exception e )
 			{
