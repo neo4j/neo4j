@@ -73,7 +73,7 @@ public abstract class AbstractServer extends UnicastRemoteObject
 		catch ( NoSuchObjectException e )
 		{
 			// Ok
-			System.out.println( "Couldn't shutdown server" );
+//			System.out.println( "Couldn't shutdown server" );
 		}
 	}
 
