@@ -62,7 +62,7 @@ public class SimpleAppServer extends AbstractAppServer
 		@Override
 		public String getDescription()
 		{
-			return "Built-in command. Exits the client";
+			return "Exits the client";
 		}
 	}
 }
