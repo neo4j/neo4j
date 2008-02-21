@@ -16,7 +16,7 @@
  */
 package org.neo4j.impl.shell.apps;
 
-import org.neo4j.impl.shell.NeoApp;
+import org.neo4j.api.core.Node;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -26,13 +26,14 @@ import org.neo4j.util.shell.ShellException;
 /**
  * Sets a property for the current node.
  */
-public class Set extends NeoApp
+public class Set extends NodeOrRelationshipApp
 {
 	/**
 	 * Constructs a new "set" application.
 	 */
 	public Set()
 	{
+		super();
 		this.addValueType( "t", new OptionContext( OptionValueType.MUST,
 			"Value type, String, Integer, Long, Byte a.s.o." ) );
 	}
@@ -47,8 +48,13 @@ public class Set extends NeoApp
 	protected String exec( AppCommandParser parser, Session session,
 		Output out ) throws ShellException
 	{
-		String key = parser.arguments().get( 0 );
+		if ( parser.arguments().size() < 2 )
+		{
+			throw new ShellException( "Must supply key and value, " +
+				"like: set -t String title \"This is a neo node\"" );
+		}
 		
+		String key = parser.arguments().get( 0 );
 		Class<?> type = this.getValueType( parser );
 		Object value = null;
 		try
@@ -61,7 +67,9 @@ public class Set extends NeoApp
 			throw new ShellException( e );
 		}
 		
-		this.getCurrentNode( session ).setProperty( key, value );
+		Node node = this.getCurrentNode( session );
+		NodeOrRelationship thing = getNodeOrRelationship( node, parser );
+		thing.setProperty( key, value );
 		return null;
 	}
 	
