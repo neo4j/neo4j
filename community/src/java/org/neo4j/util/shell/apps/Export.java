@@ -15,7 +15,8 @@ public class Export extends AbstractApp
 	@Override
 	public String getDescription()
 	{
-		return "Sets an environment variable. Usage: export <key>=<value>";
+		return "Sets an environment variable. Usage: export <key>=<value>\n" +
+			"F.ex: export NAME=\"Mattias Persson\"";
 	}
 
 	public String execute( AppCommandParser parser, Session session,

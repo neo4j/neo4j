@@ -54,7 +54,7 @@ public abstract class AbstractAppServer extends AbstractServer
 			{
 				Class<?> cls = Class.forName( name );
 				if ( !cls.isInterface() && App.class.isAssignableFrom( cls ) &&
-					Modifier.isAbstract( cls.getModifiers() ) )
+					!Modifier.isAbstract( cls.getModifiers() ) )
 				{
 					App theApp = ( App ) cls.newInstance();
 					theApp.setServer( this );
@@ -63,6 +63,13 @@ public abstract class AbstractAppServer extends AbstractServer
 			}
 			catch ( Exception e )
 			{
+			}
+			catch ( NoClassDefFoundError e )
+			{
+				// Well, if you at the prompt hit the name 'nodeorrelationship'
+				// f.ex. then a NoClassDefFoundError will be thrown since
+				// there exists a class by that name, but the case is wrong.
+				// In this particular case the class is NodeOrRelationship.
 			}
 		}
 		return null;
