@@ -22,7 +22,6 @@ import java.util.regex.Pattern;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -33,13 +32,14 @@ import org.neo4j.util.shell.ShellException;
  * Mimics the POSIX application with the same name, i.e. lists
  * properties/relationships on a node.
  */
-public class Ls extends NeoApp
+public class Ls extends NodeOrRelationshipApp
 {
 	/**
 	 * Constructs a new "ls" application.
 	 */
 	public Ls()
 	{
+		super();
 		this.addValueType( "d", new OptionContext( OptionValueType.MUST,
 			"Direction filter for relationships: " +
 			this.directionAlternatives() ) );
@@ -53,6 +53,9 @@ public class Ls extends NeoApp
 			"Lists relationships" ) );
 		this.addValueType( "f", new OptionContext( OptionValueType.MUST,
 			"Filters property keys/relationship types (regexp string)" ) );
+		this.addValueType( "e", new OptionContext( OptionValueType.MUST,
+			"Temporarily select a connected relationship to do the" +
+			"operation on" ) );
 	}
 	
 	@Override
@@ -63,8 +66,8 @@ public class Ls extends NeoApp
 	}
 	
 	@Override
-	protected String exec( AppCommandParser parser, Session session, Output out )
-		throws ShellException, RemoteException
+	protected String exec( AppCommandParser parser, Session session,
+		Output out ) throws ShellException, RemoteException
 	{
 		boolean verbose = parser.options().containsKey( "v" );
 		boolean displayValues = verbose || !parser.options().containsKey( "q" );
@@ -90,14 +93,15 @@ public class Ls extends NeoApp
 				Long.parseLong( parser.arguments().get( 0 ) ) );
 		}
 		
-		this.displayProperties( node, out, displayProperties, displayValues,
+		NodeOrRelationship thing = getNodeOrRelationship( node, parser );
+		this.displayProperties( thing, out, displayProperties, displayValues,
 			verbose, filter );
-		this.displayRelationships( parser, node, out, displayRelationships, 
+		this.displayRelationships( parser, thing, out, displayRelationships, 
 			verbose, filter );
 		return null;
 	}
 	
-	private void displayProperties( Node node, Output out,
+	private void displayProperties( NodeOrRelationship thing, Output out,
 		boolean displayProperties, boolean displayValues, boolean verbose,
 		String filter ) throws ShellException, RemoteException
 	{
@@ -105,10 +109,10 @@ public class Ls extends NeoApp
 		{
 			return;
 		}
-		int longestKey = this.findLongestKey( node );
+		int longestKey = this.findLongestKey( thing );
 		Pattern propertyKeyPattern = filter == null ? null :
 			Pattern.compile( filter );
-		for ( String key : node.getPropertyKeys() )
+		for ( String key : thing.getPropertyKeys() )
 		{
 			if ( propertyKeyPattern != null &&
 				!propertyKeyPattern.matcher( key ).matches() )
@@ -120,7 +124,7 @@ public class Ls extends NeoApp
 			if ( displayValues )
 			{
 				this.printMany( out, " ", longestKey - key.length() + 1 );
-				Object value = node.getProperty( key );
+				Object value = thing.getProperty( key );
 				out.print( "=[" + value + "]" );
 				if ( verbose )
 				{
@@ -131,9 +135,9 @@ public class Ls extends NeoApp
 		}
 	}
 	
-	private void displayRelationships( AppCommandParser parser, Node node,
-		Output out, boolean displayRelationships, boolean verbose, 
-		String filter ) throws ShellException, RemoteException
+	private void displayRelationships( AppCommandParser parser,
+		NodeOrRelationship thing, Output out, boolean displayRelationships,
+		boolean verbose, String filter ) throws ShellException, RemoteException
 	{
 		if ( !displayRelationships )
 		{
@@ -150,7 +154,7 @@ public class Ls extends NeoApp
 		if ( displayOutgoing )
 		{
 			for ( Relationship rel :
-				node.getRelationships( Direction.OUTGOING ) )
+				thing.getRelationships( Direction.OUTGOING ) )
 			{
 				if ( filterPattern != null && !filterPattern.matcher(
 					rel.getType().name() ).matches() )
@@ -172,7 +176,7 @@ public class Ls extends NeoApp
 		if ( displayIncoming )
 		{
 			for ( Relationship rel :
-				node.getRelationships( Direction.INCOMING ) )
+				thing.getRelationships( Direction.INCOMING ) )
 			{
 				if ( filterPattern != null && !filterPattern.matcher(
 					rel.getType().name() ).matches() )
@@ -200,10 +204,10 @@ public class Ls extends NeoApp
 			String.class.getPackage().getName().length() + 1 );
 	}
 	
-	private int findLongestKey( Node node )
+	private int findLongestKey( NodeOrRelationship thing )
 	{
 		int length = 0;
-		for ( String key : node.getPropertyKeys() )
+		for ( String key : thing.getPropertyKeys() )
 		{
 			if ( key.length() > length )
 			{
