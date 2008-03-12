@@ -13,8 +13,8 @@ public class PatternNode
 		new LinkedList<PatternRelationship>();
 	 
 	 private Set<String> propertiesExist = new HashSet<String>();
-	 private Map<String, Object> propertiesEqual =
-		 new HashMap<String, Object>();
+	 private Map<String, Object[]> propertiesEqual =
+		 new HashMap<String, Object[]>();
 	 private String label;
 	
 	public PatternNode()
@@ -57,9 +57,12 @@ public class PatternNode
 		this.propertiesExist.add( propertyName );
 	}
 	
-	public void addPropertyEqualConstraint( String propertyName, Object value )
+	public void addPropertyEqualConstraint( String propertyName,
+		Object... atLeastOneOfTheseValues )
 	{
-		this.propertiesEqual.put( propertyName, value );
+		assert atLeastOneOfTheseValues != null &&
+			atLeastOneOfTheseValues.length > 0;
+		this.propertiesEqual.put( propertyName, atLeastOneOfTheseValues );
 	}
 	
 	public String getLabel()
@@ -83,7 +86,7 @@ public class PatternNode
 		return this.propertiesEqual.keySet();
 	}
 	
-	Object getPropertyValue( String propertyName )
+	Object[] getPropertyValue( String propertyName )
 	{
 		return this.propertiesEqual.get( propertyName );
 	}

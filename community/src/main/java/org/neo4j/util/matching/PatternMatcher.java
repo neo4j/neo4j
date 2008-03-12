@@ -1,5 +1,7 @@
 package org.neo4j.util.matching;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.HashMap;
@@ -302,10 +304,13 @@ public class PatternMatcher
 			{
 				return false;
 			}
-			Object patternValue = patternNode.getPropertyValue( propertyName );
+			Object[] patternValues =
+				patternNode.getPropertyValue( propertyName );
 			Object neoValue = neoNode.getProperty( propertyName );
-			return NeoArrayPropertyUtil.neoValueToCollection(
-				neoValue ).contains( patternValue );
+			Collection<Object> neoValues =
+				NeoArrayPropertyUtil.neoValueToCollection( neoValue );
+			neoValues.retainAll( Arrays.asList( patternValues ) );
+			return !neoValues.isEmpty();
 		}
 
 // old implementation that doesn't return values
