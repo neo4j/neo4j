@@ -21,32 +21,12 @@ import org.neo4j.util.shell.ShellException;
  */
 public abstract class ScriptExecutor
 {
-	/**
-	 * The {@link Session} key used to read which paths (folders on disk) to
-	 * list groovy scripts from.
-	 */
-	public static final String PATH_STRING = "GSH_PATH";
-	
-	/**
-	 * The class name which represents the Binding class in groovy.
-	 */
-	public static final String BINDING_CLASS = "groovy.lang.Binding";
-	
-	/**
-	 * The class name which represents the GroovyScriptEngine class.
-	 */
-	public static final String ENGINE_CLASS = "groovy.util.GroovyScriptEngine";
-	
-	/**
-	 * Default paths to use if no paths are specified by the
-	 * {@link #PATH_STRING}.
-	 */
-	public static final String DEFAULT_PATHS =
-		".:script:src" + File.separator + "script";
-	
 	protected abstract String getPathKey();
 	
-	protected abstract String getDefaultPaths();
+	protected String getDefaultPaths()
+	{
+		return ".:src:src" + File.separator + "script";
+	}
 
 	/**
 	 * Executes a groovy script (with arguments) defined in {@code line}. 
@@ -61,7 +41,7 @@ public abstract class ScriptExecutor
 		this.ensureDependenciesAreInClasspath();
 		if ( line == null || line.trim().length() == 0 )
 		{
-			throw new ShellException( "Need to supply scripts and arguments" );
+			return;
 		}
 		
 		List<String> pathList = this.getEnvPaths( session );
@@ -147,8 +127,8 @@ public abstract class ScriptExecutor
 		try
 		{
 			List<String> list = new ArrayList<String>();
-			collectPaths( list, ( String ) session.get( PATH_STRING ) );
-			collectPaths( list, DEFAULT_PATHS );
+			collectPaths( list, ( String ) session.get( getPathKey() ) );
+			collectPaths( list, getDefaultPaths() );
 			return list;
 		}
 		catch ( RemoteException e )

@@ -33,12 +33,13 @@ public class Gsh extends AbstractApp
 	@Override
 	public String getDescription()
 	{
+		GshExecutor anExecutor = new GshExecutor();
 		return "Runs groovy scripts. Usage: gsh <groovy script line>\n" +
 			"  Example: gsh --doSomething arg1 \"arg 2\" " +
 			"--doSomethingElse arg1\n" +
 			"Where the groovy scripts doSomething.groovy and " +
 			"doSomethingElse.groovy exists in one of " +
-			"environment variable\n" + GshExecutor.PATH_STRING +
-			" paths (default is " + GshExecutor.DEFAULT_PATHS + ")";
+			"environment variable\n" + anExecutor.getPathKey() +
+			" paths (default is " + anExecutor.getDefaultPaths() + ")";
 	}
 }

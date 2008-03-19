@@ -7,7 +7,6 @@ import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.neo4j.util.shell.Output;
-import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
 public class JshExecutor extends ScriptExecutor
@@ -41,22 +40,9 @@ public class JshExecutor extends ScriptExecutor
 	}
 	
 	/**
-	 * The {@link Session} key used to read which paths (folders on disk) to
-	 * list groovy scripts from.
-	 */
-	public static final String PATH_STRING = "JSH_PATH";
-	
-	/**
-	 * Default paths to use if no paths are specified by the
-	 * {@link #PATH_STRING}.
-	 */
-	public static final String DEFAULT_PATHS =
-		".:script:src" + File.separator + "script";
-	
-	/**
 	 * The class name which represents the PythonInterpreter class.
 	 */
-	public static final String INTERPRETER_CLASS =
+	private static final String INTERPRETER_CLASS =
 		"org.python.util.PythonInterpreter";
 
 	@Override
@@ -73,15 +59,9 @@ public class JshExecutor extends ScriptExecutor
 	}
 	
 	@Override
-	protected String getDefaultPaths()
-	{
-		return ".:script:src" + File.separator + "script";
-	}
-	
-	@Override
 	protected String getPathKey()
 	{
-		return PATH_STRING;
+		return "JSH_PATH";
 	}
 	
 	@Override

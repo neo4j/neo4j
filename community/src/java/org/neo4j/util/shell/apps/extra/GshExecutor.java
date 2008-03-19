@@ -1,6 +1,5 @@
 package org.neo4j.util.shell.apps.extra;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -8,7 +7,6 @@ import java.rmi.RemoteException;
 import java.util.Map;
 
 import org.neo4j.util.shell.Output;
-import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
 /**
@@ -16,39 +14,14 @@ import org.neo4j.util.shell.ShellException;
  */
 public class GshExecutor extends ScriptExecutor
 {
-	/**
-	 * The {@link Session} key used to read which paths (folders on disk) to
-	 * list groovy scripts from.
-	 */
-	public static final String PATH_STRING = "GSH_PATH";
+	private static final String BINDING_CLASS = "groovy.lang.Binding";
 	
-	/**
-	 * The class name which represents the Binding class in groovy.
-	 */
-	public static final String BINDING_CLASS = "groovy.lang.Binding";
-	
-	/**
-	 * The class name which represents the GroovyScriptEngine class.
-	 */
-	public static final String ENGINE_CLASS = "groovy.util.GroovyScriptEngine";
-	
-	/**
-	 * Default paths to use if no paths are specified by the
-	 * {@link #PATH_STRING}.
-	 */
-	public static final String DEFAULT_PATHS =
-		".:script:src" + File.separator + "script";
+	private static final String ENGINE_CLASS = "groovy.util.GroovyScriptEngine";
 	
 	@Override
 	protected String getPathKey()
 	{
-		return PATH_STRING;
-	}
-	
-	@Override
-	protected String getDefaultPaths()
-	{
-		return DEFAULT_PATHS;
+		return "GSH_PATH";
 	}
 
 	@Override
