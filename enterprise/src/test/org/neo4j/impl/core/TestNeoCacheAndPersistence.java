@@ -38,10 +38,12 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
 	private int node2Id				= -1;
 	private String key1				= "key1";
 	private String key2				= "key2";
+    private String arrayKey         = "arrayKey";
 	private Integer int1			= new Integer( 1 );
 	private Integer int2			= new Integer( 2 );
 	private String string1			= new String( "1" );
 	private String string2			= new String( "2" );
+    private int[] array             = new int[] {1, 2, 3, 4, 5, 6, 7};
 	
 	public void setUp()
 	{
@@ -57,6 +59,9 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
 		node2.setProperty( key2, string2 );
 		rel.setProperty( key1, int1 );
 		rel.setProperty( key2, string1 );
+        node1.setProperty( arrayKey, array );
+        node2.setProperty( arrayKey, array );
+        rel.setProperty( arrayKey, array );
 		Transaction tx = getTransaction();
 		tx.success();
 		tx.finish();
@@ -92,7 +97,10 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
 		assertTrue( node2.hasProperty( key1 ) );
 		assertTrue( node1.hasProperty( key2 ) );
 		assertTrue( node2.hasProperty( key2 ) );
-		assertTrue( !node1.hasProperty( key3 ) );
+        assertTrue( node1.hasProperty( arrayKey ) );
+        assertTrue( node2.hasProperty( arrayKey ) );
+        assertTrue( rel.hasProperty( arrayKey ) );
+        assertTrue( !node1.hasProperty( key3 ) );
 		assertTrue( node2.hasProperty( key3 ) );
 		assertEquals( int1, node1.getProperty( key1 ) );
 		assertEquals( int2, node2.getProperty( key1 ) );
@@ -114,6 +122,12 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
 		 assertEquals( 1, node1.removeProperty( key1 ) );
 		 assertEquals( 2, node2.removeProperty( key1 ) );
 		 assertEquals( 1, rel.removeProperty( key1 ) );
+         assertEquals( string1, node1.removeProperty( key2 ) );
+         assertEquals( string2, node2.removeProperty( key2 ) );
+         assertEquals( string1, rel.removeProperty( key2 ) );
+         assertTrue( node1.removeProperty( arrayKey ) != null );
+         assertTrue( node2.removeProperty( arrayKey ) != null );
+         assertTrue( rel.removeProperty( arrayKey ) != null );
 	}
 	
 	public void testNodeChangeProperty()
@@ -127,6 +141,10 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
 		node1.setProperty( key1, int2 );
 		node2.setProperty( key1, int1 );
 		rel.setProperty( key1, int2 );
+        int[] newIntArray = new int[] {3, 2, 1};
+        node1.setProperty(  arrayKey, newIntArray );
+        node2.setProperty(  arrayKey, newIntArray );
+        rel.setProperty(  arrayKey, newIntArray );
 	}
 	
 	public void testNodeGetProperties()
@@ -202,4 +220,27 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
 			Direction.OUTGOING );
 		assertEquals( int1, rel.getProperty( key1 ) );
 	}
+    
+    public void testSameTxWithArray()
+    {
+        getTransaction().success();
+        getTransaction().finish();
+        newTransaction();
+        
+        Node nodeA = getNeo().createNode();
+        Node nodeB = getNeo().createNode();
+        Relationship relA = nodeA.createRelationshipTo( nodeB, 
+            MyRelTypes.TEST );
+        nodeA.setProperty( arrayKey, array );
+        relA.setProperty( arrayKey, array );
+        NodeManager nodeManager = ((EmbeddedNeo) 
+            getNeo()).getConfig().getNeoModule().getNodeManager();
+        nodeManager.clearCache();
+        assertTrue( nodeA.getProperty( arrayKey ) != null );
+        assertTrue( relA.getProperty( arrayKey ) != null );
+        relA.delete();
+        nodeA.delete();
+        nodeB.delete();
+        
+    }
 }

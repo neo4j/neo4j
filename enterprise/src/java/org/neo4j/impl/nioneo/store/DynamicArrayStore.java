@@ -420,117 +420,122 @@ class DynamicArrayStore extends AbstractDynamicStore
 		}
 		throw new RuntimeException( array + " not a valid array type." );
 	}
+    
+    public Object getRightArray( byte[] bArray )
+    {
+        ByteBuffer buf = ByteBuffer.wrap( bArray );
+        byte type = buf.get();
+        if ( type == ArrayType.INT.byteValue() )
+        {
+            int size = ( bArray.length - 1 ) / 4;
+            assert ( bArray.length - 1 ) % 4 == 0;
+            int[] array = new int[size];
+            for ( int i = 0; i < size; i++ )
+            {
+                array[i] = buf.getInt();
+            }
+            return array;
+        }
+        if ( type == ArrayType.STRING.byteValue() )
+        {
+            String[] array = new String[ buf.getInt() ];
+            for ( int i = 0; i < array.length; i++ )
+            {
+                int charLength = buf.getInt() / 2;
+                char charBuffer[] = new char[ charLength ];
+                for ( int j = 0; j < charLength; j++ )
+                {
+                    charBuffer[j] = buf.getChar();
+                }
+                array[i] = new String( charBuffer );
+            }
+            return array;
+        }
+        if ( type == ArrayType.BOOL.byteValue() )
+        {
+            boolean[] array = new boolean[ buf.getInt() ];
+            int byteItr = 1;
+            byte currentValue = buf.get();
+            for ( int i = 0; i < array.length; i++ )
+            {
+                array[i] = ( currentValue & byteItr ) > 0 ? true : false;
+                byteItr *= 2;
+                if ( byteItr == 256 )
+                {
+                    byteItr = 0;
+                    currentValue = buf.get();
+                }
+            }
+            return array;
+        }
+        if ( type == ArrayType.DOUBLE.byteValue() )
+        {
+            int size = ( bArray.length - 1 ) / 8;
+            assert ( bArray.length - 1 ) % 8 == 0;
+            double[] array = new double[size];
+            for ( int i = 0; i < size; i++ )
+            {
+                array[i] = buf.getDouble();
+            }
+            return array;
+        }
+        if ( type == ArrayType.FLOAT.byteValue() )
+        {
+            int size = ( bArray.length - 1 ) / 4;
+            assert ( bArray.length - 1 ) % 4 == 0;
+            float[] array = new float[size];
+            for ( int i = 0; i < size; i++ )
+            {
+                array[i] = buf.getFloat();
+            }
+            return array;
+        }
+        if ( type == ArrayType.LONG.byteValue() )
+        {
+            int size = ( bArray.length - 1 ) / 8;
+            assert ( bArray.length - 1 ) % 8 == 0;
+            long[] array = new long[size];
+            for ( int i = 0; i < size; i++ )
+            {
+                array[i] = buf.getLong();
+            }
+            return array;
+        }
+        if ( type == ArrayType.BYTE.byteValue() )
+        {
+            int size = ( bArray.length - 1 );
+            byte[] array = new byte[size];
+            buf.get( array );
+            return array;
+        }
+        if ( type == ArrayType.CHAR.byteValue() )
+        {
+            int size = ( bArray.length - 1 ) / 2;
+            assert ( bArray.length - 1 ) % 2 == 0;
+            char[] array = new char[size];
+            for ( int i = 0; i < size; i++ )
+            {
+                array[i] = buf.getChar();
+            }
+            return array;
+        }
+        if ( type == ArrayType.SHORT.byteValue() )
+        {
+            int size = ( bArray.length - 1 ) / 2;
+            assert ( bArray.length - 1 ) % 2 == 0;
+            short[] array = new short[size];
+            for ( short i = 0; i < size; i++ )
+            {
+                array[i] = buf.getShort();
+            }
+            return array;
+        }
+        throw new RuntimeException( "Unkown array type[" + type + "]" );
+    }
 	
 	public Object getArray( int blockId )
 	{
 		byte bArray[] = get( blockId );
-		ByteBuffer buf = ByteBuffer.wrap( bArray );
-		byte type = buf.get();
-		if ( type == ArrayType.INT.byteValue() )
-		{
-			int size = ( bArray.length - 1 ) / 4;
-			assert ( bArray.length - 1 ) % 4 == 0;
-			int[] array = new int[size];
-			for ( int i = 0; i < size; i++ )
-			{
-				array[i] = buf.getInt();
-			}
-			return array;
-		}
-		if ( type == ArrayType.STRING.byteValue() )
-		{
-			String[] array = new String[ buf.getInt() ];
-			for ( int i = 0; i < array.length; i++ )
-			{
-				int charLength = buf.getInt() / 2;
-				char charBuffer[] = new char[ charLength ];
-				for ( int j = 0; j < charLength; j++ )
-				{
-					charBuffer[j] = buf.getChar();
-				}
-				array[i] = new String( charBuffer );
-			}
-			return array;
-		}
-		if ( type == ArrayType.BOOL.byteValue() )
-		{
-			boolean[] array = new boolean[ buf.getInt() ];
-			int byteItr = 1;
-			byte currentValue = buf.get();
-			for ( int i = 0; i < array.length; i++ )
-			{
-				array[i] = ( currentValue & byteItr ) > 0 ? true : false;
-				byteItr *= 2;
-				if ( byteItr == 256 )
-				{
-					byteItr = 0;
-					currentValue = buf.get();
-				}
-			}
-			return array;
-		}
-		if ( type == ArrayType.DOUBLE.byteValue() )
-		{
-			int size = ( bArray.length - 1 ) / 8;
-			assert ( bArray.length - 1 ) % 8 == 0;
-			double[] array = new double[size];
-			for ( int i = 0; i < size; i++ )
-			{
-				array[i] = buf.getDouble();
-			}
-			return array;
-		}
-		if ( type == ArrayType.FLOAT.byteValue() )
-		{
-			int size = ( bArray.length - 1 ) / 4;
-			assert ( bArray.length - 1 ) % 4 == 0;
-			float[] array = new float[size];
-			for ( int i = 0; i < size; i++ )
-			{
-				array[i] = buf.getFloat();
-			}
-			return array;
-		}
-		if ( type == ArrayType.LONG.byteValue() )
-		{
-			int size = ( bArray.length - 1 ) / 8;
-			assert ( bArray.length - 1 ) % 8 == 0;
-			long[] array = new long[size];
-			for ( int i = 0; i < size; i++ )
-			{
-				array[i] = buf.getLong();
-			}
-			return array;
-		}
-		if ( type == ArrayType.BYTE.byteValue() )
-		{
-			int size = ( bArray.length - 1 );
-			byte[] array = new byte[size];
-			buf.get( array );
-			return array;
-		}
-		if ( type == ArrayType.CHAR.byteValue() )
-		{
-			int size = ( bArray.length - 1 ) / 2;
-			assert ( bArray.length - 1 ) % 2 == 0;
-			char[] array = new char[size];
-			for ( int i = 0; i < size; i++ )
-			{
-				array[i] = buf.getChar();
-			}
-			return array;
-		}
-		if ( type == ArrayType.SHORT.byteValue() )
-		{
-			int size = ( bArray.length - 1 ) / 2;
-			assert ( bArray.length - 1 ) % 2 == 0;
-			short[] array = new short[size];
-			for ( short i = 0; i < size; i++ )
-			{
-				array[i] = buf.getShort();
-			}
-			return array;
-		}
-		throw new RuntimeException( "Unkown array type[" + type + "]" );
+        return getRightArray( bArray );
 	}
 }
