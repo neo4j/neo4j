@@ -632,8 +632,8 @@ public class NodeManager
 			}
 			else if ( lockType == LockType.WRITE )
 			{
-				lockReleaser.addLockToTransaction( resource, lockType );
-			}
+                lockReleaser.addLockToTransaction( resource, lockType );
+            }
 			else
 			{
 				throw new RuntimeException( "Unkown lock type: " + 
@@ -694,19 +694,6 @@ public class NodeManager
         }
     }
     
-	public boolean isValidRelationship( Relationship rel )
-	{
-		try
-		{
-			return !( ( RelationshipImpl ) getRelForProxy( (int) rel.getId() ) 
-				).isDeleted();
-		}
-		catch ( RuntimeException e )
-		{
-			return false;
-		}
-	}
-	
 	public boolean isValidRelationshipType( RelationshipType type )
 	{
 		return relTypeHolder.isValidRelationshipType( type );

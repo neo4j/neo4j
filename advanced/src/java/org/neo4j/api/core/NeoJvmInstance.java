@@ -65,7 +65,7 @@ class NeoJvmInstance
 		params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
 		params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
 		params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-		params.put( "neostore.propertystore.db.arrays.mapped_memory", "1M" );
+		params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
 		params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
 		start( params );
 	}

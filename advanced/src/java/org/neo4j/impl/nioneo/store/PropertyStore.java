@@ -505,7 +505,7 @@ public class PropertyStore extends AbstractStore implements Store
 			records.hasNext() )
 		{
 			DynamicRecord record = records.next();
-			if ( record.inUse() && record.getId() == recordToFind )
+			if ( /*record.inUse() &&*/ record.getId() == recordToFind )
 			{
 				if ( record.isLight() )
 				{
@@ -539,7 +539,48 @@ public class PropertyStore extends AbstractStore implements Store
 	public Object getArrayFor( PropertyRecord propertyRecord, 
 		ReadFromBuffer buffer )
     {
-		return arrayPropertyStore.getArray( 
-			(int) propertyRecord.getPropBlock() );
+        int recordToFind = (int) propertyRecord.getPropBlock();
+        Iterator<DynamicRecord> records = 
+            propertyRecord.getValueRecords().iterator();
+        List<byte[]> byteList = new LinkedList<byte[]>();
+        int totalSize = 0;
+        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
+            records.hasNext() )
+        {
+            DynamicRecord record = records.next();
+            if ( /*record.inUse() &&*/ record.getId() == recordToFind )
+            {
+                if ( record.isLight() )
+                {
+                    arrayPropertyStore.makeHeavy( record, buffer );
+                }
+                if ( !record.isCharData() )
+                {
+                    ByteBuffer buf = ByteBuffer.wrap( record.getData() );
+                    byte[] bytes = new byte[ record.getData().length ];
+                    totalSize += bytes.length;
+                    buf.get( bytes );
+                    byteList.add( bytes );
+                }
+                else
+                {
+                    throw new RuntimeException( "Assert");
+                }
+                recordToFind = record.getNextBlock();
+                // TODO: make opti here, high chance next is right one
+                records = propertyRecord.getValueRecords().iterator();
+            }
+        }
+        byte[] bArray = new byte[totalSize];
+        int offset = 0;
+        for ( byte[] currentArray : byteList )
+        {
+            System.arraycopy( currentArray, 0, bArray, offset, 
+                currentArray.length );
+            offset += currentArray.length;
+        }
+        return arrayPropertyStore.getRightArray( bArray );
+//		return arrayPropertyStore.getArray( 
+//			(int) propertyRecord.getPropBlock() );
     }
 }
