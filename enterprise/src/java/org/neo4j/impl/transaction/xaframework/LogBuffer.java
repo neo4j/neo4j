@@ -46,6 +46,8 @@ public class LogBuffer
 	{
 		return mappedBuffer;
 	}
+    
+    private int mapFail = -1;
 	
 	private void getNewMappedBuffer()
 	{
@@ -57,11 +59,21 @@ public class LogBuffer
 				mappedBuffer.force();
 				mappedBuffer = null;
 			}
+            if ( mapFail > 1000 )
+            {
+                mapFail = -1;
+            }
+            if ( mapFail > 0 )
+            {
+                mapFail++;
+                return;
+            }
 			mappedBuffer = fileChannel.map( MapMode.READ_WRITE, 
 					mappedStartPosition, MAPPED_SIZE );
 		}
 		catch ( Throwable t )
 		{
+            mapFail = 1;
 			t.printStackTrace();
 		}
 	}
