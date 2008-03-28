@@ -20,7 +20,6 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.transaction.LockType;
-import org.neo4j.impl.util.ArrayMap;
 
 class RelationshipImpl extends NeoPrimitive 
 	implements Relationship, Comparable<Relationship>
@@ -29,8 +28,6 @@ class RelationshipImpl extends NeoPrimitive
 	private final int startNodeId;
 	private final int endNodeId;
 	private final RelationshipType type;
-	private ArrayMap<Integer,Property> propertyMap = null;
-	private boolean isDeleted = false;
 	
 	// Dummy constructor for NodeManager to acquire read lock on relationship
 	// when loading from PL.
@@ -41,7 +38,6 @@ class RelationshipImpl extends NeoPrimitive
 		this.startNodeId = -1;
 		this.endNodeId = -1;
 		this.type = null;
-		isDeleted = true;
 	}
 	
 	RelationshipImpl( int id, int startNodeId, int endNodeId, 
@@ -148,7 +144,7 @@ class RelationshipImpl extends NeoPrimitive
 		return otherType != null && otherType.name().equals( 
 			this.getType().name() );
     }
-	
+    
 	public void delete()
 	{
 		NodeImpl startNode = null;
@@ -175,10 +171,6 @@ class RelationshipImpl extends NeoPrimitive
 			// deleted when relationship is deleted
 			
             nodeManager.deleteRelationship( this );
-
-			// full phase here isn't necessary, if something breaks we still
-			// have the relationship as it was in memory and the transaction 
-			// will rollback so the full relationship will still be persistent
 			if ( startNode != null )
 			{
 				startNode.removeRelationship( type, id );
@@ -293,15 +285,5 @@ class RelationshipImpl extends NeoPrimitive
 	public int hashCode()
 	{
 		return id;
-	}
-
-	boolean isDeleted()
-	{
-		return isDeleted;
-	}
-	
-	void setIsDeleted( boolean flag )
-	{
-		isDeleted = flag;
 	}
 }
