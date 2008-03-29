@@ -90,6 +90,12 @@ class MappedPersistenceWindow extends LockableWindow
 	
 	void unmap()
 	{
+        if ( buffer != null )
+        {
+            ( ( java.nio.MappedByteBuffer ) buffer.getBuffer() ).force();
+            buffer.close();
+            position = -1;
+        }
 	}
 	
 	private volatile int hashCode = 0;
