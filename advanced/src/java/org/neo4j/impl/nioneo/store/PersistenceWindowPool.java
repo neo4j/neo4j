@@ -52,7 +52,7 @@ class PersistenceWindowPool
 	
 	private static Logger log = Logger.getLogger( 
 		PersistenceWindowPool.class.getName() );
-	private static final int REFRESH_BRICK_COUNT = 500;
+	private static final int REFRESH_BRICK_COUNT = 5000;
 	
 	private int hit = 0;
 	private int miss = 0;
@@ -92,7 +92,9 @@ class PersistenceWindowPool
 					if ( brickArray[brickIndex].getWindow() == null )
 					{
 						brickMiss++;
-						if ( brickMiss >= REFRESH_BRICK_COUNT )
+						if ( brickMiss >= REFRESH_BRICK_COUNT || 
+                            ( brickMiss >= REFRESH_BRICK_COUNT / 10 &&
+                              memUsed < mappedMem )) 
 						{
 							brickMiss = 0;
 							refreshBricks();
@@ -108,7 +110,9 @@ class PersistenceWindowPool
 					if ( brickArray[brickIndex].getWindow() == null )
 					{
 						brickMiss++;
-						if ( brickMiss >= REFRESH_BRICK_COUNT )
+						if ( brickMiss >= REFRESH_BRICK_COUNT ||
+                            ( brickMiss >= REFRESH_BRICK_COUNT / 10 &&
+                              memUsed < mappedMem )) 
 						{
 							brickMiss = 0;
 							refreshBricks();
