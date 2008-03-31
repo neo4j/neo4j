@@ -464,7 +464,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	 */
 	public int compareTo( Node n )
 	{
-		int ourId = (int) this.getId(), theirId = (int) n.getId();
+		long ourId = (long) this.getId(), theirId = (long) n.getId();
 		
 		if ( ourId < theirId )
 		{
