@@ -1,11 +1,21 @@
+/*
+ * Copyright 2007 Network Engine for Objects in Lund AB [neotechnology.com]
+ */
 package org.neo4j.graphviz;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Represents an object that can emit the properties of either a node or a
+ * relationship. The invocation order for the methods of an {@link Emitter}
+ * should always be: {@link #emitProperty(String, Object)}*, {@link #done()}.
+ * @author Tobias Ivarsson
+ */
 public abstract class Emitter
 {
+	@SuppressWarnings( { "unchecked", "serial" } )
 	private static final Map<Class, String> types = Collections
 	    .unmodifiableMap( new HashMap<Class, String>()
 	    {
@@ -22,6 +32,12 @@ public abstract class Emitter
 		    }
 	    } );
 
+	/**
+	 * Returns a string representation of a property value.
+	 * @param value
+	 *            The value to get a representation of.
+	 * @return A printable string that represents the given value.
+	 */
 	protected String escape( Object value )
 	{
 		if ( value instanceof String )
@@ -51,6 +67,12 @@ public abstract class Emitter
 		}
 	}
 
+	/**
+	 * Returns a string representation of the type of a property value.
+	 * @param value
+	 *            The value to get the type of.
+	 * @return A string representing the type of the given value.
+	 */
 	protected String typeOf( Object value )
 	{
 		String result = null;
@@ -68,12 +90,36 @@ public abstract class Emitter
 		}
 	}
 
+	/**
+	 * Emit a specified property. Default behavior is to invoke
+	 * {@link #emitMapping(String, String, String)} with string representations
+	 * of the property value and property type.
+	 * @param key
+	 *            The property key.
+	 * @param property
+	 *            The property value.
+	 */
 	public void emitProperty( String key, Object property )
 	{
 		emitMapping( key, escape( property ), typeOf( property ) );
 	}
 
+	/**
+	 * Invoked when {@link #emitProperty(String, Object)} has been invoked for
+	 * all the properties of the node or relationship that this emitter was
+	 * associated with.
+	 */
 	public abstract void done();
 
+	/**
+	 * Invoked by {@link #emitProperty(String, Object)} with the key and string
+	 * representations of the property value and property type.
+	 * @param key
+	 *            The property key.
+	 * @param value
+	 *            A string representation of the property value.
+	 * @param type
+	 *            A string representation of the property type.
+	 */
 	protected abstract void emitMapping( String key, String value, String type );
 }

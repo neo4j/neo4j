@@ -1,8 +1,11 @@
+/*
+ * Copyright 2007 Network Engine for Objects in Lund AB [neotechnology.com]
+ */
 package org.neo4j.graphviz;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Stack;
@@ -10,10 +13,20 @@ import java.util.Stack;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Traverser;
 
+/**
+ * This class is used for writing a traverser to a stream as a graphviz
+ * representation.
+ * @author Tobias Ivarsson
+ */
 public class GraphvizWriter extends EmittingConsumer
 {
 	private final GraphvizEmitter emitter;
 
+	/**
+	 * Construct a new writer that writes to a given stream.
+	 * @param stream
+	 *            The stream to write to.
+	 */
 	public GraphvizWriter( OutputStream stream )
 	{
 		final PrintStream output = new PrintStream( stream );
@@ -33,9 +46,23 @@ public class GraphvizWriter extends EmittingConsumer
 		};
 	}
 
-	public GraphvizWriter( File file ) throws FileNotFoundException
+	/**
+	 * Writes a graphviz file from the given Traverser to the given file.
+	 * @param file
+	 *            The file to write the representation of the traverser to.
+	 * @param traverser
+	 *            The traverser to get the graph from to write.
+	 * @throws IOException
+	 *             If opening the file or writing the contents of the file
+	 *             fails.
+	 */
+	public static void write( File file, Traverser traverser )
+	    throws IOException
 	{
-		this( new FileOutputStream( file ) );
+		FileOutputStream stream = new FileOutputStream( file );
+		GraphvizWriter writer = new GraphvizWriter( stream );
+		writer.consume( traverser );
+		stream.close();
 	}
 
 	@Override
@@ -79,12 +106,14 @@ public class GraphvizWriter extends EmittingConsumer
 
 	private static abstract class GraphvizEmitter extends Emitter
 	{
-		private final Stack<String> endTokens = new Stack<String>()
+		private final Stack<String> endTokens;
+
+		GraphvizEmitter()
 		{
-			{
-				push( "}" );
-			}
-		};
+			endTokens = new Stack<String>();
+			endTokens.push( "}" );
+		}
+
 		boolean softline = false;
 
 		void push( String endToken )
