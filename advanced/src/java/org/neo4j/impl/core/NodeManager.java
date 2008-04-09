@@ -726,21 +726,23 @@ public class NodeManager
 		relTypeHolder.removeRelType( id );
     }
 
-	Traverser createTraverser( Order traversalOrder, NodeImpl node, 
-		RelationshipType relationshipType, Direction direction, 
-		StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator )
-    {
-		return traverserFactory.createTraverser( traversalOrder, node, 
-			relationshipType, direction, stopEvaluator, returnableEvaluator );
-    }
+	Traverser createTraverser( Order traversalOrder, NodeImpl node,
+	    RelationshipType relationshipType, Direction direction,
+	    StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator )
+	{
+		return traverserFactory.createTraverser( traversalOrder, new NodeProxy(
+		    ( int ) node.getId(), this ), relationshipType, direction,
+		    stopEvaluator, returnableEvaluator );
+	}
 
-	Traverser createTraverser( Order traversalOrder, NodeImpl node, 
-		RelationshipType[] types, Direction[] dirs, StopEvaluator stopEvaluator,
-		ReturnableEvaluator returnableEvaluator )
-    {
-		return traverserFactory.createTraverser( traversalOrder, node, types, 
-			dirs, stopEvaluator, returnableEvaluator );
-    }
+	Traverser createTraverser( Order traversalOrder, NodeImpl node,
+	    RelationshipType[] types, Direction[] dirs,
+	    StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator )
+	{
+		return traverserFactory.createTraverser( traversalOrder, new NodeProxy(
+		    ( int ) node.getId(), this ), types, dirs, stopEvaluator,
+		    returnableEvaluator );
+	}
 
 	void addPropertyIndexes( RawPropertyIndex[] propertyIndexes )
     {
