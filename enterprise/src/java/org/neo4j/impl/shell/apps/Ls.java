@@ -54,7 +54,7 @@ public class Ls extends NodeOrRelationshipApp
 		this.addValueType( "f", new OptionContext( OptionValueType.MUST,
 			"Filters property keys/relationship types (regexp string)" ) );
 		this.addValueType( "e", new OptionContext( OptionValueType.MUST,
-			"Temporarily select a connected relationship to do the" +
+			"Temporarily select a connected relationship to do the " +
 			"operation on" ) );
 	}
 	
@@ -72,9 +72,9 @@ public class Ls extends NodeOrRelationshipApp
 		boolean verbose = parser.options().containsKey( "v" );
 		boolean displayValues = verbose || !parser.options().containsKey( "q" );
 		boolean displayProperties =
-			verbose || parser.options().containsKey( "p" );
+			parser.options().containsKey( "p" );
 		boolean displayRelationships =
-			verbose || parser.options().containsKey( "r" );
+			parser.options().containsKey( "r" );
 		String filter = parser.options().get( "f" );
 		if ( !displayProperties && !displayRelationships )
 		{
