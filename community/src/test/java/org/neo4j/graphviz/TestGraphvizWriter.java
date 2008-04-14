@@ -88,12 +88,15 @@ public class TestGraphvizWriter
 					{
 						add( "name" );
 						add( "age" );
+						add( "junk" );
 					}
 				} ) );
 				one( emil ).getProperty( "name" );
 				will( returnValue( "Emil Eifrem" ) );
 				one( emil ).getProperty( "age" );
 				will( returnValue( 29 ) );
+				one( emil ).getProperty( "junk" );
+				will( returnValue( "Should not end up in the picture" ) );
 				one( tobias ).getPropertyKeys();
 				will( returnValue( new LinkedList<String>()
 				{
@@ -173,10 +176,13 @@ public class TestGraphvizWriter
 				{
 					{
 						add( "since" );
+						add( "junk" );
 					}
 				} ) );
 				one( emilKNOWStobias ).getProperty( "since" );
 				will( returnValue( "2003-08-17" ) );
+				one( emilKNOWStobias ).getProperty( "junk" );
+				will( returnValue( "should not end up in the picture" ) );
 				one( johanKNOWSemil ).getPropertyKeys();
 				will( returnValue( new LinkedList<String>() ) );
 				one( tobiasKNOWSjohan ).getPropertyKeys();
@@ -187,7 +193,14 @@ public class TestGraphvizWriter
 		} );
 		// perform the test
 		OutputStream out = new ByteArrayOutputStream();
-		new GraphvizWriter( out ).consume( traverser );
+		EmissionPolicy policy = new EmissionPolicy()
+		{
+			public boolean acceptProperty( SourceType source, String key )
+			{
+				return !key.equals( "junk" );
+			}
+		};
+		new GraphvizWriter( out, policy ).consume( traverser );
 		// the correct output (split into parts since there is no guarantee of
 		// order)
 		String start = "digraph Neo {\n"
@@ -215,6 +228,8 @@ public class TestGraphvizWriter
 		String end = "}\n";
 		// verify the output
 		String was = out.toString();
+		System.out.println( "GraphvizWriter test, output was:" );
+		System.out.print( was );
 		Assert.assertEquals( "erronious output length", 666, was.length() );
 		Assert.assertTrue( "erronious output start", was.startsWith( start ) );
 		Assert.assertTrue( "erronious output end", was.endsWith( end ) );
@@ -224,8 +239,5 @@ public class TestGraphvizWriter
 			Assert.assertTrue( "erronious part (" + ( i++ ) + ") of message",
 			    was.contains( part ) );
 		}
-		System.out
-		    .println( "GraphvizWriter test, testSimpleGraph ok, output was:" );
-		System.out.print( was );
 	}
 }

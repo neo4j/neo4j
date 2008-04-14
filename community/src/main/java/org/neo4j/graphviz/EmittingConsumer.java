@@ -9,7 +9,6 @@ import java.util.Set;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Traverser;
 
 /**
  * Represents an object that consumes a traverser and emits some representation
@@ -24,12 +23,12 @@ public abstract class EmittingConsumer
 	/**
 	 * Consume a traverser and emit some representation of the underlying
 	 * (sub-)graph.
-	 * @param traverser
-	 *            The {@link Traverser} to consume.
+	 * @param nodes
+	 *            The nodes that build up the subgraph that should be emitted.
 	 */
-	public void consume( Traverser traverser )
+	public void consume( Iterable<Node> nodes )
 	{
-		for ( Node node : traverser )
+		for ( Node node : nodes )
 		{
 			visit( node );
 		}
@@ -63,7 +62,8 @@ public abstract class EmittingConsumer
 		Emitter emitter = emitNode( node.getId() );
 		for ( String key : node.getPropertyKeys() )
 		{
-			emitter.emitProperty( key, node.getProperty( key ) );
+			emitter
+			    .emitProperty( SourceType.NODE, key, node.getProperty( key ) );
 		}
 		emitter.done();
 	}
@@ -76,7 +76,8 @@ public abstract class EmittingConsumer
 		    .getType(), start, end );
 		for ( String key : relation.getPropertyKeys() )
 		{
-			emitter.emitProperty( key, relation.getProperty( key ) );
+			emitter.emitProperty( SourceType.RELATIONSHIP, key, relation
+			    .getProperty( key ) );
 		}
 		emitter.done();
 	}

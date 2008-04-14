@@ -21,8 +21,8 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.neo4j</groupId>
-			<artifactId>neo-utils</artifactId>
-			<version>1.0-rc-SNAPSHOT</version>
+			<artifactId>neo</artifactId>
+			<version>1.0-rc1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>

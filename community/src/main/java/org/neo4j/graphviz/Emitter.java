@@ -9,8 +9,9 @@ import java.util.Map;
 
 /**
  * Represents an object that can emit the properties of either a node or a
- * relationship. The invocation order for the methods of an {@link Emitter}
- * should always be: {@link #emitProperty(String, Object)}*, {@link #done()}.
+ * relationship. The invocation order for the methods of an Emitter should
+ * always be: {@link #emitProperty(SourceType, String, Object)}*,
+ * {@link #done()}.
  * @author Tobias Ivarsson
  */
 public abstract class Emitter
@@ -31,6 +32,17 @@ public abstract class Emitter
 			    put( Double.class, "double" );
 		    }
 	    } );
+	private final EmissionPolicy policy;
+
+	/**
+	 * Create a new Emitter.
+	 * @param policy
+	 *            The policy that determines what aspects of the graph to emit.
+	 */
+	public Emitter( EmissionPolicy policy )
+	{
+		this.policy = ( policy != null ) ? policy : EmissionPolicy.ACCEPT_ALL;
+	}
 
 	/**
 	 * Returns a string representation of a property value.
@@ -94,26 +106,30 @@ public abstract class Emitter
 	 * Emit a specified property. Default behavior is to invoke
 	 * {@link #emitMapping(String, String, String)} with string representations
 	 * of the property value and property type.
+	 * @param from
 	 * @param key
 	 *            The property key.
 	 * @param property
 	 *            The property value.
 	 */
-	public void emitProperty( String key, Object property )
+	public void emitProperty( SourceType from, String key, Object property )
 	{
-		emitMapping( key, escape( property ), typeOf( property ) );
+		if ( policy.acceptProperty( from, key ) )
+		{
+			emitMapping( key, escape( property ), typeOf( property ) );
+		}
 	}
 
 	/**
-	 * Invoked when {@link #emitProperty(String, Object)} has been invoked for
-	 * all the properties of the node or relationship that this emitter was
-	 * associated with.
+	 * Invoked when {@link #emitProperty(SourceType, String, Object)} has been
+	 * invoked for all the properties of the node or relationship that this
+	 * emitter was associated with.
 	 */
 	public abstract void done();
 
 	/**
-	 * Invoked by {@link #emitProperty(String, Object)} with the key and string
-	 * representations of the property value and property type.
+	 * Invoked by {@link #emitProperty(SourceType, String, Object)} with the key
+	 * and string representations of the property value and property type.
 	 * @param key
 	 *            The property key.
 	 * @param value
