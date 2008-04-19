@@ -23,15 +23,16 @@ package org.neo4j.api.core;
  * the {@link NeoService#createNode} method.
  * <p>
  * Node has three major groups of operations: operations that deal with
- * relationships, operations that deal with properties and operations that
- * create {@link Traverser traversers}.
+ * relationships, operations that deal with properties (see
+ * {@link PropertyContainer}) and operations that create
+ * {@link Traverser traversers}.
  * <p>
  * The relationship operations provide a number of overloaded accessors (such as
  * <code>getRelationships(...)</code> with "filters" for type, direction,
  * etc), as well as the factory method {@link #createRelationshipTo
  * createRelationshipTo(...)} that connects two nodes with a relationship. It
  * also includes the convenience method {@link #getSingleRelationship
- * getSingleRelationship(...)} for accessing the commonly occuring
+ * getSingleRelationship(...)} for accessing the commonly occurring
  * one-to-zero-or-one association.
  * <p>
  * The property operations give access to the key-value property pairs. Property
@@ -40,12 +41,13 @@ package org.neo4j.api.core;
  * etc), <code>java.lang.String</code>s and arrays of primitives and Strings.
  * <b>Please note</b> that Neo does NOT accept arbitrary objects as property
  * values. {@link #setProperty(String, Object) setProperty()} takes a
- * <code>java.lang.Object</code> for design reasons only.
+ * <code>java.lang.Object</code> for design reasons only. For further
+ * documentation see {@link PropertyContainer}.
  * <p>
  * The traversal factory methods instantiate a {@link Traverser traverser} that
  * starts traversing from this node.
  */
-public interface Node
+public interface Node extends PropertyContainer
 {
 	/**
 	 * Returns the unique id of this node. Ids are garbage collected over time
@@ -215,91 +217,6 @@ public interface Node
 	public Relationship createRelationshipTo( Node otherNode, 
 		RelationshipType type );
 
-	// Properties
-	/**
-	 * Returns <code>true</code> if this node has a property accessible
-	 * through the given key, <code>false</code> otherwise. If key is
-	 * <code>null</code>, this method returns <code>false</code>.
-	 * @param key the property key
-	 * @return <code>true</code> if this node has a property accessible
-	 * through the given key, <code>false</code> otherwise
-	 */
-	public boolean hasProperty( String key );
-	
-	/**
-	 * Returns the property value associated with the given key. The value
-	 * is of one of the valid property types, i.e. a Java primitive, a
-	 * {@link String String} or an array of any of the valid types. If there's
-	 * no property associated with <code>key</code> an unchecked exception is
-	 * raised.
-	 * @param key the property key
-	 * @return the property value associated with the given key
-	 * @throws RuntimeException if there's no property associated with
-	 * <code>key</code>
-	 */
-	// TODO: change exception type
-	public Object getProperty( String key );
-	/**
-	 * Returns the property value associated with the given key, or a default
-	 * value. The value is of one of the valid property types, i.e. a Java
-	 * primitive, a {@link String String} or an array of any of the valid types.
-	 * If <code>defaultValue</code> is not of a supported type, an unchecked
-	 * exception is raised.
-	 * @param key the property key
-	 * @return the property value associated with the given key
-	 * @throws IllegalArgumentException if <code>defaultValue</code> is of an
-	 * unsupported type
-	 */
-	public Object getProperty( String key, Object defaultValue );
-	
-	/**
-	 * Sets the property value for the given key to <code>value</code>. The
-	 * property value must be one of the valid property types, i.e:
-	 * <ul>
-	 * <li><code>boolean</code> or <code>boolean[]</code></li>
-	 * <li><code>byte</code> or <code>byte[]</code></li>
-	 * <li><code>short</code> or <code>short[]</code></li>
-	 * <li><code>int</code> or <code>int[]</code></li>
-	 * <li><code>long</code> or <code>long[]</code></li>
-	 * <li><code>float</code> or <code>float[]</code></li>
-	 * <li><code>double</code> or <code>double[]</code></li>
-	 * <li><code>char</code> or <code>char[]</code></li>
-	 * <li><code>java.lang.String</code> or <code>String[]</code></li>
-	 * </ul>
-	 * <p>
-	 * This means that <code>null</code> is not an accepted property value.
-	 * @param key the key with which the new property value will be associated
-	 * @param value the new property value, of one of the valid property types
-	 * @throws IllegalArgumentException if <code>value</code> is of an
-	 * unsuppoprted type (including <code>null</code>)
-	 */
-	public void setProperty( String key, Object value );
-	/**
-	 * Removes and returns the property associated with the given key. If
-	 * there's no property associated with the key, then <code>null</code>
-	 * is returned.
-	 * @param key the property key
-	 * @return the property value that used to be associated with the given key
-	 */
-	public Object removeProperty( String key );
-	/**
-	 * Returns all currently valid property keys, or an empty iterable if this
-	 * node has no properties.
-	 * @return all property keys
-	 */
-	// TODO: figure out concurrency semantics
-	public Iterable<String> getPropertyKeys();
-	
-	/**
-	 * Returns all currently valid property values, or an empty iterable if this
-	 * node has no properties. All values are of a supported property type, i.e.
-	 * a Java primitive, a {@link String String} or an array of any of the
-	 * supported types.
-	 * @return all property values
-	 */
-	// TODO: figure out concurrency semantics
-	public Iterable<Object> getPropertyValues();
-	
 	// Traversal
 	/**
 	 * Instantiates a traverser that will start at this node and traverse
