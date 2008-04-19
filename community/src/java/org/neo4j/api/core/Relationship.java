@@ -19,7 +19,8 @@ package org.neo4j.api.core;
 /**
  * A relationship between two nodes in the network. A relationship has a start
  * node, an end node and a {@link RelationshipType type}. You can attach
- * properties to relationships with the exact same API as with nodes.
+ * properties to relationships with the API specified in
+ * {@link PropertyContainer}.
  * <p>
  * Relationships are created by invoking the {@link Node#createRelationshipTo
  * Node.createRelationshipTo()} method on a node as follows:
@@ -43,14 +44,14 @@ package org.neo4j.api.core;
  * assert rel.getStartNode().equals( a );
  * assert rel.getEndNode().equals( b );
  * assert rel.getNodes()[0].equals( a ) &amp;&amp; rel.getNodes()[1].equals( b );
- * </code></pre>
+ * </pre></code>
  * 
  * Furthermore, Neo guarantees that a relationship is never "hanging freely,"
  * i.e. {@link #getStartNode()}, {@link #getEndNode()},
  * {@link #getOtherNode(Node)} and {@link #getNodes()} are guaranteed to always
  * return valid, non-null nodes.
  */
-public interface Relationship
+public interface Relationship extends PropertyContainer
 {
 	/**
 	 * Returns the unique id of this relationship. Ids are garbage collected
@@ -142,34 +143,4 @@ public interface Relationship
 	 * <code>type</code>, <code>false</code> otherwise or if <code>null</code>
 	 */
 	public boolean isType( RelationshipType type );
-	
-	// Property operations
-	/**
-	 * See {@link Node#hasProperty(String)}
-	 */
-	public boolean hasProperty( String key );
-	/**
-	 * See {@link Node#getProperty(String)}
-	 */
-	public Object getProperty( String key );
-	/**
-	 * See {@link Node#getProperty(String, Object)}
-	 */
-	public Object getProperty( String key, Object defaultValue );
-	/**
-	 * See {@link Node#setProperty(String, Object)}
-	 */
-	public void setProperty( String key, Object value );
-	/**
-	 * See {@link Node#removeProperty(String)}
-	 */
-	public Object removeProperty( String key );
-	/**
-	 * See {@link Node#getPropertyKeys()}
-	 */
-	public Iterable<String> getPropertyKeys();
-	/**
-	 * See {@link Node#getPropertyValues()}
-	 */
-	public Iterable<Object> getPropertyValues();
 }
