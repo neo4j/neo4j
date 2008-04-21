@@ -1,5 +1,6 @@
 package matching;
 
+import junit.framework.TestCase;
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.RelationshipType;
@@ -7,7 +8,6 @@ import org.neo4j.api.core.Transaction;
 import org.neo4j.util.matching.PatternMatch;
 import org.neo4j.util.matching.PatternMatcher;
 import org.neo4j.util.matching.PatternNode;
-import junit.framework.TestCase;
 
 public class TestPatternMatching extends TestCase
 {
@@ -17,7 +17,8 @@ public class TestPatternMatching extends TestCase
 	private static enum MyRelTypes implements RelationshipType
 	{
 		R1,
-		R2;
+		R2,
+		R3;
 	}
 	
 	private Node createInstance( String name )
@@ -308,6 +309,170 @@ public class TestPatternMatching extends TestCase
 			count++;
 		}
 		assertEquals( 1, count );
+	}
+	
+	public void testOptional()
+	{
+		Node a = createInstance( "A" );
+		Node b1 = createInstance( "B1" );
+		Node b2 = createInstance( "B2" );
+		Node c = createInstance( "C" );
+		Node d1 = createInstance( "D1" );
+		Node d2 = createInstance( "D2" );
+		Node e1 = createInstance( "E1" );
+		Node e2 = createInstance( "E2" );
+		Node f1 = createInstance( "F1" );
+		Node f2 = createInstance( "F2" );
+		Node f3 = createInstance( "F3" );
+		
+		final RelationshipType R1 = MyRelTypes.R1;
+		final RelationshipType R2 = MyRelTypes.R2;
+		final RelationshipType R3 = MyRelTypes.R3;
+		a.createRelationshipTo( b1, R1 );
+		a.createRelationshipTo( b2, R1 );
+		a.createRelationshipTo( c, R2 );
+		a.createRelationshipTo( f1, R3 );
+		a.createRelationshipTo( f2, R3 );
+		a.createRelationshipTo( f3, R3 );
+		c.createRelationshipTo( d1, R1 );
+		c.createRelationshipTo( d2, R1 );
+		d1.createRelationshipTo( e1, R2 );
+		d1.createRelationshipTo( e2, R2 );
+		
+		// Required part of the graph
+		PatternNode pA = new PatternNode( "pA" );
+		PatternNode pC = new PatternNode( "pC" );
+		pA.createRelationshipTo( pC, R2 );
+
+		// First optional branch
+		PatternNode oA1 = new PatternNode( "pA" );
+		PatternNode oB1 = new PatternNode( "pB" );
+		oA1.createRelationshipTo( oB1, R1, true );
+
+//		// Second optional branch
+		PatternNode oA2 = new PatternNode( "pA" );
+		PatternNode oF2 = new PatternNode( "pF" );
+		oA2.createRelationshipTo( oF2, R3, true );
+
+		// Third optional branch
+		PatternNode oC3 = new PatternNode( "pC" );
+		PatternNode oD3 = new PatternNode( "pD" );
+		PatternNode oE3 = new PatternNode( "pE" );
+		oC3.createRelationshipTo( oD3, R1, true );
+		oD3.createRelationshipTo( oE3, R2, true );
+
+		// Test that all permutations are there and that multiple optional
+		// branches work.
+		int count = 0;
+		for ( PatternMatch match :
+			PatternMatcher.getMatcher().match( pA, a, oA1, oA2, oC3 ) )
+		{
+			assertEquals( match.getNodeFor( pA ), a );
+			Node bMatch = match.getNodeFor( oB1 );
+			if ( !bMatch.equals( b1 ) && !bMatch.equals( b2 ) )
+			{
+				fail( "either b1 or b2" );
+			}
+			Node fMatch = match.getNodeFor( oF2 );
+			if ( !fMatch.equals( f1 ) && !fMatch.equals( f2 ) &&
+				!fMatch.equals( f3 ) )
+			{
+				fail( "either f1, f2 or f3" );
+			}
+			assertEquals( match.getNodeFor( pC ), c );
+			assertEquals( match.getNodeFor( oD3 ), d1 );
+			Node eMatch = match.getNodeFor( oE3 );
+			assertTrue( eMatch.equals( e1 ) || eMatch.equals( e2 ) );
+			count++;
+		}
+		assertEquals( count, 12 );
+		
+		// Test that unmatched optional branches are ignored.
+		PatternNode pI = new PatternNode( "pI" );
+		PatternNode pJ = new PatternNode( "pJ" );
+		PatternNode pK = new PatternNode( "pK" );
+		PatternNode pL = new PatternNode( "pL" );
+		
+		pI.createRelationshipTo( pJ, R1, true );
+		pI.createRelationshipTo( pK, R2 );
+		pK.createRelationshipTo( pL, R2, true );
+		
+		count = 0;
+		for ( PatternMatch match :
+			PatternMatcher.getMatcher().match( pI, a, pI, pK ) )
+		{
+			assertEquals( match.getNodeFor( pI), a );
+			Node jMatch = match.getNodeFor( pJ );
+			if ( !jMatch.equals( b1 ) && !jMatch.equals( b2 ) )
+			{
+				fail( "either b1 or b2" );
+			}
+			assertEquals( match.getNodeFor( pK ), c );
+			assertEquals( match.getNodeFor( pL ), null );
+			count++;
+		}
+		assertEquals( count, 2 );
+	}
+
+	public void testOptional2()
+	{
+		Node a = createInstance( "A" );
+		Node b1 = createInstance( "B1" );
+		Node b2 = createInstance( "B2" );
+		Node b3 = createInstance( "B3" );
+		Node c1 = createInstance( "C1" );
+		Node c3 = createInstance( "C3" );
+		
+		final RelationshipType R1 = MyRelTypes.R1;
+		final RelationshipType R2 = MyRelTypes.R2;
+		a.createRelationshipTo( b1, R1 );
+		a.createRelationshipTo( b2, R1 );
+		a.createRelationshipTo( b3, R1 );
+		b1.createRelationshipTo( c1, R2 );
+		b3.createRelationshipTo( c3, R2 );
+		
+		// Required part of the graph
+		PatternNode pA = new PatternNode( "pA" );
+		PatternNode pB = new PatternNode( "pB" );
+		pA.createRelationshipTo( pB, R1 );
+
+		// Optional part of the graph
+		PatternNode oB = new PatternNode( "pB" );
+		PatternNode oC = new PatternNode( "oC" );
+		oB.createRelationshipTo( oC, R2, true );
+		
+		int count = 0;
+		for ( PatternMatch match :
+			PatternMatcher.getMatcher().match( pA, a, oB ) )
+		{
+			assertEquals( match.getNodeFor( pA ), a );
+			Node bMatch = match.getNodeFor( pB );
+			Node optionalBMatch = match.getNodeFor( oB );
+			Node optionalCMatch = match.getNodeFor( oC );
+			if ( !bMatch.equals( b1 ) && !bMatch.equals( b2 ) &&
+				!bMatch.equals( b3 ) )
+			{
+				fail( "either b1, b2 or b3" );
+			}
+			if ( optionalBMatch != null )
+			{
+				assertEquals( bMatch, optionalBMatch );
+				if ( optionalBMatch.equals( b1 ) )
+				{
+					assertEquals( optionalCMatch, c1 );
+				}
+				else if ( optionalBMatch.equals( b3 ) )
+				{
+					assertEquals( optionalCMatch, c3 );
+				}
+				else
+				{
+					assertEquals( optionalCMatch, null );
+				}
+			}
+			count++;
+		}
+		assertEquals( count, 3 );
 	}
 
 	public void testArrayPropertyValues()

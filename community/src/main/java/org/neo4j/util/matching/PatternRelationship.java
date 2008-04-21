@@ -8,14 +8,22 @@ public class PatternRelationship
 	private RelationshipType type;
 	private PatternNode firstNode;
 	private PatternNode secondNode;
+	private boolean optional;
 	private boolean isMarked = false;
 	
-	PatternRelationship( RelationshipType type, PatternNode firstNode, 
+	PatternRelationship( RelationshipType type, PatternNode firstNode,
 		PatternNode secondNode )
+	{
+		this( type, firstNode, secondNode, false );
+	}
+	
+	PatternRelationship( RelationshipType type, PatternNode firstNode, 
+		PatternNode secondNode, boolean optional )
 	{
 		this.type = type;
 		this.firstNode = firstNode;
 		this.secondNode = secondNode;
+		this.optional = optional;
 	}
 	
 	public PatternNode getOtherNode( PatternNode node )
@@ -42,6 +50,11 @@ public class PatternRelationship
 		return secondNode;
 	}
 	
+	public boolean isOptional()
+	{
+		return optional;
+	}
+	
 	void mark()
 	{
 		isMarked = true;
@@ -64,8 +77,8 @@ public class PatternRelationship
 	
 	public void disconnect()
 	{
-		getFirstNode().removeRelationship( this );
-		getSecondNode().removeRelationship( this );
+		getFirstNode().removeRelationship( this, optional );
+		getSecondNode().removeRelationship( this, optional );
 		firstNode = null;
 		secondNode = null;
 	}
@@ -82,4 +95,10 @@ public class PatternRelationship
 	    }
 	    throw new RuntimeException( fromNode + " not in " + this );
     }	
+	
+	@Override
+	public String toString()
+	{
+		return type + ":" + optional;
+	}
 }

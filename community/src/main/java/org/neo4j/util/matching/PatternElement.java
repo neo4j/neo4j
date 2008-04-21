@@ -22,4 +22,10 @@ public class PatternElement
 	{
 		return node;
 	}
+	
+	@Override
+	public String toString()
+	{
+		return pNode.toString();
+	}
 }

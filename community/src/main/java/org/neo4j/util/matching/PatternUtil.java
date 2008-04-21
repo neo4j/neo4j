@@ -16,7 +16,8 @@ public class PatternUtil
 	{
 		visited.add( startNode );
 		out.println( prefix + startNode + ": " );
-		for ( PatternRelationship relationship : startNode.getRelationships() )
+		for ( PatternRelationship relationship :
+			startNode.getAllRelationships() )
 		{
 			out.print( prefix + "\t" + relationship );
 			out.println( ": " +

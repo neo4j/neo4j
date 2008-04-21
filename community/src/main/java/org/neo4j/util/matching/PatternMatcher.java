@@ -1,10 +1,12 @@
 package org.neo4j.util.matching;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.HashMap;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
@@ -30,16 +32,181 @@ public class PatternMatcher
 		return new PatternFinder( start, startNode );
 	}
 	
+	public Iterable<PatternMatch> match( PatternNode start,
+		Node startNode, Collection<PatternNode> optional )
+	{
+		if ( optional == null || optional.size() < 1 )
+		{
+			return new PatternFinder( start, startNode );
+		}
+		else
+		{
+			return new PatternFinder( start, startNode, false, optional );
+		}
+	}
+	
+	public Iterable<PatternMatch> match( PatternNode start,
+		Node startNode, PatternNode... optional )
+	{
+		return match( start, startNode, Arrays.asList( optional ) );
+	}
+	
+	private static class OptionalPatternFinder
+	{
+		private List<PatternFinder> optionalFinders;
+		private List<PatternMatch> currentMatches;
+		private Collection<PatternNode> optionalNodes;
+		private PatternMatch baseMatch;
+		private int position = -1;
+		
+		OptionalPatternFinder( PatternMatch baseMatch,
+			Collection<PatternNode> optionalNodes )
+		{
+			this.baseMatch = baseMatch;
+			this.optionalNodes = optionalNodes;
+			initialize();
+		}
+		
+		private boolean first = true;
+		PatternMatch findNextOptionalPatterns()
+		{
+			if ( position < 0 )
+			{
+				return null;
+			}
+
+			if ( first && anyMatchFound() )
+			{
+				first = false;
+				return PatternMatch.merge( currentMatches );
+			}
+
+			boolean found = false;
+			for ( ; position >= 0; position-- )
+			{
+				if ( optionalFinders.get( position ).hasNext() )
+				{
+					currentMatches.set(
+						position, optionalFinders.get( position ).next() );
+					if ( position < currentMatches.size() - 1 )
+					{
+						position++;
+						reset( position );
+					}
+					found = true;
+					break;
+				}
+			}
+			
+			if ( !found )
+			{
+				return null;
+			}
+			
+			return PatternMatch.merge( currentMatches );
+		}
+		
+		boolean anyMatchFound()
+		{
+			return !currentMatches.isEmpty();
+		}
+		
+		private void initialize()
+		{
+			optionalFinders = new ArrayList<PatternFinder>();
+			currentMatches = new ArrayList<PatternMatch>();
+			
+			for ( PatternNode node : optionalNodes )
+			{
+				PatternFinder finder = new PatternFinder(
+					node, this.getNodeFor( node ), true );
+				if ( finder.hasNext() )
+				{
+					optionalFinders.add( finder );
+					currentMatches.add( finder.next() );
+					position++;
+				}
+			}
+		}
+		
+		private Node getNodeFor( PatternNode node )
+		{
+			for ( PatternElement element : baseMatch.getElements() )
+			{
+				if ( node.getLabel().equals(
+					element.getPatternNode().getLabel() ) )
+				{
+					return element.getNode();
+				}
+			}
+			throw new RuntimeException(
+				"Optional graph isn't connected to the main graph." );
+		}
+
+		private void reset( int fromIndex )
+		{
+			for ( int i = fromIndex; i < optionalFinders.size(); i++ )
+			{
+				PatternFinder finder = optionalFinders.get( i );
+				PatternFinder newFinder = new PatternFinder(
+					finder.getStartPatternNode(), finder.getStartNode(),
+					true );
+				optionalFinders.set( i, newFinder );
+				// Only patterns with matches were added in the first place,
+				// so newFinder must have at least one match.
+				currentMatches.set( i, newFinder.next() );
+				position = i;
+			}
+		}
+	}
+	
 	private static class PatternFinder implements Iterable<PatternMatch>,
 		Iterator<PatternMatch>
 	{
 		private Set<Relationship> visitedRels = 
 			new HashSet<Relationship>();
 		private PatternPosition currentPosition;
+		private OptionalPatternFinder optionalFinder;
+		private PatternNode startPatternNode;
+		private Node startNode;
+		private Collection<PatternNode> optionalNodes;
+		private boolean optional;
 		
 		PatternFinder( PatternNode start, Node startNode )
 		{
-			currentPosition = new PatternPosition( startNode, start );
+			this( start, startNode, false );
+		}
+		
+		PatternFinder( PatternNode start, Node startNode, boolean optional )
+		{
+			this.startPatternNode = start;
+			this.startNode = startNode;
+			currentPosition =
+				new PatternPosition( startNode, start, optional );
+			this.optional = optional;
+		}
+		
+		PatternFinder( PatternNode start, Node startNode, boolean optional,
+			PatternNode... optionalNodes )
+		{
+			this( start, startNode, optional, Arrays.asList( optionalNodes ) );
+		}
+		
+		PatternFinder( PatternNode start, Node startNode, boolean optional,
+			Collection<PatternNode> optionalNodes )
+		{
+			this( start, startNode, optional );
+			this.optionalNodes = optionalNodes;
+		}
+		
+		PatternNode getStartPatternNode()
+		{
+			return startPatternNode;
+		}
+		
+		Node getStartNode()
+		{
+			return startNode;
 		}
 		
 		private static class CallPosition
@@ -116,7 +283,7 @@ public class PatternMatcher
 						filteredElements.put( element.getPatternNode(), element );
 					}
 					PatternMatch patternMatch = new PatternMatch( 
-						filteredElements);
+						filteredElements );
 					foundElements.pop();
 					return patternMatch;
 				}
@@ -157,9 +324,6 @@ public class PatternMatcher
 			pRel.mark();
 			visitedRels.remove( callPos.getLastVisitedRelationship() );
 			Node currentNode = currentPos.getCurrentNode();
-			// String posStr = "(" + 
-			// 	currentPos.getCurrentNode().getProperty( "name" ) + ")";
-			//System.out.print( posStr );
 			Iterator<Relationship> relItr = callPos.getRelationshipIterator();
 			while ( relItr.hasNext() )
 			{
@@ -174,7 +338,7 @@ public class PatternMatcher
 				pRel.mark();
 				visitedRels.add( rel );
 				if ( traverse( new PatternPosition( otherNode, 
-					otherPosition ), true ) )
+					otherPosition, optional ), true ) )
 				{
 					callPos.setLastVisitedRelationship( rel );
 					return true;
@@ -209,9 +373,6 @@ public class PatternMatcher
 					currentPos.getPatternNode(), 
 					currentPos.getCurrentNode() ) );
 			}
-			// String posStr = "[" + 
-			// 	currentPos.getCurrentNode().getProperty( "name" ) + "]";
-			// System.out.print( posStr );
 			if ( currentPos.hasNext() )
 			{
 				boolean popUncompleted = false;
@@ -243,7 +404,7 @@ public class PatternMatcher
 						currentPos, rel, relItr, pRel, popUncompleted );
 					callStack.push( callPos );
 					if ( traverse( new PatternPosition( otherNode, 
-						otherPosition ), true ) )
+						otherPosition, optional ), true ) )
 					{
 						return true;
 					}
@@ -263,7 +424,6 @@ public class PatternMatcher
 			{
 				PatternPosition digPos = uncompletedPositions.pop();
 				digPos.reset();
-				//System.out.print( "," );
 				matchFound = traverse( digPos, false );
 				uncompletedPositions.push( digPos );
 				return matchFound;
@@ -395,12 +555,32 @@ public class PatternMatcher
         }
 
 		private PatternMatch match = null;
+		private PatternMatch optionalMatch = null;
 		
 		public boolean hasNext()
         {
 			if ( match == null )
 			{
 				match = findNextMatch();
+				optionalFinder = null;
+			}
+			else if ( optionalNodes != null )
+			{
+				if ( optionalFinder == null )
+				{
+					optionalFinder = new OptionalPatternFinder(
+						match, optionalNodes );
+				}
+				if ( optionalMatch == null )
+				{
+					optionalMatch =
+						optionalFinder.findNextOptionalPatterns();
+				}
+				if ( optionalMatch == null && optionalFinder.anyMatchFound() )
+				{
+					match = null;
+					return hasNext();
+				}
 			}
 			return match != null;
         }
@@ -410,14 +590,44 @@ public class PatternMatcher
 			if ( match == null )
 			{
 				match = findNextMatch();
+				optionalFinder = null;
 			}
+			
 			PatternMatch matchToReturn = match;
-			match = null;
+			PatternMatch optionalMatchToReturn = null;
+			if ( match != null && optionalNodes != null )
+			{
+				if ( optionalFinder == null )
+				{
+					optionalFinder = new OptionalPatternFinder(
+						match, optionalNodes );
+				}
+				if ( optionalMatch == null )
+				{
+					optionalMatch = optionalFinder.findNextOptionalPatterns();
+				}
+				optionalMatchToReturn = optionalMatch;
+				optionalMatch = null;
+				if ( optionalMatchToReturn == null )
+				{
+					match = null;
+					if ( optionalFinder.anyMatchFound() )
+					{
+						return next();
+					}
+				}
+			}
+			else
+			{
+				match = null;
+			}
 			if ( matchToReturn == null )
 			{
 				throw new NoSuchElementException();
 			}
-			return matchToReturn;
+			return optionalMatchToReturn != null ?
+				PatternMatch.merge( matchToReturn, optionalMatchToReturn ) :
+					matchToReturn;
         }
 
 		public void remove()

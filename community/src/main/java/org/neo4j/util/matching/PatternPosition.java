@@ -13,12 +13,14 @@ class PatternPosition
 	private PatternRelationship nextPRel = null;
 	private PatternRelationship previous = null;
 	private PatternRelationship returnPrevious = null;
+	private boolean optional = false;
 
-	PatternPosition( Node currentNode, PatternNode pNode )
+	PatternPosition( Node currentNode, PatternNode pNode, boolean optional )
 	{
 		this.currentNode = currentNode;
 		this.pNode = pNode;
-		itr = pNode.getRelationships().iterator();
+		itr = pNode.getRelationships( optional ).iterator();
+		this.optional = optional;
 	}
 
 	Node getCurrentNode()
@@ -93,11 +95,17 @@ class PatternPosition
 		returnPrevious = null;
 		previous = null;
 		nextPRel = null;
-		itr = pNode.getRelationships().iterator();
+		itr = pNode.getRelationships( optional ).iterator();
     }
 
 	public void returnPreviousAgain()
     {
 		returnPrevious = previous;
     }
+	
+	@Override
+	public String toString()
+	{
+		return pNode.toString();
+	}
 }

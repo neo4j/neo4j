@@ -11,6 +11,8 @@ public class PatternNode
 {
 	 private LinkedList<PatternRelationship> relationships = 
 		new LinkedList<PatternRelationship>();
+	 private LinkedList<PatternRelationship> optionalRelationships =
+		 new LinkedList<PatternRelationship>();
 	 
 	 private Set<String> propertiesExist = new HashSet<String>();
 	 private Map<String, Object[]> propertiesEqual =
@@ -26,29 +28,60 @@ public class PatternNode
 	{
 		this.label = label;
 	}
-	
-	public Iterable<PatternRelationship> getRelationships()
+
+	public Iterable<PatternRelationship> getAllRelationships()
 	{
-		return relationships;
+		LinkedList<PatternRelationship> allRelationships =
+			new LinkedList<PatternRelationship>();
+		allRelationships.addAll( relationships );
+		allRelationships.addAll( optionalRelationships );
+		
+		return allRelationships;
 	}
 	
-	void addRelationship( PatternRelationship relationship )
+	public Iterable<PatternRelationship> getRelationships( boolean optional )
 	{
-		relationships.add( relationship );
+		return optional ? optionalRelationships : relationships;
 	}
 	
-	void removeRelationship( PatternRelationship relationship )
+	void addRelationship( PatternRelationship relationship, boolean optional )
 	{
-		relationships.remove( relationship );
+		if ( optional )
+		{
+			optionalRelationships.add( relationship );
+		}
+		else
+		{
+			relationships.add( relationship );
+		}
+	}
+	
+	void removeRelationship(
+		PatternRelationship relationship, boolean optional )
+	{
+		if ( optional )
+		{
+			optionalRelationships.remove( relationship );
+		}
+		else
+		{
+			relationships.remove( relationship );
+		}
+	}
+	
+	public PatternRelationship createRelationshipTo(
+		PatternNode otherNode, RelationshipType type )
+	{
+		return this.createRelationshipTo( otherNode, type, false );
 	}
 	
 	public PatternRelationship createRelationshipTo( 
-		PatternNode otherNode, RelationshipType type )
+		PatternNode otherNode, RelationshipType type, boolean optional )
 	{
 		PatternRelationship relationship = 
-			new PatternRelationship( type, this, otherNode );
-		addRelationship( relationship );
-		otherNode.addRelationship( relationship );
+			new PatternRelationship( type, this, otherNode, optional );
+		addRelationship( relationship, optional );
+		otherNode.addRelationship( relationship, optional );
 		return relationship;
 	}
 	
