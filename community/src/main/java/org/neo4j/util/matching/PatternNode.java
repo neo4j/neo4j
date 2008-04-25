@@ -69,12 +69,28 @@ public class PatternNode
 		}
 	}
 	
+    public PatternRelationship createRelationshipTo(
+        PatternNode otherNode )
+    {
+        return this.createRelationshipTo( otherNode, false );
+    }
+    
 	public PatternRelationship createRelationshipTo(
 		PatternNode otherNode, RelationshipType type )
 	{
 		return this.createRelationshipTo( otherNode, type, false );
 	}
 	
+    public PatternRelationship createRelationshipTo( 
+        PatternNode otherNode, boolean optional )
+    {
+        PatternRelationship relationship = 
+            new PatternRelationship( this, otherNode, optional );
+        addRelationship( relationship, optional );
+        otherNode.addRelationship( relationship, optional );
+        return relationship;
+    }
+    
 	public PatternRelationship createRelationshipTo( 
 		PatternNode otherNode, RelationshipType type, boolean optional )
 	{

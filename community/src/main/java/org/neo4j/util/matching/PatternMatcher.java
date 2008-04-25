@@ -278,12 +278,17 @@ public class PatternMatcher
 					currentPosition = null;
 					HashMap<PatternNode,PatternElement> filteredElements =
 						new HashMap<PatternNode, PatternElement>();
+                    HashMap<PatternRelationship,Relationship> relElements = 
+                        new HashMap<PatternRelationship,Relationship>();
 					for ( PatternElement element : foundElements )
 					{
-						filteredElements.put( element.getPatternNode(), element );
+						filteredElements.put( element.getPatternNode(), 
+                            element );
+                        relElements.put( element.getFromPatternRelationship(), 
+                            element.getFromRelationship() );
 					}
 					PatternMatch patternMatch = new PatternMatch( 
-						filteredElements );
+						filteredElements, relElements );
 					foundElements.pop();
 					return patternMatch;
 				}
@@ -303,12 +308,16 @@ public class PatternMatcher
 					// found another match, returning it
 					HashMap<PatternNode,PatternElement> filteredElements =
 						new HashMap<PatternNode, PatternElement>();
+                    HashMap<PatternRelationship,Relationship> relElements = 
+                        new HashMap<PatternRelationship,Relationship>();
 					for ( PatternElement element : foundElements )
 					{
 						filteredElements.put( element.getPatternNode(), element );
+                        relElements.put( element.getFromPatternRelationship(), 
+                            element.getFromRelationship() );
 					}
 					PatternMatch patternMatch = new PatternMatch( 
-						filteredElements);
+						filteredElements, relElements );
 					foundElements.pop();
 					return patternMatch;
 				}
@@ -332,13 +341,17 @@ public class PatternMatcher
 				{
 					continue;
 				}
+                if ( !checkProperties( pRel, rel ) )
+                {
+                    continue;
+                }
 				Node otherNode = rel.getOtherNode( currentNode );
 				PatternNode otherPosition = pRel.getOtherNode( 
 					currentPos.getPatternNode() );
 				pRel.mark();
 				visitedRels.add( rel );
 				if ( traverse( new PatternPosition( otherNode, 
-					otherPosition, optional ), true ) )
+					otherPosition, pRel, rel, optional ), true ) )
 				{
 					callPos.setLastVisitedRelationship( rel );
 					return true;
@@ -371,7 +384,9 @@ public class PatternMatcher
 			{
 				foundElements.push( new PatternElement( 
 					currentPos.getPatternNode(), 
-					currentPos.getCurrentNode() ) );
+                    currentPos.fromPatternRel(),  
+					currentPos.getCurrentNode(),
+                    currentPos.fromRelationship() ) );
 			}
 			if ( currentPos.hasNext() )
 			{
@@ -383,10 +398,8 @@ public class PatternMatcher
 					popUncompleted = true;
 				}
 				assert !pRel.isMarked();
-				Iterator<Relationship> relItr = 
-					currentNode.getRelationships( pRel.getType(), 
-						pRel.getDirectionFrom( 
-							currentPos.getPatternNode() ) ).iterator();
+				Iterator<Relationship> relItr = getRelationshipIterator( 
+                    currentPos.getPatternNode(), currentNode, pRel );
 				pRel.mark();
 				while ( relItr.hasNext() )
 				{
@@ -395,6 +408,10 @@ public class PatternMatcher
 					{
 						continue;
 					}
+                    if ( !checkProperties( pRel, rel ) )
+                    {
+                        continue;
+                    }
 					Node otherNode = rel.getOtherNode( currentNode );
 					PatternNode otherPosition = pRel.getOtherNode( 
 						currentPos.getPatternNode() );
@@ -404,7 +421,7 @@ public class PatternMatcher
 						currentPos, rel, relItr, pRel, popUncompleted );
 					callStack.push( callPos );
 					if ( traverse( new PatternPosition( otherNode, 
-						otherPosition, optional ), true ) )
+						otherPosition, pRel, rel, optional ), true ) )
 					{
 						return true;
 					}
@@ -431,7 +448,24 @@ public class PatternMatcher
 			return true;
 		}
 
-		private boolean checkProperties(
+		private Iterator<Relationship> getRelationshipIterator( 
+            PatternNode fromNode, Node currentNode, PatternRelationship pRel )
+        {
+            Iterator<Relationship> relItr = null;
+            if ( pRel.anyRelType() )
+            {
+                relItr = currentNode.getRelationships( pRel.getDirectionFrom( 
+                    fromNode ) ).iterator();
+            }
+            else
+            {
+                relItr = currentNode.getRelationships( pRel.getType(), 
+                    pRel.getDirectionFrom( fromNode ) ).iterator();
+            }
+            return relItr;
+        }
+
+        private boolean checkProperties(
 			PatternNode patternNode, Node neoNode )
 		{
 			for ( String propertyName : patternNode.getPropertiesExist() )
@@ -444,9 +478,6 @@ public class PatternMatcher
 			
 			for ( String propertyName : patternNode.getPropertiesEqual() )
 			{
-//				if ( !neoNode.hasProperty( propertyName ) ||
-//					!patternNode.getPropertyValue( propertyName ).equals(
-//					neoNode.getProperty( propertyName ) ) )
 				if ( !neoPropertyHasValue( neoNode, patternNode,
 					propertyName ) )
 				{
@@ -457,6 +488,28 @@ public class PatternMatcher
 			return true;
 		}
 		
+        private boolean checkProperties(
+            PatternRelationship patternRel, Relationship neoRel )
+        {
+            for ( String propertyName : patternRel.getPropertiesExist() )
+            {
+                if ( !neoRel.hasProperty( propertyName ) )
+                {
+                    return false;
+                }
+            }
+            
+            for ( String propertyName : patternRel.getPropertiesEqual() )
+            {
+                if ( !neoPropertyHasValue( neoRel, patternRel, propertyName ) )
+                {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+        
 		private boolean neoPropertyHasValue( Node neoNode,
 			PatternNode patternNode, String propertyName )
 		{
@@ -473,82 +526,22 @@ public class PatternMatcher
 			return !neoValues.isEmpty();
 		}
 
-// old implementation that doesn't return values
-//		private boolean traverse( PatternPosition currentPos, 
-//			Stack<PatternPosition> uncompletedPositions, 
-//			Stack<Node> foundNodes )
-//		{
-//			foundNodes.push( currentPos.getCurrentNode() );
-//			//String posStr = "[" + currentPos.getCurrentNode().getProperty( "name" ) + "]";
-//			if ( currentPos.hasNext() )
-//			{
-//				boolean popUncompleted = false;
-//				boolean anyMatchFound = false;
-//				try
-//				{
-//					PatternRelationship pRel = currentPos.next();
-//					if ( currentPos.hasNext() )
-//					{
-//						uncompletedPositions.push( currentPos );
-//						popUncompleted = true;
-//					}
-//					assert !pRel.isMarked();
-//					Node currentNode = currentPos.getCurrentNode();
-//					for ( Relationship rel : currentNode.getRelationships( 
-//							pRel.getType(), pRel.getDirectionFrom( 
-//								currentPos.getPatternNode() ) ) )
-//					{
-//						if ( visitedRels.contains( rel ) )
-//						{
-//							continue;
-//						}
-//						Node otherNode = rel.getOtherNode( currentNode );
-//						PatternNode otherPosition = pRel.getOtherNode( 
-//							currentPos.getPatternNode() );
-//						pRel.mark();
-//						visitedRels.add( rel );
-//						
-//						if ( traverse( new PatternPosition( otherNode, 
-//							otherPosition ), uncompletedPositions, 
-//							foundNodes ) )
-//						{
-//							anyMatchFound = true;
-//						}
-//						visitedRels.remove( rel );
-//						pRel.unMark();
-//					}
-//					return anyMatchFound;
-//				}
-//				finally
-//				{
-//					if ( popUncompleted )
-//					{
-//						uncompletedPositions.pop();
-//					}
-//					foundNodes.pop();
-//				}
-//			}
-//			boolean matchFound = true;
-//			if ( !uncompletedPositions.isEmpty() )
-//			{
-//				PatternPosition digPos = uncompletedPositions.pop();
-//				digPos.reset();
-//				matchFound = traverse( digPos, uncompletedPositions, 
-//					foundNodes );
-//				uncompletedPositions.push( digPos );
-//			}
-//			else
-//			{
-//				for ( Node node : foundNodes )
-//				{
-//					System.out.print( node.getProperty( "name" ) + " " );
-//				}
-//				System.out.println( " tt " );
-//			}
-//			foundNodes.pop();
-//			return matchFound;
-//		}
-		
+        private boolean neoPropertyHasValue( Relationship neoRel,
+            PatternRelationship patternRel, String propertyName )
+        {
+            if ( !neoRel.hasProperty( propertyName ) )
+            {
+                return false;
+            }
+            Object[] patternValues =
+                patternRel.getPropertyValue( propertyName );
+            Object neoValue = neoRel.getProperty( propertyName );
+            Collection<Object> neoValues =
+                NeoArrayPropertyUtil.neoValueToCollection( neoValue );
+            neoValues.retainAll( Arrays.asList( patternValues ) );
+            return !neoValues.isEmpty();
+        }
+        
 		public Iterator<PatternMatch> iterator()
         {
 			return this;

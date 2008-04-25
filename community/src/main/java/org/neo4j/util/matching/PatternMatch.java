@@ -4,15 +4,20 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.Relationship;
 
 public class PatternMatch
 {
 	private Map<PatternNode,PatternElement> elements = 
 		new HashMap<PatternNode, PatternElement>();
-	
-	PatternMatch( Map<PatternNode,PatternElement> elements )
+	private Map<PatternRelationship,Relationship> relElements = 
+        new HashMap<PatternRelationship,Relationship>();
+    
+	PatternMatch( Map<PatternNode,PatternElement> elements, 
+        Map<PatternRelationship,Relationship> relElements )
 	{
 		this.elements = elements;
+        this.relElements = relElements;
 	}
 	
 	public Node getNodeFor( PatternNode node )
@@ -20,6 +25,12 @@ public class PatternMatch
 		return elements.containsKey( node ) ?
 			elements.get( node ).getNode() : null;
 	}
+    
+    public Relationship getRelationshipFor( PatternRelationship rel )
+    {
+        return relElements.containsKey( rel ) ?
+            relElements.get( rel ) : null;
+    }
 	
 	public Iterable<PatternElement> getElements()
 	{
@@ -30,6 +41,8 @@ public class PatternMatch
 	{
 		Map<PatternNode, PatternElement> matchMap =
 			new HashMap<PatternNode, PatternElement>();
+        Map<PatternRelationship, Relationship> relElements = 
+            new HashMap<PatternRelationship, Relationship>();
 		for ( PatternMatch match : matches )
 		{
 			for ( PatternNode node : match.elements.keySet() )
@@ -46,10 +59,13 @@ public class PatternMatch
 				if ( !exists )
 				{
 					matchMap.put( node, match.elements.get( node ) );
+                    relElements.put( 
+                        match.elements.get( node ).getFromPatternRelationship(), 
+                        match.elements.get( node ).getFromRelationship() );
 				}
 			}
 		}
-		PatternMatch mergedMatch = new PatternMatch( matchMap );
+		PatternMatch mergedMatch = new PatternMatch( matchMap, relElements );
 		return mergedMatch;
 	}
 

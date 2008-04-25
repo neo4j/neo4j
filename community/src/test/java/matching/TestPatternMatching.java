@@ -1,13 +1,17 @@
 package matching;
 
+import java.util.HashSet;
+import java.util.Set;
 import junit.framework.TestCase;
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
 import org.neo4j.util.matching.PatternMatch;
 import org.neo4j.util.matching.PatternMatcher;
 import org.neo4j.util.matching.PatternNode;
+import org.neo4j.util.matching.PatternRelationship;
 
 public class TestPatternMatching extends TestCase
 {
@@ -48,7 +52,63 @@ public class TestPatternMatching extends TestCase
 	{
 		super( name );
 	}
+    
+    public void testAllRelTypes()
+    {
+        final RelationshipType R1 = MyRelTypes.R1;
+        final RelationshipType R2 = MyRelTypes.R2;
+        
+        Node a1 = createInstance( "a1" );
+        Node b1 = createInstance( "b1" );
+
+        Set<Relationship> relSet = new HashSet<Relationship>();
+        relSet.add( a1.createRelationshipTo( b1, R1 ) );
+        relSet.add( a1.createRelationshipTo( b1, R2 ) );
+
+        PatternNode pA = new PatternNode();
+        PatternNode pB = new PatternNode();
+        PatternRelationship pRel = pA.createRelationshipTo( pB );
+        int count = 0;
+        for ( PatternMatch match : 
+            PatternMatcher.getMatcher().match( pA, a1 ) )
+        {
+            assertEquals( match.getNodeFor( pA ), a1 );
+            assertEquals( match.getNodeFor( pB ), b1 );
+            assertTrue( relSet.remove( match.getRelationshipFor( pRel ) ) );
+            count++;
+        }
+        assertEquals( 0, relSet.size() );
+        assertEquals( 2, count );
+    }
 	
+    public void testAllRelTypesWithRelProperty()
+    {
+        final RelationshipType R1 = MyRelTypes.R1;
+        final RelationshipType R2 = MyRelTypes.R2;
+        
+        Node a1 = createInstance( "a1" );
+        Node b1 = createInstance( "b1" );
+
+        Relationship rel = a1.createRelationshipTo( b1, R1 );
+        // rel.setProperty( "musthave", true );
+        rel = a1.createRelationshipTo( b1, R2 );
+        rel.setProperty( "musthave", true );
+        
+        PatternNode pA = new PatternNode();
+        PatternNode pB = new PatternNode();
+        PatternRelationship pRel = pA.createRelationshipTo( pB );
+        pRel.addPropertyExistConstraint( "musthave" );
+        int count = 0;
+        for ( PatternMatch match : 
+            PatternMatcher.getMatcher().match( pA, a1 ) )
+        {
+            assertEquals( match.getNodeFor( pA ), a1 );
+            assertEquals( match.getNodeFor( pB ), b1 );
+            count++;
+        }
+        assertEquals( 1, count );
+    }
+    
 	public void testTeethStructure()
 	{
 		final RelationshipType R1 = MyRelTypes.R1;
@@ -159,19 +219,19 @@ public class TestPatternMatching extends TestCase
 		
 		final RelationshipType R = MyRelTypes.R1;
 		
-		a.createRelationshipTo( b1, R );
-		a.createRelationshipTo( b2, R );
-		a.createRelationshipTo( b3, R );
-		b1.createRelationshipTo( c, R );
-		b2.createRelationshipTo( c, R );
-		b3.createRelationshipTo( c, R );
+		Relationship rAB1 = a.createRelationshipTo( b1, R );
+        Relationship rAB2 = a.createRelationshipTo( b2, R );
+        Relationship rAB3 = a.createRelationshipTo( b3, R );
+        Relationship rB1C = b1.createRelationshipTo( c, R );
+        Relationship rB2C = b2.createRelationshipTo( c, R );
+        Relationship rB3C = b3.createRelationshipTo( c, R );
 		
 		PatternNode pA = new PatternNode();
 		PatternNode pB = new PatternNode();
 		PatternNode pC = new PatternNode();
 		
-		pA.createRelationshipTo( pB, R );
-		pB.createRelationshipTo( pC, R );
+		PatternRelationship pAB = pA.createRelationshipTo( pB, R );
+		PatternRelationship pBC = pB.createRelationshipTo( pC, R );
 		
 		int count = 0;
 		for ( PatternMatch match : 
@@ -183,7 +243,17 @@ public class TestPatternMatching extends TestCase
 			{
 				fail( "either b1 or b2 or b3" );
 			}
+            Relationship rB = match.getRelationshipFor( pAB );
+            if ( !rAB1.equals( rB ) && !rAB2.equals( rB ) && !rAB3.equals( rB ))
+            {
+                fail( "either rAB1, rAB2 or rAB3" );
+            }
 			assertEquals( match.getNodeFor( pC ), c );
+            Relationship rC = match.getRelationshipFor( pBC );
+            if ( !rB1C.equals( rC ) && !rB2C.equals( rC ) && !rB3C.equals( rC ))
+            {
+                fail( "either rB1C, rB2C or rB3C" );
+            }
 			count++;
 		}
 		assertEquals( 3, count );

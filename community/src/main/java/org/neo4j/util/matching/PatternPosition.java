@@ -1,9 +1,9 @@
 package org.neo4j.util.matching;
 
 import java.util.Iterator;
-//import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.Relationship;
 
 class PatternPosition
 {
@@ -14,6 +14,8 @@ class PatternPosition
 	private PatternRelationship previous = null;
 	private PatternRelationship returnPrevious = null;
 	private boolean optional = false;
+    private PatternRelationship fromPRel = null;
+    private Relationship fromRel = null;
 
 	PatternPosition( Node currentNode, PatternNode pNode, boolean optional )
 	{
@@ -23,6 +25,17 @@ class PatternPosition
 		this.optional = optional;
 	}
 
+    PatternPosition( Node currentNode, PatternNode pNode, 
+        PatternRelationship fromPRel, Relationship fromRel, boolean optional )
+    {
+        this.currentNode = currentNode;
+        this.pNode = pNode;
+        itr = pNode.getRelationships( optional ).iterator();
+        this.optional = optional;
+        this.fromPRel = fromPRel;
+        this.fromRel = fromRel;
+    }
+    
 	Node getCurrentNode()
 	{
 		return currentNode;
@@ -108,4 +121,14 @@ class PatternPosition
 	{
 		return pNode.toString();
 	}
+
+    public PatternRelationship fromPatternRel()
+    {
+        return fromPRel;
+    }
+    
+    public Relationship fromRelationship()
+    {
+        return fromRel;
+    }
 }
