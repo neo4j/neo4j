@@ -95,8 +95,8 @@ class NeoJvmInstance
         {
             params.put( key, stringParams.get( key ) );
         }
-		config = new Config();
-		config.getTxModule().setTxLogDirectory( storeDir );
+		config = new Config( storeDir );
+//		config.getTxModule().setTxLogDirectory( storeDir );
 		// create NioNeo DB persistence source
 		storeDir = convertFileSeparators( storeDir );
 		String separator = System.getProperty( "file.separator" );
@@ -194,12 +194,14 @@ class NeoJvmInstance
 		private String persistenceSourceName;
 		private IdGeneratorModule idGeneratorModule;
 		private NeoModule neoModule;
-				
-		Config()
+		private String storeDir;
+        
+		Config( String storeDir )
 		{
+            this.storeDir = storeDir;
 			eventModule = new EventModule();
 			cacheManager = new AdaptiveCacheManager();
-			txModule = new TxModule( eventModule.getEventManager() );
+			txModule = new TxModule( eventModule.getEventManager(), storeDir );
 			lockManager = new LockManager();
 			lockReleaser = new LockReleaser( lockManager, 
 				txModule.getTxManager() );
