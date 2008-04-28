@@ -51,7 +51,6 @@ class NeoJvmInstance
 	private Config config = null;
 	private NioNeoDbPersistenceSource persistenceSource = null; 
 	
-	
 	public Config getConfig()
 	{
 		return config;
@@ -59,18 +58,23 @@ class NeoJvmInstance
 	
 	public void start() 
 	{
-		Map<String,String> params = new HashMap<String,String>();
-		params.put( "neostore.nodestore.db.mapped_memory", "20M" );
-		params.put( "neostore.propertystore.db.mapped_memory", "90M" );
-		params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
-		params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
-		params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-		params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
-		params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
-		start( params );
+		start( new HashMap<String,String>() );
 	}
     
-	/**
+	private Map<Object,Object> getDefaultParams()
+    {
+        Map<Object,Object> params = new HashMap<Object,Object>();
+        params.put( "neostore.nodestore.db.mapped_memory", "20M" );
+        params.put( "neostore.propertystore.db.mapped_memory", "90M" );
+        params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
+        params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
+        params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
+        params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
+        params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
+        return params;
+    }
+
+    /**
 	 * Starts Neo with default configuration using NioNeo DB as persistence 
 	 * store. 
 	 *
@@ -86,7 +90,7 @@ class NeoJvmInstance
 		{
 			throw new IllegalStateException( "A Neo instance already started" );
 		}
-		Map<Object,Object> params = new HashMap<Object,Object>();
+		Map<Object,Object> params = getDefaultParams();
         for ( String key : stringParams.keySet() )
         {
             params.put( key, stringParams.get( key ) );
