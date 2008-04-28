@@ -58,9 +58,11 @@ public class TxManager implements TransactionManager
 	
 	private ArrayMap<Thread,TransactionImpl> txThreadMap; 
 	
-	private String logSwitcherFileName = "var/tm/active_tx_log";
-	private String txLog1FileName = "var/tm/tm_tx_log.1"; 
-	private String txLog2FileName = "var/tm/tm_tx_log.2";
+	private final String txLogDir;
+    private String separator = "/";
+    private String logSwitcherFileName = "active_tx_log";
+	private String txLog1FileName = "tm_tx_log.1"; 
+	private String txLog2FileName = "tm_tx_log.2";
 	private int maxTxLogRecordCount = 1000;
 	private int eventIdentifierCounter = 0;
 	
@@ -70,9 +72,10 @@ public class TxManager implements TransactionManager
 	
 	private final EventManager eventManager;
 	
-	TxManager( EventManager eventManager )
+	TxManager( EventManager eventManager, String txLogDir )
 	{
 		this.eventManager = eventManager;
+        this.txLogDir = txLogDir;
 	}
 
 	
@@ -101,17 +104,10 @@ public class TxManager implements TransactionManager
 	{
 		this.xaDsManager = xaDsManager;
 		txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
-		String txLogDir = System.getProperty( "neo.tx_log_directory" );
-		if ( txLogDir == null )
-		{
-			throw new RuntimeException( 
-				"No neo.tx_log_directory system property set or " + 
-				"TxModule registered" );
-		}
-		String separator = System.getProperty( "file.separator" );
+        separator = System.getProperty( "file.separator" );
 		logSwitcherFileName = txLogDir + separator + "active_tx_log";
-		txLog1FileName = txLogDir + separator + "tm_tx_log.1";
-		txLog2FileName = txLogDir + separator + "tm_tx_log.2";
+		txLog1FileName = "tm_tx_log.1";
+		txLog2FileName = "tm_tx_log.2";
 		try
 		{
 			if ( new File( logSwitcherFileName ).exists() )
@@ -121,7 +117,8 @@ public class TxManager implements TransactionManager
 				byte fileName[] = new byte[ 256 ];
 				ByteBuffer buf = ByteBuffer.wrap( fileName );
 				fc.read( buf );
-				String currentTxLog = new String( fileName ).trim();
+				String currentTxLog = txLogDir + separator + 
+                    new String( fileName ).trim();
 				if ( !new File( currentTxLog ).exists() )
 				{
 					throw new RuntimeException( "Unable to start TM, " + 
@@ -132,8 +129,9 @@ public class TxManager implements TransactionManager
 			}
 			else
 			{
-				if ( new File( txLog1FileName ).exists() || 
-					new File( txLog2FileName ).exists() )
+				if ( new File( txLogDir + separator + 
+                    txLog1FileName ).exists() || 
+                    new File( txLogDir + separator + txLog2FileName ).exists() )
 				{
 					throw new RuntimeException( "Unable to start TM, " +
 						"no active tx log file found but found either " +
@@ -146,7 +144,7 @@ public class TxManager implements TransactionManager
 				FileChannel fc = new RandomAccessFile( 
 					logSwitcherFileName, "rw" ).getChannel(); 
 				fc.write( buf );
-				txLog = new TxLog( txLog1FileName );  
+				txLog = new TxLog( txLogDir + separator + txLog1FileName );  
 				fc.force( true );
 				fc.close();
 			}
@@ -179,14 +177,14 @@ public class TxManager implements TransactionManager
 	{
 		if ( txLog.getRecordCount() > maxTxLogRecordCount )
 		{
-			if ( txLog.getName().equals( txLog1FileName ) )
+			if ( txLog.getName().endsWith( txLog1FileName ) )
 			{
-				txLog.switchToLogFile( txLog2FileName );
+				txLog.switchToLogFile( txLogDir + separator + txLog2FileName );
 				changeActiveLog( txLog2FileName );
 			}
-			else if ( txLog.getName().equals( txLog2FileName ) )
+			else if ( txLog.getName().endsWith( txLog2FileName ) )
 			{
-				txLog.switchToLogFile( txLog1FileName );
+				txLog.switchToLogFile( txLogDir + separator + txLog1FileName );
 				changeActiveLog( txLog1FileName );
 			}
 			else

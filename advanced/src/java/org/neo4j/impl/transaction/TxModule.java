@@ -52,9 +52,10 @@ public class TxModule
 	private final TxManager txManager;
 	private final XaDataSourceManager xaDsManager;
 	
-	public TxModule( EventManager eventManager )
+	public TxModule( EventManager eventManager, String txLogDir )
 	{
-		this.txManager = new TxManager( eventManager );
+        this.txLogDir = txLogDir;
+		this.txManager = new TxManager( eventManager, txLogDir );
 		this.xaDsManager = new XaDataSourceManager();
 	}
 
@@ -244,11 +245,6 @@ public class TxModule
 	public String getTxLogDirectory()
 	{
 		return txLogDir;
-	}
-
-	public void setTxLogDirectory( String dir )
-	{
-		txLogDir = dir;
 	}
 
 	public TransactionManager getTxManager()

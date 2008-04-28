@@ -84,7 +84,7 @@ class RelationshipIterator implements Iterable<Relationship>,
 				}
 				catch ( Throwable t )
 				{
-                    log.log( Level.INFO, "Unable to get relationship " + 
+                    log.log( Level.FINE, "Unable to get relationship " + 
                         relIds[nextPosition - 1], t );
 				}
 			}

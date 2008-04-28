@@ -25,7 +25,7 @@ import javax.transaction.xa.Xid;
 
 public class LogBuffer
 {
-	private static final int MAPPED_SIZE = 1024*1024*2;
+	private static final int MAPPED_SIZE = 1024*1024*4;
 	
 	private final FileChannel fileChannel;
 	
