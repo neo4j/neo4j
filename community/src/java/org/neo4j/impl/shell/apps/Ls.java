@@ -185,7 +185,7 @@ public class Ls extends NodeOrRelationshipApp
 				}
 				StringBuffer buf = 
 					new StringBuffer( getDisplayNameForCurrentNode() );
-				buf.append( " <--[" ).append( rel.getType() );
+				buf.append( " <--[" ).append( rel.getType().name() );
 				if ( verbose )
 				{
 					buf.append( ", " ).append( rel.getId() );
