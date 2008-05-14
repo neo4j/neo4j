@@ -81,4 +81,10 @@ public interface ShellServer extends Remote
 	 * @throws RemoteException RMI error.
 	 */
 	void makeRemotelyAvailable( int port, String name ) throws RemoteException;
+	
+	/**
+	 * @return all the available commands one can issue to this server.
+	 * @throws RemoteException RMI error.
+	 */
+	Iterable<String> getAllAvailableCommands() throws RemoteException;
 }

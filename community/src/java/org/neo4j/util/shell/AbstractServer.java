@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -83,5 +84,10 @@ public abstract class AbstractServer extends UnicastRemoteObject
 		RmiLocation location =
 			RmiLocation.location( "localhost", port, name );
 		location.bind( this );
+	}
+	
+	public Iterable<String> getAllAvailableCommands()
+	{
+		return Collections.emptyList();
 	}
 }

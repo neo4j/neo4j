@@ -2,8 +2,10 @@ package org.neo4j.util.shell;
 
 import java.lang.reflect.Modifier;
 import java.rmi.RemoteException;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * A common implementation of an {@link AppShellServer}. The server can be given
@@ -15,6 +17,7 @@ public abstract class AbstractAppServer extends AbstractServer
 	implements AppShellServer
 {
 	private Set<String> packages = new HashSet<String>();
+//	private Set<String> availableCommands;
 
 	/**
 	 * Constructs a new server.
@@ -85,5 +88,23 @@ public abstract class AbstractAppServer extends AbstractServer
 		
 		AppCommandParser parser = new AppCommandParser( this, line );
 		return parser.app().execute( parser, session, out );
+	}
+	
+	@Override
+	public Iterable<String> getAllAvailableCommands()
+	{
+		return findAllApps();
+	}
+	
+	protected Set<String> findAllApps()
+	{
+		Collection<? extends Class<?>> apps = ClassLister.
+			listClassesExtendingOrImplementing( App.class, this.packages );
+		Set<String> set = new TreeSet<String>();
+		for ( Class<?> app : apps )
+		{
+			set.add( app.getSimpleName().toLowerCase() );
+		}
+		return set;
 	}
 }

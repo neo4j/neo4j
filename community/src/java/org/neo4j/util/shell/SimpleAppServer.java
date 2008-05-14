@@ -1,6 +1,7 @@
 package org.neo4j.util.shell;
 
 import java.rmi.RemoteException;
+
 import org.neo4j.util.shell.apps.Man;
 import org.neo4j.util.shell.apps.extra.Gsh;
 
@@ -10,6 +11,9 @@ import org.neo4j.util.shell.apps.extra.Gsh;
  */
 public class SimpleAppServer extends AbstractAppServer
 {
+	private static final String APP_EXIT = "exit";
+	private static final String APP_QUIT = "quit";
+	
 	/**
 	 * Creates a new simple app server and adds default packages.
 	 * @throws RemoteException RMI error.
@@ -27,7 +31,7 @@ public class SimpleAppServer extends AbstractAppServer
 	
 	private App findBuiltInApp( String command )
 	{
-		if ( command.equals( "exit" ) || command.equals( "quit" ) )
+		if ( command.equals( APP_EXIT ) || command.equals( APP_QUIT ) )
 		{
 			return new ExitApp();
 		}
@@ -40,6 +44,15 @@ public class SimpleAppServer extends AbstractAppServer
 		App app = this.findBuiltInApp( command );
 		return app != null ? app : super.findApp( command );
 	}
+	
+//	@Override
+//	protected Set<String> findAllApps()
+//	{
+//		Set<String> set = super.findAllApps();
+//		set.add( APP_EXIT );
+//		set.add( APP_QUIT );
+//		return set;
+//	}
 
 	private abstract class BuiltInApp extends AbstractApp
 	{

@@ -37,6 +37,9 @@ A generic command shell with a client and server part
 	</build>
 	
 	<dependencies>
+		<!-- If you add the jLine library (at least version 0.9.94) to the
+			 classpath of the client then you'll get enhanced prompt abilities.
+			 Much like regular bash etc. -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -44,5 +47,4 @@ A generic command shell with a client and server part
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-	
 </project>

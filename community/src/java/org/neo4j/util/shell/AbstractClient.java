@@ -18,7 +18,7 @@ public abstract class AbstractClient implements ShellClient
 	 */
 	public static final String STACKTRACES_KEY = "STACKTRACES";
 	
-	private Console console = new Console();
+	private Console console;
 	
 	public void grabPrompt()
 	{
@@ -96,8 +96,13 @@ public abstract class AbstractClient implements ShellClient
 	{
 		try
 		{
-			possiblyGrabDefaultVariableFromServer( PROMPT_KEY, "# " );
+			possiblyGrabDefaultVariableFromServer( PROMPT_KEY, "$ " );
 			this.getOutput().println( this.getServer().welcome() );
+			
+			// Grab a jline console if available, else a standard one.
+			this.console = JLineConsole.newConsoleOrNullIfNotFound( this );
+			this.console = this.console != null ? this.console :
+				new StandardConsole();
 		}
 		catch ( RemoteException e )
 		{
