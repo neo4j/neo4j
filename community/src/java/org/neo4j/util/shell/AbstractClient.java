@@ -101,8 +101,12 @@ public abstract class AbstractClient implements ShellClient
 			
 			// Grab a jline console if available, else a standard one.
 			this.console = JLineConsole.newConsoleOrNullIfNotFound( this );
-			this.console = this.console != null ? this.console :
-				new StandardConsole();
+			if ( this.console == null )
+			{
+				System.out.println( "Want bash-like features? throw in " +
+					"jLine on the classpath" );
+				this.console = new StandardConsole();
+			}
 		}
 		catch ( RemoteException e )
 		{
