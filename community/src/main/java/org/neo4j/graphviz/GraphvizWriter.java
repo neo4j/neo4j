@@ -193,7 +193,6 @@ public class GraphvizWriter extends EmittingConsumer
 	{
 		emitter.print( "  N" + id + " [\n    label = \"{Node[" + id + "]|" );
 		emitter.push( "}\"\n  ]" );
-		emitter.softline = false;
 		return emitter;
 	}
 
@@ -202,9 +201,8 @@ public class GraphvizWriter extends EmittingConsumer
 	    long start, long end )
 	{
 		emitter.print( "  N" + start + " -> N" + end + " [\n    label = \""
-		    + type.name() );
+		    + type.name() + "\\n" );
 		emitter.push( "\"\n  ]" );
-		emitter.softline = true;
 		return emitter;
 	}
 
@@ -284,8 +282,6 @@ public class GraphvizWriter extends EmittingConsumer
 			println( propValue );
 		}
 
-		boolean softline = false;
-
 		void push( String endToken )
 		{
 			endTokens.push( endToken );
@@ -294,18 +290,12 @@ public class GraphvizWriter extends EmittingConsumer
 		@Override
 		protected void emitMapping( String key, String value, String type )
 		{
-			if ( softline )
-			{
-				print( "\\l" );
-			}
-			print( key + " = " + value + " : " + type );
-			softline = true;
+			print( key + " = " + value + " : " + type + "\\l" );
 		}
 
 		@Override
 		public void done()
 		{
-			softline = false;
 			println( endTokens.pop() );
 		}
 

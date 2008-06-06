@@ -3,6 +3,7 @@
  */
 package org.neo4j.graphviz;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,22 +17,220 @@ import java.util.Map;
  */
 public abstract class Emitter
 {
-	@SuppressWarnings( { "unchecked", "serial" } )
-	private static final Map<Class, String> types = Collections
-	    .unmodifiableMap( new HashMap<Class, String>()
-	    {
+	private enum PropertyType
+	{
+		// Scalar types
+		STRING( "String", String.class )
+		{
+			@Override
+			String format( Object object )
+			{
+				String string = ( String ) object;
+				string = string.replace( "\\n", "\\\\n" );
+				string = string.replace( "\\", "\\\\" );
+				string = string.replace( "\"", "\\\"" );
+				string = string.replace( "'", "\\\\'" );
+				string = string.replace( "\n", "\\\\n" );
+				return "'" + string + "'";
+			}
+		},
+		INT( "int", Integer.class, int.class ), LONG( "long", Long.class,
+		    long.class ), BOOLEAN( "boolean", Boolean.class, boolean.class ),
+		SHORT( "short", Short.class, short.class ), CHAR( "char",
+		    Character.class, char.class ),
+		BYTE( "byte", Byte.class, byte.class ), FLOAT( "float", Float.class,
+		    float.class ), DOUBLE( "double", Double.class, double.class ),
+		// Array types
+		STRING_ARRAY( "String[]", String[].class )
+		{
+			@Override
+			String format( Object object )
+			{
+				return formatArray( ( String[] ) object, String.class );
+			}
+		},
+		INT_ARRAY( "int[]", Integer[].class, int[].class )
+		{
+			@Override
+			String format( Object object )
+			{
+				if ( object instanceof int[] )
+				{
+					int[] value = ( int[] ) object;
+					return Arrays.toString( value );
+				}
+				else
+				{
+					Integer[] value = ( Integer[] ) object;
+					return formatArray( value, Integer.class );
+				}
+			}
+		},
+		LONG_ARRAY( "long[]", Long[].class, long[].class )
+		{
+			@Override
+			String format( Object object )
+			{
+				if ( object instanceof int[] )
+				{
+					long[] value = ( long[] ) object;
+					return Arrays.toString( value );
+				}
+				else
+				{
+					Long[] value = ( Long[] ) object;
+					return formatArray( value, Long.class );
+				}
+			}
+		},
+		BOOLEAN_ARRAY( "boolean[]", Boolean[].class, boolean[].class )
+		{
+			@Override
+			String format( Object object )
+			{
+				if ( object instanceof int[] )
+				{
+					boolean[] value = ( boolean[] ) object;
+					return Arrays.toString( value );
+				}
+				else
+				{
+					Boolean[] value = ( Boolean[] ) object;
+					return formatArray( value, Boolean.class );
+				}
+			}
+		},
+		SHORT_ARRAY( "short[]", Short[].class, short[].class )
+		{
+			@Override
+			String format( Object object )
+			{
+				if ( object instanceof int[] )
+				{
+					short[] value = ( short[] ) object;
+					return Arrays.toString( value );
+				}
+				else
+				{
+					Short[] value = ( Short[] ) object;
+					return formatArray( value, Short.class );
+				}
+			}
+		},
+		CHAR_ARRAY( "char[]", Character[].class, char[].class )
+		{
+			@Override
+			String format( Object object )
+			{
+				if ( object instanceof int[] )
+				{
+					char[] value = ( char[] ) object;
+					return Arrays.toString( value );
+				}
+				else
+				{
+					Character[] value = ( Character[] ) object;
+					return formatArray( value, Character.class );
+				}
+			}
+		},
+		BYTE_ARRAY( "byte[]", Byte[].class, byte[].class )
+		{
+			@Override
+			String format( Object object )
+			{
+				if ( object instanceof int[] )
+				{
+					byte[] value = ( byte[] ) object;
+					return Arrays.toString( value );
+				}
+				else
+				{
+					Byte[] value = ( Byte[] ) object;
+					return formatArray( value, Byte.class );
+				}
+			}
+		},
+		FLOAT_ARRAY( "float[]", Float[].class, float[].class )
+		{
+			@Override
+			String format( Object object )
+			{
+				if ( object instanceof int[] )
+				{
+					float[] value = ( float[] ) object;
+					return Arrays.toString( value );
+				}
+				else
+				{
+					Float[] value = ( Float[] ) object;
+					return formatArray( value, Float.class );
+				}
+			}
+		},
+		DOUBLE_ARRAY( "double[]", Double[].class, double[].class )
+		{
+			@Override
+			String format( Object object )
+			{
+				if ( object instanceof int[] )
+				{
+					double[] value = ( double[] ) object;
+					return Arrays.toString( value );
+				}
+				else
+				{
+					Double[] value = ( Double[] ) object;
+					return formatArray( value, Double.class );
+				}
+			}
+		};
+		private static final Map<Class<?>, PropertyType> typeMap = Collections
+		    .unmodifiableMap( new HashMap<Class<?>, PropertyType>()
 		    {
-			    put( String.class, "String" );
-			    put( Integer.class, "int" );
-			    put( Long.class, "long" );
-			    put( Boolean.class, "boolean" );
-			    put( Short.class, "short" );
-			    put( Character.class, "char" );
-			    put( Byte.class, "byte" );
-			    put( Float.class, "float" );
-			    put( Double.class, "double" );
-		    }
-	    } );
+			    {
+				    for ( PropertyType type : PropertyType.values() )
+				    {
+					    for ( Class<?> cls : type.types )
+					    {
+						    put( cls, type );
+					    }
+				    }
+			    }
+		    } );
+		private final String typeName;
+		private Class<?>[] types;
+
+		private PropertyType( String typeName, Class<?>... types )
+		{
+			this.typeName = typeName;
+			this.types = types;
+		}
+
+		String format( Object object )
+		{
+			return object.toString();
+		}
+
+		<T> String formatArray( T[] items, Class<T> type )
+		{
+			PropertyType formatter = typeMap.get( type );
+			StringBuilder result = new StringBuilder( "[" );
+			boolean addComma = false;
+			for ( T item : items )
+			{
+				if ( addComma )
+				{
+					result.append( ", " );
+				}
+				result.append( formatter.format( item ) );
+				addComma = true;
+			}
+			result.append( "]" );
+			return result.toString();
+		}
+	}
+
 	private final EmissionPolicy policy;
 
 	/**
@@ -52,26 +251,10 @@ public abstract class Emitter
 	 */
 	protected String escape( Object value )
 	{
-		if ( value instanceof String )
+		PropertyType type = PropertyType.typeMap.get( value.getClass() );
+		if ( type != null )
 		{
-			String string = ( String ) value;
-			string = string.replace( "\\n", "\\\\n" );
-			string = string.replace( "\\", "\\\\" );
-			string = string.replace( "\"", "\\\"" );
-			string = string.replace( "'", "\\\\'" );
-			string = string.replace( "\n", "\\\\n" );
-			return "'" + string + "'";
-		}
-		else if ( value instanceof String[] )
-		{
-			String[] array = ( String[] ) value;
-			StringBuilder result = new StringBuilder( "[" );
-			for ( String string : array )
-			{
-				result.append( escape( string ) );
-			}
-			result.append( "]" );
-			return result.toString();
+			return type.format( value );
 		}
 		else
 		{
@@ -87,18 +270,14 @@ public abstract class Emitter
 	 */
 	protected String typeOf( Object value )
 	{
-		String result = null;
-		if ( value != null )
+		PropertyType type = PropertyType.typeMap.get( value.getClass() );
+		if ( type != null )
 		{
-			result = types.get( value.getClass() );
-		}
-		if ( result != null )
-		{
-			return result;
+			return type.typeName;
 		}
 		else
 		{
-			return "Object";
+			return value.getClass().toString();
 		}
 	}
 

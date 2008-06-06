@@ -103,12 +103,15 @@ public class TestGraphvizWriter
 					{
 						add( "name" );
 						add( "age" );
+						add( "hours" );
 					}
 				} ) );
 				one( tobias ).getProperty( "name" );
 				will( returnValue( "Tobias \"snuttis\" Ivarsson" ) );
 				one( tobias ).getProperty( "age" );
 				will( returnValue( 23 ) );
+				one( tobias ).getProperty( "hours" );
+				will( returnValue( new int[] { 10, 10, 4, 4, 0 } ) );
 				one( johan ).getPropertyKeys();
 				will( returnValue( new LinkedList<String>()
 				{
@@ -210,27 +213,30 @@ public class TestGraphvizWriter
 		    + "  edge [\n" + "    fontname = \"Bitstream Vera Sans\"\n"
 		    + "    fontsize = 8\n" + "  ]\n";
 		String n1 = "  N1 [\n"
-		    + "    label = \"{Node[1]|name = 'Emil Eifrem' : String\\lage = 29 : int}\"\n"
+		    + "    label = \"{Node[1]|name = 'Emil Eifrem' : String\\lage = 29 : int\\l}\"\n"
 		    + "  ]\n";
 		String n2 = "  N2 [\n"
-		    + "    label = \"{Node[2]|name = 'Tobias \\\"snuttis\\\" Ivarsson' : String\\lage = 23 : int}\"\n"
+		    + "    label = \"{Node[2]|name = 'Tobias \\\"snuttis\\\" Ivarsson' : String\\lage = 23 : int\\lhours = [10, 10, 4, 4, 0] : int[]\\l}\"\n"
 		    + "  ]\n";
 		String n3 = "  N3 [\n"
-		    + "    label = \"{Node[3]|name = 'Johan \\\\'\\\\\\\\n00b\\\\' Svensson' : String}\"\n"
+		    + "    label = \"{Node[3]|name = 'Johan \\\\'\\\\\\\\n00b\\\\' Svensson' : String\\l}\"\n"
 		    + "  ]\n";
 		String n1n2 = "  N1 -> N2 [\n"
-		    + "    label = \"KNOWS\\lsince = '2003-08-17' : String\"\n"
+		    + "    label = \"KNOWS\\nsince = '2003-08-17' : String\\l\"\n"
 		    + "  ]\n";
-		String n2n1 = "  N2 -> N1 [\n" + "    label = \"WORKS_FOR\"\n"
+		String n2n1 = "  N2 -> N1 [\n" + "    label = \"WORKS_FOR\\n\"\n"
 		    + "  ]\n";
-		String n3n1 = "  N3 -> N1 [\n" + "    label = \"KNOWS\"\n" + "  ]\n";
-		String n2n3 = "  N2 -> N3 [\n" + "    label = \"KNOWS\"\n" + "  ]\n";
+		String n3n1 = "  N3 -> N1 [\n" + "    label = \"KNOWS\\n\"\n" + "  ]\n";
+		String n2n3 = "  N2 -> N3 [\n" + "    label = \"KNOWS\\n\"\n" + "  ]\n";
 		String end = "}\n";
 		// verify the output
 		String was = out.toString();
 		System.out.println( "GraphvizWriter test, output was:" );
 		System.out.print( was );
-		Assert.assertEquals( "erronious output length", 666, was.length() );
+		String expected = start + n1 + n2 + n3 + n1n2 + n2n1 + n3n1 + n2n3
+		    + end;
+		Assert.assertEquals( "erronious output length", expected.length(), was
+		    .length() );
 		Assert.assertTrue( "erronious output start", was.startsWith( start ) );
 		Assert.assertTrue( "erronious output end", was.endsWith( end ) );
 		int i = 0;
