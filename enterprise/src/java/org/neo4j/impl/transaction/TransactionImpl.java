@@ -46,6 +46,7 @@ class TransactionImpl implements Transaction
 	
 	private final byte globalId[];
 	private int status = Status.STATUS_ACTIVE;
+	private boolean active = true;
 	
 	private final LinkedList<ResourceElement> resourceList = 
 		new LinkedList<ResourceElement>();
@@ -392,18 +393,19 @@ class TransactionImpl implements Transaction
 			return false;
 		}
 		TransactionImpl other = ( TransactionImpl ) o;
-		if ( globalId.length != other.globalId.length ) 
-		{
-			return false;
-		}
-		for ( int i = 0; i < globalId.length; i++ )
-		{
-			if ( globalId[i] != other.globalId[i] )
-			{
-				return false;
-			}
-		}
-		return true;
+//		if ( globalId.length != other.globalId.length ) 
+//		{
+//			return false;
+//		}
+//		for ( int i = 0; i < globalId.length; i++ )
+//		{
+//			if ( globalId[i] != other.globalId[i] )
+//			{
+//				return false;
+//			}
+//		}
+//		return true;
+		return this.eventIdentifier == other.eventIdentifier;
 	}
 
 	private volatile int hashCode = 0;
@@ -412,12 +414,13 @@ class TransactionImpl implements Transaction
 	{
 		if ( hashCode == 0 )
 		{
-			int calcHash = 0;
-			for ( int i = 0; i < 4; i++ )
-			{
-				calcHash += globalId[ globalId.length - i - 1 ] << i * 8;
-			}
-			hashCode = 3217 * calcHash;
+//			int calcHash = 0;
+//			for ( int i = 0; i < 4; i++ )
+//			{
+//				calcHash += globalId[ globalId.length - i - 1 ] << i * 8;
+//			}
+//			hashCode = 3217 * calcHash;
+			hashCode = 3217 * eventIdentifier;
 		}
 		return hashCode;
 	}
@@ -586,5 +589,25 @@ class TransactionImpl implements Transaction
 			return "Xid[" + xid + "] XAResource[" + resource + "] Status[" +
 			 statusString + "]";
 		}
+	}
+
+	synchronized void markAsActive() 
+	{
+		if ( active )
+		{
+			throw new IllegalStateException( "Transaction[" + this + 
+				"] already active" );
+		}
+		active = true;
+	}
+	
+	synchronized void markAsSuspended()
+	{
+		if ( !active )
+		{
+			throw new IllegalStateException( "Transaction[" + this + 
+				"] already suspended" );
+		}
+		active = false;
 	}
 }

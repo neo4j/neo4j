@@ -24,7 +24,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.neo4j.impl.nioneo.xa.TxInfoManager;
 
 
 /**
@@ -384,16 +383,22 @@ public abstract class CommonAbstractStore
 		windowPool.flushAll();
 	}
 	
-	/**
-	 * Utility method to determine if we are in recovery mode. Asks the 
-	 * {@link TxInfoManager} if we are in recovery.
-	 * 
-	 * @return <CODE>true</CODE> if we are in recovery mode.
-	 */
-	protected boolean isInRecoveryMode()
-	{
-		return TxInfoManager.getManager().isInRecoveryMode();
-	}
+    private boolean isRecovered = false;
+    
+    protected boolean isInRecoveryMode()
+    {
+        return isRecovered;
+    }
+    
+    protected void setRecovered()
+    {
+        isRecovered = true;
+    }
+    
+    protected void unsetRecovered()
+    {
+        isRecovered = false;
+    }
 	
 	/**
 	 * Returns the name of this store.

@@ -42,10 +42,10 @@ public class LockReleaser
 	private static Logger log = Logger.getLogger( 
 		LockReleaser.class.getName() );
 	
-	private final ArrayMap<Thread,List<LockElement>> lockMap =  
-			new ArrayMap<Thread,List<LockElement>>( 5, true, true );
-    private final ArrayMap<Thread,List<NeoPrimitive>> cowMap = 
-        new ArrayMap<Thread,List<NeoPrimitive>>( 5, true, true );
+	private final ArrayMap<Transaction,List<LockElement>> lockMap =  
+			new ArrayMap<Transaction,List<LockElement>>( 5, true, true );
+    private final ArrayMap<Transaction,List<NeoPrimitive>> cowMap = 
+        new ArrayMap<Transaction,List<NeoPrimitive>>( 5, true, true );
 
 	private final LockManager lockManager;
 	private final TransactionManager transactionManager;
@@ -83,18 +83,17 @@ public class LockReleaser
 	public void addLockToTransaction( Object resource, LockType type ) 
 		throws NotInTransactionException
 	{
-		Thread currentThread = Thread.currentThread();
-        List<LockElement> lockElements = lockMap.get( currentThread );
-		if ( lockElements != null )
+		// Thread currentThread = Thread.currentThread();
+		try
 		{
-			lockElements.add( new LockElement( resource, type ) );
-		}
-		else
-		{
-			Transaction tx = null;
-			try
+			Transaction tx = transactionManager.getTransaction();
+	        List<LockElement> lockElements = lockMap.get( tx ); // currentThread );
+			if ( lockElements != null )
 			{
-				tx = transactionManager.getTransaction();
+				lockElements.add( new LockElement( resource, type ) );
+			}
+			else
+			{
 				if ( tx == null )
 				{
 					// no transaction we release lock right away
@@ -108,26 +107,26 @@ public class LockReleaser
 					}
 					throw new NotInTransactionException();
 				}
-				tx.registerSynchronization( new TxCommitHook( this ) );
+				tx.registerSynchronization( new TxCommitHook( this, tx ) );
+				lockElements = new ArrayList<LockElement>();
+				lockMap.put( tx, lockElements );
+				lockElements.add( new LockElement( resource, type ) );
 			}
-			catch ( javax.transaction.SystemException e )
-			{
-				throw new NotInTransactionException( e );
-			}
-			catch ( Exception e )
-			{
-				throw new NotInTransactionException( e );
-			}
-			lockElements = new ArrayList<LockElement>();
-			lockMap.put( currentThread, lockElements );
-			lockElements.add( new LockElement( resource, type ) );
+		}
+		catch ( javax.transaction.SystemException e )
+		{
+			throw new NotInTransactionException( e );
+		}
+		catch ( Exception e )
+		{
+			throw new NotInTransactionException( e );
 		}
 	}
     
     void addCowToTransaction( NeoPrimitive element )
     {
-        Thread currentThread = Thread.currentThread();
-        List<NeoPrimitive> cowElements = cowMap.get( currentThread );
+        // Thread currentThread = Thread.currentThread();
+        List<NeoPrimitive> cowElements = cowMap.get( element.cowTxId );
         if ( cowElements != null )
         {
             cowElements.add( element );
@@ -136,7 +135,7 @@ public class LockReleaser
         {
             cowElements = new LinkedList<NeoPrimitive>();
             cowElements.add( element );
-            cowMap.put( currentThread, cowElements );
+            cowMap.put( element.cowTxId, cowElements );
         }
     }
 
@@ -147,10 +146,10 @@ public class LockReleaser
 	 * @throws InvalidTransactionException if this method is invoked when 
 	 * transaction state is invalid.
 	 */
-	public void releaseLocks()
+	public void releaseLocks( Transaction tx )
 	{
-		Thread currentThread = Thread.currentThread();
-		List<LockElement> lockElements = lockMap.remove( currentThread );
+		// Thread currentThread = Thread.currentThread();
+		List<LockElement> lockElements = lockMap.remove( tx );
 		if ( lockElements != null )
 		{
 			for ( LockElement lockElement : lockElements )
@@ -177,10 +176,10 @@ public class LockReleaser
 		}
 	}
 	
-    public void releaseCows( int param )
+    public void releaseCows( Transaction cowTxId, int param )
     {
-        Thread currentThread = Thread.currentThread();
-        List<NeoPrimitive> cowElements = cowMap.remove( currentThread );
+        // Thread currentThread = Thread.currentThread();
+        List<NeoPrimitive> cowElements = cowMap.remove( cowTxId );
         if ( cowElements != null )
         {
             for ( NeoPrimitive neoPrimitive : cowElements )
@@ -215,9 +214,9 @@ public class LockReleaser
 		}
 		while ( itr.hasNext() )
 		{
-			Thread thread = (Thread) itr.next();
-			System.out.println( "" + thread + "->" +  
-				lockMap.get( thread ).size() );
+			Transaction transaction = (Transaction) itr.next();
+			System.out.println( "" + transaction + "->" +  
+				lockMap.get( transaction ).size() );
 		}
 	}
 }		

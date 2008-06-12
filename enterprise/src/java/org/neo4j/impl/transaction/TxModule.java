@@ -242,6 +242,33 @@ public class TxModule
 		}
 	}
 
+    public XaDataSource registerDataSource( String name, String className, 
+        byte resourceId[], Map<?,?> params, boolean useExisting )
+    {
+        XaDataSourceManager xaDsMgr = xaDsManager;
+        name = name.toLowerCase();
+        if ( xaDsMgr.hasDataSource( name ) )
+        {
+            if ( useExisting )
+            {
+                return xaDsMgr.getXaDataSource( name );
+            }
+            throw new RuntimeException( "Data source[" + name + 
+                "] has already been registered" );
+        }
+        try
+        {
+            XaDataSource dataSource = xaDsMgr.create( className, params );
+            xaDsMgr.registerDataSource( name, dataSource, resourceId );
+            return dataSource;
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Could not create data source " + 
+                name + "[" + name + "]", e );
+        }
+    }
+    
 	public String getTxLogDirectory()
 	{
 		return txLogDir;

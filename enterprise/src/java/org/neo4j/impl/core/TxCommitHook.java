@@ -17,14 +17,17 @@
 package org.neo4j.impl.core;
 
 import javax.transaction.Synchronization;
+import javax.transaction.Transaction;
 
 class TxCommitHook implements Synchronization
 {
 	private final LockReleaser lockReleaser;
+	private final Transaction tx;
 	
-	TxCommitHook( LockReleaser lockReleaser )
+	TxCommitHook( LockReleaser lockReleaser, Transaction tx )
 	{
 		this.lockReleaser = lockReleaser;
+		this.tx = tx;
 	}
 	
 	public void beforeCompletion()
@@ -45,8 +48,8 @@ class TxCommitHook implements Synchronization
 	
 	private void releaseLocks( int param )
 	{
-        lockReleaser.releaseCows( param );
-		lockReleaser.releaseLocks();
+        lockReleaser.releaseCows( tx, param );
+		lockReleaser.releaseLocks( tx );
 	}
 }
 

@@ -103,6 +103,20 @@ public class NodeStore extends AbstractStore implements Store
 		}
 	}
 
+    public void updateRecord( NodeRecord record, boolean recovered )
+    {
+        assert recovered;
+        setRecovered();
+        try
+        {
+            updateRecord( record );
+        }
+        finally
+        {
+            unsetRecovered();
+        }
+    }
+    
 	public void updateRecord( NodeRecord record )
 	{
 		if ( record.isTransferable() && !hasWindow( record.getId() ) )
