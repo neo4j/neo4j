@@ -596,6 +596,10 @@ public class XaResourceManager
 					xidMap.remove( xid );
 					recoveredTxCount--;
 				}
+				else
+				{
+					System.out.println( txStatus );
+				}
 			}
 		}
 		checkIfRecoveryComplete();

@@ -37,8 +37,8 @@ public class PropertyIndexManager
 	private ArrayMap<Integer,PropertyIndex> idToIndexMap
 		= new ArrayMap<Integer,PropertyIndex>( 9, true, false );
 
-	private ArrayMap<Thread,TxCommitHook> txCommitHooks = 
-		new ArrayMap<Thread,TxCommitHook>( 5, true, false );
+	private ArrayMap<Transaction,TxCommitHook> txCommitHooks = 
+		new ArrayMap<Transaction,TxCommitHook>( 5, true, false );
 
 	private final TransactionManager transactionManager; 
 	private final PersistenceManager persistenceManager;
@@ -64,7 +64,7 @@ public class PropertyIndexManager
 	public Iterable<PropertyIndex> index( String key )
 	{
 		List<PropertyIndex> list = indexMap.get( key );
-		TxCommitHook hook = txCommitHooks.get( Thread.currentThread() );
+		TxCommitHook hook = txCommitHooks.get( getTransaction() );
 		if ( hook != null )
 		{
 			PropertyIndex index = hook.getIndex( key );
@@ -113,8 +113,7 @@ public class PropertyIndexManager
 		PropertyIndex index = idToIndexMap.get( keyId );
 		if ( index == null )
 		{
-            TxCommitHook commitHook = txCommitHooks.get( 
-                Thread.currentThread() );
+            TxCommitHook commitHook = txCommitHooks.get( getTransaction() ); 
             index = commitHook.getIndex( keyId );
             if ( index != null )
             {
@@ -146,17 +145,33 @@ public class PropertyIndexManager
 		idToIndexMap.put( index.getKeyId(), index );
 	}
 	
+	private Transaction getTransaction()
+	{
+		try
+		{
+			return transactionManager.getTransaction();
+		}
+		catch ( javax.transaction.SystemException e )
+		{
+			throw new NotInTransactionException( e );
+		}
+		catch ( Exception e )
+		{
+			throw new NotInTransactionException( e );
+		}
+	}
+	
 	// concurent transactions may create duplicate keys, oh well
 	PropertyIndex createPropertyIndex( String key )
 	{
-		TxCommitHook hook = txCommitHooks.get( Thread.currentThread() );
+		Transaction tx = getTransaction();
+		TxCommitHook hook = txCommitHooks.get( tx );
 		if ( hook == null )
 		{
-			hook = new TxCommitHook();
-			txCommitHooks.put( Thread.currentThread(), hook );
+			hook = new TxCommitHook( tx );
+			txCommitHooks.put( tx, hook );
 			try
 			{
-				Transaction tx = transactionManager.getTransaction();
 				if ( tx == null )
 				{
 					throw new NotInTransactionException( 
@@ -203,6 +218,13 @@ public class PropertyIndexManager
 			new HashMap<String,PropertyIndex>();
         private Map<Integer,PropertyIndex> idToIndex = 
             new HashMap<Integer,PropertyIndex>();
+        
+        private final Transaction tx;
+        
+        TxCommitHook( Transaction tx )
+        {
+        	this.tx = tx;
+        }
 		
 		void addIndex( PropertyIndex index )
 		{
@@ -225,14 +247,14 @@ public class PropertyIndexManager
 	    {
 			try
 			{
-			if ( status == Status.STATUS_COMMITTED )
-			{
-				for ( PropertyIndex index : createdIndexes.values() )
+				if ( status == Status.STATUS_COMMITTED )
 				{
-					addPropertyIndex( index );
+					for ( PropertyIndex index : createdIndexes.values() )
+					{
+						addPropertyIndex( index );
+					}
 				}
-			}
-			txCommitHooks.remove( Thread.currentThread() );
+				txCommitHooks.remove( tx );
 			}
 			catch ( Throwable t )
 			{

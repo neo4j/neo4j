@@ -18,6 +18,9 @@ package org.neo4j.impl.core;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.transaction.Transaction;
+
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
@@ -35,7 +38,8 @@ abstract class NeoPrimitive
     private ArrayMap<Integer,Property> propertyMap = null; 
 
     private ArrayMap<Integer,Property> cowPropertyMap = null;
-    protected int cowTxId = -1;
+    // protected int cowTxId = -1;
+    protected Transaction cowTxId = null;
     
     protected final NodeManager nodeManager; 
 
@@ -68,7 +72,7 @@ abstract class NeoPrimitive
 //            ensureFullProperties();
         ArrayMap<Integer,Property> mapToCheck = null;
         if ( cowPropertyMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowPropertyMap;
         }
@@ -98,7 +102,7 @@ abstract class NeoPrimitive
 //            ensureFullProperties();
         ArrayMap<Integer,Property> mapToCheck = null;
         if ( cowPropertyMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowPropertyMap;
         }
@@ -132,7 +136,7 @@ abstract class NeoPrimitive
 //        {
         ArrayMap<Integer,Property> mapToCheck = null;
         if ( cowPropertyMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowPropertyMap;
         }
@@ -186,7 +190,7 @@ abstract class NeoPrimitive
 //        {
         ArrayMap<Integer,Property> mapToCheck = null;
         if ( cowPropertyMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowPropertyMap;
         }
@@ -236,7 +240,7 @@ abstract class NeoPrimitive
 //        {
         ArrayMap<Integer,Property> mapToCheck = null;
         if ( cowPropertyMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowPropertyMap;
         }
@@ -285,7 +289,7 @@ abstract class NeoPrimitive
             if ( cowPropertyMap != null )
             {
                 // write operation, this must be true;
-                assert cowTxId == nodeManager.getTransactionId();
+                assert cowTxId == nodeManager.getTransaction();
             }
             else
             {
@@ -362,7 +366,7 @@ abstract class NeoPrimitive
             if ( cowPropertyMap != null )
             {
                 // write operation, this must be true;
-                assert cowTxId == nodeManager.getTransactionId();
+                assert cowTxId == nodeManager.getTransaction();
             }
             else
             {
@@ -429,8 +433,9 @@ abstract class NeoPrimitive
     private void createPropertyCowMap()
     {
         assert cowPropertyMap == null;
-        int currentTxId = nodeManager.getTransactionId();
-        if ( cowTxId == -1 )
+        // int currentTxId = nodeManager.getTransactionId();
+        Transaction currentTxId = nodeManager.getTransaction();
+        if ( cowTxId == null )
         {
             cowTxId = currentTxId;
             nodeManager.addCowToTxHook( this );
@@ -453,21 +458,21 @@ abstract class NeoPrimitive
     // must be called before write lock release, piggy backing
     protected void commitCowMaps()
     {
-        assert cowTxId != -1;
+        assert cowTxId != null;
         if ( cowPropertyMap != null )
         {
             this.propertyMap = cowPropertyMap;
             cowPropertyMap = null;
         }
-        cowTxId = -1;
+        cowTxId = null;
     }
     
     // must be called before write lock release, piggy backing
     protected void rollbackCowMaps()
     {
-        assert cowTxId != -1;
+        assert cowTxId != null;
         cowPropertyMap = null;
-        cowTxId = -1;
+        cowTxId = null;
     }
     
     private boolean ensureFullProperties()

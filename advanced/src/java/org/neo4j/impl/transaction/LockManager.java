@@ -20,17 +20,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import javax.transaction.TransactionManager;
+
 /**
  * The LockManager can lock resources for reading or writing. By doing this one
  * may achieve different transaction isolation levels. A resource can for now  
  * be any object (but null).
  * <p>
  * When acquiring a lock you have to release it. Failure to do so will result
- * in the resource being blocked to all other threads. Put all locks in a 
+ * in the resource being blocked to all other transactions. Put all locks in a 
  * try - finally block.
  * <p>
- * Multiple locks on the same resource held by the same thread requires the
- * thread to invoke the release lock method multiple times. If a thread has
+ * Multiple locks on the same resource held by the same transaction requires the
+ * transaction to invoke the release lock method multiple times. If a tx has
  * invoked <CODE>getReadLock</CODE> on the same resource x times in a row
  * it must invoke <CODE>releaseReadLock</CODE> x times to release all the locks.
  * <p>
@@ -42,16 +44,17 @@ public class LockManager
 	private final Map<Object,RWLock> resourceLockMap = 
 		new HashMap<Object,RWLock>();
 	
-	private RagManager ragManager = new RagManager();
+	private final RagManager ragManager;
 	
-	public LockManager() 
+	public LockManager( TransactionManager tm ) 
 	{
+		ragManager = new RagManager( tm );
 	}
 	
 	/**
 	 * Tries to acquire read lock on <CODE>resource</CODE> for the current 
-	 * thread. If read lock can't be acquired the thread will wait for the 
-	 * lock until it can acquire it. If waiting leads to dead lock a 
+	 * transaction. If read lock can't be acquired the transaction will wait for 
+     * the lransaction until it can acquire it. If waiting leads to dead lock a 
 	 * {@link DeadlockDetectedException} will be thrown.
 	 *
 	 * @param resource The resource
@@ -82,8 +85,8 @@ public class LockManager
 	
 	/**
 	 * Tries to acquire write lock on <CODE>resource</CODE> for the current 
-	 * thread. If write lock can't be acquired the thread will wait for the 
-	 * lock until it can acquire it. If waiting leads to dead lock a 
+	 * transaction. If write lock can't be acquired the transaction will wait 
+     * for the lock until it can acquire it. If waiting leads to dead lock a 
 	 * {@link DeadlockDetectedException} will be thrown.
 	 *
 	 * @param resource The resource
@@ -113,9 +116,9 @@ public class LockManager
 	}
 	
 	/**
-	 * Releases a read lock held by the current thread on <CODE>resource</CODE>.
-	 * If current thread don't have read lock a {@link LockNotFoundException}
-	 * will be thrown.
+	 * Releases a read lock held by the current transaction on 
+     * <CODE>resource</CODE>. If current transaction don't have read lock a 
+     * {@link LockNotFoundException} will be thrown.
 	 *
 	 * @param resource The resource
 	 * @throws IllegalResourceException
@@ -150,8 +153,8 @@ public class LockManager
 	
 
 	/**
-	 * Releases a read lock held by the current thread on 
-	 * <CODE>resource</CODE>. If current thread don't have read lock a 
+	 * Releases a read lock held by the current transaction on 
+	 * <CODE>resource</CODE>. If current transaction don't have read lock a 
 	 * {@link LockNotFoundException} will be thrown.
 	 *
 	 * @param resource The resource
@@ -187,7 +190,7 @@ public class LockManager
 	}
 	
 	/**
-	 * Utility method for debugging. Dumps info to console of threads having
+	 * Utility method for debugging. Dumps info to console of txs having
 	 * locks on resources.
 	 * 
 	 * @param resource

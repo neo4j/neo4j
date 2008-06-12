@@ -25,7 +25,7 @@ import org.neo4j.impl.transaction.LockManager;
 
 public class TestRWLock extends TestCase
 {
-	private LockManager lm = new LockManager();
+	private LockManager lm = new LockManager( new PlaceboTm() );
 	
 	public TestRWLock( String testName )
 	{

@@ -37,14 +37,14 @@ import org.neo4j.impl.util.ArrayMap;
  * o Make sure no changes are made to a deleted node/relationship
  * o Make sure a deleted node has no relationships
  */
-class NeoConstraintsListener // implements ProActiveEventListener
+class NeoConstraintsListener
 {
 	static Logger log = Logger.getLogger( 
 		NeoConstraintsListener.class.getName() );
 	
 	// evaluator for each running transaction
-	private final ArrayMap<Thread,NeoConstraintsEvaluator> evaluators = 
-		new ArrayMap<Thread,NeoConstraintsEvaluator>( 5, true, true );
+	private final ArrayMap<Transaction,NeoConstraintsEvaluator> evaluators = 
+		new ArrayMap<Transaction,NeoConstraintsEvaluator>( 5, true, true );
 
 	private final TransactionManager transactionManager;
 	
@@ -57,9 +57,11 @@ class NeoConstraintsListener // implements ProActiveEventListener
 	{
 		private Map<Integer,NodeImpl> deletedNodes = null;
 		private Set<Integer> deletedRelationships = null;
+		private final Transaction tx;
 		
-		NeoConstraintsEvaluator()
+		NeoConstraintsEvaluator( Transaction tx )
 		{
+			this.tx = tx;
 		}
 		
 		public void afterCompletion( int arg0 )
@@ -74,7 +76,7 @@ class NeoConstraintsListener // implements ProActiveEventListener
 			// no harm done but will get the "severe" log message
 			try
 			{
-			removeThisEvaluator();
+			removeThisEvaluator( tx );
 			if ( getTransactionStatus() == Status.STATUS_MARKED_ROLLBACK )
 			{
 				// no need to evaluate
@@ -219,9 +221,9 @@ class NeoConstraintsListener // implements ProActiveEventListener
         }
 	}
 	
-	void removeThisEvaluator()
+	void removeThisEvaluator( Transaction tx )
 	{
-		evaluators.remove( Thread.currentThread() );
+		evaluators.remove( tx );
 	}
 
     private NeoConstraintsEvaluator getEvaluator()
@@ -239,15 +241,16 @@ class NeoConstraintsListener // implements ProActiveEventListener
                     "Neo API calls must be done in a transaction." );
             }
             
-            Thread currentThread = Thread.currentThread();
-            NeoConstraintsEvaluator evaluator = evaluators.get( 
-                currentThread );
+            tx = transactionManager.getTransaction();
+            // Thread currentThread = Thread.currentThread();
+            NeoConstraintsEvaluator evaluator = evaluators.get( tx ); 
+                // currentThread );
             if ( evaluator == null )
             {
-                tx = transactionManager.getTransaction();
-                evaluator = new NeoConstraintsEvaluator();
+                evaluator = new NeoConstraintsEvaluator( tx );
                 tx.registerSynchronization( evaluator );
-                evaluators.put( currentThread, evaluator );
+                // evaluators.put( currentThread, evaluator );
+                evaluators.put( tx, evaluator );
             }
             return evaluator;
         }

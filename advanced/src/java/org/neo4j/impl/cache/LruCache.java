@@ -67,6 +67,8 @@ public class LruCache<K,E> extends Cache<K,E>
 	 *
 	 * @param name name of cache
 	 * @param maxSize maximum size of this cache
+     * @param cacheManager adaptive cache manager or null if adaptive caching
+     * not needed
 	 */
 	public LruCache( String name, int maxSize, 
 		AdaptiveCacheManager cacheManager )
