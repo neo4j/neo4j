@@ -262,5 +262,6 @@ public class TestNeo extends AbstractNeoTestCase
 		neo2.createNode();
 		tx2.success();
 		tx2.finish();
+        neo2.shutdown();
 	}
 }

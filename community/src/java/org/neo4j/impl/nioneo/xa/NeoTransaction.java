@@ -368,7 +368,7 @@ class NeoTransaction extends XaTransaction
 			throw new XAException( "Cannot commit non prepared transaction[" + 
 				getIdentifier() + "]" );
 		}
-		TxInfoManager.getManager().registerMode( isRecovered() );
+		// TxInfoManager.getManager().registerMode( isRecovered() );
 		try
 		{
 			committed = true;
@@ -405,7 +405,7 @@ class NeoTransaction extends XaTransaction
 		}
 		finally
 		{
-			TxInfoManager.getManager().unregisterMode();
+			// TxInfoManager.getManager().unregisterMode();
             nodeRecords.clear();
             propertyRecords.clear();
             relRecords.clear();

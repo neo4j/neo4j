@@ -180,11 +180,15 @@ abstract class Command extends XaCommand
 		@Override
 		public void execute()
 		{
-			if ( isRecovered() )
-			{
-				logger.fine( this.toString() );
-			}
-			store.updateRecord( record );
+            if ( isRecovered() )
+            {
+                logger.fine( this.toString() );
+                store.updateRecord( record, true );
+            }
+            else
+            {
+                store.updateRecord( record );
+            }
 		}
 		
 		public String toString()
@@ -277,11 +281,15 @@ abstract class Command extends XaCommand
 		@Override
 		public void execute()
 		{
-			if ( isRecovered() )
-			{
-				logger.fine( this.toString() );
-			}
-			store.updateRecord( record );
+            if ( isRecovered() )
+            {
+                logger.fine( this.toString() );
+                store.updateRecord( record, true );
+            }
+            else
+            {
+                store.updateRecord( record );
+            }
 		}
 
 		@Override
@@ -394,9 +402,13 @@ abstract class Command extends XaCommand
 		{
 			if ( isRecovered() )
 			{
-				logger.fine( this.toString() );
+			    logger.fine( this.toString() );
+                store.updateRecord( record, true );
 			}
-			store.updateRecord( record );
+            else
+            {
+                store.updateRecord( record );
+            }
 		}
 
 		@Override
@@ -501,11 +513,15 @@ abstract class Command extends XaCommand
 		@Override
 		public void execute()
 		{
-			if ( isRecovered() )
-			{
-				logger.fine( this.toString() );
-			}
-			store.updateRecord( record );
+            if ( isRecovered() )
+            {
+                logger.fine( this.toString() );
+                store.updateRecord( record, true );
+            }
+            else
+            {
+                store.updateRecord( record );
+            }
 		}
 
 		@Override
@@ -659,18 +675,15 @@ abstract class Command extends XaCommand
 		@Override
 		public void execute()
 		{
-			if ( isRecovered() )
-			{
-				logger.fine( this.toString() );
-			}
-			try
-			{
-				store.updateRecord( record );
-			}
-			catch ( IOException e )
-			{
-				throw new RuntimeException( e );
-			}
+            if ( isRecovered() )
+            {
+                logger.fine( this.toString() );
+                store.updateRecord( record, true );
+            }
+            else
+            {
+                store.updateRecord( record );
+            }
 		}
 
 		@Override

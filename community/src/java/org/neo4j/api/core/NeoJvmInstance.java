@@ -29,6 +29,7 @@ import org.neo4j.impl.persistence.IdGeneratorModule;
 import org.neo4j.impl.persistence.PersistenceModule;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.TxModule;
+import org.neo4j.impl.transaction.xaframework.XaDataSource;
 
 class NeoJvmInstance
 {
@@ -37,6 +38,9 @@ class NeoJvmInstance
 		"org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource";
 	private static final String DEFAULT_DATA_SOURCE_NAME = 
 		"nioneodb";
+    
+    private static final String LUCENE_DS_CLASS = 
+        "org.neo4j.util.index.LuceneDataSource";
 	
 	private boolean started = false;
 	private boolean create;
@@ -96,11 +100,11 @@ class NeoJvmInstance
             params.put( key, stringParams.get( key ) );
         }
 		config = new Config( storeDir );
-//		config.getTxModule().setTxLogDirectory( storeDir );
 		// create NioNeo DB persistence source
 		storeDir = convertFileSeparators( storeDir );
 		String separator = System.getProperty( "file.separator" );
-		String store = storeDir + separator + "neostore";		
+		String store = storeDir + separator + "neostore";
+        params.put( "store_dir", storeDir );
 		params.put( "neo_store", store );
 		params.put( "create", String.valueOf( create ) );
 		String logicalLog = storeDir + separator + "nioneo_logical.log";
@@ -112,6 +116,18 @@ class NeoJvmInstance
 		params.put( LockReleaser.class, config.getLockReleaser() );
 		config.getTxModule().registerDataSource( DEFAULT_DATA_SOURCE_NAME,
 			NIO_NEO_DB_CLASS, resourceId, params );
+        // hack for lucene index recovery if in path
+        XaDataSource lucene = null;
+        try
+        {
+            Class clazz = Class.forName( LUCENE_DS_CLASS );
+            lucene = registerLuceneDataSource( clazz.getName(), 
+                config.getTxModule(), storeDir + "/lucene", 
+                config.getLockManager() );
+        }
+        catch ( ClassNotFoundException e )
+        { // ok index util not on class path
+        }
 		System.setProperty( "neo.tx_log_directory", storeDir );
 		persistenceSource = new NioNeoDbPersistenceSource();
 		config.setNeoPersistenceSource( DEFAULT_DATA_SOURCE_NAME, create );
@@ -131,8 +147,25 @@ class NeoJvmInstance
 			config.getTxModule().getXaDataSourceManager() );
 		config.getIdGeneratorModule().start();
 		config.getNeoModule().start();
+        if ( lucene != null )
+        {
+            config.getTxModule().getXaDataSourceManager().
+                unregisterDataSource( "lucene" );
+            lucene = null;
+        }
 		started = true;
 	}
+
+    private XaDataSource registerLuceneDataSource( String className, 
+        TxModule txModule, String luceneDirectory, LockManager lockManager )
+    {
+        byte resourceId[] = "162373".getBytes();
+        Map<Object,Object> params = new HashMap<Object,Object>();
+        params.put( "dir", luceneDirectory );
+        params.put( LockManager.class, lockManager );
+        return txModule.registerDataSource( "lucene", className, resourceId, 
+            params, true );
+    }
 
     private String convertFileSeparators( String fileName )
     {
@@ -201,8 +234,8 @@ class NeoJvmInstance
             this.storeDir = storeDir;
 			eventModule = new EventModule();
 			cacheManager = new AdaptiveCacheManager();
-			txModule = new TxModule( eventModule.getEventManager(), storeDir );
-			lockManager = new LockManager();
+			txModule = new TxModule( eventModule.getEventManager(), this.storeDir );
+			lockManager = new LockManager( txModule.getTxManager() );
 			lockReleaser = new LockReleaser( lockManager, 
 				txModule.getTxManager() );
 			persistenceModule = new PersistenceModule( 

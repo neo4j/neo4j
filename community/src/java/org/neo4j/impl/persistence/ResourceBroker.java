@@ -50,11 +50,11 @@ class ResourceBroker
 
 	private final PersistenceSourceDispatcher dispatcher;
 
-	private ArrayMap<Thread,ResourceConnection> txConnectionMap = 
-		new ArrayMap<Thread,ResourceConnection>( 5, true, true );
+	private ArrayMap<Transaction,ResourceConnection> txConnectionMap = 
+		new ArrayMap<Transaction,ResourceConnection>( 5, true, true );
 
 	// A hook that releases resources after tx.commit
-	private final Synchronization txCommitHook = new TxCommitHook();
+//	private final Synchronization txCommitHook = new TxCommitHook();
 	
 	private final TransactionManager transactionManager;
 	
@@ -91,13 +91,15 @@ class ResourceBroker
 		PersistenceSource source	= null;
 		
 		source = dispatcher.getPersistenceSource();
-        Thread currentThread = Thread.currentThread();
-        con = txConnectionMap.get( currentThread );
+        // Thread currentThread = Thread.currentThread();
+        Transaction tx = this.getCurrentTransaction();        
+        // con = txConnectionMap.get( currentThread );
+        con = txConnectionMap.get( tx );
 		if ( con == null )
 		{
 			try
 			{
-                Transaction tx = this.getCurrentTransaction();
+//
 				con = source.createResourceConnection();
 				if ( !tx.enlistResource( con.getXAResource() ) )
 				{
@@ -105,8 +107,10 @@ class ResourceBroker
 						"Unable to enlist '" + con.getXAResource() + "' in " +
 						"transaction" );
 				}
-				tx.registerSynchronization( txCommitHook );
-                txConnectionMap.put( currentThread, con );
+				// tx.registerSynchronization( txCommitHook );
+                // txConnectionMap.put( currentThread, con );
+				tx.registerSynchronization( new TxCommitHook( tx ) );
+				txConnectionMap.put( tx, con );
 			}
 			catch ( javax.transaction.RollbackException re )
 			{
@@ -131,10 +135,11 @@ class ResourceBroker
 	 * @throws NotInTransactionException if the resource broker is unable to
 	 * fetch a transaction for the current thread
 	 */
-	void releaseResourceConnectionsForTransaction() throws NotInTransactionException
+	void releaseResourceConnectionsForTransaction( Transaction tx ) 
+		throws NotInTransactionException
 	{
-        ResourceConnection con = txConnectionMap.remove( 
-            Thread.currentThread() );
+        ResourceConnection con = txConnectionMap.remove( tx );
+//            Thread.currentThread() );
 		if ( con != null )
 		{
 			this.destroyCon( con );
@@ -150,7 +155,8 @@ class ResourceBroker
 	void delistResourcesForTransaction() throws NotInTransactionException
 	{
 		Transaction tx = this.getCurrentTransaction();
-        ResourceConnection con = txConnectionMap.get( Thread.currentThread() );
+        ResourceConnection con = txConnectionMap.get( tx ); 
+//        	txConnectionMap.get( Thread.currentThread() );
 		if ( con != null )
 		{
 			this.delistCon( tx, con );
@@ -213,11 +219,18 @@ class ResourceBroker
 	
 	private class TxCommitHook implements Synchronization
 	{
+		private final Transaction tx;
+		
+		TxCommitHook( Transaction tx )
+		{
+			this.tx = tx;
+		}
+		
 		public void afterCompletion( int param )
 		{
 			try
 			{
-				releaseConnections();
+				releaseConnections( tx );
 			}
 			catch ( Throwable t )
 			{
@@ -239,11 +252,11 @@ class ResourceBroker
 			}
 		}
 		
-		private void releaseConnections()
+		private void releaseConnections( Transaction tx )
 		{
 			try
 			{
-				releaseResourceConnectionsForTransaction();
+				releaseResourceConnectionsForTransaction( tx );
 			}
 			catch ( Throwable t )
 			{

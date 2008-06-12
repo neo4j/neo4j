@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
@@ -56,6 +57,7 @@ public class TxManager implements TransactionManager
 {
 	private static Logger log = Logger.getLogger( TxManager.class.getName() );
 	
+	private Set<TransactionImpl> transactionSet;
 	private ArrayMap<Thread,TransactionImpl> txThreadMap; 
 	
 	private final String txLogDir;
@@ -794,12 +796,16 @@ public class TxManager implements TransactionManager
 		{
 			throw new IllegalStateException( "Transaction already associated" );
 		}
-		TransactionImpl txImpl = (TransactionImpl) tx;
-		if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
+		if ( tx != null )
 		{
-			txThreadMap.put( thread, txImpl );
+			TransactionImpl txImpl = (TransactionImpl) tx;
+			if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
+			{
+				txImpl.markAsActive();
+				txThreadMap.put( thread, txImpl );
+			}
+			// generate pro-active event resume
 		}
-		// generate pro-active event resume
 	}
 
 	public Transaction suspend() throws SystemException
@@ -815,6 +821,7 @@ public class TxManager implements TransactionManager
 		if ( tx != null )
 		{
 			// generate pro-active event suspend
+			tx.markAsSuspended();
 		}
 		return tx;
 	}

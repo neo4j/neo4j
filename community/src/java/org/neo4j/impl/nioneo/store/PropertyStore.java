@@ -81,6 +81,24 @@ public class PropertyStore extends AbstractStore implements Store
 	}
 	
 	@Override
+    protected void setRecovered()
+    {
+		super.setRecovered();
+		stringPropertyStore.setRecovered();
+		propertyIndexStore.setRecovered();
+		arrayPropertyStore.setRecovered();
+    }
+    
+	@Override
+    protected void unsetRecovered()
+    {
+		super.unsetRecovered();
+		stringPropertyStore.unsetRecovered();
+		propertyIndexStore.unsetRecovered();
+		arrayPropertyStore.unsetRecovered();
+    }
+	
+	@Override
 	protected void closeStorage()
 	{
 		stringPropertyStore.close();
@@ -153,6 +171,20 @@ public class PropertyStore extends AbstractStore implements Store
 		return propertyIndexStore;
 	}
 	
+    public void updateRecord( PropertyRecord record, boolean recovered )
+    {
+        assert recovered;
+        setRecovered();
+        try
+        {
+            updateRecord( record );
+        }
+        finally
+        {
+            unsetRecovered();
+        }
+    }
+    
 	public void updateRecord( PropertyRecord record )
 	{
 		if ( record.isTransferable() && !hasWindow( record.getId() ) )

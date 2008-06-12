@@ -111,6 +111,20 @@ public class RelationshipStore extends AbstractStore implements Store
 		}
 	}
 	
+    public void updateRecord( RelationshipRecord record, boolean recovered )
+    {
+        assert recovered;
+        setRecovered();
+        try
+        {
+            updateRecord( record );
+        }
+        finally
+        {
+            unsetRecovered();
+        }
+    }
+    
 	public void updateRecord( RelationshipRecord record )
 	{
 		if ( record.isTransferable() && !hasWindow( record.getId() ) )

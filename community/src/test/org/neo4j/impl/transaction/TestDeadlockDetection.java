@@ -20,9 +20,6 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import org.neo4j.impl.transaction.DeadlockDetectedException;
-import org.neo4j.impl.transaction.LockManager;
-
 public class TestDeadlockDetection extends TestCase
 {
 	public TestDeadlockDetection( String name )
@@ -30,7 +27,7 @@ public class TestDeadlockDetection extends TestCase
 		super( name );
 	}
 	
-	private static LockManager lm = new LockManager();
+	private static LockManager lm = new LockManager( new PlaceboTm() );
 	
 	public static Test suite()
 	{

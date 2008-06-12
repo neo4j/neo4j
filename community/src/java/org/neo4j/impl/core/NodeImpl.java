@@ -20,6 +20,9 @@ package org.neo4j.impl.core;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+
+import javax.transaction.Transaction;
+
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
@@ -95,7 +98,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	{
         ArrayMap<String,ArrayIntSet> mapToCheck = null;
         if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowRelationshipMap;
         }
@@ -168,7 +171,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 		}
         ArrayMap<String,ArrayIntSet> mapToCheck = null;
         if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowRelationshipMap;
         }
@@ -235,7 +238,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	{
         ArrayMap<String,ArrayIntSet> mapToCheck = null;
         if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowRelationshipMap;
         }
@@ -289,7 +292,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	{
         ArrayMap<String,ArrayIntSet> mapToCheck = null;
         if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowRelationshipMap;
         }
@@ -383,7 +386,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 		}
         ArrayMap<String,ArrayIntSet> mapToCheck = null;
         if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowRelationshipMap;
         }
@@ -528,7 +531,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         if ( cowRelationshipMap != null )
         {
             // write operation, this must be true;
-            assert cowTxId == nodeManager.getTransactionId();
+            assert cowTxId == nodeManager.getTransaction();
         }
         else
         {
@@ -564,7 +567,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         if ( cowRelationshipMap != null )
         {
             // write operation, this must be true;
-            assert cowTxId == nodeManager.getTransactionId();
+            assert cowTxId == nodeManager.getTransaction();
         }
         else
         {
@@ -612,7 +615,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	{
         ArrayMap<String,ArrayIntSet> mapToCheck = null;
         if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransactionId() )
+            cowTxId == nodeManager.getTransaction() )
         {
             mapToCheck = cowRelationshipMap;
         }
@@ -827,8 +830,8 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     private void createRelationshipCowMap()
     {
         assert cowRelationshipMap == null;
-        int currentTxId = nodeManager.getTransactionId();
-        if ( cowTxId == -1 )
+        Transaction currentTxId = nodeManager.getTransaction();
+        if ( cowTxId == null )
         {
             cowTxId = currentTxId;
             nodeManager.addCowToTxHook( this );

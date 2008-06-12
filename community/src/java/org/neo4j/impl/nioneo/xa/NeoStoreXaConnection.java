@@ -47,8 +47,7 @@ import org.neo4j.impl.transaction.xaframework.XaResourceManager;
  */
 public class NeoStoreXaConnection extends XaConnectionHelpImpl
 {
-	
-	private NeoStoreXaResource xaResource = null;
+	private final NeoStoreXaResource xaResource;
 	 
 	private final NeoStore neoStore;
 	private final NodeEventConsumer nodeConsumer;
@@ -67,7 +66,8 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		this.relConsumer = new RelationshipEventConsumerImpl( this ); 
 		this.relTypeConsumer = new RelationshipTypeEventConsumerImpl( this );
 		this.propIndexConsumer = new PropertyIndexEventConsumerImpl( this );
-		this.xaResource = new NeoStoreXaResource( xaRm );
+		this.xaResource = new NeoStoreXaResource( neoStore.getStorageFileName(), 
+            xaRm );
 	}
 
 	/**
@@ -151,20 +151,24 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	
 	private static class NeoStoreXaResource extends XaResourceHelpImpl
 	{
-		NeoStoreXaResource( XaResourceManager xaRm )
+        private final Object identifier;
+        
+		NeoStoreXaResource( Object identifier, XaResourceManager xaRm )
 		{
 			super( xaRm );
+            this.identifier = identifier;
 		}
 		
 		public boolean isSameRM( XAResource xares )
 		{
 			if ( xares instanceof NeoStoreXaResource )
 			{
-				// check for same store here later?
-				return true;
+				return identifier.equals( 
+                    ((NeoStoreXaResource) xares).identifier );
 			}
 			return false;
-		}		
+		}
+        
 	};
 	
 	private class NodeEventConsumerImpl implements NodeEventConsumer

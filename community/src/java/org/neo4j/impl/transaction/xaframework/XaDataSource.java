@@ -41,7 +41,7 @@ import java.util.Map;
  *         container.openLogicalLog();
  *     }
  *
- *     public XaConnection getXaConnection() {
+ *     public XaConnection getXaCo nnection() {
  *         return new MyXaConnection( params );
  *     }
  *
