@@ -16,6 +16,7 @@
  */
 package org.neo4j.api.core;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import javax.transaction.TransactionManager;
@@ -121,6 +122,7 @@ class NeoJvmInstance
         try
         {
             Class clazz = Class.forName( LUCENE_DS_CLASS );
+            cleanWriteLocksInLuceneDirectory( storeDir + "/lucene" );
             lucene = registerLuceneDataSource( clazz.getName(), 
                 config.getTxModule(), storeDir + "/lucene", 
                 config.getLockManager() );
@@ -155,6 +157,26 @@ class NeoJvmInstance
         }
 		started = true;
 	}
+    
+    private void cleanWriteLocksInLuceneDirectory( String luceneDir )
+    {
+        File dir = new File( luceneDir );
+        if ( !dir.isDirectory() )
+        {
+            return;
+        }
+        for ( File file : dir.listFiles() )
+        {
+            if ( file.isDirectory() )
+            {
+                cleanWriteLocksInLuceneDirectory( file.getAbsolutePath() );
+            }
+            else if ( file.getName().equals( "write.lock" ) )
+            {
+                file.delete();
+            }
+        }
+    }
 
     private XaDataSource registerLuceneDataSource( String className, 
         TxModule txModule, String luceneDirectory, LockManager lockManager )
