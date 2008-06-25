@@ -388,8 +388,17 @@ public class NodeManager
         this.referenceNodeId = nodeId;
     }
 
-    // checks the cache first, if not in cache load it using PM
-    Relationship getRelationshipById( int relId ) throws NotFoundException
+    /**
+     * Gets a relationship by id.
+     * <p>
+     * First checks the cache, if the relationship is in cache it is returned.
+     * If the relationship isn't in cache it is loaded from persistent storage.
+     * 
+     * @param relId the relationship id
+     * @return the relationship with relationship id <CODE>relId</CODE>
+     * @throws NotFoundException
+     */
+    public Relationship getRelationshipById( int relId ) throws NotFoundException
     {
         if ( relId < 0 )
         {

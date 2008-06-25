@@ -52,6 +52,14 @@ public interface NeoService
      * @throws RuntimeException if not found
      */
     public Node getNodeById( long id );
+    
+    /**
+     * Looks up a relationship by id.
+     * @param id the id of the relationship
+     * @return the relationship with id <code>id</code> if found
+     * @throws RuntimeException if not found
+     */
+    public Relationship getRelationshipById(long id);
 
     /**
      * Returns the reference node, which is a "starting point" in the node
