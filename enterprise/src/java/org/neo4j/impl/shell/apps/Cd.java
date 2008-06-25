@@ -92,7 +92,8 @@ public class Cd extends NeoApp
 				if ( !absolute && !this.nodeIsConnected( currentNode, newId ) )
 				{
 					throw new ShellException( "Node " + newId +
-						" isn't connected to the current node" );
+						" isn't connected to the current node, use -a to " +
+						"force it to go to that node anyway" );
 				}
 				paths.add( currentNode.getId() );
 			}
