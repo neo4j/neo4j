@@ -92,6 +92,15 @@ public final class EmbeddedNeo implements NeoService
     {
         return nodeManager.getNodeById( (int) id );
     }
+    
+    /*
+     * (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#getRelationshipById(long)
+     */
+    public Relationship getRelationshipById( long id )
+    {
+        return nodeManager.getRelationshipById( (int) id );
+    }
 
     /*
      * (non-Javadoc)
