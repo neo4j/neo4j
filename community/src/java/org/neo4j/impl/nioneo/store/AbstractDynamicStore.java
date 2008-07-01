@@ -211,15 +211,15 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	
 	public void updateRecord( DynamicRecord record )
 	{
-		if ( record.isTransferable() && !hasWindow( record.getId() ) &&
-            transferRecord( record ) )
-		{
-			if ( !record.inUse()&& !isInRecoveryMode() )
-			{
-				freeBlockId( record.getId() );
-			}
-			return;
-		}
+//		if ( record.isTransferable() && !hasWindow( record.getId() ) &&
+//            transferRecord( record ) )
+//		{
+//			if ( !record.inUse()&& !isInRecoveryMode() )
+//			{
+//				freeBlockId( record.getId() );
+//			}
+//			return;
+//		}
 		int blockId = record.getId();
 		PersistenceWindow window = acquireWindow( blockId, 
 			OperationType.WRITE );
@@ -361,33 +361,33 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		while ( blockId != Record.NO_NEXT_BLOCK.intValue() )
 		{
 			DynamicRecord record;
-			if ( buffer != null && !hasWindow( blockId ) && transferToBuffer( 
-                blockId, buffer ) )
-			{
-				ByteBuffer buf = buffer.getByteBuffer();
-				record = new DynamicRecord( blockId );
-				byte inUse = buf.get();
-				assert inUse == Record.IN_USE.byteValue();
-				record.setInUse( true );
-				record.setPrevBlock( buf.getInt() );
-				int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
-				int nrOfBytes = buf.getInt();
-				int nextBlock = buf.getInt();
-				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
-						nrOfBytes < dataSize || nrOfBytes > dataSize )
-				{
-					throw new StoreFailureException( "Next block set[" + 
-                        nextBlock + "] current block illegal size[" +
-						nrOfBytes + "/" + dataSize + "]" );
-				}
-				record.setLength( nrOfBytes );
-				record.setNextBlock( nextBlock );
-				record.setIsLight( true );
-				recordList.add( record );
-				blockId = nextBlock;
-			}
-			else
-			{
+//			if ( buffer != null && !hasWindow( blockId ) && transferToBuffer( 
+//                blockId, buffer ) )
+//			{
+//				ByteBuffer buf = buffer.getByteBuffer();
+//				record = new DynamicRecord( blockId );
+//				byte inUse = buf.get();
+//				assert inUse == Record.IN_USE.byteValue();
+//				record.setInUse( true );
+//				record.setPrevBlock( buf.getInt() );
+//				int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
+//				int nrOfBytes = buf.getInt();
+//				int nextBlock = buf.getInt();
+//				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
+//						nrOfBytes < dataSize || nrOfBytes > dataSize )
+//				{
+//					throw new StoreFailureException( "Next block set[" + 
+//                        nextBlock + "] current block illegal size[" +
+//						nrOfBytes + "/" + dataSize + "]" );
+//				}
+//				record.setLength( nrOfBytes );
+//				record.setNextBlock( nextBlock );
+//				record.setIsLight( true );
+//				recordList.add( record );
+//				blockId = nextBlock;
+//			}
+//			else
+//			{
 				PersistenceWindow window = acquireWindow( blockId, 
 					OperationType.READ );
 				try
@@ -400,7 +400,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 				{
 					releaseWindow( window );
 				}
-			}
+//			}
 		}
 		return recordList;
 	}
@@ -408,17 +408,17 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 	public void makeHeavy( DynamicRecord record, ReadFromBuffer buffer )
 	{
 		int blockId = record.getId();
-		if ( buffer != null && !hasWindow( blockId ) && 
-            transferToBuffer( blockId, buffer ) )
-		{
-			int nrOfBytes = record.getLength();
-			ByteBuffer buf = buffer.getByteBuffer();
-			byte bytes[] = new byte[nrOfBytes];
-			buf.get( bytes );
-			record.setData( bytes );
-		}
-		else
-		{
+//		if ( buffer != null && !hasWindow( blockId ) && 
+//            transferToBuffer( blockId, buffer ) )
+//		{
+//			int nrOfBytes = record.getLength();
+//			ByteBuffer buf = buffer.getByteBuffer();
+//			byte bytes[] = new byte[nrOfBytes];
+//			buf.get( bytes );
+//			record.setData( bytes );
+//		}
+//		else
+//		{
 			PersistenceWindow window = acquireWindow( blockId, 
 				OperationType.READ );
 			try
@@ -435,7 +435,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 			{
 				releaseWindow( window );
 			}
-		}
+//		}
 	}
 	
 	private DynamicRecord getLightRecord( int blockId, Buffer buffer )
@@ -508,35 +508,35 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		while ( blockId != Record.NO_NEXT_BLOCK.intValue() )
 		{
 			DynamicRecord record;
-			if ( buffer != null && !hasWindow( blockId ) && 
-                transferToBuffer( blockId, buffer ) )
-			{
-				ByteBuffer buf = buffer.getByteBuffer();
-				record = new DynamicRecord( blockId );
-				byte inUse = buf.get();
-				assert inUse == Record.IN_USE.byteValue();
-				record.setInUse( true );
-				record.setPrevBlock( buf.getInt() );
-				int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
-				int nrOfBytes = buf.getInt();
-				int nextBlock = buf.getInt();
-				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
-						nrOfBytes < dataSize || nrOfBytes > dataSize )
-				{
-					throw new StoreFailureException( "Next block set[" + 
-                        nextBlock + "] current block illegal size[" +
-						nrOfBytes + "/" + dataSize + "]" );
-				}
-				record.setLength( nrOfBytes );
-				record.setNextBlock( nextBlock );
-				byte byteArrayElement[] = new byte[ nrOfBytes ]; 
-				buf.get( byteArrayElement );
-				record.setData( byteArrayElement );
-				recordList.add( record );
-				blockId = nextBlock;
-			}
-			else
-			{
+//			if ( buffer != null && !hasWindow( blockId ) && 
+//                transferToBuffer( blockId, buffer ) )
+//			{
+//				ByteBuffer buf = buffer.getByteBuffer();
+//				record = new DynamicRecord( blockId );
+//				byte inUse = buf.get();
+//				assert inUse == Record.IN_USE.byteValue();
+//				record.setInUse( true );
+//				record.setPrevBlock( buf.getInt() );
+//				int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
+//				int nrOfBytes = buf.getInt();
+//				int nextBlock = buf.getInt();
+//				if ( nextBlock != Record.NO_NEXT_BLOCK.intValue() && 
+//						nrOfBytes < dataSize || nrOfBytes > dataSize )
+//				{
+//					throw new StoreFailureException( "Next block set[" + 
+//                        nextBlock + "] current block illegal size[" +
+//						nrOfBytes + "/" + dataSize + "]" );
+//				}
+//				record.setLength( nrOfBytes );
+//				record.setNextBlock( nextBlock );
+//				byte byteArrayElement[] = new byte[ nrOfBytes ]; 
+//				buf.get( byteArrayElement );
+//				record.setData( byteArrayElement );
+//				recordList.add( record );
+//				blockId = nextBlock;
+//			}
+//			else
+//			{
 				PersistenceWindow window = acquireWindow( blockId, 
 					OperationType.READ );
 				try
@@ -549,7 +549,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 				{
 					releaseWindow( window );
 				}
-			}
+//			}
 		}
 		return recordList;
 	}
@@ -710,7 +710,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 		openIdGenerator();
 	}
 
-    protected boolean transferToBuffer( int id, ReadFromBuffer buffer )
+/*    protected boolean transferToBuffer( int id, ReadFromBuffer buffer )
     {
         buffer.makeReadyForTransfer();
         try
@@ -750,5 +750,5 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             throw new StoreFailureException( "Unable to transfer record from " +
                 "other file channel", e );
         }
-    }
+    }*/
 }

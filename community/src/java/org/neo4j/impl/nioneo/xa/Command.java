@@ -73,8 +73,8 @@ abstract class Command extends XaCommand
 		throws IOException 
 	{
 		// id+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int) 
-		record.setTransferStartPosition( buffer.getFileChannel(), 
-			buffer.getFileChannelPosition() + 8 );
+//		record.setTransferStartPosition( buffer.getFileChannel(), 
+//			buffer.getFileChannelPosition() + 8 );
 		if ( record.inUse() )
 		{
 			byte inUse = Record.IN_USE.byteValue();
@@ -87,18 +87,18 @@ abstract class Command extends XaCommand
 				{
 					byte[] data = record.getData();
 					buffer.put( data );
-					record.setTransferCount( 13 + data.length );
+//					record.setTransferCount( 13 + data.length );
 				}
 				else
 				{
 					char[] chars = record.getDataAsChar();
 					buffer.put( chars );
-					record.setTransferCount( 13 + chars.length * 2 );
+//					record.setTransferCount( 13 + chars.length * 2 );
 				}
 			}
 			else
 			{
-				record.setTransferCount( 13 );
+//				record.setTransferCount( 13 );
 			}
 		}
 		else
@@ -106,7 +106,7 @@ abstract class Command extends XaCommand
 			byte inUse = Record.NOT_IN_USE.byteValue();
 			buffer.putInt( record.getId() ).putInt( record.getType() ).put( 
 				inUse );
-			record.setTransferCount( 1 );
+//			record.setTransferCount( 1 );
 		}
 	}
 	
@@ -204,19 +204,19 @@ abstract class Command extends XaCommand
 					Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
 			buffer.put( NODE_COMMAND );
 			buffer.putInt( record.getId() );
-			record.setTransferStartPosition( buffer.getFileChannel(), 
-				buffer.getFileChannelPosition() );
+//			record.setTransferStartPosition( buffer.getFileChannel(), 
+//				buffer.getFileChannelPosition() );
 			buffer.put( inUse );
 			if ( record.inUse() )
 			{
 				buffer.putInt( record.getNextRel() ).putInt( 
 					record.getNextProp() );				
-				record.setTransferCount( 9 );
+//				record.setTransferCount( 9 );
 			}
-			else
-			{
-				record.setTransferCount( 1 );
-			}
+//			else
+//			{
+//				record.setTransferCount( 1 );
+//			}
 		}
 		
 		static Command readCommand( NeoStore neoStore, FileChannel fileChannel, 
@@ -305,8 +305,8 @@ abstract class Command extends XaCommand
 				Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
 			buffer.put( REL_COMMAND );
 			buffer.putInt( record.getId() );
-			record.setTransferStartPosition( buffer.getFileChannel(), 
-				buffer.getFileChannelPosition() );
+//			record.setTransferStartPosition( buffer.getFileChannel(), 
+//				buffer.getFileChannelPosition() );
 			buffer.put( inUse );
 			if ( record.inUse() )
 			{
@@ -316,12 +316,12 @@ abstract class Command extends XaCommand
 					record.getFirstNextRel() ).putInt( 
 					record.getSecondPrevRel() ).putInt( 
 					record.getSecondNextRel() ).putInt( record.getNextProp() );				
-				record.setTransferCount( 33 );
+//				record.setTransferCount( 33 );
 			}
-			else
-			{
-				record.setTransferCount( 1 );
-			}
+//			else
+//			{
+//				record.setTransferCount( 1 );
+//			}
 		}
 		
 		static Command readCommand( NeoStore neoStore, FileChannel fileChannel, 
@@ -425,12 +425,12 @@ abstract class Command extends XaCommand
 				Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
 			buffer.put( PROP_INDEX_COMMAND );
 			buffer.putInt( record.getId() );
-			record.setTransferStartPosition( buffer.getFileChannel(), 
-				buffer.getFileChannelPosition() );
+//			record.setTransferStartPosition( buffer.getFileChannel(), 
+//				buffer.getFileChannelPosition() );
 			buffer.put( inUse );
 			buffer.putInt( record.getPropertyCount() ).putInt( 
 				record.getKeyBlockId() );
-			record.setTransferCount( 9 );
+//			record.setTransferCount( 9 );
 			if ( record.isLight() )
 			{
 				buffer.putInt( 0 );
@@ -539,8 +539,8 @@ abstract class Command extends XaCommand
 				Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
 			buffer.put( PROP_COMMAND );
 			buffer.putInt( record.getId() );
-			record.setTransferStartPosition( buffer.getFileChannel(), 
-				buffer.getFileChannelPosition() );
+//			record.setTransferStartPosition( buffer.getFileChannel(), 
+//				buffer.getFileChannelPosition() );
 			buffer.put( inUse );
 			if ( record.inUse() )
 			{
@@ -548,12 +548,12 @@ abstract class Command extends XaCommand
 					record.getKeyIndexId() ).putLong( 
 					record.getPropBlock() ).putInt( 
 					record.getPrevProp() ).putInt( record.getNextProp() );
-				record.setTransferCount( 25 );
+//				record.setTransferCount( 25 );
 			}
-			else
-			{
-				record.setTransferCount( 1 );
-			}
+//			else
+//			{
+//				record.setTransferCount( 1 );
+//			}
 			if ( record.isLight() )
 			{
 				buffer.putInt( 0 );

@@ -141,19 +141,19 @@ public class PropertyIndexStore extends AbstractStore implements Store
 	public PropertyIndexRecord getRecord( int id, ReadFromBuffer buffer ) 
 	{
 		PropertyIndexRecord record;
-		if ( buffer != null && !hasWindow( id ) && 
-            transferToBuffer( id, buffer ) )
-		{
-			ByteBuffer buf = buffer.getByteBuffer();
-			byte inUse = buf.get();
-			assert inUse == Record.IN_USE.byteValue();
-			record = new PropertyIndexRecord( id );
-			record.setInUse( true );
-			record.setPropertyCount( buf.getInt() );
-			record.setKeyBlockId( buf.getInt() );
-		}
-		else
-		{
+//		if ( buffer != null && !hasWindow( id ) && 
+//            transferToBuffer( id, buffer ) )
+//		{
+//			ByteBuffer buf = buffer.getByteBuffer();
+//			byte inUse = buf.get();
+//			assert inUse == Record.IN_USE.byteValue();
+//			record = new PropertyIndexRecord( id );
+//			record.setInUse( true );
+//			record.setPropertyCount( buf.getInt() );
+//			record.setKeyBlockId( buf.getInt() );
+//		}
+//		else
+//		{
 			PersistenceWindow window = acquireWindow( id, OperationType.READ );
 			try
 			{
@@ -163,7 +163,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 			{
 				releaseWindow( window );
 			}
-		}
+//		}
 		Collection<DynamicRecord> keyRecords = 
 			keyPropertyStore.getLightRecords( record.getKeyBlockId(), buffer );
 		for ( DynamicRecord keyRecord : keyRecords )
@@ -223,24 +223,24 @@ public class PropertyIndexStore extends AbstractStore implements Store
     
 	public void updateRecord( PropertyIndexRecord record )
 	{
-		if ( record.isTransferable() && !hasWindow( record.getId() ) )
-		{
-			if ( !transferRecord( record ) )
-			{
-				PersistenceWindow window = acquireWindow( record.getId(), 
-					OperationType.WRITE );
-				try
-				{
-					updateRecord( record, window.getBuffer() );
-				}
-				finally 
-				{
-					releaseWindow( window );
-				}
-			}
-		}
-		else
-		{
+//		if ( record.isTransferable() && !hasWindow( record.getId() ) )
+//		{
+//			if ( !transferRecord( record ) )
+//			{
+//				PersistenceWindow window = acquireWindow( record.getId(), 
+//					OperationType.WRITE );
+//				try
+//				{
+//					updateRecord( record, window.getBuffer() );
+//				}
+//				finally 
+//				{
+//					releaseWindow( window );
+//				}
+//			}
+//		}
+//		else
+//		{
 			PersistenceWindow window = acquireWindow( record.getId(), 
 				OperationType.WRITE );
 			try
@@ -251,7 +251,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 			{
 				releaseWindow( window );
 			}
-		}
+//		}
 		if ( !record.isLight() )
 		{
 			for ( DynamicRecord keyRecord : record.getKeyRecords() )

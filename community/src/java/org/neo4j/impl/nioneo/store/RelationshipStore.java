@@ -17,7 +17,6 @@
 package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
@@ -83,22 +82,22 @@ public class RelationshipStore extends AbstractStore implements Store
 	public RelationshipRecord getRecord( int id, ReadFromBuffer buffer ) 
 	{
 		RelationshipRecord record;
-		if ( buffer != null && !hasWindow( id ) && 
-            transferToBuffer( id, buffer ) )
-		{
-			ByteBuffer buf = buffer.getByteBuffer();
-			byte inUse = buf.get();
-			assert inUse == Record.IN_USE.byteValue();
-			record = new RelationshipRecord( id, 
-				buf.getInt(), buf.getInt(), buf.getInt() );
-			record.setInUse( true );
-			record.setFirstPrevRel( buf.getInt() );
-			record.setFirstNextRel( buf.getInt() );
-			record.setSecondPrevRel( buf.getInt() );
-			record.setSecondNextRel( buf.getInt() );
-			record.setNextProp( buf.getInt() );
-			return record;
-		}
+//		if ( buffer != null && !hasWindow( id ) && 
+//            transferToBuffer( id, buffer ) )
+//		{
+//			ByteBuffer buf = buffer.getByteBuffer();
+//			byte inUse = buf.get();
+//			assert inUse == Record.IN_USE.byteValue();
+//			record = new RelationshipRecord( id, 
+//				buf.getInt(), buf.getInt(), buf.getInt() );
+//			record.setInUse( true );
+//			record.setFirstPrevRel( buf.getInt() );
+//			record.setFirstNextRel( buf.getInt() );
+//			record.setSecondPrevRel( buf.getInt() );
+//			record.setSecondNextRel( buf.getInt() );
+//			record.setNextProp( buf.getInt() );
+//			return record;
+//		}
 		PersistenceWindow window = acquireWindow( id, OperationType.READ );
 		try
 		{
@@ -127,17 +126,17 @@ public class RelationshipStore extends AbstractStore implements Store
     
 	public void updateRecord( RelationshipRecord record )
 	{
-		if ( record.isTransferable() && !hasWindow( record.getId() ) )
-		{
-			if ( transferRecord( record ) )
-			{
-				if ( !record.inUse()&& !isInRecoveryMode() )
-				{
-					freeId( record.getId() );
-				}
-				return;
-			}
-		}
+//		if ( record.isTransferable() && !hasWindow( record.getId() ) )
+//		{
+//			if ( transferRecord( record ) )
+//			{
+//				if ( !record.inUse()&& !isInRecoveryMode() )
+//				{
+//					freeId( record.getId() );
+//				}
+//				return;
+//			}
+//		}
 		PersistenceWindow window = acquireWindow( record.getId(), 
 			OperationType.WRITE );
 		try

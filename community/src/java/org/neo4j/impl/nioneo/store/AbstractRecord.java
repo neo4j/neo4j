@@ -63,34 +63,34 @@ public abstract class AbstractRecord
 		return created;
 	}
 
-	public void setTransferStartPosition( FileChannel fileChannel, long pos ) 
-	{
-		this.startPosition = pos;
-		this.fromChannel = fileChannel;
-	}
+//	public void setTransferStartPosition( FileChannel fileChannel, long pos ) 
+//	{
+//		this.startPosition = pos;
+//		this.fromChannel = fileChannel;
+//	}
 	
-	boolean isTransferable()
-	{
-		return fromChannel != null;
-	}
+//	boolean isTransferable()
+//	{
+//		return fromChannel != null;
+//	}
 	
 	FileChannel getFromChannel()
 	{
 		return fromChannel;
 	}
 	
-	long getTransferStartPosition()
-	{
-		return startPosition;
-	}
+//	long getTransferStartPosition()
+//	{
+//		return startPosition;
+//	}
 	
-	long getTransferCount()
-	{
-		return count;
-	}
-	
-	public void setTransferCount( long count )
-	{
-		this.count = count;
-	}
+//	long getTransferCount()
+//	{
+//		return count;
+//	}
+//	
+//	public void setTransferCount( long count )
+//	{
+//		this.count = count;
+//	}
 }
