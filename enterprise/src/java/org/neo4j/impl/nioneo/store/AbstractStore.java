@@ -254,7 +254,7 @@ public abstract class AbstractStore extends CommonAbstractStore
 		openIdGenerator();
 	}	
 
-    protected boolean transferToBuffer( int id, ReadFromBuffer buffer )
+/*    protected boolean transferToBuffer( int id, ReadFromBuffer buffer )
     {
         buffer.makeReadyForTransfer();
         try
@@ -272,9 +272,9 @@ public abstract class AbstractStore extends CommonAbstractStore
             throw new StoreFailureException( 
                 "Failed to transfer data to read from buffer", e );
         }
-    }
+    } */
     
-    protected boolean transferRecord( AbstractRecord record )
+/*    protected boolean transferRecord( AbstractRecord record )
     {
         long id = record.getId();
         long count = record.getTransferCount();
@@ -294,5 +294,5 @@ public abstract class AbstractStore extends CommonAbstractStore
             throw new StoreFailureException( "Unable to transfer record from " +
                 "other file channel, " + getStorageFileName(), e );
         }
-    }
+    }*/
 }
