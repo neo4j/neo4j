@@ -159,31 +159,31 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     
 	public void updateRecord( RelationshipTypeRecord record ) 
 	{
-		if ( record.isTransferable() && !hasWindow( record.getId() ) )
-		{
-			if ( !transferRecord( record ) )
-			{
-				PersistenceWindow window = acquireWindow( record.getId(), 
-					OperationType.WRITE );
-				try
-				{
-					updateRecord( record, window.getBuffer() );
-				}
-				finally 
-				{
-					releaseWindow( window );
-				}
-			}
-			else
-			{
-				if ( !record.inUse()&& !isInRecoveryMode() )
-				{
-					freeId( record.getId() );
-				}
-			}
-		}
-		else
-		{
+//		if ( record.isTransferable() && !hasWindow( record.getId() ) )
+//		{
+//			if ( !transferRecord( record ) )
+//			{
+//				PersistenceWindow window = acquireWindow( record.getId(), 
+//					OperationType.WRITE );
+//				try
+//				{
+//					updateRecord( record, window.getBuffer() );
+//				}
+//				finally 
+//				{
+//					releaseWindow( window );
+//				}
+//			}
+//			else
+//			{
+//				if ( !record.inUse()&& !isInRecoveryMode() )
+//				{
+//					freeId( record.getId() );
+//				}
+//			}
+//		}
+//		else
+//		{
 			PersistenceWindow window = acquireWindow( record.getId(), 
 				OperationType.WRITE );
 			try
@@ -194,7 +194,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 			{
 				releaseWindow( window );
 			}
-		}
+//		}
 		for ( DynamicRecord typeRecord : record.getTypeRecords() )
 		{
 			typeNameStore.updateRecord( typeRecord );
@@ -204,18 +204,18 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 	public RelationshipTypeRecord getRecord( int id, ReadFromBuffer buffer ) 
 	{
 		RelationshipTypeRecord record;
-		if ( buffer != null && !hasWindow( id ) && 
-            transferToBuffer( id, buffer ) )
-		{
-			ByteBuffer buf = buffer.getByteBuffer();
-			byte inUse = buf.get();
-			assert inUse == Record.IN_USE.byteValue();
-			record = new RelationshipTypeRecord( id );
-			record.setInUse( true );
-			record.setTypeBlock( buf.getInt() );
-		}
-		else
-		{
+//		if ( buffer != null && !hasWindow( id ) && 
+//            transferToBuffer( id, buffer ) )
+//		{
+//			ByteBuffer buf = buffer.getByteBuffer();
+//			byte inUse = buf.get();
+//			assert inUse == Record.IN_USE.byteValue();
+//			record = new RelationshipTypeRecord( id );
+//			record.setInUse( true );
+//			record.setTypeBlock( buf.getInt() );
+//		}
+//		else
+//		{
 			PersistenceWindow window = acquireWindow( id, OperationType.READ );
 			try
 			{
@@ -225,7 +225,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 			{
 				releaseWindow( window );
 			}
-		}
+//		}
 		Collection<DynamicRecord> nameRecords = 
 			typeNameStore.getRecords( record.getTypeBlock(), buffer );
 		for ( DynamicRecord nameRecord : nameRecords )

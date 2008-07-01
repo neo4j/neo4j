@@ -17,7 +17,6 @@
 package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
@@ -79,18 +78,18 @@ public class NodeStore extends AbstractStore implements Store
 	public NodeRecord getRecord( int id, ReadFromBuffer buffer ) 
 	{
 		NodeRecord record;
-		if ( buffer != null && !hasWindow( id ) && 
-            transferToBuffer( id, buffer ) )
-        {
-			ByteBuffer buf = buffer.getByteBuffer();
-			record = new NodeRecord( id );
-			byte inUse = buf.get();
-			assert inUse == Record.IN_USE.byteValue();
-			record.setInUse( true );
-			record.setNextRel( buf.getInt() );
-			record.setNextProp( buf.getInt() );
-			return record;
-        }
+//		if ( buffer != null && !hasWindow( id ) && 
+//            transferToBuffer( id, buffer ) )
+//        {
+//			ByteBuffer buf = buffer.getByteBuffer();
+//			record = new NodeRecord( id );
+//			byte inUse = buf.get();
+//			assert inUse == Record.IN_USE.byteValue();
+//			record.setInUse( true );
+//			record.setNextRel( buf.getInt() );
+//			record.setNextProp( buf.getInt() );
+//			return record;
+//        }
 		PersistenceWindow window = acquireWindow( id, OperationType.READ );
 		try
 		{
@@ -119,17 +118,17 @@ public class NodeStore extends AbstractStore implements Store
     
 	public void updateRecord( NodeRecord record )
 	{
-		if ( record.isTransferable() && !hasWindow( record.getId() ) )
-		{
-			if ( transferRecord( record ) )
-			{
-				if ( !record.inUse()&& !isInRecoveryMode() )
-				{
-					freeId( record.getId() );
-				}
-				return;
-			}
-		}
+//		if ( record.isTransferable() && !hasWindow( record.getId() ) )
+//		{
+//			if ( transferRecord( record ) )
+//			{
+//				if ( !record.inUse()&& !isInRecoveryMode() )
+//				{
+//					freeId( record.getId() );
+//				}
+//				return;
+//			}
+//		}
 		PersistenceWindow window = acquireWindow( record.getId(), 
 			OperationType.WRITE );
 		try
@@ -140,26 +139,26 @@ public class NodeStore extends AbstractStore implements Store
 		{
 			releaseWindow( window );
 		}
-	}
+    }
 	
 	public boolean loadLightNode( int id, ReadFromBuffer buffer ) 
 	{
 		NodeRecord record;
-		if ( buffer != null && !hasWindow( id ) && 
-            transferToBuffer( id, buffer ) )
-		{
-			ByteBuffer buf = buffer.getByteBuffer();
-			record = new NodeRecord( id );
-			byte inUse = buf.get();
-			if ( inUse != Record.IN_USE.byteValue() )
-			{
-				return false;
-			}
-			record.setInUse( true );
-			record.setNextRel( buf.getInt() );
-			record.setNextProp( buf.getInt() );
-			return true;
-		}
+//		if ( buffer != null && !hasWindow( id ) && 
+//            transferToBuffer( id, buffer ) )
+//		{
+//			ByteBuffer buf = buffer.getByteBuffer();
+//			record = new NodeRecord( id );
+//			byte inUse = buf.get();
+//			if ( inUse != Record.IN_USE.byteValue() )
+//			{
+//				return false;
+//			}
+//			record.setInUse( true );
+//			record.setNextRel( buf.getInt() );
+//			record.setNextProp( buf.getInt() );
+//			return true;
+//		}
 		PersistenceWindow window = acquireWindow( id, OperationType.READ );
 		try
 		{
