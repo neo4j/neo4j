@@ -480,8 +480,10 @@ public interface StyleParameter
 		 */
 		protected abstract String getTailLabel( Relationship relationship );
 	}
-	/** Simple style parameter that neither requires parameters, nor custom code. */
-	enum Simple
+	/**
+	 * Simple style parameter that neither requires parameters, nor custom code.
+	 */
+	enum Simple implements StyleParameter
 	{
 		/** Don't render properties for relationships. */
 		NO_RELATIONSHIP_PROPERTIES

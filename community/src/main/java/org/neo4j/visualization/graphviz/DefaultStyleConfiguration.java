@@ -139,7 +139,7 @@ class DefaultStyleConfiguration implements StyleConfiguration
 	{
 		if ( nodeFormat != null )
 		{
-			stream.append( nodeFormat.format( key, type, value ) );
+			stream.append( nodeFormat.format( key, type, value ) + "\\l" );
 		}
 		else
 		{
@@ -153,7 +153,7 @@ class DefaultStyleConfiguration implements StyleConfiguration
 	{
 		if ( edgeFormat != null )
 		{
-			stream.append( edgeFormat.format( key, type, value ) );
+			stream.append( edgeFormat.format( key, type, value ) + "\\l" );
 		}
 		else
 		{
@@ -211,12 +211,12 @@ class DefaultStyleConfiguration implements StyleConfiguration
 	}
 
 	public void setNodePropertyFomatter( PropertyFormatter format )
-    {
+	{
 		this.nodeFormat = format;
-    }
+	}
 
 	public void setRelationshipPropertyFomatter( PropertyFormatter format )
-    {
+	{
 		this.edgeFormat = format;
-    }
+	}
 }

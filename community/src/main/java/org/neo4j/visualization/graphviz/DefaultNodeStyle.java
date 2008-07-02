@@ -46,7 +46,10 @@ class DefaultNodeStyle implements NodeStyle
 	public void emitProperty( Appendable stream, String key, Object value )
 	    throws IOException
 	{
-		PropertyType type = PropertyType.getTypeOf( value );
-		config.emitRelationshipProperty( stream, key, type, value );
+		if ( config.acceptNodeProperty( key ) )
+		{
+			PropertyType type = PropertyType.getTypeOf( value );
+			config.emitRelationshipProperty( stream, key, type, value );
+		}
 	}
 }
