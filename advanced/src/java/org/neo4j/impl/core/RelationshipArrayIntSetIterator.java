@@ -23,32 +23,42 @@ import java.util.logging.Logger;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
+import org.neo4j.impl.util.ArrayIntSet;
 
-class RelationshipIterator implements Iterable<Relationship>, 
+class RelationshipArrayIntSetIterator implements Iterable<Relationship>, 
 	Iterator<Relationship>
 {
     private Logger log = Logger.getLogger( 
-        RelationshipIterator.class.getName() );
+        RelationshipArrayIntSetIterator.class.getName() );
     
-	private int[] relIds;
+	private Iterator<Integer> relIds;
 	private Node fromNode;
 	private Direction direction = null;
 	private Relationship nextElement = null;
 	private int nextPosition = 0;
 	private final NodeManager nodeManager;
 	
-	RelationshipIterator( int[] relIds, Node fromNode, 
+	RelationshipArrayIntSetIterator( ArrayIntSet relIds, Node fromNode, 
 		Direction direction, NodeManager nodeManager )
 	{
-		this.relIds = relIds;
+		this.relIds = relIds.iterator();
 		this.fromNode = fromNode;
 		this.direction = direction;
 		this.nodeManager = nodeManager;
 	}
 
+    RelationshipArrayIntSetIterator( Iterator<Integer> relIds, Node fromNode, 
+        Direction direction, NodeManager nodeManager )
+    {
+        this.relIds = relIds;
+        this.fromNode = fromNode;
+        this.direction = direction;
+        this.nodeManager = nodeManager;
+    }
+    
 	public Iterator<Relationship> iterator()
 	{
-		return new RelationshipIterator( relIds, fromNode, direction, 
+		return new RelationshipArrayIntSetIterator( relIds, fromNode, direction, 
 			nodeManager );
 	}
 
@@ -60,13 +70,14 @@ class RelationshipIterator implements Iterable<Relationship>,
 		}
 		do
 		{
-			if ( nextPosition < relIds.length )
+			// if ( nextPosition < relIds.length )
+            if ( relIds.hasNext() )
 			{
+                int nextId = relIds.next();
 				try
 				{
 					Relationship possibleElement = 
-						nodeManager.getRelationshipById( 
-							relIds[nextPosition++] );
+						nodeManager.getRelationshipById( nextId ); 
 					if ( direction == Direction.INCOMING && 
 						possibleElement.getEndNode().equals( fromNode ) )
 					{
@@ -85,10 +96,10 @@ class RelationshipIterator implements Iterable<Relationship>,
 				catch ( Throwable t )
 				{
                     log.log( Level.FINE, "Unable to get relationship " + 
-                        relIds[nextPosition - 1], t );
+                        nextId, t );
 				}
 			}
-		} while ( nextElement == null && nextPosition < relIds.length );
+		} while ( nextElement == null && relIds.hasNext() );
 		return nextElement != null;
 	}
 

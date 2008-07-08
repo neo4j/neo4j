@@ -25,6 +25,7 @@ import java.util.Map;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.impl.transaction.xaframework.XaResource;
 
 /**
  * All datasources that have been defined in the XA data source configuration 
@@ -101,6 +102,7 @@ public class XaDataSourceManager
 	public synchronized void registerDataSource( String name, 
 		XaDataSource dataSource, byte branchId[] )
 	{
+        dataSource.setBranchId( branchId );
 		dataSources.put( name, dataSource );
 		branchIdMapping.put( new String( branchId ), dataSource );
 		sourceIdMapping.put( name, branchId );
@@ -135,6 +137,14 @@ public class XaDataSourceManager
 	
 	synchronized byte[] getBranchId( XAResource xaResource )
 	{
+        if ( xaResource instanceof XaResource )
+        {
+            byte branchId[] = ((XaResource) xaResource).getBranchId();
+            if ( branchId != null )
+            {
+                return branchId;
+            }
+        }
 		Iterator<Map.Entry<String,XaDataSource>> itr = 
 			dataSources.entrySet().iterator();
 		while ( itr.hasNext() )

@@ -729,6 +729,20 @@ public class TestJtaCompliance extends AbstractNeoTestCase
 		{
 			return new DummyXaConnection( xaResource );
 		}
+
+        @Override
+        public byte[] getBranchId()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public void setBranchId( byte[] branchId )
+        {
+            // TODO Auto-generated method stub
+            
+        }
 	}
 	
 	private static class DummyXaConnection implements XaConnection

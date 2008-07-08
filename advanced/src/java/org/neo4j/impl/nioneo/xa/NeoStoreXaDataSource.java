@@ -69,6 +69,8 @@ public class NeoStoreXaDataSource extends XaDataSource
 	private final LockReleaser lockReleaser;
 	private final EventManager eventManager;
     private final String storeDir;
+    
+    private byte[] branchId = null;
 
 	/**
 	 * Creates a <CODE>NeoStoreXaDataSource</CODE> using configuration from
@@ -251,7 +253,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 	public XaConnection getXaConnection()
 	{
 		return new NeoStoreXaConnection( neoStore, 
-			xaContainer.getResourceManager() );
+			xaContainer.getResourceManager(), branchId );
 	}
 	
 	private static class CommandFactory extends XaCommandFactory
@@ -347,5 +349,17 @@ public class NeoStoreXaDataSource extends XaDataSource
     public String getStoreDir()
     {
         return storeDir;
+    }
+
+    @Override
+    public byte[] getBranchId()
+    {
+        return this.branchId;
+    }
+
+    @Override
+    public void setBranchId( byte[] branchId )
+    {
+        this.branchId = branchId;
     }
 }

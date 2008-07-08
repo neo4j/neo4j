@@ -25,15 +25,18 @@ import javax.transaction.xa.Xid;
  * Help implementation of the XAResource interface. See 
  * {@link XaConnectionHelpImpl} for more information.
  */
-public abstract class XaResourceHelpImpl implements XAResource
+public abstract class XaResourceHelpImpl implements XaResource
 {
 	private int transactionTimeout = 120;
 	private XaTransaction xaTx = null;
 	private final XaResourceManager xaRm;
+    private byte[] branchId = null;
+    
 	
-	protected XaResourceHelpImpl( XaResourceManager xaRm )
+	protected XaResourceHelpImpl( XaResourceManager xaRm, byte branchId[] )
 	{
 		this.xaRm = xaRm;
+        this.branchId = branchId;
 	}
 	
 	/** 
@@ -127,4 +130,14 @@ public abstract class XaResourceHelpImpl implements XAResource
 			throw new XAException( "Unkown flag[" + flags + "]" );
 		}
 	}
+
+	public void setBranchId( byte branchId[] )
+    {
+	    this.branchId = branchId;
+    }
+    
+    public byte[] getBranchId()
+    {
+        return this.branchId;
+    }
 }

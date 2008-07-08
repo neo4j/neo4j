@@ -57,7 +57,8 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	
 	private NeoTransaction neoTransaction = null;
 	
-	NeoStoreXaConnection( NeoStore neoStore, XaResourceManager xaRm )
+	NeoStoreXaConnection( NeoStore neoStore, XaResourceManager xaRm, 
+        byte branchId[] )
 	{
 		super( xaRm );
 		this.neoStore = neoStore;
@@ -67,7 +68,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 		this.relTypeConsumer = new RelationshipTypeEventConsumerImpl( this );
 		this.propIndexConsumer = new PropertyIndexEventConsumerImpl( this );
 		this.xaResource = new NeoStoreXaResource( neoStore.getStorageFileName(), 
-            xaRm );
+            xaRm, branchId );
 	}
 
 	/**
@@ -153,9 +154,10 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 	{
         private final Object identifier;
         
-		NeoStoreXaResource( Object identifier, XaResourceManager xaRm )
+		NeoStoreXaResource( Object identifier, XaResourceManager xaRm, 
+            byte branchId[] )
 		{
-			super( xaRm );
+			super( xaRm, branchId );
             this.identifier = identifier;
 		}
 		
