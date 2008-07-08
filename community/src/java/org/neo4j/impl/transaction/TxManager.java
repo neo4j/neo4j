@@ -46,6 +46,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
+import org.neo4j.impl.transaction.xaframework.XaResource;
 import org.neo4j.impl.util.ArrayMap;
 
 /**
@@ -169,11 +170,6 @@ public class TxManager implements TransactionManager
 			throw new RuntimeException( e );
 		}
 	}
-	
-//	public static TxManager getManager()
-//	{
-//		return manager;
-//	}
 	
 	synchronized TxLog getTxLog() throws IOException
 	{
@@ -856,7 +852,15 @@ public class TxManager implements TransactionManager
 	
 	byte[] getBranchId( XAResource xaRes )
 	{
-		return xaDsManager.getBranchId( xaRes );
+		if ( xaRes instanceof XaResource )
+        {
+		    byte branchId[] = ((XaResource) xaRes).getBranchId();
+            if ( branchId != null )
+            {
+                return branchId;
+            }
+        }
+        return xaDsManager.getBranchId( xaRes );
 	}
 	
 	XAResource getXaResource( byte branchId[] )

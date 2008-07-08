@@ -189,13 +189,27 @@ public class TestXaFramework extends AbstractNeoTestCase
 		{
 			return new DummyXaConnection( xaContainer.getResourceManager() );
 		}
+
+        @Override
+        public byte[] getBranchId()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public void setBranchId( byte[] branchId )
+        {
+            // TODO Auto-generated method stub
+            
+        }
 	}
 	
 	private static class DummyXaResource extends XaResourceHelpImpl
 	{
 		DummyXaResource( XaResourceManager xaRm ) 
 		{
-			super( xaRm );
+			super( xaRm, null );
 		}
 		
 		public boolean isSameRM( XAResource resource )
