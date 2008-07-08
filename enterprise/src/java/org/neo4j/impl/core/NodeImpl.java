@@ -16,13 +16,9 @@
  */
 package org.neo4j.impl.core;
 
-// Java imports
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import javax.transaction.Transaction;
-
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
@@ -34,7 +30,6 @@ import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
-
 
 class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 {
@@ -49,7 +44,8 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	private RelPhase relPhase;
 
     private ArrayMap<String,ArrayIntSet> relationshipMap = null; 
-    private ArrayMap<String,ArrayIntSet> cowRelationshipMap = null;
+    private ArrayMap<String,ArrayIntSet> cowRelationshipAddMap = null;
+    private ArrayMap<String,ArrayIntSet> cowRelationshipRemoveMap = null;
     
 	NodeImpl( int id, NodeManager nodeManager )
 	{
@@ -96,71 +92,42 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	
 	public Iterable<Relationship> getRelationships()
 	{
-        ArrayMap<String,ArrayIntSet> mapToCheck = null;
-        if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        boolean checkCow = false;
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowRelationshipMap;
+            checkCow = true;
         }
-        else
+        ensureFullRelationships();
+        ArrayIntSet relIds = new ArrayIntSet();
+        for ( String type : relationshipMap.keySet() )
         {
-            ensureFullRelationships();
-            mapToCheck = relationshipMap;
-        }
-        Iterator<ArrayIntSet> values = mapToCheck.values().iterator();
-        int size = 0;
-        while ( values.hasNext() )
-        {
-            ArrayIntSet relTypeSet = values.next();
-            size += relTypeSet.size();
-        }
-        values = mapToCheck.values().iterator();
-        int[] ids = new int[size];
-        int position = 0;
-        while ( values.hasNext() )
-        {
-            ArrayIntSet relTypeSet = values.next();
-            for ( int relId : relTypeSet.values() )
+            ArrayIntSet source = relationshipMap.get( type );
+            for ( int relId : source.values() )
             {
-                ids[position++] = relId;
+                if ( checkCow && cowRelationshipRemoveMap != null )
+                {
+                    ArrayIntSet skip = cowRelationshipRemoveMap.get( type );
+                    if ( skip != null && skip.contains( relId ) )
+                    {
+                        continue;
+                    }
+                }
+                relIds.add( relId );
             }
         }
-        return new RelationshipIterator( ids, this, Direction.BOTH, 
-            nodeManager );
-/*		nodeManager.acquireLock( this, LockType.READ );
-		try
-		{
-			ensureFullRelationships();
-			if ( relationshipMap == null )
-			{
-				return Collections.emptyList();
-			}
-			
-			Iterator<ArrayIntSet> values = relationshipMap.values().iterator();
-			int size = 0;
-			while ( values.hasNext() )
-			{
-				ArrayIntSet relTypeSet = values.next();
-				size += relTypeSet.size();
-			}
-			values = relationshipMap.values().iterator();
-			int[] ids = new int[size];
-			int position = 0;
-			while ( values.hasNext() )
-			{
-				ArrayIntSet relTypeSet = values.next();
-				for ( int relId : relTypeSet.values() )
-				{
-					ids[position++] = relId;
-				}
-			}
-			return new RelationshipIterator( ids, this, Direction.BOTH, 
-				nodeManager );
-		}
-		finally
-		{
-			nodeManager.releaseLock( this, LockType.READ );
-		}*/
+        if ( checkCow && cowRelationshipAddMap != null )
+        {
+            for ( String type : cowRelationshipAddMap.keySet() )
+            {
+                ArrayIntSet source = cowRelationshipAddMap.get( type );
+                for ( int relId : source.values() )
+                {
+                    relIds.add( relId );
+                }
+            }
+        }
+        return new RelationshipArrayIntSetIterator( 
+            relIds, this, Direction.BOTH, nodeManager );
 	}
 	
 	public Iterable<Relationship> getRelationships( Direction dir )
@@ -169,195 +136,131 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 		{
 			return getRelationships();
 		}
-        ArrayMap<String,ArrayIntSet> mapToCheck = null;
-        if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        boolean checkCow = false;
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowRelationshipMap;
+            checkCow = true;
         }
-        else
+        ensureFullRelationships();
+        ArrayIntSet relIds = new ArrayIntSet();
+        for ( String type : relationshipMap.keySet() )
         {
-            ensureFullRelationships();
-            mapToCheck = relationshipMap;
-        }
-        Iterator<ArrayIntSet> values = mapToCheck.values().iterator();
-        int size = 0;
-        while ( values.hasNext() )
-        {
-            ArrayIntSet relTypeSet = values.next();
-            size += relTypeSet.size();
-        }
-        values = mapToCheck.values().iterator();
-        int[] ids = new int[size];
-        int position = 0;
-        while ( values.hasNext() )
-        {
-            ArrayIntSet relTypeSet = values.next();
-            for ( int relId : relTypeSet.values() )
+            ArrayIntSet source = relationshipMap.get( type );
+            for ( int relId : source.values() )
             {
-                ids[position++] = relId;
+                if ( checkCow && cowRelationshipRemoveMap != null )
+                {
+                    ArrayIntSet skip = cowRelationshipRemoveMap.get( type );
+                    if ( skip != null && skip.contains( relId ) )
+                    {
+                        continue;
+                    }
+                }
+                relIds.add( relId );
             }
         }
-        return new RelationshipIterator( ids, this, dir, nodeManager );
-		/*nodeManager.acquireLock( this, LockType.READ );
-		try
-		{
-			ensureFullRelationships();
-			if ( relationshipMap == null )
-			{
-				return Collections.emptyList();
-			}
-			
-			Iterator<ArrayIntSet> values = relationshipMap.values().iterator();
-			int size = 0;
-			while ( values.hasNext() )
-			{
-				ArrayIntSet relTypeSet = values.next();
-				size += relTypeSet.size();
-			}
-			values = relationshipMap.values().iterator();
-			int[] ids = new int[size];
-			int position = 0;
-			while ( values.hasNext() )
-			{
-				ArrayIntSet relTypeSet = values.next();
-				for ( int relId : relTypeSet.values() )
-				{
-					ids[position++] = relId;
-				}
-			}
-			return new RelationshipIterator( ids, this, dir, nodeManager );
-		}
-		finally
-		{
-			nodeManager.releaseLock( this, LockType.READ );
-		}*/
+        if ( checkCow && cowRelationshipAddMap != null )
+        {
+            for ( String type : cowRelationshipAddMap.keySet() )
+            {
+                ArrayIntSet source = cowRelationshipAddMap.get( type );
+                for ( int relId : source.values() )
+                {
+                    relIds.add( relId );
+                }
+            }
+        }
+        return new RelationshipArrayIntSetIterator( 
+            relIds, this, dir, nodeManager );
 	}
 	
 	public Iterable<Relationship> getRelationships( RelationshipType type )
 	{
-        ArrayMap<String,ArrayIntSet> mapToCheck = null;
-        if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        boolean checkCow = false;
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowRelationshipMap;
+            checkCow = true;
         }
-        else
+        ensureFullRelationships();
+        ArrayIntSet relIds = new ArrayIntSet();
+        ArrayIntSet source = relationshipMap.get( type.name() );
+        if ( source != null )
         {
-            ensureFullRelationships();
-            mapToCheck = relationshipMap;
+            for ( int relId : source.values() )
+            {
+                if ( checkCow && cowRelationshipRemoveMap != null )
+                {
+                    ArrayIntSet skip = cowRelationshipRemoveMap.get( type.name() );
+                    if ( skip != null && skip.contains( relId ) )
+                    {
+                        continue;
+                    }
+                }
+                relIds.add( relId );
+            }
         }
-        ArrayIntSet relationshipSet = mapToCheck.get( type.name() );
-        if ( relationshipSet == null )
+        if ( checkCow && cowRelationshipAddMap != null )
         {
-            return Collections.emptyList();
+            source = cowRelationshipAddMap.get( type.name() );
+            if ( source != null )
+            {
+                for ( int relId : source.values() )
+                {
+                    relIds.add( relId );
+                }
+            }
         }
-        int[] ids = new int[relationshipSet.size()];
-        int position = 0;
-        for ( int relId : relationshipSet.values() )
-        {
-            ids[position++] = relId;
-        }
-        return new RelationshipIterator( ids, this, Direction.BOTH, 
-            nodeManager );
-/*		nodeManager.acquireLock( this, LockType.READ );
-		try
-		{
-			ensureFullRelationships();
-			if ( relationshipMap == null )
-			{
-				return Collections.emptyList();
-			}
-			ArrayIntSet relationshipSet = relationshipMap.get( type.name() );
-			if ( relationshipSet == null )
-			{
-				return Collections.emptyList();
-			}
-			int[] ids = new int[relationshipSet.size()];
-			int position = 0;
-			for ( int relId : relationshipSet.values() )
-			{
-				ids[position++] = relId;
-			}
-			return new RelationshipIterator( ids, this, Direction.BOTH, 
-				nodeManager );
-		}
-		finally
-		{
-			nodeManager.releaseLock( this, LockType.READ );
-		}*/
+        return new RelationshipArrayIntSetIterator( 
+            relIds, this, Direction.BOTH, nodeManager );
 	}
 
 	public Iterable<Relationship> getRelationships( RelationshipType... types )
 	{
-        ArrayMap<String,ArrayIntSet> mapToCheck = null;
-        if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        boolean checkCow = false;
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowRelationshipMap;
+            checkCow = true;
         }
-        else
-        {
-            ensureFullRelationships();
-            mapToCheck = relationshipMap;
-        }
-        int size = 0;
+        ensureFullRelationships();
+        ArrayIntSet relIds = new ArrayIntSet();
         for ( RelationshipType type : types )
         {
-            ArrayIntSet relTypeSet = mapToCheck.get( type.name() );
-            if ( relTypeSet != null )
+            ArrayIntSet source = relationshipMap.get( type.name() );
+            if ( source == null )
             {
-                size += relTypeSet.size();
+                continue;
+            }
+            for ( int relId : source.values() )
+            {
+                if ( checkCow && cowRelationshipRemoveMap != null )
+                {
+                    ArrayIntSet skip = cowRelationshipRemoveMap.get( 
+                        type.name() );
+                    if ( skip != null && skip.contains( relId ) )
+                    {
+                        continue;
+                    }
+                }
+                relIds.add( relId );
             }
         }
-        int[] ids = new int[size];
-        int position = 0;
-        for ( RelationshipType type : types )
+        if ( checkCow && cowRelationshipAddMap != null )
         {
-            ArrayIntSet relTypeSet = mapToCheck.get( type.name() );
-            if ( relTypeSet != null )
+            for ( RelationshipType type : types )
             {
-                for ( int relId : relTypeSet.values() )
+                ArrayIntSet source = cowRelationshipAddMap.get( type.name() );
+                if ( source == null )
                 {
-                    ids[position++] = relId;
+                    continue;
+                }
+                for ( int relId : source.values() )
+                {
+                    relIds.add( relId );
                 }
             }
         }
-        return new RelationshipIterator( ids, this, Direction.BOTH, 
-            nodeManager );
-/*		nodeManager.acquireLock( this, LockType.READ );
-		try
-		{
-			ensureFullRelationships();
-			int size = 0;
-			for ( RelationshipType type : types )
-			{
-				ArrayIntSet relTypeSet = relationshipMap.get( type.name() );
-				if ( relTypeSet != null )
-				{
-					size += relTypeSet.size();
-				}
-			}
-			int[] ids = new int[size];
-			int position = 0;
-			for ( RelationshipType type : types )
-			{
-				ArrayIntSet relTypeSet = relationshipMap.get( type.name() );
-				if ( relTypeSet != null )
-				{
-					for ( int relId : relTypeSet.values() )
-					{
-						ids[position++] = relId;
-					}
-				}
-			}
-			return new RelationshipIterator( ids, this, Direction.BOTH, 
-				nodeManager );
-		}
-		finally
-		{
-			nodeManager.releaseLock( this, LockType.READ );
-		}*/
+        return new RelationshipArrayIntSetIterator( 
+            relIds, this, Direction.BOTH, nodeManager );
 	}
 	
 	public Relationship getSingleRelationship( RelationshipType type, 
@@ -380,59 +283,43 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	public Iterable<Relationship> getRelationships( RelationshipType type, 
 		Direction dir )
 	{
-		if ( dir == Direction.BOTH )
-		{
-			return getRelationships( type );
-		}
-        ArrayMap<String,ArrayIntSet> mapToCheck = null;
-        if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        boolean checkCow = false;
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowRelationshipMap;
+            checkCow = true;
         }
-        else
+        ensureFullRelationships();
+        ArrayIntSet relIds = new ArrayIntSet();
+        ArrayIntSet source = relationshipMap.get( type.name() );
+        if ( source != null )
         {
-            ensureFullRelationships();
-            mapToCheck = relationshipMap;
+            for ( int relId : source.values() )
+            {
+                if ( checkCow && cowRelationshipRemoveMap != null )
+                {
+                    ArrayIntSet skip = cowRelationshipRemoveMap.get( 
+                        type.name() );
+                    if ( skip != null && skip.contains( relId ) )
+                    {
+                        continue;
+                    }
+                }
+                relIds.add( relId );
+            }
         }
-        ArrayIntSet relationshipSet = mapToCheck.get( type.name() );
-        if ( relationshipSet == null )
+        if ( checkCow && cowRelationshipAddMap != null )
         {
-            return Collections.emptyList();
+            source = cowRelationshipAddMap.get( type.name() );
+            if ( source != null )
+            {
+                for ( int relId : source.values() )
+                {
+                    relIds.add( relId );
+                }
+            }
         }
-        int[] ids = new int[relationshipSet.size()];
-        int position = 0;
-        for ( int relId : relationshipSet.values() )
-        {
-            ids[position++] = relId;
-        }
-        return new RelationshipIterator( ids, this, dir, nodeManager );
-        
-//        nodeManager.acquireLock( this, LockType.READ );
-//      try
-//      {
-/*            ensureFullRelationships();
-			if ( relationshipMap == null )
-			{
-				return Collections.emptyList();
-			}
-			ArrayIntSet relationshipSet = relationshipMap.get( type.name() );
-			if ( relationshipSet == null )
-			{
-				return Collections.emptyList();
-			}
-			int[] ids = new int[relationshipSet.size()];
-			int position = 0;
-			for ( int relId : relationshipSet.values() )
-			{
-				ids[position++] = relId;
-			}
-			return new RelationshipIterator( ids, this, dir, nodeManager );*/
-//		}
-//		finally
-//		{
-//			nodeManager.releaseLock( this, LockType.READ );
-//		}
+        return new RelationshipArrayIntSetIterator( 
+            relIds, this, dir, nodeManager );
 	}
 	
 
@@ -467,7 +354,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	 */
 	public int compareTo( Node n )
 	{
-		long ourId = (long) this.getId(), theirId = (long) n.getId();
+		long ourId = this.getId(), theirId = n.getId();
 		
 		if ( ourId < theirId )
 		{
@@ -528,35 +415,21 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	 // a relationship delete is undone or when the full node is loaded
 	void addRelationship( RelationshipType type, int relId ) 
 	{
-        if ( cowRelationshipMap != null )
+        if ( cowRelationshipAddMap != null )
         {
-            // write operation, this must be true;
             assert cowTxId == nodeManager.getTransaction();
         }
         else
         {
-            ensureFullRelationships();
-            createRelationshipCowMap();
+            createRelationshipAddCowMap();
         }
-        ArrayIntSet relationshipSet = cowRelationshipMap.get( type.name() );
+        ArrayIntSet relationshipSet = cowRelationshipAddMap.get( type.name() );
         if ( relationshipSet == null )
         {
             relationshipSet = new ArrayIntSet();
-            cowRelationshipMap.put( type.name(), relationshipSet );
+            cowRelationshipAddMap.put( type.name(), relationshipSet );
         }
         relationshipSet.add( relId );
-        /*        if ( relationshipMap == null )
-        {
-            relationshipMap = new ArrayMap<String,ArrayIntSet>(); 
-        }
-		ArrayIntSet relationshipSet = relationshipMap.get( type.name() );
-		if ( relationshipSet == null )
-		{
-			relationshipSet = new ArrayIntSet();
-			relationshipMap.put( type.name(), relationshipSet );
-		}
-		relationshipSet.add( relId );
-        */
 	}
 	
 	 // caller is responsible for acquiring lock
@@ -564,69 +437,67 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	 // a relationship delete is invoked.
 	void removeRelationship( RelationshipType type, int relId )
 	{
-        if ( cowRelationshipMap != null )
+        if ( cowRelationshipRemoveMap != null )
         {
-            // write operation, this must be true;
             assert cowTxId == nodeManager.getTransaction();
         }
         else
         {
-            ensureFullRelationships();
-            createRelationshipCowMap();
+            createRelationshipRemoveCowMap();
         }
-        ArrayIntSet relationshipSet = cowRelationshipMap.get( type.name() );
-        if ( relationshipSet != null )
+        if ( cowRelationshipAddMap != null )
         {
-            relationshipSet.remove( relId );
-            if ( relationshipSet.size() == 0 )
+            ArrayIntSet addedSet = cowRelationshipAddMap.get( type.name() );
+            if ( addedSet != null )
             {
-                cowRelationshipMap.remove( type.name() );
+                addedSet.remove( relId );
             }
         }
-/*		ArrayIntSet relationshipSet = null; 
-        if ( relationshipMap != null )
+        ArrayIntSet relationshipSet = cowRelationshipRemoveMap.get( 
+            type.name() );
+        if ( relationshipSet == null )
         {
-           relationshipSet = relationshipMap.get( type.name() );
+            relationshipSet = new ArrayIntSet();
+            cowRelationshipRemoveMap.put( type.name(), relationshipSet );
         }
-		if ( relationshipSet != null )
-		{
-			if ( !relationshipSet.remove( relId ) )
-			{
-				if ( ensureFullRelationships() )
-				{
-					relationshipSet.remove( relId );
-				}
-			}
-			if ( relationshipSet.size() == 0 )
-			{
-				relationshipMap.remove( type.name() );
-			}
-		}
-		else
-		{
-			if ( ensureFullRelationships() )
-			{
-				removeRelationship( type, relId );
-			}
-		}*/
+        relationshipSet.add( relId );
 	}
 	
 	boolean internalHasRelationships()
 	{
-        ArrayMap<String,ArrayIntSet> mapToCheck = null;
-        if ( cowRelationshipMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        boolean checkCow = false;
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowRelationshipMap;
+            checkCow = true;
         }
-        else
+        ensureFullRelationships();
+        ArrayIntSet relIds = new ArrayIntSet();
+        for ( String type : relationshipMap.keySet() )
         {
-            ensureFullRelationships();
-            mapToCheck = relationshipMap;
+            ArrayIntSet source = relationshipMap.get( type );
+            for ( int relId : source.values() )
+            {
+                if ( checkCow && cowRelationshipRemoveMap != null )
+                {
+                    ArrayIntSet skip = cowRelationshipRemoveMap.get( type );
+                    if ( skip != null && skip.contains( relId ) )
+                    {
+                        continue;
+                    }
+                }
+                return true;
+            }
         }
-        if ( mapToCheck != null )
+        if ( checkCow && cowRelationshipAddMap != null )
         {
-            return ( mapToCheck.size() > 0 );
+            for ( String type : cowRelationshipAddMap.keySet() )
+            {
+                ArrayIntSet source = cowRelationshipAddMap.get( type );
+                if ( source.size() > 0 )
+                {
+                    return true;
+                }
+            }
         }
         return false;
 	}
@@ -813,23 +684,65 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     protected void commitCowMaps()
     {
         super.commitCowMaps();
-        if ( cowRelationshipMap != null )
+        ArrayMap<String,ArrayIntSet> newMap = 
+            new ArrayMap<String,ArrayIntSet>();
+        if ( relationshipMap != null )
         {
-            relationshipMap = cowRelationshipMap;
-            cowRelationshipMap = null;
+            for ( String type : relationshipMap.keySet() )
+            {
+                ArrayIntSet source = relationshipMap.get( type );
+                ArrayIntSet dest = new ArrayIntSet();
+                ArrayIntSet skip = null;
+                if ( cowRelationshipRemoveMap != null )
+                {
+                    skip = cowRelationshipRemoveMap.get( type );
+                }
+                for ( int relId : source.values() )
+                {
+                    if ( skip == null || !skip.contains( relId ) )
+                    {
+                        dest.add( relId );
+                    }
+                }
+                if ( dest.size() > 0 )
+                {
+                    newMap.put( type, dest );
+                }
+            }
         }
+        if ( cowRelationshipAddMap != null )
+        {
+            for ( String type : cowRelationshipAddMap.keySet() )
+            {
+                ArrayIntSet source = cowRelationshipAddMap.get( type );
+                ArrayIntSet dest = newMap.get( type );
+                if ( dest == null )
+                {
+                    dest = new ArrayIntSet();
+                    newMap.put( type, dest );
+                }
+                for ( int relId : source.values() )
+                {
+                    dest.add( relId );
+                }
+            }
+        }
+        cowRelationshipAddMap = null;
+        cowRelationshipRemoveMap = null;
+        relationshipMap = newMap;
     }
 
     @Override
     protected void rollbackCowMaps()
     {
         super.rollbackCowMaps();
-        cowRelationshipMap = null;
+        cowRelationshipAddMap = null;
+        cowRelationshipRemoveMap = null;
     }
     
-    private void createRelationshipCowMap()
+    private void createRelationshipAddCowMap()
     {
-        assert cowRelationshipMap == null;
+        assert cowRelationshipAddMap == null;
         Transaction currentTxId = nodeManager.getTransaction();
         if ( cowTxId == null )
         {
@@ -840,20 +753,22 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         {
             assert cowTxId == currentTxId;
         }
-        cowRelationshipMap = new ArrayMap<String,ArrayIntSet>();
-        if ( relationshipMap == null )
+        cowRelationshipAddMap = new ArrayMap<String,ArrayIntSet>();
+    }
+    
+    private void createRelationshipRemoveCowMap()
+    {
+        assert cowRelationshipRemoveMap == null;
+        Transaction currentTxId = nodeManager.getTransaction();
+        if ( cowTxId == null )
         {
-            return; 
+            cowTxId = currentTxId;
+            nodeManager.addCowToTxHook( this );
         }
-        for ( String type : this.relationshipMap.keySet() )
+        else
         {
-            ArrayIntSet rels = relationshipMap.get( type );
-            ArrayIntSet copyRels = new ArrayIntSet();
-            for( int rel : rels.values() )
-            {
-                copyRels.add( rel );
-            }
-            cowRelationshipMap.put( type, copyRels );
+            assert cowTxId == currentTxId;
         }
+        cowRelationshipRemoveMap = new ArrayMap<String,ArrayIntSet>();
     }
 }

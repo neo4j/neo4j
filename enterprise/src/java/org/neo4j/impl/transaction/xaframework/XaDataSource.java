@@ -77,4 +77,9 @@ public abstract class XaDataSource
 	 * this method has been invoked is illegal.
 	 */
 	public abstract void close();
+    
+    public abstract void setBranchId( byte branchId[] );
+    public abstract byte[] getBranchId();
+    
+    
 }
