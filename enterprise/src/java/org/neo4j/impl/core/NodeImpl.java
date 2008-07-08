@@ -18,6 +18,7 @@ package org.neo4j.impl.core;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.transaction.Transaction;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
@@ -43,6 +44,8 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	private boolean isDeleted = false;
 	private RelPhase relPhase;
 
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    
     private ArrayMap<String,ArrayIntSet> relationshipMap = null; 
     private ArrayMap<String,ArrayIntSet> cowRelationshipAddMap = null;
     private ArrayMap<String,ArrayIntSet> cowRelationshipRemoveMap = null;
@@ -92,6 +95,9 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	
 	public Iterable<Relationship> getRelationships()
 	{
+        lock.readLock().lock();
+        try
+        {
         boolean checkCow = false;
         if ( cowTxId == nodeManager.getTransaction() )
         {
@@ -128,10 +134,18 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         }
         return new RelationshipArrayIntSetIterator( 
             relIds, this, Direction.BOTH, nodeManager );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
 	}
 	
 	public Iterable<Relationship> getRelationships( Direction dir )
 	{
+        lock.readLock().lock();
+        try
+        {
 		if ( dir == Direction.BOTH )
 		{
 			return getRelationships();
@@ -172,10 +186,18 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         }
         return new RelationshipArrayIntSetIterator( 
             relIds, this, dir, nodeManager );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
 	}
 	
 	public Iterable<Relationship> getRelationships( RelationshipType type )
 	{
+        lock.readLock().lock();
+        try
+        {
         boolean checkCow = false;
         if ( cowTxId == nodeManager.getTransaction() )
         {
@@ -212,10 +234,18 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         }
         return new RelationshipArrayIntSetIterator( 
             relIds, this, Direction.BOTH, nodeManager );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
 	}
 
 	public Iterable<Relationship> getRelationships( RelationshipType... types )
 	{
+        lock.readLock().lock();
+        try
+        {
         boolean checkCow = false;
         if ( cowTxId == nodeManager.getTransaction() )
         {
@@ -261,6 +291,11 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         }
         return new RelationshipArrayIntSetIterator( 
             relIds, this, Direction.BOTH, nodeManager );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
 	}
 	
 	public Relationship getSingleRelationship( RelationshipType type, 
@@ -283,6 +318,9 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	public Iterable<Relationship> getRelationships( RelationshipType type, 
 		Direction dir )
 	{
+        lock.readLock().lock();
+        try
+        {
         boolean checkCow = false;
         if ( cowTxId == nodeManager.getTransaction() )
         {
@@ -320,6 +358,11 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         }
         return new RelationshipArrayIntSetIterator( 
             relIds, this, dir, nodeManager );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
 	}
 	
 
@@ -465,6 +508,9 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	
 	boolean internalHasRelationships()
 	{
+        lock.readLock().lock();
+        try
+        {
         boolean checkCow = false;
         if ( cowTxId == nodeManager.getTransaction() )
         {
@@ -500,6 +546,11 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
             }
         }
         return false;
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
 	}
 	
 	
@@ -684,7 +735,59 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     protected void commitCowMaps()
     {
         super.commitCowMaps();
-        ArrayMap<String,ArrayIntSet> newMap = 
+        lock.writeLock().lock();
+        try
+        {
+        if ( relationshipMap == null )
+        {
+            relationshipMap = new ArrayMap<String,ArrayIntSet>();
+        }
+        if ( cowRelationshipAddMap != null )
+        {
+            for ( String type : cowRelationshipAddMap.keySet() )
+            {
+                ArrayIntSet source = cowRelationshipAddMap.get( type );
+                if ( source.size() == 0 )
+                {
+                    continue;
+                }
+                ArrayIntSet dest = relationshipMap.get( type );
+                if ( dest == null )
+                {
+                    dest = new ArrayIntSet();
+                    relationshipMap.put( type, dest );
+                }
+                for ( int relId : source.values() )
+                {
+                    dest.add( relId );
+                }
+            }
+        }
+        if ( cowRelationshipRemoveMap != null && relationshipMap != null )
+        {
+            for ( String type : cowRelationshipRemoveMap.keySet() )
+            {
+                ArrayIntSet source = cowRelationshipRemoveMap.get( type );
+                ArrayIntSet dest = relationshipMap.get( type );
+                if ( dest == null )
+                {
+                    continue;
+                }
+                for ( int relId : source.values() )
+                {
+                    dest.remove( relId );
+                }
+            }
+        }
+        cowRelationshipAddMap = null;
+        cowRelationshipRemoveMap = null;
+        }
+        finally
+        {
+            lock.writeLock().unlock();
+        }
+        
+ /*       ArrayMap<String,ArrayIntSet> newMap = 
             new ArrayMap<String,ArrayIntSet>();
         if ( relationshipMap != null )
         {
@@ -729,7 +832,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         }
         cowRelationshipAddMap = null;
         cowRelationshipRemoveMap = null;
-        relationshipMap = newMap;
+        relationshipMap = newMap;*/
     }
 
     @Override
