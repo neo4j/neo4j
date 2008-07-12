@@ -56,8 +56,7 @@ public class NeoModule
 		this.transactionManager = transactionManager;
 		this.persistenceManager = persistenceManager;
 		nodeManager = new NodeManager( cacheManager, lockManager, 
-			transactionManager, lockReleaser, eventManager, 
-			persistenceManager, idGenerator );
+			transactionManager, eventManager, persistenceManager, idGenerator );
 	}
 	
 	public void init()
@@ -204,5 +203,10 @@ public class NeoModule
 		boolean create )
     {
 		return nodeManager.addValidRelationshipType( name, create );
+    }
+
+    public LockReleaser getLockReleaser()
+    {
+        return nodeManager.getLockReleaser();
     }
 }

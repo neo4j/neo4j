@@ -18,9 +18,7 @@ package org.neo4j.impl.core;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.transaction.Transaction;
-
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
@@ -33,15 +31,13 @@ abstract class NeoPrimitive
         FULL_PROPERTY,
     }
     
+    protected final int id;
+    protected final NodeManager nodeManager; 
+    
     private PropertyPhase propPhase;
-
     private ArrayMap<Integer,Property> propertyMap = null; 
-
-    private ArrayMap<Integer,Property> cowPropertyMap = null;
-    // protected int cowTxId = -1;
     protected Transaction cowTxId = null;
     
-    protected final NodeManager nodeManager; 
 
     protected abstract void changeProperty( int propertyId, Object value );
     protected abstract int addProperty( PropertyIndex index, Object value );
@@ -49,79 +45,96 @@ abstract class NeoPrimitive
     protected abstract RawPropertyData[] loadProperties();
     
     
-    NeoPrimitive( NodeManager nodeManager )
+    NeoPrimitive( int id, NodeManager nodeManager )
     {
+        this.id = id;
         this.nodeManager = nodeManager;
         this.propPhase = PropertyPhase.EMPTY_PROPERTY;
     }
     
-    NeoPrimitive( boolean newPrimitive, NodeManager nodeManager )
+    NeoPrimitive( int id, boolean newPrimitive, NodeManager nodeManager )
     {
+        this.id = id;
         this.nodeManager = nodeManager;
         if ( newPrimitive )
         {
             this.propPhase = PropertyPhase.FULL_PROPERTY;
         }
     }
+    
+    public long getId()
+    {
+        return this.id;
+    }
         
     public Iterable<Object> getPropertyValues()
     {
-//        nodeManager.acquireLock( this, LockType.READ );
-//        try
-//        {
-//            ensureFullProperties();
-        ArrayMap<Integer,Property> mapToCheck = null;
-        if ( cowPropertyMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        ArrayMap<Integer,Property> skipMap = null;
+        ArrayMap<Integer,Property> addMap = null;
+
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowPropertyMap;
+            skipMap = nodeManager.getCowPropertyRemoveMap( this );
+            addMap = nodeManager.getCowPropertyAddMap( this );
         }
-        else
+        ensureFullProperties();
+        List<Object> values = new ArrayList<Object>();
+            
+        for ( Integer index : propertyMap.keySet() )
         {
-            ensureFullProperties();
-            mapToCheck = propertyMap;
+            if ( skipMap != null && skipMap.get( index ) != null )
+            {
+                continue;
+            }
+            if ( addMap != null && addMap.get( index ) != null )
+            {
+                continue;
+            }
+            values.add( propertyMap.get( index ).getValue() );
         }
-        List<Object> properties = new ArrayList<Object>();
-        for ( Property property : mapToCheck.values() )
+        if ( addMap != null )
         {
-            properties.add( getPropertyValue( property ) );
+            for ( Property property : addMap.values() )
+            {
+                values.add( property.getValue() );
+            }
         }
-        return properties;
-//        }
-//        finally
-//        {
-//            nodeManager.releaseLock( this, LockType.READ );
-//        }
+        return values;
     }
     
     public Iterable<String> getPropertyKeys()
     {
-//        nodeManager.acquireLock( this, LockType.READ );
-//        try
-//        {
-//            ensureFullProperties();
-        ArrayMap<Integer,Property> mapToCheck = null;
-        if ( cowPropertyMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        ArrayMap<Integer,Property> skipMap = null;
+        ArrayMap<Integer,Property> addMap = null;
+
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowPropertyMap;
+            skipMap = nodeManager.getCowPropertyRemoveMap( this );
+            addMap = nodeManager.getCowPropertyAddMap( this );
         }
-        else
+        ensureFullProperties();
+        List<String> keys = new ArrayList<String>();
+            
+        for ( Integer index : propertyMap.keySet() )
         {
-            ensureFullProperties();
-            mapToCheck = propertyMap;
+            if ( skipMap != null && skipMap.get( index ) != null )
+            {
+                continue;
+            }
+            if ( addMap != null && addMap.get( index ) != null )
+            {
+                continue;
+            }
+            keys.add( nodeManager.getIndexFor( index ).getKey() );
         }
-        List<String> propertyKeys = new ArrayList<String>();
-        for ( int keyId : mapToCheck.keySet() )
+        if ( addMap != null )
         {
-            propertyKeys.add( nodeManager.getIndexFor( keyId ).getKey() );
+            for ( Integer index : addMap.keySet() )
+            {
+                keys.add( nodeManager.getIndexFor( index ).getKey() );
+            }
         }
-        return propertyKeys;
-//        }
-//        finally
-//        {
-//            nodeManager.releaseLock( this, LockType.READ );
-//        }           
+        return keys;
     }
 
     public Object getProperty( String key ) 
@@ -131,32 +144,55 @@ abstract class NeoPrimitive
         {
             throw new IllegalArgumentException( "null key" );
         }
-//        nodeManager.acquireLock( this, LockType.READ );
-//        try
-//        {
-        ArrayMap<Integer,Property> mapToCheck = null;
-        if ( cowPropertyMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        ArrayMap<Integer,Property> skipMap = null;
+        ArrayMap<Integer,Property> addMap = null;
+
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowPropertyMap;
+            skipMap = nodeManager.getCowPropertyRemoveMap( this );
+            addMap = nodeManager.getCowPropertyAddMap( this );
         }
-        else
-        {
-            // TODO opti this, we don't need to do full here everytime
-            ensureFullProperties();
-            mapToCheck = propertyMap;
-        }
+        ensureFullProperties();
         for ( PropertyIndex index : nodeManager.index( key ) )
         {
-            Property property = mapToCheck.get( index.getKeyId() );
+            if ( skipMap != null && 
+                skipMap.get( index.getKeyId() ) != null )
+            {
+                throw new NotFoundException( "" + key + 
+                    " property not found." );
+            }
+            if ( addMap != null )
+            {
+                Property property = addMap.get( index.getKeyId() );
+                if ( property != null )
+                {
+                    return getPropertyValue( property );
+                }
+            }
+            Property property = propertyMap.get( index.getKeyId() );
             if ( property != null )
             {
                 return getPropertyValue( property );
             }
         }
-        if ( !nodeManager.hasAllPropertyIndexes() )
+        Property property = getSlowProperty( addMap, skipMap, key );
+        if ( property != null )
         {
-            for ( int keyId : mapToCheck.keySet() )
+            return getPropertyValue( property );
+        }
+        throw new NotFoundException( "" + key + " property not found." );
+    }
+    
+    private Property getSlowProperty( ArrayMap<Integer,Property> addMap, 
+        ArrayMap<Integer,Property> skipMap, String key )
+    {
+        if ( nodeManager.hasAllPropertyIndexes() )
+        {
+            return null;
+        }
+        if ( addMap != null )
+        {
+            for ( int keyId : addMap.keySet() )
             {
                 if ( !nodeManager.hasIndexFor( keyId ) )
                 {
@@ -164,19 +200,43 @@ abstract class NeoPrimitive
                         keyId );
                     if ( indexToCheck.getKey().equals( key ) )
                     {
-                        Property property = mapToCheck.get( 
+                        if ( skipMap != null && skipMap.get( keyId ) != null )
+                        {
+                            throw new NotFoundException( "" + key + 
+                                " property not found." );
+                        }
+                        Property property = addMap.get( 
                             indexToCheck.getKeyId() );
-                        return getPropertyValue( property );
+                        if ( property != null )
+                        {
+                            return property;
+                        }
                     }
                 }
             }
         }
-//        }
-//        finally
-//        {
-//            nodeManager.releaseLock( this, LockType.READ );
-//        }
-        throw new NotFoundException( "" + key + " property not found." );
+        for ( int keyId : propertyMap.keySet() )
+        {
+            if ( !nodeManager.hasIndexFor( keyId ) )
+            {
+                PropertyIndex indexToCheck = nodeManager.getIndexFor( keyId );
+                if ( indexToCheck.getKey().equals( key ) )
+                {
+                    if ( skipMap != null && skipMap.get( keyId ) != null )
+                    {
+                        throw new NotFoundException( "" + key + 
+                            " property not found." );
+                    }
+                    Property property = propertyMap.get( 
+                        indexToCheck.getKeyId() );
+                    if ( property != null )
+                    {
+                        return property;
+                    }
+                }
+            }
+        }
+        return null;
     }
     
     public Object getProperty( String key, Object defaultValue )
@@ -185,93 +245,82 @@ abstract class NeoPrimitive
         {
             throw new IllegalArgumentException( "null key" );
         }
-//        nodeManager.acquireLock( this, LockType.READ );
-//        try
-//        {
-        ArrayMap<Integer,Property> mapToCheck = null;
-        if ( cowPropertyMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        ArrayMap<Integer,Property> skipMap = null;
+        ArrayMap<Integer,Property> addMap = null;
+
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowPropertyMap;
+            skipMap = nodeManager.getCowPropertyRemoveMap( this );
+            addMap = nodeManager.getCowPropertyAddMap( this );
         }
-        else
-        {
-            // TODO opti this, we don't need to do full here everytime
-            ensureFullProperties();
-            mapToCheck = propertyMap;
-        }
+        ensureFullProperties();
         for ( PropertyIndex index : nodeManager.index( key ) )
         {
-            Property property = mapToCheck.get( index.getKeyId() );
+            if ( skipMap != null && 
+                skipMap.get( index.getKeyId() ) != null )
+            {
+                return defaultValue;
+            }
+            if ( addMap != null )
+            {
+                Property property = addMap.get( index.getKeyId() );
+                if ( property != null )
+                {
+                    return getPropertyValue( property );
+                }
+            }
+            Property property = propertyMap.get( index.getKeyId() );
             if ( property != null )
             {
                 return getPropertyValue( property );
             }
         }
-        if ( !nodeManager.hasAllPropertyIndexes() )
+        Property property = getSlowProperty( addMap, skipMap, key );
+        if ( property != null )
         {
-            for ( int keyId : mapToCheck.keySet() )
-            {
-                if ( !nodeManager.hasIndexFor( keyId ) )
-                {
-                    PropertyIndex indexToCheck = nodeManager.getIndexFor( 
-                        keyId );
-                    if ( indexToCheck.getKey().equals( key ) )
-                    {
-                        Property property = mapToCheck.get( 
-                            indexToCheck.getKeyId() );
-                        return getPropertyValue( property );
-                    }
-                }
-            }
+            return getPropertyValue( property );
         }
-//        }
-//        finally
-//        {
-//            nodeManager.releaseLock( this, LockType.READ );
-//        }
         return defaultValue;
     }
 
     public boolean hasProperty( String key )
     {
-//        nodeManager.acquireLock( this, LockType.READ );
-//        try
-//        {
-        ArrayMap<Integer,Property> mapToCheck = null;
-        if ( cowPropertyMap != null && 
-            cowTxId == nodeManager.getTransaction() )
+        ArrayMap<Integer,Property> skipMap = null;
+        ArrayMap<Integer,Property> addMap = null;
+
+        if ( cowTxId == nodeManager.getTransaction() )
         {
-            mapToCheck = cowPropertyMap;
+            skipMap = nodeManager.getCowPropertyRemoveMap( this );
+            addMap = nodeManager.getCowPropertyAddMap( this );
         }
-        else
-        {
-            // TODO opti this, we don't need to do full here everytime
-            ensureFullProperties();
-            mapToCheck = propertyMap;
-        }
+        ensureFullProperties();
         for ( PropertyIndex index : nodeManager.index( key ) )
         {
-            Property property = mapToCheck.get( index.getKeyId() );
+            if ( skipMap != null && 
+                skipMap.get( index.getKeyId() ) != null )
+            {
+                return false;
+            }
+            if ( addMap != null )
+            {
+                Property property = addMap.get( index.getKeyId() );
+                if ( property != null )
+                {
+                    return true;
+                }
+            }
+            Property property = propertyMap.get( index.getKeyId() );
             if ( property != null )
             {
                 return true;
             }
         }
-        for ( int keyId : mapToCheck.keySet() )
+        Property property = getSlowProperty( addMap, skipMap, key );
+        if ( property != null )
         {
-            PropertyIndex indexToCheck = nodeManager.getIndexFor( keyId );
-            if ( indexToCheck.getKey().equals( key ) )
-            {
-                return true;
-            }
+            return true;
         }
         return false;
-//        }
-//        finally
-//        {
-//            nodeManager.releaseLock( this, LockType.READ );
-//        }           
     }
     
     public void setProperty( String key, Object value ) 
@@ -285,23 +334,31 @@ abstract class NeoPrimitive
         boolean success = false;
         try
         {
-            // must make sure we don't add already existing property
-            if ( cowPropertyMap != null )
-            {
-                // write operation, this must be true;
-                assert cowTxId == nodeManager.getTransaction();
-            }
-            else
-            {
-                ensureFullProperties();
-                createPropertyCowMap();
-            }
+//            if ( cowTxId == null )
+//            {
+                setupCowTx();
+//            }
+//            assert cowTxId == nodeManager.getTransaction();
+            ensureFullProperties();
+            ArrayMap<Integer,Property> addMap = 
+                nodeManager.getCowPropertyAddMap( this, true );
+            ArrayMap<Integer,Property> skipMap = 
+                nodeManager.getCowPropertyRemoveMap( this );
             PropertyIndex index = null;
             Property property = null;
             for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
-                property = cowPropertyMap.get( cachedIndex.getKeyId() );
+                if ( skipMap != null )
+                {
+                    skipMap.remove( cachedIndex.getKeyId() );
+                }
                 index = cachedIndex;
+                property = addMap.get( cachedIndex.getKeyId() );
+                if ( property != null )
+                {
+                    break;
+                }
+                property = propertyMap.get( cachedIndex.getKeyId() );
                 if ( property != null )
                 {
                     break;
@@ -309,7 +366,7 @@ abstract class NeoPrimitive
             }
             if ( property == null && !nodeManager.hasAllPropertyIndexes() )
             {
-                for ( int keyId : cowPropertyMap.keySet() )
+                for ( int keyId : addMap.keySet() )
                 {
                     if ( !nodeManager.hasIndexFor( keyId ) )
                     {
@@ -317,10 +374,41 @@ abstract class NeoPrimitive
                             keyId );
                         if ( indexToCheck.getKey().equals( key ) )
                         {
+                            if ( skipMap != null )
+                            {
+                                skipMap.remove( indexToCheck.getKeyId() );
+                            }
                             index = indexToCheck;
-                            property = cowPropertyMap.get( 
-                                indexToCheck.getKeyId() );
-                            break;
+                            property = addMap.get( indexToCheck.getKeyId() );
+                            if ( property != null )
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+                if ( property == null )
+                {
+                    for ( int keyId : propertyMap.keySet() )
+                    {
+                        if ( !nodeManager.hasIndexFor( keyId ) )
+                        {
+                            PropertyIndex indexToCheck = 
+                                nodeManager.getIndexFor( keyId );
+                            if ( indexToCheck.getKey().equals( key ) )
+                            {
+                                if ( skipMap != null )
+                                {
+                                    skipMap.remove( indexToCheck.getKeyId() );
+                                }
+                                index = indexToCheck;
+                                property = propertyMap.get( 
+                                    indexToCheck.getKeyId() );
+                                if ( property != null )
+                                {
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
@@ -338,9 +426,9 @@ abstract class NeoPrimitive
             else
             {
                 int propertyId = addProperty( index, value );
-                cowPropertyMap.put( index.getKeyId(), 
-                    new Property( propertyId, value ) );
+                property = new Property( propertyId, value );
             }
+            addMap.put( index.getKeyId(), property );
             success = true;
         }
         finally
@@ -363,38 +451,78 @@ abstract class NeoPrimitive
         boolean success = false;
         try
         {
-            if ( cowPropertyMap != null )
-            {
-                // write operation, this must be true;
-                assert cowTxId == nodeManager.getTransaction();
-            }
-            else
-            {
-                ensureFullProperties();
-                createPropertyCowMap();
-            }
+//            if ( cowTxId == null )
+//            {
+                setupCowTx();
+//            }
+//            assert cowTxId == nodeManager.getTransaction();
+            ensureFullProperties();
             Property property = null;
+            ArrayMap<Integer,Property> addMap = 
+                nodeManager.getCowPropertyAddMap( this );
+            ArrayMap<Integer,Property> removeMap = 
+                nodeManager.getCowPropertyRemoveMap( this, true );
             for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
-                property = cowPropertyMap.remove( cachedIndex.getKeyId() );
+                if ( addMap != null )
+                {
+                    property = addMap.remove( cachedIndex.getKeyId() );
+                    if ( property != null )
+                    {
+                        removeMap.put( cachedIndex.getKeyId(), property );
+                        break;
+                    }
+                }
+                property = propertyMap.get( cachedIndex.getKeyId() );
                 if ( property != null )
                 {
+                    removeMap.put( cachedIndex.getKeyId(), property );
                     break;
                 }
             }
             if ( property == null && !nodeManager.hasAllPropertyIndexes() )
             {
-                for ( int keyId : cowPropertyMap.keySet() )
+                if ( addMap != null )
                 {
-                    if ( !nodeManager.hasIndexFor( keyId ) )
+                    for ( int keyId : addMap.keySet() )
                     {
-                        PropertyIndex indexToCheck = nodeManager.getIndexFor( 
-                            keyId );
-                        if ( indexToCheck.getKey().equals( key ) )
+                        if ( !nodeManager.hasIndexFor( keyId ) )
                         {
-                            property = cowPropertyMap.remove( 
-                                indexToCheck.getKeyId() );
-                            break;
+                            PropertyIndex indexToCheck = 
+                                nodeManager.getIndexFor( keyId );
+                            if ( indexToCheck.getKey().equals( key ) )
+                            {
+                                property = addMap.remove( 
+                                    indexToCheck.getKeyId() );
+                                if ( property != null )
+                                {
+                                    removeMap.put( indexToCheck.getKeyId(), 
+                                        property );
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if ( property == null )
+                    {
+                        for ( int keyId : propertyMap.keySet() )
+                        {
+                            if ( !nodeManager.hasIndexFor( keyId ) )
+                            {
+                                PropertyIndex indexToCheck = 
+                                    nodeManager.getIndexFor( keyId );
+                                if ( indexToCheck.getKey().equals( key ) )
+                                {
+                                    property = propertyMap.get( 
+                                        indexToCheck.getKeyId() );
+                                    if ( property != null )
+                                    {
+                                        removeMap.put( indexToCheck.getKeyId(), 
+                                            property );
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -430,39 +558,47 @@ abstract class NeoPrimitive
     }
     
     // must be called after write lock aqcuire
-    private void createPropertyCowMap()
+    protected void setupCowTx()
     {
-        assert cowPropertyMap == null;
-        // int currentTxId = nodeManager.getTransactionId();
-        Transaction currentTxId = nodeManager.getTransaction();
+        cowTxId = nodeManager.getTransaction();
+        nodeManager.addCowToTxHook( this );
+/*        Transaction currentTxId = nodeManager.getTransaction();
         if ( cowTxId == null )
         {
             cowTxId = currentTxId;
             nodeManager.addCowToTxHook( this );
+            assert nodeManager.getCow( this ) != null;
         }
         else
         {
-            // ok this should be a node and relationship write operation
-            // has already been performed
-            // current tx id must be equal to cowTxId
             assert cowTxId == currentTxId;
-        }
-        cowPropertyMap = new ArrayMap<Integer,Property>();
-        for ( int index : this.propertyMap.keySet() )
-        {
-            Property prop = propertyMap.get( index );
-            cowPropertyMap.put( index, prop );
-        }
+        }*/
     }
     
     // must be called before write lock release, piggy backing
     protected void commitCowMaps()
     {
-        assert cowTxId != null;
-        if ( cowPropertyMap != null )
+        ArrayMap<Integer,Property> cowPropertyAddMap = 
+            nodeManager.getCowPropertyAddMap( this );
+        if ( cowPropertyAddMap != null )
         {
-            this.propertyMap = cowPropertyMap;
-            cowPropertyMap = null;
+            if ( propertyMap == null )
+            {
+                propertyMap = new ArrayMap<Integer,Property>();
+            }
+            for ( Integer index : cowPropertyAddMap.keySet() )
+            {
+                propertyMap.put( index, cowPropertyAddMap.get( index ) );
+            }
+        }
+        ArrayMap<Integer,Property> cowPropertyRemoveMap = 
+            nodeManager.getCowPropertyRemoveMap( this );
+        if ( cowPropertyRemoveMap != null && propertyMap != null )
+        {
+            for ( Integer index : cowPropertyRemoveMap.keySet() )
+            {
+                propertyMap.remove( index );
+            }
         }
         cowTxId = null;
     }
@@ -470,8 +606,6 @@ abstract class NeoPrimitive
     // must be called before write lock release, piggy backing
     protected void rollbackCowMaps()
     {
-        assert cowTxId != null;
-        cowPropertyMap = null;
         cowTxId = null;
     }
     
