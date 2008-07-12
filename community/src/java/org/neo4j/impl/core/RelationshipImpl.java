@@ -24,7 +24,6 @@ import org.neo4j.impl.transaction.LockType;
 class RelationshipImpl extends NeoPrimitive 
 	implements Relationship, Comparable<Relationship>
 {
-	private final int id;
 	private final int startNodeId;
 	private final int endNodeId;
 	private final RelationshipType type;
@@ -33,8 +32,7 @@ class RelationshipImpl extends NeoPrimitive
 	// when loading from PL.
 	RelationshipImpl( int id, NodeManager nodeManager )
 	{
-        super( nodeManager );
-		this.id = id;
+        super( id, nodeManager );
 		this.startNodeId = -1;
 		this.endNodeId = -1;
 		this.type = null;
@@ -43,7 +41,7 @@ class RelationshipImpl extends NeoPrimitive
 	RelationshipImpl( int id, int startNodeId, int endNodeId, 
 		RelationshipType type, boolean newRel, NodeManager nodeManager ) 
 	{
-        super( newRel, nodeManager );
+        super( id, newRel, nodeManager );
 		if ( type == null )
 		{
 			throw new IllegalArgumentException( "Null type" );
@@ -53,7 +51,6 @@ class RelationshipImpl extends NeoPrimitive
 			throw new IllegalArgumentException( "Start node equals end node" );
 		}
 		
-		this.id = id;
 		this.startNodeId = startNodeId;
 		this.endNodeId = endNodeId;
 		this.type = type;
@@ -79,11 +76,6 @@ class RelationshipImpl extends NeoPrimitive
         return nodeManager.loadProperties( this );
     }
     
-	public long getId()
-	{
-		return this.id;
-	}
-	
 	public Node[] getNodes()
 	{
 		try

@@ -258,8 +258,6 @@ class NeoJvmInstance
 			cacheManager = new AdaptiveCacheManager();
 			txModule = new TxModule( eventModule.getEventManager(), this.storeDir );
 			lockManager = new LockManager( txModule.getTxManager() );
-			lockReleaser = new LockReleaser( lockManager, 
-				txModule.getTxManager() );
 			persistenceModule = new PersistenceModule( 
                 txModule.getTxManager() );
 			idGeneratorModule = new IdGeneratorModule();
@@ -268,6 +266,7 @@ class NeoJvmInstance
 				eventModule.getEventManager(), 
 				persistenceModule.getPersistenceManager(),
 				idGeneratorModule.getIdGenerator() );
+            lockReleaser = neoModule.getLockReleaser();
 		}
 		
 		/**

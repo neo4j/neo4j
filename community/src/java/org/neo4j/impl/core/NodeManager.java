@@ -43,13 +43,15 @@ import org.neo4j.impl.transaction.LockNotFoundException;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.traversal.TraverserFactory;
+import org.neo4j.impl.util.ArrayIntSet;
+import org.neo4j.impl.util.ArrayMap;
 
 public class NodeManager
 {
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
     private int referenceNodeId = 0;
-    private final LruCache<Integer,Node> nodeCache;
-    private final LruCache<Integer,Relationship> relCache;
+    private final LruCache<Integer,NodeImpl> nodeCache;
+    private final LruCache<Integer,RelationshipImpl> relCache;
     private final AdaptiveCacheManager cacheManager;
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
@@ -64,14 +66,15 @@ public class NodeManager
     private final NeoConstraintsListener neoConstraintsListener;
 
     NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager,
-        TransactionManager transactionManager, LockReleaser lockReleaser,
+        TransactionManager transactionManager,
         EventManager eventManager, PersistenceManager persistenceManager,
         IdGenerator idGenerator )
     {
         this.cacheManager = cacheManager;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
-        this.lockReleaser = lockReleaser;
+        this.lockReleaser = new LockReleaser( lockManager, 
+            transactionManager, this );
         this.eventManager = eventManager;
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
@@ -80,9 +83,9 @@ public class NodeManager
         this.traverserFactory = new TraverserFactory();
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator );
-        nodeCache = new LruCache<Integer,Node>( "NodeCache", 1500,
+        nodeCache = new LruCache<Integer,NodeImpl>( "NodeCache", 1500,
             this.cacheManager );
-        relCache = new LruCache<Integer,Relationship>( "RelationshipCache",
+        relCache = new LruCache<Integer,RelationshipImpl>( "RelationshipCache",
             3500, this.cacheManager );
         this.purgeEventListener = new PurgeEventListener();
         this.neoConstraintsListener = new NeoConstraintsListener(
@@ -169,8 +172,8 @@ public class NodeManager
         }
         int startNodeId = (int) startNode.getId();
         NodeImpl firstNode = getLightNode( startNodeId );
-        if ( firstNode == null || 
-            neoConstraintsListener.nodeIsDeleted( startNodeId ) )
+        if ( firstNode == null /*|| 
+            neoConstraintsListener.nodeIsDeleted( startNodeId ) */)
         {
             setRollbackOnly();
             throw new RuntimeException( "First node[" + startNode.getId()
@@ -178,8 +181,8 @@ public class NodeManager
         }
         int endNodeId = (int) endNode.getId();
         NodeImpl secondNode = getLightNode( endNodeId );
-        if ( secondNode == null || 
-            neoConstraintsListener.nodeIsDeleted( endNodeId ) )
+        if ( secondNode == null /*|| 
+            neoConstraintsListener.nodeIsDeleted( endNodeId )*/ )
         {
             setRollbackOnly();
             throw new RuntimeException( "Second node[" + endNode.getId()
@@ -278,7 +281,7 @@ public class NodeManager
         {
             throw new IllegalArgumentException( "Negative node id " + nodeId );
         }
-        Node node = nodeCache.get( nodeId );
+        NodeImpl node = nodeCache.get( nodeId );
         if ( node != null )
         {
             return new NodeProxy( nodeId, this );
@@ -309,10 +312,10 @@ public class NodeManager
 
     NodeImpl getLightNode( int nodeId )
     {
-        Node node = nodeCache.get( nodeId );
+        NodeImpl node = nodeCache.get( nodeId );
         if ( node != null )
         {
-            return (NodeImpl) node;
+            return node;
         }
         node = new NodeImpl( nodeId, this );
         acquireLock( node, LockType.WRITE );
@@ -321,14 +324,14 @@ public class NodeManager
             if ( nodeCache.get( nodeId ) != null )
             {
                 node = nodeCache.get( nodeId );
-                return (NodeImpl) node;
+                return node;
             }
             if ( persistenceManager.loadLightNode( nodeId ) == null )
             {
                 return neoConstraintsListener.getDeletedNode( nodeId );
             }
             nodeCache.add( nodeId, node );
-            return (NodeImpl) node;
+            return node;
         }
         finally
         {
@@ -338,10 +341,10 @@ public class NodeManager
 
     NodeImpl getNodeForProxy( int nodeId )
     {
-        Node node = nodeCache.get( nodeId );
+        NodeImpl node = nodeCache.get( nodeId );
         if ( node != null )
         {
-            return (NodeImpl) node;
+            return node;
         }
         node = new NodeImpl( nodeId, this );
         acquireLock( node, LockType.WRITE );
@@ -350,7 +353,7 @@ public class NodeManager
             if ( nodeCache.get( nodeId ) != null )
             {
                 node = nodeCache.get( nodeId );
-                return (NodeImpl) node;
+                return node;
             }
             if ( persistenceManager.loadLightNode( nodeId ) == null )
             {
@@ -358,7 +361,7 @@ public class NodeManager
                     "] not found." );
             }
             nodeCache.add( nodeId, node );
-            return (NodeImpl) node;
+            return node;
         }
         finally
         {
@@ -404,7 +407,7 @@ public class NodeManager
         {
             throw new IllegalArgumentException( "Negative id " + relId );
         }
-        Relationship relationship = relCache.get( relId );
+        RelationshipImpl relationship = relCache.get( relId );
         if ( relationship != null )
         {
             return new RelationshipProxy( relId, this );
@@ -432,8 +435,10 @@ public class NodeManager
                     + "] exist but relationship type[" + data.getType()
                     + "] not found." );
             }
-            relationship = new RelationshipImpl( relId, data.getFirstNode(),
-                data.getSecondNode(), type, false, this );
+            final int startNodeId = data.getFirstNode();
+            final int endNodeId = data.getSecondNode();
+            relationship = new RelationshipImpl( relId, startNodeId,
+                endNodeId, type, false, this );
             relCache.add( relId, relationship );
             return new RelationshipProxy( relId, this );
         }
@@ -450,7 +455,7 @@ public class NodeManager
 
     Relationship getRelForProxy( int relId )
     {
-        Relationship relationship = relCache.get( relId );
+        RelationshipImpl relationship = relCache.get( relId );
         if ( relationship != null )
         {
             return relationship;
@@ -504,17 +509,17 @@ public class NodeManager
         return persistenceManager.loadPropertyValue( id );
     }
 
-    List<Relationship> loadRelationships( NodeImpl node )
+    List<RelationshipImpl> loadRelationships( NodeImpl node )
     {
         try
         {
             RawRelationshipData rawRels[] = persistenceManager
                 .loadRelationships( (int) node.getId() );
-            List<Relationship> relList = new ArrayList<Relationship>();
+            List<RelationshipImpl> relList = new ArrayList<RelationshipImpl>();
             for ( RawRelationshipData rawRel : rawRels )
             {
                 int relId = rawRel.getId();
-                Relationship rel = relCache.get( relId );
+                RelationshipImpl rel = relCache.get( relId );
                 if ( rel == null )
                 {
                     RelationshipType type = getRelationshipTypeById(
@@ -907,5 +912,84 @@ public class NodeManager
     public void addCowToTxHook( NeoPrimitive primitive )
     {
         lockReleaser.addCowToTransaction( primitive );
+    }
+
+    public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type )
+    {
+        return lockReleaser.getCowRelationshipRemoveMap(node, type );
+    }
+
+    public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type, 
+        boolean create )
+    {
+        return lockReleaser.getCowRelationshipRemoveMap( node, type, 
+            create );
+    }
+    
+    public ArrayMap<String,ArrayIntSet> getCowRelationshipAddMap( 
+        NodeImpl node )
+    {
+        return lockReleaser.getCowRelationshipAddMap( node );
+    }
+
+    public ArrayMap<String,ArrayIntSet> getCowRelationshipRemoveMap( 
+        NodeImpl node )
+    {
+        return lockReleaser.getCowRelationshipRemoveMap( node );
+    }
+    
+    public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String string )
+    {
+        return lockReleaser.getCowRelationshipAddMap( node, string );
+    }
+
+    public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String string, 
+        boolean create )
+    {
+        return lockReleaser.getCowRelationshipAddMap( node, string, create );
+    }
+
+    public NodeImpl getNodeIfCached( int nodeId )
+    {
+        return nodeCache.get( nodeId );
+    }
+
+    public RelationshipImpl getRelIfCached( int nodeId )
+    {
+        return relCache.get( nodeId );
+    }
+
+    public ArrayMap<Integer,Property> getCowPropertyRemoveMap( 
+        NeoPrimitive primitive )
+    {
+        return lockReleaser.getCowPropertyRemoveMap( primitive );
+    }
+
+    public ArrayMap<Integer,Property> getCowPropertyAddMap( 
+        NeoPrimitive primitive )
+    {
+        return lockReleaser.getCowPropertyAddMap( primitive );
+    }
+
+    public ArrayMap<Integer,Property> getCowPropertyAddMap( 
+        NeoPrimitive primitive, boolean create )
+    {
+        return lockReleaser.getCowPropertyAddMap( primitive, create );
+    }
+
+    public ArrayMap<Integer,Property> getCowPropertyRemoveMap( 
+        NeoPrimitive primitive, boolean create )
+    {
+        return lockReleaser.getCowPropertyRemoveMap( primitive, create );
+    }
+
+    LockReleaser getLockReleaser()
+    {
+        return this.lockReleaser;
+    }
+
+    public Object getCow( NeoPrimitive primitive )
+    {
+        return lockReleaser.getCow( primitive );
     }
 }
