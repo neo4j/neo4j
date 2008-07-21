@@ -128,7 +128,7 @@ public class AdaptiveCacheManager
 				try 
 				{
 					adaptCaches();
-					Thread.sleep( 2000 );
+					Thread.sleep( 3000 );
 				} 
 				catch (InterruptedException e) 
 				{ // ok
@@ -186,7 +186,7 @@ public class AdaptiveCacheManager
 			// after decrease we resize again with +1000 to avoid
 			// spam of this method
 			Cache<?,?> cache = element.getCache();
-			int newCacheSize = (int) ( cache.maxSize() / 1.25 / 
+			int newCacheSize = (int) ( cache.maxSize() / 1.15 / 
                 (1 + (ratio - element.getRatio())));
 			int minSize = element.minSize();
 			if ( newCacheSize < minSize )
