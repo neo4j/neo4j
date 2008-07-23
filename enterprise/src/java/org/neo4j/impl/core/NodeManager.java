@@ -18,6 +18,7 @@ package org.neo4j.impl.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
@@ -64,6 +65,13 @@ public class NodeManager
     private final PersistenceManager persistenceManager;
     private final IdGenerator idGenerator;
     private final NeoConstraintsListener neoConstraintsListener;
+    
+    private boolean useAdaptiveCache = true;
+    private float adaptiveCacheHeapRatio = 0.77f;
+    private int minNodeCacheSize = 0;
+    private int minRelCacheSize = 0;
+    private int maxNodeCacheSize = 1500;
+    private int maxRelCacheSize = 3500;
 
     NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager,
         TransactionManager transactionManager,
@@ -83,19 +91,123 @@ public class NodeManager
         this.traverserFactory = new TraverserFactory();
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator );
+        this.purgeEventListener = new PurgeEventListener();
+        this.neoConstraintsListener = new NeoConstraintsListener(
+            transactionManager );
         nodeCache = new LruCache<Integer,NodeImpl>( "NodeCache", 1500,
             this.cacheManager );
         relCache = new LruCache<Integer,RelationshipImpl>( "RelationshipCache",
             3500, this.cacheManager );
-        this.purgeEventListener = new PurgeEventListener();
-        this.neoConstraintsListener = new NeoConstraintsListener(
-            transactionManager );
+    }
+    
+    private void parseParams( Map<Object,Object> params )
+    {
+        if ( params.containsKey( "use_adaptive_cache" ) )
+        {
+            String value = (String) params.get( "use_adaptive_cache" );
+            if ( value.toLowerCase().equals( "yes" ) )
+            {
+                useAdaptiveCache = true;
+            }
+            else if ( value.toLowerCase().equals( "no" ) )
+            {
+                useAdaptiveCache = false;
+            }
+            else
+            {
+                log.warning( 
+                    "Unable to parse use_adaptive_cache=" + 
+                    value );
+            }
+        }
+        if ( params.containsKey( "adaptive_cache_heap_ratio" ) )
+        {
+            Object value = params.get( "adaptive_cache_heap_ratio" ); 
+            try
+            {
+               adaptiveCacheHeapRatio = Float.parseFloat( (String) value );
+            }
+            catch ( NumberFormatException e )
+            {
+                log.warning( "Unable to parse adaptive_cache_heap_ratio " + 
+                    value );
+            }
+            if ( adaptiveCacheHeapRatio < 0.1f )
+            {
+                adaptiveCacheHeapRatio = 0.1f;
+            }
+            if ( adaptiveCacheHeapRatio > 0.95f )
+            {
+                adaptiveCacheHeapRatio = 0.95f;
+            }
+        }
+        if ( params.containsKey( "min_node_cache_size" ) )
+        {
+            Object value = params.get( "min_node_cache_size" ); 
+            try
+            {
+               minNodeCacheSize = Integer.parseInt( (String) value );
+            }
+            catch ( NumberFormatException e )
+            {
+                log.warning( "Unable to parse min_node_cache_size " + 
+                    value );
+            }
+        }
+        if ( params.containsKey( "min_relationship_cache_size" ) )
+        {
+            Object value = params.get( "min_relationship_cache_size" ); 
+            try
+            {
+               minRelCacheSize = Integer.parseInt( (String) value );
+            }
+            catch ( NumberFormatException e )
+            {
+                log.warning( "Unable to parse min_relationship_cache_size " + 
+                    value );
+            }
+        }
+        if ( params.containsKey( "max_node_cache_size" ) )
+        {
+            Object value = params.get( "max_node_cache_size" ); 
+            try
+            {
+               maxNodeCacheSize = Integer.parseInt( (String) value );
+            }
+            catch ( NumberFormatException e )
+            {
+                log.warning( "Unable to parse max_node_cache_size " + 
+                    value );
+            }
+        }
+        if ( params.containsKey( "max_relationship_cache_size" ) )
+        {
+            Object value = params.get( "max_relationship_cache_size" ); 
+            try
+            {
+               maxRelCacheSize = Integer.parseInt( (String) value );
+            }
+            catch ( NumberFormatException e )
+            {
+                log.warning( "Unable to parse max_relationship_cache_size " + 
+                    value );
+            }
+        }
     }
 
-    public void start()
+    public void start( Map<Object,Object> params )
     {
-        cacheManager.registerCache( nodeCache, 0.77f, 0 );
-        cacheManager.registerCache( relCache, 0.77f, 0 );
+        parseParams( params );
+        nodeCache.setMaxSize( maxNodeCacheSize );
+        relCache.setMaxSize( maxRelCacheSize );
+        if ( useAdaptiveCache )
+        {
+            cacheManager.registerCache( nodeCache, adaptiveCacheHeapRatio, 
+                minNodeCacheSize );
+            cacheManager.registerCache( relCache, adaptiveCacheHeapRatio, 
+                minRelCacheSize );
+            cacheManager.start( params );
+        }
         try
         {
             eventManager.registerProActiveEventListener( purgeEventListener,
@@ -115,8 +227,12 @@ public class NodeManager
 
     public void stop()
     {
-        cacheManager.unregisterCache( nodeCache );
-        cacheManager.unregisterCache( relCache );
+        if ( useAdaptiveCache )
+        {
+            cacheManager.stop();
+            cacheManager.unregisterCache( nodeCache );
+            cacheManager.unregisterCache( relCache );
+        }
         relTypeHolder.clear();
         try
         {
