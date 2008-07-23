@@ -18,14 +18,18 @@ package org.neo4j.impl.cache;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 
 public class AdaptiveCacheManager 
 {
-	private static Logger log = 
+	private static final Logger log = 
 		Logger.getLogger( AdaptiveCacheManager.class.getName() );
 
+    private float decreaseRatio = 1.15f;
+    private float increaseRatio = 1.1f;
+    
 //	private static final AdaptiveCacheManager instance = 
 //		new AdaptiveCacheManager();
 //	
@@ -34,11 +38,6 @@ public class AdaptiveCacheManager
 //	{
 //		return instance;
 //	}
-	
-	public AdaptiveCacheManager()
-	{
-		
-	}
 	
 	private final List<AdaptiveCacheElement> caches = 
 		new CopyOnWriteArrayList<AdaptiveCacheElement>();
@@ -95,9 +94,68 @@ public class AdaptiveCacheManager
 		return -1;
 	}
 	
-	public void start()
+    private void parseParams( Map<Object,Object> params )
+    {
+        if ( params.containsKey( "adaptive_cache_worker_sleep_time" ) )
+        {
+            Object value = params.get( "adaptive_cache_worker_sleep_time" ); 
+            int sleepTime = 3000;
+            try
+            {
+               sleepTime = Integer.parseInt( (String) value );
+            }
+            catch ( NumberFormatException e )
+            {
+                log.warning( 
+                    "Unable to parse apdaptive_cache_worker_sleep_time " + 
+                    value );
+            }
+            workerThread.setSleepTime( sleepTime );
+        }
+        if ( params.containsKey( "adaptive_cache_manager_decrease_ratio" ) )
+        {
+            Object value = 
+                params.get( "adaptive_cache_manager_decrease_ratio" ); 
+            try
+            {
+               decreaseRatio = Float.parseFloat( (String) value );
+            }
+            catch ( NumberFormatException e )
+            {
+                log.warning( 
+                    "Unable to parse adaptive_cache_manager_decrease_ratio " + 
+                    value );
+            }
+            if ( decreaseRatio < 1 )
+            {
+                decreaseRatio = 1.0f;
+            }
+        }
+        if ( params.containsKey( "adaptive_cache_manager_increase_ratio" ) )
+        {
+            Object value = 
+                params.get( "adaptive_cache_manager_increase_ratio" ); 
+            try
+            {
+               increaseRatio = Float.parseFloat( (String) value );
+            }
+            catch ( NumberFormatException e )
+            {
+                log.warning( 
+                    "Unable to parse adaptive_cache_manager_increase_ratio " + 
+                    value );
+            }
+            if ( increaseRatio < 1 )
+            {
+                increaseRatio = 1.0f;
+            }
+        }
+    }
+    
+	public void start( Map<Object,Object> params )
 	{
 		workerThread = new AdaptiveCacheWorker();
+        parseParams( params );
 		workerThread.start();
 	}
 	
@@ -115,11 +173,19 @@ public class AdaptiveCacheManager
 	private class AdaptiveCacheWorker extends Thread
 	{
 		private boolean done = false;
-		
+		private int sleepTime = 3000;
+        
+        
 		AdaptiveCacheWorker()
 		{
 			super( "AdaptiveCacheWorker" );
+            
 		}
+        
+        void setSleepTime( int sleepTime )
+        {
+            this.sleepTime = sleepTime;
+        }
 		
 		public void run()
 		{
@@ -128,7 +194,7 @@ public class AdaptiveCacheManager
 				try 
 				{
 					adaptCaches();
-					Thread.sleep( 3000 );
+					Thread.sleep( sleepTime );
 				} 
 				catch (InterruptedException e) 
 				{ // ok
@@ -186,7 +252,7 @@ public class AdaptiveCacheManager
 			// after decrease we resize again with +1000 to avoid
 			// spam of this method
 			Cache<?,?> cache = element.getCache();
-			int newCacheSize = (int) ( cache.maxSize() / 1.15 / 
+			int newCacheSize = (int) ( cache.maxSize() / decreaseRatio / 
                 (1 + (ratio - element.getRatio())));
 			int minSize = element.minSize();
 			if ( newCacheSize < minSize )
@@ -233,7 +299,7 @@ public class AdaptiveCacheManager
 			{
 				return;
 			}
-			int newCacheSize =  (int) (cache.maxSize() * 1.1);
+			int newCacheSize =  (int) (cache.maxSize() * increaseRatio );
 			log.fine( "Cache[" + cache.getName() + "] increasing from " + 
 				cache.size() + " to " + newCacheSize + 
 				" (allocation ratio=" + allocationRatio + 
