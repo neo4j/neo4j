@@ -16,6 +16,7 @@
  */
 package org.neo4j.impl.core;
 
+import java.util.Map;
 import java.util.logging.Logger;
 import javax.transaction.TransactionManager;
 import org.neo4j.api.core.Node;
@@ -49,9 +50,8 @@ public class NeoModule
 	private final PersistenceManager persistenceManager;
 	
 	public NeoModule( AdaptiveCacheManager cacheManager, LockManager lockManager, 
-		TransactionManager transactionManager, LockReleaser lockReleaser, 
-		EventManager eventManager, PersistenceManager persistenceManager, 
-		IdGenerator idGenerator )
+		TransactionManager transactionManager, EventManager eventManager, 
+        PersistenceManager persistenceManager, IdGenerator idGenerator )
 	{
 		this.transactionManager = transactionManager;
 		this.persistenceManager = persistenceManager;
@@ -63,7 +63,7 @@ public class NeoModule
 	{
 	}
 	
-	public void start()
+	public void start( Map<Object,Object> params )
 	{
 		if ( !startIsOk )
 		{
@@ -101,7 +101,7 @@ public class NeoModule
 		{
 			nodeManager.setHasAllpropertyIndexes( true );
 		}
-		nodeManager.start();
+		nodeManager.start( params );
 		startIsOk = false;
 	}
 	
@@ -156,10 +156,10 @@ public class NeoModule
 		}
 	}
 
-	public void reload()
+	public void reload( Map<Object,Object> params )
 	{
 		stop();
-		start();
+		start( params );
 	}
 	
 	public void stop()

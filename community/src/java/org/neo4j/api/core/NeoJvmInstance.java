@@ -100,7 +100,7 @@ class NeoJvmInstance
         {
             params.put( key, stringParams.get( key ) );
         }
-		config = new Config( storeDir );
+		config = new Config( storeDir, params );
 		// create NioNeo DB persistence source
 		storeDir = convertFileSeparators( storeDir );
 		String separator = System.getProperty( "file.separator" );
@@ -148,7 +148,7 @@ class NeoJvmInstance
 		persistenceSource.start( 
 			config.getTxModule().getXaDataSourceManager() );
 		config.getIdGeneratorModule().start();
-		config.getNeoModule().start();
+		config.getNeoModule().start( params );
         if ( lucene != null )
         {
             config.getTxModule().getXaDataSourceManager().
@@ -250,19 +250,22 @@ class NeoJvmInstance
 		private IdGeneratorModule idGeneratorModule;
 		private NeoModule neoModule;
 		private String storeDir;
+        private final Map<Object,Object> params;
         
-		Config( String storeDir )
+		Config( String storeDir, Map<Object,Object> params )
 		{
             this.storeDir = storeDir;
+            this.params = params;
 			eventModule = new EventModule();
 			cacheManager = new AdaptiveCacheManager();
-			txModule = new TxModule( eventModule.getEventManager(), this.storeDir );
+			txModule = new TxModule( eventModule.getEventManager(), 
+                this.storeDir );
 			lockManager = new LockManager( txModule.getTxManager() );
 			persistenceModule = new PersistenceModule( 
                 txModule.getTxManager() );
 			idGeneratorModule = new IdGeneratorModule();
 			neoModule = new NeoModule( cacheManager, lockManager, 
-				txModule.getTxManager(), lockReleaser, 
+				txModule.getTxManager(), 
 				eventModule.getEventManager(), 
 				persistenceModule.getPersistenceManager(),
 				idGeneratorModule.getIdGenerator() );
@@ -325,6 +328,11 @@ class NeoJvmInstance
 		{
 			return lockReleaser;
 		}
+        
+        public Map<Object,Object> getParams()
+        {
+            return this.params;
+        }
 	}
 
 	public RelationshipType getRelationshipTypeByName( String name )

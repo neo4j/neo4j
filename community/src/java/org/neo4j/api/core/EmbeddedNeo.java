@@ -12,10 +12,16 @@
  */
 package org.neo4j.api.core;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 import javax.transaction.TransactionManager;
 import org.neo4j.api.core.NeoJvmInstance.Config;
@@ -67,6 +73,29 @@ public final class EmbeddedNeo implements NeoService
         nodeManager = neoJvmInstance.getConfig().getNeoModule()
             .getNodeManager();
         Transaction.neo = this;
+    }
+    
+    public static Map<String,String> loadConfigurations( String file ) 
+    {
+        Properties props = new Properties();
+        try
+        {
+            props.load( new FileInputStream( new File( file ) ) );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Unable to load properties file[" +
+                file + "]", e );
+        }
+        Set<Entry<Object,Object>> entries = props.entrySet();
+        Map<String,String> stringProps = new HashMap<String,String>();
+        for ( Entry entry : entries )
+        {
+            String key = (String) entry.getKey();
+            String value = (String) entry.getValue();
+            stringProps.put( key, value );
+        }
+        return stringProps;
     }
 
     // private accessor for the remote shell (started with enableRemoteShell())

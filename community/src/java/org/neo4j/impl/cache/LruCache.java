@@ -60,8 +60,13 @@ public class LruCache<K,E> extends Cache<K,E>
 			cacheManager.adaptCache( this );
 		}
 	}
-	
-	/**
+    
+    public void setMaxSize( int maxSize )
+    {
+        this.maxSize = maxSize;
+    }
+
+    /**
 	 * Creates a LRU cache. If <CODE>maxSize < 1</CODE> an 
 	 * IllegalArgumentException is thrown.
 	 *
