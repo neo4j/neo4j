@@ -24,6 +24,7 @@ import org.neo4j.api.core.ReturnableEvaluator;
 import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.TraversalPosition;
 import org.neo4j.api.core.Traverser;
+import org.neo4j.impl.core.NotFoundException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,7 +69,6 @@ abstract class AbstractTraverser implements Traverser,Iterator<Node>
 	private Direction[]			preservingDirs		= null;
 	private StopEvaluator		stopEvaluator		= null;
 	private ReturnableEvaluator	returnableEvaluator	= null;
-//	private RandomEvaluator 	randomEvaluator 	= null;
 	
 	private Set<Node> visitedNodes = new HashSet<Node>();
 	private Node cachedNode	= null;
@@ -110,7 +110,6 @@ abstract class AbstractTraverser implements Traverser,Iterator<Node>
 		this.preservingDirs = preservingDirs;
 		this.stopEvaluator = stopEvaluator;
 		this.returnableEvaluator = returnableEvaluator;
-//		this.randomEvaluator = randomEvaluator;
 		
 		// Initialize the (subclass-specific) traverser list
 		this.initializeList();
@@ -197,26 +196,34 @@ abstract class AbstractTraverser implements Traverser,Iterator<Node>
 				
 				// If we're not stopping, then add related nodes to the list
 				// or current position not valid (last trav rel deleted)
-				if ( // !currentPos.isValid() || 
-					!this.stopEvaluator.isStopNode(currentPos) )
-				{
-					// Add the nodes at the end of all traversable- and
-					// preserving relationships
-					this.addEndNodesToList( currentPos,
-											this.traversableRels,
-											this.traversableDirs );
-					this.addEndNodesToList( currentPos,
-											this.preservingRels,
-											this.preservingDirs );
-				}
-				
-				// Check if we should return currentPos
-				if ( // currentPos.isValid() && 
-					this.returnableEvaluator.isReturnableNode(currentPos) )
-				{
-					this.returnedNodesCount++;
-					nodeToReturn = currentPos.currentNode();
-				}
+                try
+                {
+    				if ( // !currentPos.isValid() || 
+    					!this.stopEvaluator.isStopNode(currentPos) )
+    				{
+    					// Add the nodes at the end of all traversable- and
+    					// preserving relationships
+    					this.addEndNodesToList( currentPos,
+    											this.traversableRels,
+    											this.traversableDirs );
+    					this.addEndNodesToList( currentPos,
+    											this.preservingRels,
+    											this.preservingDirs );
+    				}
+    				
+    				// Check if we should return currentPos
+    				if ( // currentPos.isValid() && 
+    					this.returnableEvaluator.isReturnableNode(currentPos) )
+    				{
+    					this.returnedNodesCount++;
+    					nodeToReturn = currentPos.currentNode();
+    				}
+                }
+                catch ( NotFoundException e )
+                { 
+                    // currentNode deleted in other tx
+                    // try next position from list
+                }
 			}
 		}
 		
@@ -244,24 +251,21 @@ abstract class AbstractTraverser implements Traverser,Iterator<Node>
 		{
 			// ... get all rels of that type and direction from currentNode
 			Iterable<Relationship> rels = null;
-			if ( dirs == null || dirs[i] == Direction.BOTH || dirs[i] == null )
-			{
-				rels = currentNode.getRelationships( relTypes[i] );
-//				if ( randomEvaluator != null && 
-//					randomEvaluator.shouldRandomize( currentPos, relTypes[i] ) )
-//				{
-//					rels = randomizeRelationships( rels );
-//				}
-			}
-			else
-			{
-				rels = currentNode.getRelationships( relTypes[i], dirs[i] );
-//				if ( randomEvaluator != null && 
-//					randomEvaluator.shouldRandomize( currentPos, relTypes[i] ) )
-//				{
-//					rels = randomizeRelationships( rels );
-//				}
-			}
+            try
+            {
+    			if ( dirs == null || dirs[i] == Direction.BOTH || dirs[i] == null )
+    			{
+    				rels = currentNode.getRelationships( relTypes[i] );
+    			}
+    			else
+    			{
+    				rels = currentNode.getRelationships( relTypes[i], dirs[i] );
+    			}
+            }
+            catch ( NotFoundException e )
+            {
+                // node deleted in other tx
+            }
 			
 			// The order we process relationships is really irrelevant, but
 			// as long as we have a non-deterministic ordering in
@@ -269,44 +273,16 @@ abstract class AbstractTraverser implements Traverser,Iterator<Node>
 			// hacks like this to be able to return the branches in the
 			// the order that people generally expect.
 			
-//			if ( this.traverseChildrenInNaturalOrder() )
-//			{
+            if ( rels != null )
+            {
 				for ( Relationship rel : rels )
 				{
 					this.processRel( currentNode, rel, newDepth );
 				}
-//			}
-//			else
-//			{
-//				Relationship relArray[] = getRelationshipArray( rels );
-//				for ( int j = relArray.length; --j >= 0; )
-//				{
-//					this.processRel( currentNode, relArray[j], newDepth );
-//				}
-//			}
+            }
 		}
 	}
 
-//	private Relationship[] getRelationshipArray( 
-//		Iterable<Relationship> relsIterable )
-//	{
-//		ArrayList<Relationship> relList = new ArrayList<Relationship>();
-//		for ( Relationship rel : relsIterable )
-//		{
-//			relList.add( rel );
-//		}
-//		return relList.toArray( new Relationship[ relList.size() ] );
-//	}
-	
-	// TODO, write unit test to verify RandomEvaluator stuff
-//	private Relationship[] randomizeRelationships( Relationship rel[] )
-//	{
-//		java.util.List relsList = java.util.Arrays.asList( rel );
-//		java.util.Collections.shuffle( relsList );
-//		return ( Relationship[] ) relsList.toArray( 
-//			new Relationship[ rel.length ] );
-//	}
-	
 	private void processRel( Node currentNode, Relationship rel, int newDepth )
 	{
 		Node endNode = rel.getOtherNode( currentNode );
