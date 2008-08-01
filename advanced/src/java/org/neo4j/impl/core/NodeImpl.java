@@ -277,7 +277,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 		Relationship rel = rels.next();
 		if ( rels.hasNext() )
 		{
-			throw new NotFoundException( "More then one relationship[" + type 
+			throw new NotFoundException( "More than one relationship[" + type 
 				+ "] found" );
 		}
 		return rel;
