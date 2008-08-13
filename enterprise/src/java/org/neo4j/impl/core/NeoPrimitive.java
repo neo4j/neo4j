@@ -72,7 +72,7 @@ abstract class NeoPrimitive
         ArrayMap<Integer,Property> skipMap = null;
         ArrayMap<Integer,Property> addMap = null;
 
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             skipMap = nodeManager.getCowPropertyRemoveMap( this );
             addMap = nodeManager.getCowPropertyAddMap( this );
@@ -107,7 +107,7 @@ abstract class NeoPrimitive
         ArrayMap<Integer,Property> skipMap = null;
         ArrayMap<Integer,Property> addMap = null;
 
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             skipMap = nodeManager.getCowPropertyRemoveMap( this );
             addMap = nodeManager.getCowPropertyAddMap( this );
@@ -147,7 +147,7 @@ abstract class NeoPrimitive
         ArrayMap<Integer,Property> skipMap = null;
         ArrayMap<Integer,Property> addMap = null;
 
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             skipMap = nodeManager.getCowPropertyRemoveMap( this );
             addMap = nodeManager.getCowPropertyAddMap( this );
@@ -248,7 +248,7 @@ abstract class NeoPrimitive
         ArrayMap<Integer,Property> skipMap = null;
         ArrayMap<Integer,Property> addMap = null;
 
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             skipMap = nodeManager.getCowPropertyRemoveMap( this );
             addMap = nodeManager.getCowPropertyAddMap( this );
@@ -288,7 +288,7 @@ abstract class NeoPrimitive
         ArrayMap<Integer,Property> skipMap = null;
         ArrayMap<Integer,Property> addMap = null;
 
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             skipMap = nodeManager.getCowPropertyRemoveMap( this );
             addMap = nodeManager.getCowPropertyAddMap( this );
