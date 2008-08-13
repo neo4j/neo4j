@@ -81,7 +81,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	public Iterable<Relationship> getRelationships()
 	{
         boolean checkCow = false;
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             checkCow = true;
         }
@@ -132,7 +132,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 			return getRelationships();
 		}
         boolean checkCow = false;
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             checkCow = true;
         }
@@ -178,7 +178,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	public Iterable<Relationship> getRelationships( RelationshipType type )
 	{
         boolean checkCow = false;
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             checkCow = true;
         }
@@ -219,7 +219,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	public Iterable<Relationship> getRelationships( RelationshipType... types )
 	{
         boolean checkCow = false;
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             checkCow = true;
         }
@@ -287,7 +287,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 		Direction dir )
 	{
         boolean checkCow = false;
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             checkCow = true;
         }
@@ -454,7 +454,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 	boolean internalHasRelationships()
 	{
         boolean checkCow = false;
-        if ( cowTxId == nodeManager.getTransaction() )
+        if ( cowTxId != null && cowTxId == nodeManager.getTransaction() )
         {
             checkCow = true;
         }
