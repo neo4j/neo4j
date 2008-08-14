@@ -62,6 +62,7 @@ public final class EmbeddedNeo implements NeoService
         neoJvmInstance.start();
         nodeManager = neoJvmInstance.getConfig().getNeoModule()
             .getNodeManager();
+        // TODO: remove this
         Transaction.neo = this;
     }
 
@@ -72,20 +73,29 @@ public final class EmbeddedNeo implements NeoService
         neoJvmInstance.start( params );
         nodeManager = neoJvmInstance.getConfig().getNeoModule()
             .getNodeManager();
+        // TODO: remove this
         Transaction.neo = this;
     }
-    
-    public static Map<String,String> loadConfigurations( String file ) 
+
+    public static Map<String,String> loadConfigurations( String file )
     {
         Properties props = new Properties();
         try
         {
-            props.load( new FileInputStream( new File( file ) ) );
+            FileInputStream stream = new FileInputStream( new File( file ) );
+            try
+            {
+                props.load( stream );
+            }
+            finally
+            {
+                stream.close();
+            }
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( "Unable to load properties file[" +
-                file + "]", e );
+            throw new RuntimeException( "Unable to load properties file["
+                + file + "]", e );
         }
         Set<Entry<Object,Object>> entries = props.entrySet();
         Map<String,String> stringProps = new HashMap<String,String>();
@@ -121,7 +131,7 @@ public final class EmbeddedNeo implements NeoService
     {
         return nodeManager.getNodeById( (int) id );
     }
-    
+
     /*
      * (non-Javadoc)
      * @see org.neo4j.api.core.NeoService#getRelationshipById(long)
@@ -173,19 +183,21 @@ public final class EmbeddedNeo implements NeoService
      * (non-Javadoc)
      * @see org.neo4j.api.core.NeoService#enableRemoteShell(java.util.Map)
      */
-    public boolean enableRemoteShell( Map<String,Serializable> initialProperties )
+    public boolean enableRemoteShell(
+        final Map<String,Serializable> initialProperties )
     {
+        Map<String,Serializable> properties = initialProperties;
+        if ( properties == null )
+        {
+            properties = Collections.emptyMap();
+        }
         try
         {
-            if ( initialProperties == null )
-            {
-                initialProperties = Collections.emptyMap();
-            }
             if ( shellDependencyAvailable() )
             {
                 this.shellServer = new NeoShellServer( this );
-                Object port = initialProperties.get( "port" );
-                Object name = initialProperties.get( "name" );
+                Object port = properties.get( "port" );
+                Object name = properties.get( "name" );
                 this.shellServer.makeRemotelyAvailable(
                     port != null ? (Integer) port : 1337,
                     name != null ? (String) name : "shell" );

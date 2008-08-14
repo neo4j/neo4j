@@ -28,7 +28,6 @@ public class Main
 		neo = new EmbeddedNeo( "var/neo" );
 	}
 	
-	
 	public static void main( String[] args )
 	{
 		startupNeo();
