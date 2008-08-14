@@ -1,18 +1,18 @@
 /*
  * Copyright 2002-2007 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Affero General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.impl.shell;
 
@@ -35,162 +35,161 @@ import org.neo4j.util.shell.ShellException;
  */
 public abstract class NeoApp extends AbstractApp
 {
-	private static final String NODE_KEY = "CURRENT_NODE";
-	
-	protected static Node getCurrentNode( NeoShellServer server,
-		Session session )
-	{
-		Number id = ( Number ) safeGet( session, NODE_KEY );
-		Node node = null;
-		if ( id == null )
-		{
-			node = server.getNeo().getReferenceNode();
-			setCurrentNode( session, node );
-		}
-		else
-		{
-			node = server.getNeo().getNodeById( id.longValue() );
-		}
-		return node;
-	}
-	
-	protected Node getCurrentNode( Session session )
-	{
-		return getCurrentNode( getNeoServer(), session );
-	}
-	
-	protected static void setCurrentNode( Session session, Node node )
-	{
-		safeSet( session, NODE_KEY, node.getId() );
-	}
-	
-	protected NeoShellServer getNeoServer()
-	{
-		return ( NeoShellServer ) this.getServer();
-	}
-	
-	protected RelationshipType getRelationshipType( String name )
-	{
-		return new NeoAppRelationshipType( name );
-	}
-	
-	protected Direction getDirection( String direction ) throws ShellException
-	{
-		return this.getDirection( direction, Direction.OUTGOING );
-	}
+    private static final String NODE_KEY = "CURRENT_NODE";
 
-	protected Direction getDirection( String direction,
-		Direction defaultDirection ) throws ShellException
-	{
-		if ( direction == null )
-		{
-			return defaultDirection;
-		}
-		
-		Direction result = null;
-		try
-		{
-			result = Direction.valueOf( direction.toUpperCase() );
-		}
-		catch ( Exception e )
-		{
-			if ( direction.equalsIgnoreCase( "o" ) )
-			{
-				result = Direction.OUTGOING;
-			}
-			else if ( direction.equalsIgnoreCase( "i" ) )
-			{
-				result = Direction.INCOMING;
-			}
-		}
-		
-		if ( result == null )
-		{
-			throw new ShellException( "Unknown direction " + direction +
-				" (may be " + directionAlternatives() + ")" );
-		}
-		return result;
-	}
-	
-	protected Node getNodeById( long id ) throws ShellException
-	{
-		return this.getNeoServer().getNeo().getNodeById( id );
-	}
+    protected static Node getCurrentNode( NeoShellServer server, Session session )
+    {
+        Number id = (Number) safeGet( session, NODE_KEY );
+        Node node = null;
+        if ( id == null )
+        {
+            node = server.getNeo().getReferenceNode();
+            setCurrentNode( session, node );
+        }
+        else
+        {
+            node = server.getNeo().getNodeById( id.longValue() );
+        }
+        return node;
+    }
 
-	public final String execute( AppCommandParser parser, Session session,
-		Output out ) throws ShellException
-	{
-		Transaction tx = getNeoServer().getNeo().beginTx();
-		try
-		{
-			String result = this.exec( parser, session, out );
-			tx.success();
-			return result;
-		}
-		catch ( RemoteException e )
-		{
-			throw new ShellException( e );
-		}
-		finally
-		{
-			tx.finish();
-		}
-	}
-	
-	protected String directionAlternatives()
-	{
-		return "OUTGOING, INCOMING, o, i";
-	}
-	
-	protected abstract String exec( AppCommandParser parser, Session session,
-		Output out ) throws ShellException, RemoteException;
-	
-	
-	protected String getDisplayNameForCurrentNode()
-	{
-		return "(me)";
-	}
+    protected Node getCurrentNode( Session session )
+    {
+        return getCurrentNode( getNeoServer(), session );
+    }
 
-	/**
-	 * Returns the display name for a {@link Node}.
-	 * @param node the node to get the name-representation for.
-	 * @return the display name for a {@link Node}.
-	 */
-	public static String getDisplayNameForNode( Node node )
-	{
-		return node != null
-			? getDisplayNameForNode( node.getId() )
-			: getDisplayNameForNode( (Long) null );
-	}
-	
-	/**
-	 * Returns the display name for a {@link Node}.
-	 * @param nodeId the node id to get the name-representation for.
-	 * @return the display name for a {@link Node}.
-	 */
-	public static String getDisplayNameForNode( Long nodeId )
-	{
-		return "(" + nodeId + ")";
-	}
-	
-	private static class NeoAppRelationshipType implements RelationshipType
-	{
-		private String name;
-		
-		private NeoAppRelationshipType( String name )
-		{
-			this.name = name;
-		}
-		
-		public String name()
-		{
-			return this.name;
-		}
-		
-		@Override
-		public String toString()
-		{
-			return name();
-		}
-	}
+    protected static void setCurrentNode( Session session, Node node )
+    {
+        safeSet( session, NODE_KEY, node.getId() );
+    }
+
+    protected NeoShellServer getNeoServer()
+    {
+        return (NeoShellServer) this.getServer();
+    }
+
+    protected RelationshipType getRelationshipType( String name )
+    {
+        return new NeoAppRelationshipType( name );
+    }
+
+    protected Direction getDirection( String direction ) throws ShellException
+    {
+        return this.getDirection( direction, Direction.OUTGOING );
+    }
+
+    protected Direction getDirection( String direction,
+        Direction defaultDirection ) throws ShellException
+    {
+        if ( direction == null )
+        {
+            return defaultDirection;
+        }
+
+        Direction result = null;
+        try
+        {
+            result = Direction.valueOf( direction.toUpperCase() );
+        }
+        catch ( Exception e )
+        {
+            if ( direction.equalsIgnoreCase( "o" ) )
+            {
+                result = Direction.OUTGOING;
+            }
+            else if ( direction.equalsIgnoreCase( "i" ) )
+            {
+                result = Direction.INCOMING;
+            }
+        }
+
+        if ( result == null )
+        {
+            throw new ShellException( "Unknown direction " + direction
+                + " (may be " + directionAlternatives() + ")" );
+        }
+        return result;
+    }
+
+    protected Node getNodeById( long id )
+    {
+        return this.getNeoServer().getNeo().getNodeById( id );
+    }
+
+    public final String execute( AppCommandParser parser, Session session,
+        Output out ) throws ShellException
+    {
+        Transaction tx = getNeoServer().getNeo().beginTx();
+        try
+        {
+            String result = this.exec( parser, session, out );
+            tx.success();
+            return result;
+        }
+        catch ( RemoteException e )
+        {
+            throw new ShellException( e );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    protected String directionAlternatives()
+    {
+        return "OUTGOING, INCOMING, o, i";
+    }
+
+    protected abstract String exec( AppCommandParser parser, Session session,
+        Output out ) throws ShellException, RemoteException;
+
+    protected String getDisplayNameForCurrentNode()
+    {
+        return "(me)";
+    }
+
+    /**
+     * Returns the display name for a {@link Node}.
+     * @param node
+     *            the node to get the name-representation for.
+     * @return the display name for a {@link Node}.
+     */
+    public static String getDisplayNameForNode( Node node )
+    {
+        return node != null ? getDisplayNameForNode( node.getId() )
+            : getDisplayNameForNode( (Long) null );
+    }
+
+    /**
+     * Returns the display name for a {@link Node}.
+     * @param nodeId
+     *            the node id to get the name-representation for.
+     * @return the display name for a {@link Node}.
+     */
+    public static String getDisplayNameForNode( Long nodeId )
+    {
+        return "(" + nodeId + ")";
+    }
+
+    private static class NeoAppRelationshipType implements RelationshipType
+    {
+        private String name;
+
+        private NeoAppRelationshipType( String name )
+        {
+            this.name = name;
+        }
+
+        public String name()
+        {
+            return this.name;
+        }
+
+        @Override
+        public String toString()
+        {
+            return name();
+        }
+    }
 }

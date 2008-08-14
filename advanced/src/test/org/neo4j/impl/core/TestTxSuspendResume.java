@@ -1,18 +1,18 @@
 /*
  * Copyright 2002-2007 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Affero General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.impl.core;
 
@@ -24,17 +24,17 @@ import org.neo4j.impl.AbstractNeoTestCase;
 
 public class TestTxSuspendResume extends AbstractNeoTestCase
 {
-	public TestTxSuspendResume(String testName)
-	{
-		super( testName );
-	}
-	
-	public void testMultipleTxSameThread() throws Exception
-	{
-		EmbeddedNeo neo2 = new EmbeddedNeo( "var/test-neo2" );
-		TransactionManager tm = neo2.getConfig().getTxModule().getTxManager();
+    public TestTxSuspendResume( String testName )
+    {
+        super( testName );
+    }
+
+    public void testMultipleTxSameThread() throws Exception
+    {
+        EmbeddedNeo neo2 = new EmbeddedNeo( "var/test-neo2" );
+        TransactionManager tm = neo2.getConfig().getTxModule().getTxManager();
         tm.begin();
-		Node refNode = neo2.getReferenceNode();
+        Node refNode = neo2.getReferenceNode();
         Transaction tx1 = tm.suspend();
         tm.begin();
         refNode.setProperty( "test2", "test" );
@@ -48,20 +48,20 @@ public class TestTxSuspendResume extends AbstractNeoTestCase
         assertTrue( thread.success() );
         tm.commit();
         neo2.shutdown();
-	}
-    
+    }
+
     private static class CommitThread extends Thread
     {
         private final TransactionManager tm;
-        private final Transaction tx; 
+        private final Transaction tx;
         private boolean success = false;
-        
+
         CommitThread( TransactionManager tm, Transaction tx )
         {
             this.tm = tm;
             this.tx = tx;
         }
-        
+
         @Override
         public synchronized void run()
         {
@@ -77,7 +77,7 @@ public class TestTxSuspendResume extends AbstractNeoTestCase
                 t.printStackTrace();
             }
         }
-        
+
         synchronized boolean success()
         {
             return success;

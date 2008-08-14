@@ -1,18 +1,18 @@
 /*
  * Copyright 2002-2007 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Affero General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.impl.core;
 
@@ -50,7 +50,9 @@ import org.neo4j.impl.util.ArrayMap;
 public class NodeManager
 {
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
+
     private int referenceNodeId = 0;
+    
     private final LruCache<Integer,NodeImpl> nodeCache;
     private final LruCache<Integer,RelationshipImpl> relCache;
     private final AdaptiveCacheManager cacheManager;
@@ -65,7 +67,7 @@ public class NodeManager
     private final PersistenceManager persistenceManager;
     private final IdGenerator idGenerator;
     private final NeoConstraintsListener neoConstraintsListener;
-    
+
     private boolean useAdaptiveCache = true;
     private float adaptiveCacheHeapRatio = 0.77f;
     private int minNodeCacheSize = 0;
@@ -74,15 +76,14 @@ public class NodeManager
     private int maxRelCacheSize = 3500;
 
     NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager,
-        TransactionManager transactionManager,
-        EventManager eventManager, PersistenceManager persistenceManager,
-        IdGenerator idGenerator )
+        TransactionManager transactionManager, EventManager eventManager,
+        PersistenceManager persistenceManager, IdGenerator idGenerator )
     {
         this.cacheManager = cacheManager;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
-        this.lockReleaser = new LockReleaser( lockManager, 
-            transactionManager, this );
+        this.lockReleaser = new LockReleaser( lockManager, transactionManager,
+            this );
         this.eventManager = eventManager;
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
@@ -94,12 +95,13 @@ public class NodeManager
         this.purgeEventListener = new PurgeEventListener();
         this.neoConstraintsListener = new NeoConstraintsListener(
             transactionManager );
+
         nodeCache = new LruCache<Integer,NodeImpl>( "NodeCache", 1500,
             this.cacheManager );
         relCache = new LruCache<Integer,RelationshipImpl>( "RelationshipCache",
             3500, this.cacheManager );
     }
-    
+
     private void parseParams( Map<Object,Object> params )
     {
         if ( params.containsKey( "use_adaptive_cache" ) )
@@ -115,22 +117,20 @@ public class NodeManager
             }
             else
             {
-                log.warning( 
-                    "Unable to parse use_adaptive_cache=" + 
-                    value );
+                log.warning( "Unable to parse use_adaptive_cache=" + value );
             }
         }
         if ( params.containsKey( "adaptive_cache_heap_ratio" ) )
         {
-            Object value = params.get( "adaptive_cache_heap_ratio" ); 
+            Object value = params.get( "adaptive_cache_heap_ratio" );
             try
             {
-               adaptiveCacheHeapRatio = Float.parseFloat( (String) value );
+                adaptiveCacheHeapRatio = Float.parseFloat( (String) value );
             }
             catch ( NumberFormatException e )
             {
-                log.warning( "Unable to parse adaptive_cache_heap_ratio " + 
-                    value );
+                log.warning( "Unable to parse adaptive_cache_heap_ratio "
+                    + value );
             }
             if ( adaptiveCacheHeapRatio < 0.1f )
             {
@@ -143,54 +143,52 @@ public class NodeManager
         }
         if ( params.containsKey( "min_node_cache_size" ) )
         {
-            Object value = params.get( "min_node_cache_size" ); 
+            Object value = params.get( "min_node_cache_size" );
             try
             {
-               minNodeCacheSize = Integer.parseInt( (String) value );
+                minNodeCacheSize = Integer.parseInt( (String) value );
             }
             catch ( NumberFormatException e )
             {
-                log.warning( "Unable to parse min_node_cache_size " + 
-                    value );
+                log.warning( "Unable to parse min_node_cache_size " + value );
             }
         }
         if ( params.containsKey( "min_relationship_cache_size" ) )
         {
-            Object value = params.get( "min_relationship_cache_size" ); 
+            Object value = params.get( "min_relationship_cache_size" );
             try
             {
-               minRelCacheSize = Integer.parseInt( (String) value );
+                minRelCacheSize = Integer.parseInt( (String) value );
             }
             catch ( NumberFormatException e )
             {
-                log.warning( "Unable to parse min_relationship_cache_size " + 
-                    value );
+                log.warning( "Unable to parse min_relationship_cache_size "
+                    + value );
             }
         }
         if ( params.containsKey( "max_node_cache_size" ) )
         {
-            Object value = params.get( "max_node_cache_size" ); 
+            Object value = params.get( "max_node_cache_size" );
             try
             {
-               maxNodeCacheSize = Integer.parseInt( (String) value );
+                maxNodeCacheSize = Integer.parseInt( (String) value );
             }
             catch ( NumberFormatException e )
             {
-                log.warning( "Unable to parse max_node_cache_size " + 
-                    value );
+                log.warning( "Unable to parse max_node_cache_size " + value );
             }
         }
         if ( params.containsKey( "max_relationship_cache_size" ) )
         {
-            Object value = params.get( "max_relationship_cache_size" ); 
+            Object value = params.get( "max_relationship_cache_size" );
             try
             {
-               maxRelCacheSize = Integer.parseInt( (String) value );
+                maxRelCacheSize = Integer.parseInt( (String) value );
             }
             catch ( NumberFormatException e )
             {
-                log.warning( "Unable to parse max_relationship_cache_size " + 
-                    value );
+                log.warning( "Unable to parse max_relationship_cache_size "
+                    + value );
             }
         }
     }
@@ -202,9 +200,9 @@ public class NodeManager
         relCache.setMaxSize( maxRelCacheSize );
         if ( useAdaptiveCache )
         {
-            cacheManager.registerCache( nodeCache, adaptiveCacheHeapRatio, 
+            cacheManager.registerCache( nodeCache, adaptiveCacheHeapRatio,
                 minNodeCacheSize );
-            cacheManager.registerCache( relCache, adaptiveCacheHeapRatio, 
+            cacheManager.registerCache( relCache, adaptiveCacheHeapRatio,
                 minRelCacheSize );
             cacheManager.start( params );
         }
@@ -251,7 +249,7 @@ public class NodeManager
         }
     }
 
-    public Node createNode() // throws CreateException
+    public Node createNode()
     {
         int id = idGenerator.nextId( Node.class );
         NodeImpl node = new NodeImpl( id, true, this );
@@ -282,14 +280,14 @@ public class NodeManager
             throw new IllegalArgumentException( "Null parameter, startNode="
                 + startNode + ", endNode=" + endNode + ", type=" + type );
         }
+        
         if ( !relTypeHolder.isValidRelationshipType( type ) )
         {
             relTypeHolder.addValidRelationshipType( type.name(), true );
         }
         int startNodeId = (int) startNode.getId();
         NodeImpl firstNode = getLightNode( startNodeId );
-        if ( firstNode == null /*|| 
-            neoConstraintsListener.nodeIsDeleted( startNodeId ) */)
+        if ( firstNode == null )
         {
             setRollbackOnly();
             throw new RuntimeException( "First node[" + startNode.getId()
@@ -297,8 +295,7 @@ public class NodeManager
         }
         int endNodeId = (int) endNode.getId();
         NodeImpl secondNode = getLightNode( endNodeId );
-        if ( secondNode == null /*|| 
-            neoConstraintsListener.nodeIsDeleted( endNodeId )*/ )
+        if ( secondNode == null )
         {
             setRollbackOnly();
             throw new RuntimeException( "Second node[" + endNode.getId()
@@ -381,22 +378,13 @@ public class NodeManager
         }
     }
 
-    /**
-     * Gets a node by id.
-     * <p>
-     * First checks the cache, if the node is in cache it is returned. If the
-     * node isn't in cache it is loaded from persistent storage.
-     * @param id
-     *            the node id
-     * @return the node with node id <CODE>id</CODE>
-     * @throws NotFoundException
-     */
     public Node getNodeById( int nodeId ) throws NotFoundException
     {
         if ( nodeId < 0 )
         {
             throw new IllegalArgumentException( "Negative node id " + nodeId );
         }
+        
         NodeImpl node = nodeCache.get( nodeId );
         if ( node != null )
         {
@@ -473,8 +461,7 @@ public class NodeManager
             }
             if ( persistenceManager.loadLightNode( nodeId ) == null )
             {
-                throw new NotFoundException( "Node[" + nodeId + 
-                    "] not found." );
+                throw new NotFoundException( "Node[" + nodeId + "] not found." );
             }
             nodeCache.add( nodeId, node );
             return node;
@@ -485,14 +472,6 @@ public class NodeManager
         }
     }
 
-    /**
-     * Returns the reference node in this node space. If the node isn't found
-     * (reference node hasn't been configured properly) a
-     * {@link NotFoundException} is thrown. See {@link NeoModule} for more
-     * information
-     * @return the reference node
-     * @throws NotFoundException
-     */
     public Node getReferenceNode() throws NotFoundException
     {
         if ( referenceNodeId == -1 )
@@ -507,22 +486,14 @@ public class NodeManager
         this.referenceNodeId = nodeId;
     }
 
-    /**
-     * Gets a relationship by id.
-     * <p>
-     * First checks the cache, if the relationship is in cache it is returned.
-     * If the relationship isn't in cache it is loaded from persistent storage.
-     * 
-     * @param relId the relationship id
-     * @return the relationship with relationship id <CODE>relId</CODE>
-     * @throws NotFoundException
-     */
-    public Relationship getRelationshipById( int relId ) throws NotFoundException
+    public Relationship getRelationshipById( int relId )
+        throws NotFoundException
     {
         if ( relId < 0 )
         {
             throw new IllegalArgumentException( "Negative id " + relId );
         }
+        
         RelationshipImpl relationship = relCache.get( relId );
         if ( relationship != null )
         {
@@ -553,8 +524,8 @@ public class NodeManager
             }
             final int startNodeId = data.getFirstNode();
             final int endNodeId = data.getSecondNode();
-            relationship = new RelationshipImpl( relId, startNodeId,
-                endNodeId, type, false, this );
+            relationship = new RelationshipImpl( relId, startNodeId, endNodeId,
+                type, false, this );
             relCache.add( relId, relationship );
             return new RelationshipProxy( relId, this );
         }
@@ -629,8 +600,8 @@ public class NodeManager
     {
         try
         {
-            RawRelationshipData rawRels[] = persistenceManager
-                .loadRelationships( (int) node.getId() );
+            RawRelationshipData rawRels[] = 
+                persistenceManager.loadRelationships( (int) node.getId() );
             List<RelationshipImpl> relList = new ArrayList<RelationshipImpl>();
             for ( RawRelationshipData rawRel : rawRels )
             {
@@ -638,13 +609,10 @@ public class NodeManager
                 RelationshipImpl rel = relCache.get( relId );
                 if ( rel == null )
                 {
-                    RelationshipType type = getRelationshipTypeById(
+                    RelationshipType type = getRelationshipTypeById( 
                         rawRel.getType() );
-                    if ( type == null )
-                    {
-                        // relationship with type that hasn't been registered
-                        continue;
-                    }
+                    assert type != null;
+                    
                     rel = new RelationshipImpl( relId, rawRel.getFirstNode(),
                         rawRel.getSecondNode(), type, false, this );
                     relCache.add( relId, rel );
@@ -688,8 +656,8 @@ public class NodeManager
         }
         catch ( Exception e )
         {
-            log.severe( "Failed loading properties for relationship[" + 
-                relationship.getId() + "]" );
+            log.severe( "Failed loading properties for relationship["
+                + relationship.getId() + "]" );
             throw new RuntimeException( e );
         }
     }
@@ -800,18 +768,6 @@ public class NodeManager
         return relTypeHolder.isValidRelationshipType( type );
     }
 
-    public void addEnumRelationshipTypes(
-        Class<? extends RelationshipType> relationshipTypes )
-    {
-        relTypeHolder.addValidRelationshipTypes( relationshipTypes );
-    }
-
-    public RelationshipType registerRelationshipType( String name,
-        boolean create )
-    {
-        return relTypeHolder.addValidRelationshipType( name, create );
-    }
-
     public int getHighestPossibleIdInUse( Class<?> clazz )
     {
         return idGenerator.getHighestPossibleIdInUse( clazz );
@@ -895,30 +851,9 @@ public class NodeManager
         relTypeHolder.addRawRelationshipTypes( relTypes );
     }
 
-    void addValidRelationshipTypes(
-        Class<? extends RelationshipType> relTypeClass )
-    {
-        relTypeHolder.addValidRelationshipTypes( relTypeClass );
-    }
-
-    RelationshipType getRelationshipTypeByName( String name )
-    {
-        return relTypeHolder.getRelationshipTypeByName( name );
-    }
-
     Iterable<RelationshipType> getRelationshipTypes()
     {
         return relTypeHolder.getRelationshipTypes();
-    }
-
-    boolean hasRelationshipType( String name )
-    {
-        return relTypeHolder.hasRelationshipType( name );
-    }
-
-    RelationshipType addValidRelationshipType( String name, boolean create )
-    {
-        return relTypeHolder.addValidRelationshipType( name, create );
     }
 
     private class PurgeEventListener implements ProActiveEventListener
@@ -940,7 +875,6 @@ public class NodeManager
                 removeRelationshipTypeFromCache( (Integer) data.getData() );
                 return true;
             }
-            // TODO Auto-generated method stub
             return false;
         }
     }
@@ -987,7 +921,8 @@ public class NodeManager
         // remove in rel cache done via event
     }
 
-    int relAddProperty( RelationshipImpl rel, PropertyIndex index, Object value )
+    int relAddProperty( RelationshipImpl rel, PropertyIndex index, 
+        Object value )
     {
         int relId = (int) rel.getId();
         neoConstraintsListener.relPropertyOperation( relId );
@@ -1032,34 +967,32 @@ public class NodeManager
 
     public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type )
     {
-        return lockReleaser.getCowRelationshipRemoveMap(node, type );
+        return lockReleaser.getCowRelationshipRemoveMap( node, type );
     }
 
-    public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type, 
+    public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type,
         boolean create )
     {
-        return lockReleaser.getCowRelationshipRemoveMap( node, type, 
-            create );
+        return lockReleaser.getCowRelationshipRemoveMap( node, type, create );
     }
-    
-    public ArrayMap<String,ArrayIntSet> getCowRelationshipAddMap( 
-        NodeImpl node )
+
+    public ArrayMap<String,ArrayIntSet> getCowRelationshipAddMap( NodeImpl node )
     {
         return lockReleaser.getCowRelationshipAddMap( node );
     }
 
-    public ArrayMap<String,ArrayIntSet> getCowRelationshipRemoveMap( 
+    public ArrayMap<String,ArrayIntSet> getCowRelationshipRemoveMap(
         NodeImpl node )
     {
         return lockReleaser.getCowRelationshipRemoveMap( node );
     }
-    
+
     public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String string )
     {
         return lockReleaser.getCowRelationshipAddMap( node, string );
     }
 
-    public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String string, 
+    public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String string,
         boolean create )
     {
         return lockReleaser.getCowRelationshipAddMap( node, string, create );
@@ -1075,25 +1008,25 @@ public class NodeManager
         return relCache.get( nodeId );
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyRemoveMap( 
+    public ArrayMap<Integer,Property> getCowPropertyRemoveMap(
         NeoPrimitive primitive )
     {
         return lockReleaser.getCowPropertyRemoveMap( primitive );
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyAddMap( 
+    public ArrayMap<Integer,Property> getCowPropertyAddMap(
         NeoPrimitive primitive )
     {
         return lockReleaser.getCowPropertyAddMap( primitive );
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyAddMap( 
+    public ArrayMap<Integer,Property> getCowPropertyAddMap(
         NeoPrimitive primitive, boolean create )
     {
         return lockReleaser.getCowPropertyAddMap( primitive, create );
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyRemoveMap( 
+    public ArrayMap<Integer,Property> getCowPropertyRemoveMap(
         NeoPrimitive primitive, boolean create )
     {
         return lockReleaser.getCowPropertyRemoveMap( primitive, create );
