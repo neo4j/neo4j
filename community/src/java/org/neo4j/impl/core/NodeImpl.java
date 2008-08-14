@@ -398,10 +398,10 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     // a relationship delete is undone or when the full node is loaded
     void addRelationship( RelationshipType type, int relId )
     {
-        if ( getCowTxId() == null )
-        {
+        // if ( getCowTxId() == null )
+        // {
             setupCowTx();
-        }
+        // }
         ArrayIntSet relationshipSet = nodeManager.getCowRelationshipAddMap(
             this, type.name(), true );
         relationshipSet.add( relId );
@@ -412,10 +412,10 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     // a relationship delete is invoked.
     void removeRelationship( RelationshipType type, int relId )
     {
-        if ( getCowTxId() == null )
-        {
+        // if ( getCowTxId() == null )
+        // {
             setupCowTx();
-        }
+        // }
         ArrayIntSet addedSet = nodeManager.getCowRelationshipAddMap( this, 
             type.name() );
         if ( addedSet != null )

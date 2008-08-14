@@ -345,15 +345,15 @@ abstract class NeoPrimitive
         boolean success = false;
         try
         {
-            if ( cowTxId == null )
-            {
+            // if ( cowTxId == null )
+            // {
                 setupCowTx();
-            }
+            // }
             ensureFullProperties();
-            ArrayMap<Integer,Property> addMap = nodeManager
-                .getCowPropertyAddMap( this, true );
-            ArrayMap<Integer,Property> skipMap = nodeManager
-                .getCowPropertyRemoveMap( this );
+            ArrayMap<Integer,Property> addMap = 
+                nodeManager.getCowPropertyAddMap( this, true );
+            ArrayMap<Integer,Property> skipMap = 
+                nodeManager.getCowPropertyRemoveMap( this );
             PropertyIndex index = null;
             Property property = null;
             for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
@@ -461,16 +461,16 @@ abstract class NeoPrimitive
         boolean success = false;
         try
         {
-            if ( cowTxId == null )
-            {
+            // if ( cowTxId == null )
+            // {
                 setupCowTx();
-            }
+            // }
             ensureFullProperties();
             Property property = null;
-            ArrayMap<Integer,Property> addMap = nodeManager
-                .getCowPropertyAddMap( this );
-            ArrayMap<Integer,Property> removeMap = nodeManager
-                .getCowPropertyRemoveMap( this, true );
+            ArrayMap<Integer,Property> addMap = 
+                nodeManager.getCowPropertyAddMap( this );
+            ArrayMap<Integer,Property> removeMap =
+                nodeManager.getCowPropertyRemoveMap( this, true );
             for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
                 if ( addMap != null )
