@@ -213,8 +213,8 @@ public class LockReleaser
 
     public ArrayMap<String,ArrayIntSet> getCowRelationshipAddMap( NodeImpl node )
     {
-        ArrayMap<Integer,CowNodeElement> cowElements = cowMap
-            .get( node.getCowTxId() ).nodes;
+        ArrayMap<Integer,CowNodeElement> cowElements = cowMap.get( 
+            node.getCowTxId() ).nodes;
         CowNodeElement element = cowElements.get( node.id );
         if ( element != null )
         {
@@ -317,7 +317,7 @@ public class LockReleaser
         {
             NodeImpl node = nodeManager.getNodeIfCached( nodeId );
             // if cowTxId is null it has been thrown out from cache once
-            if ( node != null && node.getCowTxId() != null )
+            if ( node != null ) // && node.getCowTxId() != null )
             {
                 if ( param == Status.STATUS_COMMITTED )
                 {
@@ -338,7 +338,7 @@ public class LockReleaser
         {
             RelationshipImpl rel = nodeManager.getRelIfCached( relId );
             // if cowTxId is null it has been thrown out from cache once
-            if ( rel != null && rel.getCowTxId() != null )
+            if ( rel != null ) // && rel.getCowTxId() != null )
             {
                 if ( param == Status.STATUS_COMMITTED )
                 {
