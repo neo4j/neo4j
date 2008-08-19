@@ -18,10 +18,15 @@ package org.neo4j.impl.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
+
 import javax.transaction.Status;
+import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.NotInTransactionException;
@@ -115,7 +120,7 @@ public class LockReleaser
     {
         try
         {
-            Transaction tx = transactionManager.getTransaction();
+            Transaction tx = getTransaction();
             List<LockElement> lockElements = lockMap.get( tx );
             if ( lockElements != null )
             {
@@ -151,34 +156,31 @@ public class LockReleaser
             throw new NotInTransactionException( e );
         }
     }
-
-    void addCowToTransaction( NeoPrimitive primitive )
+    
+    private Transaction getTransaction()
     {
-        assert primitive.getCowTxId() != null;
-        NeoPrimitiveElement cowElements = cowMap.get( primitive.getCowTxId() );
-        if ( cowElements == null )
+        try
         {
-            cowElements = new NeoPrimitiveElement();
-            cowMap.put( primitive.getCowTxId(), cowElements );
+            return transactionManager.getTransaction();
         }
-    }
-
-    Object getCow( NeoPrimitive primitive )
-    {
-        NeoPrimitiveElement cowElements = cowMap.get( primitive.getCowTxId() );
-        assert cowElements.nodes != null;
-        assert cowElements.relationships != null;
-        return cowElements;
+        catch ( SystemException e )
+        {
+            throw new RuntimeException();
+        }
     }
 
     public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type )
     {
-        ArrayMap<Integer,CowNodeElement> cowElements = 
-            cowMap.get( node.getCowTxId() ).nodes;
-        CowNodeElement element = cowElements.get( node.id );
-        if ( element != null && element.relationshipRemoveMap != null )
+        NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
+        if ( primitiveElement != null )
         {
-            return element.relationshipRemoveMap.get( type );
+            ArrayMap<Integer,CowNodeElement> cowElements = 
+                primitiveElement.nodes;
+            CowNodeElement element = cowElements.get( node.id );
+            if ( element != null && element.relationshipRemoveMap != null )
+            {
+                return element.relationshipRemoveMap.get( type );
+            }
         }
         return null;
     }
@@ -190,8 +192,9 @@ public class LockReleaser
         {
             return getCowRelationshipRemoveMap( node, type );
         }
-        ArrayMap<Integer,CowNodeElement> cowElements = cowMap
-            .get( node.getCowTxId() ).nodes;
+        NeoPrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
+        ArrayMap<Integer,CowNodeElement> cowElements = 
+            primitiveElement.nodes;
         CowNodeElement element = cowElements.get( node.id );
         if ( element == null )
         {
@@ -213,37 +216,32 @@ public class LockReleaser
 
     public ArrayMap<String,ArrayIntSet> getCowRelationshipAddMap( NodeImpl node )
     {
-        ArrayMap<Integer,CowNodeElement> cowElements = cowMap.get( 
-            node.getCowTxId() ).nodes;
-        CowNodeElement element = cowElements.get( node.id );
-        if ( element != null )
+        NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
+        if ( primitiveElement != null )
         {
-            return element.relationshipAddMap;
-        }
-        return null;
-    }
-
-    public ArrayMap<String,ArrayIntSet> getCowRelationshipRemoveMap(
-        NodeImpl node )
-    {
-        ArrayMap<Integer,CowNodeElement> cowElements = cowMap
-            .get( node.getCowTxId() ).nodes;
-        CowNodeElement element = cowElements.get( node.id );
-        if ( element != null )
-        {
-            return element.relationshipRemoveMap;
+            ArrayMap<Integer,CowNodeElement> cowElements = 
+                primitiveElement.nodes;
+            CowNodeElement element = cowElements.get( node.id );
+            if ( element != null )
+            {
+                return element.relationshipAddMap;
+            }
         }
         return null;
     }
 
     public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String type )
     {
-        ArrayMap<Integer,CowNodeElement> cowElements = cowMap
-            .get( node.getCowTxId() ).nodes;
-        CowNodeElement element = cowElements.get( node.id );
-        if ( element != null && element.relationshipAddMap != null )
+        NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
+        if ( primitiveElement != null )
         {
-            return element.relationshipAddMap.get( type );
+            ArrayMap<Integer,CowNodeElement> cowElements = 
+                primitiveElement.nodes;
+            CowNodeElement element = cowElements.get( node.id );
+            if ( element != null && element.relationshipAddMap != null )
+            {
+                return element.relationshipAddMap.get( type );
+            }
         }
         return null;
     }
@@ -255,8 +253,9 @@ public class LockReleaser
         {
             return getCowRelationshipRemoveMap( node, type );
         }
-        ArrayMap<Integer,CowNodeElement> cowElements = cowMap
-            .get( node.getCowTxId() ).nodes;
+        NeoPrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
+        ArrayMap<Integer,CowNodeElement> cowElements = 
+            primitiveElement.nodes;
         CowNodeElement element = cowElements.get( node.id );
         if ( element == null )
         {
@@ -307,48 +306,48 @@ public class LockReleaser
 
     public void releaseCows( Transaction cowTxId, int param )
     {
-        NeoPrimitiveElement element = cowMap.get( cowTxId );
+        NeoPrimitiveElement element = cowMap.remove( cowTxId );
         if ( element == null )
         {
             return;
         }
         ArrayMap<Integer,CowNodeElement> cowNodeElements = element.nodes;
-        for ( int nodeId : cowNodeElements.keySet() )
+        Set<Entry<Integer,CowNodeElement>> nodeEntrySet = 
+            cowNodeElements.entrySet();
+        for ( Entry<Integer,CowNodeElement> entry : nodeEntrySet )
         {
-            NodeImpl node = nodeManager.getNodeIfCached( nodeId );
-            // if cowTxId is null it has been thrown out from cache once
-            if ( node != null ) // && node.getCowTxId() != null )
+            NodeImpl node = nodeManager.getNodeIfCached( entry.getKey() );
+            if ( node != null )
             {
+                CowNodeElement nodeElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
-                    node.commitCowMaps();
+                    node.commitRelationshipMaps( nodeElement.relationshipAddMap,
+                        nodeElement.relationshipRemoveMap );
+                    node.commitPropertyMaps( nodeElement.propertyAddMap, 
+                        nodeElement.propertyRemoveMap );
                 }
-                else if ( param == Status.STATUS_ROLLEDBACK )
-                {
-                    node.rollbackCowMaps();
-                }
-                else
+                else if ( param != Status.STATUS_ROLLEDBACK )
                 {
                     throw new RuntimeException( "Unkown status: " + param );
                 }
             }
         }
         ArrayMap<Integer,CowRelElement> cowRelElements = element.relationships;
-        for ( int relId : cowRelElements.keySet() )
+        Set<Entry<Integer,CowRelElement>> relEntrySet = 
+            cowRelElements.entrySet();
+        for ( Entry<Integer,CowRelElement> entry : relEntrySet )
         {
-            RelationshipImpl rel = nodeManager.getRelIfCached( relId );
-            // if cowTxId is null it has been thrown out from cache once
-            if ( rel != null ) // && rel.getCowTxId() != null )
+            RelationshipImpl rel = nodeManager.getRelIfCached( entry.getKey() );
+            if ( rel != null )
             {
+                CowRelElement relElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
-                    rel.commitCowMaps();
+                    rel.commitPropertyMaps( relElement.propertyAddMap, 
+                        relElement.propertyRemoveMap );
                 }
-                else if ( param == Status.STATUS_ROLLEDBACK )
-                {
-                    rel.rollbackCowMaps();
-                }
-                else
+                else if ( param != Status.STATUS_ROLLEDBACK )
                 {
                     throw new RuntimeException( "Unkown status: " + param );
                 }
@@ -380,20 +379,22 @@ public class LockReleaser
     public ArrayMap<Integer,Property> getCowPropertyRemoveMap(
         NeoPrimitive primitive )
     {
-        if ( primitive instanceof NodeImpl )
+        NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
+        if ( primitiveElement != null && primitive instanceof NodeImpl )
         {
-            ArrayMap<Integer,CowNodeElement> cowElements = cowMap
-                .get( primitive.getCowTxId() ).nodes;
+            ArrayMap<Integer,CowNodeElement> cowElements = 
+                primitiveElement.nodes;
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null )
             {
                 return element.propertyRemoveMap;
             }
         }
-        else if ( primitive instanceof RelationshipImpl )
+        else if ( primitiveElement != null && 
+            primitive instanceof RelationshipImpl )
         {
             ArrayMap<Integer,CowRelElement> cowElements = 
-                cowMap.get( primitive.getCowTxId() ).relationships;
+                primitiveElement.relationships;
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null )
             {
@@ -406,20 +407,22 @@ public class LockReleaser
     public ArrayMap<Integer,Property> getCowPropertyAddMap(
         NeoPrimitive primitive )
     {
-        if ( primitive instanceof NodeImpl )
+        NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
+        if ( primitiveElement != null && primitive instanceof NodeImpl )
         {
             ArrayMap<Integer,CowNodeElement> cowElements = 
-                cowMap.get( primitive.getCowTxId() ).nodes;
+                primitiveElement.nodes; 
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null )
             {
                 return element.propertyAddMap;
             }
         }
-        else if ( primitive instanceof RelationshipImpl )
+        else if ( primitiveElement != null && 
+            primitive instanceof RelationshipImpl )
         {
             ArrayMap<Integer,CowRelElement> cowElements = 
-                cowMap.get( primitive.getCowTxId() ).relationships;
+                primitiveElement.relationships; 
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null )
             {
@@ -429,6 +432,22 @@ public class LockReleaser
         return null;
     }
 
+    private NeoPrimitiveElement getAndSetupPrimitiveElement()
+    {
+        Transaction tx = getTransaction();
+        if ( tx == null )
+        {
+            throw new NotInTransactionException();
+        }
+        NeoPrimitiveElement primitiveElement = cowMap.get( tx );
+        if ( primitiveElement == null )
+        {
+            primitiveElement = new NeoPrimitiveElement();
+            cowMap.put( tx, primitiveElement );
+        }
+        return primitiveElement;
+    }
+    
     public ArrayMap<Integer,Property> getCowPropertyAddMap(
         NeoPrimitive primitive, boolean create )
     {
@@ -436,10 +455,11 @@ public class LockReleaser
         {
             return getCowPropertyAddMap( primitive );
         }
+        NeoPrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         if ( primitive instanceof NodeImpl )
         {
             ArrayMap<Integer,CowNodeElement> cowElements = 
-                cowMap.get( primitive.getCowTxId() ).nodes;
+                primitiveElement.nodes;
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element == null )
             {
@@ -455,7 +475,7 @@ public class LockReleaser
         else if ( primitive instanceof RelationshipImpl )
         {
             ArrayMap<Integer,CowRelElement> cowElements = 
-                cowMap.get( primitive.getCowTxId() ).relationships;
+                primitiveElement.relationships;
             CowRelElement element = cowElements.get( primitive.id );
             if ( element == null )
             {
@@ -478,10 +498,11 @@ public class LockReleaser
         {
             return getCowPropertyRemoveMap( primitive );
         }
+        NeoPrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         if ( primitive instanceof NodeImpl )
         {
             ArrayMap<Integer,CowNodeElement> cowElements = 
-                cowMap.get( primitive.getCowTxId() ).nodes;
+                primitiveElement.nodes;
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element == null )
             {
@@ -497,7 +518,7 @@ public class LockReleaser
         else if ( primitive instanceof RelationshipImpl )
         {
             ArrayMap<Integer,CowRelElement> cowElements = 
-                cowMap.get( primitive.getCowTxId() ).relationships;
+                primitiveElement.relationships;
             CowRelElement element = cowElements.get( primitive.id );
             if ( element == null )
             {

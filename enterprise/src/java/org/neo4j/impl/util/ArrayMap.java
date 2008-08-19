@@ -17,9 +17,11 @@
 package org.neo4j.impl.util;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -230,7 +232,7 @@ public class ArrayMap<K,V>
         return null;
     }
 
-    static class ArrayEntry<K,V>
+    static class ArrayEntry<K,V> implements Entry<K,V>
     {
         private K key;
         private V value;
@@ -241,12 +243,12 @@ public class ArrayMap<K,V>
             this.value = value;
         }
 
-        K getKey()
+        public K getKey()
         {
             return key;
         }
 
-        V getValue()
+        public V getValue()
         {
             return value;
         }
@@ -254,6 +256,13 @@ public class ArrayMap<K,V>
         void setNewValue( V value )
         {
             this.value = value;
+        }
+
+        public V setValue( V value )
+        {
+            V oldValue = value;
+            this.value = value;
+            return oldValue;
         }
     }
 
@@ -283,6 +292,20 @@ public class ArrayMap<K,V>
             values.add( arrayEntries[i].getValue() );
         }
         return values;
+    }
+    
+    public Set<Entry<K,V>> entrySet()
+    {
+        if ( arrayCount == -1 )
+        {
+            return propertyMap.entrySet();
+        }
+        Set<Entry<K,V>> entries = new HashSet<Entry<K,V>>();
+        for ( int i = 0; i < arrayCount; i++ )
+        {
+            entries.add( arrayEntries[i] );
+        }
+        return entries;
     }
 
     public int size()

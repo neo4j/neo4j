@@ -18,7 +18,7 @@ package org.neo4j.impl.core;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.transaction.Transaction;
+
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
@@ -36,8 +36,6 @@ abstract class NeoPrimitive
     private PropertyPhase propPhase;
     private ArrayMap<Integer,Property> propertyMap = null;
     
-    private volatile Transaction cowTxId = null;
-
     protected abstract void changeProperty( int propertyId, Object value );
 
     protected abstract int addProperty( PropertyIndex index, Object value );
@@ -62,7 +60,7 @@ abstract class NeoPrimitive
             this.propPhase = PropertyPhase.FULL_PROPERTY;
         }
     }
-
+    
     public long getId()
     {
         return this.id;
@@ -70,14 +68,11 @@ abstract class NeoPrimitive
 
     public Iterable<Object> getPropertyValues()
     {
-        ArrayMap<Integer,Property> skipMap = null;
-        ArrayMap<Integer,Property> addMap = null;
+        ArrayMap<Integer,Property> skipMap = 
+            nodeManager.getCowPropertyRemoveMap( this );
+        ArrayMap<Integer,Property> addMap = 
+            nodeManager.getCowPropertyAddMap( this );
 
-        if ( isCowTx() )
-        {
-            skipMap = nodeManager.getCowPropertyRemoveMap( this );
-            addMap = nodeManager.getCowPropertyAddMap( this );
-        }
         ensureFullProperties();
         List<Object> values = new ArrayList<Object>();
 
@@ -103,26 +98,13 @@ abstract class NeoPrimitive
         return values;
     }
 
-    protected boolean isCowTx()
-    {
-        return cowTxId != null && cowTxId == nodeManager.getTransaction();
-    }
-    
-    protected Transaction getCowTxId()
-    {
-        return cowTxId;
-    }
-
     public Iterable<String> getPropertyKeys()
     {
-        ArrayMap<Integer,Property> skipMap = null;
-        ArrayMap<Integer,Property> addMap = null;
+        ArrayMap<Integer,Property> skipMap = 
+            nodeManager.getCowPropertyRemoveMap( this );
+        ArrayMap<Integer,Property> addMap = 
+            nodeManager.getCowPropertyAddMap( this );
 
-        if ( isCowTx() )
-        {
-            skipMap = nodeManager.getCowPropertyRemoveMap( this );
-            addMap = nodeManager.getCowPropertyAddMap( this );
-        }
         ensureFullProperties();
         List<String> keys = new ArrayList<String>();
 
@@ -154,14 +136,11 @@ abstract class NeoPrimitive
         {
             throw new IllegalArgumentException( "null key" );
         }
-        ArrayMap<Integer,Property> skipMap = null;
-        ArrayMap<Integer,Property> addMap = null;
+        ArrayMap<Integer,Property> skipMap = 
+            nodeManager.getCowPropertyRemoveMap( this );
+        ArrayMap<Integer,Property> addMap = 
+            nodeManager.getCowPropertyAddMap( this );
 
-        if ( isCowTx() )
-        {
-            skipMap = nodeManager.getCowPropertyRemoveMap( this );
-            addMap = nodeManager.getCowPropertyAddMap( this );
-        }
         ensureFullProperties();
         for ( PropertyIndex index : nodeManager.index( key ) )
         {
@@ -253,14 +232,11 @@ abstract class NeoPrimitive
         {
             throw new IllegalArgumentException( "null key" );
         }
-        ArrayMap<Integer,Property> skipMap = null;
-        ArrayMap<Integer,Property> addMap = null;
+        ArrayMap<Integer,Property> skipMap = 
+            nodeManager.getCowPropertyRemoveMap( this );
+        ArrayMap<Integer,Property> addMap = 
+            nodeManager.getCowPropertyAddMap( this );
 
-        if ( isCowTx() )
-        {
-            skipMap = nodeManager.getCowPropertyRemoveMap( this );
-            addMap = nodeManager.getCowPropertyAddMap( this );
-        }
         ensureFullProperties();
         for ( PropertyIndex index : nodeManager.index( key ) )
         {
@@ -297,14 +273,11 @@ abstract class NeoPrimitive
             return false;
         }
         
-        ArrayMap<Integer,Property> skipMap = null;
-        ArrayMap<Integer,Property> addMap = null;
+        ArrayMap<Integer,Property> skipMap = 
+            nodeManager.getCowPropertyRemoveMap( this );
+        ArrayMap<Integer,Property> addMap = 
+            nodeManager.getCowPropertyAddMap( this );
 
-        if ( isCowTx() )
-        {
-            skipMap = nodeManager.getCowPropertyRemoveMap( this );
-            addMap = nodeManager.getCowPropertyAddMap( this );
-        }
         ensureFullProperties();
         for ( PropertyIndex index : nodeManager.index( key ) )
         {
@@ -345,10 +318,6 @@ abstract class NeoPrimitive
         boolean success = false;
         try
         {
-            // if ( cowTxId == null )
-            // {
-                setupCowTx();
-            // }
             ensureFullProperties();
             ArrayMap<Integer,Property> addMap = 
                 nodeManager.getCowPropertyAddMap( this, true );
@@ -461,10 +430,6 @@ abstract class NeoPrimitive
         boolean success = false;
         try
         {
-            // if ( cowTxId == null )
-            // {
-                setupCowTx();
-            // }
             ensureFullProperties();
             Property property = null;
             ArrayMap<Integer,Property> addMap = 
@@ -566,18 +531,10 @@ abstract class NeoPrimitive
         return value;
     }
 
-    // must be called after write lock aqcuire
-    protected void setupCowTx()
+    protected void commitPropertyMaps( 
+        ArrayMap<Integer,Property> cowPropertyAddMap, 
+        ArrayMap<Integer,Property> cowPropertyRemoveMap )
     {
-        cowTxId = nodeManager.getTransaction();
-        nodeManager.addCowToTxHook( this );
-    }
-
-    // must be called before write lock release, piggy backing
-    protected void commitCowMaps()
-    {
-        ArrayMap<Integer,Property> cowPropertyAddMap = 
-            nodeManager.getCowPropertyAddMap( this );
         if ( cowPropertyAddMap != null )
         {
             if ( propertyMap == null )
@@ -589,8 +546,6 @@ abstract class NeoPrimitive
                 propertyMap.put( index, cowPropertyAddMap.get( index ) );
             }
         }
-        ArrayMap<Integer,Property> cowPropertyRemoveMap = 
-            nodeManager.getCowPropertyRemoveMap( this );
         if ( cowPropertyRemoveMap != null && propertyMap != null )
         {
             for ( Integer index : cowPropertyRemoveMap.keySet() )
@@ -598,15 +553,8 @@ abstract class NeoPrimitive
                 propertyMap.remove( index );
             }
         }
-        cowTxId = null;
     }
-
-    // must be called before write lock release, piggy backing
-    protected void rollbackCowMaps()
-    {
-        cowTxId = null;
-    }
-
+    
     private boolean ensureFullProperties()
     {
         if ( propPhase != PropertyPhase.FULL_PROPERTY )
