@@ -43,6 +43,7 @@ class TxCommitHook implements Synchronization
         catch ( Throwable t )
         {
             t.printStackTrace();
+            throw new RuntimeException( t );
         }
     }
 

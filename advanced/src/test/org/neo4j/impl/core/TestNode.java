@@ -310,4 +310,19 @@ public class TestNode extends AbstractNeoTestCase
         tx.finish();
         setTransaction( getNeo().beginTx() );
     }
+    
+    public void testChangeProperty()
+    {
+        Node node = getNeo().createNode();
+        node.setProperty( "test", "test1" );
+        newTransaction();
+        node.setProperty( "test", "test2" );
+        node.removeProperty( "test" );
+        node.setProperty( "test", "test3" );
+        assertEquals( "test3", node.getProperty( "test" ) );
+        node.removeProperty( "test" );
+        node.setProperty( "test", "test4" );
+        newTransaction();
+        assertEquals( "test4", node.getProperty( "test" ) );
+    }
 }

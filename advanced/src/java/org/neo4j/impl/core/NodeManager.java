@@ -20,8 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import javax.transaction.Transaction;
+
 import javax.transaction.TransactionManager;
+
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
@@ -403,8 +404,6 @@ public class NodeManager
             {
                 throw new NotFoundException( "Node[" + nodeId + "]" );
             }
-            // If we get here, loadLightNode didn't throw exception and
-            // a node with the given id does exist... good.
             nodeCache.add( nodeId, node );
             return new NodeProxy( nodeId, this );
         }
@@ -763,11 +762,6 @@ public class NodeManager
         }
     }
 
-    public boolean isValidRelationshipType( RelationshipType type )
-    {
-        return relTypeHolder.isValidRelationshipType( type );
-    }
-
     public int getHighestPossibleIdInUse( Class<?> clazz )
     {
         return idGenerator.getHighestPossibleIdInUse( clazz );
@@ -884,7 +878,7 @@ public class NodeManager
         neoConstraintsListener.deleteNode( node );
         int nodeId = (int) node.getId();
         persistenceManager.nodeDelete( nodeId );
-        // remove in node cache done via event
+        // remove from node cache done via event
     }
 
     int nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
@@ -948,23 +942,6 @@ public class NodeManager
         persistenceManager.relRemoveProperty( relId, propertyId );
     }
 
-    public Transaction getTransaction()
-    {
-        try
-        {
-            return transactionManager.getTransaction();
-        }
-        catch ( Throwable t )
-        {
-            throw new RuntimeException( t );
-        }
-    }
-
-    public void addCowToTxHook( NeoPrimitive primitive )
-    {
-        lockReleaser.addCowToTransaction( primitive );
-    }
-
     public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type )
     {
         return lockReleaser.getCowRelationshipRemoveMap( node, type );
@@ -979,12 +956,6 @@ public class NodeManager
     public ArrayMap<String,ArrayIntSet> getCowRelationshipAddMap( NodeImpl node )
     {
         return lockReleaser.getCowRelationshipAddMap( node );
-    }
-
-    public ArrayMap<String,ArrayIntSet> getCowRelationshipRemoveMap(
-        NodeImpl node )
-    {
-        return lockReleaser.getCowRelationshipRemoveMap( node );
     }
 
     public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String string )
@@ -1035,10 +1006,5 @@ public class NodeManager
     LockReleaser getLockReleaser()
     {
         return this.lockReleaser;
-    }
-
-    public Object getCow( NeoPrimitive primitive )
-    {
-        return lockReleaser.getCow( primitive );
     }
 }
