@@ -1,3 +1,13 @@
+1.0-b7 (2008-08-2x)
+------------------
+
+o Core: Removed singletons and made everything IoC
+o Core: Lots of minor optimization and improvments above native (nioneo)
+  store layer
+o Core: Cleanup of code (removed non used) and improved exception handling
+o Core: Greatly improved read performance removing all sychronization during 
+  read operations (MVCC)
+
 1.0-b6 (2007-11-19)
 -------------------
 
@@ -28,5 +38,3 @@ o Core: The internal version of the datastores have been changed. This release
   read the store files.
 o Core: Testing and robustification on Windows.
 o Core: Now fully supports array properties for all primitives and Strings.
-
-
