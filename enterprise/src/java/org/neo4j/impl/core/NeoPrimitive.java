@@ -325,11 +325,15 @@ abstract class NeoPrimitive
                 nodeManager.getCowPropertyRemoveMap( this );
             PropertyIndex index = null;
             Property property = null;
+            boolean foundInSkipMap = false;
             for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
                 if ( skipMap != null )
                 {
-                    skipMap.remove( cachedIndex.getKeyId() );
+                    if ( skipMap.remove( cachedIndex.getKeyId() ) != null )
+                    {
+                        foundInSkipMap = true;
+                    }
                 }
                 index = cachedIndex;
                 property = addMap.get( cachedIndex.getKeyId() );
@@ -396,7 +400,7 @@ abstract class NeoPrimitive
             {
                 index = nodeManager.createPropertyIndex( key );
             }
-            if ( property != null )
+            if ( property != null && !foundInSkipMap )
             {
                 int propertyId = property.getId();
                 changeProperty( propertyId, value );
