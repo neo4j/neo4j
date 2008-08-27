@@ -473,4 +473,39 @@ public class TestRelationship extends AbstractNeoTestCase
         node1.delete();
         node2.delete();
     }
+
+    public void testChangeProperty()
+    {
+        Node node1 = getNeo().createNode();
+        Node node2 = getNeo().createNode();
+        Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+        rel.setProperty( "test", "test1" );
+        newTransaction();
+        rel.setProperty( "test", "test2" );
+        rel.removeProperty( "test" );
+        rel.setProperty( "test", "test3" );
+        assertEquals( "test3", rel.getProperty( "test" ) );
+        rel.removeProperty( "test" );
+        rel.setProperty( "test", "test4" );
+        newTransaction();
+        assertEquals( "test4", rel.getProperty( "test" ) );
+    }
+    
+    public void testChangeProperty2()
+    {
+        Node node1 = getNeo().createNode();
+        Node node2 = getNeo().createNode();
+        Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+        rel.setProperty( "test", "test1" );
+        newTransaction();
+        rel.removeProperty( "test" );
+        rel.setProperty( "test", "test3" );
+        assertEquals( "test3", rel.getProperty( "test" ) );
+        newTransaction();
+        assertEquals( "test3", rel.getProperty( "test" ) );
+        rel.removeProperty( "test" );
+        rel.setProperty( "test", "test4" );
+        newTransaction();
+        assertEquals( "test4", rel.getProperty( "test" ) );
+    }
 }
