@@ -17,9 +17,10 @@
 package org.neo4j.impl.cache;
 
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 
 public class AdaptiveCacheManager
@@ -31,7 +32,7 @@ public class AdaptiveCacheManager
     private float increaseRatio = 1.1f;
 
     private final List<AdaptiveCacheElement> caches = 
-        new CopyOnWriteArrayList<AdaptiveCacheElement>();
+        new LinkedList<AdaptiveCacheElement>();
 
     private AdaptiveCacheWorker workerThread;
 
@@ -44,13 +45,19 @@ public class AdaptiveCacheManager
                 + ratio + " minSize=" + minSize );
         }
         
+        for ( AdaptiveCacheElement element : caches )
+        {
+            if ( element.getCache() == cache )
+            {
+                log.fine( "Cache[" + cache.getName() + 
+                    "] already registered." );
+                return;
+            }
+            
+        }
         AdaptiveCacheElement element = new AdaptiveCacheElement( cache, ratio,
             minSize );
-        int elementIndex = getAdaptiveCacheElementIndex( cache );
-        if ( elementIndex == -1 )
-        {
-            caches.add( element );
-        }
+        caches.add( element );
         cache.setAdaptiveStatus( true );
         log.fine( "Cache[" + cache.getName() + "] threshold=" + ratio
             + "minSize=" + minSize + " registered." );
@@ -62,28 +69,30 @@ public class AdaptiveCacheManager
         {
             throw new IllegalArgumentException( "Null cache" );
         }
-        
-        int elementIndex = getAdaptiveCacheElementIndex( cache );
-        if ( elementIndex != -1 )
+        Iterator<AdaptiveCacheElement> itr = caches.iterator();
+        while ( itr.hasNext() )
         {
-            caches.remove( elementIndex );
+            AdaptiveCacheElement element = itr.next();
+            if ( element.getCache() == cache )
+            {
+                itr.remove();
+                break;
+            }
         }
-        cache.setAdaptiveStatus( false );
         log.fine( "Cache[" + cache.getName() + "] removed." );
     }
 
-    int getAdaptiveCacheElementIndex( Cache<?,?> cache )
+    synchronized AdaptiveCacheElement getAdaptiveCacheElementIndex( 
+        Cache<?,?> cache )
     {
-        int i = 0;
         for ( AdaptiveCacheElement element : caches )
         {
             if ( element.getCache() == cache )
             {
-                return i;
+                return element;
             }
-            i++;
         }
-        return -1;
+        return null;
     }
 
     private void parseParams( Map<Object,Object> params )
@@ -193,31 +202,37 @@ public class AdaptiveCacheManager
             }
         }
 
-        private void adaptCaches()
-        {
-            for ( AdaptiveCacheElement element : getCaches() )
-            {
-                adaptCache( element.getCache() );
-            }
-        }
-
         void markDone()
         {
             done = true;
         }
     }
+    
+    public void adaptCaches()
+    {
+        List<AdaptiveCacheElement> copy = 
+            new LinkedList<AdaptiveCacheElement>();
+        synchronized ( this )
+        {
+            copy.addAll( caches );
+        }
+        for ( AdaptiveCacheElement element : copy )
+        {
+            adaptCache( element );
+        }
+    }
 
-    public synchronized void adaptCache( Cache<?,?> cache )
+    public void adaptCache( Cache<?,?> cache )
     {
         if ( cache == null )
         {
             throw new IllegalArgumentException( "Null cache" );
         }
         
-        int elementIndex = getAdaptiveCacheElementIndex( cache );
-        if ( elementIndex != -1 )
+        AdaptiveCacheElement element = getAdaptiveCacheElementIndex( cache );
+        if ( element != null )
         {
-            adaptCache( caches.get( elementIndex ) );
+            adaptCache( element );
         }
     }
 
