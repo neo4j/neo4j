@@ -27,6 +27,7 @@ import javax.transaction.TransactionManager;
 import org.neo4j.api.core.NeoJvmInstance.Config;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoShellServer;
+import org.neo4j.util.shell.AbstractServer;
 
 /**
  * An implementation of {@link NeoService} that is used to embed Neo in an
@@ -42,6 +43,9 @@ import org.neo4j.impl.shell.NeoShellServer;
  */
 public final class EmbeddedNeo implements NeoService
 {
+	public static final int DEFAULT_SHELL_PORT = AbstractServer.DEFAULT_PORT;
+	public static final String DEFAULT_SHELL_NAME = AbstractServer.DEFAULT_NAME;
+	
     private static Logger log = Logger.getLogger( EmbeddedNeo.class.getName() );
     private NeoShellServer shellServer;
     private Transaction placeboTransaction = null;
@@ -199,8 +203,8 @@ public final class EmbeddedNeo implements NeoService
                 Object port = properties.get( "port" );
                 Object name = properties.get( "name" );
                 this.shellServer.makeRemotelyAvailable(
-                    port != null ? (Integer) port : 1337,
-                    name != null ? (String) name : "shell" );
+                    port != null ? (Integer) port : DEFAULT_SHELL_PORT,
+                    name != null ? (String) name : DEFAULT_SHELL_NAME );
                 return true;
             }
             else
