@@ -24,12 +24,6 @@ public class JshServer extends AbstractServer
 		throws ShellException, RemoteException
 	{
 		session.set( AbstractClient.STACKTRACES_KEY, true );
-		if ( line != null && ( line.equalsIgnoreCase( "exit" ) ||
-			line.equalsIgnoreCase( "quit" ) ) )
-		{
-			return "e";
-		}
-		
 		JshExecutor jsh = new JshExecutor();
 		jsh.execute( line, session, out );
 		return null;

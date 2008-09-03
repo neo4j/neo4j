@@ -2,6 +2,9 @@ package org.neo4j.util.shell;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A common implementation of a {@link ShellClient}.
@@ -18,6 +21,9 @@ public abstract class AbstractClient implements ShellClient
 	 */
 	public static final String STACKTRACES_KEY = "STACKTRACES";
 	
+	private static final Set<String> EXIT_COMMANDS = new HashSet<String>(
+		Arrays.asList( "exit", "quit" ) );
+	
 	private Console console;
 	
 	public void grabPrompt()
@@ -29,6 +35,11 @@ public abstract class AbstractClient implements ShellClient
 			{
 				this.console.format( tryGetProperPromptString() );
 				String line = this.readLine();
+				if ( EXIT_COMMANDS.contains( line ) )
+				{
+					break;
+				}
+				
 				String result = this.getServer().interpretLine(
 					line, this.session(), this.getOutput() );
 				if ( result == null || result.trim().length() == 0 )
@@ -164,5 +175,10 @@ public abstract class AbstractClient implements ShellClient
 	public String readLine()
 	{
 		return this.console.readLine();
+	}
+	
+	public static String[] getExitCommands()
+	{
+		return EXIT_COMMANDS.toArray( new String[ EXIT_COMMANDS.size() ] );
 	}
 }

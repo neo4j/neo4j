@@ -7,6 +7,7 @@ import java.util.TreeSet;
 
 import org.neo4j.util.shell.AbstractApp;
 import org.neo4j.util.shell.AbstractAppServer;
+import org.neo4j.util.shell.AbstractClient;
 import org.neo4j.util.shell.App;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.AppShellServer;
@@ -31,8 +32,6 @@ public class Man extends AbstractApp
 		{
 			if ( parser.arguments().size() == 0 )
 			{
-//				throw new ShellException(
-//					"Need to supply a command: " + getShortUsageString() );
 				out.println( getHelpString( getServer() ) );
 				return null;
 			}
@@ -153,7 +152,10 @@ public class Man extends AbstractApp
 						appClass.getSimpleName().toLowerCase() );
 				}
 			}
-			availableCommands.add( "quit" );
+			for ( String exitCommand : AbstractClient.getExitCommands() )
+			{
+				availableCommands.add( exitCommand );
+			}
 		}
 		return availableCommands;
 	}

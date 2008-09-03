@@ -63,8 +63,10 @@ public class RemoteClient extends AbstractClient
 			shouldTryToReconnect = true;
 		}
 		
+		Exception originException = null;
 		if ( shouldTryToReconnect )
 		{
+			this.server = null;
 			try
 			{
 				this.server = findRemoteServer();
@@ -73,13 +75,21 @@ public class RemoteClient extends AbstractClient
 			catch ( ShellException ee )
 			{
 				// Ok
+				originException = ee;
 			}
 			catch ( RemoteException ee )
 			{
 				// Ok
+				originException = ee;
 			}
 		}
 		
+		if ( this.server == null )
+		{
+			throw new RuntimeException(
+				"Server closed or cannot be reached anymore: " +
+				originException.getMessage(), originException );
+		}
 		return this.server;
 	}
 

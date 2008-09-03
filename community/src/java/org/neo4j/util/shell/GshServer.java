@@ -23,12 +23,6 @@ public class GshServer extends AbstractServer
 		throws ShellException, RemoteException
 	{
 		session.set( AbstractClient.STACKTRACES_KEY, true );
-		if ( line != null && ( line.equalsIgnoreCase( "exit" ) ||
-			line.equalsIgnoreCase( "quit" ) ) )
-		{
-			return "e";
-		}
-		
 		GshExecutor gsh = new GshExecutor();
 		gsh.execute( line, session, out );
 		return null;
