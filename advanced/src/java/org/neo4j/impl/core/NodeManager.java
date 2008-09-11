@@ -19,6 +19,7 @@ package org.neo4j.impl.core;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.transaction.TransactionManager;
@@ -43,7 +44,6 @@ import org.neo4j.impl.transaction.IllegalResourceException;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockNotFoundException;
 import org.neo4j.impl.transaction.LockType;
-import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.traversal.TraverserFactory;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
@@ -560,7 +560,7 @@ public class NodeManager
             if ( data == null )
             {
                 throw new NotFoundException( "Relationship[" + relId
-                    + "] not found, has been deleted?" );
+                    + "] not found." );
             }
             RelationshipType type = getRelationshipTypeById( data.getType() );
             if ( type == null )
@@ -683,10 +683,18 @@ public class NodeManager
         {
             transactionManager.setRollbackOnly();
         }
+        catch ( IllegalStateException e )
+        {
+            // this exception always get generated in a finally block and 
+            // when it happens another exception has already been thrown
+            // (most likley NotInTransactionException)
+            log.log( Level.FINE, "Failed to set transaction rollback only", e );
+        }
         catch ( javax.transaction.SystemException se )
         {
-            se.printStackTrace();
-            log.severe( "Failed to set transaction rollback only" );
+            // our TM never throws this exception
+            log.log( Level.SEVERE, "Failed to set transaction rollback only", 
+                se );
         }
     }
 
@@ -715,33 +723,17 @@ public class NodeManager
 
     void releaseLock( Object resource, LockType lockType )
     {
-        try
+        if ( lockType == LockType.READ )
         {
-            if ( lockType == LockType.READ )
-            {
-                lockManager.releaseReadLock( resource );
-            }
-            else if ( lockType == LockType.WRITE )
-            {
-                lockReleaser.addLockToTransaction( resource, lockType );
-            }
-            else
-            {
-                throw new RuntimeException( "Unkown lock type: " + lockType );
-            }
+            lockManager.releaseReadLock( resource );
         }
-        catch ( NotInTransactionException e )
+        else if ( lockType == LockType.WRITE )
         {
-            throw new RuntimeException(
-                "Unable to get transaction isolation level.", e );
+            lockReleaser.addLockToTransaction( resource, lockType );
         }
-        catch ( LockNotFoundException e )
+        else
         {
-            throw new RuntimeException( "Unable to release locks.", e );
-        }
-        catch ( IllegalResourceException e )
-        {
-            throw new RuntimeException( "Unable to release locks.", e );
+            throw new RuntimeException( "Unkown lock type: " + lockType );
         }
     }
 

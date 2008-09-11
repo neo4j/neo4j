@@ -74,8 +74,20 @@ public abstract class AbstractNeoTestCase extends TestCase
 
     public void newTransaction()
     {
-        tx.success();
-        tx.finish();
+        if ( tx != null )
+        {
+            tx.success();
+            tx.finish();
+        }
         tx = neo.beginTx();
+    }
+    
+    public void commit()
+    {
+        if ( tx != null )
+        {
+            tx.success();
+            tx.finish();
+        }
     }
 }

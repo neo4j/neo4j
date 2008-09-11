@@ -243,8 +243,12 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         public RawRelationshipData relLoadLight( int id )
         {
             RelationshipData relData = relConsumer.getRelationship( id );
-            return new RawRelationshipData( id, relData.firstNode(), 
-                relData.secondNode(), relData.relationshipType() );
+            if ( relData != null )
+            {
+                return new RawRelationshipData( id, relData.firstNode(), 
+                    relData.secondNode(), relData.relationshipType() );
+            }
+            return null;
         }
 
         public RawPropertyData[] relLoadProperties( int relId )

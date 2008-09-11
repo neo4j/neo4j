@@ -139,7 +139,7 @@ public class LockReleaser
                     {
                         lockManager.releaseReadLock( resource );
                     }
-                    throw new NotInTransactionException();
+                    return;
                 }
                 tx.registerSynchronization( new TxCommitHook( this, tx ) );
                 lockElements = new ArrayList<LockElement>();
