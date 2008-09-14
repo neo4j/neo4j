@@ -17,7 +17,7 @@
 package org.neo4j.impl.traversal;
 
 import org.neo4j.api.core.Node;
-import org.neo4j.impl.core.NotFoundException;
+import org.neo4j.api.core.NotFoundException;
 
 import java.io.Serializable;
 import java.util.Comparator;

@@ -26,7 +26,8 @@ import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
-import org.neo4j.impl.transaction.NotInTransactionException;
+
+import org.neo4j.api.core.NotInTransactionException;
 import org.neo4j.impl.util.ArrayMap;
 
 

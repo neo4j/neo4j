@@ -203,7 +203,7 @@ public class TestTxEvents extends AbstractNeoTestCase
                 getNeo().getNodeById( (int) node.getId() );
                 fail( "Node exist but tx should have rolled back" );
             }
-            catch ( org.neo4j.impl.core.NotFoundException e )
+            catch ( org.neo4j.api.core.NotFoundException e )
             { // good
             }
         }
