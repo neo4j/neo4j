@@ -16,8 +16,6 @@
  */
 package org.neo4j.api.core;
 
-import javax.transaction.TransactionManager;
-
 /**
  * A utility class to manage transactions in Neo. All operations that work with
  * the node space (even read operations) must be wrapped in a transaction.
@@ -25,15 +23,15 @@ import javax.transaction.TransactionManager;
  * use of transactions in Neo:
  * 
  * <pre><code>
- *  Transaction tx = neo.beginTx();
+ * Transaction tx = neo.beginTx();
  * try
  * {
  * 	... // any operation that works with the node space
- * tx.success();
+ *     tx.success();
  * }
  * finally
  * {
- * 	tx.finish();
+ *     tx.finish();
  * }
  * </code></pre>
  * 
@@ -55,90 +53,26 @@ import javax.transaction.TransactionManager;
  * upon {@link #finish()}. A transaction can be explicitly marked for rollback
  * by invoking the {@link #failure() tx.failure()} method.
  */
-public class Transaction
+public interface Transaction
 {
-    private boolean success = false;
-
-    private final TransactionManager transactionManager;
-
-    Transaction( TransactionManager transactionManager )
-    {
-        this.transactionManager = transactionManager;
-    }
-
-    // TODO: remove this and remove static method begin()
-    static EmbeddedNeo neo = null;
-
-    /**
-     * This static method will only work if a single neo service is running. If
-     * you start multiple neo services this method will start transaction on the
-     * last neo service started. For more information see
-     * {@link NeoService#beginTx()}.
-     */
-    public static Transaction begin()
-    {
-        if ( neo == null )
-        {
-            throw new RuntimeException( "No neo service started" );
-        }
-        return neo.beginTx();
-    }
-
     /**
      * Marks this transaction as failed, which means that it will inexplicably
      * be rolled back upon invocation of {@link #finish()}. Once this method
      * has been invoked, it doesn't matter how many times {@link #success()} is
      * invoked -- the transaction will still be rolled back.
      */
-    public void failure()
-    {
-        this.success = false;
-        try
-        {
-            transactionManager.getTransaction().setRollbackOnly();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
+    public void failure();
 
     /**
      * Marks this transaction as successful, which means that it will be
      * commited upon invocation of {@link #finish()} unless {@link #failure()}
      * has or will be invoked before then.
      */
-    public void success()
-    {
-        success = true;
-    }
+    public void success();
 
     /**
      * Commits or marks this transaction for rollback, depending on whether
      * {@link #success()} or {@link #failure()} has been previously invoked.
      */
-    public void finish()
-    {
-        try
-        {
-            if ( success )
-            {
-                if ( transactionManager.getTransaction() != null )
-                {
-                    transactionManager.getTransaction().commit();
-                }
-            }
-            else
-            {
-                if ( transactionManager.getTransaction() != null )
-                {
-                    transactionManager.getTransaction().rollback();
-                }
-            }
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
+    public void finish();
 }

@@ -66,8 +66,6 @@ public final class EmbeddedNeo implements NeoService
         neoJvmInstance.start();
         nodeManager = neoJvmInstance.getConfig().getNeoModule()
             .getNodeManager();
-        // TODO: remove this
-        Transaction.neo = this;
     }
 
     public EmbeddedNeo( String storeDir, Map<String,String> params )
@@ -77,8 +75,6 @@ public final class EmbeddedNeo implements NeoService
         neoJvmInstance.start( params );
         nodeManager = neoJvmInstance.getConfig().getNeoModule()
             .getNodeManager();
-        // TODO: remove this
-        Transaction.neo = this;
     }
 
     public static Map<String,String> loadConfigurations( String file )
@@ -268,21 +264,19 @@ public final class EmbeddedNeo implements NeoService
         {
             throw new RuntimeException( e );
         }
-        return new Transaction( txManager );
+        return new TransactionImpl( txManager );
     }
 
-    private static class PlaceboTransaction extends Transaction
+    private static class PlaceboTransaction implements Transaction
     {
         private final TransactionManager transactionManager;
 
         PlaceboTransaction( TransactionManager transactionManager )
         {
             // we should override all so null is ok
-            super( null );
             this.transactionManager = transactionManager;
         }
 
-        @Override
         public void failure()
         {
             try
@@ -295,12 +289,10 @@ public final class EmbeddedNeo implements NeoService
             }
         }
 
-        @Override
         public void success()
         {
         }
 
-        @Override
         public void finish()
         {
         }
@@ -309,5 +301,60 @@ public final class EmbeddedNeo implements NeoService
     public Config getConfig()
     {
         return neoJvmInstance.getConfig();
+    }
+
+    private static class TransactionImpl implements Transaction
+    {
+        private boolean success = false;
+
+        private final TransactionManager transactionManager;
+
+        TransactionImpl( TransactionManager transactionManager )
+        {
+            this.transactionManager = transactionManager;
+        }
+
+        public void failure()
+        {
+            this.success = false;
+            try
+            {
+                transactionManager.getTransaction().setRollbackOnly();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+
+        public void success()
+        {
+            success = true;
+        }
+
+        public void finish()
+        {
+            try
+            {
+                if ( success )
+                {
+                    if ( transactionManager.getTransaction() != null )
+                    {
+                        transactionManager.getTransaction().commit();
+                    }
+                }
+                else
+                {
+                    if ( transactionManager.getTransaction() != null )
+                    {
+                        transactionManager.getTransaction().rollback();
+                    }
+                }
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
     }
 }
