@@ -18,10 +18,11 @@ package org.neo4j.impl.core;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.NotFoundException;
+import org.neo4j.api.core.NotInTransactionException;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.AbstractNeoTestCase;
 import org.neo4j.impl.MyRelTypes;
-import org.neo4j.impl.transaction.NotInTransactionException;
 
 public class TestNeoApiExceptions extends AbstractNeoTestCase
 {

@@ -14,26 +14,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.impl.core;
+package org.neo4j.api.core;
 
-public class NotFoundException extends RuntimeException
+/**
+ * An exception that is thrown whenever a Neo API operation that requires a 
+ * transaction is executed but no transaction is running.
+ * <p>
+ * Note, currently this exception is not guaranteed to be thrown. A read only 
+ * operation may succeed if all the data is already cached. A modifying 
+ * operation will however always throw this exception if no transaction is 
+ * running.
+ * 
+ * @see Transaction
+ */
+public class NotInTransactionException extends RuntimeException
 {
-    public NotFoundException()
+    public NotInTransactionException()
     {
         super();
     }
 
-    public NotFoundException( String message )
+    public NotInTransactionException( String message )
     {
         super( message );
     }
 
-    public NotFoundException( String message, Throwable cause )
+    public NotInTransactionException( String message, Throwable cause )
     {
         super( message, cause );
     }
 
-    public NotFoundException( Throwable cause )
+    public NotInTransactionException( Throwable cause )
     {
         super( cause );
     }
