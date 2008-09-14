@@ -71,4 +71,9 @@ class TraversalPositionImpl implements TraversalPosition
     {
         return this.depth() > 0;
     }
+
+    public boolean isStartNode()
+    {
+        return this.depth() == 0;
+    }
 }
