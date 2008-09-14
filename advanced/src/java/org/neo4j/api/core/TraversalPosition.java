@@ -99,4 +99,46 @@ public interface TraversalPosition
 	 * on the start node, <code>false</code> if it is
 	 */
 	public boolean notStartNode();
+
+   /**
+    * Returns <code>true</code> if the current position is the start node,
+    * <code>false</code> otherwise. This is useful because code in
+    * {@link StopEvaluator the} {@link ReturnableEvaluator evaluators} usually
+    * have to treat the edge case of the start node separately and using this
+    * method makes that code a lot cleaner. For example, old code would be:
+    * 
+    * <pre>
+    * <code>
+    * public boolean isReturnableNode( TraversalPosition currentPos )
+    * {
+    *      if ( currentPos.lastRelationshipTraversed() == null )
+    *      {
+    *              return false;
+    *      }
+    *      else
+    *      {
+    *              return currentPos.lastRelationshipTraversed().isType(
+    *                  MyRelationshipTypes.SOME_REL );
+    *      }
+    * }
+    * </code>
+    * </pre>
+    * 
+    * But using <code>notStartNode()</code>:
+    * 
+    * <pre>
+    * <code>
+    * public boolean isReturnableNode( TraversalPosition currentPos )
+    * {
+    *      return !currentPos.isStartNode()
+    *          &amp;&amp; currentPos.lastRelationshipTraversed().isType(
+    *              MyRelationshipTypes.SOME_REL );
+    * }
+    * </code>
+    * </pre>
+    * 
+    * @return <code>true</code> if the traversal is on the start node,
+    * <code>false</code> otherwise.
+    */
+    public boolean isStartNode();
 }
