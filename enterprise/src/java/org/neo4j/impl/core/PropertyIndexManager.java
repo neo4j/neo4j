@@ -25,9 +25,11 @@ import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+
+import org.neo4j.api.core.NotFoundException;
+import org.neo4j.api.core.NotInTransactionException;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
-import org.neo4j.impl.transaction.NotInTransactionException;
 import org.neo4j.impl.util.ArrayMap;
 
 public class PropertyIndexManager

@@ -20,6 +20,7 @@ import static org.neo4j.api.core.Traverser.Order.BREADTH_FIRST;
 import static org.neo4j.api.core.Traverser.Order.DEPTH_FIRST;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.ReturnableEvaluator;
@@ -29,7 +30,6 @@ import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.AbstractNeoTestCase;
 import org.neo4j.impl.MyRelTypes;
-import org.neo4j.impl.core.NotFoundException;
 
 public class TestTraversal extends AbstractNeoTestCase
 {

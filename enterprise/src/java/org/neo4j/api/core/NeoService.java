@@ -35,7 +35,8 @@ import java.util.Map;
  * ultimately {@link #shutdown() shutdown Neo}.
  * <p>
  * Please note that all operations that read or write to the node space must be
- * invoked in a {@link Transaction transactional context}.
+ * invoked in a {@link Transaction transactional context}. Failure to do so 
+ * will result in a {@link NotInTransactionException} being thrown.
  */
 public interface NeoService
 {
@@ -49,7 +50,7 @@ public interface NeoService
      * Looks up a node by id.
      * @param id the id of the node 
      * @return the node with id <code>id</code> if found
-     * @throws RuntimeException if not found
+     * @throws NotFoundException if not found
      */
     public Node getNodeById( long id );
     
@@ -57,7 +58,7 @@ public interface NeoService
      * Looks up a relationship by id.
      * @param id the id of the relationship
      * @return the relationship with id <code>id</code> if found
-     * @throws RuntimeException if not found
+     * @throws NotFoundException if not found
      */
     public Relationship getRelationshipById(long id);
 
@@ -68,7 +69,7 @@ public interface NeoService
      * node space organizational patterns, see the design guide at
      * <a href="http://neo4j.org/doc">http://neo4j.org/doc</a>.
      * @return the reference node
-     * @throws RuntimeException if unable to get the reference node
+     * @throws NotFoundException if unable to get the reference node
      */
     public Node getReferenceNode();
 

@@ -19,6 +19,7 @@ package org.neo4j.impl.core;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.api.core.NotFoundException;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;

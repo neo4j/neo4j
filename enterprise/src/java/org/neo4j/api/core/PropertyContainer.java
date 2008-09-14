@@ -35,7 +35,7 @@ public interface PropertyContainer
 	 * raised.
 	 * @param key the property key
 	 * @return the property value associated with the given key
-	 * @throws RuntimeException if there's no property associated with
+	 * @throws NotFoundException if there's no property associated with
 	 * <code>key</code>
 	 */
 	// TODO: change exception type
@@ -51,8 +51,6 @@ public interface PropertyContainer
 	 * @param defaultValue the default value to return if no property value was
 	 * associated with the given key
 	 * @return the property value associated with the given key
-	 * @throws IllegalArgumentException if <code>defaultValue</code> is of an
-	 * unsupported type
 	 */
 	public Object getProperty( String key, Object defaultValue );
 

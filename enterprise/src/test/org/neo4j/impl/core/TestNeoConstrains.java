@@ -19,6 +19,7 @@ package org.neo4j.impl.core;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.Transaction;
 import org.neo4j.impl.AbstractNeoTestCase;
