@@ -5,7 +5,7 @@
 		<format>zip</format>
 	</formats>
 	<fileSets>
-		<!-- source:{README,README-SOURCES,LICENSE,COPYRIGHT,CHANGES}.txt -> assembly:/ -->
+		<!-- source:{README,README.sources,LICENSE,COPYRIGHT,CHANGES,NOTICE}.txt -> assembly:/ -->
 		<fileSet>
 			<directory>.</directory>
 			<outputDirectory>/</outputDirectory>
@@ -15,6 +15,7 @@
 				<include>LICENSE.txt</include>
 				<include>COPYRIGHT.txt</include>
 				<include>CHANGES.txt</include>
+				<include>NOTICE.txt</include>
 			</includes>
 		</fileSet>
 		<!-- source:src/java -> assembly:/src/java -->

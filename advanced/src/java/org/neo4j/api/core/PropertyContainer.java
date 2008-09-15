@@ -1,17 +1,23 @@
 package org.neo4j.api.core;
 
-/**
- * A property container is an object that can contain properties. In Neo there
- * are two kinds of property containers, {@link Node}s and
- * {@link Relationship}s.
- * <p>
- * The property operations give access to the key-value property pairs. Property
- * keys are always strings. Valid property value types are all the Java
- * primitives (<code>int</code>, <code>byte</code>, <code>float</code>,
- * etc), <code>java.lang.String</code>s and arrays of primitives and Strings.
- * <b>Please note</b> that Neo does NOT accept arbitrary objects as property
- * values. {@link #setProperty(String, Object) setProperty()} takes a
- * <code>java.lang.Object</code> for design reasons only.
+/*
+ * Copyright (c) 2002-2008 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ * 
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 public interface PropertyContainer
 {
