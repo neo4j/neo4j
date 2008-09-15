@@ -1,5 +1,6 @@
-Neo
-Copyright (c) 2008 "Neo Technology," Network Engine for Objects in Lund AB
+Neo4j
+Copyright (c) 2002-2008 "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com]
 
 This product includes software developed at
 "Neo Technology," Network Engine for Objects in Lund AB

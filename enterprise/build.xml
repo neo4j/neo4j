@@ -80,7 +80,8 @@
 			package="no"
 			link="http://java.sun.com/j2se/1.5.0/docs/api/">
 			<bottom>
-<![CDATA[<i>Copyright &#169; ${year} Neo Persistence AB.</i>]]>
+<![CDATA[<i>Copyright &#169; 2002-${year} "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com].</i>]]>
 			</bottom>
 		</javadoc>
 	</target>
