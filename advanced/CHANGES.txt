@@ -1,13 +1,17 @@
-1.0-b7 (2008-08-27)
+1.0-b7 (2008-09-16)
 ------------------
 
-o Core: All known bugs have been fixed
-o Core: Removed singletons and made everything IoC
+o API: Transaction is now an inteface.
+o API: TraversalPosition interface now has a isStartNode() method.
+o API: NotFound and NotInTransaction runtime exceptions has been exposed.
+o Core: All known bugs have been fixed.
+o Core: Removed singletons and made everything IoC.
 o Core: Lots of minor optimization and improvments above native (nioneo)
-  store layer
-o Core: Cleanup of code (removed non used) and improved exception handling
-o Core: Greatly improved read performance removing all sychronization during 
-  read operations (MVCC)
+  store layer.
+o Core: Cleanup of code (removed non used) and improved exception handling.
+o Core: Improved read performance removing all sychronization during read 
+  operations (MVCC).
+
 
 1.0-b6 (2007-11-19)
 -------------------
