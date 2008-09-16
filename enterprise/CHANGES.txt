@@ -8,8 +8,8 @@ o API: NotFound and NotInTransaction runtime exceptions have been moved from
 o API: getRelationshipById is now exposed in NeoService.
 o API: A common base interface for Node and Relationship has been added that
   contains the set/get/remove property operations.
-o Core: Made it easy to embed Neo in a Spring application. Spring can also be 
-  configured to use Neo's transaction manager.
+o Core: Made it easy to embed Neo4j in a Spring application. Spring can also be 
+  configured to use Neo4j's transaction manager.
 o Core: All known bugs have been fixed.
 o Core: Removed singletons and made everything IoC.
 o Core: Lots of minor optimization and improvements above native store
