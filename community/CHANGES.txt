@@ -5,13 +5,25 @@ o API: Transaction is now an interface.
 o API: TraversalPosition now has an isStartNode() method.
 o API: NotFound and NotInTransaction runtime exceptions have been moved from
   internal impl package to the api package.
+o API: getRelationshipById is now exposed in NeoService.
+o API: A common base interface for Node and Relationship has been added that
+  contains the set/get/remove property operations.
+o Core: Made it easy to embed Neo in a Spring application. Spring can also be 
+  configured to use Neo's transaction manager.
 o Core: All known bugs have been fixed.
 o Core: Removed singletons and made everything IoC.
 o Core: Lots of minor optimization and improvements above native store
   layer (nioneo).
 o Core: Cleanup of code (removed non used) and improved exception handling.
-o Core: Improved read performance and parallelism removing all synchronization
-  during read operations (MVCC).
+o Core: Improved read performance and parallelism implementing MVCC like 
+  features. No locks are taken during read only operations. Instead of full 
+  versioning diffs are kept and applied to the right transactions (those 
+  that have modified data). Result is that read operations will execute taking 
+  no locks, make full use of what has already been cached and can execute 
+  concurrently with a transaction that modify the same data. Write operations 
+  will take locks and use diffs instead of full copy on write (this proved to be 
+  faster and scale better than actually doing a in memory copy of the required 
+  data).  
 
 
 1.0-b6 (2007-11-19)
