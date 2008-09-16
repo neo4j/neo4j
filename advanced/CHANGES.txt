@@ -1,16 +1,17 @@
 1.0-b7 (2008-09-16)
 ------------------
 
-o API: Transaction is now an inteface.
-o API: TraversalPosition interface now has a isStartNode() method.
-o API: NotFound and NotInTransaction runtime exceptions has been exposed.
+o API: Transaction is now an interface.
+o API: TraversalPosition now has an isStartNode() method.
+o API: NotFound and NotInTransaction runtime exceptions have been moved from
+  internal impl package to the api package.
 o Core: All known bugs have been fixed.
 o Core: Removed singletons and made everything IoC.
-o Core: Lots of minor optimization and improvments above native (nioneo)
-  store layer.
+o Core: Lots of minor optimization and improvements above native store
+  layer (nioneo).
 o Core: Cleanup of code (removed non used) and improved exception handling.
-o Core: Improved read performance removing all sychronization during read 
-  operations (MVCC).
+o Core: Improved read performance and parallelism removing all synchronization
+  during read operations (MVCC).
 
 
 1.0-b6 (2007-11-19)
