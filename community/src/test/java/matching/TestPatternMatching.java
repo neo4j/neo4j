@@ -37,7 +37,7 @@ public class TestPatternMatching extends TestCase
 	{
 		super.setUp();
 		neo = new EmbeddedNeo( "var/neo" );
-		tx = Transaction.begin();
+		tx = neo.beginTx();
 	}
 
 	@Override
