@@ -48,7 +48,7 @@ public class NeoAlgoTestCase extends TestCase
     {
         super.setUp();
         neo = new EmbeddedNeo( "var/algotest" );
-        tx = Transaction.begin();
+        tx = neo.beginTx();
         graph = new SimpleGraphBuilder( neo, MyRelTypes.R1 );
     }
 
