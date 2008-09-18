@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
+	<parent>
+		<groupId>org.neo4j</groupId>
+		<artifactId>parent-pom</artifactId>
+		<version>1</version>
+		<relativePath>../../pom.xml</relativePath>
+	</parent>
+
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j</groupId>
 	<artifactId>graph-algo</artifactId>
 	<version>0.1-SNAPSHOT</version>
 	<name>graph-algo</name>
 	<description>Graph algorithms for neo4j</description>
-
-	<repositories>
-		<repository>
-			<id>neo4j-public-repository</id>
-			<url>http://m2.neo4j.org</url>
-		</repository>
-	</repositories>
 
 	<!-- For custom complexity taglet -->
 	<reporting>
@@ -33,19 +33,6 @@
 		</plugins>
 	</reporting>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>1.5</source>
-					<target>1.5</target>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -55,7 +42,7 @@
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo</artifactId>
-			<version>1.0-b7-SNAPSHOT</version>
+			<version>1.0-b7-pre1</version>
 		</dependency>
 	</dependencies>
 
