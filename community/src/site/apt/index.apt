@@ -1,0 +1,17 @@
+Neo4j graph-algo
+
+	Neo4j graph-algo is a component that contains implementations of
+	some common graph algorithms for Neo4j. This includes algorihms for
+	finding shortest paths, such as Breadth First Search and Dijkstra.
+	There are also algorithms for several graph measures such as
+	centrality measures. These include:
+
+	Eccentricity
+	Network diameter
+	Network radius
+	Stress centrality
+	Closeness centrality
+	Betweenness centrality
+	Eigenvector centrality
+
+	For more details, see the wiki pages.

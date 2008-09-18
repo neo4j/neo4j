@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.neo4j</groupId>
+	<artifactId>graph-algo</artifactId>
+	<version>0.1-SNAPSHOT</version>
+	<name>graph-algo</name>
+	<description>Graph algorithms for neo4j</description>
+
+	<repositories>
+		<repository>
+			<id>neo4j-public-repository</id>
+			<url>http://m2.neo4j.org</url>
+		</repository>
+	</repositories>
+
+	<!-- For custom complexity taglet -->
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<tags>
+					<tag>
+					<name>complexity</name>
+					<placement>a</placement>
+					<head>Complexity:</head>
+					</tag>
+					</tags>
+				</configuration>
+			</plugin>
+		</plugins>
+	</reporting>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.5</source>
+					<target>1.5</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>3.8.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo</artifactId>
+			<version>1.0-b7-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
+
+</project>
