@@ -6,12 +6,20 @@ Neo4j graph-algo
 	There are also algorithms for several graph measures such as
 	centrality measures. These include:
 
-	Eccentricity
-	Network diameter
-	Network radius
-	Stress centrality
-	Closeness centrality
-	Betweenness centrality
-	Eigenvector centrality
+	* Eccentricity
+
+	* Network diameter
+
+	* Network radius
+
+	* Stress centrality
+
+	* Closeness centrality
+
+	* Betweenness centrality
+
+	* Eigenvector centrality
+
+	[]
 
 	For more details, see the wiki pages.
