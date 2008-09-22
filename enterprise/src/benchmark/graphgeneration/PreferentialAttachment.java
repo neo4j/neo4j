@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.benchmark.graphGeneration;
+package org.neo4j.graphalgo.benchmark.graphgeneration;
 
 import java.util.HashSet;
 import java.util.Random;
@@ -26,7 +26,7 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
-import org.neo4j.graphalgo.benchmark.graphGeneration.GraphStore.Graph;
+import org.neo4j.graphalgo.benchmark.graphgeneration.GraphStore.Graph;
 
 public class PreferentialAttachment implements GeneratedGraph
 {
