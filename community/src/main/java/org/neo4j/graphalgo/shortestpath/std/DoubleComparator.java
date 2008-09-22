@@ -14,13 +14,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.shortestPath.std;
+package org.neo4j.graphalgo.shortestpath.std;
 
-import org.neo4j.graphalgo.shortestPath.CostAccumulator;
+import java.util.Comparator;
 
-public class DoubleAdder implements CostAccumulator<Double>
+public class DoubleComparator implements Comparator<Double>
 {
-        public Double addCosts(Double c1, Double c2) {
-                return c1 + c2;
+        public int compare(Double o1, Double o2) {
+                Double d = o1 - o2;
+                return d > 0 ? 1 : (d < 0 ? -1 : 0);
         }
 }

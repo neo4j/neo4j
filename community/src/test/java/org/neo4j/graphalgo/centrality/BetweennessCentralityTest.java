@@ -24,11 +24,11 @@ import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.graphalgo.centrality.BetweennessCentrality;
-import org.neo4j.graphalgo.shortestPath.CostEvaluator;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathDijkstra;
-import org.neo4j.graphalgo.shortestPath.Util;
-import org.neo4j.graphalgo.shortestPath.Util.PathCounter;
+import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
+import org.neo4j.graphalgo.shortestpath.Util;
+import org.neo4j.graphalgo.shortestpath.Util.PathCounter;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
 
 public class BetweennessCentralityTest extends NeoAlgoTestCase
@@ -48,8 +48,8 @@ public class BetweennessCentralityTest extends NeoAlgoTestCase
                 {
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.shortestPath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleComparator(),
+            }, new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1, MyRelTypes.R2, MyRelTypes.R3 );
     }
 

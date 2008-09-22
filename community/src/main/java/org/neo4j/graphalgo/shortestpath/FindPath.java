@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.shortestPath;
+package org.neo4j.graphalgo.shortestpath;
 
 import java.util.List;
 
@@ -23,8 +23,8 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.PropertyContainer;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.graphalgo.shortestPath.std.IntegerAdder;
-import org.neo4j.graphalgo.shortestPath.std.IntegerComparator;
+import org.neo4j.graphalgo.shortestpath.std.IntegerAdder;
+import org.neo4j.graphalgo.shortestpath.std.IntegerComparator;
 
 /**
  * FindPath class. This class can be used to perform shortest path computations
@@ -38,7 +38,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#calculate()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#calculate()
      */
     public boolean calculate()
     {
@@ -47,7 +47,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#calculateMultiple()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#calculateMultiple()
      */
     public boolean calculateMultiple()
     {
@@ -56,7 +56,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#getCost()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#getCost()
      */
     public Integer getCost()
     {
@@ -65,7 +65,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#getDirection()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#getDirection()
      */
     public Direction getDirection()
     {
@@ -74,7 +74,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#getPath()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#getPath()
      */
     public List<PropertyContainer> getPath()
     {
@@ -83,7 +83,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#getPathAsNodes()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#getPathAsNodes()
      */
     public List<Node> getPathAsNodes()
     {
@@ -92,7 +92,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#getPathAsRelationships()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#getPathAsRelationships()
      */
     public List<Relationship> getPathAsRelationships()
     {
@@ -101,7 +101,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#getPaths()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#getPaths()
      */
     public List<List<PropertyContainer>> getPaths()
     {
@@ -110,7 +110,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#getPathsAsNodes()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#getPathsAsNodes()
      */
     public List<List<Node>> getPathsAsNodes()
     {
@@ -119,7 +119,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#getPathsAsRelationships()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#getPathsAsRelationships()
      */
     public List<List<Relationship>> getPathsAsRelationships()
     {
@@ -128,7 +128,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @return
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#getRelationshipTypes()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#getRelationshipTypes()
      */
     public RelationshipType[] getRelationshipTypes()
     {
@@ -137,7 +137,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @param maxNodesToTraverse
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#limitMaxNodesToTraverse(long)
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#limitMaxNodesToTraverse(long)
      */
     public void limitMaxNodesToTraverse( long maxNodesToTraverse )
     {
@@ -146,7 +146,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @param maxRelationShipsToTraverse
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#limitMaxRelationShipsToTraverse(long)
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#limitMaxRelationShipsToTraverse(long)
      */
     public void limitMaxRelationShipsToTraverse( long maxRelationShipsToTraverse )
     {
@@ -154,7 +154,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
     }
 
     /**
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#reset()
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#reset()
      */
     public void reset()
     {
@@ -163,7 +163,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @param endNode
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#setEndNode(org.neo4j.api.core.Node)
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#setEndNode(org.neo4j.api.core.Node)
      */
     public void setEndNode( Node endNode )
     {
@@ -172,7 +172,7 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
 
     /**
      * @param startNode
-     * @see org.neo4j.graphalgo.shortestPath.Dijkstra#setStartNode(org.neo4j.api.core.Node)
+     * @see org.neo4j.graphalgo.shortestpath.Dijkstra#setStartNode(org.neo4j.api.core.Node)
      */
     public void setStartNode( Node startNode )
     {

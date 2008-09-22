@@ -22,7 +22,7 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.PropertyContainer;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
 
 public abstract class SingleSourceShortestPathTest extends NeoAlgoTestCase

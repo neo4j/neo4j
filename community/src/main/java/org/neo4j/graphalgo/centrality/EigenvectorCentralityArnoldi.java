@@ -28,7 +28,7 @@ import org.neo4j.api.core.Relationship;
 import org.neo4j.graphalgo.MatrixUtil;
 import org.neo4j.graphalgo.MatrixUtil.DoubleMatrix;
 import org.neo4j.graphalgo.MatrixUtil.DoubleVector;
-import org.neo4j.graphalgo.shortestPath.CostEvaluator;
+import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 
 /**
  * Computing eigenvector centrality with the "Arnoldi iteration". Convergence is

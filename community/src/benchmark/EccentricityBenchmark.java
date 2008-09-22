@@ -22,9 +22,9 @@ import org.neo4j.api.core.Transaction;
 import org.neo4j.graphalgo.benchmark.graphgeneration.GraphStore;
 import org.neo4j.graphalgo.benchmark.graphgeneration.RandomGraph;
 import org.neo4j.graphalgo.centrality.Eccentricity;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathBFS;
-import org.neo4j.graphalgo.shortestPath.std.IntegerComparator;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
+import org.neo4j.graphalgo.shortestpath.std.IntegerComparator;
 
 public class EccentricityBenchmark extends NeoAlgoBenchmark
 {

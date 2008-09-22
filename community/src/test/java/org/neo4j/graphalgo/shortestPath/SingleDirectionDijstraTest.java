@@ -17,8 +17,8 @@
 package org.neo4j.graphalgo.shortestPath;
 
 import org.neo4j.api.core.Direction;
-import org.neo4j.graphalgo.shortestPath.Dijkstra;
-import org.neo4j.graphalgo.shortestPath.SingleDirectionDijkstra;
+import org.neo4j.graphalgo.shortestpath.Dijkstra;
+import org.neo4j.graphalgo.shortestpath.SingleDirectionDijkstra;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
 
 /**
@@ -38,9 +38,9 @@ public class SingleDirectionDijstraTest extends DijkstraTest
     {
         return new SingleDirectionDijkstra<Double>( startCost, graph
             .getNode( startNode ), graph.getNode( endNode ),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleEvaluator( "cost" ),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleComparator(),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator( "cost" ),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }
 }

@@ -23,7 +23,7 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.graphalgo.centrality.EigenvectorCentrality;
 import org.neo4j.graphalgo.centrality.EigenvectorCentralityPower;
-import org.neo4j.graphalgo.shortestPath.CostEvaluator;
+import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 
 public class EigenvectorCentralityPowerTest extends EigenvectorCentralityTest
 {

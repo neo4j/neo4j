@@ -24,10 +24,10 @@ import org.neo4j.graphalgo.centrality.CostDivider;
 import org.neo4j.graphalgo.centrality.ParallellCentralityCalculation;
 import org.neo4j.graphalgo.centrality.ShortestPathBasedCentrality;
 import org.neo4j.graphalgo.centrality.StressCentrality;
-import org.neo4j.graphalgo.shortestPath.CostEvaluator;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathDijkstra;
-import org.neo4j.graphalgo.shortestPath.std.DoubleAdder;
+import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
+import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
 
 public class ParallellCentralityCalculationTest extends NeoAlgoTestCase
@@ -47,8 +47,8 @@ public class ParallellCentralityCalculationTest extends NeoAlgoTestCase
                 {
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.shortestPath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleComparator(),
+            }, new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }
 

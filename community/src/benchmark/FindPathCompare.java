@@ -25,8 +25,8 @@ import org.neo4j.graphalgo.benchmark.graphgeneration.GraphStore;
 import org.neo4j.graphalgo.benchmark.graphgeneration.PreferentialAttachment;
 import org.neo4j.graphalgo.benchmark.graphgeneration.RandomGraph;
 import org.neo4j.graphalgo.benchmark.graphgeneration.SmallWorldGraph;
-import org.neo4j.graphalgo.shortestPath.FindPath;
-import org.neo4j.graphalgo.shortestPath.FindSinglePath;
+import org.neo4j.graphalgo.shortestpath.FindPath;
+import org.neo4j.graphalgo.shortestpath.FindSinglePath;
 
 public class FindPathCompare extends NeoAlgoBenchmark
 {

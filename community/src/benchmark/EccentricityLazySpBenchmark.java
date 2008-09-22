@@ -26,13 +26,13 @@ import org.neo4j.api.core.Transaction;
 import org.neo4j.graphalgo.benchmark.graphgeneration.GraphStore;
 import org.neo4j.graphalgo.benchmark.graphgeneration.RandomGraph;
 import org.neo4j.graphalgo.centrality.Eccentricity;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathBFS;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathDijkstra;
-import org.neo4j.graphalgo.shortestPath.std.DoubleAdder;
-import org.neo4j.graphalgo.shortestPath.std.DoubleComparator;
-import org.neo4j.graphalgo.shortestPath.std.DoubleEvaluator;
-import org.neo4j.graphalgo.shortestPath.std.IntegerComparator;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
+import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
+import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
+import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
+import org.neo4j.graphalgo.shortestpath.std.IntegerComparator;
 
 public class EccentricityLazySpBenchmark extends NeoAlgoBenchmark
 {

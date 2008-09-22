@@ -23,7 +23,7 @@ import java.util.Set;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.graphalgo.shortestPath.CostEvaluator;
+import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 
 /**
  * Computing eigenvector centrality with the "power method". Convergence is
