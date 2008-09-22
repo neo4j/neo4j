@@ -23,8 +23,8 @@ import org.neo4j.graphalgo.benchmark.graphgeneration.GraphStore;
 import org.neo4j.graphalgo.benchmark.graphgeneration.RandomGraph;
 import org.neo4j.graphalgo.benchmark.graphgeneration.SubGraph;
 import org.neo4j.graphalgo.centrality.BetweennessCentrality;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathBFS;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
 
 public class BetweennessCentralityBenchmark extends NeoAlgoBenchmark
 {

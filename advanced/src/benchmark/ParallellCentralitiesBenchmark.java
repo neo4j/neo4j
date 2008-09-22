@@ -25,8 +25,8 @@ import org.neo4j.graphalgo.benchmark.graphgeneration.SubGraph;
 import org.neo4j.graphalgo.centrality.BetweennessCentrality;
 import org.neo4j.graphalgo.centrality.ParallellCentralityCalculation;
 import org.neo4j.graphalgo.centrality.StressCentrality;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathBFS;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
 
 public class ParallellCentralitiesBenchmark extends NeoAlgoBenchmark
 {

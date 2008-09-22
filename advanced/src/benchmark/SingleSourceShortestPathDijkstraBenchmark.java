@@ -26,10 +26,10 @@ import org.neo4j.graphalgo.benchmark.graphgeneration.GraphStore;
 import org.neo4j.graphalgo.benchmark.graphgeneration.PreferentialAttachment;
 import org.neo4j.graphalgo.benchmark.graphgeneration.RandomGraph;
 import org.neo4j.graphalgo.benchmark.graphgeneration.SmallWorldGraph;
-import org.neo4j.graphalgo.shortestPath.CostEvaluator;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathDijkstra;
-import org.neo4j.graphalgo.shortestPath.std.IntegerAdder;
-import org.neo4j.graphalgo.shortestPath.std.IntegerComparator;
+import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
+import org.neo4j.graphalgo.shortestpath.std.IntegerAdder;
+import org.neo4j.graphalgo.shortestpath.std.IntegerComparator;
 
 public class SingleSourceShortestPathDijkstraBenchmark extends NeoAlgoBenchmark
 {

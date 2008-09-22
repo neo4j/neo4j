@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.neo4j.api.core.Node;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 
 /**
  * This is a utility class used to group together a number of centrality measure

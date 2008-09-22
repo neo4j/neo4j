@@ -21,6 +21,7 @@ import java.util.List;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.PropertyContainer;
 import org.neo4j.api.core.Relationship;
+import org.neo4j.graphalgo.shortestpath.FindPath;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
 

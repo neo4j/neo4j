@@ -24,9 +24,9 @@ import org.neo4j.graphalgo.benchmark.graphgeneration.RandomGraph;
 import org.neo4j.graphalgo.benchmark.graphgeneration.SubGraph;
 import org.neo4j.graphalgo.centrality.ClosenessCentrality;
 import org.neo4j.graphalgo.centrality.CostDivider;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathBFS;
-import org.neo4j.graphalgo.shortestPath.std.IntegerAdder;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
+import org.neo4j.graphalgo.shortestpath.std.IntegerAdder;
 
 public class ClosenessCentralityBenchmark extends NeoAlgoBenchmark
 {

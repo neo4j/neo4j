@@ -19,7 +19,7 @@ package org.neo4j.graphalgo.centrality;
 import java.util.Comparator;
 import java.util.Set;
 import org.neo4j.api.core.Node;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 
 /**
  * This can be used to calculate the diameter of a network, which is defined as

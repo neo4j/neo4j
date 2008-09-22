@@ -25,7 +25,7 @@ import org.neo4j.graphalgo.benchmark.graphgeneration.GraphStore;
 import org.neo4j.graphalgo.benchmark.graphgeneration.PreferentialAttachment;
 import org.neo4j.graphalgo.benchmark.graphgeneration.RandomGraph;
 import org.neo4j.graphalgo.benchmark.graphgeneration.SmallWorldGraph;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathBFS;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
 
 public class SingleSourceShortestPathBFSBenchmark extends NeoAlgoBenchmark
 {
