@@ -19,8 +19,8 @@ package org.neo4j.graphalgo.shortestPath;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.RelationshipType;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathBFS;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
 
 public class SingleSourceShortestPathBFSTest extends
     SingleSourceShortestPathTest

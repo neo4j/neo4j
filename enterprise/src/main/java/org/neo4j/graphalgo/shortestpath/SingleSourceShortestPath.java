@@ -14,9 +14,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.shortestPath;
+package org.neo4j.graphalgo.shortestpath;
 
 import java.util.List;
+import java.util.Map;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.PropertyContainer;
@@ -25,13 +26,13 @@ import org.neo4j.api.core.RelationshipType;
 
 /**
  * An object implementing this encapsulates an algorithm able to solve the
- * single source single sink shortest path problem. I.e. it can find the
- * shortest path(s) between two given nodes in a network.
+ * single source shortest path problem. I.e. it can find the shortest path(s)
+ * from a given start node to all other nodes in a network.
  * @author Patrik Larsson
  * @param <CostType>
  *            The datatype the edge weights are represented by.
  */
-public interface SingleSourceSingleSinkShortestPath<CostType>
+public interface SingleSourceShortestPath<CostType>
 {
     /**
      * This resets the calculation if we for some reason would like to redo it.
@@ -46,62 +47,69 @@ public interface SingleSourceSingleSinkShortestPath<CostType>
     public void setStartNode( Node node );
 
     /**
-     * This sets the end node. The found paths will end in this node.
-     * @param node
-     *            The end node.
-     */
-    public void setEndNode( Node node );
-
-    /**
      * A call to this will run the algorithm to find a single shortest path, if
      * not already done, and return it as an alternating list of
      * Node/Relationship.
      * @return The path as an alternating list of Node/Relationship.
      */
-    public List<PropertyContainer> getPath();
+    public List<PropertyContainer> getPath( Node targetNode );
 
     /**
-     * A call to this will run the algorithm to find a single shortest path, if
-     * not already done, and return it as a list of nodes.
+     * A call to this will run the algorithm, if not already done, and return
+     * the found path to the target node if found as a list of nodes.
      * @return The path as a list of nodes.
      */
-    public List<Node> getPathAsNodes();
+    public List<Node> getPathAsNodes( Node targetNode );
 
     /**
      * A call to this will run the algorithm to find a single shortest path, if
      * not already done, and return it as a list of Relationships.
      * @return The path as a list of Relationships.
      */
-    public List<Relationship> getPathAsRelationships();
+    public List<Relationship> getPathAsRelationships( Node targetNode );
 
     /**
      * A call to this will run the algorithm to find all shortest paths, if not
      * already done, and return them as alternating lists of Node/Relationship.
      * @return A list of the paths as alternating lists of Node/Relationship.
      */
-    public List<List<PropertyContainer>> getPaths();
+    public List<List<PropertyContainer>> getPaths( Node targetNode );
 
     /**
      * A call to this will run the algorithm to find all shortest paths, if not
      * already done, and return them as lists of nodes.
      * @return A list of the paths as lists of nodes.
      */
-    public List<List<Node>> getPathsAsNodes();
+    public List<List<Node>> getPathsAsNodes( Node targetNode );
 
     /**
      * A call to this will run the algorithm to find all shortest paths, if not
      * already done, and return them as lists of relationships.
      * @return A list of the paths as lists of relationships.
      */
-    public List<List<Relationship>> getPathsAsRelationships();
+    public List<List<Relationship>> getPathsAsRelationships( Node targetNode );
 
     /**
-     * A call to this will run the algorithm to find the cost for the shortest
-     * paths between the start node and the end node, if not calculated before.
-     * This will usually find a single shortest path.
+     * A call to this will run the algorithm, if not already done, and return
+     * the cost for the shortest paths between the start node and the target
+     * node.
      * @return The total weight of the shortest path(s).
      */
-    public CostType getCost();
+    public CostType getCost( Node targetNode );
+
+    /**
+     * @param node
+     * @return The nodes previous to the argument node in all found shortest
+     *         paths or null if there are no such nodes.
+     */
+    public List<Node> getPredecessorNodes( Node node );
+
+    /**
+     * This can be used to retrieve the entire data structure representing the
+     * predecessors for every node.
+     * @return
+     */
+    public Map<Node,List<Relationship>> getPredecessors();
 
     /**
      * This can be used to retrieve the Direction in which relationships should

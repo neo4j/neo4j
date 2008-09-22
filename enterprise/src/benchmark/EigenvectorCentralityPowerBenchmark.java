@@ -28,7 +28,7 @@ import org.neo4j.graphalgo.benchmark.graphgeneration.PreferentialAttachment;
 import org.neo4j.graphalgo.benchmark.graphgeneration.RandomGraph;
 import org.neo4j.graphalgo.benchmark.graphgeneration.SmallWorldGraph;
 import org.neo4j.graphalgo.centrality.EigenvectorCentralityPower;
-import org.neo4j.graphalgo.shortestPath.CostEvaluator;
+import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 
 public class EigenvectorCentralityPowerBenchmark extends NeoAlgoBenchmark
 {

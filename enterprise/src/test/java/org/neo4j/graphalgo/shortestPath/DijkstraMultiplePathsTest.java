@@ -21,10 +21,10 @@ import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.PropertyContainer;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.graphalgo.shortestPath.CostEvaluator;
-import org.neo4j.graphalgo.shortestPath.Dijkstra;
-import org.neo4j.graphalgo.shortestPath.std.DoubleAdder;
-import org.neo4j.graphalgo.shortestPath.std.DoubleComparator;
+import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphalgo.shortestpath.Dijkstra;
+import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
+import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
 
@@ -40,9 +40,9 @@ public class DijkstraMultiplePathsTest extends NeoAlgoTestCase
     {
         return new Dijkstra<Double>( startCost, graph.getNode( startNode ),
             graph.getNode( endNode ),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleEvaluator( "cost" ),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleComparator(),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator( "cost" ),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }
 
@@ -199,9 +199,9 @@ public class DijkstraMultiplePathsTest extends NeoAlgoTestCase
         graph.makeEdge( "b2", "c", "cost", (double) -2 );
         Dijkstra<Double> dijkstra = new Dijkstra<Double>( 0.0, graph
             .getNode( "a" ), graph.getNode( "z" ),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleEvaluator( "cost" ),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleComparator(),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator( "cost" ),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(),
             Direction.OUTGOING, MyRelTypes.R1 );
         List<List<Node>> paths = dijkstra.getPathsAsNodes();
         assertTrue( paths.size() == 2 );

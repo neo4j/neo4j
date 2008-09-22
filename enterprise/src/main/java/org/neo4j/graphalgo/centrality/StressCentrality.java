@@ -23,10 +23,10 @@ import java.util.Set;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.Util;
-import org.neo4j.graphalgo.shortestPath.Util.PathCounter;
-import org.neo4j.graphalgo.shortestPath.std.DoubleAdder;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.Util;
+import org.neo4j.graphalgo.shortestpath.Util.PathCounter;
+import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
 
 /**
  * Implementation of stress centrality, which is defined as the number of

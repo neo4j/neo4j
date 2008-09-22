@@ -21,10 +21,10 @@ import java.util.List;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.graphalgo.shortestPath.Dijkstra;
-import org.neo4j.graphalgo.shortestPath.std.DoubleAdder;
-import org.neo4j.graphalgo.shortestPath.std.DoubleComparator;
-import org.neo4j.graphalgo.shortestPath.std.DoubleEvaluator;
+import org.neo4j.graphalgo.shortestpath.Dijkstra;
+import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
+import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
+import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
 
 public class DijkstraIteratorTest extends NeoAlgoTestCase

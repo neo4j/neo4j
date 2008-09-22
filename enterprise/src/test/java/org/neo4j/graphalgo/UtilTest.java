@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.Map;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.graphalgo.shortestPath.Util;
-import org.neo4j.graphalgo.shortestPath.Util.PathCounter;
+import org.neo4j.graphalgo.shortestpath.Util;
+import org.neo4j.graphalgo.shortestpath.Util.PathCounter;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
 
 public class UtilTest extends NeoAlgoTestCase

@@ -19,10 +19,10 @@ package org.neo4j.graphalgo.centrality;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.graphalgo.centrality.NetworkDiameter;
-import org.neo4j.graphalgo.shortestPath.CostEvaluator;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathDijkstra;
-import org.neo4j.graphalgo.shortestPath.std.DoubleComparator;
+import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
+import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
 
 public class NetworkDiameterTest extends NeoAlgoTestCase
@@ -42,8 +42,8 @@ public class NetworkDiameterTest extends NeoAlgoTestCase
                 {
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.shortestPath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestPath.std.DoubleComparator(),
+            }, new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
+            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }
 

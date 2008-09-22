@@ -31,9 +31,9 @@ import org.neo4j.graphalgo.benchmark.graphgeneration.SmallWorldGraph;
 import org.neo4j.graphalgo.centrality.Eccentricity;
 import org.neo4j.graphalgo.centrality.ParallellCentralityCalculation;
 import org.neo4j.graphalgo.centrality.StressCentrality;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestPath.SingleSourceShortestPathBFS;
-import org.neo4j.graphalgo.shortestPath.std.IntegerComparator;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
+import org.neo4j.graphalgo.shortestpath.std.IntegerComparator;
 
 public class CentralityBenchmark extends NeoAlgoBenchmark
 {
