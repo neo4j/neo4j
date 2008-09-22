@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.benchmark.graphGeneration;
+package org.neo4j.graphalgo.benchmark.graphgeneration;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,40 +34,23 @@ import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.traversal.TraverserFactory;
 
 /**
- * This class can be used to generate an in-memory copy of a part of a network
- * (like a subgraph), represented as a set of copys of nodes and a set of copys
- * of edges. Currently, any changes made to the subnetwork will be reflected in
- * the underlying network as well. The subgraph always starts out empty, and can
- * be emptied again with the clear() method. It can then be filled with nodes
- * and edges through the various methods supplied. This class can of course be
- * used to retrieve the set of all nodes and the set of all edges from a
- * network.
+ * This class can be used to represent part of a network (like a subgraph),
+ * represented as a set of nodes and a set of edges. All this really does is
+ * filter the results of Node.getRelationships to only return relationships
+ * within this subnetwork, thus limiting traversals and searches to the nodes
+ * within the subnetwork. Therefore, any changes made to the subnetwork will be
+ * reflected in the underlying network as well. The subgraph always starts out
+ * empty, and can be emptied again with the clear() method. It can then be
+ * filled with nodes and edges through the various methods supplied. This class
+ * can of course also be used to retrieve the set of all nodes and the set of
+ * all edges from a network.
  * @author Patrik Larsson
  */
-public class SubNetworkCopy
+public class SubNetwork
 {
     Set<Relationship> subNetworkRelationships = new HashSet<Relationship>();
-    Map<Node,SubNetworkNode> nodeMap = new HashMap<Node,SubNetworkNode>();
-
-    public SubNetworkRelationship addRelationship(
-        Relationship underlyingRelationship )
-    {
-        SubNetworkRelationship subNetworkRelationship = new SubNetworkRelationship(
-            underlyingRelationship, nodeMap.get( underlyingRelationship
-                .getStartNode() ), nodeMap.get( underlyingRelationship
-                .getEndNode() ) );
-        subNetworkRelationships.add( subNetworkRelationship );
-        return subNetworkRelationship;
-    }
-
-    /**
-     * Empties this subnetwork.
-     */
-    public void clear()
-    {
-        subNetworkRelationships = new HashSet<Relationship>();
-        nodeMap = new HashMap<Node,SubNetworkNode>();
-    }
+    Set<Node> subNetworkNodes = new HashSet<Node>();
+    TraverserFactory traverserFactory = new TraverserFactory();
 
     /**
      * Adds a tree to this subnetwork by doing a breadth first search of a given
@@ -79,7 +62,7 @@ public class SubNetworkCopy
      * @param relationshipType
      *            Relation type to traverse.
      * @param direction
-     *            Direction in which to traverse edges.
+     *            Direction in which to traverse relationships.
      */
     public void addTreeFromCentralNode( Node node, final int searchDepth,
         RelationshipType relationshipType, Direction direction )
@@ -94,13 +77,9 @@ public class SubNetworkCopy
             }, ReturnableEvaluator.ALL, relationshipType, direction );
         for ( Node node2 : traverser )
         {
-            nodeMap.put( node2, new SubNetworkNode( node2 ) );
-            Relationship relationship = traverser.currentPosition()
-                .lastRelationshipTraversed();
-            if ( relationship != null )
-            {
-                addRelationship( relationship );
-            }
+            subNetworkNodes.add( node2 );
+            subNetworkRelationships.add( traverser.currentPosition()
+                .lastRelationshipTraversed() );
         }
     }
 
@@ -114,13 +93,19 @@ public class SubNetworkCopy
      * @param relationshipType
      *            Relation type to traverse.
      * @param direction
-     *            Direction in which to traverse edges.
+     *            Direction in which to traverse relationships.
+     * @param includeBoundaryRelationships
+     *            If false, relationships between nodes where the maximum depth
+     *            has been reached will not be included since the search depth
+     *            is considered to have been exhausted at them.
      */
     public void addSubNetworkFromCentralNode( Node node, final int searchDepth,
-        RelationshipType relationshipType, Direction direction )
+        RelationshipType relationshipType, Direction direction,
+        boolean includeBoundaryRelationships )
     {
         internalAddSubNetworkFromCentralNode( node, searchDepth,
-            relationshipType, direction, new HashMap<Node,Integer>() );
+            relationshipType, direction, includeBoundaryRelationships,
+            new HashMap<Node,Integer>() );
     }
 
     /**
@@ -132,7 +117,8 @@ public class SubNetworkCopy
      */
     protected void internalAddSubNetworkFromCentralNode( Node node,
         final int searchDepth, RelationshipType relationshipType,
-        Direction direction, Map<Node,Integer> nodeScanDepths )
+        Direction direction, boolean includeBoundaryRelationships,
+        Map<Node,Integer> nodeScanDepths )
     {
         // We stop here if this node has already been scanned and we this time
         // have a "shorter" way to go beyond it.
@@ -141,15 +127,18 @@ public class SubNetworkCopy
         {
             return;
         }
-        nodeMap.put( node, new SubNetworkNode( node ) );
+        subNetworkNodes.add( node );
         nodeScanDepths.put( node, searchDepth );
-        for ( Relationship relationship : node.getRelationships(
-            relationshipType, direction ) )
+        if ( searchDepth == 0 && includeBoundaryRelationships )
         {
-            Node otherNode = relationship.getOtherNode( node );
-            if ( nodeMap.containsKey( otherNode ) )
+            for ( Relationship relationship : node.getRelationships(
+                relationshipType, direction ) )
             {
-                addRelationship( relationship );
+                if ( subNetworkNodes
+                    .contains( relationship.getOtherNode( node ) ) )
+                {
+                    subNetworkRelationships.add( relationship );
+                }
             }
         }
         if ( searchDepth <= 0 )
@@ -159,34 +148,73 @@ public class SubNetworkCopy
         for ( Relationship relationship : node.getRelationships(
             relationshipType, direction ) )
         {
+            subNetworkRelationships.add( relationship );
             internalAddSubNetworkFromCentralNode( relationship
                 .getOtherNode( node ), searchDepth - 1, relationshipType,
-                direction, nodeScanDepths );
+                direction, includeBoundaryRelationships, nodeScanDepths );
         }
     }
 
-    /**
-     * @return the relationships
-     */
-    public Set<Relationship> getEdges()
+    public void clear()
     {
-        return subNetworkRelationships;
+        subNetworkRelationships = new HashSet<Relationship>();
+        subNetworkNodes = new HashSet<Node>();
     }
 
-    /**
-     * @return the nodes
-     */
-    public Set<Node> getNodes()
+    protected Relationship filterRelationship( Relationship relationship )
     {
-        return new HashSet<Node>( nodeMap.values() );
+        if ( subNetworkRelationships.contains( relationship ) )
+        {
+            return relationship;
+        }
+        return null;
     }
 
-    TraverserFactory traverserFactory = new TraverserFactory();
+    protected Iterable<Relationship> filterRelationships(
+        Iterable<Relationship> rels )
+    {
+        List<Relationship> result = new LinkedList<Relationship>();
+        for ( Relationship relationship : rels )
+        {
+            if ( filterRelationship( relationship ) != null )
+            {
+                result.add( relationship );
+            }
+        }
+        return result;
+    }
 
-    public class SubNetworkNode implements Node
+    class SubNetWorkNode implements Node
     {
         Node underlyingNode;
-        Map<RelationshipType,List<SubNetworkRelationship>> relationships = new HashMap<RelationshipType,List<SubNetworkRelationship>>();
+
+        public SubNetWorkNode( Node underlyingNode )
+        {
+            super();
+            this.underlyingNode = underlyingNode;
+        }
+
+        /**
+         * @param otherNode
+         * @param type
+         * @return
+         * @see org.neo4j.api.core.Node#createRelationshipTo(org.neo4j.api.core.Node,
+         *      org.neo4j.api.core.RelationshipType)
+         */
+        public Relationship createRelationshipTo( Node otherNode,
+            RelationshipType type )
+        {
+            return new SubNetworkRelationship( underlyingNode
+                .createRelationshipTo( otherNode, type ) );
+        }
+
+        /**
+         * @see org.neo4j.api.core.Node#delete()
+         */
+        public void delete()
+        {
+            underlyingNode.delete();
+        }
 
         /**
          * @return
@@ -199,16 +227,6 @@ public class SubNetworkCopy
 
         /**
          * @param arg0
-         * @return
-         * @see org.neo4j.api.core.PropertyContainer#getProperty(java.lang.String)
-         */
-        public Object getProperty( String arg0 )
-        {
-            return underlyingNode.getProperty( arg0 );
-        }
-
-        /**
-         * @param arg0
          * @param arg1
          * @return
          * @see org.neo4j.api.core.PropertyContainer#getProperty(java.lang.String,
@@ -217,6 +235,16 @@ public class SubNetworkCopy
         public Object getProperty( String arg0, Object arg1 )
         {
             return underlyingNode.getProperty( arg0, arg1 );
+        }
+
+        /**
+         * @param arg0
+         * @return
+         * @see org.neo4j.api.core.PropertyContainer#getProperty(java.lang.String)
+         */
+        public Object getProperty( String arg0 )
+        {
+            return underlyingNode.getProperty( arg0 );
         }
 
         /**
@@ -238,6 +266,64 @@ public class SubNetworkCopy
         }
 
         /**
+         * @return
+         * @see org.neo4j.api.core.Node#getRelationships()
+         */
+        public Iterable<Relationship> getRelationships()
+        {
+            return filterRelationships( underlyingNode.getRelationships() );
+        }
+
+        /**
+         * @param dir
+         * @return
+         * @see org.neo4j.api.core.Node#getRelationships(org.neo4j.api.core.Direction)
+         */
+        public Iterable<Relationship> getRelationships( Direction dir )
+        {
+            return filterRelationships( underlyingNode.getRelationships( dir ) );
+        }
+
+        /**
+         * @param type
+         * @param dir
+         * @return
+         * @see org.neo4j.api.core.Node#getRelationships(org.neo4j.api.core.RelationshipType,
+         *      org.neo4j.api.core.Direction)
+         */
+        public Iterable<Relationship> getRelationships( RelationshipType type,
+            Direction dir )
+        {
+            return filterRelationships( underlyingNode.getRelationships( type,
+                dir ) );
+        }
+
+        /**
+         * @param types
+         * @return
+         * @see org.neo4j.api.core.Node#getRelationships(org.neo4j.api.core.RelationshipType[])
+         */
+        public Iterable<Relationship> getRelationships(
+            RelationshipType... types )
+        {
+            return filterRelationships( underlyingNode.getRelationships( types ) );
+        }
+
+        /**
+         * @param type
+         * @param dir
+         * @return
+         * @see org.neo4j.api.core.Node#getSingleRelationship(org.neo4j.api.core.RelationshipType,
+         *      org.neo4j.api.core.Direction)
+         */
+        public Relationship getSingleRelationship( RelationshipType type,
+            Direction dir )
+        {
+            return filterRelationship( underlyingNode.getSingleRelationship(
+                type, dir ) );
+        }
+
+        /**
          * @param arg0
          * @return
          * @see org.neo4j.api.core.PropertyContainer#hasProperty(java.lang.String)
@@ -245,6 +331,26 @@ public class SubNetworkCopy
         public boolean hasProperty( String arg0 )
         {
             return underlyingNode.hasProperty( arg0 );
+        }
+
+        public boolean hasRelationship()
+        {
+            return getRelationships().iterator().hasNext();
+        }
+
+        public boolean hasRelationship( RelationshipType... types )
+        {
+            return getRelationships( types ).iterator().hasNext();
+        }
+
+        public boolean hasRelationship( Direction dir )
+        {
+            return getRelationships( dir ).iterator().hasNext();
+        }
+
+        public boolean hasRelationship( RelationshipType type, Direction dir )
+        {
+            return getRelationships( type, dir ).iterator().hasNext();
         }
 
         /**
@@ -266,149 +372,6 @@ public class SubNetworkCopy
         public void setProperty( String arg0, Object arg1 )
         {
             underlyingNode.setProperty( arg0, arg1 );
-        }
-
-        public SubNetworkNode( Node underlyingNode )
-        {
-            super();
-            this.underlyingNode = underlyingNode;
-        }
-
-        public Relationship createRelationshipTo( Node otherNode,
-            RelationshipType type )
-        {
-            SubNetworkNode otherSubNetworkNode = (SubNetworkNode) otherNode;
-            Node otherUnderlyingNode = otherNode;
-            // If otherNode is a subNetworkNode (of this network)
-            if ( nodeMap.containsValue( otherNode ) )
-            {
-                otherUnderlyingNode = otherSubNetworkNode.underlyingNode;
-            }
-            // Otherwise add it
-            // TODO: or throw some error?
-            else
-            {
-                otherSubNetworkNode = new SubNetworkNode( otherUnderlyingNode );
-                nodeMap.put( otherUnderlyingNode, otherSubNetworkNode );
-            }
-            Relationship underlyingRelationship = underlyingNode
-                .createRelationshipTo( otherUnderlyingNode, type );
-            return addRelationship( underlyingRelationship );
-        }
-
-        public void delete()
-        {
-            // TODO Auto-generated method stub
-        }
-
-        public Iterable<Relationship> getRelationships()
-        {
-            List<Relationship> result = new LinkedList<Relationship>();
-            for ( RelationshipType relationshipType : relationships.keySet() )
-            {
-                result.addAll( relationships.get( relationshipType ) );
-            }
-            return result;
-        }
-
-        public Iterable<Relationship> getRelationships(
-            RelationshipType... types )
-        {
-            List<Relationship> result = new LinkedList<Relationship>();
-            for ( RelationshipType relationshipType : types )
-            {
-                result.addAll( relationships.get( relationshipType ) );
-            }
-            return result;
-        }
-
-        protected List<Relationship> getRelationshipsOfDirection(
-            Iterable<Relationship> rels, Direction dir )
-        {
-            List<Relationship> result = new LinkedList<Relationship>();
-            for ( Relationship relationship : rels )
-            {
-                if ( dir.equals( Direction.BOTH )
-                    || (dir.equals( Direction.OUTGOING ) && relationship
-                        .getStartNode().equals( this ))
-                    || (dir.equals( Direction.INCOMING ) && relationship
-                        .getEndNode().equals( this )) )
-                {
-                    result.add( relationship );
-                }
-            }
-            return result;
-        }
-
-        protected boolean containsRelationshipOfDirection(
-            Iterable<Relationship> rels, Direction dir )
-        {
-            for ( Relationship relationship : rels )
-            {
-                if ( dir.equals( Direction.BOTH )
-                    || (dir.equals( Direction.OUTGOING ) && relationship
-                        .getStartNode().equals( this ))
-                    || (dir.equals( Direction.INCOMING ) && relationship
-                        .getEndNode().equals( this )) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public Iterable<Relationship> getRelationships( Direction dir )
-        {
-            return getRelationshipsOfDirection( getRelationships(), dir );
-        }
-
-        public Iterable<Relationship> getRelationships( RelationshipType type,
-            Direction dir )
-        {
-            List<Relationship> result = new LinkedList<Relationship>();
-            result.addAll( relationships.get( type ) );
-            return result;
-        }
-
-        public Relationship getSingleRelationship( RelationshipType type,
-            Direction dir )
-        {
-            List<SubNetworkRelationship> rels = relationships.get( type );
-            if ( rels == null || rels.isEmpty() )
-            {
-                return null;
-            }
-            return rels.get( 0 );
-        }
-
-        public boolean hasRelationship()
-        {
-            return !relationships.isEmpty();
-        }
-
-        public boolean hasRelationship( RelationshipType... types )
-        {
-            for ( RelationshipType relationshipType : types )
-            {
-                List<SubNetworkRelationship> rels = relationships
-                    .get( relationshipType );
-                if ( rels != null && !rels.isEmpty() )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public boolean hasRelationship( Direction dir )
-        {
-            return containsRelationshipOfDirection( getRelationships(), dir );
-        }
-
-        public boolean hasRelationship( RelationshipType type, Direction dir )
-        {
-            return containsRelationshipOfDirection( getRelationships( type ),
-                dir );
         }
 
         public Traverser traverse( Order traversalOrder,
@@ -501,16 +464,28 @@ public class SubNetworkCopy
     public class SubNetworkRelationship implements Relationship
     {
         Relationship underlyingRelationship;
-        Node startNode;
-        Node endNode;
 
-        public SubNetworkRelationship( Relationship underlyingRelationship,
-            Node startNode, Node endNode )
+        public SubNetworkRelationship( Relationship underlyingRelationship )
         {
             super();
             this.underlyingRelationship = underlyingRelationship;
-            this.startNode = startNode;
-            this.endNode = endNode;
+        }
+
+        /**
+         * @see org.neo4j.api.core.Relationship#delete()
+         */
+        public void delete()
+        {
+            underlyingRelationship.delete();
+        }
+
+        /**
+         * @return
+         * @see org.neo4j.api.core.Relationship#getEndNode()
+         */
+        public Node getEndNode()
+        {
+            return new SubNetWorkNode( underlyingRelationship.getEndNode() );
         }
 
         /**
@@ -520,6 +495,26 @@ public class SubNetworkCopy
         public long getId()
         {
             return underlyingRelationship.getId();
+        }
+
+        /**
+         * @return
+         * @see org.neo4j.api.core.Relationship#getNodes()
+         */
+        public Node[] getNodes()
+        {
+            return new Node[] { getStartNode(), getEndNode() };
+        }
+
+        /**
+         * @param node
+         * @return
+         * @see org.neo4j.api.core.Relationship#getOtherNode(org.neo4j.api.core.Node)
+         */
+        public Node getOtherNode( Node node )
+        {
+            return new SubNetWorkNode( underlyingRelationship
+                .getOtherNode( node ) );
         }
 
         /**
@@ -560,6 +555,15 @@ public class SubNetworkCopy
         public Iterable<Object> getPropertyValues()
         {
             return underlyingRelationship.getPropertyValues();
+        }
+
+        /**
+         * @return
+         * @see org.neo4j.api.core.Relationship#getStartNode()
+         */
+        public Node getStartNode()
+        {
+            return new SubNetWorkNode( underlyingRelationship.getStartNode() );
         }
 
         /**
@@ -610,40 +614,6 @@ public class SubNetworkCopy
         public void setProperty( String arg0, Object arg1 )
         {
             underlyingRelationship.setProperty( arg0, arg1 );
-        }
-
-        public void delete()
-        {
-            // TODO Auto-generated method stub
-        }
-
-        public Node getEndNode()
-        {
-            return endNode;
-        }
-
-        public Node[] getNodes()
-        {
-            return new Node[] { startNode, endNode };
-        }
-
-        public Node getOtherNode( Node node )
-        {
-            if ( node.equals( startNode ) )
-            {
-                return endNode;
-            }
-            if ( node.equals( endNode ) )
-            {
-                return startNode;
-            }
-            throw new RuntimeException( "Node[" + node.getId()
-                + "] not connected to this relationship[" + getId() + "]" );
-        }
-
-        public Node getStartNode()
-        {
-            return startNode;
         }
     }
 }

@@ -21,11 +21,11 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
 import org.neo4j.graphalgo.AllSimplePaths;
-import org.neo4j.graphalgo.benchmark.graphGeneration.GeneratedGraph;
-import org.neo4j.graphalgo.benchmark.graphGeneration.GraphStore;
-import org.neo4j.graphalgo.benchmark.graphGeneration.PreferentialAttachment;
-import org.neo4j.graphalgo.benchmark.graphGeneration.RandomGraph;
-import org.neo4j.graphalgo.benchmark.graphGeneration.SmallWorldGraph;
+import org.neo4j.graphalgo.benchmark.graphgeneration.GeneratedGraph;
+import org.neo4j.graphalgo.benchmark.graphgeneration.GraphStore;
+import org.neo4j.graphalgo.benchmark.graphgeneration.PreferentialAttachment;
+import org.neo4j.graphalgo.benchmark.graphgeneration.RandomGraph;
+import org.neo4j.graphalgo.benchmark.graphgeneration.SmallWorldGraph;
 
 public class AllSimplePathsBenchmark extends NeoAlgoBenchmark
 {
