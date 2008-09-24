@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
@@ -75,11 +77,13 @@ public class PropertyIndexManager
             PropertyIndex index = hook.getIndex( key );
             if ( index != null )
             {
-                if ( list == null )
+                List<PropertyIndex> added = new ArrayList<PropertyIndex>();
+                if ( list != null )
                 {
-                    list = new ArrayList<PropertyIndex>();
+                    added.addAll( list );
                 }
-                list.add( index );
+                added.add( index );
+                return added;
             }
         }
         if ( list == null )
@@ -142,7 +146,7 @@ public class PropertyIndexManager
         List<PropertyIndex> list = indexMap.get( index.getKey() );
         if ( list == null )
         {
-            list = new ArrayList<PropertyIndex>();
+            list = new CopyOnWriteArrayList<PropertyIndex>();
             indexMap.put( index.getKey(), list );
         }
         list.add( index );

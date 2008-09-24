@@ -36,7 +36,8 @@ class RelationshipTypeHolder
     private static Logger log = Logger.getLogger( RelationshipTypeHolder.class
         .getName() );
 
-    private ArrayMap<String,Integer> relTypes = new ArrayMap<String,Integer>();
+    private ArrayMap<String,Integer> relTypes = 
+        new ArrayMap<String,Integer>( 5, true, true );
     private Map<Integer,String> relTranslation = 
         new ConcurrentHashMap<Integer,String>();
 
