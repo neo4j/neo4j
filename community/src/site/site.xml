@@ -1,20 +1,18 @@
+
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <project name="Neo4j graph-algo">
-  <bannerLeft>
-    <name>Neo4j</name>
-    
-<src>http://www.neo4j.org/wp-content/themes/sandbox/imgs/logo.gif</src>
-    <href>http://neo4j.org/</href>
-  </bannerLeft>
-  <body>
-    <links>
-      <item name="Neo4j" href="http://neo4j.org/" />
-    </links>
-
-    <menu name="Neo4j graph-algo">
-      <item name="Introduction" href="index.html"/>
-    </menu>
-
-    <menu ref="reports"/>
-  </body>
+	<bannerLeft>
+		<name>Neo4j</name>
+		<src>images/logos/logo-light.gif</src>
+		<href>http://neo4j.org/</href>
+	</bannerLeft>
+	<body>
+		<links>
+			<item name="Neo4j" href="http://neo4j.org/" />
+		</links>
+		<menu name="Neo4j graph-algo">
+			<item name="Introduction" href="index.html" />
+		</menu>
+		<menu ref="reports" />
+	</body>
 </project>
