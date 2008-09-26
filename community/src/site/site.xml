@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <project name="Neo4j graph-algo">
 	<bannerLeft>
@@ -12,6 +11,7 @@
 		</links>
 		<menu name="Neo4j graph-algo">
 			<item name="Introduction" href="index.html" />
+			<item name="Wiki" href="http://wiki.neo4j.org/content/Graph-algo" />
 		</menu>
 		<menu ref="reports" />
 	</body>
