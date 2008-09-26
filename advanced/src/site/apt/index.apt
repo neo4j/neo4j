@@ -23,7 +23,7 @@ Neo4j graph-algo
 	[]
 
 	Here a few parts of this component will be presented. For more details,
-	see the wiki pages.
+	see the {{{http://wiki.neo4j.org/content/Graph-algo}wiki pages}}.
 
 Shortestpath package
 
