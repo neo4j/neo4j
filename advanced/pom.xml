@@ -22,16 +22,37 @@
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<configuration>
 					<tags>
-					<tag>
-					<name>complexity</name>
-					<placement>a</placement>
-					<head>Complexity:</head>
-					</tag>
+						<tag>
+							<name>complexity</name>
+							<placement>a</placement>
+							<head>Complexity:</head>
+						</tag>
 					</tags>
 				</configuration>
 			</plugin>
 		</plugins>
 	</reporting>
+
+	<scm>
+		<connection>
+			scm:svn:https://svn.neo4j.org/components/graph-algo/trunk/
+		</connection>
+		<url>https://trac.neo4j.org/browser/components/graph-algo
+		</url>
+	</scm>
+
+	<issueManagement>
+		<system>Trac</system>
+		<url>https://trac.neo4j.org/</url>
+	</issueManagement>
+
+	<licenses>
+		<license>
+			<name>GNU Affero General Public License, Version 3</name>
+			<url>https://svn.neo4j.org/components/graph-algo/trunk/LICENSE.txt
+			</url>
+		</license>
+	</licenses>
 
 	<dependencies>
 		<dependency>
