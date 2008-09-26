@@ -43,7 +43,7 @@
 
 	<issueManagement>
 		<system>Trac</system>
-		<url>https://trac.neo4j.org/</url>
+		<url>https://trac.neo4j.org/query?component=graph-algo</url>
 	</issueManagement>
 
 	<licenses>
