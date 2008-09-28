@@ -16,16 +16,17 @@ o Core: All known bugs have been fixed.
 o Core: Removed singletons and made everything IoC.
 o Core: Lots of minor optimization and improvements above native store
   layer (nioneo).
-o Core: Cleanup of code (removed non used) and improved exception handling.
-o Core: Improved read performance and parallelism implementing MVCC like 
-  features. No locks are taken during read only operations. Instead of full 
-  versioning diffs are kept and applied to the right transactions (those 
-  that have modified data). Result is that read operations will execute taking 
-  no locks, make full use of what has already been cached and can execute 
-  concurrently with a transaction that modify the same data. Write operations 
-  will take locks and use diffs instead of full copy on write (this proved to be 
-  faster and scale better than actually doing a in memory copy of the required 
-  data).  
+o Core: Cleanup of code (removed non used code) and improved exception handling.
+o Core: Improved read performance and parallelism by implementing MVCC-like 
+  features. No locks are now taken during read-only operations, instead
+  concurrent operations are working against snapshot versions. Rather than full
+  versioning, for higher performance diffs are kept and applied to the right
+  transactions (those that have modified data). Result is that read operations
+  will execute taking no locks, make full use of what has already been cached
+  and can execute concurrently with a transaction that modify the same data.
+  Write operations will take locks and use diffs instead of full copy on write
+  (this proved to be faster and scale better than actually doing a in memory
+  copy of the required data).
 
 
 1.0-b6 (2007-11-19)
