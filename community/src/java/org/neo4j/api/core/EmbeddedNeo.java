@@ -63,8 +63,7 @@ public final class EmbeddedNeo implements NeoService
      * Creates an embedded {@link NeoService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already
      * exist.
-     * @param storeDir
-     *            the store directory for the neo db files
+     * @param storeDir the store directory for the neo db files
      */
     public EmbeddedNeo( String storeDir )
     {
@@ -75,6 +74,13 @@ public final class EmbeddedNeo implements NeoService
             .getNodeManager();
     }
 
+    /**
+     * A non-standard way of creating an embedded {@link NeoService}
+     * with a set of configuration parameters. Will most likely be removed in
+     * future releases.
+     * @param storeDir the store directory for the db files
+     * @param params configuration parameters
+     */
     public EmbeddedNeo( String storeDir, Map<String,String> params )
     {
         this.shellServer = null;
