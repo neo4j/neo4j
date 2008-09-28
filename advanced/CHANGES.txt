@@ -1,4 +1,4 @@
-1.0-b7 (2008-09-16)
+1.0-b7 (2008-09-29)
 ------------------
 
 o API: Removed a number of deprecated methods (primarily for relationship type
