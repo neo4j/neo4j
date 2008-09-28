@@ -91,8 +91,9 @@ public final class EmbeddedNeo implements NeoService
     }
 
     /**
-     * Convenience method that loads a standard property file and converts it 
-     * into a generic <Code>Map<String,String></CODE>.
+     * A non-standard Convenience method that loads a standard property file and
+     * converts it into a generic <Code>Map<String,String></CODE>. Will most 
+     * likely be removed in future releases.
      * @param file the property file to load
      * @return a map containing the properties from the file
      */
@@ -317,6 +318,12 @@ public final class EmbeddedNeo implements NeoService
         }
     }
 
+    /**
+     * Returns a non-standard configuration object. Will most likely be removed 
+     * in future releases.
+     * 
+     * @return a configuration object
+     */
     public Config getConfig()
     {
         return neoJvmInstance.getConfig();
