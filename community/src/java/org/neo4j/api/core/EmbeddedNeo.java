@@ -90,6 +90,12 @@ public final class EmbeddedNeo implements NeoService
             .getNodeManager();
     }
 
+    /**
+     * Convenience method that loads a standard property file and converts it 
+     * into a generic <Code>Map<String,String></CODE>.
+     * @param file the property file to load
+     * @return a map containing the properties from the file
+     */
     public static Map<String,String> loadConfigurations( String file )
     {
         Properties props = new Properties();
