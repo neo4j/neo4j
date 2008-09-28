@@ -19,10 +19,21 @@ package org.neo4j.api.core;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+/**
+ * Defines a common API for handling properties on both {@link Node nodes} and
+ * {@link Relationship relationships}.
+ * <p>
+ * Properties are key-value pairs. The keys are always strings. Valid property
+ * value types are all the Java primitives (<code>int</code>, <code>byte</code>,
+ * <code>float</code>, etc), <code>java.lang.String</code>s and arrays of
+ * primitives and Strings.
+ * <p>
+ * <b>Please note</b> that Neo does NOT accept arbitrary objects as property
+ * values. {@link #setProperty(String, Object) setProperty()} takes a
+ * <code>java.lang.Object</code> for design reasons only.
+*/
 public interface PropertyContainer
 {
-
-	// Properties
 	/**
 	 * Returns <code>true</code> if this node has a property accessible
 	 * through the given key, <code>false</code> otherwise. If key is
@@ -38,21 +49,21 @@ public interface PropertyContainer
 	 * one of the valid property types, i.e. a Java primitive, a
 	 * {@link String String} or an array of any of the valid types. If there's
 	 * no property associated with <code>key</code> an unchecked exception is
-	 * raised.
+	 * raised. The idiomatic way to make Neo return <code>null</code> for
+	 * unknown keys rather than raise an exception is to use a default value:
+	 * {@link #getProperty(String, Object)
+	 * Object valueOrNull = nodeOrRel.getProperty( key, null )}
 	 * @param key the property key
 	 * @return the property value associated with the given key
 	 * @throws NotFoundException if there's no property associated with
 	 * <code>key</code>
 	 */
-	// TODO: change exception type
 	public Object getProperty( String key );
 
 	/**
 	 * Returns the property value associated with the given key, or a default
 	 * value. The value is of one of the valid property types, i.e. a Java
 	 * primitive, a {@link String String} or an array of any of the valid types.
-	 * If <code>defaultValue</code> is not of a supported type, an unchecked
-	 * exception is raised.
 	 * @param key the property key
 	 * @param defaultValue the default value to return if no property value was
 	 * associated with the given key

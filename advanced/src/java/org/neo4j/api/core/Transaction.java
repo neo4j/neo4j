@@ -20,10 +20,12 @@
 package org.neo4j.api.core;
 
 /**
- * A utility class to manage transactions in Neo. All operations that work with
- * the node space (even read operations) must be wrapped in a transaction.
- * Fortunately, the Transaction class makes this very easy. Here's the idiomatic
- * use of transactions in Neo:
+ * A programmatically handled transaction. All operations that work with the
+ * node space (even read operations) must be wrapped in a transaction.
+ * Transactions can either be handled programmatically, through this interface,
+ * or by a container through the Java Transaction API (JTA). The Transaction
+ * interface makes handling programmatic transactions easier than in JTA. Here's
+ * the idiomatic use of programmatic transactions in Neo:
  * 
  * <pre><code>
  * Transaction tx = neo.beginTx();

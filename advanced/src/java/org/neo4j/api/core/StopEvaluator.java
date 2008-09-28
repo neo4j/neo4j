@@ -52,8 +52,9 @@ package org.neo4j.api.core;
 public interface StopEvaluator
 {
 	/**
-	 * Traverser until the end of network, this evaluator returns 
-	 * <CODE>false</CODE> all the time.
+	 * Deprecated: replaced by {@link #END_OF_GRAPH}. Traverse until the end of
+	 * network, this evaluator returns <CODE>false</CODE> all the time.
+	 * @deprecated
 	 */
 	public static final StopEvaluator END_OF_NETWORK = new StopEvaluator()
 	{
@@ -61,6 +62,18 @@ public interface StopEvaluator
 		{
 			return false;
 		}
+	};
+	
+    /**
+     * Traverse until the end of the graph. This evaluator returns 
+     * <CODE>false</CODE> all the time.
+     */
+	public static final StopEvaluator END_OF_GRAPH = new StopEvaluator()
+	{
+        public boolean isStopNode( TraversalPosition currentPosition )
+        {
+            return false;
+        }
 	};
 	
 	/**
