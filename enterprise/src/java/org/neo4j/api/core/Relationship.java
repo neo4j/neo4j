@@ -20,7 +20,7 @@
 package org.neo4j.api.core;
 
 /**
- * A relationship between two nodes in the network. A relationship has a start
+ * A relationship between two nodes in the graph. A relationship has a start
  * node, an end node and a {@link RelationshipType type}. You can attach
  * properties to relationships with the API specified in
  * {@link PropertyContainer}.

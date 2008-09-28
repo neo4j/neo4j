@@ -20,7 +20,7 @@
 package org.neo4j.api.core;
 
 /**
- * A node in the network with properties and relationships to other entities.
+ * A node in the graph with properties and relationships to other entities.
  * Along with {@link Relationship relationships}, nodes are the core building
  * blocks of the Neo data representation model. Nodes are created by invoking
  * the {@link NeoService#createNode} method.

@@ -125,6 +125,10 @@ public interface NeoService
      */
     public boolean enableRemoteShell(
         Map<String, Serializable> initialProperties );
-    
+ 
+    /**
+     * Starts a new transaction.
+     * @return a new transaction instance
+     */
     public Transaction beginTx();
 }
