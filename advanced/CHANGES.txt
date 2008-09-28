@@ -1,6 +1,8 @@
 1.0-b7 (2008-09-16)
 ------------------
 
+o API: Removed a number of deprecated methods (primarily for relationship type
+  management) from EmbeddedNeo as per warning in the previous release.
 o API: Transaction is now an interface.
 o API: TraversalPosition now has an isStartNode() method.
 o API: NotFound and NotInTransaction runtime exceptions have been moved from
