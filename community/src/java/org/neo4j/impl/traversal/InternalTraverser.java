@@ -29,7 +29,7 @@ import org.neo4j.api.core.Node;
  * the node space according a complex set of rules.
  * <P>
  * A Traverser is created by invoking any of the factory methods in
- * {@link TraverserFactory}. Subsequent retrieval of the nodes from a Traverser
+ * {@link InternalTraverserFactory}. Subsequent retrieval of the nodes from a Traverser
  * is simple: it can either be treated as an {@link java.util.Iterator} using
  * the standard <CODE>if ( i.hasNext() ) { i.next(); }</CODE> idiom or as a
  * Traverser with the type-safe {@link #nextNode} or the array-based
