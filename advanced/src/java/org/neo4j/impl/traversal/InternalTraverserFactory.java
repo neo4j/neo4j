@@ -59,9 +59,9 @@ import org.neo4j.api.core.Traverser.Order;
  * them. This guarantees that the client can optimize by reusing parameters
  * between invocations of <CODE>createTraverser()</CODE>.
  */
-public final class TraverserFactory
+public final class InternalTraverserFactory
 {
-    public TraverserFactory()
+    public InternalTraverserFactory()
     {
     }
 

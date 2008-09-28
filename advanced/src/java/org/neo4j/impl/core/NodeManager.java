@@ -48,7 +48,7 @@ import org.neo4j.impl.transaction.IllegalResourceException;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockNotFoundException;
 import org.neo4j.impl.transaction.LockType;
-import org.neo4j.impl.traversal.TraverserFactory;
+import org.neo4j.impl.traversal.InternalTraverserFactory;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -65,7 +65,7 @@ public class NodeManager
     private final TransactionManager transactionManager;
     private final LockReleaser lockReleaser;
     private final PropertyIndexManager propertyIndexManager;
-    private final TraverserFactory traverserFactory;
+    private final InternalTraverserFactory traverserFactory;
     private final EventManager eventManager;
     private final RelationshipTypeHolder relTypeHolder;
     private final PurgeEventListener purgeEventListener;
@@ -94,7 +94,7 @@ public class NodeManager
         this.idGenerator = idGenerator;
         this.propertyIndexManager = new PropertyIndexManager(
             transactionManager, persistenceManager, idGenerator );
-        this.traverserFactory = new TraverserFactory();
+        this.traverserFactory = new InternalTraverserFactory();
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator );
         this.purgeEventListener = new PurgeEventListener();

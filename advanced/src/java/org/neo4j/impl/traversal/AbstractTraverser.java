@@ -80,7 +80,7 @@ abstract class AbstractTraverser implements Traverser, Iterator<Node>
 
     /**
      * Creates an AbstractTraverser subclass, for information about the
-     * arguments please see the documentation of {@link TraverserFactory}.
+     * arguments please see the documentation of {@link InternalTraverserFactory}.
      */
     AbstractTraverser( Node startNode, RelationshipType[] traversableRels,
         Direction[] traversableDirs, RelationshipType[] preservingRels,
