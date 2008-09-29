@@ -73,8 +73,12 @@ Centrality package
 	SingleSourceShortestPath<Integer> singleSourceShortestPath = new 
 	    SingleSourceShortestPathBFS(
 	        null, Direction.BOTH, MyRelationshipType );
+	        
 	// Set up betweenness centrality algorithm.
 	BetweennessCentrality<Integer> betweennessCentrality = new 
 	    BetweennessCentrality<Integer>(
 	        singleSourceShortestPath, nodeSet );
+
+	// Get centrality value for a node.
+	Double value = betweennessCentrality.getCentrality( targetNode );
 ---

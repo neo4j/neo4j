@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
-	<url>http://wiki.neo4j.org/content/Graph-algo</url>
+	<url>http://components.neo4j.org/graph-algo/</url>
 	<parent>
 		<groupId>org.neo4j</groupId>
 		<artifactId>parent-pom</artifactId>
