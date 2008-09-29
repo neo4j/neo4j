@@ -42,15 +42,20 @@ Shortestpath package
 	// Get the cost for the found path    
 	sp.getCost();
 	
-	// get the path itself
+	// Get the path itself
 	List<PropertyContainer> path = sp.getPath();
 ---
 
 	An example of shortest path from one node:
 
 ---
-	SingleSourceShortestPathBFS pathBFS = new SingleSourceShortestPathBFS(
+	SingleSourceShortestPath<Integer> pathBFS = new SingleSourceShortestPathBFS(
 	    startNode, Direction.BOTH, MyRelationshipType );
+	
+	// Get the paths to some nodes
+	List<PropertyContainer> path1 = pathBFS.getPath( targetNode1 );
+	List<PropertyContainer> path2 = pathBFS.getPath( targetNode2 );
+	List<PropertyContainer> path3 = pathBFS.getPath( targetNode3 );
 ---
 
 Centrality package

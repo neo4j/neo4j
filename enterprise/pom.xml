@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
+	<url>http://wiki.neo4j.org/content/Graph-algo</url>
 	<parent>
 		<groupId>org.neo4j</groupId>
 		<artifactId>parent-pom</artifactId>
@@ -45,6 +46,17 @@
 		<system>Trac</system>
 		<url>https://trac.neo4j.org/query?component=graph-algo</url>
 	</issueManagement>
+	<developers>
+		<developer>
+			<id>patrik</id>
+			<name>Patrik Larsson</name>
+			<email>patrik [at] neotechnology.com</email>
+			<timezone>+1</timezone>
+			<roles>
+				<role>Developer</role>
+			</roles>
+		</developer>
+	</developers>
 
 	<licenses>
 		<license>
