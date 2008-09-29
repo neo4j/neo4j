@@ -34,9 +34,15 @@ Shortestpath package
 
 ---
 	// Set up Dijkstra
-	SingleSourceSingleSinkShortestPath<Double> sp = new Dijkstra<Double>(
-	    0.0, node1, node2, new DoubleEvaluator( "cost" ),
-	    new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
+	SingleSourceSingleSinkShortestPath<Double> sp;
+	sp = new Dijkstra<Double>(
+	    0.0, 
+	    node1, 
+	    node2, 
+	    new DoubleEvaluator( "cost" ),
+	    new DoubleAdder(), 
+	    new DoubleComparator(), 
+	    Direction.BOTH,
 	    MyRelationshipType );
 	
 	// Get the cost for the found path    
@@ -49,8 +55,11 @@ Shortestpath package
 	An example of shortest path from one node:
 
 ---
-	SingleSourceShortestPath<Integer> pathBFS = new SingleSourceShortestPathBFS(
-	    startNode, Direction.BOTH, MyRelationshipType );
+	SingleSourceShortestPath<Integer> pathBFS;
+	pathBFS = new SingleSourceShortestPathBFS(
+	    startNode, 
+	    Direction.BOTH, 
+	    MyRelationshipType );
 	
 	// Get the paths to some nodes
 	List<PropertyContainer> path1 = pathBFS.getPath( targetNode1 );
@@ -70,14 +79,17 @@ Centrality package
 ---
 	// Set up shortest path algorithm.
 	// Observe that we don't need to specify a start node.
-	SingleSourceShortestPath<Integer> singleSourceShortestPath = new 
-	    SingleSourceShortestPathBFS(
-	        null, Direction.BOTH, MyRelationshipType );
+	SingleSourceShortestPath<Integer> singleSourceShortestPath;
+	singleSourceShortestPath = new SingleSourceShortestPathBFS(
+	    null, 
+	    Direction.BOTH, 
+	    MyRelationshipType );
 	        
 	// Set up betweenness centrality algorithm.
-	BetweennessCentrality<Integer> betweennessCentrality = new 
-	    BetweennessCentrality<Integer>(
-	        singleSourceShortestPath, nodeSet );
+	BetweennessCentrality<Integer> betweennessCentrality;
+	betweennessCentrality = new BetweennessCentrality<Integer>(
+	    singleSourceShortestPath, 
+	    nodeSet );
 
 	// Get centrality value for a node.
 	Double value = betweennessCentrality.getCentrality( targetNode );
