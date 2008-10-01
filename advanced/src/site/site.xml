@@ -2,7 +2,7 @@
 <project name="Neo4j graph-algo">
 	<bannerLeft>
 		<name>Neo4j</name>
-		<src>images/logos/logo-light.gif</src>
+		<src>images/logos/logo-dark.gif</src>
 		<href>http://neo4j.org/</href>
 	</bannerLeft>
 	<body>
@@ -15,4 +15,9 @@
 		</menu>
 		<menu ref="reports" />
 	</body>
+    <skin>
+        <groupId>org.neo4j.maven.skins</groupId>
+        <artifactId>default-skin</artifactId>
+        <version>1.0.1-SNAPSHOT</version>
+    </skin>
 </project>
