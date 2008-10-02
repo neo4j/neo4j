@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
-	<url>http://components.neo4j.org/graph-algo/</url>
 	<parent>
 		<groupId>org.neo4j</groupId>
 		<artifactId>parent-pom</artifactId>
@@ -14,6 +13,7 @@
 	<version>0.1-SNAPSHOT</version>
 	<name>graph-algo</name>
 	<description>Graph algorithms for neo4j</description>
+    <url>http://components.neo4j.org/${project.artifactId}/</url>
 
 	<!-- For custom complexity taglet -->
 	<reporting>
@@ -36,15 +36,15 @@
 
 	<scm>
 		<connection>
-			scm:svn:https://svn.neo4j.org/components/graph-algo/trunk/
+			scm:svn:https://svn.neo4j.org/components/${project.artifactId}/trunk/
 		</connection>
-		<url>https://trac.neo4j.org/browser/components/graph-algo
+		<url>https://trac.neo4j.org/browser/components/${project.artifactId}
 		</url>
 	</scm>
 
 	<issueManagement>
 		<system>Trac</system>
-		<url>https://trac.neo4j.org/query?component=graph-algo</url>
+		<url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${project.artifactId}</url>
 	</issueManagement>
 	<developers>
 		<developer>
@@ -61,7 +61,7 @@
 	<licenses>
 		<license>
 			<name>GNU Affero General Public License, Version 3</name>
-			<url>https://svn.neo4j.org/components/graph-algo/trunk/LICENSE.txt
+			<url>https://svn.neo4j.org/components/${project.artifactId}/trunk/LICENSE.txt
 			</url>
 		</license>
 	</licenses>
