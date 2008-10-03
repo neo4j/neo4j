@@ -75,7 +75,7 @@
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo</artifactId>
-			<version>1.0-b7-pre1</version>
+			<version>1.0-b8-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 
