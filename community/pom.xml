@@ -13,6 +13,7 @@
 	<version>0.5-SNAPSHOT</version>
 	<name>graph matching for neo.</name>
 	<description>A graph pattern matcher for Neo.</description>
+	<url>http://components.neo4j.org/${project.artifactId}/</url>
 
 	<build>
 		<plugins>
@@ -23,6 +24,57 @@
 		</plugins>
 	</build>
 
+	<scm>
+		<connection>
+			scm:svn:https://svn.neo4j.org/components/${project.artifactId}/trunk/
+		</connection>
+		<url>https://trac.neo4j.org/browser/components/${project.artifactId}
+		</url>
+	</scm>
+	
+	<issueManagement>
+		<system>Trac</system>
+		<url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${project.artifactId}</url>
+	</issueManagement>
+
+	<licenses>
+		<license>
+			<name>GNU Affero General Public License, Version 3</name>
+			<url>https://svn.neo4j.org/components/${project.artifactId}/trunk/LICENSE.txt
+			</url>
+		</license>
+	</licenses>
+	
+	<developers>
+		<developer>
+			<id>johans</id>
+			<name>Johan Svensson</name>
+			<email>johan [at] neotechnology.com</email>
+			<timezone>+1</timezone>
+			<roles>
+				<role>Developer</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>mattias</id>
+			<name>Mattias Persson</name>
+			<email>mattias [at] neotechnology.com</email>
+			<timezone>+1</timezone>
+			<roles>
+				<role>Developer</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>henrik</id>
+			<name>Henrik Larsson</name>
+			<email>henrik [at] neotechnology.com</email>
+			<timezone>+1</timezone>
+			<roles>
+				<role>Developer</role>
+			</roles>
+		</developer>
+	</developers>
+	
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
