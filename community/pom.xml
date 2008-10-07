@@ -118,7 +118,7 @@ as networks rather than tables. For more information, please see neo4j.org.
 					<includes>
 						<include>org/neo4j/api/**</include>
 					</includes>
-<!--					<comparisonVersion>1.0-b5</comparisonVersion> -->
+					<comparisonVersion>1.0-b6</comparisonVersion>
 				</configuration>
 			</plugin>			
 		</plugins>
