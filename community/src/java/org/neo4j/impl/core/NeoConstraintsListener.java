@@ -88,10 +88,13 @@ class NeoConstraintsListener
                     while ( itr.hasNext() )
                     {
                         NodeImpl node = itr.next();
-                        if ( node.internalHasRelationships() )
+                        Map<String, Integer> leftoverRelationships =
+                            node.internalGetRelationships();
+                        if ( leftoverRelationships != null )
                         {
                             log.severe( "Deleted Node[" + node + 
-                                "] still has relationship." );
+                                "] still has relationships:\n" +
+                                sumRelationships( leftoverRelationships ) );
                             StringBuffer buf = new StringBuffer(
                                 "Found relationships " );
                             log.severe( buf.toString() );
@@ -104,6 +107,22 @@ class NeoConstraintsListener
             {
                 t.printStackTrace();
             }
+        }
+        
+        private String sumRelationships( Map<String, Integer> rels )
+        {
+            StringBuffer buffer = new StringBuffer();
+            int count = 0;
+            for ( Map.Entry<String, Integer> entry : rels.entrySet() )
+            {
+                if ( count++ > 0 )
+                {
+                    buffer.append( "\n" );
+                }
+                buffer.append( "\t" + entry.getValue() + "\t" +
+                    entry.getKey() );
+            }
+            return buffer.toString();
         }
 
         private void setRollbackOnly()

@@ -19,8 +19,11 @@
  */
 package org.neo4j.impl.core;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.NotFoundException;
@@ -235,8 +238,8 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         Relationship rel = rels.next();
         if ( rels.hasNext() )
         {
-            throw new NotFoundException( "More than one relationship[" + type
-                + "] found" );
+            throw new NotFoundException( "More than one relationship[" +
+                type + ", " + dir + "] found for " + this );
         }
         return rel;
     }
@@ -387,9 +390,10 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         relationshipSet.add( relId );
     }
 
-    boolean internalHasRelationships()
+    Map<String, Integer> internalGetRelationships()
     {
         ensureFullRelationships();
+        Map<String, Integer> result = null;
         for ( String type : relationshipMap.keySet() )
         {
             ArrayIntSet source = relationshipMap.get( type );
@@ -401,7 +405,12 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
                 {
                     continue;
                 }
-                return true;
+                result = result == null ?
+                    new HashMap<String, Integer>() : result;
+                Integer count = result.get( type );
+                count = count == null ? 0 : count;
+                count++;
+                result.put( type, count );
             }
         }
         ArrayMap<String,ArrayIntSet> cowRelationshipAddMap = 
@@ -413,11 +422,16 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
                 ArrayIntSet source = cowRelationshipAddMap.get( type );
                 if ( source.size() > 0 )
                 {
-                    return true;
+                    result = result == null ?
+                        new HashMap<String, Integer>() : result;
+                    Integer count = result.get( type );
+                    count = count == null ? 0 : count;
+                    count += source.size();
+                    result.put( type, count );
                 }
             }
         }
-        return false;
+        return result;
     }
 
     private boolean ensureFullRelationships()

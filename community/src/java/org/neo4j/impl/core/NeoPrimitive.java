@@ -150,7 +150,7 @@ abstract class NeoPrimitive
         {
             if ( skipMap != null && skipMap.get( index.getKeyId() ) != null )
             {
-                throw new NotFoundException( "" + key + " property not found." );
+                throw newPropertyNotFoundException( key );
             }
             if ( addMap != null )
             {
@@ -171,9 +171,15 @@ abstract class NeoPrimitive
         {
             return getPropertyValue( property );
         }
-        throw new NotFoundException( "" + key + " property not found." );
+        throw newPropertyNotFoundException( key );
     }
-
+    
+    private NotFoundException newPropertyNotFoundException( String key )
+    {
+        return new NotFoundException( key +
+            " property not found for " + this + "." );
+    }
+    
     private Property getSlowProperty( ArrayMap<Integer,Property> addMap,
         ArrayMap<Integer,Property> skipMap, String key )
     {
@@ -193,8 +199,7 @@ abstract class NeoPrimitive
                     {
                         if ( skipMap != null && skipMap.get( keyId ) != null )
                         {
-                            throw new NotFoundException( "" + key + 
-                                " property not found." );
+                            throw newPropertyNotFoundException( key );
                         }
                         Property property = 
                             addMap.get( indexToCheck.getKeyId() );
@@ -215,8 +220,7 @@ abstract class NeoPrimitive
                 {
                     if ( skipMap != null && skipMap.get( keyId ) != null )
                     {
-                        throw new NotFoundException( "" + key
-                            + " property not found." );
+                        throw newPropertyNotFoundException( key );
                     }
                     Property property = propertyMap.get( 
                         indexToCheck.getKeyId() );
