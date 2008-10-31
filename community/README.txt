@@ -1,4 +1,4 @@
-To get started and for more information about Neo4j go to http://neo4j.org
+To get started and for more information about Neo4j go to http://neo4j.org.
 
 Quick start: 
 
