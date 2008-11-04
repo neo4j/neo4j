@@ -71,7 +71,6 @@ public class NodeManager
     private final PurgeEventListener purgeEventListener;
     private final PersistenceManager persistenceManager;
     private final IdGenerator idGenerator;
-    private final NeoConstraintsListener neoConstraintsListener;
 
     private boolean useAdaptiveCache = true;
     private float adaptiveCacheHeapRatio = 0.77f;
@@ -98,8 +97,6 @@ public class NodeManager
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator );
         this.purgeEventListener = new PurgeEventListener();
-        this.neoConstraintsListener = new NeoConstraintsListener(
-            transactionManager );
 
         nodeCache = new LruCache<Integer,NodeImpl>( "NodeCache", 1500,
             this.cacheManager );
@@ -317,20 +314,8 @@ public class NodeManager
         {
             acquireLock( firstNode, LockType.WRITE );
             firstNodeTaken = true;
-            if ( firstNode.isDeleted() )
-            {
-                setRollbackOnly();
-                throw new IllegalStateException( "" + startNode
-                    + " has been deleted in other transaction" );
-            }
             acquireLock( secondNode, LockType.WRITE );
             secondNodeTaken = true;
-            if ( secondNode.isDeleted() )
-            {
-                setRollbackOnly();
-                throw new IllegalStateException( "" + endNode
-                    + " has been deleted in other transaction" );
-            }
             int typeId = getRelationshipTypeIdFor( type );
             persistenceManager.relationshipCreate( id, typeId, startNodeId,
                 endNodeId );
@@ -435,7 +420,8 @@ public class NodeManager
             }
             if ( persistenceManager.loadLightNode( nodeId ) == null )
             {
-                return neoConstraintsListener.getDeletedNode( nodeId );
+                // return neoConstraintsListener.getDeletedNode( nodeId );
+                return null;
             }
             nodeCache.add( nodeId, node );
             return node;
@@ -871,7 +857,6 @@ public class NodeManager
 
     void deleteNode( NodeImpl node )
     {
-        neoConstraintsListener.deleteNode( node );
         int nodeId = (int) node.getId();
         persistenceManager.nodeDelete( nodeId );
         // remove from node cache done via event
@@ -880,32 +865,23 @@ public class NodeManager
     int nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
     {
         int nodeId = (int) node.getId();
-        neoConstraintsListener.nodePropertyOperation( nodeId );
         return persistenceManager.nodeAddProperty( nodeId, index, value );
     }
 
     void nodeChangeProperty( NodeImpl node, int propertyId, Object value )
     {
         int nodeId = (int) node.getId();
-        neoConstraintsListener.nodePropertyOperation( nodeId );
         persistenceManager.nodeChangeProperty( nodeId, propertyId, value );
     }
 
     void nodeRemoveProperty( NodeImpl node, int propertyId )
     {
         int nodeId = (int) node.getId();
-        neoConstraintsListener.nodePropertyOperation( nodeId );
-        if ( neoConstraintsListener.nodeIsDeleted( nodeId ) )
-        {
-            // property will be deleted
-            return;
-        }
         persistenceManager.nodeRemoveProperty( nodeId, propertyId );
     }
 
     public void deleteRelationship( RelationshipImpl rel )
     {
-        neoConstraintsListener.deleteRelationship( rel );
         int relId = (int) rel.getId();
         persistenceManager.relDelete( relId );
         // remove in rel cache done via event
@@ -915,26 +891,18 @@ public class NodeManager
         Object value )
     {
         int relId = (int) rel.getId();
-        neoConstraintsListener.relPropertyOperation( relId );
         return persistenceManager.relAddProperty( relId, index, value );
     }
 
     void relChangeProperty( RelationshipImpl rel, int propertyId, Object value )
     {
         int relId = (int) rel.getId();
-        neoConstraintsListener.relPropertyOperation( relId );
         persistenceManager.relChangeProperty( relId, propertyId, value );
     }
 
     void relRemoveProperty( RelationshipImpl rel, int propertyId )
     {
         int relId = (int) rel.getId();
-        neoConstraintsListener.relPropertyOperation( relId );
-        if ( neoConstraintsListener.relIsDeleted( relId ) )
-        {
-            // property will be deleted
-            return;
-        }
         persistenceManager.relRemoveProperty( relId, propertyId );
     }
 
