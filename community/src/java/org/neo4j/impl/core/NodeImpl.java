@@ -39,19 +39,11 @@ import org.neo4j.impl.util.ArrayMap;
 
 class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 {
-    private static enum RelPhase
-    {
-        EMPTY_REL, FULL_REL
-    }
-
-    private boolean isDeleted = false;
-    private RelPhase relPhase;
     private ArrayMap<String,ArrayIntSet> relationshipMap = null;
 
     NodeImpl( int id, NodeManager nodeManager )
     {
         super( id, nodeManager );
-        this.relPhase = RelPhase.EMPTY_REL;
     }
 
     // newNode will only be true for NodeManager.createNode
@@ -60,7 +52,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         super( id, newNode, nodeManager );
         if ( newNode )
         {
-            this.relPhase = RelPhase.FULL_REL;
+            relationshipMap = new ArrayMap<String,ArrayIntSet>();
         }
     }
 
@@ -436,7 +428,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 
     private boolean ensureFullRelationships()
     {
-        if ( relPhase != RelPhase.FULL_REL )
+        if ( relationshipMap == null )
         {
             List<RelationshipImpl> fullRelationshipList = 
                 nodeManager.loadRelationships( this );
@@ -457,49 +449,10 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
                 }
                 relationshipSet.add( relId );
             }
-            if ( relationshipMap != null )
-            {
-                for ( String typeName : relationshipMap.keySet() )
-                {
-                    ArrayIntSet relationshipSet = 
-                        relationshipMap.get( typeName );
-                    for ( Integer relId : relationshipSet.values() )
-                    {
-                        if ( !addedRels.contains( relId ) )
-                        {
-                            ArrayIntSet newRelationshipSet = 
-                                newRelationshipMap.get( typeName );
-                            if ( newRelationshipSet == null )
-                            {
-                                newRelationshipSet = new ArrayIntSet();
-                                newRelationshipMap.put( typeName,
-                                    newRelationshipSet );
-                            }
-                            newRelationshipSet.add( relId );
-                            addedRels.add( relId );
-                        }
-                    }
-                }
-            }
             this.relationshipMap = newRelationshipMap;
-            relPhase = RelPhase.FULL_REL;
             return true;
         }
-        if ( relationshipMap == null )
-        {
-            relationshipMap = new ArrayMap<String,ArrayIntSet>();
-        }
         return false;
-    }
-
-    boolean isDeleted()
-    {
-        return isDeleted;
-    }
-
-    void setIsDeleted( boolean flag )
-    {
-        isDeleted = flag;
     }
 
     public Relationship createRelationshipTo( Node otherNode,

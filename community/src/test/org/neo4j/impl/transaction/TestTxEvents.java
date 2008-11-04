@@ -251,7 +251,7 @@ public class TestTxEvents extends AbstractNeoTestCase
                 txManager.commit();
                 fail( "tx should throw exception on commit" );
             }
-            catch ( javax.transaction.RollbackException e )
+            catch ( Exception e )
             { // good
             }
             Thread.sleep( 500 ); // should be enough to propagate the event

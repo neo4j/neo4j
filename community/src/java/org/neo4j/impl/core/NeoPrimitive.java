@@ -29,15 +29,9 @@ import org.neo4j.impl.util.ArrayMap;
 
 abstract class NeoPrimitive
 {
-    private static enum PropertyPhase
-    {
-        EMPTY_PROPERTY, FULL_PROPERTY,
-    }
-
     protected final int id;
     protected final NodeManager nodeManager;
 
-    private PropertyPhase propPhase;
     private ArrayMap<Integer,Property> propertyMap = null;
     
     protected abstract void changeProperty( int propertyId, Object value );
@@ -52,7 +46,6 @@ abstract class NeoPrimitive
     {
         this.id = id;
         this.nodeManager = nodeManager;
-        this.propPhase = PropertyPhase.EMPTY_PROPERTY;
     }
 
     NeoPrimitive( int id, boolean newPrimitive, NodeManager nodeManager )
@@ -61,7 +54,7 @@ abstract class NeoPrimitive
         this.nodeManager = nodeManager;
         if ( newPrimitive )
         {
-            this.propPhase = PropertyPhase.FULL_PROPERTY;
+            propertyMap = new ArrayMap<Integer,Property>( 9, false, true );
         }
     }
     
@@ -569,12 +562,12 @@ abstract class NeoPrimitive
     
     private boolean ensureFullProperties()
     {
-        if ( propPhase != PropertyPhase.FULL_PROPERTY )
+        if ( propertyMap == null )
         {
             RawPropertyData[] rawProperties = loadProperties();
             ArrayIntSet addedProps = new ArrayIntSet();
             ArrayMap<Integer,Property> newPropertyMap = 
-                new ArrayMap<Integer,Property>();
+                new ArrayMap<Integer,Property>( 9, false, true );
             for ( RawPropertyData propData : rawProperties )
             {
                 int propId = propData.getId();
@@ -582,27 +575,8 @@ abstract class NeoPrimitive
                 Property property = new Property( propId, propData.getValue() );
                 newPropertyMap.put( propData.getIndex(), property );
             }
-            if ( propertyMap != null )
-            {
-                for ( int index : this.propertyMap.keySet() )
-                {
-                    Property prop = propertyMap.get( index );
-                    if ( !addedProps.contains( prop.getId() ) )
-                    {
-                        newPropertyMap.put( index, prop );
-                    }
-                }
-            }
             this.propertyMap = newPropertyMap;
-            propPhase = PropertyPhase.FULL_PROPERTY;
             return true;
-        }
-        else
-        {
-            if ( propertyMap == null )
-            {
-                propertyMap = new ArrayMap<Integer,Property>( 9, false, true );
-            }
         }
         return false;
     }
