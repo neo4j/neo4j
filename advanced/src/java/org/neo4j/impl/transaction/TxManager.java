@@ -48,6 +48,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.impl.event.Event;
 import org.neo4j.impl.event.EventData;
 import org.neo4j.impl.event.EventManager;
+import org.neo4j.impl.nioneo.store.StoreFailureException;
 import org.neo4j.impl.transaction.xaframework.XaResource;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -571,6 +572,7 @@ public class TxManager implements TransactionManager
         HeuristicRollbackException
     {
         // mark as commit in log done TxImpl.doCommit()
+        StoreFailureException sfe = null;
         int xaErrorCode = -1;
         if ( tx.getResourceCount() == 0 )
         {
@@ -596,6 +598,11 @@ public class TxManager implements TransactionManager
                     throw new RuntimeException(
                         "commit threw exception but status is committed?", e );
                 }
+            }
+            catch ( StoreFailureException e )
+            {
+                sfe = e;
+                // ok we should have status not committed and
             }
         }
         if ( tx.getStatus() != Status.STATUS_COMMITTED )
@@ -632,9 +639,17 @@ public class TxManager implements TransactionManager
                     + " error writing transaction log," + e );
             }
             tx.setStatus( Status.STATUS_NO_TRANSACTION );
-            throw new HeuristicRollbackException(
-                "Failed to commit, transaction rolledback ---> "
-                    + "error code was: " + xaErrorCode );
+            if ( sfe == null )
+            {
+                throw new HeuristicRollbackException(
+                    "Failed to commit, transaction rolledback ---> "
+                        + "error code was: " + xaErrorCode );
+            }
+            else
+            {
+                throw new HeuristicRollbackException(
+                    "Failed to commit, transaction rolledback ---> " + sfe );
+            }
         }
         tx.doAfterCompletion();
         txThreadMap.remove( thread );

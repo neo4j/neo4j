@@ -46,7 +46,6 @@ import org.neo4j.impl.transaction.LockManager;
 
 public class TestNeoStore extends AbstractNeoTestCase
 {
-
     public TestNeoStore( String testName )
     {
         super( testName );

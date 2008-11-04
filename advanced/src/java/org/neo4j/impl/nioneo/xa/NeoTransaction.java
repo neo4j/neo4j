@@ -475,6 +475,11 @@ class NeoTransaction extends XaTransaction
             nodeRecord = getNodeStore().getRecord( nodeId );
             addNodeRecord( nodeRecord );
         }
+        if ( !nodeRecord.inUse() )
+        {
+            throw new IllegalStateException( "Unable to delete Node[" + nodeId + 
+            "] since it has already been deleted." );
+        }
         nodeRecord.setInUse( false );
         int nextProp = nodeRecord.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
@@ -507,6 +512,11 @@ class NeoTransaction extends XaTransaction
         {
             record = getRelationshipStore().getRecord( id );
             addRelationshipRecord( record );
+        }
+        if ( !record.inUse() )
+        {
+            throw new IllegalStateException( "Unable to delete relationship[" + 
+                id + "] since it is already deleted." );
         }
         int nextProp = record.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
@@ -719,6 +729,11 @@ class NeoTransaction extends XaTransaction
         {
             relRecord = getRelationshipStore().getRecord( relId );
         }
+        if ( !relRecord.inUse() )
+        {
+            throw new IllegalStateException( "Property remove on relationship[" +
+                relId + "] illegal since it has been deleted." );
+        }
         PropertyRecord propRecord = getPropertyRecord( propertyId );
         if ( propRecord == null )
         {
@@ -884,6 +899,11 @@ class NeoTransaction extends XaTransaction
         {
             nodeRecord = getNodeStore().getRecord( nodeId );
         }
+        if ( !nodeRecord.inUse() )
+        {
+            throw new IllegalStateException( "Property remove on node[" +
+                nodeId + "] illegal since it has been deleted." );
+        }
         PropertyRecord propRecord = getPropertyRecord( propertyId );
         if ( propRecord == null )
         {
@@ -937,6 +957,16 @@ class NeoTransaction extends XaTransaction
 
     void relChangeProperty( int relId, int propertyId, Object value )
     {
+        RelationshipRecord relRecord = getRelationshipRecord( relId );
+        if ( relRecord == null )
+        {
+            relRecord = getRelationshipStore().getRecord( relId );
+        }
+        if ( !relRecord.inUse() )
+        {
+            throw new IllegalStateException( "Property change on relationship[" +
+                relId + "] illegal since it has been deleted." );
+        }
         PropertyRecord propertyRecord = getPropertyRecord( propertyId );
         if ( propertyRecord == null )
         {
@@ -974,6 +1004,16 @@ class NeoTransaction extends XaTransaction
 
     void nodeChangeProperty( int nodeId, int propertyId, Object value )
     {
+        NodeRecord nodeRecord = getNodeRecord( nodeId );
+        if ( nodeRecord == null )
+        {
+            nodeRecord = getNodeStore().getRecord( nodeId );
+        }
+        if ( !nodeRecord.inUse() )
+        {
+            throw new IllegalStateException( "Property change on node[" +
+                nodeId + "] illegal since it has been deleted." );
+        }
         PropertyRecord propertyRecord = getPropertyRecord( propertyId );
         if ( propertyRecord == null )
         {
@@ -1018,6 +1058,11 @@ class NeoTransaction extends XaTransaction
             relRecord = getRelationshipStore().getRecord( relId );
             addRelationshipRecord( relRecord );
         }
+        if ( !relRecord.inUse() )
+        {
+            throw new IllegalStateException( "Property add on relationship[" +
+                relId + "] illegal since it has been deleted." );
+        }
         PropertyRecord propertyRecord = new PropertyRecord( propertyId );
         propertyRecord.setInUse( true );
         propertyRecord.setCreated();
@@ -1052,6 +1097,11 @@ class NeoTransaction extends XaTransaction
             nodeRecord = getNodeStore().getRecord( nodeId );
             addNodeRecord( nodeRecord );
         }
+        if ( !nodeRecord.inUse() )
+        {
+            throw new IllegalStateException( "Property add on node[" +
+                nodeId + "] illegal since it has been deleted." );
+        }
 
         PropertyRecord propertyRecord = new PropertyRecord( propertyId );
         propertyRecord.setInUse( true );
@@ -1081,30 +1131,42 @@ class NeoTransaction extends XaTransaction
         addPropertyRecord( propertyRecord );
     }
 
-    void relationshipCreate( int id, int firstNode, int secondNode, int type )
+    void relationshipCreate( int id, int firstNodeId, int secondNodeId, 
+        int type )
     {
-        RelationshipRecord record = new RelationshipRecord( id, firstNode,
-            secondNode, type );
+        NodeRecord firstNode = getNodeRecord( firstNodeId );
+        if ( firstNode == null )
+        {
+            firstNode = getNodeStore().getRecord( firstNodeId );
+            addNodeRecord( firstNode );
+        }
+        if ( !firstNode.inUse() )
+        {
+            throw new IllegalStateException( "First node[" + firstNodeId + 
+                "] is deleted and cannot be used to create a relationship" );
+        }
+        NodeRecord secondNode = getNodeRecord( secondNodeId );
+        if ( secondNode == null )
+        {
+            secondNode = getNodeStore().getRecord( secondNodeId );
+            addNodeRecord( secondNode );
+        }
+        if ( !secondNode.inUse() )
+        {
+            throw new IllegalStateException( "Second node[" + secondNodeId + 
+                "] is deleted and cannot be used to create a relationship" );
+        }
+        RelationshipRecord record = new RelationshipRecord( id, firstNodeId,
+            secondNodeId, type );
         record.setInUse( true );
         record.setCreated();
         addRelationshipRecord( record );
-        connectRelationship( record );
+        connectRelationship( firstNode, secondNode, record );
     }
 
-    private void connectRelationship( RelationshipRecord rel )
+    private void connectRelationship( NodeRecord firstNode, 
+        NodeRecord secondNode, RelationshipRecord rel )
     {
-        NodeRecord firstNode = getNodeRecord( rel.getFirstNode() );
-        if ( firstNode == null )
-        {
-            firstNode = getNodeStore().getRecord( rel.getFirstNode() );
-            addNodeRecord( firstNode );
-        }
-        NodeRecord secondNode = getNodeRecord( rel.getSecondNode() );
-        if ( secondNode == null )
-        {
-            secondNode = getNodeStore().getRecord( rel.getSecondNode() );
-            addNodeRecord( secondNode );
-        }
         assert firstNode.getNextRel() != rel.getId();
         assert secondNode.getNextRel() != rel.getId();
         rel.setFirstNextRel( firstNode.getNextRel() );

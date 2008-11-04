@@ -135,15 +135,16 @@ public class TestNeoConstrains extends AbstractNeoTestCase
         try
         {
             node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            fail( "Create of rel on deleted node should fail fast" );
         }
         catch ( Exception e )
         { // ok
         }
         try
         {
-            tx.success();
+            tx.failure();
             tx.finish();
-            fail( "Transaction should be marked rollback" );
+            // fail( "Transaction should be marked rollback" );
         }
         catch ( Exception e )
         { // good
