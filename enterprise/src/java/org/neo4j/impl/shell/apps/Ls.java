@@ -116,7 +116,7 @@ public class Ls extends NodeOrRelationshipApp
         for ( String key : thing.getPropertyKeys() )
         {
             if ( propertyKeyPattern != null
-                && !propertyKeyPattern.matcher( key ).matches() )
+                && !propertyKeyPattern.matcher( key ).find() )
             {
                 continue;
             }
