@@ -33,6 +33,12 @@ public class PatternMatcher
 		return matcher;
 	}
 	
+    public Iterable<PatternMatch> match( PatternNode start, 
+        Node startNode )
+    {
+        return match( start, startNode, null );
+    }
+    
 	public Iterable<PatternMatch> match( PatternNode start, 
 		Node startNode, Map<String, PatternNode> objectVariables )
 	{
