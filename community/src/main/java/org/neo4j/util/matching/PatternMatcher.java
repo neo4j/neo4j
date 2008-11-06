@@ -15,10 +15,10 @@ import java.util.Stack;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.util.FilteringIterable;
-import org.neo4j.util.matching.regex.RegexBinaryNode;
-import org.neo4j.util.matching.regex.RegexExpression;
-import org.neo4j.util.matching.regex.RegexPattern;
-import org.neo4j.util.matching.regex.RegexValueGetter;
+import org.neo4j.util.matching.filter.AbstractFilterExpression;
+import org.neo4j.util.matching.filter.FilterBinaryNode;
+import org.neo4j.util.matching.filter.FilterExpression;
+import org.neo4j.util.matching.filter.FilterValueGetter;
 
 public class PatternMatcher
 {
@@ -180,7 +180,7 @@ public class PatternMatcher
 		}
 	}
 	
-	private static class SimpleRegexValueGetter implements RegexValueGetter
+	private static class SimpleRegexValueGetter implements FilterValueGetter
 	{
 	    private PatternMatch match;
 	    private Map<String, PatternNode> labelToNode =
@@ -189,29 +189,30 @@ public class PatternMatcher
 	        new HashMap<String, String>();
 	    
 	    SimpleRegexValueGetter( Map<String, PatternNode> objectVariables,
-	        PatternMatch match, RegexExpression[] expressions )
+	        PatternMatch match, FilterExpression[] expressions )
 	    {
             this.match = match;
-            for ( RegexExpression expression : expressions )
+            for ( FilterExpression expression : expressions )
             {
                 mapFromExpression( expression );
             }
             this.labelToNode = objectVariables;
 	    }
 	    
-	    private void mapFromExpression( RegexExpression expression )
+	    private void mapFromExpression( FilterExpression expression )
 	    {
-	        if ( expression instanceof RegexBinaryNode )
+	        if ( expression instanceof FilterBinaryNode )
 	        {
-	            RegexBinaryNode node = ( RegexBinaryNode ) expression;
+	            FilterBinaryNode node = ( FilterBinaryNode ) expression;
 	            mapFromExpression( node.getLeftExpression() );
 	            mapFromExpression( node.getRightExpression() );
 	        }
 	        else
 	        {
-	            RegexPattern pattern = ( RegexPattern ) expression;
+	            AbstractFilterExpression pattern =
+	                ( AbstractFilterExpression ) expression;
 	            labelToProperty.put( pattern.getLabel(),
-	                pattern.getPropertyKey() );
+	                pattern.getProperty() );
 	        }
 	    }
 
@@ -272,9 +273,9 @@ public class PatternMatcher
                 PatternGroup group = node.getGroup();
                 if ( calculatedGroups.add( group ) )
                 {
-                    RegexValueGetter valueGetter = new SimpleRegexValueGetter(
+                    FilterValueGetter valueGetter = new SimpleRegexValueGetter(
                         objectVariables, item, group.getFilters() );
-                    for ( RegexExpression expression : group.getFilters() )
+                    for ( FilterExpression expression : group.getFilters() )
                     {
                         if ( !expression.matches( valueGetter ) )
                         {

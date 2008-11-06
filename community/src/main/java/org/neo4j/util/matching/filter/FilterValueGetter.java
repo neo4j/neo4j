@@ -1,4 +1,4 @@
-package org.neo4j.util.matching.regex;
+package org.neo4j.util.matching.filter;
 
 import org.neo4j.util.matching.PatternNode;
 
@@ -6,7 +6,7 @@ import org.neo4j.util.matching.PatternNode;
  * A hook for getting values from a node (real neo node) represented by
  * a {@link PatternNode} with a certain label.
  */
-public interface RegexValueGetter
+public interface FilterValueGetter
 {
-    String[] getValues( String label );
+    Object[] getValues( String label );
 }

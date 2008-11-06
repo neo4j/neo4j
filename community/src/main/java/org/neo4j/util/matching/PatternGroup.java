@@ -3,21 +3,21 @@ package org.neo4j.util.matching;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.util.matching.regex.RegexExpression;
+import org.neo4j.util.matching.filter.FilterExpression;
 
 public class PatternGroup
 {
-    private Collection<RegexExpression> regexExpression =
-        new ArrayList<RegexExpression>();
+    private Collection<FilterExpression> regexExpression =
+        new ArrayList<FilterExpression>();
     
-    public void addFilter( RegexExpression regexRepression )
+    public void addFilter( FilterExpression regexRepression )
     {
         this.regexExpression.add( regexRepression );
     }
     
-    public RegexExpression[] getFilters()
+    public FilterExpression[] getFilters()
     {
         return this.regexExpression.toArray(
-            new RegexExpression[ this.regexExpression.size() ] );
+            new FilterExpression[ this.regexExpression.size() ] );
     }
 }
