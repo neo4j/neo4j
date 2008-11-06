@@ -1,5 +1,6 @@
 package matching;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestCase;
@@ -52,6 +53,19 @@ public class TestPatternMatching extends TestCase
 	{
 		super( name );
 	}
+	
+	private Iterable<PatternMatch> doMatch( PatternNode pNode, Node node )
+	{
+	    return PatternMatcher.getMatcher().match( pNode, node,
+	        new HashMap<String, PatternNode>() );
+	}
+    
+    private Iterable<PatternMatch> doMatch( PatternNode pNode, Node node,
+        PatternNode... optionalNodes )
+    {
+        return PatternMatcher.getMatcher().match( pNode, node,
+            new HashMap<String, PatternNode>(), optionalNodes );
+    }
     
     public void testAllRelTypes()
     {
@@ -70,7 +84,7 @@ public class TestPatternMatching extends TestCase
         PatternRelationship pRel = pA.createRelationshipTo( pB );
         int count = 0;
         for ( PatternMatch match : 
-            PatternMatcher.getMatcher().match( pA, a1 ) )
+            doMatch( pA, a1 ) )
         {
             assertEquals( match.getNodeFor( pA ), a1 );
             assertEquals( match.getNodeFor( pB ), b1 );
@@ -100,7 +114,7 @@ public class TestPatternMatching extends TestCase
         pRel.addPropertyExistConstraint( "musthave" );
         int count = 0;
         for ( PatternMatch match : 
-            PatternMatcher.getMatcher().match( pA, a1 ) )
+            doMatch( pA, a1 ) )
         {
             assertEquals( match.getNodeFor( pA ), a1 );
             assertEquals( match.getNodeFor( pB ), b1 );
@@ -166,7 +180,7 @@ public class TestPatternMatching extends TestCase
 		
 		int count = 0;
 		for ( PatternMatch match : 
-			PatternMatcher.getMatcher().match( pA, aT ) )
+			doMatch( pA, aT ) )
 		{
 			assertEquals( match.getNodeFor( pA ), aT );
 			assertEquals( match.getNodeFor( pAI ), a1 );
@@ -192,7 +206,7 @@ public class TestPatternMatching extends TestCase
 		
 		count = 0;
 		for ( PatternMatch match : 
-			PatternMatcher.getMatcher().match( pCI, c2 ) )
+			doMatch( pCI, c2 ) )
 		{
 			assertEquals( match.getNodeFor( pA ), aT );
 			assertEquals( match.getNodeFor( pAI ), a1 );
@@ -235,7 +249,7 @@ public class TestPatternMatching extends TestCase
 		
 		int count = 0;
 		for ( PatternMatch match : 
-			PatternMatcher.getMatcher().match( pA, a ) )
+			doMatch( pA, a ) )
 		{
 			assertEquals( match.getNodeFor( pA ), a );
 			Node b = match.getNodeFor( pB );
@@ -259,7 +273,7 @@ public class TestPatternMatching extends TestCase
 		assertEquals( 3, count );
 		count = 0;
 		for ( PatternMatch match : 
-			PatternMatcher.getMatcher().match( pB, b2 ) )
+			doMatch( pB, b2 ) )
 		{
 			assertEquals( match.getNodeFor( pA ), a );
 			assertEquals( match.getNodeFor( pB ), b2 );
@@ -297,7 +311,7 @@ public class TestPatternMatching extends TestCase
 		
 		int count = 0;
 		for ( PatternMatch match : 
-			PatternMatcher.getMatcher().match( pA, a ) )
+			doMatch( pA, a ) )
 		{
 			assertEquals( match.getNodeFor( pA ), a );
 			Node b = match.getNodeFor( pB );
@@ -311,7 +325,7 @@ public class TestPatternMatching extends TestCase
 		assertEquals( 3, count );
 		count = 0;
 		for ( PatternMatch match : 
-			PatternMatcher.getMatcher().match( pB, b2 ) )
+			doMatch( pB, b2 ) )
 		{
 			assertEquals( match.getNodeFor( pA ), a );
 			Node b = match.getNodeFor( pB );
@@ -357,7 +371,7 @@ public class TestPatternMatching extends TestCase
 		
 		int count = 0;
 		for ( PatternMatch match : 
-			PatternMatcher.getMatcher().match( pA, a ) )
+			doMatch( pA, a ) )
 		{
 			assertEquals( match.getNodeFor( pA ), a );
 			Node b = match.getNodeFor( pB );
@@ -371,7 +385,7 @@ public class TestPatternMatching extends TestCase
 		assertEquals( 2, count );
 		count = 0;
 		for ( PatternMatch match : 
-			PatternMatcher.getMatcher().match( pB, b2 ) )
+			doMatch( pB, b2 ) )
 		{
 			assertEquals( match.getNodeFor( pA ), a );
 			assertEquals( match.getNodeFor( pB ), b2 );
@@ -435,7 +449,7 @@ public class TestPatternMatching extends TestCase
 		// branches work.
 		int count = 0;
 		for ( PatternMatch match :
-			PatternMatcher.getMatcher().match( pA, a, oA1, oA2, oC3 ) )
+			doMatch( pA, a, oA1, oA2, oC3 ) )
 		{
 			assertEquals( match.getNodeFor( pA ), a );
 			Node bMatch = match.getNodeFor( oB1 );
@@ -469,7 +483,7 @@ public class TestPatternMatching extends TestCase
 		
 		count = 0;
 		for ( PatternMatch match :
-			PatternMatcher.getMatcher().match( pI, a, pI, pK ) )
+			doMatch( pI, a, pI, pK ) )
 		{
 			assertEquals( match.getNodeFor( pI), a );
 			Node jMatch = match.getNodeFor( pJ );
@@ -513,7 +527,7 @@ public class TestPatternMatching extends TestCase
 		
 		int count = 0;
 		for ( PatternMatch match :
-			PatternMatcher.getMatcher().match( pA, a, oB ) )
+			doMatch( pA, a, oB ) )
 		{
 			assertEquals( match.getNodeFor( pA ), a );
 			Node bMatch = match.getNodeFor( pB );
@@ -577,7 +591,7 @@ public class TestPatternMatching extends TestCase
 		
 		int count = 0;
 		for ( PatternMatch match : 
-			PatternMatcher.getMatcher().match( pA, a ) )
+			doMatch( pA, a ) )
 		{
 			assertEquals( match.getNodeFor( pA ), a );
 			Node b = match.getNodeFor( pB );
@@ -591,7 +605,7 @@ public class TestPatternMatching extends TestCase
 		assertEquals( 2, count );
 		count = 0;
 		for ( PatternMatch match : 
-			PatternMatcher.getMatcher().match( pB, b2 ) )
+			doMatch( pB, b2 ) )
 		{
 			assertEquals( match.getNodeFor( pA ), a );
 			assertEquals( match.getNodeFor( pB ), b2 );

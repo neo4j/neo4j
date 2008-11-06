@@ -7,11 +7,18 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
+
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
+import org.neo4j.util.FilteringIterable;
+import org.neo4j.util.matching.regex.RegexBinaryNode;
+import org.neo4j.util.matching.regex.RegexExpression;
+import org.neo4j.util.matching.regex.RegexPattern;
+import org.neo4j.util.matching.regex.RegexValueGetter;
 
 public class PatternMatcher
 {
@@ -27,28 +34,41 @@ public class PatternMatcher
 	}
 	
 	public Iterable<PatternMatch> match( PatternNode start, 
-		Node startNode )
+		Node startNode, Map<String, PatternNode> objectVariables )
 	{
-		return new PatternFinder( start, startNode );
+		return match( start, startNode, objectVariables,
+		    ( Collection<PatternNode> ) null );
 	}
 	
 	public Iterable<PatternMatch> match( PatternNode start,
-		Node startNode, Collection<PatternNode> optional )
+		Node startNode, Map<String, PatternNode> objectVariables,
+		Collection<PatternNode> optional )
 	{
+	    Iterable<PatternMatch> result = null;
 		if ( optional == null || optional.size() < 1 )
 		{
-			return new PatternFinder( start, startNode );
+			result = new PatternFinder( start, startNode );
 		}
 		else
 		{
-			return new PatternFinder( start, startNode, false, optional );
+			result = new PatternFinder( start, startNode, false, optional );
 		}
+		
+		if ( objectVariables != null )
+		{
+    		// Uses the FILTER expressions
+    		result = new FilteredPatternFinder( result, objectVariables );
+		}
+		
+		return result;
 	}
 	
 	public Iterable<PatternMatch> match( PatternNode start,
-		Node startNode, PatternNode... optional )
+		Node startNode, Map<String, PatternNode> objectVariables,
+		PatternNode... optional )
 	{
-		return match( start, startNode, Arrays.asList( optional ) );
+		return match( start, startNode, objectVariables,
+		    Arrays.asList( optional ) );
 	}
 	
 	private static class OptionalPatternFinder
@@ -158,6 +178,113 @@ public class PatternMatcher
 				position = i;
 			}
 		}
+	}
+	
+	private static class SimpleRegexValueGetter implements RegexValueGetter
+	{
+	    private PatternMatch match;
+	    private Map<String, PatternNode> labelToNode =
+	        new HashMap<String, PatternNode>();
+	    private Map<String, String> labelToProperty =
+	        new HashMap<String, String>();
+	    
+	    SimpleRegexValueGetter( Map<String, PatternNode> objectVariables,
+	        PatternMatch match, RegexExpression[] expressions )
+	    {
+            this.match = match;
+            for ( RegexExpression expression : expressions )
+            {
+                mapFromExpression( expression );
+            }
+            this.labelToNode = objectVariables;
+	    }
+	    
+	    private void mapFromExpression( RegexExpression expression )
+	    {
+	        if ( expression instanceof RegexBinaryNode )
+	        {
+	            RegexBinaryNode node = ( RegexBinaryNode ) expression;
+	            mapFromExpression( node.getLeftExpression() );
+	            mapFromExpression( node.getRightExpression() );
+	        }
+	        else
+	        {
+	            RegexPattern pattern = ( RegexPattern ) expression;
+	            labelToProperty.put( pattern.getLabel(),
+	                pattern.getPropertyKey() );
+	        }
+	    }
+
+        public String[] getValues( String label )
+        {
+            PatternNode pNode = labelToNode.get( label );
+            if ( pNode == null )
+            {
+                throw new RuntimeException( "No node for label '" + label +
+                    "'" );
+            }
+            Node node = this.match.getNodeFor( pNode );
+            
+            String propertyKey = labelToProperty.get( label );
+            if ( propertyKey == null )
+            {
+                throw new RuntimeException( "No property key for label '" +
+                    label + "'" );
+            }
+            
+            Object neoValue = node.getProperty( propertyKey, null );
+            if ( neoValue == null )
+            {
+                return new String[ 0 ];
+            }
+            
+            Collection<Object> values =
+                NeoArrayPropertyUtil.neoValueToCollection( neoValue );
+            String[] result = new String[ values.size() ];
+            int counter = 0;
+            for ( Object value : values )
+            {
+                result[ counter++ ] = ( String ) value;
+            }
+            return result;
+        }
+	}
+	
+	private static class FilteredPatternFinder
+	    extends FilteringIterable<PatternMatch>
+	{
+	    private final Map<String, PatternNode> objectVariables;
+	    
+        public FilteredPatternFinder( Iterable<PatternMatch> source,
+            Map<String, PatternNode> objectVariables )
+        {
+            super( source );
+            this.objectVariables = objectVariables;
+        }
+
+        @Override
+        protected boolean passes( PatternMatch item )
+        {
+            Set<PatternGroup> calculatedGroups = new HashSet<PatternGroup>();
+            for ( PatternElement element : item.getElements() )
+            {
+                PatternNode node = element.getPatternNode();
+                PatternGroup group = node.getGroup();
+                if ( calculatedGroups.add( group ) )
+                {
+                    RegexValueGetter valueGetter = new SimpleRegexValueGetter(
+                        objectVariables, item, group.getFilters() );
+                    for ( RegexExpression expression : group.getFilters() )
+                    {
+                        if ( !expression.matches( valueGetter ) )
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
 	}
 	
 	private static class PatternFinder implements Iterable<PatternMatch>,

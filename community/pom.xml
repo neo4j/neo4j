@@ -87,6 +87,11 @@
 			<artifactId>neo</artifactId>
 			<version>1.0-b8-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo-component-commons</artifactId>
+			<version>0.1-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 </project>

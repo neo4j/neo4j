@@ -9,24 +9,43 @@ import org.neo4j.api.core.RelationshipType;
 
 public class PatternNode
 {
-	 private LinkedList<PatternRelationship> relationships = 
+    public static final PatternGroup DEFAULT_PATTERN_GROUP = new PatternGroup();
+    
+	private LinkedList<PatternRelationship> relationships = 
 		new LinkedList<PatternRelationship>();
-	 private LinkedList<PatternRelationship> optionalRelationships =
-		 new LinkedList<PatternRelationship>();
+	private LinkedList<PatternRelationship> optionalRelationships =
+		new LinkedList<PatternRelationship>();
 	 
-	 private Set<String> propertiesExist = new HashSet<String>();
-	 private Map<String, Object[]> propertiesEqual =
-		 new HashMap<String, Object[]>();
-	 private String label;
+	private Set<String> propertiesExist = new HashSet<String>();
+	private Map<String, Object[]> propertiesEqual =
+		new HashMap<String, Object[]>();
+	private final String label;
+	private final PatternGroup group;
 	
 	public PatternNode()
 	{
-		this.label = "";
+	    this( DEFAULT_PATTERN_GROUP, "" );
 	}
 	
 	public PatternNode( String label )
 	{
-		this.label = label;
+	    this( DEFAULT_PATTERN_GROUP, label );
+	}
+	
+	public PatternNode( PatternGroup group )
+	{
+	    this( group, "" );
+	}
+	
+	public PatternNode( PatternGroup group, String label )
+	{
+	    this.group = group;
+	    this.label = label;
+	}
+	
+	public PatternGroup getGroup()
+	{
+	    return this.group;
 	}
 
 	public Iterable<PatternRelationship> getAllRelationships()
