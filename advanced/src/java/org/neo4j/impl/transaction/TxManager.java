@@ -121,6 +121,7 @@ public class TxManager implements TransactionManager
                 byte fileName[] = new byte[256];
                 ByteBuffer buf = ByteBuffer.wrap( fileName );
                 fc.read( buf );
+                fc.close();
                 String currentTxLog = txLogDir + separator
                     + new String( fileName ).trim();
                 if ( !new File( currentTxLog ).exists() )
