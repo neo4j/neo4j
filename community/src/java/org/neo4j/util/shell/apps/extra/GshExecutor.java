@@ -44,7 +44,10 @@ public class GshExecutor extends ScriptExecutor
 			// Don't pass the exception on because the client most certainly
 			// doesn't have groovy in the classpath.
 			throw new ShellException( "Groovy exception: " +
-				this.findProperMessage( e ) );
+				this.findProperMessage( e ) + "\n" +
+				"\n----------[ACTUAL EXCEPTION]----------" + "\n" +
+				this.stackTraceAsString( e ) +
+				"----------[END OF ACTUAL EXCEPTION]----------\n" );
 		}
 	}
 	
