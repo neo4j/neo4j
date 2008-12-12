@@ -22,6 +22,7 @@ package org.neo4j.impl.core;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,7 +47,6 @@ import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.transaction.IllegalResourceException;
 import org.neo4j.impl.transaction.LockManager;
-import org.neo4j.impl.transaction.LockNotFoundException;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.traversal.InternalTraverserFactory;
 import org.neo4j.impl.util.ArrayIntSet;
@@ -78,6 +78,10 @@ public class NodeManager
     private int minRelCacheSize = 0;
     private int maxNodeCacheSize = 1500;
     private int maxRelCacheSize = 3500;
+    
+    private static final int LOCK_STRIPE_COUNT = 5;
+    private final ReentrantLock loadLocks[] = 
+        new ReentrantLock[LOCK_STRIPE_COUNT]; 
 
     NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager,
         TransactionManager transactionManager, EventManager eventManager,
@@ -102,6 +106,10 @@ public class NodeManager
             this.cacheManager );
         relCache = new LruCache<Integer,RelationshipImpl>( "RelationshipCache",
             3500, this.cacheManager );
+        for ( int i = 0; i < loadLocks.length; i++ )
+        {
+            loadLocks[i] = new ReentrantLock();
+        }
     }
 
     private void parseParams( Map<Object,Object> params )
@@ -368,6 +376,13 @@ public class NodeManager
         }
     }
 
+    private ReentrantLock lockId( int id )
+    {
+        ReentrantLock lock = loadLocks[id % LOCK_STRIPE_COUNT ];
+        lock.lock();
+        return lock;
+    }
+    
     public Node getNodeById( int nodeId ) throws NotFoundException
     {
         if ( nodeId < 0 )
@@ -381,7 +396,7 @@ public class NodeManager
             return new NodeProxy( nodeId, this );
         }
         node = new NodeImpl( nodeId, this );
-        acquireLock( node, LockType.WRITE );
+        ReentrantLock loadLock = lockId( nodeId );
         try
         {
             if ( nodeCache.get( nodeId ) != null )
@@ -398,7 +413,7 @@ public class NodeManager
         }
         finally
         {
-            forceReleaseWriteLock( node );
+            loadLock.unlock();
         }
     }
 
@@ -410,7 +425,7 @@ public class NodeManager
             return node;
         }
         node = new NodeImpl( nodeId, this );
-        acquireLock( node, LockType.WRITE );
+        ReentrantLock loadLock = lockId( nodeId );
         try
         {
             if ( nodeCache.get( nodeId ) != null )
@@ -420,7 +435,6 @@ public class NodeManager
             }
             if ( persistenceManager.loadLightNode( nodeId ) == null )
             {
-                // return neoConstraintsListener.getDeletedNode( nodeId );
                 return null;
             }
             nodeCache.add( nodeId, node );
@@ -428,7 +442,7 @@ public class NodeManager
         }
         finally
         {
-            forceReleaseWriteLock( node );
+            loadLock.unlock();
         }
     }
 
@@ -440,7 +454,7 @@ public class NodeManager
             return node;
         }
         node = new NodeImpl( nodeId, this );
-        acquireLock( node, LockType.WRITE );
+        ReentrantLock loadLock = lockId( nodeId );
         try
         {
             if ( nodeCache.get( nodeId ) != null )
@@ -457,7 +471,7 @@ public class NodeManager
         }
         finally
         {
-            forceReleaseWriteLock( node );
+            loadLock.unlock();
         }
     }
 
@@ -489,7 +503,7 @@ public class NodeManager
             return new RelationshipProxy( relId, this );
         }
         relationship = new RelationshipImpl( relId, this );
-        acquireLock( relationship, LockType.WRITE );
+        ReentrantLock loadLock = lockId( relId );
         try
         {
             if ( relCache.get( relId ) != null )
@@ -520,7 +534,7 @@ public class NodeManager
         }
         finally
         {
-            forceReleaseWriteLock( relationship );
+            loadLock.unlock();
         }
     }
 
@@ -537,7 +551,7 @@ public class NodeManager
             return relationship;
         }
         relationship = new RelationshipImpl( relId, this );
-        acquireLock( relationship, LockType.WRITE );
+        ReentrantLock loadLock = lockId( relId );
         try
         {
             if ( relCache.get( relId ) != null )
@@ -566,7 +580,7 @@ public class NodeManager
         }
         finally
         {
-            forceReleaseWriteLock( relationship );
+            loadLock.unlock();
         }
     }
 
@@ -724,23 +738,6 @@ public class NodeManager
         else
         {
             throw new RuntimeException( "Unkown lock type: " + lockType );
-        }
-    }
-
-    // used when loading nodes/rels to cache
-    private void forceReleaseWriteLock( Object resource )
-    {
-        try
-        {
-            lockManager.releaseWriteLock( resource );
-        }
-        catch ( LockNotFoundException e )
-        {
-            throw new RuntimeException( "Unable to release lock.", e );
-        }
-        catch ( IllegalResourceException e )
-        {
-            throw new RuntimeException( "Unable to release lock.", e );
         }
     }
 
