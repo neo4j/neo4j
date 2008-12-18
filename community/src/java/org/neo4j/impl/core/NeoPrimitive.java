@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.neo4j.api.core.NotFoundException;
 import org.neo4j.impl.transaction.LockType;
-import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
 
 abstract class NeoPrimitive
@@ -540,12 +539,13 @@ abstract class NeoPrimitive
         ArrayMap<Integer,Property> cowPropertyAddMap, 
         ArrayMap<Integer,Property> cowPropertyRemoveMap )
     {
+        if ( propertyMap == null )
+        {
+            // we will load full in some other tx
+            return;
+        }
         if ( cowPropertyAddMap != null )
         {
-            if ( propertyMap == null )
-            {
-                propertyMap = new ArrayMap<Integer,Property>();
-            }
             for ( Integer index : cowPropertyAddMap.keySet() )
             {
                 propertyMap.put( index, cowPropertyAddMap.get( index ) );
@@ -565,13 +565,11 @@ abstract class NeoPrimitive
         if ( propertyMap == null )
         {
             RawPropertyData[] rawProperties = loadProperties();
-            ArrayIntSet addedProps = new ArrayIntSet();
             ArrayMap<Integer,Property> newPropertyMap = 
                 new ArrayMap<Integer,Property>( 9, false, true );
             for ( RawPropertyData propData : rawProperties )
             {
                 int propId = propData.getId();
-                assert addedProps.add( propId );
                 Property property = new Property( propId, propData.getValue() );
                 newPropertyMap.put( propData.getIndex(), property );
             }

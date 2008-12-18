@@ -566,13 +566,13 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         ArrayMap<String,ArrayIntSet> cowRelationshipAddMap, 
         ArrayMap<String,ArrayIntSet> cowRelationshipRemoveMap )
     {
+        if ( relationshipMap == null )
+        {
+            // we will load full in some other tx
+            return;
+        }
         if ( cowRelationshipAddMap != null )
         {
-            if ( relationshipMap == null )
-            {
-                // we will load full in some other tx
-                return;
-            }
             for ( String type : cowRelationshipAddMap.keySet() )
             {
                 ArrayIntSet source = cowRelationshipAddMap.get( type );
