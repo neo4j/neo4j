@@ -245,4 +245,48 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
         nodeB.delete();
 
     }
+    
+    public void testAddCacheCleared()
+    {
+        Node nodeA = getNeo().createNode();
+        nodeA.setProperty( "1", 1 );
+        Node nodeB = getNeo().createNode();
+        Relationship rel = nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
+        rel.setProperty( "1", 1 );
+        getTransaction().success();
+        getTransaction().finish();
+        newTransaction();
+        NodeManager nodeManager = ((EmbeddedNeo) 
+            getNeo()).getConfig().getNeoModule().getNodeManager();
+        nodeManager.clearCache();
+        nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
+        int count = 0;
+        for ( Relationship relToB : nodeA.getRelationships( MyRelTypes.TEST ) )
+        {
+            count++;
+        }
+        assertEquals( 2, count );
+        nodeA.setProperty( "2", 2 );
+        assertEquals( 1, nodeA.getProperty( "1" ) );
+        rel.setProperty( "2", 2 );
+        assertEquals( 1, rel.getProperty( "1" ) );
+        nodeManager.clearCache();
+        // trigger empty load
+        getNeo().getNodeById( nodeA.getId() );
+        getNeo().getRelationshipById( rel.getId() );
+        // apply COW maps
+        getTransaction().success();
+        getTransaction().finish();
+        newTransaction();
+        count = 0;
+        for ( Relationship relToB : nodeA.getRelationships( MyRelTypes.TEST ) )
+        {
+            count++;
+        }
+        assertEquals( 2, count );
+        assertEquals( 1, nodeA.getProperty( "1" ) );
+        assertEquals( 1, rel.getProperty( "1" ) );
+        assertEquals( 2, nodeA.getProperty( "2" ) );
+        assertEquals( 2, rel.getProperty( "2" ) );
+    }
 }
