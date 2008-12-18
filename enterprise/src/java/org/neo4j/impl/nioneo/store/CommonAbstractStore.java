@@ -375,18 +375,18 @@ public abstract class CommonAbstractStore
         return windowPool.acquire( position, type );
     }
 
-    protected boolean hasWindow( int position )
-    {
-        if ( !isInRecoveryMode()
-            && (position > idGenerator.getHighId() || !storeOk) )
-        {
-            throw new StoreFailureException( "Position[" + position
-                + "] requested for operation is high id["
-                + idGenerator.getHighId() + "] or store is flagged as dirty["
-                + storeOk + "]" );
-        }
-        return windowPool.hasWindow( position );
-    }
+//    protected boolean hasWindow( int position )
+//    {
+//        if ( !isInRecoveryMode()
+//            && (position > idGenerator.getHighId() || !storeOk) )
+//        {
+//            throw new StoreFailureException( "Position[" + position
+//                + "] requested for operation is high id["
+//                + idGenerator.getHighId() + "] or store is flagged as dirty["
+//                + storeOk + "]" );
+//        }
+//        return windowPool.hasWindow( position );
+//    }
 
     /**
      * Releases the window and writes the data (async) if the 
