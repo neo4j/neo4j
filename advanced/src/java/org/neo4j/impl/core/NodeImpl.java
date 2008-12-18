@@ -580,16 +580,20 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
                 {
                     continue;
                 }
-                ArrayIntSet dest = relationshipMap.get( type );
-                if ( dest == null )
+                ArrayIntSet dest = new ArrayIntSet();
+                ArrayIntSet orig = relationshipMap.get( type );
+                if ( orig != null )
                 {
-                    dest = new ArrayIntSet();
-                    relationshipMap.put( type, dest );
+                    for ( int relId : orig.values() )
+                    {
+                        dest.add( relId );
+                    }
                 }
                 for ( int relId : source.values() )
                 {
                     dest.add( relId );
                 }
+                relationshipMap.put( type, dest );
             }
         }
         if ( cowRelationshipRemoveMap != null && relationshipMap != null )
@@ -597,14 +601,22 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
             for ( String type : cowRelationshipRemoveMap.keySet() )
             {
                 ArrayIntSet source = cowRelationshipRemoveMap.get( type );
-                ArrayIntSet dest = relationshipMap.get( type );
-                if ( dest == null )
+                if ( source.size() == 0 )
                 {
                     continue;
                 }
-                for ( int relId : source.values() )
+                ArrayIntSet dest = new ArrayIntSet(); 
+                ArrayIntSet orig = relationshipMap.get( type );
+                if ( orig != null )
                 {
-                    dest.remove( relId );
+                    for ( int relId : orig.values() )
+                    {
+                        if ( !source.contains( relId ) )
+                        {
+                            dest.add( relId );
+                        }
+                    }
+                    relationshipMap.put( type, dest );
                 }
             }
         }
