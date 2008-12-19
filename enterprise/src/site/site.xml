@@ -9,6 +9,7 @@
     <body>
         <links>
             <item name="Neo4j home" href="http://neo4j.org/" />
+            <item name="news" href="http://news.neo4j.org/" />
             <item name="wiki" href="http://wiki.neo4j.org/" />
             <item name="issues" href="https://trac.neo4j.org/" />
             <item name="components" href=".." />
