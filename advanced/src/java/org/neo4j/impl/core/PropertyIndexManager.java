@@ -123,10 +123,13 @@ public class PropertyIndexManager
         if ( index == null )
         {
             TxCommitHook commitHook = txCommitHooks.get( getTransaction() );
-            index = commitHook.getIndex( keyId );
-            if ( index != null )
+            if ( commitHook != null )
             {
-                return index;
+                index = commitHook.getIndex( keyId );
+                if ( index != null )
+                {
+                    return index;
+                }
             }
             String indexString;
             indexString = persistenceManager.loadIndex( keyId );
