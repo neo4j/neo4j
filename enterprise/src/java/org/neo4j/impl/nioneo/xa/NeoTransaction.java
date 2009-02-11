@@ -802,8 +802,9 @@ class NeoTransaction extends XaTransaction
             {
                 propRecord = getPropertyStore().getLightRecord( nextProp );
             }
-            properties.add( new PropertyData( propRecord.getId(), propRecord
-                .getKeyIndexId(), null ) );
+            properties.add( new PropertyData( propRecord.getId(), 
+                propRecord.getKeyIndexId(), 
+                propertyGetValueOrNull( propRecord ) ) );
             nextProp = propRecord.getNextProp();
         }
         return properties.toArray( new PropertyData[properties.size()] );
@@ -826,10 +827,63 @@ class NeoTransaction extends XaTransaction
                 propRecord = getPropertyStore().getLightRecord( nextProp );
             }
             properties.add( new PropertyData( propRecord.getId(), 
-                propRecord.getKeyIndexId(), null ) );
+                propRecord.getKeyIndexId(), 
+                propertyGetValueOrNull( propRecord ) ) );
             nextProp = propRecord.getNextProp();
         }
         return properties.toArray( new PropertyData[properties.size()] );
+    }
+    
+    public Object propertyGetValueOrNull( PropertyRecord propertyRecord )
+    {
+        PropertyType type = propertyRecord.getType();
+        if ( type == PropertyType.INT )
+        {
+            return (int) propertyRecord.getPropBlock();
+        }
+        if ( type == PropertyType.STRING )
+        {
+            return null;
+        }
+        if ( type == PropertyType.BOOL )
+        {
+            if ( propertyRecord.getPropBlock() == 1 )
+            {
+                return Boolean.valueOf( true );
+            }
+            return Boolean.valueOf( false );
+        }
+        if ( type == PropertyType.DOUBLE )
+        {
+            return new Double( Double.longBitsToDouble( 
+                propertyRecord.getPropBlock() ) );
+        }
+        if ( type == PropertyType.FLOAT )
+        {
+            return new Float( Float.intBitsToFloat( 
+                (int) propertyRecord.getPropBlock() ) );
+        }
+        if ( type == PropertyType.LONG )
+        {
+            return propertyRecord.getPropBlock();
+        }
+        if ( type == PropertyType.BYTE )
+        {
+            return (byte) propertyRecord.getPropBlock();
+        }
+        if ( type == PropertyType.CHAR )
+        {
+            return (char) propertyRecord.getPropBlock();
+        }
+        if ( type == PropertyType.ARRAY )
+        {
+            return null;
+        }
+        if ( type == PropertyType.SHORT )
+        {
+            return (short) propertyRecord.getPropBlock();
+        }
+        throw new RuntimeException( "Unkown type: " + type );
     }
 
     public Object propertyGetValue( int id )
