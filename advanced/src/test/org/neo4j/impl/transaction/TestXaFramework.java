@@ -23,14 +23,16 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.List;
+import java.nio.channels.ReadableByteChannel;
+
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+
 import junit.framework.Test;
 import junit.framework.TestSuite;
+
 import org.neo4j.api.core.Node;
 import org.neo4j.impl.AbstractNeoTestCase;
 import org.neo4j.impl.transaction.xaframework.LogBuffer;
@@ -96,12 +98,12 @@ public class TestXaFramework extends AbstractNeoTestCase
 
     private static class DummyCommandFactory extends XaCommandFactory
     {
-        public XaCommand readCommand( FileChannel fileChannel, ByteBuffer buffer )
-            throws IOException
+        public XaCommand readCommand( ReadableByteChannel byteChannel, 
+            ByteBuffer buffer ) throws IOException
         {
             buffer.clear();
             buffer.limit( 4 );
-            if ( fileChannel.read( buffer ) == 4 )
+            if ( byteChannel.read( buffer ) == 4 )
             {
                 buffer.flip();
                 return new DummyCommand( buffer.getInt() );
@@ -154,11 +156,22 @@ public class TestXaFramework extends AbstractNeoTestCase
         {
             return new DummyTransaction( identifier, getLogicalLog() );
         }
+        
+        public void flushAll()
+        {
+            
+        }
 
         @Override
-        public void lazyDoneWrite( List<Integer> identifiers )
-            throws XAException
+        public long getAndSetNewVersion()
         {
+            return -1;
+        }
+
+        @Override
+        public long getCurrentVersion()
+        {
+            return -1;
         }
     }
 
@@ -307,7 +320,7 @@ public class TestXaFramework extends AbstractNeoTestCase
             catch ( XAException e )
             { // good
             }
-            Xid xid = new XidImpl();
+            Xid xid = new XidImpl( new byte[0], new byte[0] ); 
             xaC.getXaResource().start( xid, XAResource.TMNOFLAGS );
             try
             {
@@ -413,112 +426,6 @@ public class TestXaFramework extends AbstractNeoTestCase
         for ( int i = 0; i < files.length; i++ )
         {
             files[i].delete();
-        }
-    }
-
-    private static class XidImpl implements Xid
-    {
-        private static final int FORMAT_ID = 0xDDDDDDDD;
-
-        private static final byte INSTANCE_ID[] = new byte[] { 'N', 'E', 'O',
-            'K', 'E', 'R', 'N', 'L' };
-        private static final byte DUMMY_BRANCH_ID[] = new byte[] { 'D', 'U',
-            'M', 'M', 'Y' };
-        private static long seqId = 0;
-
-        private byte globalId[] = null;
-        private byte branchId[] = null;
-
-        XidImpl()
-        {
-            globalId = getNewGlobalId();
-            branchId = DUMMY_BRANCH_ID;
-        }
-
-        private static long getNextSequenceId()
-        {
-            return seqId++;
-        }
-
-        static byte[] getNewGlobalId()
-        {
-            // create new global id ( [INSTANCE_ID][time][sequence] )
-            byte globalId[] = new byte[INSTANCE_ID.length + 16];
-            System.arraycopy( INSTANCE_ID, 0, globalId, 0, INSTANCE_ID.length );
-            long time = System.currentTimeMillis();
-            long sequence = getNextSequenceId();
-            for ( int i = 0; i < 8; i++ )
-            {
-                globalId[INSTANCE_ID.length + i] = (byte) ((time >> ((7 - i) * 8)) & 0xFF);
-            }
-            for ( int i = 0; i < 8; i++ )
-            {
-                globalId[INSTANCE_ID.length + 8 + i] = (byte) ((sequence >> ((7 - i) * 8)) & 0xFF);
-            }
-            return globalId;
-        }
-
-        public byte[] getGlobalTransactionId()
-        {
-            return globalId.clone();
-        }
-
-        public byte[] getBranchQualifier()
-        {
-            return branchId.clone();
-        }
-
-        public int getFormatId()
-        {
-            return FORMAT_ID;
-        }
-
-        public boolean equals( Object o )
-        {
-            if ( !(o instanceof Xid) )
-            {
-                return false;
-            }
-            byte otherGlobalId[] = ((Xid) o).getGlobalTransactionId();
-            byte otherBranchId[] = ((Xid) o).getBranchQualifier();
-
-            if ( globalId.length != otherGlobalId.length
-                || branchId.length != otherBranchId.length )
-            {
-                return false;
-            }
-
-            for ( int i = 0; i < globalId.length; i++ )
-            {
-                if ( globalId[i] != otherGlobalId[i] )
-                {
-                    return false;
-                }
-            }
-            for ( int i = 0; i < branchId.length; i++ )
-            {
-                if ( branchId[i] != otherBranchId[i] )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private volatile int hashCode = 0;
-
-        public int hashCode()
-        {
-            if ( hashCode == 0 )
-            {
-                int calcHash = 0;
-                for ( int i = 0; i < 4 && i < globalId.length; i++ )
-                {
-                    calcHash += globalId[globalId.length - i - 1] << i * 8;
-                }
-                hashCode = 3217 * calcHash;
-            }
-            return hashCode;
         }
     }
 }

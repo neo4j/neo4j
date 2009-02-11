@@ -392,4 +392,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         typeNameStore.makeStoreOk();
         super.makeStoreOk();
     }
+
+    @Override
+    public void rebuildIdGenerators()
+    {
+        typeNameStore.rebuildIdGenerators();
+        super.rebuildIdGenerators();
+    }
 }

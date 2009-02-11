@@ -219,7 +219,7 @@ public class TxManager implements TransactionManager
     {
         try
         {
-            System.out.println( "Found uncompleted global transactions" );
+            log.info( "Found uncompleted global transactions" );
             // contains NonCompletedTransaction that needs to be committed
             List<NonCompletedTransaction> commitList = 
                 new ArrayList<NonCompletedTransaction>();
@@ -243,13 +243,13 @@ public class TxManager implements TransactionManager
                 {
                     if ( XidImpl.isThisTm( xids[i].getGlobalTransactionId() ) )
                     {
+                        // linear search
                         if ( rollbackList.contains( xids[i] ) )
                         {
-                            System.out.print( "Found pre commit " + xids[i]
+                            log.info( "Found pre commit " + xids[i]
                                 + " rolling back ... " );
                             rollbackList.remove( xids[i] );
                             xaRes.rollback( xids[i] );
-                            System.out.println( "done" );
                         }
                         else
                         {
@@ -258,7 +258,7 @@ public class TxManager implements TransactionManager
                     }
                     else
                     {
-                        System.out.println( "Unkown xid: " + xids[i] );
+                        log.warning( "Unkown xid: " + xids[i] );
                     }
                 }
             }
@@ -276,15 +276,18 @@ public class TxManager implements TransactionManager
             Iterator<NonCompletedTransaction> commitItr = commitList.iterator();
             while ( commitItr.hasNext() )
             {
-                Xid xids[] = commitItr.next().getXids();
+                NonCompletedTransaction nct = commitItr.next();
+                int seq = nct.getSequenceNumber();
+                Xid xids[] = nct.getXids();
+                log.info( "Marked as commit tx-seq[" + seq + 
+                    "] branch length: " + xids.length );
                 for ( int i = 0; i < xids.length; i++ )
                 {
                     if ( !recoveredXidsList.contains( xids[i] ) )
                     {
-                        System.out.println( "WARNING, " + xids[i]
-                            + " not found in recovered xid list, "
+                        log.info( "Tx-seq[" + seq + "][" + xids[i] + 
+                            "] not found in recovered xid list, "
                             + "assuming already committed" );
-                        recoveredXidsList.remove( xids[i] );
                         continue;
                     }
                     recoveredXidsList.remove( xids[i] );
@@ -295,9 +298,9 @@ public class TxManager implements TransactionManager
                         throw new RuntimeException(
                             "Couldn't find XAResource for " + xids[i] );
                     }
-                    System.out.print( "Commiting " + xids[i] + " ... " );
+                    log.info( "Commiting tx seq[" + seq + "][" + 
+                        xids[i] + "] ... " );
                     resourceMap.get( resource ).commit( xids[i], false );
-                    System.out.println( "done" );
                 }
             }
             // rollback the rest
@@ -311,13 +314,12 @@ public class TxManager implements TransactionManager
                     throw new RuntimeException( "Couldn't find XAResource for "
                         + xid );
                 }
-                System.out.print( "Rollback " + xid + " ... " );
+                log.info( "Rollback " + xid + " ... " );
                 resourceMap.get( resource ).rollback( xid );
-                System.out.println( "done" );
             }
             if ( rollbackList.size() > 0 )
             {
-                System.out.println( "WARNING: TxLog contained unresolved "
+                log.warning( "TxLog contained unresolved "
                     + "xids that needed rollback. They couldn't be matched to "
                     + "any of the XAResources recover list. " + "Assuming "
                     + rollbackList.size()
@@ -377,7 +379,6 @@ public class TxManager implements TransactionManager
             }
             Iterator<Resource> resourceItr = branchSet.iterator();
             List<Xid> xids = new LinkedList<Xid>();
-            startRecord.getGlobalId();
             while ( resourceItr.hasNext() )
             {
                 Resource resource = resourceItr.next();

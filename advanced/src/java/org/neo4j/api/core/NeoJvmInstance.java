@@ -311,7 +311,7 @@ class NeoJvmInstance
             return neoModule;
         }
 
-        PersistenceModule getPersistenceModule()
+        public PersistenceModule getPersistenceModule()
         {
             return persistenceModule;
         }

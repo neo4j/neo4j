@@ -19,9 +19,11 @@
  */
 package org.neo4j.impl.transaction;
 
+import java.nio.ByteBuffer;
+
 import javax.transaction.xa.Xid;
 
-class XidImpl implements Xid
+public class XidImpl implements Xid
 {
     private static final int FORMAT_ID = 0x4E454E31; // NEO format identidier
 
@@ -42,6 +44,8 @@ class XidImpl implements Xid
     private final byte globalId[];
     // branchId assumes Xid.MAXBQUALSIZE >= 4
     private final byte branchId[];
+    private final int formatId;
+    
 
     // resourceId.length = 4, unique for each XAResource
     static byte[] getNewGlobalId()
@@ -49,18 +53,11 @@ class XidImpl implements Xid
         // create new global id ( [INSTANCE_ID][time][sequence] )
         byte globalId[] = new byte[INSTANCE_ID.length + 16];
         System.arraycopy( INSTANCE_ID, 0, globalId, 0, INSTANCE_ID.length );
+        ByteBuffer byteBuf = ByteBuffer.wrap( globalId );
+        byteBuf.position( INSTANCE_ID.length );
         long time = System.currentTimeMillis();
         long sequence = getNextSequenceId();
-        for ( int i = 0; i < 8; i++ )
-        {
-            globalId[INSTANCE_ID.length + i] = 
-                (byte) ((time >> ((7 - i) * 8)) & 0xFF);
-        }
-        for ( int i = 0; i < 8; i++ )
-        {
-            globalId[INSTANCE_ID.length + 8 + i] = 
-                (byte) ((sequence >> ((7 - i) * 8)) & 0xFF);
-        }
+        byteBuf.putLong( time ).putLong( sequence );
         return globalId;
     }
 
@@ -79,9 +76,14 @@ class XidImpl implements Xid
         }
         return true;
     }
+    
+    public XidImpl( byte globalId[], byte resourceId[] )
+    {
+        this( globalId, resourceId, FORMAT_ID );
+    }
 
     // create xid for transaction with more than one XAResource enlisted
-    XidImpl( byte globalId[], byte resourceId[] )
+    public XidImpl( byte globalId[], byte resourceId[], int formatId )
     {
         if ( globalId.length > Xid.MAXGTRIDSIZE )
         {
@@ -95,6 +97,7 @@ class XidImpl implements Xid
         }
         this.globalId = globalId;
         this.branchId = resourceId;
+        this.formatId = formatId;
     }
 
     public byte[] getGlobalTransactionId()
@@ -151,9 +154,13 @@ class XidImpl implements Xid
         if ( hashCode == 0 )
         {
             int calcHash = 0;
-            for ( int i = 0; i < 4 && i < globalId.length; i++ )
+            for ( int i = 0; i < 3 && i < globalId.length; i++ )
             {
                 calcHash += globalId[globalId.length - i - 1] << i * 8;
+            }
+            if ( branchId.length > 0 )
+            {
+                calcHash += branchId[0] << 3 * 8;
             }
             hashCode = 3217 * calcHash;
         }
@@ -163,30 +170,29 @@ class XidImpl implements Xid
     public String toString()
     {
         StringBuffer buf = new StringBuffer( "GlobalId[" );
-        for ( int i = 0; i < INSTANCE_ID.length; i++ )
+        if ( globalId.length == (INSTANCE_ID.length + 8 + 8) )
         {
-            buf.append( (char) globalId[i] );
+            for ( int i = 0; i < INSTANCE_ID.length - 1; i++ )
+            {
+                buf.append( (char) globalId[i] );
+            }
+            ByteBuffer byteBuf = ByteBuffer.wrap( globalId );
+            byteBuf.position( INSTANCE_ID.length );
+            long time = byteBuf.getLong();
+            long sequence = byteBuf.getLong();
+            buf.append( '|' );
+            buf.append( time );
+            buf.append( '|' );
+            buf.append( sequence );
         }
-        long time = 0;
-        for ( int i = 0; i < 8; i++ )
+        else
         {
-            time += (long) 
-                (globalId[INSTANCE_ID.length + i] & 0xFF) << ((7 - i) * 8);
+            buf.append( "UNKNOWN_ID" );
         }
-        buf.append( '|' );
-        buf.append( new java.util.Date( time ).toString() );
-        long sequence = 0;
-        for ( int i = 0; i < 8; i++ )
-        {
-            sequence += (long) 
-                (globalId[INSTANCE_ID.length + 8 + i] & 0xFF) << ((7 - i) * 8);
-        }
-        buf.append( '|' );
-        buf.append( sequence );
-        buf.append( "], BranchId[" );
+        buf.append( "], BranchId[ " );
         for ( int i = 0; i < branchId.length; i++ )
         {
-            buf.append( (char) branchId[i] );
+            buf.append( (byte) branchId[i] + " " );
         }
         buf.append( "]" );
         return buf.toString();

@@ -45,71 +45,12 @@ public class XaResourceManager
 
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
-    private boolean lazyDone = false;
-    private List<Integer> lazyDoneRecords = null;
     private final String name;
 
     XaResourceManager( XaTransactionFactory tf, String name )
     {
         this.tf = tf;
         this.name = name;
-    }
-
-    /**
-     * If set to <CODE>true</CODE> done records will not be written at once.
-     * Instead a few done records will be collected then written together after
-     * the {@link XaTransactionFactory.lazyDoneWrite} method has been called.
-     * 
-     * @param status
-     *            <CODE>true</CODE> turns lazy write of done records on,
-     *            <CODE>false</CODE> turns it off
-     * 
-     * @throws XAException
-     *             if change of lazy done failed
-     */
-    public synchronized void setLazyDoneRecords( boolean status )
-        throws XAException
-    {
-        if ( status )
-        {
-            lazyDone = true;
-            lazyDoneRecords = new ArrayList<Integer>();
-        }
-        else
-        {
-            lazyDone = false;
-            if ( lazyDoneRecords != null )
-            {
-                tf.lazyDoneWrite( lazyDoneRecords );
-                for ( int identifier : lazyDoneRecords )
-                {
-                    log.done( identifier );
-                }
-                lazyDoneRecords = null;
-            }
-        }
-    }
-
-    synchronized void writeOutLazyDoneRecords() throws XAException
-    {
-        if ( lazyDone )
-        {
-            tf.lazyDoneWrite( lazyDoneRecords );
-            for ( int identifier : lazyDoneRecords )
-            {
-                log.done( identifier );
-            }
-            lazyDoneRecords = null;
-        }
-        lazyDone = false;
-    }
-
-    /**
-     * @return true if lazy done is set
-     */
-    public boolean lazyDoneSet()
-    {
-        return lazyDone;
     }
 
     synchronized void setLogicalLog( XaLogicalLog log )
@@ -387,19 +328,36 @@ public class XaResourceManager
 
     // called during recovery
     // if not read only transaction will be commited.
-    synchronized void injectOnePhaseCommit( Xid xid ) throws IOException
+    synchronized void injectOnePhaseCommit( Xid xid ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new IOException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unkown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         txOrderMap.put( xid, nextTxOrder++ );
         txStatus.markAsPrepared();
         txStatus.markCommitStarted();
+        XaTransaction xaTransaction = txStatus.getTransaction();
+        xaTransaction.commit();
     }
-
+    
+    synchronized void injectTwoPhaseCommit( Xid xid ) throws XAException
+    {
+        XidStatus status = xidMap.get( xid );
+        if ( status == null )
+        {
+            throw new XAException( "Unkown xid[" + xid + "]" );
+        }
+        TransactionStatus txStatus = status.getTransactionStatus();
+        txOrderMap.put( xid, nextTxOrder++ );
+        txStatus.markAsPrepared();
+        txStatus.markCommitStarted();
+        XaTransaction xaTransaction = txStatus.getTransaction();
+        xaTransaction.commit();
+    }
+    
     synchronized XaTransaction commit( Xid xid, boolean onePhase )
         throws XAException
     {
@@ -417,8 +375,8 @@ public class XaResourceManager
                 if ( !xaTransaction.isRecovered() )
                 {
                     xaTransaction.prepare();
+                    log.commitOnePhase( xaTransaction.getIdentifier() );
                 }
-                log.commitOnePhase( xaTransaction.getIdentifier() );
             }
             txStatus.markAsPrepared();
         }
@@ -429,26 +387,17 @@ public class XaResourceManager
         }
         if ( !xaTransaction.isReadOnly() )
         {
+            if ( !xaTransaction.isRecovered() )
+            {
+                if ( !onePhase )
+                {
+                    log.commitTwoPhase( xaTransaction.getIdentifier() );
+                }
+            }
             txStatus.markCommitStarted();
             xaTransaction.commit();
         }
-        if ( lazyDone && !xaTransaction.isRecovered() )
-        {
-            lazyDoneRecords.add( xaTransaction.getIdentifier() );
-            if ( lazyDoneRecords.size() >= 100 )
-            {
-                tf.lazyDoneWrite( lazyDoneRecords );
-                for ( int identifier : lazyDoneRecords )
-                {
-                    log.done( identifier );
-                }
-                lazyDoneRecords = new ArrayList<Integer>();
-            }
-        }
-        else
-        {
-            log.done( xaTransaction.getIdentifier() );
-        }
+        log.done( xaTransaction.getIdentifier() );
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
         {
@@ -538,6 +487,23 @@ public class XaResourceManager
         }
     }
 
+    synchronized void pruneXidIfExist( Xid xid ) throws IOException
+    {
+        XidStatus status = xidMap.get( xid );
+        if ( status == null )
+        {
+            return;
+        }
+        TransactionStatus txStatus = status.getTransactionStatus();
+        XaTransaction xaTransaction = txStatus.getTransaction();
+        xidMap.remove( xid );
+        if ( xaTransaction.isRecovered() )
+        {
+            recoveredTxCount--;
+            checkIfRecoveryComplete();
+        }
+    }
+    
     synchronized void checkXids() throws IOException
     {
         Iterator<Xid> keyIterator = xidMap.keySet().iterator();
@@ -582,19 +548,8 @@ public class XaResourceManager
             {
                 if ( txStatus.commitStarted() )
                 {
-                    logger.info( "(Re-)committing [" + name + "] tx "
-                        + identifier );
-                    try
-                    {
-                        xaTransaction.commit();
-                    }
-                    catch ( XAException e )
-                    {
-                        e.printStackTrace();
-                        throw new IOException(
-                            "Unable to commit one-phase transaction "
-                                + identifier + ", " + e );
-                    }
+                    logger.info( "Marking 1PC [" + name + "] tx "
+                        + identifier + " as done" );
                     log.doneInternal( identifier );
                     xidMap.remove( xid );
                     recoveredTxCount--;
@@ -609,7 +564,8 @@ public class XaResourceManager
                 }
                 else
                 {
-                    System.out.println( "[" + name + "] " + txStatus );
+                    logger.info( "2PC tx [" + name + "] " + txStatus + 
+                        " txIdent[" + identifier + "]" );
                 }
             }
         }
@@ -620,7 +576,7 @@ public class XaResourceManager
     {
         if ( log.scanIsComplete() && recoveredTxCount == 0 )
         {
-            log.makeNewLog();
+            // log.makeNewLog();
             tf.recoveryComplete();
         }
     }

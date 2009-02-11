@@ -384,6 +384,15 @@ public class PropertyStore extends AbstractStore implements Store
         super.makeStoreOk();
     }
 
+    @Override
+    public void rebuildIdGenerators()
+    {
+        propertyIndexStore.rebuildIdGenerators();
+        stringPropertyStore.rebuildIdGenerators();
+        arrayPropertyStore.rebuildIdGenerators();
+        super.rebuildIdGenerators();
+    }
+    
     private Collection<DynamicRecord> allocateStringRecords( int valueBlockId,
         char[] chars )
     {
