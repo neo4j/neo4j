@@ -19,6 +19,8 @@
  */
 package org.neo4j.impl.persistence;
 
+import org.neo4j.impl.transaction.xaframework.XaDataSource;
+
 /**
  * A data resource that Neo uses to persist entities.
  * <P>
@@ -46,4 +48,6 @@ public interface PersistenceSource
     public int getHighestPossibleIdInUse( Class<?> clazz );
 
     public int getNumberOfIdsInUse( Class<?> clazz );
+    
+    public XaDataSource getXaDataSource();
 }

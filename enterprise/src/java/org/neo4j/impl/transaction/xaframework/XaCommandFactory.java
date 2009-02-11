@@ -21,7 +21,7 @@ package org.neo4j.impl.transaction.xaframework;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 
 /**
  * During recovery (after system crash) the {@link XaLogicalLog} will examine
@@ -49,6 +49,6 @@ public abstract class XaCommandFactory
      * @throws IOException
      *             In case of real IO failure
      */
-    public abstract XaCommand readCommand( FileChannel fileChannel,
+    public abstract XaCommand readCommand( ReadableByteChannel byteChannel,
         ByteBuffer buffer ) throws IOException;
 }

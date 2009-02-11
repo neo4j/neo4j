@@ -20,7 +20,9 @@
 package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -32,9 +34,10 @@ public class NeoStore extends AbstractStore
 {
     // neo store version, store should end with this string
     // (byte encoded)
-    private static final String VERSION = "NeoStore v0.9.3";
+    private static final String VERSION = "NeoStore v0.9.4";
 
-    private static final int RECORD_SIZE = 0;
+    // 3 longs in header (long + in use), time | random | version
+    private static final int RECORD_SIZE = 9;
 
     private NodeStore nodeStore;
     private PropertyStore propStore;
@@ -117,6 +120,96 @@ public class NeoStore extends AbstractStore
         PropertyStore.createStore( fileName + ".propertystore.db" );
         RelationshipTypeStore.createStore( fileName
             + ".relationshiptypestore.db" );
+        NeoStore neoStore = new NeoStore( fileName );
+        // created time | random long | backup version
+        neoStore.nextId(); neoStore.nextId(); neoStore.nextId();
+        long time = System.currentTimeMillis();
+        neoStore.setCreationTime( time );
+        neoStore.setRandomNumber( new Random( time ).nextLong() );
+        neoStore.setVersion( 0 );
+        neoStore.close();
+    }
+    
+    public long getCreationTime()
+    {
+        return getRecord( 0 );
+    }
+    
+    public void setCreationTime( long time )
+    {
+        setRecord( 0, time );
+    }
+    
+    public long getRandomNumber()
+    {
+        return getRecord( 1 );
+    }
+    
+    public void setRandomNumber( long nr )
+    {
+        setRecord( 1, nr );
+    }
+    
+    public void setRecoveredStatus( boolean status )
+    {
+        if ( status )
+        {
+            setRecovered();
+        }
+        else
+        {
+            unsetRecovered();
+        }
+    }
+    
+    public long getVersion()
+    {
+        return getRecord( 2 );
+    }
+    
+    public void setVersion( long version )
+    {
+        setRecord( 2, version );
+    }
+    
+    public long incrementVersion()
+    {
+        long current = getVersion();
+        setVersion( current + 1 );
+        return current;
+    }
+    
+    private long getRecord( int id )
+    {
+        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        Buffer buffer = window.getBuffer();
+        try
+        {
+            int offset = (int) (id - buffer.position()) * getRecordSize();
+            buffer.setOffset( offset );
+            buffer.get();
+            return buffer.getLong();
+        }
+        finally
+        {
+            releaseWindow( window );
+        }
+    }
+    
+    private void setRecord( int id, long value )
+    {
+        PersistenceWindow window = acquireWindow( id, OperationType.WRITE );
+        Buffer buffer = window.getBuffer();
+        try
+        {
+            int offset = (int) (id - buffer.position()) * getRecordSize();
+            buffer.setOffset( offset );
+            buffer.put( Record.IN_USE.byteValue() ).putLong( value );
+        }
+        finally
+        {
+            releaseWindow( window );
+        }
     }
 
     /**
@@ -168,4 +261,39 @@ public class NeoStore extends AbstractStore
         nodeStore.makeStoreOk();
         super.makeStoreOk();
     }
+    
+    
+    public void rebuildIdGenerators()
+    {
+        relTypeStore.rebuildIdGenerators();
+        propStore.rebuildIdGenerators();
+        relStore.rebuildIdGenerators();
+        nodeStore.rebuildIdGenerators();
+        super.rebuildIdGenerators();
+    }
+    
+    @Override
+    protected void versionFound( String version )
+    {
+        if ( version.equals( "NeoStore v0.9.3" ) )
+        {
+            ByteBuffer buffer = ByteBuffer.wrap( new byte[ 3 * RECORD_SIZE ] );
+            long time = System.currentTimeMillis();
+            long random = new Random( time ).nextLong();
+            buffer.put( Record.IN_USE.byteValue() ).putLong( time );
+            buffer.put( Record.IN_USE.byteValue() ).putLong( random );
+            buffer.put( Record.IN_USE.byteValue() ).putLong( 0 );
+            buffer.flip();
+            try
+            {
+                getFileChannel().write( buffer, 0 );
+            }
+            catch ( IOException e )
+            {
+                throw new StoreFailureException( e );
+            }
+            rebuildIdGenerator();
+        }
+    }
 }
+

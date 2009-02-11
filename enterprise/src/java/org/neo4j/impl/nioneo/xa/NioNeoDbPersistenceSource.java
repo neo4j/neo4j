@@ -20,6 +20,7 @@
 package org.neo4j.impl.nioneo.xa;
 
 import javax.transaction.xa.XAResource;
+
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.core.RawNodeData;
 import org.neo4j.impl.core.RawPropertyData;
@@ -33,6 +34,7 @@ import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.persistence.PersistenceSource;
 import org.neo4j.impl.persistence.ResourceConnection;
 import org.neo4j.impl.transaction.XaDataSourceManager;
+import org.neo4j.impl.transaction.xaframework.XaDataSource;
 
 /**
  * The NioNeo persistence source implementation. If this class is registered as
@@ -311,5 +313,10 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
     public int getNumberOfIdsInUse( Class<?> clazz )
     {
         return xaDs.getNumberOfIdsInUse( clazz );
+    }
+    
+    public XaDataSource getXaDataSource()
+    {
+        return xaDs;
     }
 }

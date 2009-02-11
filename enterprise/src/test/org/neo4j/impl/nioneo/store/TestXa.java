@@ -31,10 +31,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+
 import junit.framework.Test;
 import junit.framework.TestSuite;
+
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
@@ -44,8 +47,8 @@ import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.impl.nioneo.xa.XidImpl;
 import org.neo4j.impl.transaction.LockManager;
+import org.neo4j.impl.transaction.XidImpl;
 
 public class TestXa extends AbstractNeoTestCase
 {
@@ -268,30 +271,81 @@ public class TestXa extends AbstractNeoTestCase
 
     private void deleteLogicalLogIfExist()
     {
-        File file = new File( "nioneo_logical.log" );
+        File file = new File( "nioneo_logical.log.1" );
         if ( file.exists() )
         {
-            if ( !file.delete() && file.exists() )
-            {
-                System.gc();
-                assertTrue( file.delete() );
-            }
+            assertTrue( file.delete() );
         }
+        file = new File( "nioneo_logical.log.2" );
+        if ( file.exists() )
+        {
+            assertTrue( file.delete() );
+        }
+        file = new File( "nioneo_logical.log.active" );
+        assertTrue( file.delete() );
     }
 
     private void renameCopiedLogicalLog() throws IOException
     {
-        File file = new File( "nioneo_logical.log.bak" );
-        assertTrue( file.renameTo( new File( "nioneo_logical.log" ) ) );
+        File file = new File( "nioneo_logical.log.bak.1" );
+        if ( file.exists() )
+        {
+            assertTrue( file.renameTo( new File( "nioneo_logical.log.1" ) ) );
+        }
+        else
+        {
+            file = new File( "nioneo_logical.log.bak.2" );
+            assertTrue( file.renameTo( new File( "nioneo_logical.log.2" ) ) );
+        }
+        file = new File( "nioneo_logical.log.bak.active" );
+        assertTrue( file.renameTo( new File( "nioneo_logical.log.active" ) ) );
     }
 
+    private void truncateLogicalLog( int size ) throws IOException
+    {
+        char active = '1';
+        FileChannel af = new RandomAccessFile( "nioneo_logical.log.active", 
+            "r" ).getChannel();
+        ByteBuffer buffer = ByteBuffer.allocate( 1024 );
+        af.read( buffer );
+        af.close();
+        buffer.flip();
+        active = buffer.asCharBuffer().get();
+        buffer.clear();
+        FileChannel fileChannel = new RandomAccessFile( "nioneo_logical.log." + 
+            active, "rw" ).getChannel();
+        if ( size < 0 )
+        {
+            fileChannel.truncate( fileChannel.size() - 3 );
+        }
+        else
+        {
+            fileChannel.truncate( size );
+        }
+        fileChannel.force( false );
+        fileChannel.close();
+    }
+    
     private void copyLogicalLog() throws IOException
     {
-        FileChannel source = new RandomAccessFile( "nioneo_logical.log", "r" )
-            .getChannel();
-        FileChannel dest = new RandomAccessFile( "nioneo_logical.log.bak", "rw" )
-            .getChannel();
+        char active = '1';
+        FileChannel af = new RandomAccessFile( "nioneo_logical.log.active", 
+            "r" ).getChannel();
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
+        af.read( buffer );
+        buffer.flip();
+        FileChannel activeCopy = new RandomAccessFile( 
+            "nioneo_logical.log.bak.active", "rw" ).getChannel();
+        activeCopy.write( buffer );
+        activeCopy.close();
+        af.close();
+        buffer.flip();
+        active = buffer.asCharBuffer().get();
+        buffer.clear();
+        FileChannel source = new RandomAccessFile( "nioneo_logical.log." + 
+            active, "r" ).getChannel();
+        FileChannel dest = new RandomAccessFile( "nioneo_logical.log.bak." + 
+            active, "rw" ).getChannel();
         int read = -1;
         do
         {
@@ -352,7 +406,6 @@ public class TestXa extends AbstractNeoTestCase
             xaCon.getNodeConsumer().deleteNode( node2 );
             xaRes.end( xid, XAResource.TMSUCCESS );
             xaRes.commit( xid, true );
-            ds.writeOutLazyRecords();
             copyLogicalLog();
             xaCon.clearAllTransactions();
             ds.close();
@@ -484,11 +537,7 @@ public class TestXa extends AbstractNeoTestCase
             ds.close();
             deleteLogicalLogIfExist();
             renameCopiedLogicalLog();
-            java.nio.channels.FileChannel fileChannel = new java.io.RandomAccessFile(
-                "nioneo_logical.log", "rw" ).getChannel();
-            fileChannel.truncate( fileChannel.size() - 3 );
-            fileChannel.force( false );
-            fileChannel.close();
+            truncateLogicalLog( -3 );
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
                 lockManager, lockReleaser, eventManager );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
@@ -524,11 +573,7 @@ public class TestXa extends AbstractNeoTestCase
             ds.close();
             deleteLogicalLogIfExist();
             renameCopiedLogicalLog();
-            java.nio.channels.FileChannel fileChannel = new java.io.RandomAccessFile(
-                "nioneo_logical.log", "rw" ).getChannel();
-            fileChannel.truncate( 141 );
-            fileChannel.force( false );
-            fileChannel.close();
+            truncateLogicalLog( 141 );
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
                 lockManager, lockReleaser, eventManager );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
@@ -564,12 +609,128 @@ public class TestXa extends AbstractNeoTestCase
             ds.close();
             deleteLogicalLogIfExist();
             renameCopiedLogicalLog();
+            truncateLogicalLog( 145 );
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
                 lockManager, lockReleaser, eventManager );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
             xaRes = xaCon.getXaResource();
             assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
             xaCon.clearAllTransactions();
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            fail( "" + e );
+        }
+    }
+    
+    public void testLogVersion()
+    {
+        long creationTime = ds.getCreationTime();
+        long randomIdentifier = ds.getRandomIdentifier();
+        long currentVersion = ds.getCurrentLogVersion();
+        assertEquals( currentVersion, ds.incrementAndGetLogVersion() );
+        assertEquals( currentVersion + 1, ds.incrementAndGetLogVersion() );
+        assertEquals( creationTime, ds.getCreationTime() );
+        assertEquals( randomIdentifier, ds.getRandomIdentifier() );
+    }
+
+    public void testLogicalLogRotation()
+    {
+        try
+        {
+            ds.keepLogicalLogs( true );
+            Xid xid = new XidImpl( new byte[1], new byte[1] );
+            XAResource xaRes = xaCon.getXaResource();
+            xaRes.start( xid, XAResource.TMNOFLAGS );
+            int node1 = ds.nextId( Node.class );
+            xaCon.getNodeConsumer().createNode( node1 );
+            int node2 = ds.nextId( Node.class );
+            xaCon.getNodeConsumer().createNode( node2 );
+            int n1prop1 = ds.nextId( PropertyStore.class );
+            xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+                index( "prop1" ), "string1" );
+            xaCon.getNodeConsumer().getProperties( node1 );
+            int relType1 = ds.nextId( RelationshipType.class );
+            xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+                "relationshiptype1" );
+            int rel1 = ds.nextId( Relationship.class );
+            xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
+                node2, relType1 );
+            int r1prop1 = ds.nextId( PropertyStore.class );
+            xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+                index( "prop1" ), "string1" );
+            xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
+            xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+                "string2" );
+            xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
+            xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
+            xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
+            xaCon.getNodeConsumer().deleteNode( node1 );
+            xaCon.getNodeConsumer().deleteNode( node2 );
+            xaRes.end( xid, XAResource.TMSUCCESS );
+            xaRes.commit( xid, true );
+            long currentVersion = ds.getCurrentLogVersion();
+            ds.rotateLogicalLog();
+            assertTrue( ds.getLogicalLog( currentVersion ) != null );
+            ds.rotateLogicalLog();
+            assertTrue( ds.getLogicalLog( currentVersion ) != null );
+            assertTrue( ds.getLogicalLog( currentVersion + 1 ) != null );
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            fail( "" + e );
+        }
+    }
+
+
+    public void testApplyLogicalLog()
+    {
+        try
+        {
+            ds.keepLogicalLogs( true );
+            Xid xid = new XidImpl( new byte[1], new byte[1] );
+            XAResource xaRes = xaCon.getXaResource();
+            xaRes.start( xid, XAResource.TMNOFLAGS );
+            int node1 = ds.nextId( Node.class );
+            xaCon.getNodeConsumer().createNode( node1 );
+            int node2 = ds.nextId( Node.class );
+            xaCon.getNodeConsumer().createNode( node2 );
+            int n1prop1 = ds.nextId( PropertyStore.class );
+            xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+                index( "prop1" ), "string1" );
+            xaCon.getNodeConsumer().getProperties( node1 );
+            int relType1 = ds.nextId( RelationshipType.class );
+            xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+                "relationshiptype1" );
+            int rel1 = ds.nextId( Relationship.class );
+            xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
+                node2, relType1 );
+            int r1prop1 = ds.nextId( PropertyStore.class );
+            xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+                index( "prop1" ), "string1" );
+            xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
+            xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+                "string2" );
+            xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
+            xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
+            xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
+            xaCon.getNodeConsumer().deleteNode( node1 );
+            xaCon.getNodeConsumer().deleteNode( node2 );
+            xaRes.end( xid, XAResource.TMSUCCESS );
+            xaRes.commit( xid, true );
+            long currentVersion = ds.getCurrentLogVersion();
+            ds.keepLogicalLogs( true );
+            ds.rotateLogicalLog();
+            ds.rotateLogicalLog();
+            ds.rotateLogicalLog();
+            ds.setCurrentLogVersion( currentVersion );
+            ds.makeBackupSlave();
+            ds.applyLog( ds.getLogicalLog( currentVersion ) );
+            ds.applyLog( ds.getLogicalLog( currentVersion + 1 ) );
+            ds.applyLog( ds.getLogicalLog( currentVersion + 2 ) );
+            ds.keepLogicalLogs( false );
         }
         catch ( Exception e )
         {

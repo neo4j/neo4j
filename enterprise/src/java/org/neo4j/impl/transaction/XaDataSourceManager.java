@@ -106,6 +106,7 @@ public class XaDataSourceManager
         XaDataSource dataSource, byte branchId[] )
     {
         dataSource.setBranchId( branchId );
+        dataSource.setName( name );
         dataSources.put( name, dataSource );
         branchIdMapping.put( new String( branchId ), dataSource );
         sourceIdMapping.put( name, branchId );
@@ -182,5 +183,11 @@ public class XaDataSourceManager
                 + new String( branchId ) + "]" );
         }
         return dataSource.getXaConnection().getXaResource();
+    }
+    
+    // not thread safe
+    public Iterable<XaDataSource> getAllRegisteredDataSources()
+    {
+        return dataSources.values();
     }
 }

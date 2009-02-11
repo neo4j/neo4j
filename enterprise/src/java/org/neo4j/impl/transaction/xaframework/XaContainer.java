@@ -20,7 +20,6 @@
 package org.neo4j.impl.transaction.xaframework;
 
 import java.io.IOException;
-import javax.transaction.xa.XAException;
 
 /**
  * This is a wrapper class containing the logical log, command factory,
@@ -96,10 +95,6 @@ public class XaContainer
     {
         try
         {
-            if ( rm != null )
-            {
-                rm.writeOutLazyDoneRecords();
-            }
             if ( log != null )
             {
                 log.close();
@@ -108,11 +103,6 @@ public class XaContainer
         catch ( IOException e )
         {
             System.out.println( "Unable to close logical log" );
-            e.printStackTrace();
-        }
-        catch ( XAException e )
-        {
-            System.out.println( "Unable to close XA container" );
             e.printStackTrace();
         }
         log = null;
@@ -139,15 +129,5 @@ public class XaContainer
     public XaTransactionFactory getTransactionFactory()
     {
         return tf;
-    }
-
-    public void setLazyDoneRecords() throws XAException
-    {
-        rm.setLazyDoneRecords( true );
-    }
-
-    public void writeOutLazyDoneRecords() throws XAException
-    {
-        rm.writeOutLazyDoneRecords();
     }
 }

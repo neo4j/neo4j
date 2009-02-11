@@ -129,7 +129,7 @@ class NeoTransaction extends XaTransaction
 
     public void doAddCommand( XaCommand command )
     {
-        // do nothing, commands are created and added in prepare
+        // override
     }
 
     @Override
@@ -166,11 +166,11 @@ class NeoTransaction extends XaTransaction
             Command.NodeCommand command = new Command.NodeCommand( 
                 neoStore.getNodeStore(), record );
             nodeCommands.add( command );
-            addCommand( command );
             if ( !record.inUse() )
             {
                 removeNodeFromCache( record.getId() );
             }
+            addCommand( command );
         }
         for ( RelationshipRecord record : relRecords.values() )
         {
@@ -178,11 +178,11 @@ class NeoTransaction extends XaTransaction
                 new Command.RelationshipCommand( 
                     neoStore.getRelationshipStore(), record );
             relCommands.add( command );
-            addCommand( command );
             if ( !record.inUse() )
             {
                 removeRelationshipFromCache( record.getId() );
             }
+            addCommand( command );
         }
         for ( PropertyIndexRecord record : propIndexRecords.values() )
         {
@@ -201,6 +201,7 @@ class NeoTransaction extends XaTransaction
         }
     }
 
+    @Override
     protected void injectCommand( XaCommand xaCommand )
     {
         if ( xaCommand instanceof Command.NodeCommand )

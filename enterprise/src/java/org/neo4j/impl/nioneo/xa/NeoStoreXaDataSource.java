@@ -23,13 +23,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
-import javax.transaction.xa.XAException;
+
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
@@ -46,6 +45,7 @@ import org.neo4j.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.impl.transaction.xaframework.XaConnection;
 import org.neo4j.impl.transaction.xaframework.XaContainer;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.impl.transaction.xaframework.XaResource;
 import org.neo4j.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.impl.util.ArrayMap;
@@ -73,7 +73,7 @@ public class NeoStoreXaDataSource extends XaDataSource
     private final EventManager eventManager;
     private final String storeDir;
 
-    private byte[] branchId = null;
+    private boolean logApplied = false;
 
     /**
      * Creates a <CODE>NeoStoreXaDataSource</CODE> using configuration from
@@ -141,14 +141,6 @@ public class NeoStoreXaDataSource extends XaDataSource
         xaContainer = XaContainer.create( (String) config.get( "logical_log" ),
             new CommandFactory( neoStore ), new TransactionFactory() );
 
-//        try
-//        {
-//            xaContainer.setLazyDoneRecords();
-//        }
-//        catch ( XAException e )
-//        {
-//            throw new IOException( "Unable to set lazy done records, " + e );
-//        }
         xaContainer.openLogicalLog();
         if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
         {
@@ -211,14 +203,6 @@ public class NeoStoreXaDataSource extends XaDataSource
         xaContainer = XaContainer.create( logicalLogPath, new CommandFactory(
             neoStore ), new TransactionFactory() );
 
-        try
-        {
-            xaContainer.setLazyDoneRecords();
-        }
-        catch ( XAException e )
-        {
-            throw new IOException( "Unable to set lazy done records, " + e );
-        }
         xaContainer.openLogicalLog();
         if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
         {
@@ -241,7 +225,7 @@ public class NeoStoreXaDataSource extends XaDataSource
         this.idGenerators.put( PropertyIndex.class, 
             neoStore.getPropertyStore().getIndexStore() );
     }
-
+    
     NeoStore getNeoStore()
     {
         return neoStore;
@@ -250,6 +234,11 @@ public class NeoStoreXaDataSource extends XaDataSource
     public void close()
     {
         xaContainer.close();
+        if ( logApplied )
+        {
+            neoStore.rebuildIdGenerators();
+            logApplied = false;
+        }
         neoStore.close();
         logger.fine( "NeoStore closed" );
     }
@@ -257,7 +246,7 @@ public class NeoStoreXaDataSource extends XaDataSource
     public XaConnection getXaConnection()
     {
         return new NeoStoreXaConnection( neoStore, 
-            xaContainer.getResourceManager(), branchId );
+            xaContainer.getResourceManager(), getBranchId() );
     }
 
     private static class CommandFactory extends XaCommandFactory
@@ -269,10 +258,10 @@ public class NeoStoreXaDataSource extends XaDataSource
             this.neoStore = neoStore;
         }
 
-        public XaCommand readCommand( FileChannel fileChannel, ByteBuffer buffer )
-            throws IOException
+        public XaCommand readCommand( ReadableByteChannel byteChannel, 
+            ByteBuffer buffer ) throws IOException
         {
-            Command command = Command.readCommand( neoStore, fileChannel,
+            Command command = Command.readCommand( neoStore, byteChannel,
                 buffer );
             if ( command != null )
             {
@@ -305,7 +294,31 @@ public class NeoStoreXaDataSource extends XaDataSource
         }
 
         @Override
-        public void lazyDoneWrite( List<Integer> identifiers )
+        public long getCurrentVersion()
+        {
+            if ( getLogicalLog().scanIsComplete() )
+            {
+                return neoStore.getVersion();
+            }
+            neoStore.setRecoveredStatus( true );
+            try
+            {
+                return neoStore.getVersion();
+            }
+            finally
+            {
+                neoStore.setRecoveredStatus( false );
+            }
+        }
+        
+        @Override
+        public long getAndSetNewVersion()
+        {
+            return neoStore.incrementVersion();
+        }
+        
+        @Override
+        public void flushAll()
         {
             neoStore.flushAll();
         }
@@ -345,25 +358,92 @@ public class NeoStoreXaDataSource extends XaDataSource
         return store.getNumberOfIdsInUse();
     }
 
-    public void writeOutLazyRecords() throws XAException
-    {
-        xaContainer.writeOutLazyDoneRecords();
-    }
-
     public String getStoreDir()
     {
         return storeDir;
     }
-
+    
     @Override
-    public byte[] getBranchId()
+    public void keepLogicalLogs( boolean keep )
     {
-        return this.branchId;
+        xaContainer.getLogicalLog().setKeepLogs( keep );
+    }
+    
+    @Override
+    public long getCreationTime()
+    {
+        return neoStore.getCreationTime();
+    }
+    
+    @Override
+    public long getRandomIdentifier()
+    {
+        return neoStore.getRandomNumber();
+    }
+    
+    @Override
+    public long getCurrentLogVersion()
+    {
+        return neoStore.getVersion();
+    }
+
+    public long incrementAndGetLogVersion()
+    {
+        return neoStore.incrementVersion();
+    }
+
+    public void setCurrentLogVersion( long version )
+    {
+        neoStore.setVersion( version );
+    }
+    
+    @Override
+    public void applyLog( ReadableByteChannel byteChannel ) throws IOException
+    {
+        logApplied = true;
+        xaContainer.getLogicalLog().applyLog( byteChannel );
+    }
+    
+    @Override
+    public void rotateLogicalLog() throws IOException
+    {
+        // flush done inside rotate
+        xaContainer.getLogicalLog().rotate();
+    }
+    
+    @Override
+    public ReadableByteChannel getLogicalLog( long version ) throws IOException
+    {
+        return xaContainer.getLogicalLog().getLogicalLog( version );
     }
 
     @Override
-    public void setBranchId( byte[] branchId )
+    public boolean hasLogicalLog( long version )
     {
-        this.branchId = branchId;
+        return xaContainer.getLogicalLog().hasLogicalLog( version );
+    }
+    
+    @Override
+    public boolean deleteLogicalLog( long version )
+    {
+        return xaContainer.getLogicalLog().deleteLogicalLog( version );
+    }
+    
+    @Override
+    public void setAutoRotate( boolean rotate )
+    {
+        xaContainer.getLogicalLog().setAutoRotateLogs( rotate );
+    }
+    
+    @Override
+    public void setLogicalLogTargetSize( long size )
+    {
+        xaContainer.getLogicalLog().setLogicalLogTargetSize( size );
+    }
+    
+    @Override
+    public void makeBackupSlave()
+    {
+        xaContainer.getLogicalLog().makeBackupSlave();
     }
 }
