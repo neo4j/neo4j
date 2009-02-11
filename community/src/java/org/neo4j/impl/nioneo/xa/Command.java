@@ -21,9 +21,10 @@ package org.neo4j.impl.nioneo.xa;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.logging.Logger;
+
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeRecord;
@@ -75,7 +76,7 @@ abstract class Command extends XaCommand
     static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record )
         throws IOException
     {
-        // id+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
+        // id+type+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
         if ( record.inUse() )
         {
             byte inUse = Record.IN_USE.byteValue();
@@ -104,13 +105,13 @@ abstract class Command extends XaCommand
         }
     }
 
-    static DynamicRecord readDynamicRecord( FileChannel fileChannel,
+    static DynamicRecord readDynamicRecord( ReadableByteChannel byteChannel,
         ByteBuffer buffer ) throws IOException
     {
         // id+type+in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
         buffer.clear();
         buffer.limit( 9 );
-        if ( fileChannel.read( buffer ) != buffer.limit() )
+        if ( byteChannel.read( buffer ) != buffer.limit() )
         {
             return null;
         }
@@ -124,7 +125,7 @@ abstract class Command extends XaCommand
             inUse = true;
             buffer.clear();
             buffer.limit( 12 );
-            if ( fileChannel.read( buffer ) != buffer.limit() )
+            if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
@@ -143,7 +144,7 @@ abstract class Command extends XaCommand
             record.setNextBlock( buffer.getInt() );
             buffer.clear();
             buffer.limit( nrOfBytes );
-            if ( fileChannel.read( buffer ) != buffer.limit() )
+            if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
@@ -207,12 +208,13 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore, FileChannel fileChannel,
-            ByteBuffer buffer ) throws IOException
+        static Command readCommand( NeoStore neoStore, 
+            ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+            throws IOException
         {
             buffer.clear();
             buffer.limit( 5 );
-            if ( fileChannel.read( buffer ) != buffer.limit() )
+            if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
@@ -234,7 +236,7 @@ abstract class Command extends XaCommand
             {
                 buffer.clear();
                 buffer.limit( 8 );
-                if ( fileChannel.read( buffer ) != buffer.limit() )
+                if ( byteChannel.read( buffer ) != buffer.limit() )
                 {
                     return null;
                 }
@@ -306,13 +308,14 @@ abstract class Command extends XaCommand
                         record.getNextProp() );
             }
         }
-
-        static Command readCommand( NeoStore neoStore, FileChannel fileChannel,
-            ByteBuffer buffer ) throws IOException
+        
+        static Command readCommand( NeoStore neoStore, 
+            ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+            throws IOException
         {
             buffer.clear();
             buffer.limit( 5 );
-            if ( fileChannel.read( buffer ) != buffer.limit() )
+            if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
@@ -335,7 +338,7 @@ abstract class Command extends XaCommand
             {
                 buffer.clear();
                 buffer.limit( 32 );
-                if ( fileChannel.read( buffer ) != buffer.limit() )
+                if ( byteChannel.read( buffer ) != buffer.limit() )
                 {
                     return null;
                 }
@@ -428,13 +431,13 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore, FileChannel fileChannel,
+        static Command readCommand( NeoStore neoStore, ReadableByteChannel byteChannel,
             ByteBuffer buffer ) throws IOException
         {
             // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
             buffer.clear();
             buffer.limit( 17 );
-            if ( fileChannel.read( buffer ) != buffer.limit() )
+            if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
@@ -458,7 +461,7 @@ abstract class Command extends XaCommand
             int nrKeyRecords = buffer.getInt();
             for ( int i = 0; i < nrKeyRecords; i++ )
             {
-                DynamicRecord dr = readDynamicRecord( fileChannel, buffer );
+                DynamicRecord dr = readDynamicRecord( byteChannel, buffer );
                 if ( dr == null )
                 {
                     return null;
@@ -545,14 +548,15 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore, FileChannel fileChannel,
-            ByteBuffer buffer ) throws IOException
+        static Command readCommand( NeoStore neoStore, 
+            ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+            throws IOException
         {
             // id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
             // prev_prop_id(int)+next_prop_id(int)+nr_value_records(int)
             buffer.clear();
             buffer.limit( 5 );
-            if ( fileChannel.read( buffer ) != buffer.limit() )
+            if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
@@ -574,7 +578,7 @@ abstract class Command extends XaCommand
             {
                 buffer.clear();
                 buffer.limit( 24 );
-                if ( fileChannel.read( buffer ) != buffer.limit() )
+                if ( byteChannel.read( buffer ) != buffer.limit() )
                 {
                     return null;
                 }
@@ -589,7 +593,7 @@ abstract class Command extends XaCommand
             }
             buffer.clear();
             buffer.limit( 4 );
-            if ( fileChannel.read( buffer ) != buffer.limit() )
+            if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
@@ -597,7 +601,7 @@ abstract class Command extends XaCommand
             int nrValueRecords = buffer.getInt();
             for ( int i = 0; i < nrValueRecords; i++ )
             {
-                DynamicRecord dr = readDynamicRecord( fileChannel, buffer );
+                DynamicRecord dr = readDynamicRecord( byteChannel, buffer );
                 if ( dr == null )
                 {
                     return null;
@@ -697,13 +701,14 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore, FileChannel fileChannel,
-            ByteBuffer buffer ) throws IOException
+        static Command readCommand( NeoStore neoStore, 
+            ReadableByteChannel byteChannel, ByteBuffer buffer ) 
+            throws IOException
         {
             // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
             buffer.clear();
             buffer.limit( 13 );
-            if ( fileChannel.read( buffer ) != buffer.limit() )
+            if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
@@ -726,7 +731,7 @@ abstract class Command extends XaCommand
             int nrTypeRecords = buffer.getInt();
             for ( int i = 0; i < nrTypeRecords; i++ )
             {
-                DynamicRecord dr = readDynamicRecord( fileChannel, buffer );
+                DynamicRecord dr = readDynamicRecord( byteChannel, buffer );
                 if ( dr == null )
                 {
                     return null;
@@ -748,12 +753,12 @@ abstract class Command extends XaCommand
         }
     }
 
-    static Command readCommand( NeoStore neoStore, FileChannel fileChannel,
+    static Command readCommand( NeoStore neoStore, ReadableByteChannel byteChannel,
         ByteBuffer buffer ) throws IOException
     {
         buffer.clear();
         buffer.limit( 1 );
-        if ( fileChannel.read( buffer ) != buffer.limit() )
+        if ( byteChannel.read( buffer ) != buffer.limit() )
         {
             return null;
         }
@@ -762,19 +767,19 @@ abstract class Command extends XaCommand
         switch ( commandType )
         {
             case NODE_COMMAND:
-                return NodeCommand.readCommand( neoStore, fileChannel, buffer );
+                return NodeCommand.readCommand( neoStore, byteChannel, buffer );
             case PROP_COMMAND:
-                return PropertyCommand.readCommand( neoStore, fileChannel,
+                return PropertyCommand.readCommand( neoStore, byteChannel,
                     buffer );
             case PROP_INDEX_COMMAND:
-                return PropertyIndexCommand.readCommand( neoStore, fileChannel,
+                return PropertyIndexCommand.readCommand( neoStore, byteChannel,
                     buffer );
             case REL_COMMAND:
-                return RelationshipCommand.readCommand( neoStore, fileChannel,
+                return RelationshipCommand.readCommand( neoStore, byteChannel,
                     buffer );
             case REL_TYPE_COMMAND:
                 return RelationshipTypeCommand.readCommand( neoStore,
-                    fileChannel, buffer );
+                    byteChannel, buffer );
             default:
                 throw new IOException( "Unkown command type[" + commandType
                     + "]" );

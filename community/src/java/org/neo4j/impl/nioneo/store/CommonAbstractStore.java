@@ -62,7 +62,7 @@ public abstract class CommonAbstractStore
     // default, do nothing
     protected void versionFound( String version )
     {
-    };
+    }
 
     /**
      * This method should close/release all resources that the implementation of
@@ -338,6 +338,11 @@ public abstract class CommonAbstractStore
         }
     }
 
+    public void rebuildIdGenerators()
+    {
+        rebuildIdGenerator();
+    }
+    
     /**
      * Returns the configuration map if set in constructor.
      * 

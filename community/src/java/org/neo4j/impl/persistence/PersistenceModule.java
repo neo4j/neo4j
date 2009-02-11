@@ -77,4 +77,9 @@ public class PersistenceModule
     {
         return persistenceManager;
     }
+    
+    public PersistenceSource getPersistenceSource()
+    {
+        return source;
+    }
 }

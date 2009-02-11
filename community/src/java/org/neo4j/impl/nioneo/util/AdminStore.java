@@ -137,7 +137,8 @@ public class AdminStore
             createEmptyStore( fileName, blockSize, VERSION );
         }
 
-        void rebuildIdGenerators()
+        @Override
+        public void rebuildIdGenerators()
         {
             rebuildIdGenerator();
         }
