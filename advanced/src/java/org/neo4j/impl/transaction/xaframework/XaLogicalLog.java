@@ -567,7 +567,13 @@ public class XaLogicalLog
         if ( autoRotate && 
             writeBuffer.getFileChannelPosition() >= rotateAtSize )
         {
-            rotate();
+            long currentPos = writeBuffer.getFileChannelPosition();
+            long firstStartEntry = getFirstStartEntry( currentPos ); 
+            // only rotate if no huge tx is running
+            if ( ( currentPos - firstStartEntry ) < rotateAtSize / 2 )
+            {
+                rotate();
+            }
         }
     }
 
