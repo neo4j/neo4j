@@ -158,7 +158,7 @@ public class ArrayIntSet
         }
         if ( arrayCount == -1 )
         {
-            return relationshipSet.remove( id );
+            return relationshipSet.contains( id );
         }
         return false;
     }
