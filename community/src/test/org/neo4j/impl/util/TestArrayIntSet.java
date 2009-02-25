@@ -129,4 +129,60 @@ public class TestArrayIntSet extends TestCase
         }
         assertEquals( 0, count );
     }
+    
+    public void testContains()
+    {
+        ArrayIntSet set = new ArrayIntSet();
+        for ( int i = 0; i < 10; i++ )
+        {
+            set.add( i );
+            assertTrue( set.contains( i ) );
+        }
+        for ( int i = 0; i < 10; i++ )
+        {
+            assertTrue( set.contains( i ) );
+        }
+        for ( int i = 0; i < 10; i+=2 )
+        {
+            set.remove( i );
+            assertTrue( !set.contains( i ) );
+        }
+        for ( int i = 0; i < 10; i++ )
+        {
+            if ( i % 2 == 0 )
+            {
+                assertTrue( !set.contains( i ) );
+            }
+            else
+            {
+                assertTrue( set.contains( i ) );
+            }
+        }
+        
+        for ( int i = 0; i < 1000; i++ )
+        {
+            set.add( i );
+            assertTrue( set.contains( i ) );
+        }
+        for ( int i = 0; i < 1000; i++ )
+        {
+            assertTrue( set.contains( i ) );
+        }
+        for ( int i = 0; i < 1000; i+=2 )
+        {
+            set.remove( i );
+            assertTrue( !set.contains( i ) );
+        }
+        for ( int i = 0; i < 1000; i++ )
+        {
+            if ( i % 2 == 0 )
+            {
+                assertTrue( !set.contains( i ) );
+            }
+            else
+            {
+                assertTrue( set.contains( i ) );
+            }
+        }
+    }
 }
