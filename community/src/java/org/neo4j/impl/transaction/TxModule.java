@@ -27,7 +27,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -55,10 +54,10 @@ public class TxModule
     private final TxManager txManager;
     private final XaDataSourceManager xaDsManager;
 
-    public TxModule( EventManager eventManager, String txLogDir )
+    public TxModule( String txLogDir )
     {
         this.txLogDir = txLogDir;
-        this.txManager = new TxManager( eventManager, txLogDir );
+        this.txManager = new TxManager( txLogDir );
         this.xaDsManager = new XaDataSourceManager();
     }
 

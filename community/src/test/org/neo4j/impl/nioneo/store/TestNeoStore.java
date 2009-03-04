@@ -37,7 +37,6 @@ import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.AbstractNeoTestCase;
 import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.PropertyIndex;
-import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.impl.nioneo.xa.NodeEventConsumer;
@@ -119,14 +118,12 @@ public class TestNeoStore extends AbstractNeoTestCase
     {
         try
         {
-            EventManager eventManager = getEmbeddedNeo().getConfig()
-                .getEventModule().getEventManager();
             LockManager lockManager = getEmbeddedNeo().getConfig()
                 .getLockManager();
             LockReleaser lockReleaser = getEmbeddedNeo().getConfig()
                 .getLockReleaser();
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser, eventManager );
+                lockManager, lockReleaser );
         }
         catch ( InstantiationException e )
         {

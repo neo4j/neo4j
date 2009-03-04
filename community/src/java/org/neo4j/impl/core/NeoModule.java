@@ -21,12 +21,13 @@ package org.neo4j.impl.core;
 
 import java.util.Map;
 import java.util.logging.Logger;
+
 import javax.transaction.TransactionManager;
+
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.cache.AdaptiveCacheManager;
-import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.transaction.LockManager;
@@ -45,13 +46,12 @@ public class NeoModule
 
     public NeoModule( AdaptiveCacheManager cacheManager,
         LockManager lockManager, TransactionManager transactionManager,
-        EventManager eventManager, PersistenceManager persistenceManager,
-        IdGenerator idGenerator )
+        PersistenceManager persistenceManager, IdGenerator idGenerator )
     {
         this.transactionManager = transactionManager;
         this.persistenceManager = persistenceManager;
         nodeManager = new NodeManager( cacheManager, lockManager,
-            transactionManager, eventManager, persistenceManager, idGenerator );
+            transactionManager, persistenceManager, idGenerator );
     }
 
     public void init()

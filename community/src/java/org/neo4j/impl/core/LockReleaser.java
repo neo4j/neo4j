@@ -51,7 +51,8 @@ public class LockReleaser
     private final NodeManager nodeManager;
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
-
+    private final PropertyIndexManager propertyIndexManager; 
+    
     private static class NeoPrimitiveElement
     {
         NeoPrimitiveElement()
@@ -89,10 +90,12 @@ public class LockReleaser
     }
 
     public LockReleaser( LockManager lockManager,
-        TransactionManager transactionManager, NodeManager nodeManager )
+        TransactionManager transactionManager, 
+        PropertyIndexManager propertyIndexManager, NodeManager nodeManager )
     {
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
+        this.propertyIndexManager = propertyIndexManager;
         this.nodeManager = nodeManager;
     }
 
@@ -121,42 +124,30 @@ public class LockReleaser
     public void addLockToTransaction( Object resource, LockType type )
         throws NotInTransactionException
     {
-        try
+        Transaction tx = getTransaction();
+        List<LockElement> lockElements = lockMap.get( tx );
+        if ( lockElements != null )
         {
-            Transaction tx = getTransaction();
-            List<LockElement> lockElements = lockMap.get( tx );
-            if ( lockElements != null )
+            lockElements.add( new LockElement( resource, type ) );
+        }
+        else
+        {
+            if ( tx == null )
             {
-                lockElements.add( new LockElement( resource, type ) );
-            }
-            else
-            {
-                if ( tx == null )
+                // no transaction we release lock right away
+                if ( type == LockType.WRITE )
                 {
-                    // no transaction we release lock right away
-                    if ( type == LockType.WRITE )
-                    {
-                        lockManager.releaseWriteLock( resource );
-                    }
-                    else if ( type == LockType.READ )
-                    {
-                        lockManager.releaseReadLock( resource );
-                    }
-                    return;
+                    lockManager.releaseWriteLock( resource );
                 }
-                tx.registerSynchronization( new TxCommitHook( this, tx ) );
-                lockElements = new ArrayList<LockElement>();
-                lockMap.put( tx, lockElements );
-                lockElements.add( new LockElement( resource, type ) );
+                else if ( type == LockType.READ )
+                {
+                    lockManager.releaseReadLock( resource );
+                }
+                return;
             }
-        }
-        catch ( javax.transaction.SystemException e )
-        {
-            throw new NotInTransactionException( e );
-        }
-        catch ( Exception e )
-        {
-            throw new NotInTransactionException( e );
+            lockElements = new ArrayList<LockElement>();
+            lockMap.put( tx, lockElements );
+            lockElements.add( new LockElement( resource, type ) );
         }
     }
     
@@ -168,7 +159,7 @@ public class LockReleaser
         }
         catch ( SystemException e )
         {
-            throw new RuntimeException();
+            throw new RuntimeException( "Unable to get transaction", e );
         }
     }
 
@@ -278,7 +269,25 @@ public class LockReleaser
         return set;
     }
 
-    public void releaseLocks( Transaction tx )
+    public void commit()
+    {
+        Transaction tx = getTransaction();
+        // propertyIndex
+        propertyIndexManager.commit( tx );
+        releaseCows( tx, Status.STATUS_COMMITTED );
+        releaseLocks( tx );
+    }
+    
+    public void rollback()
+    {
+        Transaction tx = getTransaction();
+        // propertyIndex
+        propertyIndexManager.rollback( tx );
+        releaseCows( tx, Status.STATUS_ROLLEDBACK );
+        releaseLocks( tx );
+    }
+    
+    void releaseLocks( Transaction tx )
     {
         List<LockElement> lockElements = lockMap.remove( tx );
         if ( lockElements != null )
@@ -307,7 +316,7 @@ public class LockReleaser
         }
     }
 
-    public void releaseCows( Transaction cowTxId, int param )
+    void releaseCows( Transaction cowTxId, int param )
     {
         NeoPrimitiveElement element = cowMap.remove( cowTxId );
         if ( element == null )
@@ -535,5 +544,20 @@ public class LockReleaser
             return element.propertyRemoveMap;
         }
         return null;
+    }
+
+    public void removeNodeFromCache( int nodeId )
+    {
+        nodeManager.removeNodeFromCache( nodeId );
+    }
+
+    public void removeRelationshipFromCache( int id )
+    {
+        nodeManager.removeRelationshipFromCache( id );
+    }
+    
+    public void removeRelationshipTypeFromCache( int id )
+    {
+        nodeManager.removeRelationshipTypeFromCache( id );
     }
 }

@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -45,9 +46,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-import org.neo4j.impl.event.Event;
-import org.neo4j.impl.event.EventData;
-import org.neo4j.impl.event.EventManager;
+
 import org.neo4j.impl.nioneo.store.StoreFailureException;
 import org.neo4j.impl.transaction.xaframework.XaResource;
 import org.neo4j.impl.util.ArrayMap;
@@ -75,11 +74,8 @@ public class TxManager implements TransactionManager
     private XaDataSourceManager xaDsManager = null;
     private boolean tmOk = false;
 
-    private final EventManager eventManager;
-
-    TxManager( EventManager eventManager, String txLogDir )
+    TxManager( String txLogDir )
     {
-        this.eventManager = eventManager;
         this.txLogDir = txLogDir;
     }
 
@@ -511,19 +507,6 @@ public class TxManager implements TransactionManager
             throw new SystemException( "TM encountered a problem, "
                 + " error writing transaction log," + e );
         }
-        eventManager.generateReActiveEvent( Event.TX_BEGIN, new EventData( tx
-            .getEventIdentifier() ) );
-        try
-        {
-            tx.registerSynchronization( new TxEventGenerator( eventManager, 
-                tx ) );
-        }
-        catch ( Exception e )
-        {
-            throw new SystemException( "" + e );
-        }
-        eventManager.generateProActiveEvent( Event.TX_IMMEDIATE_BEGIN,
-            new EventData( tx.getEventIdentifier() ) );
     }
 
     public void commit() throws RollbackException, HeuristicMixedException,
@@ -551,16 +534,10 @@ public class TxManager implements TransactionManager
         if ( tx.getStatus() == Status.STATUS_ACTIVE )
         {
             commit( thread, tx );
-            Event event = Event.TX_IMMEDIATE_COMMIT;
-            eventManager.generateProActiveEvent( event, new EventData( 
-                tx.getEventIdentifier() ) );
         }
         else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
         {
             rollbackCommit( thread, tx );
-            Event event = Event.TX_IMMEDIATE_ROLLBACK;
-            eventManager.generateProActiveEvent( event, new EventData( 
-                tx.getEventIdentifier() ) );
         }
         else
         {
@@ -568,7 +545,7 @@ public class TxManager implements TransactionManager
                 + getTxStatusAsString( tx.getStatus() ) );
         }
     }
-
+    
     private void commit( Thread thread, TransactionImpl tx )
         throws SystemException, HeuristicMixedException,
         HeuristicRollbackException
@@ -576,15 +553,18 @@ public class TxManager implements TransactionManager
         // mark as commit in log done TxImpl.doCommit()
         StoreFailureException sfe = null;
         int xaErrorCode = -1;
+        int result = Status.STATUS_UNKNOWN;
         if ( tx.getResourceCount() == 0 )
         {
             tx.setStatus( Status.STATUS_COMMITTED );
+            result = Status.STATUS_COMMITTED;
         }
         else
         {
             try
             {
                 tx.doCommit();
+                result = Status.STATUS_COMMITTED;
             }
             catch ( XAException e )
             {
@@ -612,6 +592,7 @@ public class TxManager implements TransactionManager
             try
             {
                 tx.doRollback();
+                result = Status.STATUS_ROLLEDBACK;
             }
             catch ( XAException e )
             {
@@ -757,9 +738,6 @@ public class TxManager implements TransactionManager
                     + " error writing transaction log," + e );
             }
             tx.setStatus( Status.STATUS_NO_TRANSACTION );
-            Event event = Event.TX_IMMEDIATE_ROLLBACK;
-            eventManager.generateProActiveEvent( event, new EventData( 
-                tx.getEventIdentifier() ) );
         }
         else
         {

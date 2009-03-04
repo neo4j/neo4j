@@ -39,10 +39,6 @@ import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.cache.AdaptiveCacheManager;
 import org.neo4j.impl.cache.LruCache;
-import org.neo4j.impl.event.Event;
-import org.neo4j.impl.event.EventData;
-import org.neo4j.impl.event.EventManager;
-import org.neo4j.impl.event.ProActiveEventListener;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.transaction.IllegalResourceException;
@@ -66,9 +62,7 @@ public class NodeManager
     private final LockReleaser lockReleaser;
     private final PropertyIndexManager propertyIndexManager;
     private final InternalTraverserFactory traverserFactory;
-    private final EventManager eventManager;
     private final RelationshipTypeHolder relTypeHolder;
-    private final PurgeEventListener purgeEventListener;
     private final PersistenceManager persistenceManager;
     private final IdGenerator idGenerator;
 
@@ -84,23 +78,21 @@ public class NodeManager
         new ReentrantLock[LOCK_STRIPE_COUNT]; 
 
     NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager,
-        TransactionManager transactionManager, EventManager eventManager,
+        TransactionManager transactionManager, 
         PersistenceManager persistenceManager, IdGenerator idGenerator )
     {
         this.cacheManager = cacheManager;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
-        this.lockReleaser = new LockReleaser( lockManager, transactionManager,
-            this );
-        this.eventManager = eventManager;
-        this.persistenceManager = persistenceManager;
-        this.idGenerator = idGenerator;
         this.propertyIndexManager = new PropertyIndexManager(
             transactionManager, persistenceManager, idGenerator );
+        this.lockReleaser = new LockReleaser( lockManager, transactionManager,
+            propertyIndexManager, this );
+        this.persistenceManager = persistenceManager;
+        this.idGenerator = idGenerator;
         this.traverserFactory = new InternalTraverserFactory();
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator );
-        this.purgeEventListener = new PurgeEventListener();
 
         nodeCache = new LruCache<Integer,NodeImpl>( "NodeCache", 1500,
             this.cacheManager );
@@ -216,21 +208,6 @@ public class NodeManager
                 minRelCacheSize );
             cacheManager.start( params );
         }
-        try
-        {
-            eventManager.registerProActiveEventListener( purgeEventListener,
-                Event.PURGE_NODE );
-            eventManager.registerProActiveEventListener( purgeEventListener,
-                Event.PURGE_REL );
-            eventManager.registerProActiveEventListener( purgeEventListener,
-                Event.PURGE_REL_TYPE );
-            eventManager.registerProActiveEventListener( purgeEventListener,
-                Event.PURGE_PROP_INDEX );
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     public void stop()
@@ -242,21 +219,6 @@ public class NodeManager
             cacheManager.unregisterCache( relCache );
         }
         relTypeHolder.clear();
-        try
-        {
-            eventManager.unregisterProActiveEventListener( purgeEventListener,
-                Event.PURGE_NODE );
-            eventManager.unregisterProActiveEventListener( purgeEventListener,
-                Event.PURGE_REL );
-            eventManager.unregisterProActiveEventListener( purgeEventListener,
-                Event.PURGE_REL_TYPE );
-            eventManager.unregisterProActiveEventListener( purgeEventListener,
-                Event.PURGE_PROP_INDEX );
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     public Node createNode()
@@ -827,29 +789,6 @@ public class NodeManager
     Iterable<RelationshipType> getRelationshipTypes()
     {
         return relTypeHolder.getRelationshipTypes();
-    }
-
-    private class PurgeEventListener implements ProActiveEventListener
-    {
-        public boolean proActiveEventReceived( Event event, EventData data )
-        {
-            if ( Event.PURGE_NODE == event )
-            {
-                removeNodeFromCache( (Integer) data.getData() );
-                return true;
-            }
-            if ( Event.PURGE_REL == event )
-            {
-                removeRelationshipFromCache( (Integer) data.getData() );
-                return true;
-            }
-            if ( Event.PURGE_REL_TYPE == event )
-            {
-                removeRelationshipTypeFromCache( (Integer) data.getData() );
-                return true;
-            }
-            return false;
-        }
     }
 
     void deleteNode( NodeImpl node )

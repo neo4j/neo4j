@@ -69,30 +69,6 @@ public class Event
     public static final Event PROPERTY_INDEX_CREATE = new Event(
         "PROPERTY_INDEX_CREATE" );
 
-    // Persistence related events
-    public static final Event DATA_SOURCE_ADDED = new Event(
-        "DATA_SOURCE_ADDED" );
-    public static final Event DATA_SOURCE_REMOVED = new Event(
-        "DATA_SOURCE_REMOVED" );
-
-    // Transaction related events
-    public static final Event TX_BEGIN = new Event( "TX_BEGIN" );
-    public static final Event TX_ROLLBACK = new Event( "TX_ROLLBACK" );
-    public static final Event TX_COMMIT = new Event( "TX_COMMIT" );
-
-    public static final Event TX_IMMEDIATE_BEGIN = new Event(
-        "TX_IMMEDIATE_BEGIN" );
-    public static final Event TX_IMMEDIATE_ROLLBACK = new Event(
-        "TX_IMMEDIATE_ROLLBACK" );
-    public static final Event TX_IMMEDIATE_COMMIT = new Event(
-        "TX_IMMEDIATE_COMMIT" );
-
-    // remove element from cache
-    public static final Event PURGE_NODE = new Event( "PURGE_NODE" );
-    public static final Event PURGE_REL = new Event( "PURGE_REL" );
-    public static final Event PURGE_REL_TYPE = new Event( "PURGE_REL_TYPE" );
-    public static final Event PURGE_PROP_INDEX = new Event( "PURGE_PROP_INDEX" );
-
     protected Event( String name )
     {
         this.name = name;
