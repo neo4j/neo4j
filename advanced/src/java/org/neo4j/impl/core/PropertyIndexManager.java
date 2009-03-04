@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
@@ -176,28 +174,16 @@ public class PropertyIndexManager
     PropertyIndex createPropertyIndex( String key )
     {
         Transaction tx = getTransaction();
+        if ( tx == null )
+        {
+            throw new NotInTransactionException(
+                "Unable to create property index for " + key );
+        }
         TxCommitHook hook = txCommitHooks.get( tx );
         if ( hook == null )
         {
             hook = new TxCommitHook( tx );
             txCommitHooks.put( tx, hook );
-            try
-            {
-                if ( tx == null )
-                {
-                    throw new NotInTransactionException(
-                        "Unable to create property index for " + key );
-                }
-                tx.registerSynchronization( hook );
-            }
-            catch ( javax.transaction.SystemException e )
-            {
-                throw new NotInTransactionException( e );
-            }
-            catch ( Exception e )
-            {
-                throw new NotInTransactionException( e );
-            }
         }
         PropertyIndex index = hook.getIndex( key );
         if ( index != null )
@@ -222,8 +208,28 @@ public class PropertyIndexManager
             se.printStackTrace();
         }
     }
+    
+    void commit( Transaction tx )
+    {
+        if ( tx != null )
+        {
+            TxCommitHook hook = txCommitHooks.remove( tx );
+            if ( hook != null )
+            {
+                for ( PropertyIndex index : hook.getAddedPropertyIndexes() )
+                {
+                    addPropertyIndex( index );
+                }
+            }
+        }
+    }
+    
+    void rollback( Transaction tx )
+    {
+        txCommitHooks.remove( tx );
+    }
 
-    private class TxCommitHook implements Synchronization
+    private class TxCommitHook
     {
         private Map<String,PropertyIndex> createdIndexes = 
             new HashMap<String,PropertyIndex>();
@@ -254,27 +260,9 @@ public class PropertyIndexManager
             return idToIndex.get( keyId );
         }
 
-        public void afterCompletion( int status )
+        Iterable<PropertyIndex> getAddedPropertyIndexes()
         {
-            try
-            {
-                if ( status == Status.STATUS_COMMITTED )
-                {
-                    for ( PropertyIndex index : createdIndexes.values() )
-                    {
-                        addPropertyIndex( index );
-                    }
-                }
-                txCommitHooks.remove( tx );
-            }
-            catch ( Throwable t )
-            {
-                t.printStackTrace();
-            }
-        }
-
-        public void beforeCompletion()
-        {
+            return createdIndexes.values();
         }
     }
 }

@@ -22,11 +22,12 @@ package org.neo4j.api.core;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.transaction.TransactionManager;
+
 import org.neo4j.impl.cache.AdaptiveCacheManager;
 import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.NeoModule;
-import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.event.EventModule;
 import org.neo4j.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.impl.persistence.IdGeneratorModule;
@@ -115,8 +116,6 @@ class NeoJvmInstance
         String logicalLog = storeDir + separator + "nioneo_logical.log";
         params.put( "logical_log", logicalLog );
         byte resourceId[] = "414141".getBytes();
-        params.put( EventManager.class, config.getEventModule()
-            .getEventManager() );
         params.put( LockManager.class, config.getLockManager() );
         params.put( LockReleaser.class, config.getLockReleaser() );
         config.getTxModule().registerDataSource( DEFAULT_DATA_SOURCE_NAME,
@@ -261,15 +260,13 @@ class NeoJvmInstance
             this.params = params;
             eventModule = new EventModule();
             cacheManager = new AdaptiveCacheManager();
-            txModule = new TxModule( eventModule.getEventManager(),
-                this.storeDir );
+            txModule = new TxModule( this.storeDir );
             lockManager = new LockManager( txModule.getTxManager() );
             persistenceModule = new PersistenceModule( txModule.getTxManager() );
             idGeneratorModule = new IdGeneratorModule();
             neoModule = new NeoModule( cacheManager, lockManager, txModule
-                .getTxManager(), eventModule.getEventManager(),
-                persistenceModule.getPersistenceManager(), idGeneratorModule
-                    .getIdGenerator() );
+                .getTxManager(), persistenceModule.getPersistenceManager(), 
+                idGeneratorModule.getIdGenerator() );
             lockReleaser = neoModule.getLockReleaser();
         }
 

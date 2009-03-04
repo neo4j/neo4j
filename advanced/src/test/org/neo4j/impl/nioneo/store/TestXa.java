@@ -44,7 +44,6 @@ import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.AbstractNeoTestCase;
 import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.PropertyIndex;
-import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.impl.transaction.LockManager;
@@ -115,7 +114,6 @@ public class TestXa extends AbstractNeoTestCase
         return index;
     }
 
-    private EventManager eventManager;
     private LockManager lockManager;
     private LockReleaser lockReleaser;
 
@@ -133,12 +131,10 @@ public class TestXa extends AbstractNeoTestCase
         try
         {
             NeoStore.createStore( "neo" );
-            eventManager = getEmbeddedNeo().getConfig().getEventModule()
-                .getEventManager();
             lockManager = getEmbeddedNeo().getConfig().getLockManager();
             lockReleaser = getEmbeddedNeo().getConfig().getLockReleaser();
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser, eventManager );
+                lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         }
         catch ( Exception e )
@@ -412,7 +408,7 @@ public class TestXa extends AbstractNeoTestCase
             deleteLogicalLogIfExist();
             renameCopiedLogicalLog();
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser, eventManager );
+                lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
             xaRes = xaCon.getXaResource();
             assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -459,7 +455,7 @@ public class TestXa extends AbstractNeoTestCase
             deleteLogicalLogIfExist();
             renameCopiedLogicalLog();
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser, eventManager );
+                lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
             xaRes = xaCon.getXaResource();
             assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -506,7 +502,7 @@ public class TestXa extends AbstractNeoTestCase
             deleteLogicalLogIfExist();
             renameCopiedLogicalLog();
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser, eventManager );
+                lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
             xaRes = xaCon.getXaResource();
             assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -539,7 +535,7 @@ public class TestXa extends AbstractNeoTestCase
             renameCopiedLogicalLog();
             truncateLogicalLog( -3 );
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser, eventManager );
+                lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
             xaRes = xaCon.getXaResource();
             assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -575,7 +571,7 @@ public class TestXa extends AbstractNeoTestCase
             renameCopiedLogicalLog();
             truncateLogicalLog( 141 );
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser, eventManager );
+                lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
             xaRes = xaCon.getXaResource();
             assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -611,7 +607,7 @@ public class TestXa extends AbstractNeoTestCase
             renameCopiedLogicalLog();
             truncateLogicalLog( 145 );
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser, eventManager );
+                lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
             xaRes = xaCon.getXaResource();
             assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
