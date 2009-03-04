@@ -34,7 +34,6 @@ import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.PropertyIndex;
-import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.Store;
@@ -70,7 +69,6 @@ public class NeoStoreXaDataSource extends XaDataSource
 
     private final LockManager lockManager;
     private final LockReleaser lockReleaser;
-    private final EventManager eventManager;
     private final String storeDir;
 
     private boolean logApplied = false;
@@ -101,7 +99,6 @@ public class NeoStoreXaDataSource extends XaDataSource
         super( params );
         this.lockManager = (LockManager) params.get( LockManager.class );
         this.lockReleaser = (LockReleaser) params.get( LockReleaser.class );
-        this.eventManager = (EventManager) params.get( EventManager.class );
         String configFileName = (String) params.get( "config" );
         storeDir = (String) params.get( "store_dir" );
         Properties config = new Properties();
@@ -191,13 +188,12 @@ public class NeoStoreXaDataSource extends XaDataSource
      */
     public NeoStoreXaDataSource( String neoStoreFileName,
         String logicalLogPath, LockManager lockManager,
-        LockReleaser lockReleaser, EventManager eventManager )
+        LockReleaser lockReleaser )
         throws IOException, InstantiationException
     {
         super( null );
         this.lockManager = lockManager;
         this.lockReleaser = lockReleaser;
-        this.eventManager = eventManager;
         storeDir = logicalLogPath;
         neoStore = new NeoStore( neoStoreFileName );
         xaContainer = XaContainer.create( logicalLogPath, new CommandFactory(
@@ -280,7 +276,7 @@ public class NeoStoreXaDataSource extends XaDataSource
         public XaTransaction create( int identifier )
         {
             return new NeoTransaction( identifier, getLogicalLog(), neoStore,
-                lockReleaser, lockManager, eventManager );
+                lockReleaser, lockManager );
         }
 
         public void recoveryComplete()

@@ -26,16 +26,15 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.xa.XAException;
+
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.core.RawPropertyIndex;
-import org.neo4j.impl.event.Event;
-import org.neo4j.impl.event.EventData;
-import org.neo4j.impl.event.EventManager;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeRecord;
@@ -93,17 +92,14 @@ class NeoTransaction extends XaTransaction
 
     private final LockReleaser lockReleaser;
     private final LockManager lockManager;
-    private final EventManager eventManager;
 
     NeoTransaction( int identifier, XaLogicalLog log, NeoStore neoStore,
-        LockReleaser lockReleaser, LockManager lockManager,
-        EventManager eventManager )
+        LockReleaser lockReleaser, LockManager lockManager )
     {
         super( identifier, log );
         this.neoStore = neoStore;
         this.lockReleaser = lockReleaser;
         this.lockManager = lockManager;
-        this.eventManager = eventManager;
     }
 
     public boolean isReadOnly()
@@ -339,25 +335,26 @@ class NeoTransaction extends XaTransaction
             propIndexCommands.clear();
             relCommands.clear();
             relTypeCommands.clear();
+            if ( !isRecovered() )
+            {
+                lockReleaser.rollback();
+            }
         }
     }
 
     private void removeRelationshipTypeFromCache( int id )
     {
-        eventManager.generateProActiveEvent( Event.PURGE_REL_TYPE,
-            new EventData( id ) );
+        lockReleaser.removeRelationshipTypeFromCache( id );
     }
 
     private void removeRelationshipFromCache( int id )
     {
-        eventManager.generateProActiveEvent( Event.PURGE_REL,
-            new EventData( id ) );
+        lockReleaser.removeRelationshipFromCache( id );
     }
 
     private void removeNodeFromCache( int id )
     {
-        eventManager.generateProActiveEvent( Event.PURGE_NODE, new EventData(
-            id ) );
+        lockReleaser.removeNodeFromCache( id );
     }
 
     public void doCommit() throws XAException
@@ -399,6 +396,10 @@ class NeoTransaction extends XaTransaction
             for ( Command.PropertyCommand command : propCommands )
             {
                 command.execute();
+            }
+            if ( !isRecovered() )
+            {
+                lockReleaser.commit();
             }
         }
         finally
@@ -670,6 +671,14 @@ class NeoTransaction extends XaTransaction
         {
             nodeRecord = getNodeStore().getRecord( nodeId );
         }
+        else
+        {
+            if ( !nodeRecord.inUse() )
+            {
+                throw new StoreFailureException( "Node[" + nodeId + 
+                    "] not in use" );
+            }
+        }
         int nextRel = nodeRecord.getNextRel();
         List<RelationshipData> rels = new ArrayList<RelationshipData>();
         while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -793,6 +802,11 @@ class NeoTransaction extends XaTransaction
         {
             relRecord = getRelationshipStore().getRecord( relId );
         }
+        if ( !relRecord.inUse() )
+        {
+            throw new StoreFailureException( "Relationship[" + relId + 
+                "] not in use" );
+        }
         int nextProp = relRecord.getNextProp();
         List<PropertyData> properties = new ArrayList<PropertyData>();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
@@ -817,6 +831,12 @@ class NeoTransaction extends XaTransaction
         {
             nodeRecord = getNodeStore().getRecord( nodeId );
         }
+        else if ( !nodeRecord.inUse() )
+        {
+            throw new StoreFailureException( "Node[" + nodeId + 
+                "] not in use" );
+        }
+            
         int nextProp = nodeRecord.getNextProp();
         List<PropertyData> properties = new ArrayList<PropertyData>();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )

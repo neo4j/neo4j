@@ -45,8 +45,7 @@ class PersistenceRow extends LockableWindow
         this.position = position;
         this.recordSize = recordSize;
         this.buffer = new Buffer( this );
-
-        goToPosition();
+        this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
     }
 
     public Buffer getBuffer()
@@ -59,13 +58,12 @@ class PersistenceRow extends LockableWindow
         return position;
     }
 
-    private void goToPosition()
+    void readPosition()
     {
         try
         {
             long fileSize = getFileChannel().size();
             int recordCount = (int) (fileSize / recordSize);
-            this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
             // possible last element not written completely, therefore if
             // fileSize % recordSize can be non 0 and we check > instead of >=
             if ( position > recordCount )
@@ -89,7 +87,7 @@ class PersistenceRow extends LockableWindow
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }
-
+    
     void writeOut()
     {
         if ( getOperationType() == OperationType.WRITE )
