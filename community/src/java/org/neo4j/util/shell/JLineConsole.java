@@ -11,6 +11,7 @@ public class JLineConsole implements Console
 	private ShellClient client;
 	private Object consoleReader;
 	private Object completor;
+	private boolean successfulGrabAvailableCommands = true;
 	
 	public static JLineConsole newConsoleOrNullIfNotFound( ShellClient client )
 	{
@@ -72,15 +73,33 @@ public class JLineConsole implements Console
 	
 	public String readLine()
 	{
+	    try
+	    {
+	        grabAvailableCommands();
+	        successfulGrabAvailableCommands = true;
+	    }
+	    catch ( Exception e )
+	    {
+            // It's ok. Maybe there's problems with the server connection?
+	        if ( successfulGrabAvailableCommands )
+	        {
+	            System.err.println( "Couldn't grab available commands: " +
+	                e.toString() );
+	            successfulGrabAvailableCommands = false;
+	        }
+	    }
+        
 		try
 		{
-			grabAvailableCommands();
 			return ( String ) consoleReader.getClass().getMethod( "readLine" ).
 				invoke( consoleReader );
 		}
+		catch ( RuntimeException e )
+		{
+		    throw e;
+		}
 		catch ( Exception e )
 		{
-			e.printStackTrace();
 			throw new RuntimeException( e );
 		}
 	}

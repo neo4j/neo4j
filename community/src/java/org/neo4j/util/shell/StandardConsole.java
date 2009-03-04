@@ -1,7 +1,13 @@
 package org.neo4j.util.shell;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 public class StandardConsole implements Console
 {
+    private BufferedReader consoleReader;
+    
 	/**
 	 * Prints a formatted string to the console (System.out).
 	 * @param format the string/format to print.
@@ -17,26 +23,18 @@ public class StandardConsole implements Console
 	 */
 	public String readLine()
 	{
-		try
-		{
-			StringBuffer text = new StringBuffer();
-			while ( true )
-			{
-				int charRead = System.in.read();
-				if ( charRead == '\r' || charRead == '\n' )
-				{
-					// Skip garbage chars.
-					System.in.skip( System.in.available() );
-					break;
-				}
-				
-				text.append( ( char ) charRead );
-			}
-			return text.toString();
-		}
-		catch ( java.io.IOException e )
-		{
-			throw new RuntimeException( e );
-		}
+	    try
+	    {
+	        if ( consoleReader == null )
+	        {
+	            consoleReader = new BufferedReader( new InputStreamReader(
+	                System.in ) );
+	        }
+	        return consoleReader.readLine();
+	    }
+	    catch ( IOException e )
+	    {
+	        throw new RuntimeException( e );
+	    }
 	}
 }
