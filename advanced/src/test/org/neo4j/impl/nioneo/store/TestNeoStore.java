@@ -339,8 +339,10 @@ public class TestNeoStore extends AbstractNeoTestCase
             }
             for ( int i = 0; i < 2; i++ )
             {
-                rStore.createRelationship( ds.nextId( Relationship.class ),
+                int id =  ds.nextId( Relationship.class );
+                rStore.createRelationship( id,
                     nodeIds[i], nodeIds[i + 1], relType1 );
+                rStore.deleteRelationship( id );
             }
             for ( int i = 0; i < 3; i++ )
             {
