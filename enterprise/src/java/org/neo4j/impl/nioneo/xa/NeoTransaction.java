@@ -690,8 +690,11 @@ class NeoTransaction extends XaTransaction
             }
             int firstNode = relRecord.getFirstNode();
             int secondNode = relRecord.getSecondNode();
-            rels.add( new RelationshipData( nextRel, firstNode, secondNode,
-                relRecord.getType() ) );
+            if ( !relRecord.isCreated() )
+            {
+                rels.add( new RelationshipData( nextRel, firstNode, secondNode,
+                    relRecord.getType() ) );
+            }
             if ( firstNode == nodeId )
             {
                 nextRel = relRecord.getFirstNextRel();
@@ -816,9 +819,12 @@ class NeoTransaction extends XaTransaction
             {
                 propRecord = getPropertyStore().getLightRecord( nextProp );
             }
-            properties.add( new PropertyData( propRecord.getId(), 
-                propRecord.getKeyIndexId(), 
-                propertyGetValueOrNull( propRecord ) ) );
+            if ( !propRecord.isCreated() )
+            {
+                properties.add( new PropertyData( propRecord.getId(), 
+                    propRecord.getKeyIndexId(), 
+                    propertyGetValueOrNull( propRecord ) ) );
+            }
             nextProp = propRecord.getNextProp();
         }
         return properties.toArray( new PropertyData[properties.size()] );
@@ -846,9 +852,12 @@ class NeoTransaction extends XaTransaction
             {
                 propRecord = getPropertyStore().getLightRecord( nextProp );
             }
-            properties.add( new PropertyData( propRecord.getId(), 
-                propRecord.getKeyIndexId(), 
-                propertyGetValueOrNull( propRecord ) ) );
+            if ( !propRecord.isCreated() )
+            {
+                properties.add( new PropertyData( propRecord.getId(), 
+                    propRecord.getKeyIndexId(), 
+                    propertyGetValueOrNull( propRecord ) ) );
+            }
             nextProp = propRecord.getNextProp();
         }
         return properties.toArray( new PropertyData[properties.size()] );

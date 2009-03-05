@@ -21,6 +21,9 @@ package org.neo4j.impl.core;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+
+import javax.transaction.TransactionManager;
+
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.Node;
@@ -288,5 +291,59 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
         assertEquals( 1, rel.getProperty( "1" ) );
         assertEquals( 2, nodeA.getProperty( "2" ) );
         assertEquals( 2, rel.getProperty( "2" ) );
+    }
+    
+    public void testTxCacheLoadIsolation()
+    {
+        Node node = getNeo().createNode();
+        node.setProperty( "someproptest", "testing" );
+        Node node1 = getNeo().createNode();
+        node1.setProperty( "someotherproptest", 2 );
+        commit();
+        EmbeddedNeo eNeo = (EmbeddedNeo) getNeo();
+        TransactionManager txManager = 
+            eNeo.getConfig().getTxModule().getTxManager();
+        NodeManager nodeManager = 
+            eNeo.getConfig().getNeoModule().getNodeManager();
+        try
+        {
+            txManager.begin();
+            node.setProperty( "someotherproptest", "testing2" );
+            Relationship rel = node.createRelationshipTo( node1, 
+                MyRelTypes.TEST );
+            javax.transaction.Transaction txA = txManager.suspend();
+            txManager.begin();
+            assertEquals( "testing", node.getProperty( "someproptest" ) );
+            assertTrue( !node.hasProperty( "someotherproptest" ) );
+            assertTrue( !node.hasRelationship() );
+            nodeManager.clearCache();
+            assertEquals( "testing", node.getProperty( "someproptest" ) );
+            assertTrue( !node.hasProperty( "someotherproptest" ) );
+            javax.transaction.Transaction txB = txManager.suspend();
+            txManager.resume( txA );
+            assertEquals( "testing", node.getProperty( "someproptest" ) );
+            assertTrue( node.hasProperty( "someotherproptest" ) );
+            assertTrue( node.hasRelationship() );
+            nodeManager.clearCache();
+            assertEquals( "testing", node.getProperty( "someproptest" ) );
+            assertTrue( node.hasProperty( "someotherproptest" ) );
+            assertTrue( node.hasRelationship() );
+            txManager.suspend();
+            txManager.resume( txB );
+            assertEquals( "testing", node.getProperty( "someproptest" ) );
+            assertTrue( !node.hasProperty( "someotherproptest" ) );
+            assertTrue( !node.hasRelationship() );
+            txManager.rollback();
+            txManager.resume( txA );
+            node.delete();
+            node1.delete();
+            rel.delete();
+            txManager.commit();
+            newTransaction();
+        }
+        catch ( Exception e )
+        {
+            fail( "" + e );
+        }
     }
 }
