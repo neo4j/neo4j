@@ -23,7 +23,9 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
+import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.transaction.LockType;
+import org.neo4j.impl.util.ArrayMap;
 
 class RelationshipImpl extends NeoPrimitive implements Relationship,
     Comparable<Relationship>
@@ -75,7 +77,7 @@ class RelationshipImpl extends NeoPrimitive implements Relationship,
         nodeManager.relRemoveProperty( this, propertyId );
     }
 
-    protected RawPropertyData[] loadProperties()
+    protected ArrayMap<Integer,PropertyData> loadProperties()
     {
         return nodeManager.loadProperties( this );
     }

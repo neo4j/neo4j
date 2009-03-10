@@ -20,12 +20,13 @@
 package org.neo4j.impl.persistence;
 
 import javax.transaction.TransactionManager;
+
 import org.neo4j.impl.core.PropertyIndex;
-import org.neo4j.impl.core.RawNodeData;
-import org.neo4j.impl.core.RawPropertyData;
-import org.neo4j.impl.core.RawPropertyIndex;
-import org.neo4j.impl.core.RawRelationshipData;
-import org.neo4j.impl.core.RawRelationshipTypeData;
+import org.neo4j.impl.nioneo.store.PropertyData;
+import org.neo4j.impl.nioneo.store.PropertyIndexData;
+import org.neo4j.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.impl.nioneo.store.RelationshipData;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * The PersistenceManager is the front-end for all persistence related
@@ -48,7 +49,7 @@ public class PersistenceManager
         return broker;
     }
 
-    public RawNodeData loadLightNode( int id )
+    public boolean loadLightNode( int id )
     {
         return getResource().nodeLoadLight( id );
     }
@@ -63,32 +64,32 @@ public class PersistenceManager
         return getResource().loadIndex( id );
     }
 
-    public RawPropertyIndex[] loadPropertyIndexes( int maxCount )
+    public PropertyIndexData[] loadPropertyIndexes( int maxCount )
     {
         return getResource().loadPropertyIndexes( maxCount );
     }
 
-    public RawRelationshipData[] loadRelationships( int nodeId )
+    public Iterable<RelationshipData> loadRelationships( int nodeId )
     {
         return getResource().nodeLoadRelationships( nodeId );
     }
 
-    public RawPropertyData[] loadNodeProperties( int nodeId )
+    public ArrayMap<Integer,PropertyData> loadNodeProperties( int nodeId )
     {
         return getResource().nodeLoadProperties( nodeId );
     }
 
-    public RawPropertyData[] loadRelProperties( int relId )
+    public ArrayMap<Integer,PropertyData> loadRelProperties( int relId )
     {
         return getResource().relLoadProperties( relId );
     }
 
-    public RawRelationshipData loadLightRelationship( int id )
+    public RelationshipData loadLightRelationship( int id )
     {
         return getResource().relLoadLight( id );
     }
 
-    public RawRelationshipTypeData[] loadAllRelationshipTypes()
+    public RelationshipTypeData[] loadAllRelationshipTypes()
     {
         return getResource().loadRelationshipTypes();
     }

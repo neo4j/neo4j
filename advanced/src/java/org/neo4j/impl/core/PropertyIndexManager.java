@@ -31,6 +31,7 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.NotInTransactionException;
+import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.util.ArrayMap;
@@ -106,9 +107,9 @@ public class PropertyIndexManager
         return idToIndexMap.get( keyId ) != null;
     }
 
-    void addPropertyIndexes( RawPropertyIndex[] indexes )
+    void addPropertyIndexes( PropertyIndexData[] indexes )
     {
-        for ( RawPropertyIndex rawIndex : indexes )
+        for ( PropertyIndexData rawIndex : indexes )
         {
             addPropertyIndex( new PropertyIndex( rawIndex.getValue(), 
                 rawIndex.getKeyId() ) );

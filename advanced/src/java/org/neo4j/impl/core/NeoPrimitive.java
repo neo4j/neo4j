@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.api.core.NotFoundException;
+import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -31,7 +32,7 @@ abstract class NeoPrimitive
     protected final int id;
     protected final NodeManager nodeManager;
 
-    private ArrayMap<Integer,Property> propertyMap = null;
+    private ArrayMap<Integer,PropertyData> propertyMap = null;
     
     protected abstract void changeProperty( int propertyId, Object value );
 
@@ -39,7 +40,7 @@ abstract class NeoPrimitive
 
     protected abstract void removeProperty( int propertyId );
 
-    protected abstract RawPropertyData[] loadProperties();
+    protected abstract ArrayMap<Integer,PropertyData> loadProperties();
 
     NeoPrimitive( int id, NodeManager nodeManager )
     {
@@ -53,7 +54,7 @@ abstract class NeoPrimitive
         this.nodeManager = nodeManager;
         if ( newPrimitive )
         {
-            propertyMap = new ArrayMap<Integer,Property>( 9, false, true );
+            propertyMap = new ArrayMap<Integer,PropertyData>( 9, false, true );
         }
     }
     
@@ -64,9 +65,9 @@ abstract class NeoPrimitive
 
     public Iterable<Object> getPropertyValues()
     {
-        ArrayMap<Integer,Property> skipMap = 
+        ArrayMap<Integer,PropertyData> skipMap = 
             nodeManager.getCowPropertyRemoveMap( this );
-        ArrayMap<Integer,Property> addMap = 
+        ArrayMap<Integer,PropertyData> addMap = 
             nodeManager.getCowPropertyAddMap( this );
 
         ensureFullProperties();
@@ -86,7 +87,7 @@ abstract class NeoPrimitive
         }
         if ( addMap != null )
         {
-            for ( Property property : addMap.values() )
+            for ( PropertyData property : addMap.values() )
             {
                 values.add( property.getValue() );
             }
@@ -96,9 +97,9 @@ abstract class NeoPrimitive
 
     public Iterable<String> getPropertyKeys()
     {
-        ArrayMap<Integer,Property> skipMap = 
+        ArrayMap<Integer,PropertyData> skipMap = 
             nodeManager.getCowPropertyRemoveMap( this );
-        ArrayMap<Integer,Property> addMap = 
+        ArrayMap<Integer,PropertyData> addMap = 
             nodeManager.getCowPropertyAddMap( this );
 
         ensureFullProperties();
@@ -132,9 +133,9 @@ abstract class NeoPrimitive
         {
             throw new IllegalArgumentException( "null key" );
         }
-        ArrayMap<Integer,Property> skipMap = 
+        ArrayMap<Integer,PropertyData> skipMap = 
             nodeManager.getCowPropertyRemoveMap( this );
-        ArrayMap<Integer,Property> addMap = 
+        ArrayMap<Integer,PropertyData> addMap = 
             nodeManager.getCowPropertyAddMap( this );
 
         ensureFullProperties();
@@ -146,19 +147,19 @@ abstract class NeoPrimitive
             }
             if ( addMap != null )
             {
-                Property property = addMap.get( index.getKeyId() );
+                PropertyData property = addMap.get( index.getKeyId() );
                 if ( property != null )
                 {
                     return getPropertyValue( property );
                 }
             }
-            Property property = propertyMap.get( index.getKeyId() );
+            PropertyData property = propertyMap.get( index.getKeyId() );
             if ( property != null )
             {
                 return getPropertyValue( property );
             }
         }
-        Property property = getSlowProperty( addMap, skipMap, key );
+        PropertyData property = getSlowProperty( addMap, skipMap, key );
         if ( property != null )
         {
             return getPropertyValue( property );
@@ -172,8 +173,8 @@ abstract class NeoPrimitive
             " property not found for " + this + "." );
     }
     
-    private Property getSlowProperty( ArrayMap<Integer,Property> addMap,
-        ArrayMap<Integer,Property> skipMap, String key )
+    private PropertyData getSlowProperty( ArrayMap<Integer,PropertyData> addMap,
+        ArrayMap<Integer,PropertyData> skipMap, String key )
     {
         if ( nodeManager.hasAllPropertyIndexes() )
         {
@@ -193,7 +194,7 @@ abstract class NeoPrimitive
                         {
                             throw newPropertyNotFoundException( key );
                         }
-                        Property property = 
+                        PropertyData property = 
                             addMap.get( indexToCheck.getKeyId() );
                         if ( property != null )
                         {
@@ -214,7 +215,7 @@ abstract class NeoPrimitive
                     {
                         throw newPropertyNotFoundException( key );
                     }
-                    Property property = propertyMap.get( 
+                    PropertyData property = propertyMap.get( 
                         indexToCheck.getKeyId() );
                     if ( property != null )
                     {
@@ -232,9 +233,9 @@ abstract class NeoPrimitive
         {
             throw new IllegalArgumentException( "null key" );
         }
-        ArrayMap<Integer,Property> skipMap = 
+        ArrayMap<Integer,PropertyData> skipMap = 
             nodeManager.getCowPropertyRemoveMap( this );
-        ArrayMap<Integer,Property> addMap = 
+        ArrayMap<Integer,PropertyData> addMap = 
             nodeManager.getCowPropertyAddMap( this );
 
         ensureFullProperties();
@@ -246,19 +247,19 @@ abstract class NeoPrimitive
             }
             if ( addMap != null )
             {
-                Property property = addMap.get( index.getKeyId() );
+                PropertyData property = addMap.get( index.getKeyId() );
                 if ( property != null )
                 {
                     return getPropertyValue( property );
                 }
             }
-            Property property = propertyMap.get( index.getKeyId() );
+            PropertyData property = propertyMap.get( index.getKeyId() );
             if ( property != null )
             {
                 return getPropertyValue( property );
             }
         }
-        Property property = getSlowProperty( addMap, skipMap, key );
+        PropertyData property = getSlowProperty( addMap, skipMap, key );
         if ( property != null )
         {
             return getPropertyValue( property );
@@ -273,9 +274,9 @@ abstract class NeoPrimitive
             return false;
         }
         
-        ArrayMap<Integer,Property> skipMap = 
+        ArrayMap<Integer,PropertyData> skipMap = 
             nodeManager.getCowPropertyRemoveMap( this );
-        ArrayMap<Integer,Property> addMap = 
+        ArrayMap<Integer,PropertyData> addMap = 
             nodeManager.getCowPropertyAddMap( this );
 
         ensureFullProperties();
@@ -287,19 +288,19 @@ abstract class NeoPrimitive
             }
             if ( addMap != null )
             {
-                Property property = addMap.get( index.getKeyId() );
+                PropertyData property = addMap.get( index.getKeyId() );
                 if ( property != null )
                 {
                     return true;
                 }
             }
-            Property property = propertyMap.get( index.getKeyId() );
+            PropertyData property = propertyMap.get( index.getKeyId() );
             if ( property != null )
             {
                 return true;
             }
         }
-        Property property = getSlowProperty( addMap, skipMap, key );
+        PropertyData property = getSlowProperty( addMap, skipMap, key );
         if ( property != null )
         {
             return true;
@@ -319,12 +320,12 @@ abstract class NeoPrimitive
         try
         {
             ensureFullProperties();
-            ArrayMap<Integer,Property> addMap = 
+            ArrayMap<Integer,PropertyData> addMap = 
                 nodeManager.getCowPropertyAddMap( this, true );
-            ArrayMap<Integer,Property> skipMap = 
+            ArrayMap<Integer,PropertyData> skipMap = 
                 nodeManager.getCowPropertyRemoveMap( this );
             PropertyIndex index = null;
-            Property property = null;
+            PropertyData property = null;
             boolean foundInSkipMap = false;
             for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
@@ -409,7 +410,7 @@ abstract class NeoPrimitive
             else
             {
                 int propertyId = addProperty( index, value );
-                property = new Property( propertyId, value );
+                property = new PropertyData( propertyId, value );
             }
             addMap.put( index.getKeyId(), property );
             success = true;
@@ -435,10 +436,10 @@ abstract class NeoPrimitive
         try
         {
             ensureFullProperties();
-            Property property = null;
-            ArrayMap<Integer,Property> addMap = 
+            PropertyData property = null;
+            ArrayMap<Integer,PropertyData> addMap = 
                 nodeManager.getCowPropertyAddMap( this );
-            ArrayMap<Integer,Property> removeMap =
+            ArrayMap<Integer,PropertyData> removeMap =
                 nodeManager.getCowPropertyRemoveMap( this, true );
             for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
@@ -524,7 +525,7 @@ abstract class NeoPrimitive
         }
     }
 
-    private Object getPropertyValue( Property property )
+    private Object getPropertyValue( PropertyData property )
     {
         Object value = property.getValue();
         if ( value == null )
@@ -536,8 +537,8 @@ abstract class NeoPrimitive
     }
 
     protected void commitPropertyMaps( 
-        ArrayMap<Integer,Property> cowPropertyAddMap, 
-        ArrayMap<Integer,Property> cowPropertyRemoveMap )
+        ArrayMap<Integer,PropertyData> cowPropertyAddMap, 
+        ArrayMap<Integer,PropertyData> cowPropertyRemoveMap )
     {
         if ( propertyMap == null )
         {
@@ -564,16 +565,7 @@ abstract class NeoPrimitive
     {
         if ( propertyMap == null )
         {
-            RawPropertyData[] rawProperties = loadProperties();
-            ArrayMap<Integer,Property> newPropertyMap = 
-                new ArrayMap<Integer,Property>( 9, false, true );
-            for ( RawPropertyData propData : rawProperties )
-            {
-                int propId = propData.getId();
-                Property property = new Property( propId, propData.getValue() );
-                newPropertyMap.put( propData.getIndex(), property );
-            }
-            this.propertyMap = newPropertyMap;
+            this.propertyMap = loadProperties();
             return true;
         }
         return false;

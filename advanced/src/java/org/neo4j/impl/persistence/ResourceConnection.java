@@ -20,12 +20,13 @@
 package org.neo4j.impl.persistence;
 
 import javax.transaction.xa.XAResource;
+
 import org.neo4j.impl.core.PropertyIndex;
-import org.neo4j.impl.core.RawNodeData;
-import org.neo4j.impl.core.RawPropertyData;
-import org.neo4j.impl.core.RawPropertyIndex;
-import org.neo4j.impl.core.RawRelationshipData;
-import org.neo4j.impl.core.RawRelationshipTypeData;
+import org.neo4j.impl.nioneo.store.PropertyData;
+import org.neo4j.impl.nioneo.store.PropertyIndexData;
+import org.neo4j.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.impl.nioneo.store.RelationshipData;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * A connection to a {@link PersistenceSource}. <CODE>ResourceConnection</CODE>
@@ -65,23 +66,23 @@ public interface ResourceConnection
 
     public void relRemoveProperty( int relId, int propertyId );
 
-    public RawNodeData nodeLoadLight( int id );
+    public boolean nodeLoadLight( int id );
 
     public Object loadPropertyValue( int id );
 
     public String loadIndex( int id );
 
-    public RawPropertyIndex[] loadPropertyIndexes( int maxCount );
+    public PropertyIndexData[] loadPropertyIndexes( int maxCount );
 
-    public RawRelationshipData[] nodeLoadRelationships( int nodeId );
+    public Iterable<RelationshipData> nodeLoadRelationships( int nodeId );
 
-    public RawPropertyData[] nodeLoadProperties( int nodeId );
+    public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId );
 
-    public RawPropertyData[] relLoadProperties( int relId );
+    public ArrayMap<Integer,PropertyData> relLoadProperties( int relId );
 
-    public RawRelationshipData relLoadLight( int id );
+    public RelationshipData relLoadLight( int id );
 
-    public RawRelationshipTypeData[] loadRelationshipTypes();
+    public RelationshipTypeData[] loadRelationshipTypes();
 
     public void createPropertyIndex( String key, int id );
 
