@@ -34,7 +34,6 @@ import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.PropertyIndex;
-import org.neo4j.impl.core.RawPropertyIndex;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeRecord;
@@ -45,6 +44,7 @@ import org.neo4j.impl.nioneo.store.PropertyIndexStore;
 import org.neo4j.impl.nioneo.store.PropertyRecord;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.PropertyType;
+import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.nioneo.store.Record;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipRecord;
@@ -57,6 +57,7 @@ import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.xaframework.XaCommand;
 import org.neo4j.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.impl.transaction.xaframework.XaTransaction;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
@@ -664,7 +665,7 @@ class NeoTransaction extends XaTransaction
         lockReleaser.addLockToTransaction( lockableRel, LockType.WRITE );
     }
 
-    public RelationshipData[] nodeGetRelationships( int nodeId )
+    public Iterable<RelationshipData> nodeGetRelationships( int nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord == null )
@@ -708,7 +709,7 @@ class NeoTransaction extends XaTransaction
                 throw new RuntimeException( "GAH" );
             }
         }
-        return rels.toArray( new RelationshipData[rels.size()] );
+        return rels;
     }
 
     private void updateNodes( RelationshipRecord rel )
@@ -798,7 +799,7 @@ class NeoTransaction extends XaTransaction
         }
     }
 
-    public PropertyData[] relGetProperties( int relId )
+    public ArrayMap<Integer,PropertyData> relGetProperties( int relId )
     {
         RelationshipRecord relRecord = getRelationshipRecord( relId );
         if ( relRecord == null )
@@ -811,7 +812,8 @@ class NeoTransaction extends XaTransaction
                 "] not in use" );
         }
         int nextProp = relRecord.getNextProp();
-        List<PropertyData> properties = new ArrayList<PropertyData>();
+        ArrayMap<Integer,PropertyData> propertyMap = 
+            new ArrayMap<Integer,PropertyData>( 9, false, true );
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = getPropertyRecord( nextProp );
@@ -821,16 +823,16 @@ class NeoTransaction extends XaTransaction
             }
             if ( !propRecord.isCreated() )
             {
-                properties.add( new PropertyData( propRecord.getId(), 
-                    propRecord.getKeyIndexId(), 
-                    propertyGetValueOrNull( propRecord ) ) );
+                propertyMap.put( propRecord.getKeyIndexId(), 
+                    new PropertyData( propRecord.getId(),                      
+                        propertyGetValueOrNull( propRecord ) ) );
             }
             nextProp = propRecord.getNextProp();
         }
-        return properties.toArray( new PropertyData[properties.size()] );
+        return propertyMap;
     }
 
-    public PropertyData[] nodeGetProperties( int nodeId )
+    ArrayMap<Integer,PropertyData> nodeGetProperties( int nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord == null )
@@ -844,7 +846,8 @@ class NeoTransaction extends XaTransaction
         }
             
         int nextProp = nodeRecord.getNextProp();
-        List<PropertyData> properties = new ArrayList<PropertyData>();
+        ArrayMap<Integer,PropertyData> propertyMap = 
+            new ArrayMap<Integer,PropertyData>( 9, false, true );
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = getPropertyRecord( nextProp );
@@ -854,13 +857,13 @@ class NeoTransaction extends XaTransaction
             }
             if ( !propRecord.isCreated() )
             {
-                properties.add( new PropertyData( propRecord.getId(), 
-                    propRecord.getKeyIndexId(), 
-                    propertyGetValueOrNull( propRecord ) ) );
+                propertyMap.put( propRecord.getKeyIndexId(), 
+                    new PropertyData( propRecord.getId(), 
+                        propertyGetValueOrNull( propRecord ) ) );
             }
             nextProp = propRecord.getNextProp();
         }
-        return properties.toArray( new PropertyData[properties.size()] );
+        return propertyMap;
     }
     
     public Object propertyGetValueOrNull( PropertyRecord propertyRecord )
@@ -1336,7 +1339,7 @@ class NeoTransaction extends XaTransaction
         return indexStore.getStringFor( index );
     }
 
-    RawPropertyIndex[] getPropertyIndexes( int count )
+    PropertyIndexData[] getPropertyIndexes( int count )
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
         return indexStore.getPropertyIndexes( count );

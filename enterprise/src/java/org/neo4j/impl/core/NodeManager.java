@@ -19,8 +19,6 @@
  */
 package org.neo4j.impl.core;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -39,6 +37,10 @@ import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.cache.AdaptiveCacheManager;
 import org.neo4j.impl.cache.LruCache;
+import org.neo4j.impl.nioneo.store.PropertyData;
+import org.neo4j.impl.nioneo.store.PropertyIndexData;
+import org.neo4j.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.transaction.IllegalResourceException;
@@ -366,7 +368,7 @@ public class NodeManager
                 node = nodeCache.get( nodeId );
                 return new NodeProxy( nodeId, this );
             }
-            if ( persistenceManager.loadLightNode( nodeId ) == null )
+            if ( !persistenceManager.loadLightNode( nodeId ) )
             {
                 throw new NotFoundException( "Node[" + nodeId + "]" );
             }
@@ -395,7 +397,7 @@ public class NodeManager
                 node = nodeCache.get( nodeId );
                 return node;
             }
-            if ( persistenceManager.loadLightNode( nodeId ) == null )
+            if ( !persistenceManager.loadLightNode( nodeId ) )
             {
                 return null;
             }
@@ -424,7 +426,7 @@ public class NodeManager
                 node = nodeCache.get( nodeId );
                 return node;
             }
-            if ( persistenceManager.loadLightNode( nodeId ) == null )
+            if ( !persistenceManager.loadLightNode( nodeId ) )
             {
                 throw new NotFoundException( "Node[" + nodeId + "] not found." );
             }
@@ -473,22 +475,23 @@ public class NodeManager
                 relationship = relCache.get( relId );
                 return new RelationshipProxy( relId, this );
             }
-            RawRelationshipData data = persistenceManager
-                .loadLightRelationship( relId );
+            RelationshipData data = persistenceManager.loadLightRelationship( 
+                relId );
             if ( data == null )
             {
                 throw new NotFoundException( "Relationship[" + relId
                     + "] not found" );
             }
-            RelationshipType type = getRelationshipTypeById( data.getType() );
+            int typeId = data.relationshipType(); 
+            RelationshipType type = getRelationshipTypeById( typeId ); 
             if ( type == null )
             {
                 throw new RuntimeException( "Relationship[" + data.getId()
-                    + "] exist but relationship type[" + data.getType()
+                    + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
-            final int startNodeId = data.getFirstNode();
-            final int endNodeId = data.getSecondNode();
+            final int startNodeId = data.firstNode();
+            final int endNodeId = data.secondNode();
             relationship = new RelationshipImpl( relId, startNodeId, endNodeId,
                 type, false, this );
             relCache.add( relId, relationship );
@@ -521,22 +524,23 @@ public class NodeManager
                 relationship = relCache.get( relId );
                 return relationship;
             }
-            RawRelationshipData data = persistenceManager
-                .loadLightRelationship( relId );
+            RelationshipData data = persistenceManager.loadLightRelationship( 
+                relId );
             if ( data == null )
             {
                 throw new NotFoundException( "Relationship[" + relId
                     + "] not found." );
             }
-            RelationshipType type = getRelationshipTypeById( data.getType() );
+            int typeId = data.relationshipType();
+            RelationshipType type = getRelationshipTypeById( typeId );
             if ( type == null )
             {
                 throw new RuntimeException( "Relationship[" + data.getId()
-                    + "] exist but relationship type[" + data.getType()
+                    + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
-            relationship = new RelationshipImpl( relId, data.getFirstNode(),
-                data.getSecondNode(), type, false, this );
+            relationship = new RelationshipImpl( relId, data.firstNode(),
+                data.secondNode(), type, false, this );
             relCache.add( relId, relationship );
             return relationship;
         }
@@ -561,30 +565,41 @@ public class NodeManager
         return persistenceManager.loadPropertyValue( id );
     }
 
-    List<RelationshipImpl> loadRelationships( NodeImpl node )
+    ArrayMap<String,ArrayIntSet> loadRelationships( NodeImpl node )
     {
         try
         {
-            RawRelationshipData rawRels[] = 
+            Iterable<RelationshipData> rels = 
                 persistenceManager.loadRelationships( (int) node.getId() );
-            List<RelationshipImpl> relList = new ArrayList<RelationshipImpl>();
-            for ( RawRelationshipData rawRel : rawRels )
+            ArrayMap<String,ArrayIntSet> newRelationshipMap = 
+                new ArrayMap<String,ArrayIntSet>();
+            for ( RelationshipData rel : rels )
             {
-                int relId = rawRel.getId();
-                RelationshipImpl rel = relCache.get( relId );
-                if ( rel == null )
+                int relId = rel.getId();
+                RelationshipImpl relImpl = relCache.get( relId );
+                RelationshipType type = null;
+                if ( relImpl == null )
                 {
-                    RelationshipType type = getRelationshipTypeById( 
-                        rawRel.getType() );
+                    type = getRelationshipTypeById( rel.relationshipType() );
                     assert type != null;
-                    
-                    rel = new RelationshipImpl( relId, rawRel.getFirstNode(),
-                        rawRel.getSecondNode(), type, false, this );
-                    relCache.add( relId, rel );
+                    relImpl = new RelationshipImpl( relId, rel.firstNode(),
+                        rel.secondNode(), type, false, this );
+                    relCache.add( relId, relImpl );
                 }
-                relList.add( rel );
+                else
+                {
+                    type = relImpl.getType();
+                }
+                ArrayIntSet relationshipSet = newRelationshipMap.get( 
+                    type.name() );
+                if ( relationshipSet == null )
+                {
+                    relationshipSet = new ArrayIntSet();
+                    newRelationshipMap.put( type.name(), relationshipSet );
+                }
+                relationshipSet.add( relId );
             }
-            return relList;
+            return newRelationshipMap;
         }
         catch ( Exception e )
         {
@@ -594,13 +609,11 @@ public class NodeManager
         }
     }
 
-    RawPropertyData[] loadProperties( NodeImpl node )
+    ArrayMap<Integer,PropertyData> loadProperties( NodeImpl node )
     {
         try
         {
-            RawPropertyData properties[] = 
-                persistenceManager.loadNodeProperties( (int) node.getId() );
-            return properties;
+            return persistenceManager.loadNodeProperties( (int) node.getId() );
         }
         catch ( Exception e )
         {
@@ -610,14 +623,12 @@ public class NodeManager
         }
     }
 
-    RawPropertyData[] loadProperties( RelationshipImpl relationship )
+    ArrayMap<Integer,PropertyData> loadProperties( RelationshipImpl relationship )
     {
         try
         {
-            RawPropertyData properties[] = 
-                persistenceManager.loadRelProperties( 
-                    (int) relationship.getId() );
-            return properties;
+            return persistenceManager.loadRelProperties( 
+                (int) relationship.getId() );
         }
         catch ( Exception e )
         {
@@ -736,7 +747,7 @@ public class NodeManager
             returnableEvaluator );
     }
 
-    void addPropertyIndexes( RawPropertyIndex[] propertyIndexes )
+    void addPropertyIndexes( PropertyIndexData[] propertyIndexes )
     {
         propertyIndexManager.addPropertyIndexes( propertyIndexes );
     }
@@ -781,7 +792,7 @@ public class NodeManager
         return relTypeHolder.getIdFor( type );
     }
 
-    void addRawRelationshipTypes( RawRelationshipTypeData[] relTypes )
+    void addRawRelationshipTypes( RelationshipTypeData[] relTypes )
     {
         relTypeHolder.addRawRelationshipTypes( relTypes );
     }
@@ -879,25 +890,25 @@ public class NodeManager
         return relCache.get( nodeId );
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyRemoveMap(
+    public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
         NeoPrimitive primitive )
     {
         return lockReleaser.getCowPropertyRemoveMap( primitive );
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyAddMap(
+    public ArrayMap<Integer,PropertyData> getCowPropertyAddMap(
         NeoPrimitive primitive )
     {
         return lockReleaser.getCowPropertyAddMap( primitive );
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyAddMap(
+    public ArrayMap<Integer,PropertyData> getCowPropertyAddMap(
         NeoPrimitive primitive, boolean create )
     {
         return lockReleaser.getCowPropertyAddMap( primitive, create );
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyRemoveMap(
+    public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
         NeoPrimitive primitive, boolean create )
     {
         return lockReleaser.getCowPropertyRemoveMap( primitive, create );

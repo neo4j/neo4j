@@ -31,6 +31,7 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.api.core.NotInTransactionException;
+import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.util.ArrayIntSet;
@@ -74,8 +75,8 @@ public class LockReleaser
 
         ArrayMap<String,ArrayIntSet> relationshipAddMap = null;
         ArrayMap<String,ArrayIntSet> relationshipRemoveMap = null;
-        ArrayMap<Integer,Property> propertyAddMap = null;
-        ArrayMap<Integer,Property> propertyRemoveMap = null;
+        ArrayMap<Integer,PropertyData> propertyAddMap = null;
+        ArrayMap<Integer,PropertyData> propertyRemoveMap = null;
     }
 
     private static class CowRelElement
@@ -85,8 +86,8 @@ public class LockReleaser
 
         }
 
-        ArrayMap<Integer,Property> propertyAddMap = null;
-        ArrayMap<Integer,Property> propertyRemoveMap = null;
+        ArrayMap<Integer,PropertyData> propertyAddMap = null;
+        ArrayMap<Integer,PropertyData> propertyRemoveMap = null;
     }
 
     public LockReleaser( LockManager lockManager,
@@ -388,7 +389,7 @@ public class LockReleaser
         }
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyRemoveMap(
+    public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
         NeoPrimitive primitive )
     {
         NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
@@ -416,7 +417,7 @@ public class LockReleaser
         return null;
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyAddMap(
+    public ArrayMap<Integer,PropertyData> getCowPropertyAddMap(
         NeoPrimitive primitive )
     {
         NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
@@ -460,7 +461,7 @@ public class LockReleaser
         return primitiveElement;
     }
     
-    public ArrayMap<Integer,Property> getCowPropertyAddMap(
+    public ArrayMap<Integer,PropertyData> getCowPropertyAddMap(
         NeoPrimitive primitive, boolean create )
     {
         if ( !create )
@@ -480,7 +481,7 @@ public class LockReleaser
             }
             if ( element.propertyAddMap == null )
             {
-                element.propertyAddMap = new ArrayMap<Integer,Property>();
+                element.propertyAddMap = new ArrayMap<Integer,PropertyData>();
             }
             return element.propertyAddMap;
         }
@@ -496,14 +497,14 @@ public class LockReleaser
             }
             if ( element.propertyAddMap == null )
             {
-                element.propertyAddMap = new ArrayMap<Integer,Property>();
+                element.propertyAddMap = new ArrayMap<Integer,PropertyData>();
             }
             return element.propertyAddMap;
         }
         return null;
     }
 
-    public ArrayMap<Integer,Property> getCowPropertyRemoveMap(
+    public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
         NeoPrimitive primitive, boolean create )
     {
         if ( !create )
@@ -523,7 +524,7 @@ public class LockReleaser
             }
             if ( element.propertyRemoveMap == null )
             {
-                element.propertyRemoveMap = new ArrayMap<Integer,Property>();
+                element.propertyRemoveMap = new ArrayMap<Integer,PropertyData>();
             }
             return element.propertyRemoveMap;
         }
@@ -539,7 +540,7 @@ public class LockReleaser
             }
             if ( element.propertyRemoveMap == null )
             {
-                element.propertyRemoveMap = new ArrayMap<Integer,Property>();
+                element.propertyRemoveMap = new ArrayMap<Integer,PropertyData>();
             }
             return element.propertyRemoveMap;
         }

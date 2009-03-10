@@ -20,7 +20,6 @@
 package org.neo4j.impl.core;
 
 import java.util.Iterator;
-import java.util.List;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
@@ -31,6 +30,7 @@ import org.neo4j.api.core.ReturnableEvaluator;
 import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
+import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
@@ -69,7 +69,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         nodeManager.nodeRemoveProperty( this, propertyId );
     }
 
-    protected RawPropertyData[] loadProperties()
+    protected ArrayMap<Integer,PropertyData> loadProperties()
     {
         return nodeManager.loadProperties( this );
     }
@@ -384,72 +384,11 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         relationshipSet.add( relId );
     }
 
-    /*Map<String, Integer> internalGetRelationships()
-    {
-        ensureFullRelationships();
-        Map<String, Integer> result = null;
-        for ( String type : relationshipMap.keySet() )
-        {
-            ArrayIntSet source = relationshipMap.get( type );
-            ArrayIntSet skip = nodeManager.getCowRelationshipRemoveMap(
-                this, type );
-            for ( int relId : source.values() )
-            {
-                if ( skip != null && skip.contains( relId ) )
-                {
-                    continue;
-                }
-                result = result == null ?
-                    new HashMap<String, Integer>() : result;
-                Integer count = result.get( type );
-                count = count == null ? 0 : count;
-                count++;
-                result.put( type, count );
-            }
-        }
-        ArrayMap<String,ArrayIntSet> cowRelationshipAddMap = 
-            nodeManager.getCowRelationshipAddMap( this );
-        if ( cowRelationshipAddMap != null )
-        {
-            for ( String type : cowRelationshipAddMap.keySet() )
-            {
-                ArrayIntSet source = cowRelationshipAddMap.get( type );
-                if ( source.size() > 0 )
-                {
-                    result = result == null ?
-                        new HashMap<String, Integer>() : result;
-                    Integer count = result.get( type );
-                    count = count == null ? 0 : count;
-                    count += source.size();
-                    result.put( type, count );
-                }
-            }
-        }
-        return result;
-    }*/
-
     private boolean ensureFullRelationships()
     {
         if ( relationshipMap == null )
         {
-            List<RelationshipImpl> fullRelationshipList = 
-                nodeManager.loadRelationships( this );
-            ArrayMap<String,ArrayIntSet> newRelationshipMap = 
-                new ArrayMap<String,ArrayIntSet>();
-            for ( Relationship rel : fullRelationshipList )
-            {
-                int relId = (int) rel.getId();
-                RelationshipType type = rel.getType();
-                ArrayIntSet relationshipSet = newRelationshipMap.get( 
-                    type.name() );
-                if ( relationshipSet == null )
-                {
-                    relationshipSet = new ArrayIntSet();
-                    newRelationshipMap.put( type.name(), relationshipSet );
-                }
-                relationshipSet.add( relId );
-            }
-            this.relationshipMap = newRelationshipMap;
+            this.relationshipMap = nodeManager.loadRelationships( this );
             return true;
         }
         return false;
