@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import javax.transaction.Status;
+import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
@@ -149,6 +150,19 @@ public class LockReleaser
             lockElements = new ArrayList<LockElement>();
             lockMap.put( tx, lockElements );
             lockElements.add( new LockElement( resource, type ) );
+            // we have to have a syncrhonization hook for read only transaction,
+            // write locks can be taken in read only transactions (ex: 
+            // transactions that peform write operations that cancel each other
+            // out). This sync hook will only release locks if they exist and 
+            // tx was read only
+            try
+            {
+                tx.registerSynchronization( new ReadOnlyTxReleaser( tx ) );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
     
@@ -560,5 +574,26 @@ public class LockReleaser
     public void removeRelationshipTypeFromCache( int id )
     {
         nodeManager.removeRelationshipTypeFromCache( id );
+    }
+    
+    private class ReadOnlyTxReleaser implements Synchronization 
+    {
+        private final Transaction tx;
+        
+        ReadOnlyTxReleaser( Transaction tx )
+        {
+            this.tx = tx;
+        }
+        
+        public void afterCompletion( int status )
+        {
+            releaseLocks( tx );
+        }
+
+        public void beforeCompletion()
+        {
+            // TODO Auto-generated method stub
+            
+        }
     }
 }
