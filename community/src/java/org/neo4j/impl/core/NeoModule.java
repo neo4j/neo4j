@@ -28,6 +28,8 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.cache.AdaptiveCacheManager;
+import org.neo4j.impl.nioneo.store.PropertyIndexData;
+import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.transaction.LockManager;
@@ -65,8 +67,8 @@ public class NeoModule
             return;
         }
         // load and verify from PS
-        RawRelationshipTypeData relTypes[] = null;
-        RawPropertyIndex propertyIndexes[] = null;
+        RelationshipTypeData relTypes[] = null;
+        PropertyIndexData propertyIndexes[] = null;
         try
         {
             transactionManager.begin();

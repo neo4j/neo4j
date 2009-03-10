@@ -19,7 +19,7 @@
  */
 package org.neo4j.impl.nioneo.xa;
 
-import org.neo4j.impl.core.RawPropertyIndex;
+import org.neo4j.impl.nioneo.store.PropertyIndexData;
 
 public interface PropertyIndexEventConsumer
 {
@@ -27,5 +27,5 @@ public interface PropertyIndexEventConsumer
 
     public String getKeyFor( int id );
 
-    public RawPropertyIndex[] getPropertyIndexes( int count );
+    public PropertyIndexData[] getPropertyIndexes( int count );
 }

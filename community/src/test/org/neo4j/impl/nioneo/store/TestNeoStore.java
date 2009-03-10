@@ -44,6 +44,7 @@ import org.neo4j.impl.nioneo.xa.RelationshipEventConsumer;
 import org.neo4j.impl.nioneo.xa.RelationshipTypeEventConsumer;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.XidImpl;
+import org.neo4j.impl.util.ArrayMap;
 
 public class TestNeoStore extends AbstractNeoTestCase
 {
@@ -346,10 +347,10 @@ public class TestNeoStore extends AbstractNeoTestCase
             }
             for ( int i = 0; i < 3; i++ )
             {
-                RelationshipData rels[] = nStore.getRelationships( nodeIds[i] );
-                for ( int j = 0; j < rels.length; j++ )
+                for ( RelationshipData rel : 
+                    nStore.getRelationships( nodeIds[i] ) )
                 {
-                    rStore.deleteRelationship( rels[j].getId() );
+                    rStore.deleteRelationship( rel.getId() );
                 }
                 nStore.deleteNode( nodeIds[i] );
             }
@@ -419,55 +420,51 @@ public class TestNeoStore extends AbstractNeoTestCase
         int rel1, int rel2, int relType1, int relType2 ) throws IOException
     {
         assertTrue( nStore.loadLightNode( node ) );
-        PropertyData data[] = nStore.getProperties( node );
-        for ( int i = 0; i < data.length; i++ )
+        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node );
+        int count = 0;
+        for ( int keyId : props.keySet() )
         {
-            PropertyRecord record = pStore.getRecord( data[i].getId() );
-            data[i] = new PropertyData( data[i].getId(), data[i].getIndex(),
-                getValue( record ) );
-        }
-        assertEquals( 3, data.length );
-        for ( int i = 0; i < 3; i++ )
-        {
-            if ( data[i].getId() == prop1 )
+            int id = props.get( keyId ).getId();
+            PropertyRecord record = pStore.getRecord( id );
+            PropertyData data = new PropertyData( id, getValue( record ) );
+            if ( data.getId() == prop1 )
             {
-                assertEquals( "prop1", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( "string1", data[i].getValue() );
+                assertEquals( "prop1", MyPropertyIndex.getIndexFor( 
+                    keyId ).getKey() );
+                assertEquals( "string1", data.getValue() );
                 nStore.changeProperty( node, prop1, "-string1" );
             }
-            else if ( data[i].getId() == prop2 )
+            else if ( data.getId() == prop2 )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Integer( 1 ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Integer( 1 ), data.getValue() );
                 nStore.changeProperty( node, prop2, new Integer( -1 ) );
             }
-            else if ( data[i].getId() == prop3 )
+            else if ( data.getId() == prop3 )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Boolean( true ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Boolean( true ), data.getValue() );
                 nStore.changeProperty( node, prop3, new Boolean( false ) );
             }
             else
             {
                 throw new IOException();
             }
+            count++;
         }
-        RelationshipData rels[] = nStore.getRelationships( node );
-        assertEquals( 2, rels.length );
-        for ( int i = 0; i < 2; i++ )
+        assertEquals( 3, count );
+        count = 0;
+        for ( RelationshipData rel : nStore.getRelationships( node ) )
         {
-            if ( rels[i].getId() == rel1 )
+            if ( rel.getId() == rel1 )
             {
-                RelationshipData rel = rels[i];
                 assertEquals( node, rel.firstNode() );
                 assertEquals( relType1, rel.relationshipType() );
             }
-            else if ( rels[i].getId() == rel2 )
+            else if ( rel.getId() == rel2 )
             {
-                RelationshipData rel = rels[i];
                 assertEquals( node, rel.secondNode() );
                 assertEquals( relType2, rel.relationshipType() );
             }
@@ -475,111 +472,110 @@ public class TestNeoStore extends AbstractNeoTestCase
             {
                 throw new IOException();
             }
+            count++;
         }
+        assertEquals( 2, count );
     }
 
     private void validateNodeRel2( int node, int prop1, int prop2, int prop3,
         int rel1, int rel2, int relType1, int relType2 ) throws IOException
     {
         assertTrue( nStore.loadLightNode( node ) );
-        PropertyData data[] = nStore.getProperties( node );
-        for ( int i = 0; i < data.length; i++ )
+        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node );
+        int count = 0;
+        for ( int keyId : props.keySet() )
         {
-            PropertyRecord record = pStore.getRecord( data[i].getId() );
-            data[i] = new PropertyData( data[i].getId(), data[i].getIndex(),
-                getValue( record ) );
-        }
-        assertEquals( 3, data.length );
-        for ( int i = 0; i < 3; i++ )
-        {
-            if ( data[i].getId() == prop1 )
+            int id = props.get( keyId ).getId();
+            PropertyRecord record = pStore.getRecord( id );
+            PropertyData data = new PropertyData( id, getValue( record ) );
+            if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( "string2", data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( "string2", data.getValue() );
                 nStore.changeProperty( node, prop1, "-string2" );
             }
-            else if ( data[i].getId() == prop2 )
+            else if ( data.getId() == prop2 )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Integer( 2 ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Integer( 2 ), data.getValue() );
                 nStore.changeProperty( node, prop2, new Integer( -2 ) );
             }
-            else if ( data[i].getId() == prop3 )
+            else if ( data.getId() == prop3 )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Boolean( false ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Boolean( false ), data.getValue() );
                 nStore.changeProperty( node, prop3, new Boolean( true ) );
             }
             else
             {
                 throw new IOException();
             }
+            count++;
         }
-        RelationshipData rels[] = nStore.getRelationships( node );
-        assertEquals( 2, rels.length );
-        for ( int i = 0; i < 2; i++ )
+        assertEquals( 3, count );
+        count = 0;
+        for ( RelationshipData rel : nStore.getRelationships( node ) )
         {
-            if ( rels[i].getId() == rel1 )
+            if ( rel.getId() == rel1 )
             {
-                // RelationshipData rel = rStore.getRelationship( rel1 );
-                assertEquals( node, rels[i].secondNode() );
-                assertEquals( relType1, rels[i].relationshipType() );
+                assertEquals( node, rel.secondNode() );
+                assertEquals( relType1, rel.relationshipType() );
             }
-            else if ( rels[i].getId() == rel2 )
+            else if ( rel.getId() == rel2 )
             {
-                // RelationshipData rel = rStore.getRelationship( rel2 );
-                assertEquals( node, rels[i].firstNode() );
-                assertEquals( relType2, rels[i].relationshipType() );
+                assertEquals( node, rel.firstNode() );
+                assertEquals( relType2, rel.relationshipType() );
             }
             else
             {
                 throw new IOException();
             }
+            count++;
         }
+        assertEquals( 2, count );
     }
 
     private void validateRel1( int rel, int prop1, int prop2, int prop3,
         int firstNode, int secondNode, int relType ) throws IOException
     {
-        PropertyData data[] = rStore.getProperties( rel );
-        for ( int i = 0; i < data.length; i++ )
+        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel );
+        int count = 0;
+        for ( int keyId : props.keySet() )
         {
-            PropertyRecord record = pStore.getRecord( data[i].getId() );
-            data[i] = new PropertyData( data[i].getId(), data[i].getIndex(),
-                getValue( record ) );
-        }
-        assertEquals( 3, data.length );
-        for ( int i = 0; i < 3; i++ )
-        {
-            if ( data[i].getId() == prop1 )
+            int id = props.get( keyId ).getId();
+            PropertyRecord record = pStore.getRecord( id );
+            PropertyData data = new PropertyData( id, getValue( record ) );
+            if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( "string1", data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( "string1", data.getValue() );
                 rStore.changeProperty( rel, prop1, "-string1" );
             }
-            else if ( data[i].getId() == prop2 )
+            else if ( data.getId() == prop2 )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Integer( 1 ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Integer( 1 ), data.getValue() );
                 rStore.changeProperty( rel, prop2, new Integer( -1 ) );
             }
-            else if ( data[i].getId() == prop3 )
+            else if ( data.getId() == prop3 )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Boolean( true ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Boolean( true ), data.getValue() );
                 rStore.changeProperty( rel, prop3, new Boolean( false ) );
             }
             else
             {
                 throw new IOException();
             }
+            count++;
         }
+        assertEquals( 3, count );
         RelationshipData relData = rStore.getRelationship( rel );
         assertEquals( firstNode, relData.firstNode() );
         assertEquals( secondNode, relData.secondNode() );
@@ -589,42 +585,41 @@ public class TestNeoStore extends AbstractNeoTestCase
     private void validateRel2( int rel, int prop1, int prop2, int prop3,
         int firstNode, int secondNode, int relType ) throws IOException
     {
-        PropertyData data[] = rStore.getProperties( rel );
-        for ( int i = 0; i < data.length; i++ )
+        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel );
+        int count = 0;
+        for ( int keyId : props.keySet() )
         {
-            PropertyRecord record = pStore.getRecord( data[i].getId() );
-            data[i] = new PropertyData( data[i].getId(), data[i].getIndex(),
-                getValue( record ) );
-        }
-        assertEquals( 3, data.length );
-        for ( int i = 0; i < 3; i++ )
-        {
-            if ( data[i].getId() == prop1 )
+            int id = props.get( keyId ).getId();
+            PropertyRecord record = pStore.getRecord( id );
+            PropertyData data = new PropertyData( id, getValue( record ) );
+            if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( "string2", data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( "string2", data.getValue() );
                 rStore.changeProperty( rel, prop1, "-string2" );
             }
-            else if ( data[i].getId() == prop2 )
+            else if ( data.getId() == prop2 )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Integer( 2 ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Integer( 2 ), data.getValue() );
                 rStore.changeProperty( rel, prop2, new Integer( -2 ) );
             }
-            else if ( data[i].getId() == prop3 )
+            else if ( data.getId() == prop3 )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Boolean( false ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Boolean( false ), data.getValue() );
                 rStore.changeProperty( rel, prop3, new Boolean( true ) );
             }
             else
             {
                 throw new IOException();
             }
+            count++;
         }
+        assertEquals( 3, count );
         RelationshipData relData = rStore.getRelationship( rel );
         assertEquals( firstNode, relData.firstNode() );
         assertEquals( secondNode, relData.secondNode() );
@@ -664,185 +659,189 @@ public class TestNeoStore extends AbstractNeoTestCase
     private void deleteRel1( int rel, int prop1, int prop2, int prop3,
         int firstNode, int secondNode, int relType ) throws IOException
     {
-        PropertyData data[] = rStore.getProperties( rel );
-        for ( int i = 0; i < data.length; i++ )
+        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel );
+        int count = 0;
+        for ( int keyId : props.keySet() )
         {
-            PropertyRecord record = pStore.getRecord( data[i].getId() );
-            data[i] = new PropertyData( data[i].getId(), data[i].getIndex(),
-                getValue( record ) );
-        }
-        assertEquals( 3, data.length );
-        for ( int i = 0; i < 3; i++ )
-        {
-            if ( data[i].getId() == prop1 )
+            int id = props.get( keyId ).getId();
+            PropertyRecord record = pStore.getRecord( id );
+            PropertyData data = new PropertyData( id, getValue( record ) );
+            if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( "-string1", data[i].getValue() );
-                // rStore.removeProperty( rel, prop1, r1prop1kb, r1prop1vb );
+                    keyId ).getKey() );
+                assertEquals( "-string1", data.getValue() );
             }
-            else if ( data[i].getId() == prop2 )
+            else if ( data.getId() == prop2 )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Integer( -1 ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Integer( -1 ), data.getValue() );
             }
-            else if ( data[i].getId() == prop3 )
+            else if ( data.getId() == prop3 )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Boolean( false ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Boolean( false ), data.getValue() );
                 rStore.removeProperty( rel, prop3 );
             }
             else
             {
                 throw new IOException();
             }
+            count++;
         }
-        assertEquals( 2, rStore.getProperties( rel ).length );
-        // rStore.removeProperty( rel, prop2 );
+        assertEquals( 3, count );
+        assertEquals( 2, rStore.getProperties( rel ).size() );
         RelationshipData relData = rStore.getRelationship( rel );
         assertEquals( firstNode, relData.firstNode() );
         assertEquals( secondNode, relData.secondNode() );
         assertEquals( relType, relData.relationshipType() );
         rStore.deleteRelationship( rel );
-        assertEquals( 1, nStore.getRelationships( firstNode ).length );
-        assertEquals( 1, nStore.getRelationships( secondNode ).length );
+        Iterator<RelationshipData> first = 
+            nStore.getRelationships( firstNode ).iterator();
+        first.next();
+        Iterator<RelationshipData> second = 
+            nStore.getRelationships( secondNode ).iterator();
+        second.next();
+        assertTrue( !first.hasNext() );
+        assertTrue( !second.hasNext() );
     }
 
     private void deleteRel2( int rel, int prop1, int prop2, int prop3,
         int firstNode, int secondNode, int relType ) throws IOException
     {
-        PropertyData data[] = rStore.getProperties( rel );
-        for ( int i = 0; i < data.length; i++ )
+        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel );
+        int count = 0;
+        for ( int keyId : props.keySet() )
         {
-            PropertyRecord record = pStore.getRecord( data[i].getId() );
-            data[i] = new PropertyData( data[i].getId(), data[i].getIndex(),
-                getValue( record ) );
-        }
-        assertEquals( 3, data.length );
-        for ( int i = 0; i < 3; i++ )
-        {
-            if ( data[i].getId() == prop1 )
+            int id = props.get( keyId ).getId();
+            PropertyRecord record = pStore.getRecord( id );
+            PropertyData data = new PropertyData( id, getValue( record ) );
+            if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( "-string2", data[i].getValue() );
-                // rStore.removeProperty( rel, prop1, r2prop1kb, r2prop1vb );
+                    keyId ).getKey() );
+                assertEquals( "-string2", data.getValue() );
             }
-            else if ( data[i].getId() == prop2 )
+            else if ( data.getId() == prop2 )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Integer( -2 ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Integer( -2 ), data.getValue() );
             }
-            else if ( data[i].getId() == prop3 )
+            else if ( data.getId() == prop3 )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Boolean( true ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Boolean( true ), data.getValue() );
                 rStore.removeProperty( rel, prop3 );
             }
             else
             {
                 throw new IOException();
             }
+            count++;
         }
-        assertEquals( 2, rStore.getProperties( rel ).length );
+        assertEquals( 3, count );
+        assertEquals( 2, rStore.getProperties( rel ).size() );
         RelationshipData relData = rStore.getRelationship( rel );
         assertEquals( firstNode, relData.firstNode() );
         assertEquals( secondNode, relData.secondNode() );
         assertEquals( relType, relData.relationshipType() );
         rStore.deleteRelationship( rel );
-        assertEquals( 0, nStore.getRelationships( firstNode ).length );
-        assertEquals( 0, nStore.getRelationships( secondNode ).length );
+        Iterator<RelationshipData> first = 
+            nStore.getRelationships( firstNode ).iterator();
+        Iterator<RelationshipData> second = 
+            nStore.getRelationships( secondNode ).iterator();
+        assertTrue( !first.hasNext() );
+        assertTrue( !second.hasNext() );
     }
 
     private void deleteNode1( int node, int prop1, int prop2, int prop3 )
         throws IOException
     {
-        PropertyData data[] = nStore.getProperties( node );
-        for ( int i = 0; i < data.length; i++ )
+        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node );
+        int count = 0;
+        for ( int keyId : props.keySet() )
         {
-            PropertyRecord record = pStore.getRecord( data[i].getId() );
-            data[i] = new PropertyData( data[i].getId(), data[i].getIndex(),
-                getValue( record ) );
-        }
-        assertEquals( 3, data.length );
-        for ( int i = 0; i < 3; i++ )
-        {
-            if ( data[i].getId() == prop1 )
+            int id = props.get( keyId ).getId();
+            PropertyRecord record = pStore.getRecord( id );
+            PropertyData data = new PropertyData( id, getValue( record ) );
+            if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( "-string1", data[i].getValue() );
-                // nStore.removeProperty( node, prop1, n1prop1kb, n1prop1vb );
+                    keyId ).getKey() );
+                assertEquals( "-string1", data.getValue() );
             }
-            else if ( data[i].getId() == prop2 )
+            else if ( data.getId() == prop2 )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Integer( -1 ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Integer( -1 ), data.getValue() );
             }
-            else if ( data[i].getId() == prop3 )
+            else if ( data.getId() == prop3 )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Boolean( false ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Boolean( false ), data.getValue() );
                 nStore.removeProperty( node, prop3 );
             }
             else
             {
                 throw new IOException();
             }
+            count++;
         }
-        assertEquals( 2, nStore.getProperties( node ).length );
-        // nStore.removeProperty( node, prop2 );
-        assertEquals( 0, nStore.getRelationships( node ).length );
+        assertEquals( 3, count );
+        assertEquals( 2, nStore.getProperties( node ).size() );
+
+        Iterator<RelationshipData> rels = 
+            nStore.getRelationships( node ).iterator();
+        assertTrue( !rels.hasNext() );
         nStore.deleteNode( node );
     }
 
     private void deleteNode2( int node, int prop1, int prop2, int prop3 )
         throws IOException
     {
-        PropertyData data[] = nStore.getProperties( node );
-        for ( int i = 0; i < data.length; i++ )
+        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node );
+        int count = 0;
+        for ( int keyId : props.keySet() )
         {
-            PropertyRecord record = pStore.getRecord( data[i].getId() );
-            data[i] = new PropertyData( data[i].getId(), data[i].getIndex(),
-                getValue( record ) );
-        }
-        assertEquals( 3, data.length );
-        for ( int i = 0; i < 3; i++ )
-        {
-            if ( data[i].getId() == prop1 )
+            int id = props.get( keyId ).getId();
+            PropertyRecord record = pStore.getRecord( id );
+            PropertyData data = new PropertyData( id, getValue( record ) );
+            if ( data.getId() == prop1 )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( "-string2", data[i].getValue() );
-                // nStore.removeProperty( node, prop1, n2prop1kb, n2prop1vb );
+                    keyId ).getKey() );
+                assertEquals( "-string2", data.getValue() );
             }
-            else if ( data[i].getId() == prop2 )
+            else if ( data.getId() == prop2 )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Integer( -2 ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Integer( -2 ), data.getValue() );
             }
-            else if ( data[i].getId() == prop3 )
+            else if ( data.getId() == prop3 )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
-                    data[i].getIndex() ).getKey() );
-                assertEquals( new Boolean( true ), data[i].getValue() );
+                    keyId ).getKey() );
+                assertEquals( new Boolean( true ), data.getValue() );
                 nStore.removeProperty( node, prop3 );
             }
             else
             {
                 throw new IOException();
             }
+            count++;
         }
-        assertEquals( 2, nStore.getProperties( node ).length );
-        // nStore.removeProperty( node, prop2 );
-        assertEquals( 0, nStore.getRelationships( node ).length );
+        assertEquals( 3, count );
+        assertEquals( 2, nStore.getProperties( node ).size() );
+        Iterator<RelationshipData> rels = 
+            nStore.getRelationships( node ).iterator();
+        assertTrue( !rels.hasNext() );
         nStore.deleteNode( node );
     }
 
@@ -879,10 +878,10 @@ public class TestNeoStore extends AbstractNeoTestCase
             startTx();
             for ( int i = 0; i < 3; i++ )
             {
-                RelationshipData rels[] = nStore.getRelationships( nodeIds[i] );
-                for ( int j = 0; j < rels.length; j++ )
+                for ( RelationshipData rel : 
+                    nStore.getRelationships( nodeIds[i] ) )
                 {
-                    rStore.deleteRelationship( rels[j].getId() );
+                    rStore.deleteRelationship( rel.getId() );
                 }
                 nStore.deleteNode( nodeIds[i] );
             }
@@ -923,10 +922,10 @@ public class TestNeoStore extends AbstractNeoTestCase
             startTx();
             for ( int i = 0; i < 3; i++ )
             {
-                RelationshipData rels[] = nStore.getRelationships( nodeIds[i] );
-                for ( int j = 0; j < rels.length; j++ )
+                for ( RelationshipData rel : 
+                    nStore.getRelationships( nodeIds[i] ) )
                 {
-                    rStore.deleteRelationship( rels[j].getId() );
+                    rStore.deleteRelationship( rel.getId() );
                 }
                 nStore.deleteNode( nodeIds[i] );
             }

@@ -22,12 +22,8 @@ package org.neo4j.impl.nioneo.xa;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.impl.core.PropertyIndex;
-import org.neo4j.impl.core.RawNodeData;
-import org.neo4j.impl.core.RawPropertyData;
-import org.neo4j.impl.core.RawPropertyIndex;
-import org.neo4j.impl.core.RawRelationshipData;
-import org.neo4j.impl.core.RawRelationshipTypeData;
 import org.neo4j.impl.nioneo.store.PropertyData;
+import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
@@ -35,6 +31,7 @@ import org.neo4j.impl.persistence.PersistenceSource;
 import org.neo4j.impl.persistence.ResourceConnection;
 import org.neo4j.impl.transaction.XaDataSourceManager;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * The NioNeo persistence source implementation. If this class is registered as
@@ -186,7 +183,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return propIndexConsumer.getKeyFor( id );
         }
 
-        public RawPropertyIndex[] loadPropertyIndexes( int maxCount )
+        public PropertyIndexData[] loadPropertyIndexes( int maxCount )
         {
             return propIndexConsumer.getPropertyIndexes( maxCount );
         }
@@ -196,76 +193,43 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return xaCon.getNeoTransaction().propertyGetValue( id );
         }
 
-        public RawRelationshipTypeData[] loadRelationshipTypes()
+        public RelationshipTypeData[] loadRelationshipTypes()
         {
             RelationshipTypeData relTypeData[] = 
                 relTypeConsumer.getRelationshipTypes();
-            RawRelationshipTypeData rawRelTypeData[] = 
-                new RawRelationshipTypeData[relTypeData.length];
+            RelationshipTypeData rawRelTypeData[] = 
+                new RelationshipTypeData[relTypeData.length];
             for ( int i = 0; i < relTypeData.length; i++ )
             {
-                rawRelTypeData[i] = new RawRelationshipTypeData( 
+                rawRelTypeData[i] = new RelationshipTypeData( 
                     relTypeData[i].getId(), relTypeData[i].getName() );
             }
             return rawRelTypeData;
         }
 
-        public RawNodeData nodeLoadLight( int id )
+        public boolean nodeLoadLight( int id )
         {
-            if ( nodeConsumer.loadLightNode( id ) )
-            {
-                return new RawNodeData();
-            }
-            return null;
+            return nodeConsumer.loadLightNode( id );
         }
 
-        public RawPropertyData[] nodeLoadProperties( int nodeId )
+        public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId )
         {
-            PropertyData propData[] = nodeConsumer.getProperties( nodeId );
-            RawPropertyData properties[] = new RawPropertyData[propData.length];
-            for ( int i = 0; i < propData.length; i++ )
-            {
-                properties[i] = new RawPropertyData( propData[i].getId(),
-                    propData[i].getIndex(), propData[i].getValue() );
-            }
-            return properties;
+            return nodeConsumer.getProperties( nodeId );
         }
 
-        public RawRelationshipData[] nodeLoadRelationships( int nodeId )
+        public Iterable<RelationshipData> nodeLoadRelationships( int nodeId )
         {
-            RelationshipData relData[] = nodeConsumer.getRelationships( nodeId );
-            RawRelationshipData relationships[] = 
-                new RawRelationshipData[relData.length];
-            for ( int i = 0; i < relData.length; i++ )
-            {
-                relationships[i] = new RawRelationshipData( relData[i].getId(),
-                    relData[i].firstNode(), relData[i].secondNode(), 
-                    relData[i].relationshipType() );
-            }
-            return relationships;
+            return nodeConsumer.getRelationships( nodeId );
         }
 
-        public RawRelationshipData relLoadLight( int id )
+        public RelationshipData relLoadLight( int id )
         {
-            RelationshipData relData = relConsumer.getRelationship( id );
-            if ( relData != null )
-            {
-                return new RawRelationshipData( id, relData.firstNode(), 
-                    relData.secondNode(), relData.relationshipType() );
-            }
-            return null;
+            return relConsumer.getRelationship( id );
         }
 
-        public RawPropertyData[] relLoadProperties( int relId )
+        public ArrayMap<Integer,PropertyData> relLoadProperties( int relId )
         {
-            PropertyData propData[] = relConsumer.getProperties( relId );
-            RawPropertyData properties[] = new RawPropertyData[propData.length];
-            for ( int i = 0; i < propData.length; i++ )
-            {
-                properties[i] = new RawPropertyData( propData[i].getId(),
-                    propData[i].getIndex(), propData[i].getValue() );
-            }
-            return properties;
+            return relConsumer.getProperties( relId );
         }
 
         public void createPropertyIndex( String key, int id )

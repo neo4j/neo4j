@@ -17,25 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.impl.core;
+package org.neo4j.impl.nioneo.store;
 
-public class RawPropertyIndex
+public class PropertyIndexData
 {
     private final int keyId;
     private final String value;
 
-    public RawPropertyIndex( int keyId, String value )
+    public PropertyIndexData( int keyId, String value )
     {
         this.keyId = keyId;
         this.value = value;
     }
 
-    int getKeyId()
+    public int getKeyId()
     {
         return this.keyId;
     }
 
-    String getValue()
+    public String getValue()
     {
         return this.value;
     }

@@ -19,20 +19,11 @@
  */
 package org.neo4j.impl.nioneo.store;
 
-/**
- * Wrapper class for the data contained in a relationship type record.
- */
 public class RelationshipTypeData
 {
-    private final int id;
     private final String name;
+    private final int id;
 
-    /**
-     * @param id
-     *            The id of the relationship type
-     * @param name
-     *            The name of the relationship type
-     */
     public RelationshipTypeData( int id, String name )
     {
         this.id = id;
@@ -41,11 +32,11 @@ public class RelationshipTypeData
 
     public int getId()
     {
-        return id;
+        return this.id;
     }
 
     public String getName()
     {
-        return name;
+        return this.name;
     }
 }

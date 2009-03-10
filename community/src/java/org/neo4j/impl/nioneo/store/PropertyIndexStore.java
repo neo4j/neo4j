@@ -26,7 +26,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.impl.core.RawPropertyIndex;
 
 /**
  * Implementation of the node store.
@@ -122,10 +121,10 @@ public class PropertyIndexStore extends AbstractStore implements Store
             KEY_STORE_BLOCK_SIZE );
     }
 
-    public RawPropertyIndex[] getPropertyIndexes( int count )
+    public PropertyIndexData[] getPropertyIndexes( int count )
     {
-        LinkedList<RawPropertyIndex> indexList = 
-            new LinkedList<RawPropertyIndex>();
+        LinkedList<PropertyIndexData> indexList = 
+            new LinkedList<PropertyIndexData>();
         int maxIdInUse = getHighestPossibleIdInUse();
         int found = 0;
         for ( int i = 0; i <= maxIdInUse && found < count; i++ )
@@ -140,10 +139,10 @@ public class PropertyIndexStore extends AbstractStore implements Store
                 continue;
             }
             found++;
-            indexList.add( new RawPropertyIndex( record.getId(), 
+            indexList.add( new PropertyIndexData( record.getId(), 
                 getStringFor( record ) ) );
         }
-        return indexList.toArray( new RawPropertyIndex[indexList.size()] );
+        return indexList.toArray( new PropertyIndexData[indexList.size()] );
     }
 
     public PropertyIndexRecord getRecord( int id )

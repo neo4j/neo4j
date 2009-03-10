@@ -21,13 +21,14 @@ package org.neo4j.impl.nioneo.xa;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
+
 import org.neo4j.impl.core.PropertyIndex;
-import org.neo4j.impl.core.RawPropertyIndex;
 import org.neo4j.impl.nioneo.store.IdGenerator;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeStore;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
+import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
@@ -37,6 +38,7 @@ import org.neo4j.impl.transaction.xaframework.XaConnection;
 import org.neo4j.impl.transaction.xaframework.XaConnectionHelpImpl;
 import org.neo4j.impl.transaction.xaframework.XaResourceHelpImpl;
 import org.neo4j.impl.transaction.xaframework.XaResourceManager;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * {@link XaConnection} implementation for the NioNeo data store. Contains
@@ -221,12 +223,12 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             xaCon.getNeoTransaction().nodeRemoveProperty( nodeId, propertyId );
         }
 
-        public PropertyData[] getProperties( int nodeId )
+        public ArrayMap<Integer,PropertyData> getProperties( int nodeId )
         {
             return xaCon.getNeoTransaction().nodeGetProperties( nodeId );
         }
 
-        public RelationshipData[] getRelationships( int nodeId )
+        public Iterable<RelationshipData> getRelationships( int nodeId )
         {
             return xaCon.getNeoTransaction().nodeGetRelationships( nodeId );
         }
@@ -284,7 +286,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             xaCon.getNeoTransaction().relRemoveProperty( relId, propertyId );
         }
 
-        public PropertyData[] getProperties( int relId )
+        public ArrayMap<Integer,PropertyData> getProperties( int relId )
         {
             return xaCon.getNeoTransaction().relGetProperties( relId );
         }
@@ -358,7 +360,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             return xaCon.getNeoTransaction().getPropertyIndex( id );
         }
 
-        public RawPropertyIndex[] getPropertyIndexes( int count )
+        public PropertyIndexData[] getPropertyIndexes( int count )
         {
             return xaCon.getNeoTransaction().getPropertyIndexes( count );
         }

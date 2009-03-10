@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import javax.transaction.TransactionManager;
 import org.neo4j.api.core.RelationshipType;
+import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.util.ArrayMap;
@@ -53,7 +54,7 @@ class RelationshipTypeHolder
         this.idGenerator = idGenerator;
     }
 
-    void addRawRelationshipTypes( RawRelationshipTypeData[] types )
+    void addRawRelationshipTypes( RelationshipTypeData[] types )
     {
         for ( int i = 0; i < types.length; i++ )
         {

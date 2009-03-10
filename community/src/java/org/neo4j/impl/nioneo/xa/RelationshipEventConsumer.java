@@ -19,9 +19,12 @@
  */
 package org.neo4j.impl.nioneo.xa;
 
+import java.io.IOException;
+
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
+import org.neo4j.impl.util.ArrayMap;
 
 /**
  * Defines the operations in Neo that are relationship related.
@@ -107,7 +110,7 @@ public interface RelationshipEventConsumer
      * @throws IOException
      *             If unable to get the properties
      */
-    public PropertyData[] getProperties( int relId );
+    public ArrayMap<Integer,PropertyData> getProperties( int relId );
 
     /**
      * Gets a relationship with a given id.
