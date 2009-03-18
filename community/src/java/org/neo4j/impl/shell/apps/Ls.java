@@ -227,7 +227,8 @@ public class Ls extends NodeOrRelationshipApp
                 buf.append( ", " ).append( rel.getId() );
             }
             buf.append( postfixString + " " );
-            buf.append( getDisplayNameForNode( rel.getEndNode() ) );
+            buf.append( getDisplayNameForNode( direction == Direction.OUTGOING ?
+                rel.getEndNode() : rel.getStartNode() ) );
             out.println( buf );
         }
     }
