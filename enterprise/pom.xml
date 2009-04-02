@@ -7,11 +7,48 @@
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j</groupId>
-	<artifactId>onlinebackup</artifactId>
+	<artifactId>online-backup</artifactId>
 	<version>0.1-SNAPSHOT</version>
-	<name>backup</name>
+	<name>Onlinebackup</name>
 	<description>Backup of resources using the XA framework</description>
-	<url></url>
+    <url>http://components.neo4j.org/${project.artifactId}/</url>
+    
+    <scm>
+        <connection>
+            scm:svn:https://svn.neo4j.org/components/${project.artifactId}/trunk/
+        </connection>
+        <url>https://trac.neo4j.org/browser/components/${project.artifactId}
+        </url>
+    </scm>
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License, Version 3</name>
+            <url>https://svn.neo4j.org/components/${project.artifactId}/trunk/LICENSE.txt
+            </url>
+        </license>
+    </licenses>
+    
+    <developers>
+        <developer>
+            <id>johans</id>
+            <name>Johan Svensson</name>
+            <email>johan [at] neotechnology.com</email>
+            <timezone>+1</timezone>
+            <roles>
+                <role>Developer</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>andersn</id>
+            <name>Anders Nawroth</name>
+            <email>anders [at] neotechnology.com</email>
+            <timezone>+1</timezone>
+            <roles>
+                <role>Developer</role>
+            </roles>
+        </developer>
+    </developers>
+    
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -40,6 +77,38 @@
 					<target>1.6</target>
 				</configuration>
 			</plugin>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 		</plugins>
 	</build>
+    <reporting>
+        <plugins>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <subpackages>org.neo4j.onlinebackup</subpackages>
+                    <links>
+                        <link>http://java.sun.com/javase/6/docs/api/</link>
+                    </links>
+                    <quiet>true</quiet>
+                </configuration>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>javadoc</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>
