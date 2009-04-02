@@ -192,11 +192,14 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             releaseWindow( window );
         }
         // }
-        Collection<DynamicRecord> nameRecords = typeNameStore.getRecords(
-            record.getTypeBlock() );
-        for ( DynamicRecord nameRecord : nameRecords )
+        if ( record != null )
         {
-            record.addTypeRecord( nameRecord );
+            Collection<DynamicRecord> nameRecords = typeNameStore.getRecords(
+                record.getTypeBlock() );
+            for ( DynamicRecord nameRecord : nameRecords )
+            {
+                record.addTypeRecord( nameRecord );
+            }
         }
         return record;
     }
@@ -223,7 +226,8 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             {
                 break;
             }
-            if ( record.getTypeBlock() != Record.RESERVED.intValue() )
+            if ( record != null && 
+                record.getTypeBlock() != Record.RESERVED.intValue() )
             {
                 String name = getStringFor( record );
                 typeDataList.add( new RelationshipTypeData( i, name ) );
@@ -261,9 +265,15 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     {
         int offset = (int) (id - buffer.position()) * getRecordSize();
         buffer.setOffset( offset );
-        if ( buffer.get() != Record.IN_USE.byteValue() )
+        byte inUse = buffer.get();
+        if ( inUse == Record.NOT_IN_USE.byteValue() )
         {
-            throw new StoreFailureException( "Record[" + id + "] not in use" );
+            return null;
+        }
+        if ( inUse != Record.IN_USE.byteValue() )
+        {
+            throw new StoreFailureException( "Record[" + id + 
+                "] unkown in use flag[" + inUse + "]" );
         }
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
