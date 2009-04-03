@@ -908,14 +908,26 @@ public class XaLogicalLog
         }
         if ( !keepLogs || backupSlave )
         {
-            deleteCurrentLogFile( fileName + "." + currentLog );
+            if ( currentLog == CLEAN )
+            {
+                // special case going from old xa version with no log rotation
+                // and we started with a recovery
+                deleteCurrentLogFile( fileName );
+            }
+            else
+            {
+                deleteCurrentLogFile( fileName + "." + currentLog );
+            }
         }
         else
         {
             renameCurrentLogFileAndIncrementVersion( fileName + "." + 
                 currentLog, endPosition );
         }
-        setActiveLog( CLEAN );
+        if ( currentLog != CLEAN ) // again special case, see above
+        {
+            setActiveLog( CLEAN );
+        }
     }
 
     private void doInternalRecovery( String logFileName ) throws IOException
