@@ -157,12 +157,14 @@ class RelationshipTypeHolder
             }
             catch ( Throwable t )
             {
+                t.printStackTrace();
                 try
                 {
                     transactionManager.rollback();
                 }
                 catch ( Throwable tt )
                 {
+                    tt.printStackTrace();
                 }
             }
             finally
