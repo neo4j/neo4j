@@ -888,6 +888,11 @@ public class XaLogicalLog
 
     public synchronized void close() throws IOException
     {
+        if ( fileChannel == null || !fileChannel.isOpen() )
+        {
+            log.info( "Logical log: " + fileName + " already closed" );
+            return;
+        }
         long endPosition = writeBuffer.getFileChannelPosition();
         if ( xidIdentMap.size() > 0 )
         {
