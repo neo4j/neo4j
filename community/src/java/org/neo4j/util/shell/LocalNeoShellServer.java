@@ -7,7 +7,7 @@ import java.util.Set;
 public class LocalNeoShellServer extends SimpleAppServer
 {
 	private String neoDirectory;
-	private Object neoObject;
+	private Object neoServiceInstance;
 	private SimpleAppServer neoServer;
 	
 	public LocalNeoShellServer( String neoDirectory ) throws RemoteException
@@ -16,35 +16,47 @@ public class LocalNeoShellServer extends SimpleAppServer
 		this.neoDirectory = neoDirectory;
 	}
 	
+	public LocalNeoShellServer( Object neoServiceInstance )
+	    throws RemoteException
+	{
+	    super();
+	    this.neoServiceInstance = neoServiceInstance;
+	}
+	
 	private SimpleAppServer getNeoServer()
 	{
-		if ( neoServer == null )
+		if ( this.neoServer == null )
 		{
 			try
 			{
-				neoServer = instantiateNewNeoServer();
+				this.neoServer = this.instantiateNewNeoServer();
 			}
 			catch ( ShellException e )
 			{
 				throw new RuntimeException( e.getMessage(), e );
 			}
 		}
-		return neoServer;
+		return this.neoServer;
 	}
 	
 	private void shutdownServer()
 	{
-		if ( neoServer == null )
+		if ( this.neoServer == null )
 		{
 			return;
 		}
 		
 		try
 		{
-			neoServer.getClass().getMethod( "shutdown" ).invoke( neoServer );
-			neoObject.getClass().getMethod( "shutdown" ).invoke( neoObject );
-			neoObject = null;
-			neoServer = null;
+			this.neoServer.getClass().getMethod( "shutdown" ).invoke(
+			    this.neoServer );
+			if ( this.neoDirectory != null )
+			{
+			    this.neoServiceInstance.getClass().getMethod(
+			        "shutdown" ).invoke( this.neoServiceInstance );
+			}
+			this.neoServiceInstance = null;
+			this.neoServer = null;
 		}
 		catch ( Exception e )
 		{
@@ -63,10 +75,13 @@ public class LocalNeoShellServer extends SimpleAppServer
 			Class<?> neoServiceClass = Class.forName( neoServiceClassName );
 			Class<?> neoShellServerClass =
 				Class.forName( neoShellServerClassName );
-			neoObject = neoClass.getConstructor(
-				String.class ).newInstance( neoDirectory );
+			if ( this.neoServiceInstance == null )
+			{
+			    this.neoServiceInstance = neoClass.getConstructor(
+			        String.class ).newInstance( this.neoDirectory );
+			}
 			Object neoShellServerObject = neoShellServerClass.getConstructor(
-				neoServiceClass ).newInstance( neoObject );
+				neoServiceClass ).newInstance( neoServiceInstance );
 			return ( SimpleAppServer ) neoShellServerObject;
 		}
 		catch ( Exception e )
@@ -78,54 +93,53 @@ public class LocalNeoShellServer extends SimpleAppServer
 	@Override
 	public String getName()
 	{
-		return getNeoServer().getName();
+		return this.getNeoServer().getName();
 	}
 	
 	@Override
 	public Serializable getProperty( String key )
 	{
-		return getNeoServer().getProperty( key );
+		return this.getNeoServer().getProperty( key );
 	}
 	
 	@Override
 	public void setProperty( String key, Serializable value )
 	{
-		getNeoServer().setProperty( key, value );
+		this.getNeoServer().setProperty( key, value );
 	}
 	
 	@Override
 	public Set<String> getPackages()
 	{
-		return getNeoServer().getPackages();
+		return this.getNeoServer().getPackages();
 	}
 	
 	@Override
 	public App findApp( String command )
 	{
-		return getNeoServer().findApp( command );
+		return this.getNeoServer().findApp( command );
 	}
 	
 	@Override
 	public String welcome()
 	{
-		return getNeoServer().welcome();
+		return this.getNeoServer().welcome();
 	}
 	
 	@Override
 	public Serializable interpretVariable( String key, Serializable value,
 		Session session ) throws RemoteException
 	{
-		return getNeoServer().interpretVariable( key, value, session );
+		return this.getNeoServer().interpretVariable( key, value, session );
 	}
 	
 	@Override
 	public void shutdown()
 	{
 		super.shutdown();
-		if ( neoServer == null )
+		if ( this.neoServer != null )
 		{
-			return;
+	        this.shutdownServer();
 		}
-		shutdownServer();
 	}
 }
