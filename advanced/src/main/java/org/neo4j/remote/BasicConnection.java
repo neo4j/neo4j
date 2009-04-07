@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.NeoService;
 import org.neo4j.remote.RemoteResponse.ResponseBuilder;
-import org.neo4j.util.index.IndexService;
 
 final class BasicConnection implements RemoteConnection
 {
@@ -270,7 +269,7 @@ final class BasicConnection implements RemoteConnection
 
     // Index implementation
 
-    public RemoteResponse<Integer> getIndexId( String indexName )
+    public RemoteResponse<Integer> getIndexServiceId( String indexName )
     {
         int id;
         try

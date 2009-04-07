@@ -18,6 +18,11 @@ package org.neo4j.remote;
 
 import org.neo4j.api.core.Relationship;
 
+/**
+ * Serialized object representing a {@link Relationship}.
+ * 
+ * @author Tobias Ivarsson
+ */
 public final class RelationshipSpecification implements EncodedObject
 {
     private static final long serialVersionUID = 1L;
@@ -35,6 +40,11 @@ public final class RelationshipSpecification implements EncodedObject
         endNodeId = endNode;
     }
 
+    /**
+     * Create a new {@link Relationship} serialization.
+     * @param relationship
+     *            the {@link Relationship} to serialize.
+     */
     public RelationshipSpecification( Relationship relationship )
     {
         this( relationship.getId(), relationship.getType().name(), relationship

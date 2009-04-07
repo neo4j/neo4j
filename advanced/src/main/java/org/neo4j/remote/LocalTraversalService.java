@@ -17,9 +17,8 @@ import org.neo4j.api.core.ReturnableEvaluator;
 import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.TraversalPosition;
 import org.neo4j.api.core.Traverser.Order;
-import org.neo4j.remote.services.TraversalService;
 
-class LocalTraversalService implements TraversalService
+class LocalTraversalService
 {
     public Iterable<TraversalPosition> performExternalEvaluatorTraversal(
         final Node startNode, final Order order,

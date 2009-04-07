@@ -229,6 +229,13 @@ public abstract class BasicNeoServer implements RemoteSite
         return ( result < 1 ) ? 1 : result;
     }
 
+    /**
+     * Register a server side index service implementation.
+     * @param name
+     *            A name that identifies the index service implementation.
+     * @param index
+     *            The index service implementation to register.
+     */
     public void registerIndexService( String name, IndexService index )
     {
         synchronized ( this )

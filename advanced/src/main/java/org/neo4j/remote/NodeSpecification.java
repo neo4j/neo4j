@@ -16,13 +16,18 @@
  */
 package org.neo4j.remote;
 
+/**
+ * Serialized object representing a {@link org.neo4j.api.core.Node}.
+ * 
+ * @author Tobias Ivarsson
+ */
 public final class NodeSpecification implements EncodedObject
 {
     private static final long serialVersionUID = 1L;
     final long id;
 
-	NodeSpecification( long id )
-	{
-		this.id = id;
-	}
+    NodeSpecification( long id )
+    {
+        this.id = id;
+    }
 }

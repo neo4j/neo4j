@@ -24,8 +24,6 @@ import java.io.PrintStream;
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.NeoService;
 import org.neo4j.remote.RemoteNeo;
-import org.neo4j.remote.inspect.InspectionSite;
-import org.neo4j.remote.inspect.InspectionAdapter;
 import org.neo4j.remote.sites.LocalSite;
 
 abstract class Base

@@ -16,8 +16,14 @@
  */
 package org.neo4j.remote;
 
-import java.io.Serializable;
-
+/**
+ * Serialized object representing an iterator.
+ * 
+ * @author Tobias Ivarsson
+ * 
+ * @param <T>
+ *            the content type of the iterator.
+ */
 public final class IterableSpecification<T> implements EncodedObject
 {
     private static final long serialVersionUID = 1L;
