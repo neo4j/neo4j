@@ -23,11 +23,9 @@ import org.neo4j.api.core.ReturnableEvaluator;
 import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.TraversalPosition;
 import org.neo4j.api.core.Traverser.Order;
-import org.neo4j.remote.TransactionalServiceMethod;
 
 public interface TraversalService
 {
-    @TransactionalServiceMethod( onlyRead = true )
     Iterable<TraversalPosition> performExternalEvaluatorTraversal(
         Node startNode, Order order, StopEvaluator stopEvaluator,
         ReturnableEvaluator returnableEvaluator, RelationshipType[] types,

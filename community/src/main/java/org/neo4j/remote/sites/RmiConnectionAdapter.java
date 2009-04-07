@@ -17,40 +17,18 @@
 package org.neo4j.remote.sites;
 
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 
 import org.neo4j.api.core.Direction;
-import org.neo4j.remote.AsynchronousCallback;
 import org.neo4j.remote.ClientConfigurator;
 import org.neo4j.remote.Configuration;
-import org.neo4j.remote.EncodedObject;
 import org.neo4j.remote.IterableSpecification;
 import org.neo4j.remote.NodeSpecification;
 import org.neo4j.remote.RelationshipSpecification;
 import org.neo4j.remote.RemoteConnection;
 import org.neo4j.remote.RemoteResponse;
-import org.neo4j.remote.ServiceSpecification;
-import org.neo4j.remote.SynchronousCallback;
 
 class RmiConnectionAdapter implements RemoteConnection
 {
-    private static class Callback extends UnicastRemoteObject implements
-        RmiCallback
-    {
-        private static final long serialVersionUID = 1L;
-
-        protected Callback( AsynchronousCallback callback )
-            throws RemoteException
-        {
-            super();
-        }
-
-        public Callback( SynchronousCallback callback ) throws RemoteException
-        {
-            super();
-        }
-    }
-
     private RmiConnection rmi;
 
     RmiConnectionAdapter( RmiConnection rmi )
@@ -92,99 +70,11 @@ class RmiConnectionAdapter implements RemoteConnection
         }
     }
 
-    public ClientConfigurator configure( Configuration config,
-        AsynchronousCallback callback )
+    public ClientConfigurator configure( Configuration config )
     {
         try
         {
-            return rmi().configure( config,
-                callback != null ? new Callback( callback ) : null );
-        }
-        catch ( RemoteException ex )
-        {
-            throw remoteException( ex );
-        }
-    }
-
-    public RemoteResponse<Iterable<ServiceSpecification>> getServices(
-        String interfaceName )
-    {
-        try
-        {
-            return rmi().getServices( interfaceName );
-        }
-        catch ( RemoteException ex )
-        {
-            throw remoteException( ex );
-        }
-    }
-
-    public RemoteResponse<EncodedObject> invokeServiceMethod(
-        SynchronousCallback callback, int serviceId, int functionIndex,
-        EncodedObject[] arguments )
-    {
-        try
-        {
-            return rmi().invokeServiceMethod( new Callback( callback ),
-                serviceId, functionIndex, arguments );
-        }
-        catch ( RemoteException ex )
-        {
-            throw remoteException( ex );
-        }
-    }
-
-    public RemoteResponse<EncodedObject> invokeObjectMethod(
-        SynchronousCallback callback, int serviceId, int objectId,
-        int functionIndex, EncodedObject[] arguments )
-    {
-        try
-        {
-            return rmi().invokeObjectMethod( new Callback( callback ),
-                serviceId, objectId, functionIndex, arguments );
-        }
-        catch ( RemoteException ex )
-        {
-            throw remoteException( ex );
-        }
-    }
-
-    public RemoteResponse<EncodedObject> invokeTransactionalServiceMethod(
-        int transactionId, SynchronousCallback callback, int serviceId,
-        int functionIndex, EncodedObject[] arguments )
-    {
-        try
-        {
-            return rmi().invokeTransactionalServiceMethod( transactionId,
-                new Callback( callback ), serviceId, functionIndex, arguments );
-        }
-        catch ( RemoteException ex )
-        {
-            throw remoteException( ex );
-        }
-    }
-
-    public RemoteResponse<EncodedObject> invokeTransactionalObjectMethod(
-        int transactionId, SynchronousCallback callback, int serviceId,
-        int objectId, int functionIndex, EncodedObject[] arguments )
-    {
-        try
-        {
-            return rmi().invokeTransactionalObjectMethod( transactionId,
-                new Callback( callback ), serviceId, objectId, functionIndex,
-                arguments );
-        }
-        catch ( RemoteException ex )
-        {
-            throw remoteException( ex );
-        }
-    }
-
-    public void finalizeObject( int serviceId, int objectId )
-    {
-        try
-        {
-            rmi().finalizeObject( serviceId, objectId );
+            return rmi().configure( config );
         }
         catch ( RemoteException ex )
         {
@@ -221,33 +111,6 @@ class RmiConnectionAdapter implements RemoteConnection
         try
         {
             rmi().rollback( transactionId );
-        }
-        catch ( RemoteException ex )
-        {
-            throw remoteException( ex );
-        }
-    }
-
-    public RemoteResponse<IterableSpecification<EncodedObject>> getMoreObjects(
-        int requestToken )
-    {
-        try
-        {
-            return rmi().getMoreObjects( requestToken );
-        }
-        catch ( RemoteException ex )
-        {
-            throw remoteException( ex );
-        }
-    }
-
-    public RemoteResponse<IterableSpecification<EncodedObject>> getMoreObjects(
-        int transactionId, int requestToken )
-    {
-        try
-        {
-            return rmi().getTransactionalMoreObjects( transactionId,
-                requestToken );
         }
         catch ( RemoteException ex )
         {
@@ -565,6 +428,58 @@ class RmiConnectionAdapter implements RemoteConnection
         {
             return rmi().removeRelationshipProperty( transactionId,
                 relationshipId, key );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
+
+    public RemoteResponse<Integer> getIndexId( String indexName )
+    {
+        try
+        {
+            return rmi().getIndexId( indexName );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
+
+    public RemoteResponse<IterableSpecification<NodeSpecification>> getIndexNodes(
+        int transactionId, int indexId, String key, Object value )
+    {
+        try
+        {
+            return rmi().getIndexNodes( transactionId, indexId, key, value );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
+
+    public RemoteResponse<Void> indexNode( int transactionId, int indexId,
+        long nodeId, String key, Object value )
+    {
+        try
+        {
+            return rmi().indexNode( transactionId, indexId, nodeId, key, value );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
+
+    public RemoteResponse<Void> removeIndexNode( int transactionId,
+        int indexId, long nodeId, String key, Object value )
+    {
+        try
+        {
+            return rmi().removeIndexNode( transactionId, indexId, nodeId, key,
+                value );
         }
         catch ( RemoteException ex )
         {

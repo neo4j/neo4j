@@ -16,25 +16,21 @@
  */
 package org.neo4j.remote.sites;
 
-import java.lang.reflect.Method;
 import java.rmi.RemoteException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 import java.rmi.server.UnicastRemoteObject;
 
 import org.neo4j.api.core.Direction;
+import org.neo4j.remote.BasicNeoServer;
 import org.neo4j.remote.ClientConfigurator;
 import org.neo4j.remote.Configuration;
-import org.neo4j.remote.EncodedObject;
 import org.neo4j.remote.IterableSpecification;
 import org.neo4j.remote.NodeSpecification;
-import org.neo4j.remote.PositionSpecification;
 import org.neo4j.remote.RelationshipSpecification;
 import org.neo4j.remote.RemoteConnection;
 import org.neo4j.remote.RemoteResponse;
-import org.neo4j.remote.BasicNeoServer;
 import org.neo4j.remote.RemoteSite;
-import org.neo4j.remote.ServiceSpecification;
 
 class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
 {
@@ -132,58 +128,9 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
         this.connection = connection;
     }
 
-    public ClientConfigurator configure( Configuration config,
-        RmiCallback callback )
+    public ClientConfigurator configure( Configuration config )
     {
-        return connection
-            .configure( config, new RmiCallbackAdapter( callback ) );
-    }
-
-    public RemoteResponse<Iterable<ServiceSpecification>> getServices(
-        String interfaceName )
-    {
-        return connection.getServices( interfaceName );
-    }
-
-    public RemoteResponse<EncodedObject> invokeServiceMethod(
-        RmiCallback callback, int serviceId, int functionIndex,
-        EncodedObject[] arguments )
-    {
-        return connection.invokeServiceMethod(
-            new RmiCallbackAdapter( callback ), serviceId, functionIndex,
-            arguments );
-    }
-
-    public RemoteResponse<EncodedObject> invokeObjectMethod(
-        RmiCallback callback, int serviceId, int objectId, int functionIndex,
-        EncodedObject[] arguments )
-    {
-        return connection.invokeObjectMethod(
-            new RmiCallbackAdapter( callback ), serviceId, objectId,
-            functionIndex, arguments );
-    }
-
-    public RemoteResponse<EncodedObject> invokeTransactionalServiceMethod(
-        int transactionId, RmiCallback callback, int serviceId,
-        int functionIndex, EncodedObject[] arguments )
-    {
-        return connection.invokeTransactionalServiceMethod( transactionId,
-            new RmiCallbackAdapter( callback ), serviceId, functionIndex,
-            arguments );
-    }
-
-    public RemoteResponse<EncodedObject> invokeTransactionalObjectMethod(
-        int transactionId, RmiCallback callback, int serviceId, int objectId,
-        int functionIndex, EncodedObject[] arguments )
-    {
-        return connection.invokeTransactionalObjectMethod( transactionId,
-            new RmiCallbackAdapter( callback ), serviceId, objectId,
-            functionIndex, arguments );
-    }
-
-    public void finalizeObject( int serviceId, int objectId )
-    {
-        connection.finalizeObject( serviceId, objectId );
+        return connection.configure( config );
     }
 
     public void close()
@@ -204,18 +151,6 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
     public void rollback( int transactionId )
     {
         connection.rollback( transactionId );
-    }
-
-    public RemoteResponse<IterableSpecification<EncodedObject>> getMoreObjects(
-        int requestToken )
-    {
-        return connection.getMoreObjects( requestToken );
-    }
-
-    public RemoteResponse<IterableSpecification<EncodedObject>> getTransactionalMoreObjects(
-        int transactionId, int requestToken )
-    {
-        return connection.getMoreObjects( transactionId, requestToken );
     }
 
     public RemoteResponse<IterableSpecification<String>> getRelationshipTypes(
@@ -367,5 +302,33 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
     {
         return connection.removeRelationshipProperty( transactionId,
             relationshipId, key );
+    }
+
+    public RemoteResponse<Integer> getIndexId( String indexName )
+        throws RemoteException
+    {
+        return connection.getIndexId( indexName );
+    }
+
+    public RemoteResponse<IterableSpecification<NodeSpecification>> getIndexNodes(
+        int transactionId, int indexId, String key, Object value )
+        throws RemoteException
+    {
+        return connection.getIndexNodes( transactionId, indexId, key, value );
+    }
+
+    public RemoteResponse<Void> indexNode( int transactionId, int indexId,
+        long nodeId, String key, Object value ) throws RemoteException
+    {
+        return connection
+            .indexNode( transactionId, indexId, nodeId, key, value );
+    }
+
+    public RemoteResponse<Void> removeIndexNode( int transactionId,
+        int indexId, long nodeId, String key, Object value )
+        throws RemoteException
+    {
+        return connection.removeIndexNode( transactionId, indexId, nodeId, key,
+            value );
     }
 }

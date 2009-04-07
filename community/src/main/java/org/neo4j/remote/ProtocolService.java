@@ -18,7 +18,6 @@ package org.neo4j.remote;
 
 import java.lang.reflect.Method;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;

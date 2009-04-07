@@ -178,7 +178,7 @@ class RemoteTransaction implements Transaction
             {
                 return previous.createPlaceboTransaction();
             }
-            
+
             @Override
             public String toString()
             {
@@ -199,36 +199,6 @@ class RemoteTransaction implements Transaction
     private void rollback()
     {
         engine.rollback( id );
-    }
-
-    // Services
-
-    EncodedObject invokeServiceMethod( SynchronousCallback callback,
-        int serviceId, int functionIndex, EncodedObject[] arguments )
-    {
-        return engine.invokeTransactionalServiceMethod( id, callback,
-            serviceId, functionIndex, arguments );
-    }
-
-    EncodedObject invokeObjectMethod( SynchronousCallback callback,
-        int serviceId, int objectId, int functionIndex,
-        EncodedObject[] arguments )
-    {
-        return engine.invokeTransactionalObjectMethod( id, callback, serviceId,
-            objectId, functionIndex, arguments );
-    }
-
-    Iterable<RelationshipType> getRelationshipTypes()
-    {
-        return new ConversionIterable<String, RelationshipType>( engine
-            .getRelationshipTypes( id ) )
-        {
-            @Override
-            RelationshipType convert( String source )
-            {
-                return engine.type( source );
-            }
-        };
     }
 
     // Node management
@@ -283,6 +253,19 @@ class RemoteTransaction implements Transaction
     void deleteNode( RemoteNode node )
     {
         engine.deleteNode( id, node.id );
+    }
+
+    Iterable<RelationshipType> getRelationshipTypes()
+    {
+        return new ConversionIterable<String, RelationshipType>( engine
+            .getRelationshipTypes( id ) )
+        {
+            @Override
+            RelationshipType convert( String source )
+            {
+                return engine.type( source );
+            }
+        };
     }
 
     // Relationship management
@@ -427,11 +410,10 @@ class RemoteTransaction implements Transaction
 
     // Index operations
 
-    Iterable<Node> getIndexNodes( IndexingConnection connection, int serviceId,
-        String key, Object value )
+    Iterable<Node> getIndexNodes( int indexId, String key, Object value )
     {
         return new ConversionIterable<NodeSpecification, Node>( engine
-            .getIndexNodes( id, connection, serviceId, key, value ) )
+            .getIndexNodes( id, indexId, key, value ) )
         {
             @Override
             Node convert( NodeSpecification source )
@@ -441,16 +423,14 @@ class RemoteTransaction implements Transaction
         };
     }
 
-    void indexNode( IndexingConnection connection, int serviceId,
-        RemoteNode node, String key, Object value )
+    void indexNode( int indexId, RemoteNode node, String key, Object value )
     {
-        engine.indexNode( id, connection, serviceId, node.id, key, value );
+        engine.indexNode( id, indexId, node.id, key, value );
     }
 
-    void removeIndexNode( IndexingConnection connection, int serviceId,
-        RemoteNode node, String key, Object value )
+    void removeIndexNode( int indexId, RemoteNode node, String key, Object value )
     {
-        engine.removeIndexNode( id, connection, serviceId, node.id, key, value );
+        engine.removeIndexNode( id, indexId, node.id, key, value );
     }
 
     private static abstract class ConversionIterable<F, T> implements

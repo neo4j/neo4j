@@ -16,13 +16,9 @@
  */
 package org.neo4j.remote;
 
-import java.lang.reflect.Proxy;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
-import javax.transaction.TransactionManager;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.NotInTransactionException;
@@ -35,86 +31,17 @@ import org.neo4j.remote.services.TraversalService;
 
 final class RemoteNeoEngine
 {
-    private class Callback implements AsynchronousCallback
-    {
-    }
-
-    private static final String INDEX_SERVICE_CLASS_NAME = "org.neo4j.util.index.IndexService";
-
-    private final ServiceDescriptor<TransactionManager> TX_DESCRIPTOR = new ServiceDescriptor<TransactionManager>()
-    {
-        public TransactionManager getService()
-        {
-            return txManager;
-        }
-
-        public String getIdentifier()
-        {
-            return "local transaction manager";
-        }
-    };
     private final ThreadLocal<RemoteTransaction> current = new ThreadLocal<RemoteTransaction>();
-    private final TransactionManager txManager = null; // TODO: implement
     private final RemoteConnection connection;
     private final ConfigurationFactory factory;
     private final Map<String, RelationshipType> typesCache = null;
-    private volatile TraversalService traversalService = null;
-    private final Map<Class<?>, ServiceFactory<?>> serviceFactories = new HashMap<Class<?>, ServiceFactory<?>>();
+    private TraversalService traversal = new LocalTraversalService();
 
     RemoteNeoEngine( RemoteConnection connection, ConfigurationModule module )
     {
         this.connection = connection;
-        this.factory = new ConfigurationFactory( module, connection.configure(
-            Configuration.of( module ), new Callback() ) );
-        try
-        {
-            Class<?> indexServiceInterface = Class
-                .forName( INDEX_SERVICE_CLASS_NAME );
-            if ( connection instanceof IndexingConnection )
-            {
-                IndexingConnection ixConnection = ( IndexingConnection ) connection;
-                serviceFactories.put( indexServiceInterface,
-                    indexFactory( ixConnection ) );
-            }
-        }
-        catch ( ClassNotFoundException e )
-        {
-        }
-    }
-
-    private ServiceFactory<?> indexFactory( IndexingConnection connection )
-    {
-        return new IndexServiceFactory( this, connection );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private <T> ServiceDescriptor<T> txDescriptor()
-    {
-        return ( ServiceDescriptor<T> ) TX_DESCRIPTOR;
-    }
-
-    private TraversalService traversal()
-    {
-        if ( traversalService == null )
-        {
-            synchronized ( this )
-            {
-                if ( traversalService == null )
-                {
-                    Iterator<ServiceDescriptor<TraversalService>> candidates = getServices(
-                        TraversalService.class ).iterator();
-                    if ( candidates.hasNext() )
-                    {
-                        traversalService = candidates.next().getService();
-                    }
-                    else
-                    {
-                        traversalService = new LocalTraversalService();
-                    }
-                }
-            }
-        }
-        return traversalService;
+        this.factory = new ConfigurationFactory( module, connection
+            .configure( Configuration.of( module ) ) );
     }
 
     RemoteTransaction beginTx()
@@ -166,166 +93,6 @@ final class RemoteNeoEngine
     void rollback( int txId )
     {
         connection.rollback( txId );
-    }
-
-    <T> Iterable<ServiceDescriptor<T>> getServices( final Class<T> iface )
-    {
-        if ( !iface.isInterface() )
-        {
-            throw new IllegalArgumentException( iface + " is not an interface." );
-        }
-        // Transaction management for the local side is done locally
-        if ( iface == TransactionManager.class )
-        {
-            return new Iterable<ServiceDescriptor<T>>()
-            {
-                public Iterator<ServiceDescriptor<T>> iterator()
-                {
-                    return new Iterator<ServiceDescriptor<T>>()
-                    {
-                        boolean hasNext = true;
-
-                        public boolean hasNext()
-                        {
-                            return hasNext;
-                        }
-
-                        public ServiceDescriptor<T> next()
-                        {
-                            if ( !hasNext )
-                            {
-                                throw new NoSuchElementException();
-                            }
-                            hasNext = false;
-                            return txDescriptor();
-                        }
-
-                        public void remove()
-                        {
-                            throw new UnsupportedOperationException();
-                        }
-                    };
-                }
-            };
-        }
-        // Discover the extension service from the server
-        return new Iterable<ServiceDescriptor<T>>()
-        {
-            final Iterable<ServiceSpecification> services;
-            {
-                services = receive( connection.getServices( iface.getName() ) );
-            }
-
-            public Iterator<ServiceDescriptor<T>> iterator()
-            {
-                return new Iterator<ServiceDescriptor<T>>()
-                {
-                    Iterator<ServiceSpecification> iter = services.iterator();
-
-                    public boolean hasNext()
-                    {
-                        return iter.hasNext();
-                    }
-
-                    public ServiceDescriptor<T> next()
-                    {
-                        return iter.next().descriptor( iface,
-                            RemoteNeoEngine.this );
-                    }
-
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-        };
-    }
-
-    <T> ServiceFactory<T> getServiceFactory( final Class<T> iface,
-        ServiceFactory.Builder builder )
-    {
-        @SuppressWarnings( "unchecked" )
-        ServiceFactory<T> factory = ( ServiceFactory<T> ) serviceFactories
-            .get( iface );
-        if ( factory == null )
-        {
-            final HandlerFactory handlerFactory = new HandlerFactory( this,
-                iface, builder );
-            factory = new ServiceFactory<T>()
-            {
-                public T createServiceInstance( int serviceId )
-                {
-                    return iface.cast( Proxy.newProxyInstance( iface
-                        .getClassLoader(), new Class[] { iface },
-                        handlerFactory.makeServiceHandler( serviceId ) ) );
-                }
-            };
-            serviceFactories.put( iface, factory );
-        }
-        return factory;
-    }
-
-    EncodedObject invokeServiceMethod( CallbackManager objectCallback,
-        int serviceId, int functionIndex, EncodedObject[] arguments )
-    {
-        RemoteTransaction tx = current.get();
-        if ( tx == null )
-        {
-            return receive( connection
-                .invokeServiceMethod( callback( objectCallback ), serviceId,
-                    functionIndex, arguments ) );
-        }
-        else
-        {
-            return tx.invokeServiceMethod( callback( objectCallback ),
-                serviceId, functionIndex, arguments );
-        }
-    }
-
-    EncodedObject invokeTransactionalServiceMethod( int txId,
-        SynchronousCallback callback, int serviceId, int functionIndex,
-        EncodedObject[] arguments )
-    {
-        return receive( connection.invokeTransactionalServiceMethod( txId,
-            callback, serviceId, functionIndex, arguments ) );
-    }
-
-    EncodedObject invokeObjectMethod( CallbackManager objectCallback,
-        int serviceId, int objectId, int functionIndex,
-        EncodedObject[] arguments )
-    {
-        RemoteTransaction tx = current.get();
-        if ( tx == null )
-        {
-            return receive( connection.invokeObjectMethod(
-                callback( objectCallback ), serviceId, objectId, functionIndex,
-                arguments ) );
-        }
-        else
-        {
-            return tx.invokeObjectMethod( callback( objectCallback ),
-                serviceId, objectId, functionIndex, arguments );
-        }
-    }
-
-    EncodedObject invokeTransactionalObjectMethod( int txId,
-        SynchronousCallback callback, int serviceId, int objectId,
-        int functionIndex, EncodedObject[] arguments )
-    {
-        return receive( connection.invokeTransactionalObjectMethod( txId,
-            callback, serviceId, objectId, functionIndex, arguments ) );
-    }
-
-    private SynchronousCallback callback( CallbackManager objectCallback )
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    void finalizeObject( int serviceId, int objectId )
-    {
-        connection.finalizeObject( serviceId, objectId );
     }
 
     RelationshipType type( String name )
@@ -453,7 +220,7 @@ final class RemoteNeoEngine
         ReturnableEvaluator returnableEvaluator,
         RelationshipType[] relationshipTypes, Direction[] directions )
     {
-        return traversal().performExternalEvaluatorTraversal( startNode, order,
+        return traversal.performExternalEvaluatorTraversal( startNode, order,
             stopEvaluator, returnableEvaluator, relationshipTypes, directions );
     }
 
@@ -545,16 +312,15 @@ final class RemoteNeoEngine
     // indexing
 
     Iterable<NodeSpecification> getIndexNodes( final int txId,
-        final IndexingConnection ixConnection, final int serviceId,
-        final String key, final Object value )
+        final int indexId, final String key, final Object value )
     {
         return new BatchIterable<NodeSpecification>()
         {
             @Override
             IterableSpecification<NodeSpecification> init()
             {
-                return receive( ixConnection.getIndexNodes( txId, serviceId,
-                    key, value ) );
+                return receive( connection.getIndexNodes( txId, indexId, key,
+                    value ) );
             }
 
             @Override
@@ -565,17 +331,15 @@ final class RemoteNeoEngine
         };
     }
 
-    void indexNode( int txId, IndexingConnection connection, int serviceId,
-        long nodeId, String key, Object value )
+    void indexNode( int txId, int indexId, long nodeId, String key, Object value )
     {
-        receive( connection.indexNode( txId, serviceId, nodeId, key, value ) );
+        receive( connection.indexNode( txId, indexId, nodeId, key, value ) );
     }
 
-    void removeIndexNode( int txId, IndexingConnection connection,
-        int serviceId, long nodeId, String key, Object value )
+    void removeIndexNode( int txId, int indexId, long nodeId, String key,
+        Object value )
     {
-        receive( connection.removeIndexNode( txId, serviceId, nodeId, key,
-            value ) );
+        receive( connection.removeIndexNode( txId, indexId, nodeId, key, value ) );
     }
 
     private static abstract class BatchIterable<T> implements Iterable<T>
@@ -626,5 +390,10 @@ final class RemoteNeoEngine
         abstract IterableSpecification<T> init();
 
         abstract IterableSpecification<T> more( int requestToken );
+    }
+
+    int getIndexId( String name )
+    {
+        return receive( connection.getIndexId( name ) );
     }
 }
