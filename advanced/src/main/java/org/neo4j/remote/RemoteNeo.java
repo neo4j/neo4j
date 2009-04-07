@@ -223,10 +223,9 @@ public final class RemoteNeo implements NeoService
         engine.shutdown();
     }
 
-    public <T> Iterable<ServiceDescriptor<T>> getServices(
-        Class<T> iface )
+    RemoteNeoEngine getEngine()
     {
-        return engine.getServices( iface );
+        return engine;
     }
 
     // These are scheduled to be removed from the NeoService interface.
