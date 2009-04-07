@@ -435,7 +435,7 @@ class RmiConnectionAdapter implements RemoteConnection
         }
     }
 
-    public RemoteResponse<Integer> getIndexId( String indexName )
+    public RemoteResponse<Integer> getIndexServiceId( String indexName )
     {
         try
         {

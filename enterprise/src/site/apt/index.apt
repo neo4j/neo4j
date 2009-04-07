@@ -1,0 +1,6 @@
+Remote Neo
+
+    Remote Neo is a tool for introspecting a running Neo4j instance from
+    a different process.
+
+    Remote Neo is not intended for integration into applications.

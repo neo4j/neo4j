@@ -5,6 +5,38 @@
 	<artifactId>remote-neo</artifactId>
 	<version>0.1-SNAPSHOT</version>
 	<description></description>
+	<scm>
+		<connection>
+			scm:svn:https://svn.neo4j.org/components/${project.artifactId}/trunk/
+		</connection>
+		<url>https://trac.neo4j.org/browser/components/${project.artifactId}
+		</url>
+	</scm>
+
+	<issueManagement>
+		<system>Trac</system>
+		<url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${project.artifactId}</url>
+	</issueManagement>
+	
+	<licenses>
+		<license>
+			<name>GNU Affero General Public License, Version 3</name>
+			<url>https://svn.neo4j.org/components/${project.artifactId}/trunk/LICENSE.txt
+			</url>
+		</license>
+	</licenses>
+	
+	<developers>
+		<developer>
+			<id>tobias</id>
+			<name>Tobias Ivarsson</name>
+			<email>tobias.ivarsson [at] neotechnology.com</email>
+			<timezone>+1</timezone>
+			<roles>
+				<role>Developer</role>
+			</roles>
+		</developer>
+	</developers>
 	<dependencies>
 		<dependency>
 			<groupId>org.neo4j</groupId>
@@ -25,15 +57,36 @@
 		</dependency>
 	</dependencies>
 	<build>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <configuration>
-                <source>1.5</source>
-                <target>1.5</target>
-              </configuration>
-            </plugin>
-          </plugins>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.5</source>
+					<target>1.5</target>
+				</configuration>
+			</plugin>
+		</plugins>
 	</build>
+	<reporting>
+		<plugins>
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<subpackages>org.neo4j.api</subpackages>
+					<links>
+						<link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
+					</links>
+					<quiet>true</quiet>
+				</configuration>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>javadoc</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+		</plugins>
+	</reporting>
 </project>
