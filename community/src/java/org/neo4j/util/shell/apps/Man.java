@@ -48,7 +48,7 @@ public class Man extends AbstractApp
 					app.getDescription( option ) );
 				OptionValueType type = app.getOptionValueType( option );
 				println( out, "-" + option + "\t" + description + " " +
-				( type == OptionValueType.NONE ? "(no value)" : "" ) +
+				( type == OptionValueType.NONE ? "" : "" ) +
 				( type == OptionValueType.MAY ? "(may have value)" : "" ) +
 				( type == OptionValueType.MUST ? "(must have value)" : "" ) );
 			}
