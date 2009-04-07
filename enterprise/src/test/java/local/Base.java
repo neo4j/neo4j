@@ -65,8 +65,9 @@ abstract class Base
                 buffer.append( ( char ) b );
             }
         } );
-        neo = new RemoteNeo( new InspectionSite( new LocalSite(
-            new EmbeddedNeo( STORE_DIR ) ), InspectionAdapter.trace( stream ) ) );
+        /*neo = new RemoteNeo( new InspectionSite( new LocalSite(
+            new EmbeddedNeo( STORE_DIR ) ), InspectionAdapter.trace( stream ) ) );*/
+        neo = new RemoteNeo( new LocalSite( new EmbeddedNeo( STORE_DIR ) ) );
     }
 
     public void tearDown()

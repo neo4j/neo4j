@@ -26,8 +26,8 @@ import org.neo4j.api.core.TraversalPosition;
 import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.remote.BasicNeoServer;
+import org.neo4j.remote.RemoteIndexService;
 import org.neo4j.remote.RemoteNeo;
-import org.neo4j.remote.ServiceDescriptor;
 import org.neo4j.remote.sites.LocalSite;
 import org.neo4j.util.index.IndexService;
 import org.neo4j.util.index.NeoIndexService;
@@ -46,7 +46,7 @@ public class MatrixTest
         backend = new EmbeddedNeo( "target/neo" );
         server = new LocalSite( backend );
         nodeIndex = new NeoIndexService( backend );
-        server.registerService( IndexService.class, "node index", nodeIndex );
+        server.registerIndexService( "node index", nodeIndex );
     }
 
     @AfterClass
@@ -64,13 +64,7 @@ public class MatrixTest
     public void connect()
     {
         neo = new RemoteNeo( server );
-        Iterable<ServiceDescriptor<IndexService>> indexDescriptors = ( ( RemoteNeo ) neo )
-            .getServices( IndexService.class );
-        for ( ServiceDescriptor<IndexService> descriptor : indexDescriptors )
-        {
-            index = descriptor.getService();
-            break;
-        }
+        index = new RemoteIndexService( neo, "node index" );
     }
 
     @After

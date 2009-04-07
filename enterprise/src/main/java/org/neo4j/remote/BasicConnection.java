@@ -16,8 +16,6 @@
  */
 package org.neo4j.remote;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,15 +23,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.NeoService;
 import org.neo4j.remote.RemoteResponse.ResponseBuilder;
+import org.neo4j.util.index.IndexService;
 
-final class BasicConnection implements RemoteConnection, IndexingConnection
+final class BasicConnection implements RemoteConnection
 {
     private final AtomicInteger txIdPool = new AtomicInteger();
     private final BasicNeoServer server;
     final NeoService neo;
     private final Map<Integer, BasicServerTransaction> transactions = new ConcurrentHashMap<Integer, BasicServerTransaction>();
     private transient boolean open = true;
-    private AsynchronousCallback callback;
 
     BasicConnection( BasicNeoServer server, NeoService neo )
     {
@@ -70,11 +68,6 @@ final class BasicConnection implements RemoteConnection, IndexingConnection
         }
     }
 
-    private Object service( int serviceId )
-    {
-        return server.getService( serviceId );
-    }
-
     ResponseBuilder response()
     {
         ResponseBuilder builder = new ResponseBuilder();
@@ -82,88 +75,9 @@ final class BasicConnection implements RemoteConnection, IndexingConnection
         return builder;
     }
 
-    public ClientConfigurator configure( Configuration config,
-        AsynchronousCallback callback )
+    public ClientConfigurator configure( Configuration config )
     {
-        this.callback = callback;
         return new BasicClientConfigurator( config );
-    }
-
-    public RemoteResponse<Iterable<ServiceSpecification>> getServices(
-        String interfaceName )
-    {
-        ServiceSpecification[] specifications = new ServiceSpecification[ 0 ];
-        try
-        {
-            Iterable<ServiceSpecification> services = server
-                .getServiceSpecifications( getInterface( interfaceName ) );
-            if ( services != null )
-            {
-                List<ServiceSpecification> result = new ArrayList<ServiceSpecification>();
-                for ( ServiceSpecification service : services )
-                {
-                    result.add( service );
-                }
-                specifications = result.toArray( specifications );
-            }
-        }
-        catch ( Exception ex )
-        {
-            return response().buildErrorResponse( ex );
-        }
-        return response().buildServiceResponse( specifications );
-    }
-
-    private Class<?> getInterface( String interfaceName )
-    {
-        try
-        {
-            return server.getClass().getClassLoader().loadClass( interfaceName );
-        }
-        catch ( ClassNotFoundException e )
-        {
-            throw new RuntimeException(
-                "TODO: Better exception type. The server does not support the service interface: "
-                    + interfaceName );
-        }
-    }
-
-    public RemoteResponse<EncodedObject> invokeServiceMethod(
-        SynchronousCallback callback, int serviceId, int functionIndex,
-        EncodedObject[] arguments )
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public RemoteResponse<EncodedObject> invokeObjectMethod(
-        SynchronousCallback callback, int serviceId, int objectId,
-        int functionIndex, EncodedObject[] arguments )
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public RemoteResponse<EncodedObject> invokeTransactionalServiceMethod(
-        int transactionId, SynchronousCallback callback, int serviceId,
-        int functionIndex, EncodedObject[] arguments )
-    {
-        return transaction( transactionId ).invokeServiceMethod( serviceId,
-            functionIndex, arguments );
-    }
-
-    public RemoteResponse<EncodedObject> invokeTransactionalObjectMethod(
-        int transactionId, SynchronousCallback callback, int serviceId,
-        int objectId, int functionIndex, EncodedObject[] arguments )
-    {
-        return transaction( transactionId ).invokeObjectMethod( serviceId,
-            objectId, functionIndex, arguments );
-    }
-
-    public void finalizeObject( int serviceId, int objectId )
-    {
-        // TODO Auto-generated method stub
-
     }
 
     public void close()
@@ -199,19 +113,6 @@ final class BasicConnection implements RemoteConnection, IndexingConnection
         BasicServerTransaction tx = transaction( transactionId );
         transactions.remove( tx.id );
         tx.rollback();
-    }
-
-    public RemoteResponse<IterableSpecification<EncodedObject>> getMoreObjects(
-        int requestToken )
-    {
-        // TODO implement this
-        return null;
-    }
-
-    public RemoteResponse<IterableSpecification<EncodedObject>> getMoreObjects(
-        int transactionId, int requestToken )
-    {
-        return transaction( transactionId ).getMoreObjects( requestToken );
     }
 
     public RemoteResponse<NodeSpecification> createNode( int transactionId )
@@ -367,26 +268,39 @@ final class BasicConnection implements RemoteConnection, IndexingConnection
             relationshipId, key, value );
     }
 
-    // IndexingConnection implementation
+    // Index implementation
 
-    public RemoteResponse<IterableSpecification<NodeSpecification>> getIndexNodes(
-        int transactionId, int serviceId, String key, Object value )
+    public RemoteResponse<Integer> getIndexId( String indexName )
     {
-        return transaction( transactionId ).getIndexNodes(
-            service( serviceId ), key, value );
+        int id;
+        try
+        {
+            id = server.getIndexId( indexName );
+        }
+        catch ( Exception ex )
+        {
+            return response().buildErrorResponse( ex );
+        }
+        return response().buildIntegerResponse( id );
     }
 
-    public RemoteResponse<Void> indexNode( int transactionId, int serviceId,
+    public RemoteResponse<IterableSpecification<NodeSpecification>> getIndexNodes(
+        int transactionId, int indexId, String key, Object value )
+    {
+        return transaction( transactionId ).getIndexNodes( indexId, key, value );
+    }
+
+    public RemoteResponse<Void> indexNode( int transactionId, int indexId,
         long nodeId, String key, Object value )
     {
-        return transaction( transactionId ).indexNode( service( serviceId ),
-            nodeId, key, value );
+        return transaction( transactionId ).indexNode( indexId, nodeId, key,
+            value );
     }
 
     public RemoteResponse<Void> removeIndexNode( int transactionId,
-        int serviceId, long nodeId, String key, Object value )
+        int indexId, long nodeId, String key, Object value )
     {
-        return transaction( transactionId ).removeIndexNode(
-            service( serviceId ), nodeId, key, value );
+        return transaction( transactionId ).removeIndexNode( indexId, nodeId,
+            key, value );
     }
 }

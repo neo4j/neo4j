@@ -16,12 +16,8 @@
  */
 package org.neo4j.remote;
 
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.NoSuchElementException;
 
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
@@ -36,7 +32,6 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.remote.RemoteResponse.ResponseBuilder;
-import org.neo4j.remote.ServiceSpecification.ServiceBuilder;
 import org.neo4j.util.index.IndexService;
 
 /**
@@ -56,9 +51,7 @@ public abstract class BasicNeoServer implements RemoteSite
 {
     private static final int DEFAULT_BATCH_SIZE = 10;
     private final TransactionManager txManager;
-    private final Map<Class<?>, ServiceStore> serviceStores = new ConcurrentHashMap<Class<?>, ServiceStore>();
-    private final Map<Integer, Object> services = new ConcurrentHashMap<Integer, Object>();
-    private final AtomicInteger servicesPool = new AtomicInteger();
+    private IndexSpec[] indexes = {};
 
     /**
      * Create a new server for remote Neo.
@@ -236,55 +229,35 @@ public abstract class BasicNeoServer implements RemoteSite
         return ( result < 1 ) ? 1 : result;
     }
 
-    /**
-     * Register an extension service in this neo server.
-     * @param <T>
-     *            The type of the service.
-     * @param iface
-     *            The interface to register the service under.
-     * @param identifier
-     *            An identifier that identifies this instance of the service.
-     * @param implementation
-     *            The object that provides the implementation of the service.
-     * @deprecated Service discovery should be added to the {@link NeoService}
-     *             interface, then that should be used to discover the services.
-     */
-    @Deprecated
-    public <T> void registerService( Class<T> iface, String identifier,
-        T implementation )
+    public void registerIndexService( String name, IndexService index )
     {
-        if ( !iface.isInterface() )
+        synchronized ( this )
         {
-            throw new IllegalArgumentException( "Illegal service interface: "
-                + iface + " is not an interface." );
-        }
-        synchronized ( serviceStores )
-        {
-            ServiceStore store = serviceStores.get( iface );
-            if ( store == null )
+            IndexSpec[] new_indexes = new IndexSpec[ indexes.length + 1 ];
+            for ( int i = 0; i < indexes.length; i++ )
             {
-                store = new ServiceStore( iface );
-                serviceStores.put( iface, store );
+                if ( indexes[ i ].name.equals( name ) )
+                {
+                    throw new IllegalArgumentException( "IndexService \""
+                        + name + "\" is already registered." );
+                }
+                new_indexes[ i ] = indexes[ i ];
             }
-            store.add( identifier, implementation );
+            new_indexes[ indexes.length ] = new IndexSpec( name, index );
+            this.indexes = new_indexes;
         }
     }
 
-    <T> Iterable<ServiceSpecification> getServiceSpecifications( Class<T> iface )
+    private static class IndexSpec
     {
-        return serviceStores.get( iface );
-    }
+        final String name;
+        final IndexService index;
 
-    Object getService( int serviceId )
-    {
-        Object service = services.get( serviceId );
-        if ( service == null )
+        IndexSpec( String name, IndexService index )
         {
-            throw new RuntimeException(
-                "TODO: better exception! No service registered with id="
-                    + serviceId );
+            this.name = name;
+            this.index = index;
         }
-        return service;
     }
 
     void buildResponse( NeoService neo, ResponseBuilder builder )
@@ -624,11 +597,25 @@ public abstract class BasicNeoServer implements RemoteSite
         return neo.getRelationshipById( relationshipId ).removeProperty( key );
     }
 
-    SimpleIterator<NodeSpecification> getIndexNodes( NeoService neo,
-        Object service, String key, Object value )
+    int getIndexId( String indexName )
     {
-        final Iterable<Node> nodes = ( ( IndexService ) service ).getNodes(
-            key, value );
+        IndexSpec[] indexes = this.indexes;
+        for ( int i = 0; i < indexes.length; i++ )
+        {
+            if ( indexes[ i ].name.equals( indexName ) )
+            {
+                return i;
+            }
+        }
+        throw new NoSuchElementException( "No index with the name \""
+            + indexName + "\" registered." );
+    }
+
+    SimpleIterator<NodeSpecification> getIndexNodes( NeoService neo,
+        int indexId, String key, Object value )
+    {
+        final Iterable<Node> nodes = indexes[ indexId ].index.getNodes( key,
+            value );
         return new SimpleIterator<NodeSpecification>()
         {
             Iterator<Node> iter = nodes.iterator();
@@ -647,81 +634,16 @@ public abstract class BasicNeoServer implements RemoteSite
         };
     }
 
-    void indexNode( NeoService neo, Object service, long nodeId, String key,
+    void indexNode( NeoService neo, int indexId, long nodeId, String key,
         Object value )
     {
-        ( ( IndexService ) service ).index( neo.getNodeById( nodeId ), key,
+        indexes[ indexId ].index.index( neo.getNodeById( nodeId ), key, value );
+    }
+
+    void removeIndexNode( NeoService neo, int indexId, long nodeId, String key,
+        Object value )
+    {
+        indexes[ indexId ].index.removeIndex( neo.getNodeById( nodeId ), key,
             value );
-    }
-
-    void removeIndexNode( NeoService neo, Object service, long nodeId,
-        String key, Object value )
-    {
-        ( ( IndexService ) service ).removeIndex( neo.getNodeById( nodeId ),
-            key, value );
-    }
-
-    private class ServiceStore implements Iterable<ServiceSpecification>
-    {
-        private final Collection<Service> store = new ConcurrentLinkedQueue<Service>();
-        private final ServiceSpecification.ServiceBuilder builder;
-
-        ServiceStore( Class<?> iface )
-        {
-            builder = new ServiceSpecification.ServiceBuilder();
-        }
-
-        void add( String identifier, Object service )
-        {
-            add( new Service( servicesPool.incrementAndGet(), identifier,
-                service ) );
-        }
-
-        private void add( Service service )
-        {
-            store.add( service );
-            services.put( service.id, service.service );
-        }
-
-        public Iterator<ServiceSpecification> iterator()
-        {
-            return new Iterator<ServiceSpecification>()
-            {
-                final Iterator<Service> services = store.iterator();
-
-                public boolean hasNext()
-                {
-                    return services.hasNext();
-                }
-
-                public ServiceSpecification next()
-                {
-                    return services.next().specification( builder );
-                }
-
-                public void remove()
-                {
-                    throw new UnsupportedOperationException();
-                }
-            };
-        }
-    }
-    private static class Service
-    {
-        final int id;
-        final String identifier;
-        final Object service;
-
-        Service( int id, String identifier, Object service )
-        {
-            this.id = id;
-            this.identifier = identifier;
-            this.service = service;
-        }
-
-        ServiceSpecification specification( ServiceBuilder builder )
-        {
-            return builder.build( identifier, id );
-        }
     }
 }

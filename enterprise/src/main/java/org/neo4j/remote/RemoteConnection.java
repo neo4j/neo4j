@@ -28,34 +28,10 @@ public interface RemoteConnection
      * Co-configure the client and the server for this connection.
      * @param config
      *            An object that represents the configuration of the client.
-     * @param callback
-     *            A callback object used for asynchronous callbacks from the
-     *            server.
      * @return An object that can set up the client according to the agreed
      *         configuration.
      */
-    ClientConfigurator configure( Configuration config, AsynchronousCallback callback );
-
-    RemoteResponse<Iterable<ServiceSpecification>> getServices(
-        String interfaceName );
-
-    RemoteResponse<EncodedObject> invokeServiceMethod(
-        SynchronousCallback callback, int serviceId, int functionIndex,
-        EncodedObject[] arguments );
-
-    RemoteResponse<EncodedObject> invokeObjectMethod(
-        SynchronousCallback callback, int serviceId, int objectId,
-        int functionIndex, EncodedObject[] arguments );
-
-    RemoteResponse<EncodedObject> invokeTransactionalServiceMethod(
-        int transactionId, SynchronousCallback callback, int serviceId,
-        int functionIndex, EncodedObject[] arguments );
-
-    RemoteResponse<EncodedObject> invokeTransactionalObjectMethod(
-        int transactionId, SynchronousCallback callback, int serviceId,
-        int objectId, int functionIndex, EncodedObject[] arguments );
-
-    void finalizeObject( int serviceId, int objectId );
+    ClientConfigurator configure( Configuration config );
 
     /**
      * Close the remote connection, rolling back all active transactions.
@@ -81,12 +57,6 @@ public interface RemoteConnection
      *            The id that represents the transaction to be rolled back.
      */
     void rollback( int transactionId );
-
-    RemoteResponse<IterableSpecification<EncodedObject>> getMoreObjects(
-        int requestToken );
-
-    RemoteResponse<IterableSpecification<EncodedObject>> getMoreObjects(
-        int transactionId, int requestToken );
 
     RemoteResponse<IterableSpecification<String>> getRelationshipTypes(
         int transactionId );
@@ -157,4 +127,17 @@ public interface RemoteConnection
 
     RemoteResponse<Object> removeRelationshipProperty( int transactionId,
         long relationshipId, String key );
+
+    // Indexing
+    
+    RemoteResponse<Integer> getIndexId(String indexName);
+
+    RemoteResponse<IterableSpecification<NodeSpecification>> getIndexNodes(
+        int transactionId, int indexId, String key, Object value );
+
+    RemoteResponse<Void> indexNode( int transactionId, int indexId,
+        long nodeId, String key, Object value );
+
+    RemoteResponse<Void> removeIndexNode( int transactionId, int indexId,
+        long nodeId, String key, Object value );
 }

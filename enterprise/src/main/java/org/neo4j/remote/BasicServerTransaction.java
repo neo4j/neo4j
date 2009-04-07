@@ -39,7 +39,6 @@ final class BasicServerTransaction
     private int nodTokenPool = 0;
     private int relTokenPool = 0;
     private int strTokenPool = 0;
-    private final Map<Integer, SimpleIterator<EncodedObject>> objIter = new HashMap<Integer, SimpleIterator<EncodedObject>>();
     private final Map<Integer, SimpleIterator<RelationshipSpecification>> relIter = new HashMap<Integer, SimpleIterator<RelationshipSpecification>>();
     private final Map<Integer, SimpleIterator<NodeSpecification>> nodIter = new HashMap<Integer, SimpleIterator<NodeSpecification>>();
     private final Map<Integer, SimpleIterator<String>> strIter = new HashMap<Integer, SimpleIterator<String>>();
@@ -109,27 +108,6 @@ final class BasicServerTransaction
         ResponseBuilder builder = connection.response();
         server.buildResponse( connection.neo, id, builder );
         return builder;
-    }
-
-    private SimpleIterator<EncodedObject> getObjects( int token )
-    {
-        return objIter.remove( token );
-    }
-
-    private RemoteResponse<IterableSpecification<EncodedObject>> objects(
-        int token, SimpleIterator<EncodedObject> iterator )
-    {
-        EncodedObject[] result = consume( token, objIter, iterator,
-            server.objectsBatchSize( iterator.count() ) ).toArray(
-            new EncodedObject[ 0 ] );
-        if ( iterator.hasNext() )
-        {
-            return response().buildPartialObjectResponse( token, result );
-        }
-        else
-        {
-            return response().buildFinalObjectResponse( result );
-        }
     }
 
     private SimpleIterator<NodeSpecification> getNodes( int token )
@@ -227,20 +205,6 @@ final class BasicServerTransaction
     }
 
     // Communication
-
-    RemoteResponse<EncodedObject> invokeServiceMethod( int serviceId,
-        int functionIndex, EncodedObject[] arguments )
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    RemoteResponse<EncodedObject> invokeObjectMethod( int serviceId,
-        int objectId, int functionIndex, EncodedObject[] arguments )
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
     RemoteResponse<NodeSpecification> createNode()
     {
@@ -350,22 +314,6 @@ final class BasicServerTransaction
             return response().buildErrorResponse( ex );
         }
         return relationships( relTokenPool++, iterator );
-    }
-
-    RemoteResponse<IterableSpecification<EncodedObject>> getMoreObjects(
-        int requestToken )
-    {
-        resume();
-        SimpleIterator<EncodedObject> objects;
-        try
-        {
-            objects = getObjects( requestToken );
-        }
-        catch ( Exception ex )
-        {
-            return response().buildErrorResponse( ex );
-        }
-        return objects( requestToken, objects );
     }
 
     RemoteResponse<IterableSpecification<RelationshipSpecification>> getMoreRelationships(
@@ -644,13 +592,13 @@ final class BasicServerTransaction
     // indexing
 
     RemoteResponse<IterableSpecification<NodeSpecification>> getIndexNodes(
-        Object service, String key, Object value )
+        int indexId, String key, Object value )
     {
         resume();
         SimpleIterator<NodeSpecification> nodes;
         try
         {
-            nodes = server.getIndexNodes( connection.neo, service, key, value );
+            nodes = server.getIndexNodes( connection.neo, indexId, key, value );
         }
         catch ( Exception ex )
         {
@@ -659,14 +607,13 @@ final class BasicServerTransaction
         return nodes( nodTokenPool++, nodes );
     }
 
-    RemoteResponse<Void> indexNode( Object service, long nodeId, String key,
+    RemoteResponse<Void> indexNode( int indexId, long nodeId, String key,
         Object value )
     {
         resume();
-        SimpleIterator<NodeSpecification> nodes;
         try
         {
-            server.indexNode( connection.neo, service, nodeId, key, value );
+            server.indexNode( connection.neo, indexId, nodeId, key, value );
         }
         catch ( Exception ex )
         {
@@ -675,15 +622,14 @@ final class BasicServerTransaction
         return response().buildVoidResponse();
     }
 
-    RemoteResponse<Void> removeIndexNode( Object service, long nodeId,
-        String key, Object value )
+    RemoteResponse<Void> removeIndexNode( int indexId, long nodeId, String key,
+        Object value )
     {
         resume();
-        SimpleIterator<NodeSpecification> nodes;
         try
         {
             server
-                .removeIndexNode( connection.neo, service, nodeId, key, value );
+                .removeIndexNode( connection.neo, indexId, nodeId, key, value );
         }
         catch ( Exception ex )
         {

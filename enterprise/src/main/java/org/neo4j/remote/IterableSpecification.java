@@ -16,6 +16,8 @@
  */
 package org.neo4j.remote;
 
+import java.io.Serializable;
+
 public final class IterableSpecification<T> implements EncodedObject
 {
     private static final long serialVersionUID = 1L;

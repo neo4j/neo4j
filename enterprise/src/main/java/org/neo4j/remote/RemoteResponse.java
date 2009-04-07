@@ -36,12 +36,6 @@ public abstract class RemoteResponse<T> implements Serializable
 
     public static final class ResponseBuilder implements ResponseVisitor
     {
-        public RemoteResponse<Iterable<ServiceSpecification>> buildServiceResponse(
-            ServiceSpecification... specifications )
-        {
-            return new ServiceResponse( this, specifications );
-        }
-
         public RemoteResponse<NodeSpecification> buildNodeResponse( long id )
         {
             return new NodeResponse( this, id );
@@ -64,16 +58,9 @@ public abstract class RemoteResponse<T> implements Serializable
             return new BooleanResponse( this, value );
         }
 
-        public RemoteResponse<IterableSpecification<EncodedObject>> buildPartialObjectResponse(
-            int moreToken, EncodedObject... values )
+        public RemoteResponse<Integer> buildIntegerResponse( int value )
         {
-            return new IterableResponse<EncodedObject>( this, true, moreToken, values );
-        }
-
-        public RemoteResponse<IterableSpecification<EncodedObject>> buildFinalObjectResponse(
-            EncodedObject... values )
-        {
-            return new IterableResponse<EncodedObject>( this, false, 0, values );
+            return new IntegerResponse( this, value );
         }
 
         public RemoteResponse<IterableSpecification<String>> buildPartialStringResponse(
@@ -131,27 +118,6 @@ public abstract class RemoteResponse<T> implements Serializable
 
     private RemoteResponse( ResponseBuilder builder )
     {
-    }
-
-    private static class ServiceResponse extends
-        RemoteResponse<Iterable<ServiceSpecification>>
-    {
-        private static final long serialVersionUID = 1L;
-        private final ServiceSpecification[] specifications;
-
-        ServiceResponse( ResponseBuilder builder,
-            ServiceSpecification[] specifications )
-        {
-            super( builder );
-            this.specifications = specifications;
-        }
-
-        @Override
-        Iterable<ServiceSpecification> value()
-        {
-            return Collections.unmodifiableCollection( Arrays
-                .asList( specifications ) );
-        }
     }
 
     private static class NodeResponse extends RemoteResponse<NodeSpecification>
@@ -254,6 +220,24 @@ public abstract class RemoteResponse<T> implements Serializable
 
         @Override
         Boolean value()
+        {
+            return value;
+        }
+    }
+
+    private static class IntegerResponse extends RemoteResponse<Integer>
+    {
+        private static final long serialVersionUID = 1L;
+        private final int value;
+
+        private IntegerResponse( ResponseBuilder builder, int value )
+        {
+            super( builder );
+            this.value = value;
+        }
+
+        @Override
+        Integer value()
         {
             return value;
         }

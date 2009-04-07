@@ -22,52 +22,22 @@ import java.rmi.RemoteException;
 import org.neo4j.api.core.Direction;
 import org.neo4j.remote.ClientConfigurator;
 import org.neo4j.remote.Configuration;
-import org.neo4j.remote.EncodedObject;
 import org.neo4j.remote.IterableSpecification;
 import org.neo4j.remote.NodeSpecification;
 import org.neo4j.remote.RelationshipSpecification;
 import org.neo4j.remote.RemoteResponse;
-import org.neo4j.remote.ServiceSpecification;
 
 interface RmiConnection extends Remote
 {
     void close() throws RemoteException;
 
-    ClientConfigurator configure( Configuration config, RmiCallback callback )
-        throws RemoteException;
-
-    RemoteResponse<Iterable<ServiceSpecification>> getServices(
-        String interfaceName ) throws RemoteException;
-
-    RemoteResponse<EncodedObject> invokeServiceMethod( RmiCallback callback,
-        int serviceId, int functionIndex, EncodedObject[] arguments )
-        throws RemoteException;
-
-    RemoteResponse<EncodedObject> invokeObjectMethod( RmiCallback callback,
-        int serviceId, int objectId, int functionIndex,
-        EncodedObject[] arguments ) throws RemoteException;
-
-    RemoteResponse<EncodedObject> invokeTransactionalServiceMethod(
-        int transactionId, RmiCallback callback, int serviceId,
-        int functionIndex, EncodedObject[] arguments ) throws RemoteException;
-
-    RemoteResponse<EncodedObject> invokeTransactionalObjectMethod(
-        int transactionId, RmiCallback callback, int serviceId, int objectId,
-        int functionIndex, EncodedObject[] arguments ) throws RemoteException;
-
-    void finalizeObject( int serviceId, int objectId ) throws RemoteException;
+    ClientConfigurator configure( Configuration config ) throws RemoteException;
 
     int beginTransaction() throws RemoteException;
 
     void commit( int transactionId ) throws RemoteException;
 
     void rollback( int transactionId ) throws RemoteException;
-
-    RemoteResponse<IterableSpecification<EncodedObject>> getMoreObjects(
-        int requestToken ) throws RemoteException;
-
-    RemoteResponse<IterableSpecification<EncodedObject>> getTransactionalMoreObjects(
-        int transactionId, int requestToken ) throws RemoteException;
 
     RemoteResponse<IterableSpecification<String>> getRelationshipTypes(
         int transactionId ) throws RemoteException;
@@ -143,4 +113,17 @@ interface RmiConnection extends Remote
 
     RemoteResponse<Object> removeRelationshipProperty( int transactionId,
         long relationshipId, String key ) throws RemoteException;
+
+    RemoteResponse<Integer> getIndexId( String indexName )
+        throws RemoteException;
+
+    RemoteResponse<IterableSpecification<NodeSpecification>> getIndexNodes(
+        int transactionId, int indexId, String key, Object value )
+        throws RemoteException;
+
+    RemoteResponse<Void> indexNode( int transactionId, int indexId,
+        long nodeId, String key, Object value ) throws RemoteException;
+
+    RemoteResponse<Void> removeIndexNode( int transactionId, int indexId,
+        long nodeId, String key, Object value ) throws RemoteException;
 }
