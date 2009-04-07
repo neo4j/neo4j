@@ -27,7 +27,6 @@ import org.neo4j.api.core.ReturnableEvaluator;
 import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.TraversalPosition;
 import org.neo4j.api.core.Traverser.Order;
-import org.neo4j.remote.services.TraversalService;
 
 final class RemoteNeoEngine
 {
@@ -35,7 +34,7 @@ final class RemoteNeoEngine
     private final RemoteConnection connection;
     private final ConfigurationFactory factory;
     private final Map<String, RelationshipType> typesCache = null;
-    private TraversalService traversal = new LocalTraversalService();
+    private final LocalTraversalService traversal = new LocalTraversalService();
 
     RemoteNeoEngine( RemoteConnection connection, ConfigurationModule module )
     {
@@ -394,6 +393,6 @@ final class RemoteNeoEngine
 
     int getIndexId( String name )
     {
-        return receive( connection.getIndexId( name ) );
+        return receive( connection.getIndexServiceId( name ) );
     }
 }

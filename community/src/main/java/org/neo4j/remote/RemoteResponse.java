@@ -17,8 +17,6 @@
 package org.neo4j.remote;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collections;
 
 /**
  * Represents a response to request sent to a {@link RemoteConnection}. The
@@ -34,13 +32,38 @@ public abstract class RemoteResponse<T> implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Factory for creating {@link RemoteResponse} objects.
+     * 
+     * @author Tobias Ivarsson
+     */
     public static final class ResponseBuilder implements ResponseVisitor
     {
+        /**
+         * Create a response for a node request.
+         * 
+         * @param id
+         *            the id of the node.
+         * @return The response for the node request.
+         */
         public RemoteResponse<NodeSpecification> buildNodeResponse( long id )
         {
             return new NodeResponse( this, id );
         }
 
+        /**
+         * Create a response for a relationship request.
+         * 
+         * @param id
+         *            the id of the relationship.
+         * @param typeName
+         *            the type name of the relationship.
+         * @param startNode
+         *            the node id of the relationship start node.
+         * @param endNode
+         *            the node id of the relationship end node.
+         * @return The response for the relationship request.
+         */
         public RemoteResponse<RelationshipSpecification> buildRelationshipResponse(
             long id, String typeName, long startNode, long endNode )
         {
@@ -48,33 +71,79 @@ public abstract class RemoteResponse<T> implements Serializable
                 endNode );
         }
 
+        /**
+         * Create a response for a property request.
+         * 
+         * @param value
+         *            the value of the property.
+         * @return The response for the property request.
+         */
         public RemoteResponse<Object> buildPropertyResponse( Object value )
         {
             return new ObjectResponse( this, value );
         }
 
+        /**
+         * Create a response for a boolean request.
+         * 
+         * @param value
+         *            the result.
+         * @return The response for the boolean request.
+         */
         public RemoteResponse<Boolean> buildBooleanResponse( boolean value )
         {
             return new BooleanResponse( this, value );
         }
 
+        /**
+         * Create a response for an integer request.
+         * 
+         * @param value
+         *            the result.
+         * @return The response for the integer request.
+         */
         public RemoteResponse<Integer> buildIntegerResponse( int value )
         {
             return new IntegerResponse( this, value );
         }
 
+        /**
+         * Create a partial response for a string iterator request.
+         * 
+         * @param moreToken
+         *            the token used to get the further parts of the iterator.
+         * @param strings
+         *            the strings to return in this batch.
+         * @return The partial response for the string iterator request.
+         */
         public RemoteResponse<IterableSpecification<String>> buildPartialStringResponse(
             int moreToken, String... strings )
         {
             return new IterableResponse<String>( this, true, moreToken, strings );
         }
 
+        /**
+         * Create a final response for a string iterator request.
+         * 
+         * @param strings
+         *            the strings to return in this batch.
+         * @return The partial response for the string iterator request.
+         */
         public RemoteResponse<IterableSpecification<String>> buildFinalStringResponse(
             String... strings )
         {
             return new IterableResponse<String>( this, false, 0, strings );
         }
 
+        /**
+         * Create a partial response for a node iterator request.
+         * 
+         * @param moreToken
+         *            the token used to get the further parts of the iterator.
+         * @param nodes
+         *            the nodes to return in this batch.
+         * @return The partial response for the node iterator request.
+         */
         public RemoteResponse<IterableSpecification<NodeSpecification>> buildPartialNodeResponse(
             int moreToken, NodeSpecification... nodes )
         {
@@ -82,6 +151,13 @@ public abstract class RemoteResponse<T> implements Serializable
                 moreToken, nodes );
         }
 
+        /**
+         * Create a final response for a node iterator request.
+         * 
+         * @param nodes
+         *            the nodes to return in this batch.
+         * @return The partial response for the node iterator request.
+         */
         public RemoteResponse<IterableSpecification<NodeSpecification>> buildFinalNodeResponse(
             NodeSpecification... nodes )
         {
@@ -89,6 +165,15 @@ public abstract class RemoteResponse<T> implements Serializable
                 nodes );
         }
 
+        /**
+         * Create a partial response for a relationship iterator request.
+         * 
+         * @param moreToken
+         *            the token used to get the further parts of the iterator.
+         * @param relationships
+         *            the relationships to return in this batch.
+         * @return The partial response for the relationship iterator request.
+         */
         public RemoteResponse<IterableSpecification<RelationshipSpecification>> buildPartialRelationshipResponse(
             int moreToken, RelationshipSpecification... relationships )
         {
@@ -96,6 +181,13 @@ public abstract class RemoteResponse<T> implements Serializable
                 moreToken, relationships );
         }
 
+        /**
+         * Create a final response for a relationship iterator request.
+         * 
+         * @param relationships
+         *            the relationships to return in this batch.
+         * @return The partial response for the relationship iterator request.
+         */
         public RemoteResponse<IterableSpecification<RelationshipSpecification>> buildFinalRelationshipResponse(
             RelationshipSpecification... relationships )
         {
@@ -103,11 +195,26 @@ public abstract class RemoteResponse<T> implements Serializable
                 false, 0, relationships );
         }
 
+        /**
+         * Create a response for a void request.
+         * 
+         * @return The response for the void request.
+         */
         public RemoteResponse<Void> buildVoidResponse()
         {
             return new VoidResponse( this );
         }
 
+        /**
+         * Create an error response for any request.
+         * 
+         * @param <T>
+         *            the type of the original request.
+         * @param ex
+         *            the exception that occurred during the processing of the
+         *            request.
+         * @return The error response for the request.
+         */
         public <T> RemoteResponse<T> buildErrorResponse( Exception ex )
         {
             return new ErrorResponse<T>( this, ex );

@@ -307,7 +307,7 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
     public RemoteResponse<Integer> getIndexId( String indexName )
         throws RemoteException
     {
-        return connection.getIndexId( indexName );
+        return connection.getIndexServiceId( indexName );
     }
 
     public RemoteResponse<IterableSpecification<NodeSpecification>> getIndexNodes(
