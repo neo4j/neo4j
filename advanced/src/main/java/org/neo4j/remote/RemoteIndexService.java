@@ -1,18 +1,18 @@
 /*
- * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Affero General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.remote;
 
@@ -25,9 +25,8 @@ import org.neo4j.util.index.Isolation;
 
 /**
  * An implementation of {@link IndexService} for the client side of
- * {@link RemoteNeo}.
- * 
- * This requires that {@link IndexService}s are registered on the server using
+ * {@link RemoteNeo}. This requires that {@link IndexService}s are registered on
+ * the server using
  * {@link BasicNeoServer#registerIndexService(String, IndexService)}.
  * 
  * @author Tobias Ivarsson
@@ -39,6 +38,7 @@ public final class RemoteIndexService implements IndexService
 
     /**
      * Create a new client for an {@link IndexService}.
+     * 
      * @param neo
      *            The {@link RemoteNeo} that owns the index.
      * @param name
@@ -118,6 +118,13 @@ public final class RemoteIndexService implements IndexService
         throw new IllegalArgumentException( "Node not in same node space." );
     }
 
+    /**
+     * This operation is not supported by the {@link RemoteIndexService}.
+     * 
+     * @param level
+     *            the {@link Isolation} level to set.
+     * @see IndexService#setIsolation(Isolation)
+     */
     public void setIsolation( Isolation level )
     {
         throw new UnsupportedOperationException(

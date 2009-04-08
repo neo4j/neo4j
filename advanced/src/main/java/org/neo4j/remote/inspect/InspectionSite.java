@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -68,9 +68,9 @@ public final class InspectionSite implements RemoteSite
         this.inspector = inspector;
     }
 
-    public RemoteConnection connect( )
+    public RemoteConnection connect()
     {
-        return debugConnect( site.connect( ) );
+        return debugConnect( site.connect() );
     }
 
     public RemoteConnection connect( String username, String password )

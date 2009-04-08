@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -208,14 +208,12 @@ public final class RemoteNeo implements NeoService
 
     public Node getReferenceNode()
     {
-        // TODO: implement non-transactional path
-        return engine.current().getReferenceNode();
+        return engine.current( true ).getReferenceNode();
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        // TODO: implement non-transactional path
-        return engine.current().getRelationshipTypes();
+        return engine.current( true ).getRelationshipTypes();
     }
 
     public void shutdown()

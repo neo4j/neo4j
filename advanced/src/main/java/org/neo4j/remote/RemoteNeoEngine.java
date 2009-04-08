@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -65,6 +65,11 @@ final class RemoteNeoEngine
     }
 
     RemoteTransaction current()
+    {
+        return current( false );
+    }
+
+    RemoteTransaction current( boolean read_only )
     {
         RemoteTransaction transaction = current.get();
         if ( transaction == null )
