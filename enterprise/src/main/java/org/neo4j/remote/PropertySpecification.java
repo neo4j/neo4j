@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,15 +20,15 @@ import java.io.Serializable;
 
 class PropertySpecification implements Serializable
 {
-	private static final long serialVersionUID = 1L;
-	final long id;
-	final String key;
-	final Object value;
+    private static final long serialVersionUID = 1L;
+    final long id;
+    final String key;
+    final Object value;
 
-	PropertySpecification( long id, String key, Object value )
-	{
-		this.id = id;
-		this.key = key;
-		this.value = value;
-	}
+    PropertySpecification( long id, String key, Object value )
+    {
+        this.id = id;
+        this.key = key;
+        this.value = value;
+    }
 }

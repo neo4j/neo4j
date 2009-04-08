@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -92,17 +92,20 @@ final class RemoteNode extends RemotePropertyContainer implements Node
 
     public Iterable<Relationship> getRelationships()
     {
-        return engine.current().getRelationships( this, Direction.BOTH, (( RelationshipType[] ) null) );
+        return engine.current().getRelationships( this, Direction.BOTH,
+            ( ( RelationshipType[] ) null ) );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
-        return engine.current().getRelationships( this, Direction.BOTH, (types == null ? types : new RelationshipType[ 0 ]) );
+        return engine.current().getRelationships( this, Direction.BOTH,
+            ( types == null ? types : new RelationshipType[ 0 ] ) );
     }
 
     public Iterable<Relationship> getRelationships( Direction dir )
     {
-        return engine.current().getRelationships( this, dir, (( RelationshipType[] ) null) );
+        return engine.current().getRelationships( this, dir,
+            ( ( RelationshipType[] ) null ) );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType type,
@@ -243,8 +246,9 @@ final class RemoteNode extends RemotePropertyContainer implements Node
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType[] relationshipTypes, Direction[] directions )
     {
-        final Iterable<TraversalPosition> positions = engine.current().traverse( this, traversalOrder, stopEvaluator,
-        returnableEvaluator, relationshipTypes, directions );
+        final Iterable<TraversalPosition> positions = engine.current()
+            .traverse( this, traversalOrder, stopEvaluator,
+                returnableEvaluator, relationshipTypes, directions );
         return new Traverser()
         {
             Iterator<TraversalPosition> iter = positions.iterator();

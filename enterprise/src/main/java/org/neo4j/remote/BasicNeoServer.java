@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -83,35 +83,6 @@ public abstract class BasicNeoServer implements RemoteSite
      * @return The {@link NeoService} implementation to use for the connection.
      */
     protected abstract NeoService connectNeo( String username, String password );
-
-    /**
-     * Get the size of the next batch of values sent to the client in an
-     * iteration.
-     * 
-     * Override to change the default batch size or create a smarter batching
-     * scheme.
-     * @param returned
-     *            The number of previously returned elements in the iteration.
-     * @return The size of the next batch of elements to send to the client.
-     */
-    protected int getObjectsBatchSize( int returned )
-    {
-        return DEFAULT_BATCH_SIZE;
-    }
-
-    int objectsBatchSize( int returned )
-    {
-        int result;
-        try
-        {
-            result = getObjectsBatchSize( returned );
-        }
-        catch ( Exception ex )
-        {
-            result = DEFAULT_BATCH_SIZE;
-        }
-        return ( result < 1 ) ? 1 : result;
-    }
 
     /**
      * Get the size of the next batch of {@link Node}s sent to the client in an
