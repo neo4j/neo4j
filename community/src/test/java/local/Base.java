@@ -1,18 +1,18 @@
 /*
  * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU Affero General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
  * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package local;
 
@@ -26,76 +26,62 @@ import org.neo4j.api.core.NeoService;
 import org.neo4j.remote.RemoteNeo;
 import org.neo4j.remote.sites.LocalSite;
 
-abstract class Base
-{
+abstract class Base {
 
     private static final String STORE_DIR = "target/neo";
     private StringBuffer buffer;
 
     private NeoService neo;
     private PrintStream stream;
+    private NeoService embeddedNeo;
 
-    protected NeoService neo()
-    {
+    protected NeoService neo() {
         return neo;
     }
 
-    protected void print( Object object )
-    {
-        stream.print( object.toString() );
+    protected void print(Object object) {
+        stream.print(object.toString());
     }
 
-    protected void println( Object object )
-    {
-        stream.println( object.toString() );
+    protected void println(Object object) {
+        stream.println(object.toString());
     }
 
-    public void setUp()
-    {
-        deleteIfPresent( STORE_DIR );
+    public void setUp() {
+        deleteIfPresent(STORE_DIR);
         buffer = new StringBuffer();
-        stream = new PrintStream( new OutputStream()
-        {
-
+        stream = new PrintStream(new OutputStream() {
             @Override
-            public void write( int b ) throws IOException
-            {
-                buffer.append( ( char ) b );
+            public void write(int b) throws IOException {
+                buffer.append((char) b);
             }
-        } );
-        /*neo = new RemoteNeo( new InspectionSite( new LocalSite(
-            new EmbeddedNeo( STORE_DIR ) ), InspectionAdapter.trace( stream ) ) );*/
-        neo = new RemoteNeo( new LocalSite( new EmbeddedNeo( STORE_DIR ) ) );
+        });
+        embeddedNeo = new EmbeddedNeo(STORE_DIR);
+        neo = new RemoteNeo(new LocalSite(embeddedNeo));
     }
 
-    public void tearDown()
-    {
+    public void tearDown() {
         neo.shutdown();
-        markForRemoval( STORE_DIR );
-        System.out.print( buffer );
+        embeddedNeo.shutdown();
+        markForRemoval(STORE_DIR);
+        System.out.print(buffer);
     }
 
-    private void deleteIfPresent( String storeDir )
-    {
-        File dir = new File( storeDir );
-        if ( dir.exists() )
-        {
-            for ( File file : dir.listFiles() )
-            {
+    private void deleteIfPresent(String storeDir) {
+        File dir = new File(storeDir);
+        if (dir.exists()) {
+            for (File file : dir.listFiles()) {
                 file.delete();
             }
             dir.delete();
         }
     }
 
-    private void markForRemoval( String storeDir )
-    {
-        File dir = new File( storeDir );
-        if ( dir.exists() )
-        {
+    private void markForRemoval(String storeDir) {
+        File dir = new File(storeDir);
+        if (dir.exists()) {
             dir.deleteOnExit();
-            for ( File file : dir.listFiles() )
-            {
+            for (File file : dir.listFiles()) {
                 file.deleteOnExit();
             }
         }
