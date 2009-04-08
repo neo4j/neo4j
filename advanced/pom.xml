@@ -4,7 +4,28 @@
 	<groupId>org.neo4j</groupId>
 	<artifactId>remote-neo</artifactId>
 	<version>0.1-SNAPSHOT</version>
+	<name>Remote Neo</name>
 	<description></description>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo</artifactId>
+			<version>1.0-b8-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>index-util</artifactId>
+			<version>0.6-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.4</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
 	<scm>
 		<connection>
 			scm:svn:https://svn.neo4j.org/components/${project.artifactId}/trunk/
@@ -37,25 +58,7 @@
 			</roles>
 		</developer>
 	</developers>
-	<dependencies>
-		<dependency>
-			<groupId>org.neo4j</groupId>
-			<artifactId>neo</artifactId>
-			<version>1.0-b8-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>org.neo4j</groupId>
-			<artifactId>index-util</artifactId>
-			<version>0.6-SNAPSHOT</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.4</version>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
+	
 	<build>
 		<plugins>
 			<plugin>
@@ -68,12 +71,15 @@
 			</plugin>
 		</plugins>
 	</build>
+	
 	<reporting>
 		<plugins>
 			<plugin>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<configuration>
-					<subpackages>org.neo4j.api</subpackages>
+					<subpackages>org.neo4j.remote</subpackages>
+					<!-- exclude broken inspect API from JavaDoc until fixed -->
+					<excludePackageNames>org.neo4j.remote.inspect</excludePackageNames>
 					<links>
 						<link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
 					</links>
@@ -89,4 +95,5 @@
 			</plugin>
 		</plugins>
 	</reporting>
+	
 </project>
