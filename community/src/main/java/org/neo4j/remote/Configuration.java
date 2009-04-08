@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,6 +21,8 @@ import java.io.Serializable;
 /**
  * Representation of the configuration supported by a client, for sending to the
  * server as part of the connection configuration phase.
+ * 
+ * NOTE: this is not specified yet.
  * 
  * @author Tobias Ivarsson
  */

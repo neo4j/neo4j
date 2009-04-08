@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,17 +24,17 @@ package org.neo4j.remote.inspect;
  */
 public interface CallBack<T>
 {
-	/**
-	 * Called if the event was successful.
-	 * @param result
-	 *            the result of the call.
-	 */
-	void success( T result );
+    /**
+     * Called if the event was successful.
+     * @param result
+     *            the result of the call.
+     */
+    void success( T result );
 
-	/**
-	 * Called if the event failed.
-	 * @param ex
-	 *            The exception that the event failed with.
-	 */
-	void failure( Throwable ex );
+    /**
+     * Called if the event failed.
+     * @param ex
+     *            The exception that the event failed with.
+     */
+    void failure( Throwable ex );
 }

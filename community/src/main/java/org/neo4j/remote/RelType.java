@@ -1,5 +1,5 @@
 /*
- * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,21 +20,21 @@ import org.neo4j.api.core.RelationshipType;
 
 class RelType implements RelationshipType
 {
-	private final String name;
+    private final String name;
 
-	RelType( String name )
-	{
-		this.name = name;
-	}
+    RelType( String name )
+    {
+        this.name = name;
+    }
 
-	public String name()
-	{
-		return name;
-	}
+    public String name()
+    {
+        return name;
+    }
 
-	@Override
-	public String toString()
-	{
-		return "RelationshipType(" + name + ")";
-	}
+    @Override
+    public String toString()
+    {
+        return "RelationshipType(" + name + ")";
+    }
 }
