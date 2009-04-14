@@ -56,7 +56,7 @@ public class XaDataSourceManager
     }
 
     XaDataSource create( String className, Map<?,?> params )
-        throws ClassNotFoundException, // NoSuchMethodException,
+        throws ClassNotFoundException,
         InstantiationException, IllegalAccessException,
         InvocationTargetException
     {

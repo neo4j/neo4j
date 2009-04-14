@@ -267,4 +267,47 @@ public class TestNeo extends AbstractNeoTestCase
         tx2.finish();
         neo2.shutdown();
     }
+    
+    public void testGetAllNode()
+    {
+        long highId = getNodeManager().getHighestPossibleIdInUse( Node.class );
+        if ( highId >= 0 && highId < 10000 )
+        {
+            int count = 0;
+            for ( Node node : getEmbeddedNeo().getAllNodes() )
+            {
+                count++;
+            }
+            boolean found = false;
+            Node newNode = getNeo().createNode();
+            newTransaction();
+            int oldCount = count;
+            count = 0;
+            for ( Node node : getEmbeddedNeo().getAllNodes() )
+            {
+                count++;
+                if ( node.equals( newNode ) )
+                {
+                    found = true;
+                }
+            }
+            assertTrue( found );
+            assertEquals( count, oldCount + 1 );
+            newNode.delete();
+            newTransaction();
+            found = false;
+            count = 0;
+            for ( Node node : getEmbeddedNeo().getAllNodes() )
+            {
+                count++;
+                if ( node.equals( newNode ) )
+                {
+                    found = true;
+                }
+            }
+            assertTrue( !found );
+            assertEquals( count, oldCount );
+        }
+        // else we skip test, takes to long
+    }
 }
