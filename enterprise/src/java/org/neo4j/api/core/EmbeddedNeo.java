@@ -25,7 +25,9 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -58,6 +60,7 @@ public final class EmbeddedNeo implements NeoService
     private Transaction placeboTransaction = null;
     private final NeoJvmInstance neoJvmInstance;
     private final NodeManager nodeManager;
+    private final String storeDir;
 
     /**
      * Creates an embedded {@link NeoService} with a store located in
@@ -67,6 +70,7 @@ public final class EmbeddedNeo implements NeoService
      */
     public EmbeddedNeo( String storeDir )
     {
+        this.storeDir = storeDir;
         this.shellServer = null;
         neoJvmInstance = new NeoJvmInstance( storeDir, true );
         neoJvmInstance.start();
@@ -83,6 +87,7 @@ public final class EmbeddedNeo implements NeoService
      */
     public EmbeddedNeo( String storeDir, Map<String,String> params )
     {
+        this.storeDir = storeDir;
         this.shellServer = null;
         neoJvmInstance = new NeoJvmInstance( storeDir, true );
         neoJvmInstance.start( params );
@@ -381,6 +386,69 @@ public final class EmbeddedNeo implements NeoService
             {
                 throw new RuntimeException( e );
             }
+        }
+    }
+    
+    public String toString()
+    {
+        return super.toString() + " [" + storeDir + "]";
+    }
+    
+    public Iterable<Node> getAllNodes()
+    {
+        long highId = (nodeManager.getHighestPossibleIdInUse( Node.class ) &
+            0xFFFFFFFFL );
+        return new AllNodesIterator( highId );
+    }
+    
+    // TODO: temporary all nodes getter, fix this with better implementation
+    // (no NotFoundException to control flow)
+    private class AllNodesIterator implements Iterator<Node>, Iterable<Node>
+    {
+        private final long highId;
+        private long currentNodeId = 0;
+        private Node currentNode = null;
+        
+        AllNodesIterator( long highId )
+        {
+            this.highId = highId;
+        }
+
+        public synchronized boolean hasNext()
+        {
+            while ( currentNode == null && currentNodeId <= highId )
+            {
+                try
+                {
+                    currentNode = getNodeById( currentNodeId++ );
+                }
+                catch ( NotFoundException e )
+                {
+                    // ok we try next
+                }
+            }
+            return currentNode != null;
+        }
+        
+        public synchronized Node next()
+        {
+            Node nextNode = currentNode;
+            currentNode = null;
+            if ( nextNode == null )
+            {
+                throw new NoSuchElementException();
+            }
+            return nextNode;
+        }
+        
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        public Iterator<Node> iterator()
+        {
+            return this;
         }
     }
 }

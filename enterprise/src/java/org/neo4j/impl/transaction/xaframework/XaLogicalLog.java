@@ -415,7 +415,8 @@ public class XaLogicalLog
         }
         catch ( XAException e )
         {
-            throw new IOException( e );
+            e.printStackTrace();
+            throw new IOException( e.getMessage() );
         }
         return true;
     }
@@ -516,7 +517,8 @@ public class XaLogicalLog
         }
         catch ( XAException e )
         {
-            throw new IOException( e );
+            e.printStackTrace();
+            throw new IOException( e.getMessage() );
         }
         return true;
     }
@@ -1287,7 +1289,8 @@ public class XaLogicalLog
             }
             catch ( XAException e )
             {
-                throw new IOException( e );
+                e.printStackTrace();
+                throw new IOException( e.getMessage() );
             }
         }
 
@@ -1314,7 +1317,8 @@ public class XaLogicalLog
             }
             catch ( XAException e )
             {
-                throw new IOException( e );
+                e.printStackTrace();
+                throw new IOException( e.getMessage() );
             }
         }
 

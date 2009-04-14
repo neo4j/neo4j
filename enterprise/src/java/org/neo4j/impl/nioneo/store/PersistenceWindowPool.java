@@ -46,8 +46,8 @@ class PersistenceWindowPool
     private FileChannel fileChannel;
     private Map<Integer,PersistenceRow> activeRowWindows = 
         new HashMap<Integer,PersistenceRow>();
-    private int mappedMem = 0;
-    private int memUsed = 0;
+    private long mappedMem = 0;
+    private long memUsed = 0;
     private int brickCount = 0;
     private int brickSize = 0;
     private BrickElement brickArray[] = new BrickElement[0];
@@ -77,7 +77,7 @@ class PersistenceWindowPool
      *             If unable to create pool
      */
     PersistenceWindowPool( String storeName, int blockSize,
-        FileChannel fileChannel, int mappedMem )
+        FileChannel fileChannel, long mappedMem )
     {
         this.storeName = storeName;
         this.blockSize = blockSize;
@@ -328,7 +328,11 @@ class PersistenceWindowPool
             double ratio = (mappedMem + 0.0d) / fileSize;
             if ( ratio >= 1 )
             {
-                brickSize = mappedMem / 10;
+                brickSize = (int) (mappedMem / 10);
+                if ( brickSize < 0 )
+                {
+                    brickSize = Integer.MAX_VALUE;
+                }
                 brickSize = (brickSize / blockSize) * blockSize;
                 brickCount = (int) fileSize / brickSize;
             }
@@ -357,7 +361,11 @@ class PersistenceWindowPool
         }
         else if ( mappedMem > 0 )
         {
-            brickSize = mappedMem / 10;
+            brickSize = (int) (mappedMem / 10);
+            if ( brickSize < 0 )
+            {
+                brickSize = Integer.MAX_VALUE;
+            }
             brickSize = (brickSize / blockSize) * blockSize;
         }
         brickArray = new BrickElement[brickCount];
