@@ -25,6 +25,7 @@ import junit.framework.TestSuite;
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.NeoService;
 import org.neo4j.api.core.Transaction;
+import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.core.TestNeo;
 
 public abstract class AbstractNeoTestCase extends TestCase
@@ -92,5 +93,10 @@ public abstract class AbstractNeoTestCase extends TestCase
             tx.success();
             tx.finish();
         }
+    }
+    
+    public NodeManager getNodeManager()
+    {
+        return ((EmbeddedNeo) neo).getConfig().getNeoModule().getNodeManager();
     }
 }

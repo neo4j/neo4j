@@ -244,8 +244,8 @@ public class TxModule
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( "Could not create data source " + name
-                + "[" + name + "]", e );
+            throw new RuntimeException( "Could not create data source [" + name
+                + "], see nested exception for cause of error", e );
         }
     }
 
