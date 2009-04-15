@@ -192,7 +192,7 @@ public class XidImpl implements Xid
         buf.append( "], BranchId[ " );
         for ( int i = 0; i < branchId.length; i++ )
         {
-            buf.append( (byte) branchId[i] + " " );
+            buf.append( branchId[i] + " " );
         }
         buf.append( "]" );
         return buf.toString();
