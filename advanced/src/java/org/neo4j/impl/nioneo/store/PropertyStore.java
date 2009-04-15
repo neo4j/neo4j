@@ -374,6 +374,58 @@ public class PropertyStore extends AbstractStore implements Store
                 throw new StoreFailureException( "Unkown enum type:" + type );
         }
     }
+    
+    public Object getValue( PropertyRecord propertyRecord )
+    {
+        PropertyType type = propertyRecord.getType();
+        if ( type == PropertyType.INT )
+        {
+            return (int) propertyRecord.getPropBlock();
+        }
+        if ( type == PropertyType.STRING )
+        {
+            return getStringFor( propertyRecord );
+        }
+        if ( type == PropertyType.BOOL )
+        {
+            if ( propertyRecord.getPropBlock() == 1 )
+            {
+                return Boolean.valueOf( true );
+            }
+            return Boolean.valueOf( false );
+        }
+        if ( type == PropertyType.DOUBLE )
+        {
+            return new Double( Double.longBitsToDouble( 
+                propertyRecord.getPropBlock() ) );
+        }
+        if ( type == PropertyType.FLOAT )
+        {
+            return new Float( Float.intBitsToFloat( 
+                (int) propertyRecord.getPropBlock() ) );
+        }
+        if ( type == PropertyType.LONG )
+        {
+            return propertyRecord.getPropBlock();
+        }
+        if ( type == PropertyType.BYTE )
+        {
+            return (byte) propertyRecord.getPropBlock();
+        }
+        if ( type == PropertyType.CHAR )
+        {
+            return (char) propertyRecord.getPropBlock();
+        }
+        if ( type == PropertyType.ARRAY )
+        {
+            return getArrayFor( propertyRecord );
+        }
+        if ( type == PropertyType.SHORT )
+        {
+            return (short) propertyRecord.getPropBlock();
+        }
+        throw new RuntimeException( "Unkown type: " + type );
+    }
 
     @Override
     public void makeStoreOk()
