@@ -334,7 +334,7 @@ class PersistenceWindowPool
                     brickSize = Integer.MAX_VALUE;
                 }
                 brickSize = (brickSize / blockSize) * blockSize;
-                brickCount = (int) fileSize / brickSize;
+                brickCount = (int) (fileSize / brickSize);
             }
             else
             {
@@ -355,7 +355,16 @@ class PersistenceWindowPool
                     return;
                 }
                 brickSize = (int) (fileSize / brickCount);
-                brickSize = (brickSize / blockSize) * blockSize;
+                if ( brickSize < 0 )
+                {
+                    brickSize = Integer.MAX_VALUE;
+                    brickSize = (brickSize / blockSize) * blockSize;
+                    brickCount = (int) (fileSize / brickSize);
+                }
+                else
+                {
+                    brickSize = (brickSize / blockSize) * blockSize;
+                }
                 assert brickSize > blockSize;
             }
         }
