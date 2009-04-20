@@ -1,0 +1,19 @@
+APOC examples - Basic Neo4j examples
+
+Copyright (c) 2009 "Neo Technology," Network Engine for Objects in Lund AB
+    
+This package includes software developed at
+"Neo Technology," Network Engine for Objects in Lund AB
+(http://neotechnology.com).
+
+The bundled graph database engine is copyright
+"Neo Technology," Network Engine for Objects in Lund AB
+and licensed under the GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html).
+
+The bundled JTA library is copyright Sun Microsystems,
+Inc. 4150 Network Circle, Santa Clara, California 95054.
+
+The bundled Lucene text search engine library is copyright The
+Apache Software Foundation  (http://www.apache.org/)
+under the Apache License version 2.0.

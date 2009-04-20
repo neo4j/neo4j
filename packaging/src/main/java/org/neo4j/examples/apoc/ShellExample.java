@@ -1,4 +1,4 @@
-package org.neo4j.examples;
+package org.neo4j.examples.apoc;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
