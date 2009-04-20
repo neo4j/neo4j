@@ -1,4 +1,4 @@
-package org.neo4j.examples;
+package org.neo4j.examples.apoc;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.EmbeddedNeo;

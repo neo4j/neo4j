@@ -27,6 +27,7 @@
 			<groupId>org.neo4j</groupId>
 			<artifactId>apoc</artifactId>
 			<version>1.0-b8-SNAPSHOT</version>
+			<type>pom</type>
 		</dependency>
 	</dependencies>
 
@@ -48,18 +49,19 @@
 					</platforms>
 					<programs>
 						<program>
-							<mainClass>org.neo4j.examples.EmbeddedNeoExample
+							<mainClass>org.neo4j.examples.apoc.EmbeddedNeoExample
 							</mainClass>
 							<name>EmbeddedNeo-example</name>
 						</program>
 						<program>
-							<mainClass>org.neo4j.examples.EmbeddedNeoWithIndexingExample
+							<mainClass>
+								org.neo4j.examples.apoc.EmbeddedNeoWithIndexingExample
 							</mainClass>
 							<name>EmbeddedNeo-example-with-indexing
 							</name>
 						</program>
 						<program>
-							<mainClass>org.neo4j.examples.ShellExample
+							<mainClass>org.neo4j.examples.apoc.ShellExample
 							</mainClass>
 							<name>Shell-example</name>
 						</program>
@@ -74,6 +76,23 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<descriptors>
+						<descriptor>src/main/assembly/apoc-assembly.xml</descriptor>
+					</descriptors>
+				</configuration>
+                <executions>
+                    <execution>
+                        <id>apoc-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attached</goal>
+                        </goals>
+                    </execution>
+                </executions>
 			</plugin>
 		</plugins>
 	</build>
