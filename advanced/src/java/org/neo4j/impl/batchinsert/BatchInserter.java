@@ -104,7 +104,7 @@ public class BatchInserter
         int firstNodeId = (int) (node1 & 0xFFFFFFFF );
         int secondNodeId = (int) (node2 & 0xFFFFFFFF );
         NodeRecord firstNode = getNodeRecord( node1 );
-        NodeRecord secondNode = getNodeRecord( secondNodeId );
+        NodeRecord secondNode = getNodeRecord( node2 );
         int typeId = typeHolder.getTypeId( type.name() );
         if ( typeId == -1 )
         {
@@ -130,8 +130,8 @@ public class BatchInserter
         rel.setSecondNextRel( secondNode.getNextRel() );
         if ( firstNode.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RelationshipRecord nextRel = getRelationshipRecord( 
-                firstNode.getNextRel() & 0xFFFFFFFFL );
+            RelationshipRecord nextRel = getRelationshipStore().getRecord( 
+                firstNode.getNextRel() );
             if ( nextRel.getFirstNode() == firstNode.getId() )
             {
                 nextRel.setFirstPrevRel( rel.getId() );
@@ -145,11 +145,12 @@ public class BatchInserter
                 throw new RuntimeException( firstNode + " dont match "
                     + nextRel );
             }
+            getRelationshipStore().updateRecord( nextRel );
         }
         if ( secondNode.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RelationshipRecord nextRel = getRelationshipRecord( 
-                secondNode.getNextRel() & 0xFFFFFFFFL );
+            RelationshipRecord nextRel = getRelationshipStore().getRecord(  
+                secondNode.getNextRel() );
             if ( nextRel.getFirstNode() == secondNode.getId() )
             {
                 nextRel.setFirstPrevRel( rel.getId() );
@@ -163,6 +164,7 @@ public class BatchInserter
                 throw new RuntimeException( firstNode + " dont match "
                     + nextRel );
             }
+            getRelationshipStore().updateRecord( nextRel );
         }
         firstNode.setNextRel( rel.getId() );
         secondNode.setNextRel( rel.getId() );
@@ -341,6 +343,7 @@ public class BatchInserter
             PropertyRecord propertyRecord = new PropertyRecord( propertyId );
             propertyRecord.setInUse( true );
             propertyRecord.setCreated();
+            propertyRecord.setKeyIndexId( keyId );
             propStore.encodeValue( propertyRecord, entry.getValue() );
             if ( prevRecord != null )
             {
@@ -505,11 +508,16 @@ public class BatchInserter
         {
             dir = dir.replace( '\\', '/' );
         }
-        String store = dir + fileSeparator + "neostore.db";
+        String store = dir + fileSeparator + "neostore";
         if ( !new File( store).exists() )
         {
             NeoStore.createStore( store );
         }
         return store;
+    }
+    
+    public String getStore()
+    {
+        return storeDir;
     }
 }
