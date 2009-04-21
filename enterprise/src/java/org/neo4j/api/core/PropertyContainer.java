@@ -1,5 +1,3 @@
-package org.neo4j.api.core;
-
 /*
  * Copyright (c) 2002-2008 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,6 +17,8 @@ package org.neo4j.api.core;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.api.core;
+
 /**
  * Defines a common API for handling properties on both {@link Node nodes} and
  * {@link Relationship relationships}.
