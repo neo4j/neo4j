@@ -548,7 +548,7 @@ public class XaResourceManager
             {
                 if ( txStatus.commitStarted() )
                 {
-                    logger.info( "Marking 1PC [" + name + "] tx "
+                    logger.fine( "Marking 1PC [" + name + "] tx "
                         + identifier + " as done" );
                     log.doneInternal( identifier );
                     xidMap.remove( xid );
@@ -556,7 +556,7 @@ public class XaResourceManager
                 }
                 else if ( !txStatus.prepared() )
                 {
-                    logger.info( "Rolling back non prepared tx [" + name + "]"
+                    logger.fine( "Rolling back non prepared tx [" + name + "]"
                         + "txIdent[" + identifier + "]" );
                     log.doneInternal( xaTransaction.getIdentifier() );
                     xidMap.remove( xid );
@@ -564,7 +564,7 @@ public class XaResourceManager
                 }
                 else
                 {
-                    logger.info( "2PC tx [" + name + "] " + txStatus + 
+                    logger.fine( "2PC tx [" + name + "] " + txStatus + 
                         " txIdent[" + identifier + "]" );
                 }
             }

@@ -191,31 +191,32 @@ abstract class AbstractTraverser implements Traverser, Iterator<Node>
 
                 // If we're not stopping, then add related nodes to the list
                 // or current position not valid (last trav rel deleted)
-                try
-                {
-                    if ( // !currentPos.isValid() ||
+                if ( // !currentPos.isValid() ||
                     !this.stopEvaluator.isStopNode( currentPos ) )
+                {
+                    // Add the nodes at the end of all traversable- and
+                    // preserving relationships
+                    try
                     {
-                        // Add the nodes at the end of all traversable- and
-                        // preserving relationships
                         this.addEndNodesToList( currentPos,
                             this.traversableRels, this.traversableDirs );
                         this.addEndNodesToList( currentPos,
                             this.preservingRels, this.preservingDirs );
                     }
-
-                    // Check if we should return currentPos
-                    if ( // currentPos.isValid() &&
-                    this.returnableEvaluator.isReturnableNode( currentPos ) )
+                    catch ( NotFoundException e )
                     {
-                        this.returnedNodesCount++;
-                        nodeToReturn = currentPos.currentNode();
+                        // currentNode deleted in other tx
+                        // try next position from list
+                        continue;
                     }
                 }
-                catch ( NotFoundException e )
+
+                // Check if we should return currentPos
+                if ( // currentPos.isValid() &&
+                    this.returnableEvaluator.isReturnableNode( currentPos ) )
                 {
-                    // currentNode deleted in other tx
-                    // try next position from list
+                    this.returnedNodesCount++;
+                    nodeToReturn = currentPos.currentNode();
                 }
             }
         }
