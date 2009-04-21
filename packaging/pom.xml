@@ -80,19 +80,21 @@
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
+					<finalName>neo4j-${project.build.finalName}</finalName>
 					<descriptors>
-						<descriptor>src/main/assembly/apoc-assembly.xml</descriptor>
+						<descriptor>src/main/assembly/apoc-assembly.xml
+						</descriptor>
 					</descriptors>
 				</configuration>
-                <executions>
-                    <execution>
-                        <id>apoc-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>attached</goal>
-                        </goals>
-                    </execution>
-                </executions>
+				<executions>
+					<execution>
+						<id>apoc-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>attached</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
