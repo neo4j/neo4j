@@ -145,8 +145,8 @@ public class NeoStoreXaDataSource extends XaDataSource
         }
         else
         {
-            logger
-                .info( "Waiting for TM to take care of recovered transactions." );
+            logger.fine( "Waiting for TM to take care of recovered " + 
+                "transactions." );
         }
         idGenerators = new ArrayMap<Class<?>,Store>( 5, false, false );
         this.idGenerators.put( Node.class, neoStore.getNodeStore() );
@@ -206,8 +206,8 @@ public class NeoStoreXaDataSource extends XaDataSource
         }
         else
         {
-            logger
-                .info( "Waiting for TM to take care of recovered transactions." );
+            logger.info( "Waiting for TM to take care of recovered " + 
+                "transactions." );
         }
         idGenerators = new ArrayMap<Class<?>,Store>( 5, false, false );
         this.idGenerators.put( Node.class, neoStore.getNodeStore() );
@@ -281,12 +281,12 @@ public class NeoStoreXaDataSource extends XaDataSource
 
         public void recoveryComplete()
         {
-            logger.info( "Recovery complete, "
+            logger.fine( "Recovery complete, "
                 + "all transactions have been resolved" );
-            logger.info( "Rebuilding id generators as needed. "
+            logger.fine( "Rebuilding id generators as needed. "
                 + "This can take a while for large stores..." );
             neoStore.makeStoreOk();
-            logger.info( "Rebuild of id generators complete." );
+            logger.fine( "Rebuild of id generators complete." );
         }
 
         @Override
