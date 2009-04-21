@@ -42,7 +42,7 @@ public class PropertyStore extends AbstractStore implements Store
     // prev_prop_id(int)+next_prop_id(int)
     private static final int RECORD_SIZE = 25;
 
-    private static final int STRING_STORE_BLOCK_SIZE = 30;
+    private static final int STRING_STORE_BLOCK_SIZE = 120;
 
     private DynamicStringStore stringPropertyStore;
     private PropertyIndexStore propertyIndexStore;

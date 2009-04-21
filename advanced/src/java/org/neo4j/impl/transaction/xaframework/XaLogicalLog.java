@@ -898,14 +898,17 @@ public class XaLogicalLog
         long endPosition = writeBuffer.getFileChannelPosition();
         if ( xidIdentMap.size() > 0 )
         {
-            log.info( "Active transactions: " + xidIdentMap.size() );
-            log.info( "Closing dirty log: " + fileName + "." + currentLog );
+            log.info( "Close invoked with " + xidIdentMap.size() + 
+                " running transaction(s). " );
             if ( writeBuffer != null )
             {
                 writeBuffer.force();
             }
             writeBuffer = null;
             fileChannel.close();
+            log.info( "Dirty log: " + fileName + "." + currentLog + 
+                " now closed. Recovery will be started automatically next " + 
+                "time it is opened." );
             return;
         }
         if ( !keepLogs || backupSlave )
@@ -934,9 +937,8 @@ public class XaLogicalLog
 
     private void doInternalRecovery( String logFileName ) throws IOException
     {
-        log.info( "Logical log is dirty[" + logFileName + 
-            "], this means data source hasn't been shutdown properly. " + 
-            "Recovering..." );
+        log.info( "Non clean shutdown detected on log [" + logFileName + 
+            "]. Recovery started ..." );
         // get log creation time
         buffer.clear();
         buffer.limit( 8 );
@@ -964,16 +966,18 @@ public class XaLogicalLog
         scanIsComplete = true;
         log.fine( "Internal recovery completed, scanned " + logEntriesFound
             + " log entries." );
-        log.info( "[" + logFileName + "] " + xidIdentMap.size() + 
-            " uncompleted transactions found " );
         xaRm.checkXids();
-        if ( xidIdentMap.size() > 0 )
+        if ( xidIdentMap.size() == 0 )
         {
-            log.info( "[" + logFileName + "] Found " + xidIdentMap.size()
+            log.fine( "Recovery completed." );
+        }
+        else
+        {
+            log.fine( "[" + logFileName + "] Found " + xidIdentMap.size()
                 + " prepared 2PC transactions." );
             for ( StartEntry entry : xidIdentMap.values() )
             {
-                log.info( "[" + logFileName + "] 2PC xid[" + 
+                log.fine( "[" + logFileName + "] 2PC xid[" + 
                     entry.getXid() + "]" );
             }
         }

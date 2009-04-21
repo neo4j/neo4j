@@ -123,7 +123,8 @@ public class TxManager implements TransactionManager
                 if ( !new File( currentTxLog ).exists() )
                 {
                     throw new RuntimeException( "Unable to start TM, "
-                        + "active tx log file[" + currentTxLog + "] not found." );
+                        + "active tx log file[" + currentTxLog + 
+                        "] not found." );
                 }
                 txLog = new TxLog( currentTxLog );
             }
@@ -152,9 +153,11 @@ public class TxManager implements TransactionManager
                 txLog.getDanglingRecords();
             if ( danglingRecordList.hasNext() )
             {
-                log.warning( "Non completed transactions found in transaction "
-                    + "log. Transaction recovery started" );
+                log.info( "Unresolved transactions found, " + 
+                    "recovery started ..." );
                 recover( danglingRecordList );
+                log.info( "Recovery completed, all transactions have been " + 
+                    "resolved to a consistent state." );
             }
             getTxLog().truncate();
             tmOk = true;
@@ -215,7 +218,6 @@ public class TxManager implements TransactionManager
     {
         try
         {
-            log.info( "Found uncompleted global transactions" );
             // contains NonCompletedTransaction that needs to be committed
             List<NonCompletedTransaction> commitList = 
                 new ArrayList<NonCompletedTransaction>();
@@ -242,7 +244,7 @@ public class TxManager implements TransactionManager
                         // linear search
                         if ( rollbackList.contains( xids[i] ) )
                         {
-                            log.info( "Found pre commit " + xids[i]
+                            log.fine( "Found pre commit " + xids[i]
                                 + " rolling back ... " );
                             rollbackList.remove( xids[i] );
                             xaRes.rollback( xids[i] );
@@ -275,13 +277,13 @@ public class TxManager implements TransactionManager
                 NonCompletedTransaction nct = commitItr.next();
                 int seq = nct.getSequenceNumber();
                 Xid xids[] = nct.getXids();
-                log.info( "Marked as commit tx-seq[" + seq + 
+                log.fine( "Marked as commit tx-seq[" + seq + 
                     "] branch length: " + xids.length );
                 for ( int i = 0; i < xids.length; i++ )
                 {
                     if ( !recoveredXidsList.contains( xids[i] ) )
                     {
-                        log.info( "Tx-seq[" + seq + "][" + xids[i] + 
+                        log.fine( "Tx-seq[" + seq + "][" + xids[i] + 
                             "] not found in recovered xid list, "
                             + "assuming already committed" );
                         continue;
@@ -294,7 +296,7 @@ public class TxManager implements TransactionManager
                         throw new RuntimeException(
                             "Couldn't find XAResource for " + xids[i] );
                     }
-                    log.info( "Commiting tx seq[" + seq + "][" + 
+                    log.fine( "Commiting tx seq[" + seq + "][" + 
                         xids[i] + "] ... " );
                     resourceMap.get( resource ).commit( xids[i], false );
                 }
@@ -310,12 +312,12 @@ public class TxManager implements TransactionManager
                     throw new RuntimeException( "Couldn't find XAResource for "
                         + xid );
                 }
-                log.info( "Rollback " + xid + " ... " );
+                log.fine( "Rollback " + xid + " ... " );
                 resourceMap.get( resource ).rollback( xid );
             }
             if ( rollbackList.size() > 0 )
             {
-                log.warning( "TxLog contained unresolved "
+                log.fine( "TxLog contained unresolved "
                     + "xids that needed rollback. They couldn't be matched to "
                     + "any of the XAResources recover list. " + "Assuming "
                     + rollbackList.size()
