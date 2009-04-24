@@ -35,8 +35,8 @@ import org.neo4j.api.core.NotInTransactionException;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
-import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
+import org.neo4j.impl.util.IntArray;
 
 /**
  * Manages object version diffs and locks for each transaction.
@@ -74,8 +74,8 @@ public class LockReleaser
 
         }
 
-        ArrayMap<String,ArrayIntSet> relationshipAddMap = null;
-        ArrayMap<String,ArrayIntSet> relationshipRemoveMap = null;
+        ArrayMap<String,IntArray> relationshipAddMap = null;
+        ArrayMap<String,IntArray> relationshipRemoveMap = null;
         ArrayMap<Integer,PropertyData> propertyAddMap = null;
         ArrayMap<Integer,PropertyData> propertyRemoveMap = null;
     }
@@ -178,7 +178,7 @@ public class LockReleaser
         }
     }
 
-    public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type )
+    public IntArray getCowRelationshipRemoveMap( NodeImpl node, String type )
     {
         NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
@@ -194,7 +194,7 @@ public class LockReleaser
         return null;
     }
 
-    public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type,
+    public IntArray getCowRelationshipRemoveMap( NodeImpl node, String type,
         boolean create )
     {
         if ( !create )
@@ -212,18 +212,18 @@ public class LockReleaser
         }
         if ( element.relationshipRemoveMap == null )
         {
-            element.relationshipRemoveMap = new ArrayMap<String,ArrayIntSet>();
+            element.relationshipRemoveMap = new ArrayMap<String,IntArray>();
         }
-        ArrayIntSet set = element.relationshipRemoveMap.get( type );
+        IntArray set = element.relationshipRemoveMap.get( type );
         if ( set == null )
         {
-            set = new ArrayIntSet();
+            set = new IntArray();
             element.relationshipRemoveMap.put( type, set );
         }
         return set;
     }
 
-    public ArrayMap<String,ArrayIntSet> getCowRelationshipAddMap( NodeImpl node )
+    public ArrayMap<String,IntArray> getCowRelationshipAddMap( NodeImpl node )
     {
         NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
@@ -239,7 +239,7 @@ public class LockReleaser
         return null;
     }
 
-    public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String type )
+    public IntArray getCowRelationshipAddMap( NodeImpl node, String type )
     {
         NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
@@ -255,7 +255,7 @@ public class LockReleaser
         return null;
     }
 
-    public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String type,
+    public IntArray getCowRelationshipAddMap( NodeImpl node, String type,
         boolean create )
     {
         if ( !create )
@@ -273,12 +273,12 @@ public class LockReleaser
         }
         if ( element.relationshipAddMap == null )
         {
-            element.relationshipAddMap = new ArrayMap<String,ArrayIntSet>();
+            element.relationshipAddMap = new ArrayMap<String,IntArray>();
         }
-        ArrayIntSet set = element.relationshipAddMap.get( type );
+        IntArray set = element.relationshipAddMap.get( type );
         if ( set == null )
         {
-            set = new ArrayIntSet();
+            set = new IntArray();
             element.relationshipAddMap.put( type, set );
         }
         return set;
