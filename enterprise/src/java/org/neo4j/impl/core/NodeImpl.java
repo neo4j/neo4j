@@ -20,6 +20,8 @@
 package org.neo4j.impl.core;
 
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
@@ -32,12 +34,12 @@ import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.transaction.LockType;
-import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
+import org.neo4j.impl.util.IntArray;
 
 class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 {
-    private ArrayMap<String,ArrayIntSet> relationshipMap = null;
+    private ArrayMap<String,IntArray> relationshipMap = null;
 
     NodeImpl( int id, NodeManager nodeManager )
     {
@@ -50,7 +52,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         super( id, newNode, nodeManager );
         if ( newNode )
         {
-            relationshipMap = new ArrayMap<String,ArrayIntSet>();
+            relationshipMap = new ArrayMap<String,IntArray>();
         }
     }
 
@@ -73,158 +75,93 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     {
         return nodeManager.loadProperties( this );
     }
-
-    public Iterable<Relationship> getRelationships()
+    
+    private List<RelTypeElementIterator> getAllRelationships()
     {
         ensureFullRelationships();
-        ArrayIntSet relIds = new ArrayIntSet();
+        List<RelTypeElementIterator> relTypeList = 
+            new LinkedList<RelTypeElementIterator>();
+        ArrayMap<String,IntArray> addMap = 
+            nodeManager.getCowRelationshipAddMap( this );
         for ( String type : relationshipMap.keySet() )
         {
-            ArrayIntSet source = relationshipMap.get( type );
-            ArrayIntSet skip = nodeManager.getCowRelationshipRemoveMap(
+            IntArray src = relationshipMap.get( type );
+            IntArray remove = nodeManager.getCowRelationshipRemoveMap(
                 this, type );
-            for ( int relId : source.values() )
+            IntArray add = null;
+            if ( addMap != null )
             {
-                if ( skip != null && skip.contains( relId ) )
-                {
-                    continue;
-                }
-                relIds.add( relId );
+                add = addMap.get( type );
             }
+            relTypeList.add( RelTypeElement.create( src, add, remove ) );
         }
-        ArrayMap<String,ArrayIntSet> cowRelationshipAddMap = null;
-        cowRelationshipAddMap = nodeManager.getCowRelationshipAddMap( this );
-        if ( cowRelationshipAddMap != null )
+        if ( addMap != null )
         {
-            for ( String type : cowRelationshipAddMap.keySet() )
+            for ( String type : addMap.keySet() )
             {
-                ArrayIntSet source = cowRelationshipAddMap.get( type );
-                for ( int relId : source.values() )
+                if ( relationshipMap.get( type ) == null )
                 {
-                    relIds.add( relId );
+                    IntArray remove = nodeManager.getCowRelationshipRemoveMap(
+                        this, type );
+                    IntArray add = addMap.get( type );
+                    relTypeList.add( RelTypeElement.create( null, add, 
+                        remove ) );
                 }
             }
         }
-        return new RelationshipArrayIntSetIterator( relIds, this,
+        return relTypeList;
+    }
+    
+    private List<RelTypeElementIterator> getAllRelationshipsOfType( 
+        RelationshipType... types)
+    {
+        ensureFullRelationships();
+        List<RelTypeElementIterator> relTypeList = 
+            new LinkedList<RelTypeElementIterator>();
+        for ( RelationshipType type : types )
+        {
+            IntArray src = relationshipMap.get( type.name() );
+            IntArray remove = nodeManager.getCowRelationshipRemoveMap(
+                this, type.name() );
+            IntArray add = nodeManager.getCowRelationshipAddMap( this, 
+                type.name() );
+            relTypeList.add( RelTypeElement.create( src, add, remove ) );
+        }
+        return relTypeList;
+    }
+    
+    public Iterable<Relationship> getRelationships()
+    {
+        return new IntArrayIterator( getAllRelationships(), this,
             Direction.BOTH, nodeManager );
     }
 
     public Iterable<Relationship> getRelationships( Direction dir )
     {
-        if ( dir == Direction.BOTH )
-        {
-            return getRelationships();
-        }
-        ensureFullRelationships();
-        ArrayIntSet relIds = new ArrayIntSet();
-        for ( String type : relationshipMap.keySet() )
-        {
-            ArrayIntSet source = relationshipMap.get( type );
-            ArrayIntSet skip = nodeManager.getCowRelationshipRemoveMap(
-                this, type );
-            for ( int relId : source.values() )
-            {
-                if ( skip != null && skip.contains( relId ) )
-                {
-                    continue;
-                }
-                relIds.add( relId );
-            }
-        }
-        ArrayMap<String,ArrayIntSet> cowRelationshipAddMap = 
-            nodeManager.getCowRelationshipAddMap( this );
-        if ( cowRelationshipAddMap != null )
-        {
-            for ( String type : cowRelationshipAddMap.keySet() )
-            {
-                ArrayIntSet source = cowRelationshipAddMap.get( type );
-                if ( source == null )
-                {
-                    continue;
-                }
-                for ( int relId : source.values() )
-                {
-                    relIds.add( relId );
-                }
-            }
-        }
-        return new RelationshipArrayIntSetIterator( relIds, this, dir,
+        return new IntArrayIterator( getAllRelationships(), this, dir,
             nodeManager );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType type )
     {
-        ensureFullRelationships();
-        ArrayIntSet relIds = new ArrayIntSet();
-        ArrayIntSet source = relationshipMap.get( type.name() );
-        if ( source != null )
-        {
-            ArrayIntSet skip = nodeManager.getCowRelationshipRemoveMap(
-                this, type.name() );
-            for ( int relId : source.values() )
-            {
-                if ( skip != null && skip.contains( relId ) )
-                {
-                    continue;
-                }
-                relIds.add( relId );
-            }
-        }
-        source = nodeManager.getCowRelationshipAddMap( this, type.name() );
-        if ( source != null )
-        {
-            for ( int relId : source.values() )
-            {
-                relIds.add( relId );
-            }
-        }
-        return new RelationshipArrayIntSetIterator( relIds, this,
-            Direction.BOTH, nodeManager );
+        return new IntArrayIterator( 
+            getAllRelationshipsOfType( new RelationshipType[] { type } ), 
+            this, Direction.BOTH, nodeManager );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
-        ensureFullRelationships();
-        ArrayIntSet relIds = new ArrayIntSet();
-        for ( RelationshipType type : types )
-        {
-            ArrayIntSet source = relationshipMap.get( type.name() );
-            if ( source == null )
-            {
-                continue;
-            }
-            ArrayIntSet skip = nodeManager.getCowRelationshipRemoveMap(
-                this, type.name() );
-            for ( int relId : source.values() )
-            {
-                if ( skip != null && skip.contains( relId ) )
-                {
-                    continue;
-                }
-                relIds.add( relId );
-            }
-        }
-        for ( RelationshipType type : types )
-        {
-            ArrayIntSet source = nodeManager.getCowRelationshipAddMap(
-                this, type.name() );
-            if ( source == null )
-            {
-                continue;
-            }
-            for ( int relId : source.values() )
-            {
-                relIds.add( relId );
-            }
-        }
-        return new RelationshipArrayIntSetIterator( relIds, this,
-            Direction.BOTH, nodeManager );
+        return new IntArrayIterator( 
+            getAllRelationshipsOfType(types ), 
+            this, Direction.BOTH, nodeManager );
     }
 
     public Relationship getSingleRelationship( RelationshipType type,
         Direction dir )
     {
-        Iterator<Relationship> rels = getRelationships( type, dir ).iterator();
+        Iterator<Relationship> rels = new IntArrayIterator( 
+            getAllRelationshipsOfType( new RelationshipType[] { type } ), 
+            this, dir, nodeManager );
         if ( !rels.hasNext() )
         {
             return null;
@@ -241,32 +178,9 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     public Iterable<Relationship> getRelationships( RelationshipType type,
         Direction dir )
     {
-        ensureFullRelationships();
-        ArrayIntSet relIds = new ArrayIntSet();
-        ArrayIntSet source = relationshipMap.get( type.name() );
-        if ( source != null )
-        {
-            ArrayIntSet skip = nodeManager.getCowRelationshipRemoveMap(
-                this, type.name() );
-            for ( int relId : source.values() )
-            {
-                if ( skip != null && skip.contains( relId ) )
-                {
-                    continue;
-                }
-                relIds.add( relId );
-            }
-        }
-        source = nodeManager.getCowRelationshipAddMap( this, type.name() );
-        if ( source != null )
-        {
-            for ( int relId : source.values() )
-            {
-                relIds.add( relId );
-            }
-        }
-        return new RelationshipArrayIntSetIterator( relIds, this, dir,
-            nodeManager );
+        return new IntArrayIterator( 
+            getAllRelationshipsOfType( new RelationshipType[] { type } ), 
+            this, dir, nodeManager );
     }
     
     public void delete()
@@ -363,7 +277,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     // a relationship delete is undone or when the full node is loaded
     void addRelationship( RelationshipType type, int relId )
     {
-        ArrayIntSet relationshipSet = nodeManager.getCowRelationshipAddMap(
+        IntArray relationshipSet = nodeManager.getCowRelationshipAddMap(
             this, type.name(), true );
         relationshipSet.add( relId );
     }
@@ -373,13 +287,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     // a relationship delete is invoked.
     void removeRelationship( RelationshipType type, int relId )
     {
-        ArrayIntSet addedSet = nodeManager.getCowRelationshipAddMap( this, 
-            type.name() );
-        if ( addedSet != null )
-        {
-            addedSet.remove( relId );
-        }
-        ArrayIntSet relationshipSet = nodeManager.getCowRelationshipRemoveMap(
+        IntArray relationshipSet = nodeManager.getCowRelationshipRemoveMap(
             this, type.name(), true );
         relationshipSet.add( relId );
     }
@@ -502,8 +410,8 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     }
 
     protected void commitRelationshipMaps( 
-        ArrayMap<String,ArrayIntSet> cowRelationshipAddMap, 
-        ArrayMap<String,ArrayIntSet> cowRelationshipRemoveMap )
+        ArrayMap<String,IntArray> cowRelationshipAddMap, 
+        ArrayMap<String,IntArray> cowRelationshipRemoveMap )
     {
         if ( relationshipMap == null )
         {
@@ -514,49 +422,30 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         {
             for ( String type : cowRelationshipAddMap.keySet() )
             {
-                ArrayIntSet source = cowRelationshipAddMap.get( type );
-                if ( source.size() == 0 )
+                IntArray add = cowRelationshipAddMap.get( type );
+                IntArray remove = null; 
+                if ( cowRelationshipRemoveMap != null ) 
                 {
-                    continue;
+                    remove = cowRelationshipRemoveMap.get( type );
                 }
-                ArrayIntSet dest = new ArrayIntSet();
-                ArrayIntSet orig = relationshipMap.get( type );
-                if ( orig != null )
-                {
-                    for ( int relId : orig.values() )
-                    {
-                        dest.add( relId );
-                    }
-                }
-                for ( int relId : source.values() )
-                {
-                    dest.add( relId );
-                }
-                relationshipMap.put( type, dest );
+                IntArray src = relationshipMap.get( type );
+                relationshipMap.put( type, IntArray.composeNew( 
+                    src, add, remove ) );
             }
         }
-        if ( cowRelationshipRemoveMap != null && relationshipMap != null )
+        if ( cowRelationshipRemoveMap != null )
         {
             for ( String type : cowRelationshipRemoveMap.keySet() )
             {
-                ArrayIntSet source = cowRelationshipRemoveMap.get( type );
-                if ( source.size() == 0 )
+                if ( cowRelationshipAddMap != null && 
+                    cowRelationshipAddMap.get( type ) != null ) 
                 {
                     continue;
                 }
-                ArrayIntSet dest = new ArrayIntSet(); 
-                ArrayIntSet orig = relationshipMap.get( type );
-                if ( orig != null )
-                {
-                    for ( int relId : orig.values() )
-                    {
-                        if ( !source.contains( relId ) )
-                        {
-                            dest.add( relId );
-                        }
-                    }
-                    relationshipMap.put( type, dest );
-                }
+                IntArray src = relationshipMap.get( type );
+                IntArray remove = cowRelationshipRemoveMap.get( type ); 
+                relationshipMap.put( type, IntArray.composeNew( src, null, 
+                     remove ) );
             }
         }
     }

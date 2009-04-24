@@ -41,6 +41,28 @@ public class TestRelationship extends AbstractNeoTestCase
     {
         super( testName );
     }
+    
+    public void testSimpleCreate()
+    {
+        Node node1 = getNeo().createNode();
+        Node node2 = getNeo().createNode();
+        Relationship rel1 = node1.createRelationshipTo( node2, 
+            MyRelTypes.TEST );
+        Relationship rel2 = node1.createRelationshipTo( node2, 
+            MyRelTypes.TEST );
+        rel1.delete();
+        newTransaction();
+        assertTrue( node1.getRelationships().iterator().hasNext() );
+        assertTrue( node2.getRelationships().iterator().hasNext() );
+        assertTrue( node1.getRelationships( 
+            MyRelTypes.TEST ).iterator().hasNext() );
+        assertTrue( node2.getRelationships( 
+            MyRelTypes.TEST ).iterator().hasNext() );
+        assertTrue( node1.getRelationships( 
+            MyRelTypes.TEST, Direction.OUTGOING ).iterator().hasNext() );
+        assertTrue( node2.getRelationships( 
+            MyRelTypes.TEST, Direction.INCOMING ).iterator().hasNext() );
+    }
 
     public void testRelationshipCreateAndDelete()
     {

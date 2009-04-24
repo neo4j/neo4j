@@ -39,16 +39,16 @@ import org.neo4j.impl.cache.AdaptiveCacheManager;
 import org.neo4j.impl.cache.LruCache;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
-import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
+import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.transaction.IllegalResourceException;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.traversal.InternalTraverserFactory;
-import org.neo4j.impl.util.ArrayIntSet;
 import org.neo4j.impl.util.ArrayMap;
+import org.neo4j.impl.util.IntArray;
 
 public class NodeManager
 {
@@ -565,14 +565,14 @@ public class NodeManager
         return persistenceManager.loadPropertyValue( id );
     }
 
-    ArrayMap<String,ArrayIntSet> loadRelationships( NodeImpl node )
+    ArrayMap<String,IntArray> loadRelationships( NodeImpl node )
     {
         try
         {
             Iterable<RelationshipData> rels = 
                 persistenceManager.loadRelationships( (int) node.getId() );
-            ArrayMap<String,ArrayIntSet> newRelationshipMap = 
-                new ArrayMap<String,ArrayIntSet>();
+            ArrayMap<String,IntArray> newRelationshipMap = 
+                new ArrayMap<String,IntArray>();
             for ( RelationshipData rel : rels )
             {
                 int relId = rel.getId();
@@ -590,11 +590,11 @@ public class NodeManager
                 {
                     type = relImpl.getType();
                 }
-                ArrayIntSet relationshipSet = newRelationshipMap.get( 
+                IntArray relationshipSet = newRelationshipMap.get( 
                     type.name() );
                 if ( relationshipSet == null )
                 {
-                    relationshipSet = new ArrayIntSet();
+                    relationshipSet = new IntArray();
                     newRelationshipMap.put( type.name(), relationshipSet );
                 }
                 relationshipSet.add( relId );
@@ -853,28 +853,28 @@ public class NodeManager
         persistenceManager.relRemoveProperty( relId, propertyId );
     }
 
-    public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type )
+    public IntArray getCowRelationshipRemoveMap( NodeImpl node, String type )
     {
         return lockReleaser.getCowRelationshipRemoveMap( node, type );
     }
 
-    public ArrayIntSet getCowRelationshipRemoveMap( NodeImpl node, String type,
+    public IntArray getCowRelationshipRemoveMap( NodeImpl node, String type,
         boolean create )
     {
         return lockReleaser.getCowRelationshipRemoveMap( node, type, create );
     }
 
-    public ArrayMap<String,ArrayIntSet> getCowRelationshipAddMap( NodeImpl node )
+    public ArrayMap<String,IntArray> getCowRelationshipAddMap( NodeImpl node )
     {
         return lockReleaser.getCowRelationshipAddMap( node );
     }
 
-    public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String string )
+    public IntArray getCowRelationshipAddMap( NodeImpl node, String string )
     {
         return lockReleaser.getCowRelationshipAddMap( node, string );
     }
 
-    public ArrayIntSet getCowRelationshipAddMap( NodeImpl node, String string,
+    public IntArray getCowRelationshipAddMap( NodeImpl node, String string,
         boolean create )
     {
         return lockReleaser.getCowRelationshipAddMap( node, string, create );
