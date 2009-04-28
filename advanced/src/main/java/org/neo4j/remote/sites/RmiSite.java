@@ -124,6 +124,45 @@ public final class RmiSite implements RemoteSite
             csf, ssf ) );
     }
 
+    /**
+     * Start a stand alone Remote Neo / RMI server.
+     * 
+     * Usage:
+     * <pre>
+     * java -cp neo.jar:remote-neo.jar org.neo4j.remote.sites.RmiSite PATH RESOURCE_URI
+     * </pre>
+     * 
+     * @param args
+     *            The arguments passed on the command line.
+     * @throws RemoteException
+     *             when the registration of the server fails.
+     * @throws IllegalArgumentException
+     *             when an error was found in the command line arguments.
+     */
+    public static void main( String[] args ) throws RemoteException,
+        IllegalArgumentException
+    {
+        String usage = "Usage: " + RmiSite.class.getName()
+            + " <Neo dir> <rmi resource uri>";
+        if ( args.length != 2 )
+        {
+            throw new IllegalArgumentException( usage );
+        }
+        try
+        {
+            register( new LocalSite( new org.neo4j.api.core.EmbeddedNeo(
+                args[ 0 ] ) ), args[ 1 ] );
+        }
+        catch ( RuntimeException ex )
+        {
+            throw new IllegalArgumentException( usage, ex );
+        }
+        catch ( MalformedURLException ex )
+        {
+            throw new IllegalArgumentException( usage, ex );
+        }
+    }
+
     private RmiLoginSite site()
     {
         try
