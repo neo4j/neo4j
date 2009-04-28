@@ -4,3 +4,50 @@ Remote Neo
     a different process.
 
     Remote Neo is not intended for integration into applications.
+
+Getting Started
+
+    To use Remote Neo over RMI you first need to configure the server:
+
+---
+import org.neo4j.api.core.NeoService;
+import org.neo4j.remote.sites.LocalSite;
+import org.neo4j.remote.sites.RmiSite;
+
+public class ThatStartsARemoteNeoRMIServer
+{
+    private static final String RESOURCE_URI = "rmi://rmi-server/neo-service";
+
+    public void publishServer( NeoService neo )
+    {
+        RmiSite.register( new LocalSite( neo ), RESOURCE_URI );
+    }
+}
+---
+
+    Then you connect to the Remote Neo server like so:
+
+---
+import org.neo4j.api.core.NeoService;
+import org.neo4j.remote.RemoteNeo;
+
+public class ThatConnectsToARemoteNeoServer
+{
+    private static final String RESOURCE_URI = "rmi://rmi-server/neo-service";
+
+    public NeoService connect()
+    {
+        return new RemoteNeo( RESOURCE_URI );
+    }
+}
+---
+
+    Then you use the Remote Neo service just like you use a normal NeoService.
+
+    If you only want to make a Neo4j store available as a Remote Neo over RMI
+    server, with no other code running on the server (e.g. for testing
+    purposes), there is a main method in the RmiSite class that does this:
+
+---
+java -cp neo.jar:remote-neo.jar org.neo4j.remote.sites.RmiSite path/to/neo/store rmi://rmi-server/neo-service
+---
