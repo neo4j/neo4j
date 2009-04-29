@@ -17,6 +17,7 @@
 package org.neo4j.remote.sites;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,22 +54,28 @@ public final class LocalSiteFactory extends RemoteSiteFactory
         return "file".equals( resourceUri.getScheme() );
     }
 
-    private static Map<File, NeoService> instances = new HashMap<File, NeoService>();
-
-    private static synchronized NeoService getNeoService( File file )
+    private static Map<String, NeoService> instances = new HashMap<String, NeoService>();
+    
+    static synchronized NeoService getNeoService( File file )
     {
-        NeoService neo = instances.get( file );
+    	String path;
+    	try {
+    		path = file.getCanonicalPath();
+    	} catch ( IOException ex ) {
+    		path = file.getAbsolutePath();
+    	}
+        NeoService neo = instances.get( path );
         if ( neo == null )
         {
-            neo = newNeoService( file );
-            instances.put( file, neo );
+            neo = newNeoService( path );
+            instances.put( path, neo );
         }
         return neo;
     }
 
-    private static NeoService newNeoService( File file )
+    private static NeoService newNeoService( String path )
     {
-        final NeoService neo = new EmbeddedNeo( file.getPath() );
+        final NeoService neo = new EmbeddedNeo( path );
         Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
         {
             public void run()

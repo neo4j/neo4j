@@ -49,5 +49,5 @@ public class ThatConnectsToARemoteNeoServer
     purposes), there is a main method in the RmiSite class that does this:
 
 ---
-java -cp neo.jar:remote-neo.jar org.neo4j.remote.sites.RmiSite path/to/neo/store rmi://rmi-server/neo-service
+java -cp neo.jar:jta.jar:remote-neo.jar org.neo4j.remote.sites.RmiSite path/to/neo/store rmi://rmi-server/neo-service
 ---
