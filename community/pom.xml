@@ -67,6 +67,22 @@
 	</developers>
 	
 	<build>
+		<!-- FIX for broken parent pom -->
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+			<resource>
+				<directory>${basedir}</directory>
+				<targetPath>META-INF</targetPath>
+				<includes>
+					<include>NOTICE.txt</include>
+					<include>LICENSE.txt</include>
+					<include>COPYRIGHT.txt</include>
+				</includes>
+			</resource>
+		</resources>
+		<!-- /FIX -->
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
