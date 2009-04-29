@@ -16,6 +16,8 @@
  */
 package org.neo4j.remote.sites;
 
+import java.io.File;
+
 import javax.transaction.TransactionManager;
 
 import org.neo4j.api.core.EmbeddedNeo;
@@ -25,8 +27,8 @@ import org.neo4j.remote.RemoteSite;
 
 /**
  * An implementation of {@link RemoteSite} that isn't really remote. This
- * implementation is useful for implementing other {@link RemoteSite}s and for
- * testing purpouses.
+ * implementation is useful for implementing servers for other
+ * {@link RemoteSite}s and for testing purposes.
  * @author Tobias Ivarsson
  */
 public final class LocalSite extends BasicNeoServer
@@ -42,6 +44,16 @@ public final class LocalSite extends BasicNeoServer
     {
         super( getTransactionManagerFor( neo ) );
         this.neo = neo;
+    }
+    
+    /**
+     * Create a new local {@link RemoteSite}.
+     * @param path
+     *            The path to the Neo store.
+     */
+    public LocalSite( String path )
+    {
+    	this( LocalSiteFactory.getNeoService( new File( path ) ) );
     }
 
     @Override

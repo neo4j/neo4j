@@ -53,6 +53,76 @@ final class ProtocolService
 
     private final Map<String, Set<RemoteSiteFactory>> implementations = new HashMap<String, Set<RemoteSiteFactory>>();
     private final Iterable<RemoteSiteFactory> factories;
+    
+    private static abstract class CheckingIterable implements Iterable<RemoteSiteFactory> {
+		public Iterator<RemoteSiteFactory> iterator() {
+            try
+            {
+                final Iterator<?> iterator = provideIterator();
+                return new Iterator<RemoteSiteFactory>()
+                {
+                    RemoteSiteFactory cached = null;
+
+                    public boolean hasNext()
+                    {
+                        if ( cached != null )
+                        {
+                            return true;
+                        }
+                        else
+                            while ( iterator.hasNext() )
+                            {
+                                try
+                                {
+                                    cached = ( RemoteSiteFactory ) iterator
+                                        .next();
+                                    return true;
+                                }
+                                // FIXME: be more specific than Throwable
+                                // catching all throwables is dangerous,
+                                // but only catching exceptions here is wrong.
+                                catch ( Throwable ex )
+                                {
+                                    cached = null;
+                                }
+                            }
+                        return false;
+                    }
+
+                    public RemoteSiteFactory next()
+                    {
+                        if ( hasNext() )
+                        {
+                            try
+                            {
+                                return cached;
+                            }
+                            finally
+                            {
+                                cached = null;
+                            }
+                        }
+                        else
+                        {
+                            throw new IllegalStateException();
+                        }
+                    }
+
+                    public void remove()
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+            catch ( Exception ex )
+            {
+                return Arrays.asList( new RemoteSiteFactory[ 0 ] )
+                    .iterator();
+            }
+		}
+
+		abstract Iterator<?> provideIterator() throws Exception;
+    };
 
     ProtocolService()
     {
@@ -65,9 +135,14 @@ final class ProtocolService
             Method loadMethod = serviceLoaderClass.getMethod( "load",
                 Class.class );
             @SuppressWarnings( "unchecked" )
-            Iterable<RemoteSiteFactory> iter = ( ( Iterable<RemoteSiteFactory> ) loadMethod
+            final Iterable<RemoteSiteFactory> iter = ( ( Iterable<RemoteSiteFactory> ) loadMethod
                 .invoke( null, RemoteSiteFactory.class ) );
-            result = iter;
+            result = new CheckingIterable(){
+            	@Override
+            	Iterator<?> provideIterator() {
+            		return iter.iterator();
+            	}
+            };
         }
         catch ( Exception ex )
         {
@@ -79,78 +154,16 @@ final class ProtocolService
                 Class<?> serviceClass = Class.forName( "sun.misc.Service" );
                 final Method providersMethod = serviceClass.getMethod(
                     "providers", Class.class );
-                result = new Iterable<RemoteSiteFactory>()
-                {
-                    public Iterator<RemoteSiteFactory> iterator()
-                    {
-                        try
-                        {
-                            final Iterator<?> iterator = ( Iterator<?> ) providersMethod
-                                .invoke( null, RemoteSiteFactory.class );
-                            return new Iterator<RemoteSiteFactory>()
-                            {
-                                RemoteSiteFactory cached = null;
-
-                                public boolean hasNext()
-                                {
-                                    if ( cached != null )
-                                    {
-                                        return true;
-                                    }
-                                    else
-                                        while ( iterator.hasNext() )
-                                        {
-                                            try
-                                            {
-                                                cached = ( RemoteSiteFactory ) iterator
-                                                    .next();
-                                                return true;
-                                            }
-                                            catch ( Exception ex )
-                                            {
-                                                cached = null;
-                                            }
-                                        }
-                                    return false;
-                                }
-
-                                public RemoteSiteFactory next()
-                                {
-                                    if ( hasNext() )
-                                    {
-                                        try
-                                        {
-                                            return cached;
-                                        }
-                                        finally
-                                        {
-                                            cached = null;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        throw new IllegalStateException();
-                                    }
-                                }
-
-                                public void remove()
-                                {
-                                    throw new UnsupportedOperationException();
-                                }
-                            };
-                        }
-                        catch ( Exception ex )
-                        {
-                            return Arrays.asList( new RemoteSiteFactory[ 0 ] )
-                                .iterator();
-                        }
-                    }
+                result = new CheckingIterable() {
+                	@Override
+                	Iterator<?> provideIterator() throws Exception {
+                		return( Iterator<?> ) providersMethod
+                			.invoke( null, RemoteSiteFactory.class );
+                	}
                 };
             }
             catch ( Exception e )
             {
-                // If that fails as well, we could provide our own
-                // implementation. But that's a todo.
                 result = empty;
             }
         }
@@ -174,7 +187,7 @@ final class ProtocolService
         }
         throw new RuntimeException(
             "No implementation available to handle resource URI: "
-                + resourceUri + "\nSupported protocolls are: " + allProtocols() );
+                + resourceUri + "\nSupported protocoll are: " + allProtocols() );
     }
 
     private RemoteSiteFactory loadSiteFactory( URI resourceUri )
@@ -221,6 +234,13 @@ final class ProtocolService
                 }
             }
         }
-        return result.toString();
+        if (comma)
+        {
+        	return result.toString();
+        }
+        else
+        {
+        	return "None!";
+        }
     }
 }

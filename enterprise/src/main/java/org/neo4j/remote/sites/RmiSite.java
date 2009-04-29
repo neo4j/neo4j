@@ -129,7 +129,7 @@ public final class RmiSite implements RemoteSite
      * 
      * Usage:
      * <pre>
-     * java -cp neo.jar:remote-neo.jar org.neo4j.remote.sites.RmiSite PATH RESOURCE_URI
+     * java -cp neo.jar:jta.jar:remote-neo.jar org.neo4j.remote.sites.RmiSite PATH RESOURCE_URI
      * </pre>
      * 
      * @param args
@@ -150,8 +150,7 @@ public final class RmiSite implements RemoteSite
         }
         try
         {
-            register( new LocalSite( new org.neo4j.api.core.EmbeddedNeo(
-                args[ 0 ] ) ), args[ 1 ] );
+            register( new LocalSite( args[ 0 ] ), args[ 1 ] );
         }
         catch ( RuntimeException ex )
         {
