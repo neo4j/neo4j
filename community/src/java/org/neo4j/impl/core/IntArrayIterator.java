@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.Relationship;
 
 class IntArrayIterator implements Iterable<Relationship>,
@@ -108,10 +109,10 @@ class IntArrayIterator implements Iterable<Relationship>,
                         return true;
                     }
                 }
-                catch ( Throwable t )
+                catch ( NotFoundException e )
                 {
                     log.log( Level.FINE,
-                        "Unable to get relationship " + nextId, t );
+                        "Unable to get relationship " + nextId, e );
                 }
             }
             while ( !currentTypeIterator.hasNext() && typeIterator.hasNext() )
