@@ -33,7 +33,7 @@ import org.neo4j.remote.RemoteSite;
  */
 public final class LocalSite extends BasicNeoServer
 {
-    private final NeoService neo;
+    final NeoService neo;
 
     /**
      * Create a new local {@link RemoteSite}.
