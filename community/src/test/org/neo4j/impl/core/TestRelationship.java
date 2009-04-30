@@ -128,14 +128,53 @@ public class TestRelationship extends AbstractNeoTestCase
         allGetRelationshipMethods2( node1, Direction.OUTGOING );
         allGetRelationshipMethods2( node2, Direction.INCOMING );
         newTransaction();
-        Node node3 = getNeo().createNode();
-        Node node4 = getNeo().createNode();
-        for ( int i = 0; i < 10000; i++ )
-        {
-            node3.createRelationshipTo( node4, MyRelTypes.TEST );
-        }
         allGetRelationshipMethods2( node1, Direction.OUTGOING );
         allGetRelationshipMethods2( node2, Direction.INCOMING );
+        for ( Relationship rel : node1.getRelationships() )
+        {
+            rel.delete();
+        }
+        node1.delete();
+        node2.delete();
+    }
+    
+    public void testSimple4()
+    {
+        Node node1 = getNeo().createNode();
+        Node node2 = getNeo().createNode();
+        for ( int i = 0; i < 2; i++ )
+        {
+            node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL ); 
+            node1.createRelationshipTo( node2, MyRelTypes.TEST2 ); 
+        }
+        allGetRelationshipMethods3( node1, Direction.OUTGOING );
+        allGetRelationshipMethods3( node2, Direction.INCOMING );
+        newTransaction();
+        allGetRelationshipMethods3( node1, Direction.OUTGOING );
+        allGetRelationshipMethods3( node2, Direction.INCOMING );
+        node1.getRelationships( MyRelTypes.TEST, 
+            Direction.OUTGOING ).iterator().next().delete();
+        int count = 0;
+        for ( Relationship rel : node1.getRelationships( MyRelTypes.TEST_TRAVERSAL, 
+            Direction.OUTGOING ) )
+        {
+            if ( count == 1 )
+            {
+                rel.delete();
+            }
+            count++;
+        }
+        node1.getRelationships( MyRelTypes.TEST2, 
+            Direction.OUTGOING ).iterator().next().delete();
+        node1.createRelationshipTo( node2, MyRelTypes.TEST );
+        node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL ); 
+        node1.createRelationshipTo( node2, MyRelTypes.TEST2 ); 
+        allGetRelationshipMethods3( node1, Direction.OUTGOING );
+        allGetRelationshipMethods3( node2, Direction.INCOMING );
+        newTransaction();
+        allGetRelationshipMethods3( node1, Direction.OUTGOING );
+        allGetRelationshipMethods3( node2, Direction.INCOMING );
         for ( Relationship rel : node1.getRelationships() )
         {
             rel.delete();
@@ -189,6 +228,30 @@ public class TestRelationship extends AbstractNeoTestCase
         countRelationships( 1, node.getRelationships( MyRelTypes.TEST, dir ) );
         countRelationships( 1, node.getRelationships( MyRelTypes.TEST2, dir ) );
         countRelationships( 1, node.getRelationships( 
+            MyRelTypes.TEST_TRAVERSAL, dir ) );
+    }
+    
+    private void allGetRelationshipMethods3( Node node, Direction dir )
+    {
+        countRelationships( 6, node.getRelationships() );
+        countRelationships( 6, node.getRelationships( dir ) );
+        countRelationships( 6, node.getRelationships( new RelationshipType[] { 
+            MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL } ) );
+        countRelationships( 4, node.getRelationships( new RelationshipType[] { 
+            MyRelTypes.TEST, MyRelTypes.TEST2 } ) );
+        countRelationships( 4, node.getRelationships( new RelationshipType[] { 
+            MyRelTypes.TEST, MyRelTypes.TEST_TRAVERSAL } ) );
+        countRelationships( 4, node.getRelationships( new RelationshipType[] { 
+            MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL } ) );
+        countRelationships( 2, node.getRelationships( new RelationshipType[] { 
+            MyRelTypes.TEST } ) );
+        countRelationships( 2, node.getRelationships( new RelationshipType[] { 
+            MyRelTypes.TEST2 } ) );
+        countRelationships( 2, node.getRelationships( new RelationshipType[] { 
+            MyRelTypes.TEST_TRAVERSAL } ) );
+        countRelationships( 2, node.getRelationships( MyRelTypes.TEST, dir ) );
+        countRelationships( 2, node.getRelationships( MyRelTypes.TEST2, dir ) );
+        countRelationships( 2, node.getRelationships( 
             MyRelTypes.TEST_TRAVERSAL, dir ) );
     }
     
