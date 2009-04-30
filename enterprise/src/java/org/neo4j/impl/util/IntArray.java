@@ -139,7 +139,7 @@ public class IntArray
                 if ( set.contains( value ) )
                 {
                     boolean swapSuccessful = false;
-                    for ( int j = newArray.length() - 1; j > i + 1; j--)
+                    for ( int j = newArray.length() - 1; j >= i + 1; j--)
                     {
                         int backValue = newArray.get( j );
                         newArray.arrayCount--;
