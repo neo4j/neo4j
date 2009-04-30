@@ -16,11 +16,16 @@
  */
 package org.neo4j.remote.sites;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 
@@ -126,10 +131,19 @@ public final class RmiSite implements RemoteSite
 
     /**
      * Start a stand alone Remote Neo / RMI server.
-     * 
+     * <p />
      * Usage:
      * <pre>
      * java -cp neo.jar:jta.jar:remote-neo.jar org.neo4j.remote.sites.RmiSite PATH RESOURCE_URI
+     * </pre>
+     * <p />
+     * If the host in the <code>RESOURCE_URI</code> resolves to the local host a
+     * registry will be started if none is running.
+     * <p />
+     * Any further arguments will be used to register index services. These take
+     * the form of:
+     * <pre>
+     * class.name.for.the.IndexServiceImplementation:index-service-identifier
      * </pre>
      * 
      * @param args
@@ -144,13 +158,44 @@ public final class RmiSite implements RemoteSite
     {
         String usage = "Usage: " + RmiSite.class.getName()
             + " <Neo dir> <rmi resource uri>";
-        if ( args.length != 2 )
+        if ( args.length < 2 )
         {
             throw new IllegalArgumentException( usage );
         }
+        // Check if the resource uri host is localhost
+        final URI uri;
+        final InetAddress addr;
+        final InetAddress localhost;
         try
         {
-            register( new LocalSite( args[ 0 ] ), args[ 1 ] );
+        	uri = new URI( args[ 1 ] );
+        	addr = InetAddress.getByName( uri.getHost() );
+        	localhost = InetAddress.getLocalHost();
+        }
+        catch ( Exception ex )
+        {
+        	throw new IllegalArgumentException( usage, ex );
+        }
+        // if it is localhost - try to start a registry
+        if ( addr.equals( localhost ) )
+        {
+        	int port = uri.getPort();
+        	if ( port == -1 ) port = Registry.REGISTRY_PORT;
+        	try
+        	{
+        		LocateRegistry.createRegistry( port );
+        	}
+        	catch ( Exception ex )
+        	{
+        		// it could have failed because it is already started
+        	}
+        }
+        // Register the server at the specified mounting point in the registry
+        final LocalSite server;
+        try
+        {
+        	server = new LocalSite( args[ 0 ] );
+            register( server, args[ 1 ] );
         }
         catch ( RuntimeException ex )
         {
@@ -160,9 +205,52 @@ public final class RmiSite implements RemoteSite
         {
             throw new IllegalArgumentException( usage, ex );
         }
+        // The rest of the parameters define indexes
+        // Loosely couple the indexes, we don't need them unless we use them
+        Class<?> indexService;
+        Method registerIndexMethod;
+        try
+        {
+        	indexService = Class.forName("org.neo4j.util.index.IndexService");
+            registerIndexMethod = BasicNeoServer.class.getDeclaredMethod(
+            		"registerIndexService", String.class, indexService );
+        }
+        catch ( Exception ex )
+        {
+        	indexService = null;
+        	registerIndexMethod = null;
+        }
+        // Start each index service
+        for ( int i = 2; i < args.length; i++ )
+        {
+        	// ... but not if we don't have the index component
+        	if ( indexService == null )
+        	{
+        		System.err.println( "Could not instantiate index \"" + args[i] +
+        				"\"\n    The neo-index component is not loaded." );
+        		continue;
+        	}
+        	// Separate the index class name from the index service identifier
+        	String argument[] = args[i].split(":", 2);
+        	String className = argument[0];
+        	String indexName = argument.length == 2 ? argument[1] : argument[0];
+        	// Instantiate and register the index service
+        	try
+        	{
+        		Class<?> cls = Class.forName( className );
+        		Constructor<?> ctor = cls.getConstructor( NeoService.class );
+        		Object index = ctor.newInstance( server.neo );
+        		registerIndexMethod.invoke( server, indexName, index );
+        	}
+        	catch ( Exception ex )
+        	{
+        		System.err.println( "Could not instantiate index \"" + args[i] );
+        		ex.printStackTrace( System.err );
+        	}
+        }
     }
 
-    private RmiLoginSite site()
+	private RmiLoginSite site()
     {
         try
         {
