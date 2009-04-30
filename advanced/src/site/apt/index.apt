@@ -18,7 +18,7 @@ public class ThatStartsARemoteNeoRMIServer
 {
     private static final String RESOURCE_URI = "rmi://rmi-server/neo-service";
 
-    public void publishServer( NeoService neo )
+    public static void publishServer( NeoService neo )
     {
         RmiSite.register( new LocalSite( neo ), RESOURCE_URI );
     }
@@ -35,7 +35,7 @@ public class ThatConnectsToARemoteNeoServer
 {
     private static final String RESOURCE_URI = "rmi://rmi-server/neo-service";
 
-    public NeoService connect()
+    public static NeoService connect()
     {
         return new RemoteNeo( RESOURCE_URI );
     }
@@ -44,10 +44,89 @@ public class ThatConnectsToARemoteNeoServer
 
     Then you use the Remote Neo service just like you use a normal NeoService.
 
+    You also need to start a rmiregistry with access to the Remote Neo rmi
+    transport layer classes:
+
+---
+rmiregistry -J-Djava.class.path=remote-neo.jar
+---
+
     If you only want to make a Neo4j store available as a Remote Neo over RMI
     server, with no other code running on the server (e.g. for testing
     purposes), there is a main method in the RmiSite class that does this:
 
 ---
 java -cp neo.jar:jta.jar:remote-neo.jar org.neo4j.remote.sites.RmiSite path/to/neo/store rmi://rmi-server/neo-service
+---
+
+    If the rmi-server is found to be the local machine and the local machine
+    does not have a running rmi registry, this command will create a registry.
+
+
+Adding Indexes
+
+    The next thing you will probably want to do is to expose indexes to the
+    client through Remote Neo. To be able to do this the index services in
+    your application needs to be registered with your Remote Neo server.
+
+---
+import java.util.Map;
+import java.util.HashMap;
+
+import org.neo4j.api.core.NeoService;
+import org.neo4j.remote.BasicNeoServer;
+import org.neo4j.remote.sites.LocalSite;
+import org.neo4j.util.index.IndexService;
+
+public final class RemoteNeoServerFactory
+{
+    private NeoService neo;
+    private Map<String, IndexService> indexes = new HashMap<String, IndexService>;
+
+    public RemoteNeoServerFactory(NeoService neo)
+    {
+        this.neo = neo;
+    }
+
+    public static BasicNeoServer create()
+    {
+        BasicNeoServer server = new LocalSite( neo );
+        for ( Map.Entry<String, IndexService> entry : indexes.entrySet() )
+        {
+            server.registerIndexService( entry.getKey(), entry.getValue() );
+        }
+        return server;
+    }
+
+    public void RemoteNeoServerFactory addIndex(String id, IndexService service)
+    {
+        indexes.put(id, service);
+        return this;
+    }
+}
+---
+
+    Then the indexes are available for access as remote indexes on the client:
+
+---
+import org.neo4j.remote.RemoteIndexService;
+import org.neo4j.api.core.NeoService;
+import org.neo4j.util.index.IndexService;
+
+public class ThatAccessesARemoteIndexService
+{
+    public static IndexService getIndexService(NeoService remoteNeo, String indexId)
+    {
+        return new RemoteIndexService( remoteNeo, indexId );
+    }
+}
+---
+
+    When running a stand alone Remote Neo server index services can be
+    registered by adding additional arguments to the end of the command line.
+
+    These arguments should have the format of:
+
+---
+class.name.for.the.IndexServiceImplementation:index-service-identifier
 ---
