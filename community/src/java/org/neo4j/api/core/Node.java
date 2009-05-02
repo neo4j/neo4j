@@ -22,7 +22,7 @@ package org.neo4j.api.core;
 /**
  * A node in the graph with properties and relationships to other entities.
  * Along with {@link Relationship relationships}, nodes are the core building
- * blocks of the Neo data representation model. Nodes are created by invoking
+ * blocks of the Neo4j data representation model. Nodes are created by invoking
  * the {@link NeoService#createNode} method.
  * <p>
  * Node has three major groups of operations: operations that deal with
@@ -42,10 +42,11 @@ package org.neo4j.api.core;
  * keys are always strings. Valid property value types are all the Java
  * primitives (<code>int</code>, <code>byte</code>, <code>float</code>,
  * etc), <code>java.lang.String</code>s and arrays of primitives and Strings.
- * <b>Please note</b> that Neo does NOT accept arbitrary objects as property
+ * <b>Please note</b> that Neo4j does NOT accept arbitrary objects as property
  * values. {@link #setProperty(String, Object) setProperty()} takes a
- * <code>java.lang.Object</code> for design reasons only. For further
- * documentation see {@link PropertyContainer}.
+ * <code>java.lang.Object</code> only to avoid an explosion of overloaded
+ * <code>setProperty()</code> methods. For further documentation see 
+ * {@link PropertyContainer}.
  * <p>
  * The traversal factory methods instantiate a {@link Traverser traverser} that
  * starts traversing from this node.
@@ -56,15 +57,18 @@ public interface Node extends PropertyContainer
 	 * Returns the unique id of this node. Ids are garbage collected over time
 	 * so are only guaranteed to be unique at a specific set of time: if the
 	 * node is deleted, it's likely that a new node at some point will get the
-	 * old id. This make node ids brittle as public APIs.
+	 * old id. <b>Note</b>: this make node ids brittle as public APIs.
 	 * @return the id of this node
 	 */
 	public long getId();
 	
 	/**
-	 * Deletes this node. Invoking any methods on this node after
-	 * <code>delete()</code> has returned is invalid and will lead to
-	 * unspecified behavior.
+	 * Deletes this node if it has no relationships attached to it. If <code>delete()</code> is invoked on
+	 * a node with relationships, an unchecked exception will be raised.
+	 * Invoking any methods on
+     * this node after <code>delete()</code> has returned is invalid and will
+     * lead to unspecified behavior. 
+	 * @throws RuntimeException if this node has relationships attached to it 
 	 */
 	public void delete();
 	
