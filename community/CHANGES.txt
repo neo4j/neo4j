@@ -1,0 +1,8 @@
+1.0-b8 (2009-05-03)
+-------------------
+
+o Improved the ls command with additional options.
+o Improved error reporting so non existing exception classes on client
+  side still get the original exception message.
+o Fixed bug in the jLineConsole causing shell client to enter infinite loop.
+
