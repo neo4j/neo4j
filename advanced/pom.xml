@@ -1,7 +1,7 @@
 <project>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j.examples</groupId>
-	<artifactId>apoc</artifactId>
+	<artifactId>apoc-examples</artifactId>
 	<name>apoc-examples</name>
 	<version>1.0-b8-SNAPSHOT</version>
 	<description>Basic Neo4j examples</description>
@@ -26,7 +26,7 @@
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>apoc</artifactId>
-			<version>1.0-b8-SNAPSHOT</version>
+			<version>0.1-SNAPSHOT</version>
 			<type>pom</type>
 		</dependency>
 	</dependencies>
