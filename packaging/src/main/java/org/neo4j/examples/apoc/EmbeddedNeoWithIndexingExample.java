@@ -18,6 +18,12 @@ public class EmbeddedNeoWithIndexingExample
     private static NeoService neo;
     private static IndexService indexService;
     
+    private static enum RelTypes implements RelationshipType
+    {
+        USERS_REFERENCE,
+        USER,
+    }
+
     public static void main( String[] args )
     {
         neo = new EmbeddedNeo( NEO_DB_PATH );
@@ -27,7 +33,7 @@ public class EmbeddedNeoWithIndexingExample
         Transaction tx = neo.beginTx();
         try
         {
-            // Create users sub reference node (see design guide lines on
+            // Create users sub reference node (see design guidelines on
             // http://wiki.neo4j.org)
             Node usersReferenceNode = neo.createNode();
             neo.getReferenceNode().createRelationshipTo( usersReferenceNode,
@@ -36,7 +42,7 @@ public class EmbeddedNeoWithIndexingExample
             // Create some users and index their names with the IndexService
             for ( int id = 0; id < 100; id++ )
             {
-                Node userNode = createAndIndexUser( formUserName( id ) ); 
+                Node userNode = createAndIndexUser( idToUserName( id ) ); 
                 usersReferenceNode.createRelationshipTo( userNode,
                     RelTypes.USER );
             }
@@ -45,7 +51,7 @@ public class EmbeddedNeoWithIndexingExample
             // Find a user through the search index
             int idToFind = 45;
             Node foundUser = indexService.getSingleNode( USERNAME_KEY,
-                formUserName( idToFind ) );
+                idToUserName( idToFind ) );
             System.out.println( "The username of user " + idToFind + " is " +
                 foundUser.getProperty( USERNAME_KEY ) );
             
@@ -80,7 +86,7 @@ public class EmbeddedNeoWithIndexingExample
         neo.shutdown();
     }
     
-    private static String formUserName( int id )
+    private static String idToUserName( int id )
     {
         return "user" + id + "@neo4j.org";
     }
@@ -106,11 +112,5 @@ public class EmbeddedNeoWithIndexingExample
                 shutdown();
             }
         } );
-    }
-    
-    private static enum RelTypes implements RelationshipType
-    {
-        USERS_REFERENCE,
-        USER,
-    }
+    }    
 }
