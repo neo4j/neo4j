@@ -392,14 +392,18 @@ public final class EmbeddedNeo implements NeoService
     
     public Iterable<Node> getAllNodes()
     {
-        long highId = (nodeManager.getHighestPossibleIdInUse( Node.class ) &
-            0xFFFFFFFFL );
-        return new AllNodesIterator( highId );
+        return new Iterable<Node>() {
+            public Iterator<Node> iterator() {
+                long highId = (nodeManager.getHighestPossibleIdInUse(Node.class)
+                        & 0xFFFFFFFFL);
+                return new AllNodesIterator(highId);
+            }
+        };
     }
     
     // TODO: temporary all nodes getter, fix this with better implementation
     // (no NotFoundException to control flow)
-    private class AllNodesIterator implements Iterator<Node>, Iterable<Node>
+    private class AllNodesIterator implements Iterator<Node>
     {
         private final long highId;
         private long currentNodeId = 0;
@@ -440,11 +444,6 @@ public final class EmbeddedNeo implements NeoService
         public void remove()
         {
             throw new UnsupportedOperationException();
-        }
-
-        public Iterator<Node> iterator()
-        {
-            return this;
         }
     }
 }
