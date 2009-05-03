@@ -21,6 +21,12 @@ public class ShellExample
     
     private static NeoService neo;
     
+    private static enum RelTypes implements RelationshipType
+    {
+        USERS_REFERENCE,
+        USER,
+    }
+    
     public static void main( String[] args ) throws Exception
     {
         neo = new EmbeddedNeo( NEO_DB_PATH );
@@ -154,11 +160,5 @@ public class ShellExample
         Node node = neo.createNode();
         node.setProperty( USERNAME_KEY, username );
         return node;
-    }
-    
-    private static enum RelTypes implements RelationshipType
-    {
-        USERS_REFERENCE,
-        USER,
     }
 }

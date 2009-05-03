@@ -10,7 +10,13 @@ import org.neo4j.api.core.Transaction;
 public class EmbeddedNeoExample
 {
     private static final String NEO_DB_PATH = "neo-store";
+    private static final String NAME_KEY = "name";
     
+    private static enum ExampleRelationshipTypes implements RelationshipType
+    {
+        EXAMPLE
+    }
+
     public static void main( String[] args )
     {
         final NeoService neo = new EmbeddedNeo( NEO_DB_PATH );
@@ -21,16 +27,16 @@ public class EmbeddedNeoExample
         try
         {
             Node firstNode = neo.createNode();
-            firstNode.setProperty( "name", "Hello" );
+            firstNode.setProperty( NAME_KEY, "Hello" );
             
             Node secondNode = neo.createNode();
-            secondNode.setProperty( "name", "World" );
+            secondNode.setProperty( NAME_KEY, "World" );
             
             firstNode.createRelationshipTo( secondNode,
                 ExampleRelationshipTypes.EXAMPLE );
             
-            String greeting = firstNode.getProperty( "name" ) + " " +
-                secondNode.getProperty( "name" );
+            String greeting = firstNode.getProperty( NAME_KEY ) + " " +
+                secondNode.getProperty( NAME_KEY );
             System.out.println( greeting );
             
             firstNode.getSingleRelationship(
@@ -61,10 +67,5 @@ public class EmbeddedNeoExample
                 neo.shutdown();
             }
         } );
-    }
-
-    static enum ExampleRelationshipTypes implements RelationshipType
-    {
-        EXAMPLE
     }
 }
