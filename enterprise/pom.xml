@@ -3,24 +3,13 @@
 	<groupId>org.neo4j.examples</groupId>
 	<artifactId>apoc-examples</artifactId>
 	<name>apoc-examples</name>
-	<version>1.0-b8-SNAPSHOT</version>
+	<version>0.1-SNAPSHOT</version>
 	<description>Basic Neo4j examples</description>
 	<parent>
 		<groupId>org.neo4j</groupId>
 		<artifactId>parent-pom</artifactId>
 		<version>2</version>
 	</parent>
-	<pluginRepositories>
-		<pluginRepository>
-			<id>codehaus.snapshots</id>
-			<name>Codehaus snapshots</name>
-			<url>http://snapshots.repository.codehaus.org/
-			</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</pluginRepository>
-	</pluginRepositories>
 
 	<dependencies>
 		<dependency>
@@ -38,7 +27,6 @@
 				<artifactId>appassembler-maven-plugin
 				</artifactId>
 				<configuration>
-					<binPrefix>neo4j</binPrefix>
 					<repositoryLayout>flat</repositoryLayout>
 					<repositoryName>lib</repositoryName>
 					<includeConfigurationDirectoryInClasspath>false
@@ -80,7 +68,7 @@
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
-					<finalName>neo4j-${project.build.finalName}</finalName>
+					<finalName>neo4j-apoc-${project.version}</finalName>
 					<descriptors>
 						<descriptor>src/main/assembly/apoc-assembly.xml
 						</descriptor>
