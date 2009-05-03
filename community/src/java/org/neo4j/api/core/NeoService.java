@@ -23,9 +23,9 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * The main access point to a running Neo instance. The only current
+ * The main access point to a running Neo4j instance. The most common
  * implementation is the {@link EmbeddedNeo EmbeddedNeo} class, which is used to
- * embed Neo in an application. Typically, you would create an
+ * embed Neo4j in an application. Typically, you would create an
  * <code>EmbeddedNeo</code> instance as follows:
  * <code>
  * <pre>NeoService neo = new EmbeddedNeo( "var/neo" );
@@ -35,7 +35,7 @@ import java.util.Map;
  * NeoService provides operations to {@link #enableRemoteShell enable the shell},
  * {@link #createNode() create nodes}, {@link #getNodeById(long) get nodes
  * given an id}, get the {@link #getReferenceNode() reference node} and
- * ultimately {@link #shutdown() shutdown Neo}.
+ * ultimately {@link #shutdown() shutdown Neo4j}.
  * <p>
  * Please note that all operations that read or write to the node space must be
  * invoked in a {@link Transaction transactional context}. Failure to do so 
@@ -75,16 +75,35 @@ public interface NeoService
      * @throws NotFoundException if unable to get the reference node
      */
     public Node getReferenceNode();
+    
+    /**
+     * Returns all nodes in the node space. 
+     * @return all nodes in the node space
+     */
+    public Iterable<Node> getAllNodes();
+    
+    
+    /**
+     * Returns all relationship types currently in the underlying store. Relationship
+     * types are added to the underlying store the first time they are used in
+     * a successfully commited {@link Node#createRelationshipTo node.createRelationshipTo(...)}. Note that
+     * this method is guaranteed to return all known relationship types, but
+     * it does not guarantee that it won't return <i>more</i> than that (e.g.
+     * it can return "historic" relationship types that no longer have any
+     * relationships in the node space).
+     * @return all relationship types in the underlying store
+     */
+    public Iterable<RelationshipType> getRelationshipTypes();
 
     /**
-     * Shuts down Neo. After this method has been invoked,  it's invalid to
-     * invoke any methods in the Neo API and all references to this instance of
-     * NeoService should be discarded.
+     * Shuts down Neo4j. After this method has been invoked,  it's invalid to
+     * invoke any methods in the Neo4j API and all references to this instance
+     * of NeoService should be discarded.
      */
     public void shutdown();
     
     /**
-     * Enables remote shell access (with default configuration) to this Neo
+     * Enables remote shell access (with default configuration) to this Neo4j
      * instance, if the Neo4j <code>shell</code> component is available on the
      * classpath. This method is identical to invoking
      * {@link #enableRemoteShell(Map) enableRemoteShell( null )}.
@@ -95,7 +114,7 @@ public interface NeoService
     public boolean enableRemoteShell();
 
     /**
-     * Enables remote shell access to this Neo instance, if the Neo4j
+     * Enables remote shell access to this Neo4j instance, if the Neo4j
      * <code>shell</code> component is available on the classpath. This will
      * publish a shell access interface on an RMI registry on localhost (with
      * configurable port and RMI binding name). It can be accessed by a
