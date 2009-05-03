@@ -1,4 +1,2 @@
-junit.jar           - Version 3.7 of JUnit (http://junit.org). Used for
-                      automated unit tests.
 jta-1_1.jar         - Version 1.1 of Sun's JTA specification.
 
