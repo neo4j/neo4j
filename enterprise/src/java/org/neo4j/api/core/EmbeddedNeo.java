@@ -256,13 +256,9 @@ public final class EmbeddedNeo implements NeoService
         }
     }
 
-    /**
-     * Returns all relationship types in the underlying store. Relationship
-     * types are added to the underlying store the first time they are used in
-     * {@link Node#createRelationshipTo}.
-     * @return all relationship types in the underlying store
-     * @deprecated Might not be needed now that relationship types are {@link
-     *             RelationshipType created dynamically}.
+    /*
+     * (non-Javadoc)
+     * @see org.neo4j.api.core.NeoService#getRelationshipTypes()
      */
     public Iterable<RelationshipType> getRelationshipTypes()
     {
