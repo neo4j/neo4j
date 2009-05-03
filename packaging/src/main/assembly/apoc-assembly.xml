@@ -7,11 +7,8 @@
     <fileSets>
         <!-- SRC -->
         <fileSet>
-            <directory>src</directory>
-            <useDefaultExcludes>true</useDefaultExcludes>
-            <excludes>
-                <exclude>**/main/assembly/**</exclude>
-            </excludes>
+            <directory>src/main/java</directory>
+            <outputDirectory>examples</outputDirectory>
         </fileSet>
         <!-- INFO -->
         <fileSet>
