@@ -60,7 +60,7 @@ package org.neo4j.api.core;
  * is by invoking <code>equals()</code> on their {@link #name names}, NOT by
  * using Java's identity operator (<code>==</code>). However, you usually
  * want to check whether a specific relationship <i>instance</i> is of a
- * certain type and that is best done with the
+ * certain type. That is best achieved with the
  * {@link Relationship#isType Relationship.isType} method, such as: <code><pre>
  * if ( rel.isType( MyRelationshipTypes.CONTAINED_IN ) )
  * {
@@ -72,8 +72,8 @@ public interface RelationshipType
 {
 	/**
 	 * Returns the name of the relationship type. The name uniquely identifies
-	 * a relationship type, i.e. two different RelationshipType implementations
-	 * with different object identifies (and possibly even different classes)
+	 * a relationship type, i.e. two different RelationshipType instances
+	 * with different object identifiers (and possibly even different classes)
 	 * are semantically equivalent if they have {@link String#equals(Object)
 	 * equal} names.
 	 * @return the name of the relationship type
