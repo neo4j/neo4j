@@ -365,6 +365,25 @@ public abstract class BasicNeoServer implements RemoteSite
         return neo.getReferenceNode().getId();
     }
 
+    SimpleIterator<NodeSpecification> getAllNodes( NeoService neo )
+    {
+        final Iterator<Node> nodes = neo.getAllNodes().iterator();
+        return new SimpleIterator<NodeSpecification>()
+        {
+            @Override
+            boolean hasNext()
+            {
+                return nodes.hasNext();
+            }
+
+            @Override
+            NodeSpecification getNext()
+            {
+                return new NodeSpecification( nodes.next().getId() );
+            }
+        };
+    }
+
     boolean hasNodeWithId( NeoService neo, long nodeId )
     {
         Node node = null;
