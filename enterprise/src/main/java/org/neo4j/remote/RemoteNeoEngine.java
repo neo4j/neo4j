@@ -136,6 +136,24 @@ final class RemoteNeoEngine
         };
     }
 
+    Iterable<NodeSpecification> getAllNodes( final int txId )
+    {
+        return new BatchIterable<NodeSpecification>()
+        {
+            @Override
+            IterableSpecification<NodeSpecification> init()
+            {
+                return receive( connection.getAllNodes(txId) );
+            }
+
+            @Override
+            IterableSpecification<NodeSpecification> more( int requestToken )
+            {
+                return receive( connection.getMoreNodes( txId, requestToken ) );
+            }
+        };
+    }
+
     // --- RemoteTransaction interface ---
 
     long createNode( int txId )

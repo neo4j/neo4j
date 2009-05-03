@@ -131,6 +131,16 @@ public interface RemoteConnection
     RemoteResponse<Void> deleteNode( int transactionId, long nodeId );
 
     /**
+     * Get all nodes.
+     * 
+     * @param transactionId
+     *            the id of the transaction to get all nodes in.
+     * @return A serialized iterator containing nodes.
+     */
+    RemoteResponse<IterableSpecification<NodeSpecification>> getAllNodes(
+        int transactionId );
+
+    /**
      * Get the next chunk of the lazy iterator of nodes.
      * 
      * @param transactionId

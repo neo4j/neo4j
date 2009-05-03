@@ -215,6 +215,11 @@ public final class RemoteNeo implements NeoService
     {
         return engine.current( true ).getRelationshipTypes();
     }
+    
+    public Iterable<Node> getAllNodes()
+    {
+        return engine.current( true ).getAllNodes();
+    }
 
     public void shutdown()
     {

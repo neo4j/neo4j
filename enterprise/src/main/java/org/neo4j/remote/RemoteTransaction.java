@@ -255,6 +255,18 @@ class RemoteTransaction implements Transaction
         engine.deleteNode( id, node.id );
     }
 
+    Iterable<Node> getAllNodes()
+    {
+        return new ConversionIterable<NodeSpecification, Node>( engine.getAllNodes( id ) )
+        {
+            @Override
+            Node convert( NodeSpecification source )
+            {
+                return getNode( source.id, true );
+            }
+        };
+    }
+
     Iterable<RelationshipType> getRelationshipTypes()
     {
         return new ConversionIterable<String, RelationshipType>( engine

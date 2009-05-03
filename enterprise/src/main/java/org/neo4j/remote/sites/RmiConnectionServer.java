@@ -185,6 +185,12 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
     {
         return connection.deleteNode( transactionId, nodeId );
     }
+    
+    public RemoteResponse<IterableSpecification<NodeSpecification>> getAllNodes(
+        int transactionId )
+    {
+        return connection.getAllNodes( transactionId );
+    }
 
     public RemoteResponse<IterableSpecification<NodeSpecification>> getMoreNodes(
         int transactionId, int requestToken )
