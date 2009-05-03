@@ -144,6 +144,19 @@ class RmiConnectionAdapter implements RemoteConnection
         }
     }
 
+    public RemoteResponse<IterableSpecification<NodeSpecification>> getAllNodes(
+        int transactionId )
+    {
+        try
+        {
+            return rmi().getAllNodes( transactionId );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
+
     public RemoteResponse<NodeSpecification> createNode( int transactionId )
     {
         try

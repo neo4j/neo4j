@@ -123,6 +123,12 @@ final class BasicConnection implements RemoteConnection
     {
         return transaction( transactionId ).hasNodeWithId( nodeId );
     }
+    
+    public RemoteResponse<IterableSpecification<NodeSpecification>> getAllNodes(
+        int transactionId )
+    {
+        return transaction( transactionId ).getAllNodes();
+    }
 
     public RemoteResponse<IterableSpecification<NodeSpecification>> getMoreNodes(
         int transactionId, int requestToken )

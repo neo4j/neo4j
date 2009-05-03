@@ -285,6 +285,19 @@ final class BasicServerTransaction
         return response().buildVoidResponse();
     }
 
+    RemoteResponse<IterableSpecification<NodeSpecification>> getAllNodes()
+    {
+        resume();
+        SimpleIterator<NodeSpecification> iterator;
+        try {
+            iterator = server.getAllNodes( connection.neo );
+        } catch ( RuntimeException ex )
+        {
+            return response().buildErrorResponse( ex );
+        }
+        return nodes( nodTokenPool++, iterator );
+    }
+
     RemoteResponse<Void> deleteRelationship( long relationshipId )
     {
         resume();

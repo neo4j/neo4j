@@ -57,6 +57,9 @@ interface RmiConnection extends Remote
     RemoteResponse<Void> deleteNode( int transactionId, long nodeId )
         throws RemoteException;
 
+    RemoteResponse<IterableSpecification<NodeSpecification>> getAllNodes(
+        int transactionId ) throws RemoteException;
+
     RemoteResponse<IterableSpecification<NodeSpecification>> getMoreNodes(
         int transactionId, int requestToken ) throws RemoteException;
 
