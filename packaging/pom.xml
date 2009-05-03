@@ -39,19 +39,18 @@
 						<program>
 							<mainClass>org.neo4j.examples.apoc.EmbeddedNeoExample
 							</mainClass>
-							<name>EmbeddedNeo-example</name>
+							<name>embedded-neo-example</name>
 						</program>
 						<program>
 							<mainClass>
 								org.neo4j.examples.apoc.EmbeddedNeoWithIndexingExample
 							</mainClass>
-							<name>EmbeddedNeo-example-with-indexing
-							</name>
+							<name>embedded-neo-with-indexing-example</name>
 						</program>
 						<program>
 							<mainClass>org.neo4j.examples.apoc.ShellExample
 							</mainClass>
-							<name>Shell-example</name>
+							<name>shell-example</name>
 						</program>
 					</programs>
 				</configuration>

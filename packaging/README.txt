@@ -1,12 +1,29 @@
-Basic Neo4j examples
+Apoc 0.1 - Basic Neo4j examples
 
-This package includes the most commonly used Neo4j components
-and example code showing basic usage of them.
+This package includes some of the commonly used Neo4j components as well as
+example code that shows basic usage of them.
 
-You can run the examples from the Unix and Windows start scripts
-in the bin/ directory.
-The source code is found in the src/ directory.
-The libraries/components are found in the lib/ directory.
+Included in this release of Apoc is:
 
-Various licenses apply, please refer to the LICENSE and
-NOTICE files for further information.
+   neo: the neo4j graph database engine
+   index-util: indexing and data structures
+   shell: text command shell for browsing the node space
+   remote-neo: thin layer to enable remote access to a neo instance
+   
+You can run the examples from the Unix and Windows start scripts in the bin/
+directory.
+
+You'll find the source code to the examples in the src/ directory.
+
+The components are found in the lib/ directory.
+
+For documentation, see:
+
+   http://api.neo4j.org/current
+
+and:
+
+   http://components.neo4j.org
+
+Various licenses apply, please refer to the LICENSE and NOTICE files for more
+detailed information.
