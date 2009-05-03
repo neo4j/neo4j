@@ -1,3 +1,54 @@
+1.0-b8 (2009-05-03)
+-------------------
+
+-Enhancements, new features and major changes
+o Core: Added logical log rotation and online-backup core features.
+o Core: Reduced memory footprint and object allocation.
+o Core: Moved all constrain checks to nioneo resulting in performance increase.
+o Core: Improved traversal speed reworking set oriented caches to use arrays.
+
+-Misc enhancements, minor changes and tweaks
+o Core: Removed event manager dependency since it needs a rewrite (event
+  generation needs specification).
+o Core: Transaction events have been removed, needs proper specification.
+o Core: Removed read lock on loading of non cached node/relationship,
+  replaced with reeantrant lock stripe.
+o Core: Persistence row windows in nioneo now only load data if acquired for 
+  read operation.
+o Core: Upgraded to JTA 1.1
+o Core: Improved some error messages.
+o Core: EmbeddedNeo.toString now reports object id and neo store path.
+o Core: Cleaned up logging messages during recovery.
+o Core: Increased default block size for string and array stores to better
+  fit avg. data sets out there.
+
+-Bug fixes
+o Core: Fixed missing close on TM's active log file.
+o Core: A bug with copy on write "diff" maps that could cause wrong cached value 
+  to be read (for both properties and relationships) has been fixed.
+o Core: Fixed an issue with non committed properties/relationships
+  modifications leaking to other transactions (in cache layer during cache 
+  resize).
+o Core: Fixed bug in property index manager that could cause created index
+  not to be published at the right time.
+o Core: Fixed bug that allowed for relationship/property loads on deleted
+  node (in same tx).
+o Core: Fixed some bugs caused by use of JTA tx synchronization hooks (we can't 
+  use them when ordering is required).
+o Core: Fixed bug with relationship type store not handeling "holes" correctly.
+o Core: Fixed problem with multiple calls to close() on XaDataSources
+o Core: Removed use IOException( Throwable ) since it is not in Java 1.5
+o Core: Parsing of memory mapped settings can now handle G (1024*1024*1024).
+o Core: Fixed swallow of NotFoundException in traverser implementation.
+
+-Notes
+o Testing on Windows Vista platform has revealed a strange "slowness" for b8
+  that has yet to be dertermined the cause of. The problem becomes more visible 
+  when running many concurrent transactions/threads hammering requests to Neo 
+  (10x performance decrease has been observed on same hardware). For production 
+  systems we recommend using GNU Linux or Solaris OS with Sun's 1.6 JVM for best 
+  performance.
+
 1.0-b7 (2008-09-29)
 ------------------
 
