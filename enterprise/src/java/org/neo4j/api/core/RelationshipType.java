@@ -58,9 +58,13 @@ package org.neo4j.api.core;
  * by its name, not by any particular instance that implements this interface.
  * This means that the proper way to check if two relationship types are equal
  * is by invoking <code>equals()</code> on their {@link #name names}, NOT by
- * using Java's identity operator (<code>==</code>). However, you usually
- * want to check whether a specific relationship <i>instance</i> is of a
- * certain type. That is best achieved with the
+ * using Java's identity operator (<code>==</code>) or <code>equals()</code>
+ * on the relationship type instances. A consequence of this is that you can NOT
+ * use relationship types in hashed collections such as {@link java.util.HashMap
+ * HashMap} and {@link java.util.HashSet HashSet}. 
+ * <p>
+ * However, you usually want to check whether a specific relationship
+ * <i>instance</i> is of a certain type. That is best achieved with the
  * {@link Relationship#isType Relationship.isType} method, such as: <code><pre>
  * if ( rel.isType( MyRelationshipTypes.CONTAINED_IN ) )
  * {
@@ -78,5 +82,5 @@ public interface RelationshipType
 	 * equal} names.
 	 * @return the name of the relationship type
 	 */
-	public String name();
+	public String name();	
 }
