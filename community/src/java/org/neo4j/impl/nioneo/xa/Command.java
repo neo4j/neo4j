@@ -475,7 +475,7 @@ abstract class Command extends XaCommand
         @Override
         public boolean equals( Object o )
         {
-            if ( !(o instanceof PropertyCommand) )
+            if ( !(o instanceof PropertyIndexCommand) )
             {
                 return false;
             }

@@ -365,7 +365,6 @@ public class NodeManager
         {
             if ( nodeCache.get( nodeId ) != null )
             {
-                node = nodeCache.get( nodeId );
                 return new NodeProxy( nodeId, this );
             }
             if ( !persistenceManager.loadLightNode( nodeId ) )
