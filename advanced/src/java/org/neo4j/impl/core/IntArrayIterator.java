@@ -120,7 +120,8 @@ class IntArrayIterator implements Iterable<Relationship>,
                 currentTypeIterator = typeIterator.next();
             }
          } while ( currentTypeIterator.hasNext() );
-        return nextElement != null;
+        // no next element found
+        return false;
     }
 
     public Relationship next()
