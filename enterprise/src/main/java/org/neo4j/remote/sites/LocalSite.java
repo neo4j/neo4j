@@ -24,6 +24,7 @@ import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.NeoService;
 import org.neo4j.remote.BasicNeoServer;
 import org.neo4j.remote.RemoteSite;
+import org.neo4j.util.index.IndexService;
 
 /**
  * An implementation of {@link RemoteSite} that isn't really remote. This
@@ -33,8 +34,6 @@ import org.neo4j.remote.RemoteSite;
  */
 public final class LocalSite extends BasicNeoServer
 {
-    final NeoService neo;
-
     /**
      * Create a new local {@link RemoteSite}.
      * @param neo
@@ -42,10 +41,9 @@ public final class LocalSite extends BasicNeoServer
      */
     public LocalSite( NeoService neo )
     {
-        super( getTransactionManagerFor( neo ) );
-        this.neo = neo;
+        this( new NeoServiceContainer( neo ) );
     }
-    
+
     /**
      * Create a new local {@link RemoteSite}.
      * @param path
@@ -53,19 +51,34 @@ public final class LocalSite extends BasicNeoServer
      */
     public LocalSite( String path )
     {
-    	this( LocalSiteFactory.getNeoService( new File( path ) ) );
+        this( LocalSiteFactory.getNeoService( new File( path ) ) );
+    }
+
+    final NeoServiceContainer neo;
+
+    LocalSite( NeoServiceContainer neo )
+    {
+        super( getTransactionManagerFor( neo.service ) );
+        this.neo = neo;
     }
 
     @Override
     protected NeoService connectNeo()
     {
-        return neo;
+        return neo.service;
     }
 
     @Override
     protected NeoService connectNeo( String username, String password )
     {
-        return neo;
+        return neo.service;
+    }
+
+    @Override
+    public void registerIndexService( String name, IndexService index )
+    {
+        super.registerIndexService( name, index );
+        neo.addIndexService( index );
     }
 
     private static TransactionManager getTransactionManagerFor( NeoService neo )
