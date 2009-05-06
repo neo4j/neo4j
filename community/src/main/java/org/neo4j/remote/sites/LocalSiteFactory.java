@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.NeoService;
 import org.neo4j.remote.RemoteSite;
 import org.neo4j.remote.RemoteSiteFactory;
 
@@ -54,35 +53,26 @@ public final class LocalSiteFactory extends RemoteSiteFactory
         return "file".equals( resourceUri.getScheme() );
     }
 
-    private static Map<String, NeoService> instances = new HashMap<String, NeoService>();
-    
-    static synchronized NeoService getNeoService( File file )
+    private static Map<String, NeoServiceContainer> instances = new HashMap<String, NeoServiceContainer>();
+
+    static synchronized NeoServiceContainer getNeoService( File file )
     {
-    	String path;
-    	try {
-    		path = file.getCanonicalPath();
-    	} catch ( IOException ex ) {
-    		path = file.getAbsolutePath();
-    	}
-        NeoService neo = instances.get( path );
+        String path;
+        try
+        {
+            path = file.getCanonicalPath();
+        }
+        catch ( IOException ex )
+        {
+            path = file.getAbsolutePath();
+        }
+        NeoServiceContainer neo = instances.get( path );
         if ( neo == null )
         {
-            neo = newNeoService( path );
+            neo = new NeoServiceContainer( new EmbeddedNeo( path ) );
+            Runtime.getRuntime().addShutdownHook( new Thread( neo ) );
             instances.put( path, neo );
         }
-        return neo;
-    }
-
-    private static NeoService newNeoService( String path )
-    {
-        final NeoService neo = new EmbeddedNeo( path );
-        Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
-        {
-            public void run()
-            {
-                neo.shutdown();
-            }
-        } ) );
         return neo;
     }
 }
