@@ -151,7 +151,10 @@ public class XaLogicalLog
             File copy = new File( fileName + ".copy" );
             if ( copy.exists() )
             {
-                copy.delete();
+                if ( !copy.delete() )
+                {
+                    log.warning( "Unable to delete " + copy.getName() );
+                }
             }
             if ( c == CLEAN )
             {
@@ -177,7 +180,10 @@ public class XaLogicalLog
                 File otherLog = new File( fileName + ".2" );
                 if ( otherLog.exists() )
                 {
-                    otherLog.delete();
+                    if ( !otherLog.delete() )
+                    {
+                        log.warning( "Unable to delete " + copy.getName() );
+                    }
                 }
                 open( newLog );
             }
@@ -192,7 +198,10 @@ public class XaLogicalLog
                 File otherLog = new File( fileName + ".1" );
                 if ( otherLog.exists() )
                 {
-                    otherLog.delete();
+                    if ( !otherLog.delete() )
+                    {
+                        log.warning( "Unable to delete " + copy.getName() );
+                    }
                 }
                 currentLog = LOG2;
                 open( newLog );
@@ -900,10 +909,7 @@ public class XaLogicalLog
         {
             log.info( "Close invoked with " + xidIdentMap.size() + 
                 " running transaction(s). " );
-            if ( writeBuffer != null )
-            {
-                writeBuffer.force();
-            }
+            writeBuffer.force();
             writeBuffer = null;
             fileChannel.close();
             log.info( "Dirty log: " + fileName + "." + currentLog + 
@@ -1490,7 +1496,7 @@ public class XaLogicalLog
                     readAndWriteCommandEntry( newLog );
                     break;
                 case DONE:
-                    readAndWriteDoneEntry();
+                    readAndVerifyDoneEntry();
                     break;
                 case EMPTY:
                     emptyHit = true;
@@ -1596,29 +1602,21 @@ public class XaLogicalLog
         }
     }
 
-    private void readAndWriteDoneEntry() 
+    private void readAndVerifyDoneEntry() 
         throws IOException
     {
         buffer.clear();
-        buffer.limit( 1 + 4 );
-        buffer.put( DONE );
+        buffer.limit( 4 );
         if ( fileChannel.read( buffer ) != 4 )
         {
             throw new IllegalStateException( "Unable to read done entry" );
         }
         buffer.flip();
-        buffer.position( 1 );
         int identifier = buffer.getInt();
-        FileChannel writeToLog = null;
         if ( xidIdentMap.get( identifier ) != null )
         {
             throw new IllegalStateException( identifier + 
                 " done entry found but still active" );
-        }
-        buffer.position( 0 );
-        if ( writeToLog != null && writeToLog.write( buffer ) != 5 )
-        {
-            throw new RuntimeException( "Unable to write done entry" );
         }
     }
 
