@@ -26,7 +26,7 @@ import org.neo4j.impl.nioneo.store.AbstractDynamicStore;
 /**
  * Dynamic store that stores strings.
  */
-class DynamicStringStore extends AbstractDynamicStore
+public class DynamicStringStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "StringPropertyStore v0.9.3";
@@ -49,5 +49,15 @@ class DynamicStringStore extends AbstractDynamicStore
     public static void createStore( String fileName, int blockSize )
     {
         createEmptyStore( fileName, blockSize, VERSION );
+    }
+    
+    public void setHighId( long highId )
+    {
+        super.setHighId( highId );
+    }
+    
+    public int nextBlockId()
+    {
+        return super.nextBlockId();
     }
 }

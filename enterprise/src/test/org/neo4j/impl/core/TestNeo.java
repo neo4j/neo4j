@@ -158,8 +158,8 @@ public class TestNeo extends AbstractNeoTestCase
         NeoModule neoModule = ((EmbeddedNeo) getNeo()).getConfig()
             .getNeoModule();
         NodeManager nm = neoModule.getNodeManager();
-        int nodeCount = nm.getNumberOfIdsInUse( Node.class );
-        int relCount = nm.getNumberOfIdsInUse( Relationship.class );
+        long nodeCount = nm.getNumberOfIdsInUse( Node.class );
+        long relCount = nm.getNumberOfIdsInUse( Relationship.class );
         if ( nodeCount > nm.getHighestPossibleIdInUse( Node.class ) )
         {
             // fail( "Node count greater than highest id " + nodeCount );

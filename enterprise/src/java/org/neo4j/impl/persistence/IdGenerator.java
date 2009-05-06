@@ -47,12 +47,12 @@ public class IdGenerator
         return getPersistenceSource().nextId( clazz );
     }
 
-    public int getHighestPossibleIdInUse( Class<?> clazz )
+    public long getHighestPossibleIdInUse( Class<?> clazz )
     {
         return getPersistenceSource().getHighestPossibleIdInUse( clazz );
     }
 
-    public int getNumberOfIdsInUse( Class<?> clazz )
+    public long getNumberOfIdsInUse( Class<?> clazz )
     {
         return getPersistenceSource().getNumberOfIdsInUse( clazz );
     }

@@ -239,9 +239,9 @@ public abstract class CommonAbstractStore
      * @throws IOException
      *             If unable to get next free id
      */
-    protected int nextId()
+    public int nextId()
     {
-        return idGenerator.nextId();
+        return (int) idGenerator.nextId();
     }
 
     /**
@@ -252,17 +252,22 @@ public abstract class CommonAbstractStore
      * @throws IOException
      *             If unable to free the id
      */
-    protected void freeId( int id )
+    public void freeId( int id )
     {
-        idGenerator.freeId( id );
+        idGenerator.freeId( makeUnsignedInt( id ) );
     }
-
+    
+    private long makeUnsignedInt( int signedInteger )
+    {
+        return signedInteger & 0xFFFFFFFFL;
+    }
+    
     /**
      * Return the highest id in use.
      * 
      * @return The highest id in use.
      */
-    protected int getHighId()
+    protected long getHighId()
     {
         return idGenerator.getHighId();
     }
@@ -273,7 +278,7 @@ public abstract class CommonAbstractStore
      * @param highId
      *            The high id to set.
      */
-    protected void setHighId( int highId )
+    protected void setHighId( long highId )
     {
         idGenerator.setHighId( highId );
     }
@@ -372,10 +377,11 @@ public abstract class CommonAbstractStore
      * @throws IOException
      *             If unable to acquire window
      */
-    protected PersistenceWindow acquireWindow( int position, OperationType type )
+    protected PersistenceWindow acquireWindow( int sPosition, OperationType type )
     {
+        long position = makeUnsignedInt( sPosition );
         if ( !isInRecoveryMode()
-            && (position > idGenerator.getHighId() || !storeOk) )
+            && ( position > idGenerator.getHighId() || !storeOk) )
         {
             throw new StoreFailureException( "Position[" + position
                 + "] requested for operation is high id["
@@ -384,19 +390,6 @@ public abstract class CommonAbstractStore
         }
         return windowPool.acquire( position, type );
     }
-
-//    protected boolean hasWindow( int position )
-//    {
-//        if ( !isInRecoveryMode()
-//            && (position > idGenerator.getHighId() || !storeOk) )
-//        {
-//            throw new StoreFailureException( "Position[" + position
-//                + "] requested for operation is high id["
-//                + idGenerator.getHighId() + "] or store is flagged as dirty["
-//                + storeOk + "]" );
-//        }
-//        return windowPool.hasWindow( position );
-//    }
 
     /**
      * Releases the window and writes the data (async) if the 
@@ -412,7 +405,7 @@ public abstract class CommonAbstractStore
     {
         windowPool.release( window );
     }
-
+    
     public void flushAll()
     {
         windowPool.flushAll();
@@ -495,7 +488,7 @@ public abstract class CommonAbstractStore
             windowPool.close();
             windowPool = null;
         }
-        int highId = idGenerator.getHighId();
+        long highId = idGenerator.getHighId();
         int recordSize = -1;
         if ( this instanceof AbstractDynamicStore )
         {
@@ -513,7 +506,7 @@ public abstract class CommonAbstractStore
         {
             try
             {
-                fileChannel.position( ((long) highId) * recordSize );
+                fileChannel.position( highId * recordSize );
                 ByteBuffer buffer = ByteBuffer.wrap( 
                     getTypeAndVersionDescriptor().getBytes() );
                 fileChannel.write( buffer );
@@ -553,7 +546,7 @@ public abstract class CommonAbstractStore
     /**
      * @return The highest possible id in use, -1 if no id in use.
      */
-    public int getHighestPossibleIdInUse()
+    public long getHighestPossibleIdInUse()
     {
         return idGenerator.getHighId() - 1;
     }
@@ -561,7 +554,7 @@ public abstract class CommonAbstractStore
     /**
      * @return The total number of ids in use.
      */
-    public int getNumberOfIdsInUse()
+    public long getNumberOfIdsInUse()
     {
         return idGenerator.getNumberOfIdsInUse();
     }

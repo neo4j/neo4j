@@ -23,12 +23,11 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.impl.core.PropertyIndex;
-import org.neo4j.impl.nioneo.store.IdGenerator;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeStore;
 import org.neo4j.impl.nioneo.store.PropertyData;
-import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
+import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
@@ -232,16 +231,6 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         {
             return xaCon.getNeoTransaction().nodeGetRelationships( nodeId );
         }
-
-        public int nextId()
-        {
-            return nodeStore.nextId();
-        }
-
-        public IdGenerator getIdGenerator()
-        {
-            throw new RuntimeException( "don't use" );
-        }
     };
 
     private class RelationshipEventConsumerImpl implements
@@ -295,16 +284,6 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         {
             return xaCon.getNeoTransaction().relationshipLoad( id );
         }
-
-        public int nextId()
-        {
-            return relStore.nextId();
-        }
-
-        public IdGenerator getIdGenerator()
-        {
-            throw new RuntimeException( "don't use" );
-        }
     };
 
     private class RelationshipTypeEventConsumerImpl implements
@@ -332,11 +311,6 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         public RelationshipTypeData[] getRelationshipTypes()
         {
             return relTypeStore.getRelationshipTypes();
-        }
-
-        public int nextId()
-        {
-            return relTypeStore.nextId();
         }
     };
 

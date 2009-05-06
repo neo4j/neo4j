@@ -45,9 +45,9 @@ public interface PersistenceSource
      */
     public int nextId( Class<?> clazz );
 
-    public int getHighestPossibleIdInUse( Class<?> clazz );
+    public long getHighestPossibleIdInUse( Class<?> clazz );
 
-    public int getNumberOfIdsInUse( Class<?> clazz );
+    public long getNumberOfIdsInUse( Class<?> clazz );
     
     public XaDataSource getXaDataSource();
 }

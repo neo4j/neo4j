@@ -31,7 +31,11 @@ public interface PersistenceWindow
      * @return The underlying buffer
      */
     public Buffer getBuffer();
+    
+    public Buffer getOffsettedBuffer( int id );
 
+    public int getRecordSize();
+    
     /**
      * Returns the current record/block position.
      * 

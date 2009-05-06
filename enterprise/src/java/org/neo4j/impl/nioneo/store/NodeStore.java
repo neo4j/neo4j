@@ -85,7 +85,7 @@ public class NodeStore extends AbstractStore implements Store
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            NodeRecord record = getRecord( id, window.getBuffer(), false );
+            NodeRecord record = getRecord( id, window, false );
             return record;
         }
         finally
@@ -114,7 +114,7 @@ public class NodeStore extends AbstractStore implements Store
             OperationType.WRITE );
         try
         {
-            updateRecord( record, window.getBuffer() );
+            updateRecord( record, window );
         }
         finally
         {
@@ -137,7 +137,7 @@ public class NodeStore extends AbstractStore implements Store
 
         try
         {
-            NodeRecord record = getRecord( id, window.getBuffer(), true );
+            NodeRecord record = getRecord( id, window, true );
             if ( record == null )
             {
                 return false;
@@ -150,10 +150,10 @@ public class NodeStore extends AbstractStore implements Store
         }
     }
 
-    private NodeRecord getRecord( int id, Buffer buffer, boolean check )
+    private NodeRecord getRecord( int id, PersistenceWindow window, 
+        boolean check )
     {
-        int offset = (int) (id - buffer.position()) * getRecordSize();
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( id );
         boolean inUse = (buffer.get() == Record.IN_USE.byteValue());
         if ( !inUse )
         {
@@ -170,11 +170,10 @@ public class NodeStore extends AbstractStore implements Store
         return nodeRecord;
     }
 
-    private void updateRecord( NodeRecord record, Buffer buffer )
+    private void updateRecord( NodeRecord record, PersistenceWindow window )
     {
         int id = record.getId();
-        int offset = (int) (id - buffer.position()) * getRecordSize();
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {
             buffer.put( Record.IN_USE.byteValue() ).putInt( 
@@ -189,7 +188,7 @@ public class NodeStore extends AbstractStore implements Store
             }
         }
     }
-
+    
     public String toString()
     {
         return "NodeStore";

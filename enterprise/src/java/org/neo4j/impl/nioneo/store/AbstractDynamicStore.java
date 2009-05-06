@@ -189,7 +189,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
     {
         return blockSize;
     }
-
+    
     /**
      * Returns next free block.
      * 
@@ -224,9 +224,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         PersistenceWindow window = acquireWindow( blockId, OperationType.WRITE );
         try
         {
-            Buffer buffer = window.getBuffer();
-            int offset = (int) (blockId - buffer.position()) * getBlockSize();
-            buffer.setOffset( offset );
+            Buffer buffer = window.getOffsettedBuffer( blockId );
             if ( record.inUse() )
             {
                 assert record.getId() != record.getPrevBlock();
@@ -362,7 +360,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             try
             {
                 DynamicRecord record = getLightRecord( 
-                    blockId, window.getBuffer() );
+                    blockId, window );
                 recordList.add( record );
                 blockId = record.getNextBlock();
             }
@@ -381,8 +379,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         try
         {
             Buffer buf = window.getBuffer();
-            int offset = (int) (blockId - buf.position()) * getBlockSize()
-                + BLOCK_HEADER_SIZE;
+            // NOTE: skip of header in offset
+            int offset = (int) ((blockId & 0xFFFFFFFFL) - 
+                buf.position()) * getBlockSize() + BLOCK_HEADER_SIZE;
             buf.setOffset( offset );
             byte bytes[] = new byte[record.getLength()];
             buf.get( bytes );
@@ -394,11 +393,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
     }
 
-    private DynamicRecord getLightRecord( int blockId, Buffer buffer )
+    private DynamicRecord getLightRecord( int blockId, PersistenceWindow window )
     {
         DynamicRecord record = new DynamicRecord( blockId );
-        int offset = (int) (blockId - buffer.position()) * getBlockSize();
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( blockId );
         byte inUse = buffer.get();
         if ( inUse != Record.IN_USE.byteValue() )
         {
@@ -424,11 +422,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         return record;
     }
 
-    private DynamicRecord getRecord( int blockId, Buffer buffer )
+    private DynamicRecord getRecord( int blockId, PersistenceWindow window )
     {
         DynamicRecord record = new DynamicRecord( blockId );
-        int offset = (int) (blockId - buffer.position()) * getBlockSize();
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( blockId );
         byte inUse = buffer.get();
         if ( inUse != Record.IN_USE.byteValue() )
         {
@@ -466,7 +463,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 OperationType.READ );
             try
             {
-                DynamicRecord record = getRecord( blockId, window.getBuffer() );
+                DynamicRecord record = getRecord( blockId, window );
                 recordList.add( record );
                 blockId = record.getNextBlock();
             }
@@ -494,9 +491,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         PersistenceWindow window = acquireWindow( blockId, OperationType.READ );
         try
         {
-            Buffer buffer = window.getBuffer();
-            int offset = (int) (blockId - buffer.position()) * getBlockSize();
-            buffer.setOffset( offset );
+            Buffer buffer = window.getOffsettedBuffer( blockId );
             byte inUse = buffer.get();
             if ( inUse != Record.IN_USE.byteValue() )
             {
@@ -530,10 +525,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 {
                     releaseWindow( window );
                     window = acquireWindow( nextBlock, OperationType.READ );
-                    buffer = window.getBuffer();
-                    offset = (int) (nextBlock - buffer.position())
-                        * getBlockSize();
-                    buffer.setOffset( offset );
+                    buffer = window.getOffsettedBuffer( nextBlock );
                     inUse = buffer.get();
                     if ( inUse != Record.IN_USE.byteValue() )
                     {

@@ -713,12 +713,12 @@ public class NodeManager
         }
     }
 
-    public int getHighestPossibleIdInUse( Class<?> clazz )
+    public long getHighestPossibleIdInUse( Class<?> clazz )
     {
         return idGenerator.getHighestPossibleIdInUse( clazz );
     }
 
-    public int getNumberOfIdsInUse( Class<?> clazz )
+    public long getNumberOfIdsInUse( Class<?> clazz )
     {
         return idGenerator.getNumberOfIdsInUse( clazz );
     }

@@ -223,7 +223,7 @@ public class TestNeoStore extends AbstractNeoTestCase
         }
     }
 
-    private PropertyIndex index( String key ) throws IOException
+    private PropertyIndex index( String key )
     {
         Iterator<PropertyIndex> itr = MyPropertyIndex.index( key ).iterator();
         if ( !itr.hasNext() )

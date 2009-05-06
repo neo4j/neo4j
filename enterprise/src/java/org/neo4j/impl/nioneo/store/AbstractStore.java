@@ -155,21 +155,11 @@ public abstract class AbstractStore extends CommonAbstractStore
     }
 
     /**
-     * Returns the next free id from {@link IdGenerator} used by this storage.
-     * 
-     * @return The id generator for this storage
-     */
-    public int nextId()
-    {
-        return super.nextId();
-    }
-
-    /**
      * Returns the highest id in use by this store.
      * 
      * @return The highest id in use
      */
-    public int getHighId()
+    public long getHighId()
     {
         return super.getHighId();
     }
@@ -183,18 +173,6 @@ public abstract class AbstractStore extends CommonAbstractStore
     public void setHighId( int id )
     {
         super.setHighId( id );
-    }
-
-    /**
-     * Makes a id previously acquired from <CODE>nextId()</CODE> method
-     * available again.
-     * 
-     * @param id
-     *            The id to free
-     */
-    public void freeId( int id )
-    {
-        super.freeId( id );
     }
 
     /**
@@ -221,7 +199,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         IdGenerator.createGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
         FileChannel fileChannel = getFileChannel();
-        int highId = 1;
+        long highId = 1;
         long defraggedCount = 0;
         try
         {
@@ -243,7 +221,7 @@ public abstract class AbstractStore extends CommonAbstractStore
                 }
                 else
                 {
-                    highId = (int) i;
+                    highId = i;
                     while ( !freeIdList.isEmpty() )
                     {
                         freeId( freeIdList.removeFirst() );
