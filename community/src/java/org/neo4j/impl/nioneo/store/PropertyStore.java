@@ -195,7 +195,7 @@ public class PropertyStore extends AbstractStore implements Store
             OperationType.WRITE );
         try
         {
-            updateRecord( record, window.getBuffer() );
+            updateRecord( record, window );
         }
         finally
         {
@@ -225,11 +225,10 @@ public class PropertyStore extends AbstractStore implements Store
     // in_use(byte)+type(int)+key_blockId(int)+prop_blockId(long)+
     // prev_prop_id(int)+next_prop_id(int)
 
-    private void updateRecord( PropertyRecord record, Buffer buffer )
+    private void updateRecord( PropertyRecord record, PersistenceWindow window )
     {
         int id = record.getId();
-        int offset = (int) (id - buffer.position()) * getRecordSize();
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {
             buffer.put( Record.IN_USE.byteValue() ).putInt(
@@ -252,7 +251,7 @@ public class PropertyStore extends AbstractStore implements Store
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            PropertyRecord record = getRecord( id, window.getBuffer() );
+            PropertyRecord record = getRecord( id, window );
             record.setIsLight( true );
             return record;
         }
@@ -295,7 +294,7 @@ public class PropertyStore extends AbstractStore implements Store
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            record = getRecord( id, window.getBuffer() );
+            record = getRecord( id, window );
         }
         finally
         {
@@ -328,10 +327,9 @@ public class PropertyStore extends AbstractStore implements Store
         return record;
     }
 
-    private PropertyRecord getRecord( int id, Buffer buffer )
+    private PropertyRecord getRecord( int id, PersistenceWindow window )
     {
-        int offset = (int) (id - buffer.position()) * getRecordSize();
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( id );
         if ( buffer.get() != Record.IN_USE.byteValue() )
         {
             throw new StoreFailureException( "Record[" + id + "] not in use" );

@@ -332,7 +332,7 @@ public class NeoStoreXaDataSource extends XaDataSource
         return store.nextId();
     }
 
-    public int getHighestPossibleIdInUse( Class<?> clazz )
+    public long getHighestPossibleIdInUse( Class<?> clazz )
     {
         Store store = idGenerators.get( clazz );
         if ( store == null )
@@ -343,7 +343,7 @@ public class NeoStoreXaDataSource extends XaDataSource
         return store.getHighestPossibleIdInUse();
     }
 
-    public int getNumberOfIdsInUse( Class<?> clazz )
+    public long getNumberOfIdsInUse( Class<?> clazz )
     {
         Store store = idGenerators.get( clazz );
         if ( store == null )

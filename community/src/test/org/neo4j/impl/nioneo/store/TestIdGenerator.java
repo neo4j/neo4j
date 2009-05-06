@@ -24,12 +24,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-
-import org.neo4j.impl.nioneo.store.IdGenerator;
 
 public class TestIdGenerator extends TestCase
 {
@@ -101,18 +103,18 @@ public class TestIdGenerator extends TestCase
             } // good
             idGenerator.close();
             // verify that id generator is ok
-            FileChannel fileChannel = new FileInputStream( "testIdGenerator.id" )
-                .getChannel();
-            ByteBuffer buffer = ByteBuffer.allocate( 5 );
-            assertEquals( 5, fileChannel.read( buffer ) );
+            FileChannel fileChannel = new FileInputStream( 
+                "testIdGenerator.id" ).getChannel();
+            ByteBuffer buffer = ByteBuffer.allocate( 9 );
+            assertEquals( 9, fileChannel.read( buffer ) );
             buffer.flip();
             assertEquals( (byte) 0, buffer.get() );
-            assertEquals( 0, buffer.getInt() );
+            assertEquals( 0, buffer.getLong() );
             buffer.flip();
             int readCount = fileChannel.read( buffer );
             if ( readCount != -1 && readCount != 0 )
             {
-                fail( "Id generator header not ok read 5 + " + readCount
+                fail( "Id generator header not ok read 9 + " + readCount
                     + " bytes from file" );
             }
             fileChannel.close();
@@ -333,19 +335,19 @@ public class TestIdGenerator extends TestCase
             {
                 idGenerator.nextId();
             }
-            java.util.Map<Integer,Object> freedIds = new java.util.HashMap<Integer,Object>();
-            for ( int i = 1; i < capacity; i += 2 )
+            Map<Long,Object> freedIds = new HashMap<Long,Object>();
+            for ( long i = 1; i < capacity; i += 2 )
             {
                 idGenerator.freeId( i );
-                freedIds.put( new Integer( i ), this );
+                freedIds.put( i, this );
             }
             idGenerator.close();
             idGenerator = new IdGenerator( "testIdGenerator.id", 2000 );
-            int oldId = -1;
+            long oldId = -1;
             for ( int i = 0; i < capacity - 1; i += 2 )
             {
-                int id = idGenerator.nextId();
-                if ( freedIds.remove( new Integer( id ) ) == null )
+                long id = idGenerator.nextId();
+                if ( freedIds.remove( id ) == null )
                 {
                     throw new RuntimeException( "Id=" + id + " prevId=" + oldId
                         + " list.size()=" + freedIds.size() );
@@ -372,18 +374,17 @@ public class TestIdGenerator extends TestCase
             {
                 idGenerator.nextId();
             }
-            java.util.Map<Integer,Object> freedIds = new java.util.HashMap<Integer,Object>();
-            for ( int i = 0; i < capacity; i += 2 )
+            Map<Long,Object> freedIds = new HashMap<Long,Object>();
+            for ( long i = 0; i < capacity; i += 2 )
             {
                 idGenerator.freeId( i );
-                freedIds.put( new Integer( i ), this );
+                freedIds.put( i, this );
             }
             idGenerator.close();
             idGenerator = new IdGenerator( "testIdGenerator.id", 2000 );
             for ( int i = 0; i < capacity; i += 2 )
             {
-                assertEquals( this, freedIds.remove( new Integer( idGenerator
-                    .nextId() ) ) );
+                assertEquals( this, freedIds.remove( idGenerator.nextId() ) );
             }
             assertEquals( 0, freedIds.values().size() );
             idGenerator.close();
@@ -408,7 +409,7 @@ public class TestIdGenerator extends TestCase
         IdGenerator.createGenerator( "testIdGenerator.id" );
         IdGenerator idGenerator = new IdGenerator( "testIdGenerator.id",
             grabSize );
-        java.util.ArrayList<Integer> idsTaken = new java.util.ArrayList<Integer>();
+        List<Long> idsTaken = new ArrayList<Long>();
         float releaseIndex = 0.25f;
         float closeIndex = 0.05f;
         int currentIdCount = 0;
@@ -425,7 +426,7 @@ public class TestIdGenerator extends TestCase
                 }
                 else
                 {
-                    idsTaken.add( new Integer( idGenerator.nextId() ) );
+                    idsTaken.add( idGenerator.nextId() );
                     currentIdCount++;
                 }
                 if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
@@ -448,5 +449,46 @@ public class TestIdGenerator extends TestCase
             }
         }
 
+    }
+
+    public void testUnsignedId()
+    {
+        try
+        {
+            IdGenerator.createGenerator( "testIdGenerator.id" );
+            IdGenerator idGenerator = new IdGenerator( "testIdGenerator.id", 1 );
+            idGenerator.setHighId( 4294967293l );
+            long id = idGenerator.nextId();
+            assertEquals( 4294967293l, id );
+            idGenerator.freeId( id );
+            try
+            {
+                idGenerator.nextId();
+            }
+            catch ( StoreFailureException e ) 
+            { // good, capacity exceeded
+            }
+            idGenerator.close();
+            idGenerator = new IdGenerator( "testIdGenerator.id", 1 );
+            assertEquals( 4294967294l, idGenerator.getHighId() );
+            id = idGenerator.nextId();
+            assertEquals( 4294967293l, id );
+            try
+            {
+                idGenerator.nextId();
+            }
+            catch ( StoreFailureException e ) 
+            { // good, capacity exceeded
+            }
+            idGenerator.close();
+        }
+        finally
+        {
+            File file = new File( "testIdGenerator.id" );
+            if ( file.exists() )
+            {
+                assertTrue( file.delete() );
+            }
+        }
     }
 }

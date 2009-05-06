@@ -29,23 +29,29 @@ import java.nio.channels.FileChannel;
  * required record/block and it would be non efficient to create a large new
  * window to perform the required operation.
  */
-class PersistenceRow extends LockableWindow
+class DirectPersistenceWindow extends LockableWindow
 {
-    private int recordSize = -1;
+    private final int recordSize;
     private final long position;
     private Buffer buffer = null;
+    private final int totalSize;
+    private final int windowSize;
 
-    PersistenceRow( long position, int recordSize, FileChannel channel )
+    DirectPersistenceWindow( long position, int recordSize, int totalSize, 
+        FileChannel channel )
     {
         super( channel );
         assert position >= 0 : "Illegal position[" + position + "]";
         assert recordSize > 0 : "Illegal recordSize[" + recordSize + "]";
         assert channel != null : "Null file channel";
-
+        assert totalSize >= recordSize;
+        
         this.position = position;
         this.recordSize = recordSize;
+        this.totalSize = totalSize;
+        this.windowSize = totalSize / recordSize;
         this.buffer = new Buffer( this );
-        this.buffer.setByteBuffer( ByteBuffer.allocate( recordSize ) );
+        this.buffer.setByteBuffer( ByteBuffer.allocate( totalSize ) );
     }
 
     public Buffer getBuffer()
@@ -60,11 +66,9 @@ class PersistenceRow extends LockableWindow
 
     public Buffer getOffsettedBuffer( int id )
     {
-        if ( (id & 0xFFFFFFFFL) != buffer.position() )
-        {
-            throw new StoreFailureException( "Id[" + id + 
-                "] not equal to buffer position[" + buffer.position() + "]" );
-        }
+        int offset = (int) ((id & 0xFFFFFFFFL) - 
+            buffer.position()) * recordSize;
+        buffer.setOffset( offset );
         return buffer;
     }
     
@@ -90,10 +94,6 @@ class PersistenceRow extends LockableWindow
             byteBuffer.clear();
             int count = getFileChannel().read( byteBuffer,
                 position * recordSize );
-            if ( position < recordCount )
-            {
-                assert count == recordSize;
-            }
             byteBuffer.clear();
         }
         catch ( IOException e )
@@ -113,7 +113,7 @@ class PersistenceRow extends LockableWindow
             {
                 int count = getFileChannel().write( byteBuffer,
                     position * recordSize );
-                assert count == recordSize;
+                assert count == totalSize;
             }
             catch ( IOException e )
             {
@@ -125,7 +125,7 @@ class PersistenceRow extends LockableWindow
 
     public int size()
     {
-        return 1;
+        return windowSize;
     }
 
     public void force()
@@ -135,11 +135,11 @@ class PersistenceRow extends LockableWindow
 
     public boolean equals( Object o )
     {
-        if ( !(o instanceof PersistenceRow) )
+        if ( !(o instanceof DirectPersistenceWindow) )
         {
             return false;
         }
-        return position() == ((PersistenceRow) o).position();
+        return position() == ((DirectPersistenceWindow) o).position();
     }
 
     public int hashCode()
@@ -154,6 +154,7 @@ class PersistenceRow extends LockableWindow
 
     public void close()
     {
+        // close called after flush all so no need to write out here
         buffer.close();
     }
 }

@@ -61,6 +61,7 @@ class PersistenceWindowPool
     private int miss = 0;
     private int switches = 0;
     private int ooe = 0;
+    private boolean useDirect = false;
 
     /**
      * Create new pool for a store.
@@ -422,9 +423,8 @@ class PersistenceWindowPool
             }
             try
             {
-                nonMappedBrick.setWindow( new MappedPersistenceWindow(
-                    ((long) nonMappedBrick.index()) * brickSize / blockSize,
-                    blockSize, brickSize, fileChannel ) );
+                nonMappedBrick.setWindow( 
+                    allocateNewWindow( nonMappedBrick.index() ) ); 
                 memUsed += brickSize;
             }
             catch ( MappedMemException e )
@@ -432,6 +432,12 @@ class PersistenceWindowPool
                 e.printStackTrace();
                 ooe++;
                 logWarn( "Unable to memory map" );
+            }
+            catch ( OutOfMemoryError e )
+            {
+                e.printStackTrace();
+                ooe++;
+                logWarn( "Unable to allocate direct buffer" );
             }
         }
         
@@ -452,13 +458,16 @@ class PersistenceWindowPool
                 {
                     ((MappedPersistenceWindow) window).unmap();
                 }
+                else if ( window instanceof DirectPersistenceWindow )
+                {
+                    ((DirectPersistenceWindow) window).writeOut();
+                }
                 mappedBrick.setWindow( null );
                 memUsed -= brickSize;
                 try
                 {
-                    nonMappedBrick.setWindow( new MappedPersistenceWindow( 
-                        ((long) nonMappedBrick.index()) * brickSize / blockSize, 
-                        blockSize, brickSize, fileChannel ) );
+                    nonMappedBrick.setWindow( 
+                        allocateNewWindow( nonMappedBrick.index() ) );
                     memUsed += brickSize;
                     switches++;
                 }
@@ -466,6 +475,11 @@ class PersistenceWindowPool
                 {
                     ooe++;
                     logWarn( "Unable to memory map" );
+                }
+                catch ( OutOfMemoryError e )
+                {
+                    ooe++;
+                    logWarn( "Unable to allocate direct buffer" );
                 }
             }
         }
@@ -485,15 +499,18 @@ class PersistenceWindowPool
                 {
                     try
                     {
-                        be.setWindow( new MappedPersistenceWindow( 
-                            ((long) i) * brickSize / blockSize, blockSize, 
-                            brickSize, fileChannel ) );
+                        be.setWindow( allocateNewWindow( i ) );
                         memUsed += brickSize;
                     }
                     catch ( MappedMemException e )
                     {
                         ooe++;
                         logWarn( "Unable to memory map" );
+                    }
+                    catch ( OutOfMemoryError e )
+                    {
+                        ooe++;
+                        logWarn( "Unable to allocate direct buffer" );
                     }
                 }
             }
@@ -502,6 +519,21 @@ class PersistenceWindowPool
         }
     }
 
+    private LockableWindow allocateNewWindow( long brick )
+    {
+        if ( !useDirect )
+        {
+             return new MappedPersistenceWindow( 
+                brick * brickSize / blockSize, blockSize, 
+                brickSize, fileChannel );
+        }
+        DirectPersistenceWindow dpw = 
+            new DirectPersistenceWindow( 
+                brick * brickSize / blockSize, 
+                blockSize, brickSize, fileChannel );
+        dpw.readPosition();
+        return dpw;
+    }
     static class BrickSorter implements Comparator<BrickElement>, Serializable
     {
         public int compare( BrickElement o1, BrickElement o2 )

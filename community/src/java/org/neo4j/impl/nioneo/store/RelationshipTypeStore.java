@@ -133,7 +133,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         PersistenceWindow window = acquireWindow( id, OperationType.WRITE );
         try
         {
-            markAsReserved( id, window.getBuffer() );
+            markAsReserved( id, window );
         }
         finally
         {
@@ -167,7 +167,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             OperationType.WRITE );
         try
         {
-            updateRecord( record, window.getBuffer() );
+            updateRecord( record, window );
         }
         finally
         {
@@ -185,7 +185,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            record = getRecord( id, window.getBuffer() );
+            record = getRecord( id, window );
         }
         finally
         {
@@ -247,24 +247,16 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         typeNameStore.freeBlockId( id );
     }
 
-    private void markAsReserved( int id, Buffer buffer )
+    private void markAsReserved( int id, PersistenceWindow window )
     {
-        int offset = (int) (id - buffer.position()) * getRecordSize();
-        buffer.setOffset( offset );
-        if ( buffer.get() != Record.NOT_IN_USE.byteValue() )
-        {
-            throw new StoreFailureException( "Record[" + id
-                + "] already in use" );
-        }
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( id );
         buffer.put( Record.IN_USE.byteValue() ).putInt(
             Record.RESERVED.intValue() );
     }
 
-    private RelationshipTypeRecord getRecord( int id, Buffer buffer )
+    private RelationshipTypeRecord getRecord( int id, PersistenceWindow window )
     {
-        int offset = (int) (id - buffer.position()) * getRecordSize();
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( id );
         byte inUse = buffer.get();
         if ( inUse == Record.NOT_IN_USE.byteValue() )
         {
@@ -281,11 +273,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         return record;
     }
 
-    private void updateRecord( RelationshipTypeRecord record, Buffer buffer )
+    private void updateRecord( RelationshipTypeRecord record, 
+        PersistenceWindow window )
     {
         int id = record.getId();
-        int offset = (int) (id - buffer.position()) * getRecordSize();
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {
             buffer.put( Record.IN_USE.byteValue() ).putInt(
@@ -312,7 +304,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         IdGenerator.createGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
         FileChannel fileChannel = getFileChannel();
-        int highId = -1;
+        long highId = -1;
         int recordSize = getRecordSize();
         try
         {
