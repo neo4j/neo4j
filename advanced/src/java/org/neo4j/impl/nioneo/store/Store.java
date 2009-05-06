@@ -36,7 +36,7 @@ public interface Store
      */
     public int nextId();
     
-    public int getHighestPossibleIdInUse();
+    public long getHighestPossibleIdInUse();
 
-    public int getNumberOfIdsInUse();
+    public long getNumberOfIdsInUse();
 }

@@ -89,8 +89,7 @@ public class RelationshipStore extends AbstractStore implements Store
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            RelationshipRecord record = getRecord( id, window.getBuffer(), 
-                false );
+            RelationshipRecord record = getRecord( id, window, false );
             return record;
         }
         finally
@@ -113,8 +112,7 @@ public class RelationshipStore extends AbstractStore implements Store
         }
         try
         {
-            RelationshipRecord record = getRecord( id, window.getBuffer(), 
-                true );
+            RelationshipRecord record = getRecord( id, window, true );
             return record;
         }
         finally
@@ -143,7 +141,7 @@ public class RelationshipStore extends AbstractStore implements Store
             OperationType.WRITE );
         try
         {
-            updateRecord( record, window.getBuffer() );
+            updateRecord( record, window );
         }
         finally
         {
@@ -151,11 +149,11 @@ public class RelationshipStore extends AbstractStore implements Store
         }
     }
 
-    private void updateRecord( RelationshipRecord record, Buffer buffer )
+    private void updateRecord( RelationshipRecord record, 
+        PersistenceWindow window )
     {
         int id = record.getId();
-        int offset = (int) (id - buffer.position()) * getRecordSize();
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {
             byte inUse = Record.IN_USE.byteValue();
@@ -175,10 +173,10 @@ public class RelationshipStore extends AbstractStore implements Store
         }
     }
 
-    private RelationshipRecord getRecord( int id, Buffer buffer, boolean check )
+    private RelationshipRecord getRecord( int id, PersistenceWindow window, 
+        boolean check )
     {
-        int offset = (int) (id - buffer.position()) * getRecordSize();
-        buffer.setOffset( offset );
+        Buffer buffer = window.getOffsettedBuffer( id );
         byte inUse = buffer.get();
         boolean inUseFlag = ((inUse & Record.IN_USE.byteValue()) == 
             Record.IN_USE.byteValue());

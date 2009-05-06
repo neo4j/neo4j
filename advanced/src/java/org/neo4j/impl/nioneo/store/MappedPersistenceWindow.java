@@ -65,6 +65,11 @@ class MappedPersistenceWindow extends LockableWindow
     {
         return buffer;
     }
+    
+    public int getRecordSize()
+    {
+        return recordSize;
+    }
 
     public long position()
     {
@@ -122,5 +127,13 @@ class MappedPersistenceWindow extends LockableWindow
     public void close()
     {
         buffer.close();
+    }
+
+    public Buffer getOffsettedBuffer( int id )
+    {
+        int offset = (int) ((id & 0xFFFFFFFFL) - 
+            buffer.position()) * recordSize;
+        buffer.setOffset( offset );
+        return buffer;
     }
 }

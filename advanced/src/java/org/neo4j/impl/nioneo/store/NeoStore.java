@@ -182,11 +182,9 @@ public class NeoStore extends AbstractStore
     private long getRecord( int id )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
-        Buffer buffer = window.getBuffer();
         try
         {
-            int offset = (int) (id - buffer.position()) * getRecordSize();
-            buffer.setOffset( offset );
+            Buffer buffer = window.getOffsettedBuffer( id );
             buffer.get();
             return buffer.getLong();
         }
@@ -199,11 +197,9 @@ public class NeoStore extends AbstractStore
     private void setRecord( int id, long value )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.WRITE );
-        Buffer buffer = window.getBuffer();
         try
         {
-            int offset = (int) (id - buffer.position()) * getRecordSize();
-            buffer.setOffset( offset );
+            Buffer buffer = window.getOffsettedBuffer( id );
             buffer.put( Record.IN_USE.byteValue() ).putLong( value );
         }
         finally
@@ -296,4 +292,3 @@ public class NeoStore extends AbstractStore
         }
     }
 }
-

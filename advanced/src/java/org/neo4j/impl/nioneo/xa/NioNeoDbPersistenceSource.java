@@ -111,7 +111,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         {
             return this.xaCon.getXaResource();
         }
-
+        
         public void destroy()
         {
             xaCon.destroy();
@@ -269,12 +269,12 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         return this.dataSourceName;
     }
 
-    public int getHighestPossibleIdInUse( Class<?> clazz )
+    public long getHighestPossibleIdInUse( Class<?> clazz )
     {
         return xaDs.getHighestPossibleIdInUse( clazz );
     }
 
-    public int getNumberOfIdsInUse( Class<?> clazz )
+    public long getNumberOfIdsInUse( Class<?> clazz )
     {
         return xaDs.getNumberOfIdsInUse( clazz );
     }
