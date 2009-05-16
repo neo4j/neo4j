@@ -549,11 +549,14 @@ public class AdminStore
         Set<Integer> startBlocks = new java.util.HashSet<Integer>();
         int i = 0;
         int inUseCount = 0;
-        for ( i = 0; (i + 1) * recordSize <= fileSize; i++ )
+        for ( i = 0; (long)(i + 1) * recordSize <= fileSize; i++ )
         {
             buffer.clear();
             fileChannel.position( (long) i * recordSize );
-            fileChannel.read( buffer );
+            if ( fileChannel.read( buffer ) == 0 )
+            {
+                break;
+            }
             buffer.flip();
             byte inUse = buffer.get();
             if ( inUse == RECORD_IN_USE )
@@ -596,7 +599,7 @@ public class AdminStore
                 }
                 else
                 {
-                    if ( (previous + 1) * recordSize > fileSize || previous < 0 )
+                    if ( (long)(previous + 1) * recordSize > fileSize || previous < 0 )
                     {
                         throw new IOException( "Bad previous record["
                             + previous + "] at record " + i );
@@ -690,11 +693,14 @@ public class AdminStore
         Set<Integer> startBlocks = new java.util.HashSet<Integer>();
         int i = 0;
         int inUseCount = 0;
-        for ( i = 0; (i + 1) * recordSize <= fileSize; i++ )
+        for ( i = 0; (long)(i + 1) * recordSize <= fileSize; i++ )
         {
             buffer.clear();
             fileChannel.position( (long) i * recordSize );
-            fileChannel.read( buffer );
+            if ( fileChannel.read( buffer ) == 0 )
+            {
+                break;
+            }
             buffer.flip();
             byte inUse = buffer.get();
             if ( inUse == RECORD_IN_USE )
@@ -756,11 +762,14 @@ public class AdminStore
         Set<Integer> nodeSet = new java.util.HashSet<Integer>();
         int i = 0;
         int inUseCount = 0;
-        for ( i = 0; (i + 1) * recordSize <= fileSize; i++ )
+        for ( i = 0; (long)(i + 1) * recordSize <= fileSize; i++ )
         {
             buffer.clear();
             fileChannel.position( (long) i * recordSize );
-            fileChannel.read( buffer );
+            if ( fileChannel.read( buffer ) == 0 )
+            {
+                break;
+            }
             buffer.flip();
             byte inUse = buffer.get();
             if ( inUse == RECORD_IN_USE )
@@ -830,11 +839,14 @@ public class AdminStore
         long dot = fileSize / recordSize / 20;
         int i = 0;
         int inUseCount = 0;
-        for ( i = 0; (i + 1) * recordSize <= fileSize; i++ )
+        for ( i = 0; (long)(i + 1) * recordSize <= fileSize; i++ )
         {
             buffer.clear();
             fileChannel.position( (long) i * recordSize );
-            fileChannel.read( buffer );
+            if ( fileChannel.read( buffer ) == 0 )
+            {
+                break;
+            }
             buffer.flip();
             byte inUse = buffer.get();
             if ( inUse == RECORD_IN_USE + NOT_DIRECTED
@@ -901,7 +913,7 @@ public class AdminStore
         int recordSize = 33;
         if ( next != NO_NEXT_BLOCK )
         {
-            if ( (next + 1) * recordSize > fileSize || next < 0 )
+            if ( (long)(next + 1) * recordSize > fileSize || next < 0 )
             {
                 throw new IOException( "Bad next record[" + next
                     + "] at record " + i );
@@ -942,7 +954,7 @@ public class AdminStore
         }
         if ( prev != NO_PREV_BLOCK )
         {
-            if ( (prev + 1) * recordSize > fileSize || prev < 0 )
+            if ( (long)(prev + 1) * recordSize > fileSize || prev < 0 )
             {
                 throw new IOException( "Bad previous record[" + prev
                     + "] at record " + i );
@@ -1023,11 +1035,14 @@ public class AdminStore
         Set<Integer> startBlocks = new java.util.HashSet<Integer>();
         int i = 0;
         int inUseCount = 0;
-        for ( i = 1; (i + 1) * blockSize <= fileSize; i++ )
+        for ( i = 1; (long)(i + 1) * blockSize <= fileSize; i++ )
         {
             inUseBuffer.clear();
             fileChannel.position( (long) i * blockSize );
-            fileChannel.read( inUseBuffer );
+            if ( fileChannel.read( inUseBuffer ) == 0 )
+            {
+                break;
+            }
             inUseBuffer.flip();
             byte inUse = inUseBuffer.get();
             if ( inUse == BLOCK_IN_USE )
@@ -1047,7 +1062,7 @@ public class AdminStore
                 }
                 else if ( next != NO_NEXT_BLOCK )
                 {
-                    if ( (next + 1) * blockSize > fileSize || next < 0 )
+                    if ( (long)(next + 1) * blockSize > fileSize || next < 0 )
                     {
                         throw new IOException( "Bad next block[" + next
                             + "] at block " + i );
@@ -1074,7 +1089,7 @@ public class AdminStore
                 }
                 else
                 {
-                    if ( (previous + 1) * blockSize > fileSize || previous < 0 )
+                    if ( (long)(previous + 1) * blockSize > fileSize || previous < 0 )
                     {
                         throw new IOException( "Bad previous block[" + previous
                             + "] at block " + i );

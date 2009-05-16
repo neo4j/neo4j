@@ -105,21 +105,18 @@ class DirectPersistenceWindow extends LockableWindow
     
     void writeOut()
     {
-        if ( getOperationType() == OperationType.WRITE )
+        ByteBuffer byteBuffer = buffer.getBuffer();
+        byteBuffer.clear();
+        try
         {
-            ByteBuffer byteBuffer = buffer.getBuffer();
-            byteBuffer.clear();
-            try
-            {
-                int count = getFileChannel().write( byteBuffer,
-                    position * recordSize );
-                assert count == totalSize;
-            }
-            catch ( IOException e )
-            {
-                throw new StoreFailureException( "Unable to write record["
-                    + position + "] @[" + position * recordSize + "]", e );
-            }
+            int count = getFileChannel().write( byteBuffer,
+                position * recordSize );
+            assert count == totalSize;
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( "Unable to write record["
+                + position + "] @[" + position * recordSize + "]", e );
         }
     }
 
