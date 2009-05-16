@@ -67,13 +67,12 @@ public class BatchInserter
             params.put( entry.getKey(), entry.getValue() );
         }
         this.storeDir = storeDir;
-        Map<Object,Object> config = getDefaultParams();
         String store = fixPath( storeDir ); 
-        config.put( "neo_store", store );
+        params.put( "neo_store", store );
 
         // TODO: check if clean shutdown
         
-        neoStore = new NeoStore( config );
+        neoStore = new NeoStore( params );
         neoStore.makeStoreOk();
         PropertyIndexData[] indexes = 
             getPropertyIndexStore().getPropertyIndexes( 10000 );
