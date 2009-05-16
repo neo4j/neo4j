@@ -61,7 +61,7 @@ class PersistenceWindowPool
     private int miss = 0;
     private int switches = 0;
     private int ooe = 0;
-    private boolean useDirect = false;
+    private boolean useMemoryMapped = true;
 
     /**
      * Create new pool for a store.
@@ -521,7 +521,7 @@ class PersistenceWindowPool
 
     private LockableWindow allocateNewWindow( long brick )
     {
-        if ( !useDirect )
+        if ( useMemoryMapped )
         {
              return new MappedPersistenceWindow( 
                 brick * brickSize / blockSize, blockSize, 
@@ -560,7 +560,7 @@ class PersistenceWindowPool
     {
         try
         {
-            log.finest( "[" + storeName + "] brickCount=" + brickCount
+            log.fine( "[" + storeName + "] brickCount=" + brickCount
                 + " brickSize=" + brickSize + "b mappedMem=" + mappedMem
                 + "b (storeSize=" + fileChannel.size() + "b)" );
         }
