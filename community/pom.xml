@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.neo4j</groupId>
 		<artifactId>parent-pom</artifactId>
-		<version>3</version>
+		<version>4</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j</groupId>
@@ -67,48 +67,4 @@
 			<version>0.6-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
-				</configuration>
-			</plugin>
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-		</plugins>
-	</build>
-    <reporting>
-        <plugins>
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <subpackages>org.neo4j.onlinebackup</subpackages>
-                    <links>
-                        <link>http://java.sun.com/javase/6/docs/api/</link>
-                    </links>
-                    <quiet>true</quiet>
-                </configuration>
-                <reportSets>
-                    <reportSet>
-                        <reports>
-                            <report>javadoc</report>
-                        </reports>
-                    </reportSet>
-                </reportSets>
-            </plugin>
-        </plugins>
-    </reporting>
 </project>
