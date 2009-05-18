@@ -2,7 +2,7 @@
 	<parent>
 		<groupId>org.neo4j</groupId>
 		<artifactId>parent-pom</artifactId>
-		<version>3</version>
+		<version>4</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 
@@ -98,27 +98,6 @@ as graphs rather than tables. For more information, see http://neo4j.org.
 			</plugin>
 			<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<artifactId>maven-source-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>attach-javadocs</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
