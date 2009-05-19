@@ -1,3 +1,15 @@
+/*
+ * Copyright (c) 2002-2009 "Neo Technology," Network Engine for Objects in Lund
+ * AB [http://neotechnology.com] This file is part of Neo4j. Neo4j is free
+ * software: you can redistribute it and/or modify it under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version. This
+ * program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details. You should have received a copy of the GNU Affero General Public
+ * License along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.onlinebackup;
 
 import java.io.File;
@@ -27,7 +39,6 @@ public class NeoBackup implements Backup
     private static final Level LOG_LEVEL_NORMAL = Level.INFO;
     private static final Level LOG_LEVEL_DEBUG = Level.ALL;
     private static final Level LOG_LEVEL_OFF = Level.OFF;
-
     static
     {
         logger.setUseParentHandlers( false );
@@ -43,7 +54,7 @@ public class NeoBackup implements Backup
      * @param destDir
      *            location of backup destination
      */
-    public NeoBackup( EmbeddedNeo sourceNeo, String destDir )
+    public NeoBackup( final EmbeddedNeo sourceNeo, final String destDir )
     {
         if ( sourceNeo == null )
         {
@@ -70,7 +81,7 @@ public class NeoBackup implements Backup
      * @param destNeo
      *            running database as backup destination
      */
-    public NeoBackup( EmbeddedNeo sourceNeo, EmbeddedNeo destNeo )
+    public NeoBackup( final EmbeddedNeo sourceNeo, final EmbeddedNeo destNeo )
     {
         if ( sourceNeo == null )
         {
@@ -98,8 +109,8 @@ public class NeoBackup implements Backup
      * @param xaDataSourceNames
      *            names of data sources to backup
      */
-    public NeoBackup( EmbeddedNeo sourceNeo, String destDir,
-        List<String> xaDataSourceNames )
+    public NeoBackup( final EmbeddedNeo sourceNeo, final String destDir,
+        final List<String> xaDataSourceNames )
     {
         this( sourceNeo, destDir );
         initXaNames( xaDataSourceNames );
@@ -116,8 +127,8 @@ public class NeoBackup implements Backup
      * @param xaDataSourceNames
      *            names of data sources to backup
      */
-    public NeoBackup( EmbeddedNeo sourceNeo, EmbeddedNeo destNeo,
-        List<String> xaDataSourceNames )
+    public NeoBackup( final EmbeddedNeo sourceNeo, final EmbeddedNeo destNeo,
+        final List<String> xaDataSourceNames )
     {
         this( sourceNeo, destNeo );
         initXaNames( xaDataSourceNames );
@@ -126,7 +137,7 @@ public class NeoBackup implements Backup
     /**
      * @param xaDataSourceNames
      */
-    private final void initXaNames( List<String> xaDataSourceNames )
+    private final void initXaNames( final List<String> xaDataSourceNames )
     {
         if ( xaDataSourceNames == null )
         {
@@ -185,8 +196,8 @@ public class NeoBackup implements Backup
      *            backup destination
      * @throws IOException
      */
-    private void runSimpleBackup( NeoResource srcResource,
-        NeoResource dstResource ) throws IOException
+    private void runSimpleBackup( final NeoResource srcResource,
+        final NeoResource dstResource ) throws IOException
     {
         NeoBackupTask task = new NeoBackupTask( srcResource.getDataSource(),
             dstResource.getDataSource() );
@@ -204,11 +215,10 @@ public class NeoBackup implements Backup
      *            backup destination
      * @throws IOException
      */
-    private void runMultiBackup( NeoResource srcResource,
-        NeoResource dstResource ) throws IOException
+    private void runMultiBackup( final NeoResource srcResource,
+        final NeoResource dstResource ) throws IOException
     {
         List<NeoBackupTask> tasks = new ArrayList<NeoBackupTask>();
-
         logger.info( "Checking and preparing " + xaNames.toString()
             + " data sources." );
         for ( String xaName : xaNames )
@@ -244,7 +254,6 @@ public class NeoBackup implements Backup
                 }
             }
         }
-
         if ( tasks.size() == 0 )
         {
             String message = "No data sources to backup were found.";
@@ -282,8 +291,8 @@ public class NeoBackup implements Backup
          * @param resourceName
          *            name of data source
          */
-        private NeoBackupTask( XaDataSourceResource src,
-            XaDataSourceResource dst )
+        private NeoBackupTask( final XaDataSourceResource src,
+            final XaDataSourceResource dst )
         {
             this.src = src;
             this.dst = dst;
@@ -377,6 +386,7 @@ public class NeoBackup implements Backup
         /**
          * Returns the resource name for this task.
          */
+        @Override
         public String toString()
         {
             return resourceName;
