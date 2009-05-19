@@ -1,82 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project>
-	<parent>
-		<groupId>org.neo4j</groupId>
-		<artifactId>parent-pom</artifactId>
-		<version>4</version>
-		<relativePath>../../pom.xml</relativePath>
-	</parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>4</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
 
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.neo4j</groupId>
-	<artifactId>graph-algo</artifactId>
-	<version>0.1-SNAPSHOT</version>
-	<name>graph-algo</name>
-	<description>Graph algorithms for neo4j</description>
-    <url>http://components.neo4j.org/${project.artifactId}/</url>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j</groupId>
+  <artifactId>graph-algo</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <name>graph-algo</name>
+  <description>Graph algorithms for neo4j</description>
+  <url>http://components.neo4j.org/${project.artifactId}/</url>
 
-	<!-- For custom complexity taglet -->
-	<reporting>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<configuration>
-					<tags>
-						<tag>
-							<name>complexity</name>
-							<placement>a</placement>
-							<head>Complexity:</head>
-						</tag>
-					</tags>
-				</configuration>
-			</plugin>
-		</plugins>
-	</reporting>
+  <!-- For custom complexity taglet -->
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <tags>
+            <tag>
+              <name>complexity</name>
+              <placement>a</placement>
+              <head>Complexity:</head>
+            </tag>
+          </tags>
+          <links>
+            <link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
+          </links>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
 
-	<scm>
-		<connection>
-			scm:svn:https://svn.neo4j.org/components/${project.artifactId}/trunk/
-		</connection>
-		<url>https://trac.neo4j.org/browser/components/${project.artifactId}
-		</url>
-	</scm>
+  <scm>
+    <connection>
+            scm:svn:https://svn.neo4j.org/components/${project.artifactId}/trunk/
+        </connection>
+    <url>https://trac.neo4j.org/browser/components/${project.artifactId}
+        </url>
+  </scm>
 
-	<issueManagement>
-		<system>Trac</system>
-		<url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${project.artifactId}</url>
-	</issueManagement>
-	<developers>
-		<developer>
-			<id>patrik</id>
-			<name>Patrik Larsson</name>
-			<email>patrik [at] neotechnology.com</email>
-			<timezone>+1</timezone>
-			<roles>
-				<role>Developer</role>
-			</roles>
-		</developer>
-	</developers>
+  <developers>
+    <developer>
+      <id>patrik</id>
+      <name>Patrik Larsson</name>
+      <email>patrik [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
 
-	<licenses>
-		<license>
-			<name>GNU Affero General Public License, Version 3</name>
-			<url>https://svn.neo4j.org/components/${project.artifactId}/trunk/LICENSE.txt
-			</url>
-		</license>
-	</licenses>
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>https://svn.neo4j.org/components/${project.artifactId}/trunk/LICENSE.txt
+            </url>
+    </license>
+  </licenses>
 
-	<dependencies>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>3.8.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.neo4j</groupId>
-			<artifactId>neo</artifactId>
-			<version>1.0-b8-SNAPSHOT</version>
-		</dependency>
-	</dependencies>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo</artifactId>
+      <version>1.0-b8-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
 
 </project>
