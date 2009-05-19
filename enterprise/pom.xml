@@ -8,7 +8,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j</groupId>
 	<artifactId>online-backup</artifactId>
-	<version>0.1-SNAPSHOT</version>
+	<version>0.1</version>
 	<name>Onlinebackup</name>
 	<description>Backup of resources using the XA framework</description>
     <url>http://components.neo4j.org/${project.artifactId}/</url>
