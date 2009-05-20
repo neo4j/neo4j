@@ -28,9 +28,17 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.api.core.EmbeddedNeo;
+import org.neo4j.api.core.NeoService;
+
 public class SpringTransactionManager implements TransactionManager
 {
-    static TransactionManager tm;
+    private final TransactionManager tm;
+    
+    public SpringTransactionManager( NeoService neo )
+    {
+        this.tm = ((EmbeddedNeo) neo).getConfig().getTxModule().getTxManager();
+    }
 
     public void begin() throws NotSupportedException, SystemException
     {

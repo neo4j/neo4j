@@ -75,9 +75,6 @@ public class TxModule
         {
             new XaDataSourceConfigFileParser().parse( dataSourceConfigFile );
         }
-        // TODO: fix this, make it IOC somehow
-        UserTransactionImpl.tm = txManager;
-        SpringTransactionManager.tm = txManager;
         txManager.init( xaDsManager );
         startIsOk = false;
     }
@@ -285,7 +282,7 @@ public class TxModule
     {
         return txManager;
     }
-
+    
     public XaDataSourceManager getXaDataSourceManager()
     {
         return xaDsManager;

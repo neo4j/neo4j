@@ -27,21 +27,18 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
 
+import org.neo4j.api.core.EmbeddedNeo;
+import org.neo4j.api.core.NeoService;
+
 public class UserTransactionImpl implements UserTransaction
 {
-    private static final UserTransactionImpl instance = new UserTransactionImpl();
-
-    static TransactionManager tm = null;
-
-    public static UserTransactionImpl getInstance()
+    private final TransactionManager tm;
+    
+    public UserTransactionImpl( NeoService neo )
     {
-        return instance;
+        this.tm = ((EmbeddedNeo) neo).getConfig().getTxModule().getTxManager();
     }
-
-    private UserTransactionImpl()
-    {
-    }
-
+    
     public void begin() throws NotSupportedException, SystemException
     {
         tm.begin();
