@@ -390,6 +390,11 @@ public final class EmbeddedNeo implements NeoService
         return super.toString() + " [" + storeDir + "]";
     }
     
+    public String getStoreDir()
+    {
+        return storeDir;
+    }
+    
     public Iterable<Node> getAllNodes()
     {
         return new Iterable<Node>() {
