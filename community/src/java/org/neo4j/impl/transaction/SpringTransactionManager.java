@@ -33,13 +33,21 @@ import org.neo4j.api.core.NeoService;
 
 public class SpringTransactionManager implements TransactionManager
 {
-    private final TransactionManager tm;
+    private TransactionManager tm;
+
+    /**
+     * Using this constructor requires setting the the transaction manager via
+     * {@link #setTransactionManager(TransactionManager)} method.
+     */
+    public SpringTransactionManager()
+    { 
+    }
     
     public SpringTransactionManager( NeoService neo )
     {
         this.tm = ((EmbeddedNeo) neo).getConfig().getTxModule().getTxManager();
     }
-
+    
     public void begin() throws NotSupportedException, SystemException
     {
         tm.begin();
@@ -87,5 +95,15 @@ public class SpringTransactionManager implements TransactionManager
     public Transaction suspend() throws SystemException
     {
         return tm.suspend();
+    }
+
+    public void setTransactionManager( TransactionManager tm )
+    {
+        this.tm = tm;
+    }
+
+    public TransactionManager getTransactionManager()
+    {
+        return tm;
     }
 }

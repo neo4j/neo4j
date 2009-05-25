@@ -29,7 +29,7 @@ public class NodeStore extends AbstractStore implements Store
 {
     // node store version, each node store should end with this string
     // (byte encoded)
-    private static final String VERSION = "NodeStore v0.9.3";
+    private static final String VERSION = "NodeStore v0.9.5";
 
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)
     private static final int RECORD_SIZE = 9;
@@ -192,5 +192,25 @@ public class NodeStore extends AbstractStore implements Store
     public String toString()
     {
         return "NodeStore";
+    }
+    
+    @Override
+    protected boolean versionFound( String version )
+    {
+        if ( !version.startsWith( "NodeStore" ) )
+        {
+            // non clean shutdown, need to do recover with right neo
+            return false;
+        }
+        if ( version.equals( "NodeStore v0.9.3" ) )
+        {
+            rebuildIdGenerator();
+            closeIdGenerator();
+            return true;
+        }
+        throw new RuntimeException( "Unkown store version " + version  + 
+            " Please make sure you are not running old Neo4j kernel " + 
+            " towards a store that has been created by newer version " + 
+            " of Neo4j." );
     }
 }

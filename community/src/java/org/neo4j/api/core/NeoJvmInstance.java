@@ -77,6 +77,12 @@ class NeoJvmInstance
         params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
         params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
         params.put( "neostore.relationshipstore.db.mapped_memory", "100M" );
+        // if on windows, default no memory mapping
+        String nameOs = System.getProperty( "os.name" );
+        if ( nameOs.startsWith( "Windows" ) )
+        {
+            params.put( "use_memory_mapped_buffers", "false" );
+        }
         return params;
     }
 

@@ -145,15 +145,23 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             ByteBuffer buffer = ByteBuffer.wrap( version );
             getFileChannel().position( fileSize - version.length );
             getFileChannel().read( buffer );
-            if ( !expectedVersion.equals( new String( version ) ) )
-            {
-                setStoreNotOk();
-            }
             buffer = ByteBuffer.allocate( 4 );
             getFileChannel().position( 0 );
             getFileChannel().read( buffer );
             buffer.flip();
             blockSize = buffer.getInt();
+            if ( blockSize <= 0 )
+            {
+                throw new StoreFailureException( "Illegal block size: " + 
+                    blockSize );
+            }
+            if ( !expectedVersion.equals( new String( version ) ) )
+            {
+                if ( !versionFound( new String( version ) ) )
+                {
+                    setStoreNotOk();
+                }
+            }
             if ( (fileSize - version.length) % blockSize != 0 )
             {
                 setStoreNotOk();
@@ -177,7 +185,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             setStoreNotOk();
         }
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
-            getBlockSize(), getFileChannel(), getMappedMem() ) );
+            getBlockSize(), getFileChannel(), getMappedMem(), 
+            getIfMemoryMapped() ) );
     }
 
     /**
@@ -573,6 +582,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
      */
     protected void rebuildIdGenerator()
     {
+        if ( getBlockSize() <= 0 )
+        {
+            throw new StoreFailureException( "Illegal blockSize: " + 
+                getBlockSize() );
+        }
         logger.fine( "Rebuilding id generator for[" + getStorageFileName()
             + "] ..." );
         closeIdGenerator();

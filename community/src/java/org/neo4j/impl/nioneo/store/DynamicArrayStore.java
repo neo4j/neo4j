@@ -29,7 +29,7 @@ import java.util.Map;
 class DynamicArrayStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "ArrayPropertyStore v0.9.3";
+    private static final String VERSION = "ArrayPropertyStore v0.9.5";
 
     private static enum ArrayType
     {
@@ -539,5 +539,25 @@ class DynamicArrayStore extends AbstractDynamicStore
     {
         byte bArray[] = get( blockId );
         return getRightArray( bArray );
+    }
+
+    @Override
+    protected boolean versionFound( String version )
+    {
+        if ( !version.startsWith( "ArrayPropertyStore" ) )
+        {
+            // non clean shutdown, need to do recover with right neo
+            return false;
+        }
+        if ( version.equals( "ArrayPropertyStore v0.9.3" ) )
+        {
+            rebuildIdGenerator();
+            closeIdGenerator();
+            return true;
+        }
+        throw new RuntimeException( "Unkown store version " + version  + 
+            " Please make sure you are not running old Neo4j kernel " + 
+            " towards a store that has been created by newer version " + 
+            " of Neo4j." );
     }
 }

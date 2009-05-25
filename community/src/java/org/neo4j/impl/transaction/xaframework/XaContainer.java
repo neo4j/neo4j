@@ -20,6 +20,7 @@
 package org.neo4j.impl.transaction.xaframework;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * This is a wrapper class containing the logical log, command factory,
@@ -50,9 +51,10 @@ public class XaContainer
      *            The command factory implementation
      * @param tf
      *            The transaction factory implementation
+     * @param config Configuration map or null if no config needed
      */
     public static XaContainer create( String logicalLog, XaCommandFactory cf,
-        XaTransactionFactory tf ) // throws IOException
+        XaTransactionFactory tf, Map<Object,Object> config )
     {
         if ( logicalLog == null || cf == null || tf == null )
         {
@@ -60,16 +62,16 @@ public class XaContainer
                 + "LogicalLog[" + logicalLog + "] CommandFactory[" + cf
                 + "TransactionFactory[" + tf + "]" );
         }
-        return new XaContainer( logicalLog, cf, tf );
+        return new XaContainer( logicalLog, cf, tf, config );
     }
 
     private XaContainer( String logicalLog, XaCommandFactory cf,
-        XaTransactionFactory tf ) // throws IOException
+        XaTransactionFactory tf, Map<Object,Object> config )
     {
         this.cf = cf;
         this.tf = tf;
         rm = new XaResourceManager( tf, logicalLog );
-        log = new XaLogicalLog( logicalLog, rm, cf, tf );
+        log = new XaLogicalLog( logicalLog, rm, cf, tf, config );
         rm.setLogicalLog( log );
         tf.setLogicalLog( log );
     }
