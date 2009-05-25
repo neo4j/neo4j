@@ -124,8 +124,10 @@ public abstract class AbstractStore extends CommonAbstractStore
             getFileChannel().read( buffer );
             if ( !expectedVersion.equals( new String( version ) ) )
             {
-                versionFound( new String( version ) );
-                setStoreNotOk();
+                if ( !versionFound( new String( version ) ) )
+                {
+                    setStoreNotOk();
+                }
             }
             if ( getRecordSize() != 0
                 && (fileSize - version.length) % getRecordSize() != 0 )
@@ -151,7 +153,8 @@ public abstract class AbstractStore extends CommonAbstractStore
             setStoreNotOk();
         }
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
-            getRecordSize(), getFileChannel(), getMappedMem() ) );
+            getRecordSize(), getFileChannel(), getMappedMem(), 
+            getIfMemoryMapped() ) );
     }
 
     /**

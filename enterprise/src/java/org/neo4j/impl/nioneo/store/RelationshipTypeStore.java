@@ -36,7 +36,7 @@ import java.util.Map;
 public class RelationshipTypeStore extends AbstractStore implements Store
 {
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "RelationshipTypeStore v0.9.3";
+    private static final String VERSION = "RelationshipTypeStore v0.9.5";
 
     // record header size
     // in_use(byte)+type_blockId(int)
@@ -400,5 +400,26 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     {
         typeNameStore.rebuildIdGenerators();
         super.rebuildIdGenerators();
+    }
+
+
+    @Override
+    protected boolean versionFound( String version )
+    {
+        if ( !version.startsWith( "RelationshipTypeStore" ) )
+        {
+            // non clean shutdown, need to do recover with right neo
+            return false;
+        }
+        if ( version.equals( "RelationshipTypeStore v0.9.3" ) )
+        {
+            rebuildIdGenerator();
+            closeIdGenerator();
+            return true;
+        }
+        throw new RuntimeException( "Unkown store version " + version  + 
+            " Please make sure you are not running old Neo4j kernel " + 
+            " towards a store that has been created by newer version " + 
+            " of Neo4j." );
     }
 }

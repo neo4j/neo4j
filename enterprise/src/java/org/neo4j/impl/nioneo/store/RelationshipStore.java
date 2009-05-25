@@ -29,7 +29,7 @@ public class RelationshipStore extends AbstractStore implements Store
 {
     // relationship store version, each rel store ends with this
     // string (byte encoded)
-    private static final String VERSION = "RelationshipStore v0.9.3";
+    private static final String VERSION = "RelationshipStore v0.9.5";
 
     // record header size
     // directed|in_use(byte)+first_node(int)+second_node(int)+rel_type(int)+
@@ -202,5 +202,25 @@ public class RelationshipStore extends AbstractStore implements Store
     public String toString()
     {
         return "RelStore";
+    }
+
+    @Override
+    protected boolean versionFound( String version )
+    {
+        if ( !version.startsWith( "RelationshipStore" ) )
+        {
+            // non clean shutdown, need to do recover with right neo
+            return false;
+        }
+        if ( version.equals( "RelationshipStore v0.9.3" ) )
+        {
+            rebuildIdGenerator();
+            closeIdGenerator();
+            return true;
+        }
+        throw new RuntimeException( "Unkown store version " + version  + 
+            " Please make sure you are not running old Neo4j kernel " + 
+            " towards a store that has been created by newer version " + 
+            " of Neo4j." );
     }
 }

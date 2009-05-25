@@ -33,7 +33,7 @@ import java.util.Map;
 public class PropertyIndexStore extends AbstractStore implements Store
 {
     // store version, should end with this string (byte encoded)
-    private static final String VERSION = "PropertyIndex v0.9.3";
+    private static final String VERSION = "PropertyIndex v0.9.5";
     private static final int KEY_STORE_BLOCK_SIZE = 30;
 
     // in_use(byte)+prop_count(int)+key_block_id(int)
@@ -317,5 +317,25 @@ public class PropertyIndexStore extends AbstractStore implements Store
     public String toString()
     {
         return "PropertyIndexStore";
+    }
+
+    @Override
+    protected boolean versionFound( String version )
+    {
+        if ( !version.startsWith( "PropertyIndex" ) )
+        {
+            // non clean shutdown, need to do recover with right neo
+            return false;
+        }
+        if ( version.equals( "PropertyIndex v0.9.3" ) )
+        {
+            rebuildIdGenerator();
+            closeIdGenerator();
+            return true;
+        }
+        throw new RuntimeException( "Unkown store version " + version  + 
+            " Please make sure you are not running old Neo4j kernel " + 
+            " towards a store that has been created by newer version " + 
+            " of Neo4j." );
     }
 }
