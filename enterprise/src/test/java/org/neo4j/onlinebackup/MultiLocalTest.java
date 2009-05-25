@@ -10,6 +10,7 @@ import org.neo4j.api.core.EmbeddedNeo;
  */
 public class MultiLocalTest extends MultiRunningTest
 {
+    @Override
     @SuppressWarnings( "serial" )
     protected void setupBackup( EmbeddedNeo neo, String location )
         throws IOException
