@@ -15,6 +15,7 @@ import org.neo4j.api.core.Transaction;
  */
 public class SimpleLocalTest extends SimpleRunningTest
 {
+    @Override
     protected void tryBackup( EmbeddedNeo neo, String location, int relCount )
         throws IOException
     {
