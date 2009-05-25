@@ -29,7 +29,7 @@ import org.neo4j.impl.nioneo.store.AbstractDynamicStore;
 public class DynamicStringStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "StringPropertyStore v0.9.3";
+    private static final String VERSION = "StringPropertyStore v0.9.5";
 
     public DynamicStringStore( String fileName, Map<?,?> config )
     {
@@ -59,5 +59,25 @@ public class DynamicStringStore extends AbstractDynamicStore
     public int nextBlockId()
     {
         return super.nextBlockId();
+    }
+
+    @Override
+    protected boolean versionFound( String version )
+    {
+        if ( !version.startsWith( "StringPropertyStore" ) )
+        {
+            // non clean shutdown, need to do recover with right neo
+            return false;
+        }
+        if ( version.equals( "StringPropertyStore v0.9.3" ) )
+        {
+            rebuildIdGenerator();
+            closeIdGenerator();
+            return true;
+        }
+        throw new RuntimeException( "Unkown store version " + version  + 
+            " Please make sure you are not running old Neo4j kernel " + 
+            " towards a store that has been created by newer version " + 
+            " of Neo4j." );
     }
 }

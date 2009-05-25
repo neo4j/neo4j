@@ -32,7 +32,11 @@ import org.neo4j.api.core.NeoService;
 
 public class UserTransactionImpl implements UserTransaction
 {
-    private final TransactionManager tm;
+    private TransactionManager tm;
+    
+    public UserTransactionImpl()
+    {
+    }
     
     public UserTransactionImpl( NeoService neo )
     {
@@ -90,5 +94,15 @@ public class UserTransactionImpl implements UserTransaction
         {
         }
         return null;
+    }
+
+    public void setTransactionManager( TransactionManager tm )
+    {
+        this.tm = tm;
+    }
+
+    public TransactionManager getTransactionManager()
+    {
+        return tm;
     }
 }

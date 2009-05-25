@@ -46,7 +46,7 @@ class PersistenceWindowPool
     private FileChannel fileChannel;
     private Map<Integer,PersistenceRow> activeRowWindows = 
         new HashMap<Integer,PersistenceRow>();
-    private long mappedMem = 0;
+    private long availableMem = 0;
     private long memUsed = 0;
     private int brickCount = 0;
     private int brickSize = 0;
@@ -78,12 +78,14 @@ class PersistenceWindowPool
      *             If unable to create pool
      */
     PersistenceWindowPool( String storeName, int blockSize,
-        FileChannel fileChannel, long mappedMem )
+        FileChannel fileChannel, long mappedMem, 
+        boolean useMemoryMappedBuffers )
     {
         this.storeName = storeName;
         this.blockSize = blockSize;
         this.fileChannel = fileChannel;
-        this.mappedMem = mappedMem;
+        this.availableMem = mappedMem;
+        this.useMemoryMapped = useMemoryMappedBuffers;
         setupBricks();
         dumpStatus();
     }
@@ -313,23 +315,23 @@ class PersistenceWindowPool
         {
             return;
         }
-        if ( mappedMem > 0 && mappedMem < blockSize * 10 )
+        if ( availableMem > 0 && availableMem < blockSize * 10 )
         {
-            logWarn( "Unable to use " + mappedMem
+            logWarn( "Unable to use " + availableMem
                 + "b as memory mapped windows, need at least " + blockSize * 10
                 + "b (block size * 10)" );
             logWarn( "Memory mapped windows have been turned off" );
-            mappedMem = 0;
+            availableMem = 0;
             brickCount = 0;
             brickSize = 0;
             return;
         }
-        if ( mappedMem > 0 && fileSize > 0 )
+        if ( availableMem > 0 && fileSize > 0 )
         {
-            double ratio = (mappedMem + 0.0d) / fileSize;
+            double ratio = (availableMem + 0.0d) / fileSize;
             if ( ratio >= 1 )
             {
-                brickSize = (int) (mappedMem / 10);
+                brickSize = (int) (availableMem / 100 );
                 if ( brickSize < 0 )
                 {
                     brickSize = Integer.MAX_VALUE;
@@ -344,13 +346,13 @@ class PersistenceWindowPool
                 {
                     brickCount = MAX_BRICK_COUNT;
                 }
-                if ( fileSize / brickCount > mappedMem )
+                if ( fileSize / brickCount > availableMem )
                 {
-                    logWarn( "Unable to use " + (mappedMem / 1024)
+                    logWarn( "Unable to use " + (availableMem / 1024)
                         + "kb as memory mapped windows, need at least "
                         + (fileSize / brickCount / 1024) + "kb" );
                     logWarn( "Memory mapped windows have been turned off" );
-                    mappedMem = 0;
+                    availableMem = 0;
                     brickCount = 0;
                     brickSize = 0;
                     return;
@@ -369,9 +371,9 @@ class PersistenceWindowPool
                 assert brickSize > blockSize;
             }
         }
-        else if ( mappedMem > 0 )
+        else if ( availableMem > 0 )
         {
-            brickSize = (int) (mappedMem / 10);
+            brickSize = (int) (availableMem / 100);
             if ( brickSize < 0 )
             {
                 brickSize = Integer.MAX_VALUE;
@@ -413,7 +415,7 @@ class PersistenceWindowPool
         int mappedIndex = 0;
         int nonMappedIndex = nonMappedBricks.size() - 1;
         // fill up unused memory
-        while ( memUsed + brickSize <= mappedMem && nonMappedIndex >= 0 )
+        while ( memUsed + brickSize <= availableMem && nonMappedIndex >= 0 )
         {
             BrickElement nonMappedBrick = nonMappedBricks.get( 
                 nonMappedIndex-- );
@@ -458,9 +460,9 @@ class PersistenceWindowPool
                 {
                     ((MappedPersistenceWindow) window).unmap();
                 }
-                else if ( window instanceof DirectPersistenceWindow )
+                else if ( window instanceof PlainPersistenceWindow )
                 {
-                    ((DirectPersistenceWindow) window).writeOut();
+                    ((PlainPersistenceWindow) window).writeOut();
                 }
                 mappedBrick.setWindow( null );
                 memUsed -= brickSize;
@@ -495,7 +497,7 @@ class PersistenceWindowPool
             {
                 BrickElement be = new BrickElement( i );
                 tmpArray[i] = be;
-                if ( memUsed + brickSize <= mappedMem )
+                if ( memUsed + brickSize <= availableMem )
                 {
                     try
                     {
@@ -527,8 +529,8 @@ class PersistenceWindowPool
                 brick * brickSize / blockSize, blockSize, 
                 brickSize, fileChannel );
         }
-        DirectPersistenceWindow dpw = 
-            new DirectPersistenceWindow( 
+        PlainPersistenceWindow dpw = 
+            new PlainPersistenceWindow( 
                 brick * brickSize / blockSize, 
                 blockSize, brickSize, fileChannel );
         dpw.readPosition();
@@ -561,7 +563,7 @@ class PersistenceWindowPool
         try
         {
             log.fine( "[" + storeName + "] brickCount=" + brickCount
-                + " brickSize=" + brickSize + "b mappedMem=" + mappedMem
+                + " brickSize=" + brickSize + "b mappedMem=" + availableMem
                 + "b (storeSize=" + fileChannel.size() + "b)" );
         }
         catch ( IOException e )

@@ -62,6 +62,7 @@ public class BatchInserter
         Map<String,String> stringParams )
     {
         Map<Object,Object> params = getDefaultParams();
+        params.put( "use_memory_mapped_buffers", "false" );
         for ( Map.Entry<String,String> entry : stringParams.entrySet() )
         {
             params.put( entry.getKey(), entry.getValue() );

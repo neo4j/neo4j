@@ -59,9 +59,9 @@ public abstract class CommonAbstractStore
     {
     }
 
-    // default, do nothing
-    protected void versionFound( String version )
+    protected boolean versionFound( String version )
     {
+        return true;
     }
 
     /**
@@ -281,6 +281,21 @@ public abstract class CommonAbstractStore
     protected void setHighId( long highId )
     {
         idGenerator.setHighId( highId );
+    }
+    
+    protected boolean getIfMemoryMapped()
+    {
+        if ( getConfig() != null )
+        {
+            String useMemMapped = (String) getConfig().get( 
+                "use_memory_mapped_buffers" );
+            if ( useMemMapped != null && 
+                useMemMapped.toLowerCase().equals( "false" ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

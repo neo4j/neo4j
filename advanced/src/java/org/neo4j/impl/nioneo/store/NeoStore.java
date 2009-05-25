@@ -34,7 +34,7 @@ public class NeoStore extends AbstractStore
 {
     // neo store version, store should end with this string
     // (byte encoded)
-    private static final String VERSION = "NeoStore v0.9.4";
+    private static final String VERSION = "NeoStore v0.9.5";
 
     // 3 longs in header (long + in use), time | random | version
     private static final int RECORD_SIZE = 9;
@@ -269,8 +269,13 @@ public class NeoStore extends AbstractStore
     }
     
     @Override
-    protected void versionFound( String version )
+    protected boolean versionFound( String version )
     {
+        if ( !version.startsWith( "NeoStore" ) )
+        {
+            // non clean shutdown, need to do recover with right neo
+            return false;
+        }
         if ( version.equals( "NeoStore v0.9.3" ) )
         {
             ByteBuffer buffer = ByteBuffer.wrap( new byte[ 3 * RECORD_SIZE ] );
@@ -289,6 +294,18 @@ public class NeoStore extends AbstractStore
                 throw new StoreFailureException( e );
             }
             rebuildIdGenerator();
+            closeIdGenerator();
+            return true;
         }
+        else if ( version.equals( "NeoStore v0.9.4" ) )
+        {
+            rebuildIdGenerator();
+            closeIdGenerator();
+            return true;
+        }
+        throw new RuntimeException( "Unkown store version " + version  + 
+            " Please make sure you are not running old Neo4j kernel " + 
+            " towards a store that has been created by newer version " + 
+            " of Neo4j." );
     }
 }

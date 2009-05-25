@@ -93,7 +93,7 @@ public class NeoStoreXaDataSource extends XaDataSource
      * @throws IOException
      *             If unable to create data source
      */
-    public NeoStoreXaDataSource( Map<?,?> params ) throws IOException,
+    public NeoStoreXaDataSource( Map<Object,Object> params ) throws IOException,
         InstantiationException
     {
         super( params );
@@ -136,7 +136,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 
         neoStore = new NeoStore( config );
         xaContainer = XaContainer.create( (String) config.get( "logical_log" ),
-            new CommandFactory( neoStore ), new TransactionFactory() );
+            new CommandFactory( neoStore ), new TransactionFactory(), params );
 
         xaContainer.openLogicalLog();
         if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
@@ -197,7 +197,7 @@ public class NeoStoreXaDataSource extends XaDataSource
         storeDir = logicalLogPath;
         neoStore = new NeoStore( neoStoreFileName );
         xaContainer = XaContainer.create( logicalLogPath, new CommandFactory(
-            neoStore ), new TransactionFactory() );
+            neoStore ), new TransactionFactory(), null );
 
         xaContainer.openLogicalLog();
         if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
