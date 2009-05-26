@@ -73,7 +73,7 @@ public class TestBatchInsert extends TestCase
     public void testSimple()
     {
         BatchInserter neo = new 
-            BatchInserter( "var/neo-batch" );
+            BatchInserterImpl( "var/neo-batch" );
         long node1 = neo.createNode( null );
         long node2 = neo.createNode( null );
         long rel1 = neo.createRelationship( node1, node2, RelTypes.BATCH_TEST, 
@@ -88,7 +88,7 @@ public class TestBatchInsert extends TestCase
     public void testMore()
     {
         BatchInserter neo = new 
-            BatchInserter( "var/neo-batch" );
+            BatchInserterImpl( "var/neo-batch" );
         long startNode = neo.createNode( properties );
         long endNodes[] = new long[25];
         Set<Long> rels = new HashSet<Long>();
@@ -104,5 +104,6 @@ public class TestBatchInsert extends TestCase
             assertEquals( rel.getStartNode(), startNode );
         }
         neo.setNodeProperties( startNode, properties );
+        neo.shutdown();
     }
 }

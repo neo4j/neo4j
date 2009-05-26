@@ -186,7 +186,8 @@ public class TestXaFramework extends AbstractNeoTestCase
             try
             {
                 xaContainer = XaContainer.create( "dummy_resource",
-                    new DummyCommandFactory(), new DummyTransactionFactory() );
+                    new DummyCommandFactory(), new DummyTransactionFactory(), 
+                    null );
                 xaContainer.openLogicalLog();
             }
             catch ( IOException e )
