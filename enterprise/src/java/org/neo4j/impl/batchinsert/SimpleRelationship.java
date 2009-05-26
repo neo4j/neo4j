@@ -21,6 +21,10 @@ package org.neo4j.impl.batchinsert;
 
 import org.neo4j.api.core.RelationshipType;
 
+/**
+ * Simple relationship wrapping start node id, end node id and relationship 
+ * type. 
+ */
 public class SimpleRelationship
 {
     private final int id;
