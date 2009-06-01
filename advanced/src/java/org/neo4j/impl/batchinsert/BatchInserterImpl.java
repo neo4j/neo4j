@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.NeoStore;
@@ -538,5 +539,10 @@ public class BatchInserterImpl implements BatchInserter
     public String getStore()
     {
         return storeDir;
+    }
+    
+    public static Map<String,String> loadProperties( String file )
+    {
+        return EmbeddedNeo.loadConfigurations( file );
     }
 }
