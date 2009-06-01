@@ -24,7 +24,7 @@ import java.util.Map;
 import org.neo4j.api.core.RelationshipType;
 
 /**
- * The batch inserted drops support for transactions and concurrency in favor 
+ * The batch inserter drops support for transactions and concurrency in favor 
  * of insertion speed. When done using the batch inserter {@link #shutdown()} 
  * must be invoked and complete succesfully for the Neo4j store to be in 
  * consistent state.  
@@ -34,7 +34,7 @@ import org.neo4j.api.core.RelationshipType;
  * <p>
  * Transactions are not supported so if your JVM/machine crash or you fail to 
  * invoke {@link #shutdown()} before JVM exits the Neo4j store can be considered 
- * beeing in non consistent state and the insertion has to be redone from 
+ * beeing in non consistent state and the insertion has to be re-done from 
  * scratch.
  */
 public interface BatchInserter
