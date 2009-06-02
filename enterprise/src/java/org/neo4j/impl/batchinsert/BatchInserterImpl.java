@@ -401,10 +401,11 @@ public class BatchInserterImpl implements BatchInserter
     {
         PropertyStore propStore = getPropertyStore();
         PropertyRecord propertyRecord = propStore.getRecord( propertyId );
-        int nextProperty = propertyRecord.getNextProp();
+        int nextProperty = -1;
         Map<String,Object> properties = new HashMap<String,Object>();
         do
         {
+            nextProperty = propertyRecord.getNextProp();
             propStore.makeHeavy( propertyRecord );
             String key = indexHolder.getStringKey( 
                 propertyRecord.getKeyIndexId() );
