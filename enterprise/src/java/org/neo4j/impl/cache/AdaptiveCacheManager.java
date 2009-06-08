@@ -200,7 +200,8 @@ public class AdaptiveCacheManager
                     Thread.sleep( sleepTime );
                 }
                 catch ( InterruptedException e )
-                { // ok
+                { 
+                    Thread.interrupted();
                 }
             }
         }

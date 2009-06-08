@@ -192,7 +192,8 @@ class RelationshipTypeHolder
                     createrThread.wait( 50 );
                 }
                 catch ( InterruptedException e )
-                { // ok
+                { 
+                    Thread.interrupted();
                 }
             }
         }
