@@ -155,7 +155,6 @@ public interface BatchInserter
      */
     public Map getRelationshipProperties( long relId );
 
-
     /**
      * Shuts down this batch inserter syncing all changes that are still only 
      * in memory to disk. Failing to invoke this method may leave the Neo4j 
@@ -172,4 +171,12 @@ public interface BatchInserter
      * @return the path to this Neo4j store.
      */
     public String getStore();
+    
+    /**
+     * Returns the reference node id or <code>-1</code> if it doesn't exist.
+     * 
+     * @return the reference node
+     */
+    public long getReferenceNode();
+        
 }

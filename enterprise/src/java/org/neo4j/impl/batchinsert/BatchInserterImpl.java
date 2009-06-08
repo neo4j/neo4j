@@ -546,4 +546,13 @@ public class BatchInserterImpl implements BatchInserter
     {
         return EmbeddedNeo.loadConfigurations( file );
     }
+
+    public long getReferenceNode()
+    {
+        if ( nodeExists( 0 ) )
+        {
+            return 0;
+        }
+        return -1;
+    }
 }
