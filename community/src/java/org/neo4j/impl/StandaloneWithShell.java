@@ -70,6 +70,7 @@ public class StandaloneWithShell
 		}
 		catch ( InterruptedException e )
 		{
+            Thread.interrupted();
 			// Exit
 		}		
 	}

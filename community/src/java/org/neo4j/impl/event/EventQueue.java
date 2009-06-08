@@ -97,7 +97,8 @@ class EventQueue extends Thread
                     wait( waitTime );
                 }
                 catch ( InterruptedException e )
-                { // ok
+                { 
+                    Thread.interrupted();
                 }
 
                 eventElement = eventManager.getNextEventElement();
@@ -138,6 +139,7 @@ class EventQueue extends Thread
             }
             catch ( InterruptedException e )
             {
+                Thread.interrupted();
                 System.out.println( "Error " + e );
             }
         }
