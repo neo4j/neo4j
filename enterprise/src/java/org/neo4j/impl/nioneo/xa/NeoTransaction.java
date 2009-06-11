@@ -754,6 +754,11 @@ class NeoTransaction extends XaTransaction
             propRecord = getPropertyStore().getRecord( propertyId );
             addPropertyRecord( propRecord );
         }
+        if ( !propRecord.inUse() )
+        {
+            throw new IllegalStateException( "Unable to delete property[" + 
+                propertyId + "] since it is already deleted." );
+        }
         propRecord.setRelId( relId );
         if ( propRecord.isLight() )
         {
@@ -785,6 +790,7 @@ class NeoTransaction extends XaTransaction
                 prevPropRecord = getPropertyStore().getLightRecord( prevProp );
                 addPropertyRecord( prevPropRecord );
             }
+            assert prevPropRecord.inUse();
             prevPropRecord.setNextProp( nextProp );
         }
         if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
@@ -795,6 +801,7 @@ class NeoTransaction extends XaTransaction
                 nextPropRecord = getPropertyStore().getLightRecord( nextProp );
                 addPropertyRecord( nextPropRecord );
             }
+            assert nextPropRecord.inUse();
             nextPropRecord.setPrevProp( prevProp );
         }
     }
@@ -997,6 +1004,11 @@ class NeoTransaction extends XaTransaction
             propRecord = getPropertyStore().getRecord( propertyId );
             addPropertyRecord( propRecord );
         }
+        if ( !propRecord.inUse() )
+        {
+            throw new IllegalStateException( "Unable to delete property[" + 
+                propertyId + "] since it is already deleted." );
+        }
         propRecord.setNodeId( nodeId );
         if ( propRecord.isLight() )
         {
@@ -1026,9 +1038,10 @@ class NeoTransaction extends XaTransaction
             if ( prevPropRecord == null )
             {
                 prevPropRecord = getPropertyStore().getLightRecord( prevProp );
+                addPropertyRecord( prevPropRecord );
             }
+            assert prevPropRecord.inUse();
             prevPropRecord.setNextProp( nextProp );
-            addPropertyRecord( prevPropRecord );
         }
         if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
@@ -1036,9 +1049,10 @@ class NeoTransaction extends XaTransaction
             if ( nextPropRecord == null )
             {
                 nextPropRecord = getPropertyStore().getLightRecord( nextProp );
+                addPropertyRecord( nextPropRecord );
             }
+            assert nextPropRecord.inUse();
             nextPropRecord.setPrevProp( prevProp );
-            addPropertyRecord( nextPropRecord );
         }
     }
 
@@ -1059,6 +1073,11 @@ class NeoTransaction extends XaTransaction
         {
             propertyRecord = getPropertyStore().getRecord( propertyId );
             addPropertyRecord( propertyRecord );
+        }
+        if ( !propertyRecord.inUse() )
+        {
+            throw new IllegalStateException( "Unable to change property[" + 
+                propertyId + "] since it is deleted." );
         }
         propertyRecord.setRelId( relId );
         if ( propertyRecord.isLight() )
@@ -1106,6 +1125,11 @@ class NeoTransaction extends XaTransaction
         {
             propertyRecord = getPropertyStore().getRecord( propertyId );
             addPropertyRecord( propertyRecord );
+        }
+        if ( !propertyRecord.inUse() )
+        {
+            throw new IllegalStateException( "Unable to change property[" + 
+                propertyId + "] since it is deleted." );
         }
         propertyRecord.setNodeId( nodeId );
         if ( propertyRecord.isLight() )

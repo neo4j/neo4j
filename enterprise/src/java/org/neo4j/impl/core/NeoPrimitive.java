@@ -452,6 +452,11 @@ abstract class NeoPrimitive
                         break;
                     }
                 }
+                if ( removeMap.get( cachedIndex.getKeyId() ) != null )
+                {
+                    success = true;
+                    return null;
+                }
                 property = propertyMap.get( cachedIndex.getKeyId() );
                 if ( property != null )
                 {

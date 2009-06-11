@@ -346,4 +346,52 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
             fail( "" + e );
         }
     }
+    
+    public void testNodeMultiRemoveProperty()
+    {
+        Node node = getNeo().createNode();
+        node.setProperty( "key0", "0" );
+        node.setProperty( "key1", "1" );
+        node.setProperty( "key2", "2" );
+        node.setProperty( "key3", "3" );
+        node.setProperty( "key4", "4" );
+        newTransaction();
+        node.removeProperty( "key3" );
+        node.removeProperty( "key2" );
+        node.removeProperty( "key3" );
+        newTransaction();
+        getNodeManager().clearCache();
+        assertEquals( "0", node.getProperty( "key0" ) );
+        assertEquals( "1", node.getProperty( "key1" ) );
+        assertEquals( "4", node.getProperty( "key4" ) );
+        assertTrue( !node.hasProperty( "key2" ) );
+        assertTrue( !node.hasProperty( "key3" ) );
+        node.delete();
+    }
+
+    public void testRelMultiRemoveProperty()
+    {
+        Node node1 = getNeo().createNode();
+        Node node2 = getNeo().createNode();
+        Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+        rel.setProperty( "key0", "0" );
+        rel.setProperty( "key1", "1" );
+        rel.setProperty( "key2", "2" );
+        rel.setProperty( "key3", "3" );
+        rel.setProperty( "key4", "4" );
+        newTransaction();
+        rel.removeProperty( "key3" );
+        rel.removeProperty( "key2" );
+        rel.removeProperty( "key3" );
+        newTransaction();
+        getNodeManager().clearCache();
+        assertEquals( "0", rel.getProperty( "key0" ) );
+        assertEquals( "1", rel.getProperty( "key1" ) );
+        assertEquals( "4", rel.getProperty( "key4" ) );
+        assertTrue( !rel.hasProperty( "key2" ) );
+        assertTrue( !rel.hasProperty( "key3" ) );
+        rel.delete();
+        node1.delete();
+        node2.delete();
+    }
 }
