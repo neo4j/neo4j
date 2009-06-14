@@ -50,10 +50,10 @@ public class LockReleaser
     private final ArrayMap<Transaction,NeoPrimitiveElement> cowMap = 
         new ArrayMap<Transaction,NeoPrimitiveElement>( 5, true, true );
 
-    private final NodeManager nodeManager;
+    private NodeManager nodeManager;
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
-    private final PropertyIndexManager propertyIndexManager; 
+    private PropertyIndexManager propertyIndexManager; 
     
     private static class NeoPrimitiveElement
     {
@@ -92,13 +92,20 @@ public class LockReleaser
     }
 
     public LockReleaser( LockManager lockManager,
-        TransactionManager transactionManager, 
-        PropertyIndexManager propertyIndexManager, NodeManager nodeManager )
+        TransactionManager transactionManager )
     {
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
-        this.propertyIndexManager = propertyIndexManager;
+    }
+    
+    void setNodeManager( NodeManager nodeManager )
+    {
         this.nodeManager = nodeManager;
+    }
+    
+    void setPropertyIndexManager( PropertyIndexManager propertyIndexManager )
+    {
+        this.propertyIndexManager = propertyIndexManager;
     }
 
     private static class LockElement

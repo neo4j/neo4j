@@ -27,6 +27,7 @@ import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.impl.persistence.PersistenceSource;
 import org.neo4j.impl.persistence.ResourceConnection;
 import org.neo4j.impl.transaction.XaDataSourceManager;
@@ -44,6 +45,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 
     private NeoStoreXaDataSource xaDs = null;
     private String dataSourceName = null;
+    private ResourceConnection readOnlyResourceConnection; 
 
     public synchronized void init()
     {
@@ -57,6 +59,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         {
             throw new RuntimeException( "Unable to get nioneodb datasource" );
         }
+        readOnlyResourceConnection = new ReadOnlyResourceConnection( xaDs );
     }
 
     public synchronized void reload()
@@ -82,9 +85,181 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         return MODULE_NAME;
     }
 
-    public synchronized ResourceConnection createResourceConnection()
+    public ResourceConnection createResourceConnection()
     {
         return new NioNeoDbResourceConnection( this.xaDs );
+    }
+    
+    public ResourceConnection createReadOnlyResourceConnection()
+    {
+        return readOnlyResourceConnection; 
+    }
+    
+    private static class ReadOnlyResourceConnection implements 
+        ResourceConnection
+    {
+        private final NeoReadTransaction neoTransaction;
+        private final RelationshipTypeStore relTypeStore;
+
+        ReadOnlyResourceConnection( NeoStoreXaDataSource xaDs )
+        {
+            this.neoTransaction = xaDs.getReadOnlyTransaction();
+            this.relTypeStore = xaDs.getNeoStore().getRelationshipTypeStore();
+        }
+
+        public XAResource getXAResource()
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+        
+        public void destroy()
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public void nodeDelete( int nodeId )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public int nodeAddProperty( int nodeId, PropertyIndex index,
+            Object value )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public void nodeChangeProperty( int nodeId, int propertyId, Object value )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public void nodeRemoveProperty( int nodeId, int propertyId )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public void nodeCreate( int nodeId )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public void relationshipCreate( int id, int typeId, int startNodeId,
+            int endNodeId )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public void relDelete( int relId )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public int relAddProperty( int relId, PropertyIndex index, Object value )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public void relChangeProperty( int relId, int propertyId, Object value )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public void relRemoveProperty( int relId, int propertyId )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public String loadIndex( int id )
+        {
+            return neoTransaction.getPropertyIndex( id );
+        }
+
+        public PropertyIndexData[] loadPropertyIndexes( int maxCount )
+        {
+            return neoTransaction.getPropertyIndexes( maxCount );
+        }
+
+        public Object loadPropertyValue( int id )
+        {
+            return neoTransaction.propertyGetValue( id );
+        }
+
+        public RelationshipTypeData[] loadRelationshipTypes()
+        {
+            RelationshipTypeData relTypeData[] = 
+                relTypeStore.getRelationshipTypes();
+            RelationshipTypeData rawRelTypeData[] = 
+                new RelationshipTypeData[relTypeData.length];
+            for ( int i = 0; i < relTypeData.length; i++ )
+            {
+                rawRelTypeData[i] = new RelationshipTypeData( 
+                    relTypeData[i].getId(), relTypeData[i].getName() );
+            }
+            return rawRelTypeData;
+        }
+
+        public boolean nodeLoadLight( int id )
+        {
+            return neoTransaction.nodeLoadLight( id );
+        }
+
+        public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId )
+        {
+            return neoTransaction.nodeGetProperties( nodeId );
+        }
+
+        public Iterable<RelationshipData> nodeLoadRelationships( int nodeId )
+        {
+            return neoTransaction.nodeGetRelationships( nodeId );
+        }
+
+        public RelationshipData relLoadLight( int id )
+        {
+            return neoTransaction.relationshipLoad( id );
+        }
+
+        public ArrayMap<Integer,PropertyData> relLoadProperties( int relId )
+        {
+            return neoTransaction.relGetProperties( relId );
+        }
+
+        public void createPropertyIndex( String key, int id )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
+
+        public void createRelationshipType( int id, String name )
+        {
+            throw new IllegalStateException( 
+                "This is a read only transaction, " + 
+                "this method should never be invoked" );
+        }
     }
 
     private static class NioNeoDbResourceConnection implements

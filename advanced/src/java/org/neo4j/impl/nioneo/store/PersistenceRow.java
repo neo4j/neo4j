@@ -120,6 +120,7 @@ class PersistenceRow extends LockableWindow
                 throw new StoreFailureException( "Unable to write record["
                     + position + "] @[" + position * recordSize + "]", e );
             }
+            byteBuffer.clear();
         }
     }
 

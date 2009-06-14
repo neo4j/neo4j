@@ -50,6 +50,7 @@ class TransactionImpl implements Transaction
     private final byte globalId[];
     private int status = Status.STATUS_ACTIVE;
     private boolean active = true;
+    private boolean globalStartRecordWritten = false;
 
     private final LinkedList<ResourceElement> resourceList = 
         new LinkedList<ResourceElement>();
@@ -100,6 +101,11 @@ class TransactionImpl implements Transaction
         // make sure tx not suspended
         txManager.commit();
     }
+    
+    boolean isGlobalStartRecordWritten()
+    {
+        return globalStartRecordWritten;
+    }
 
     public synchronized void rollback() throws IllegalStateException,
         SystemException
@@ -122,6 +128,11 @@ class TransactionImpl implements Transaction
             {
                 if ( resourceList.size() == 0 )
                 {
+                    if ( !globalStartRecordWritten )
+                    {
+                        txManager.writeStartRecord( globalId );
+                        globalStartRecordWritten = true;
+                    }
                     // 
                     byte branchId[] = txManager.getBranchId( xaRes );
                     Xid xid = new XidImpl( globalId, branchId );
