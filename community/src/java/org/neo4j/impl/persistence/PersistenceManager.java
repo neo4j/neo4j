@@ -19,84 +19,84 @@
  */
 package org.neo4j.impl.persistence;
 
-import javax.transaction.TransactionManager;
+import java.util.logging.Logger;
 
+import javax.transaction.Synchronization;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
+import javax.transaction.xa.XAResource;
+
+import org.neo4j.api.core.NotInTransactionException;
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
+import org.neo4j.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.impl.util.ArrayMap;
 
-/**
- * The PersistenceManager is the front-end for all persistence related
- * operations. In reality, only <B>load</B> operations are accessible via the
- * PersistenceManager due to Neo's incremental persistence architecture --
- * updates, additions and deletions are handled via the event framework and the
- * {@link PersistenceLayerMonitor}.
- */
 public class PersistenceManager
 {
-    private final ResourceBroker broker;
-
-    public PersistenceManager( TransactionManager transactionManager )
+    private static Logger log = Logger.getLogger( PersistenceManager.class
+        .getName() );
+    
+    private final PersistenceSource persistenceSource;
+    private final TransactionManager transactionManager;
+    
+    private final ArrayMap<Transaction,ResourceConnection> txConnectionMap = 
+        new ArrayMap<Transaction,ResourceConnection>( 5, true, true );
+    
+    public PersistenceManager( TransactionManager transactionManager, 
+        PersistenceSource persistenceSource )
     {
-        broker = new ResourceBroker( transactionManager );
-    }
-
-    ResourceBroker getResourceBroker()
-    {
-        return broker;
+        this.transactionManager = transactionManager;
+        this.persistenceSource = persistenceSource;
     }
 
     public boolean loadLightNode( int id )
     {
-        return getResource().nodeLoadLight( id );
+        return getReadOnlyResource().nodeLoadLight( id );
     }
 
     public Object loadPropertyValue( int id )
     {
-        return getResource().loadPropertyValue( id );
+        return getReadOnlyResource().loadPropertyValue( id );
     }
 
     public String loadIndex( int id )
     {
-        return getResource().loadIndex( id );
+        return getReadOnlyResource().loadIndex( id );
     }
 
     public PropertyIndexData[] loadPropertyIndexes( int maxCount )
     {
-        return getResource().loadPropertyIndexes( maxCount );
+        return getReadOnlyResource().loadPropertyIndexes( maxCount );
     }
 
     public Iterable<RelationshipData> loadRelationships( int nodeId )
     {
-        return getResource().nodeLoadRelationships( nodeId );
+        return getReadOnlyResource().nodeLoadRelationships( nodeId );
     }
 
     public ArrayMap<Integer,PropertyData> loadNodeProperties( int nodeId )
     {
-        return getResource().nodeLoadProperties( nodeId );
+        return getReadOnlyResource().nodeLoadProperties( nodeId );
     }
 
     public ArrayMap<Integer,PropertyData> loadRelProperties( int relId )
     {
-        return getResource().relLoadProperties( relId );
+        return getReadOnlyResource().relLoadProperties( relId );
     }
 
     public RelationshipData loadLightRelationship( int id )
     {
-        return getResource().relLoadLight( id );
+        return getReadOnlyResource().relLoadLight( id );
     }
 
     public RelationshipTypeData[] loadAllRelationshipTypes()
     {
-        return getResource().loadRelationshipTypes();
-    }
-
-    private ResourceConnection getResource()
-    {
-        return broker.acquireResourceConnection();
+        return getReadOnlyResource().loadRelationshipTypes();
     }
 
     public void nodeDelete( int nodeId )
@@ -158,5 +158,152 @@ public class PersistenceManager
     public void createRelationshipType( int id, String name )
     {
         getResource().createRelationshipType( id, name );
+    }
+
+    private ResourceConnection getReadOnlyResource()
+    {
+        Transaction tx = this.getCurrentTransaction();
+        ResourceConnection con = txConnectionMap.get( tx );
+        if ( con == null )
+        {
+            return ((NioNeoDbPersistenceSource) 
+                persistenceSource ).createReadOnlyResourceConnection();
+        }
+        return con;
+    }
+    
+    private ResourceConnection getResource()
+    {
+        ResourceConnection con = null;
+
+        Transaction tx = this.getCurrentTransaction();
+        con = txConnectionMap.get( tx );
+        if ( con == null )
+        {
+            try
+            {
+                con = persistenceSource.createResourceConnection();
+                if ( !tx.enlistResource( con.getXAResource() ) )
+                {
+                    throw new ResourceAcquisitionFailedException(
+                        "Unable to enlist '" + con.getXAResource() + "' in "
+                            + "transaction" );
+                }
+                tx.registerSynchronization( new TxCommitHook( tx ) );
+                txConnectionMap.put( tx, con );
+            }
+            catch ( javax.transaction.RollbackException re )
+            {
+                String msg = "The transaction is marked for rollback only.";
+                throw new ResourceAcquisitionFailedException( msg, re );
+            }
+            catch ( javax.transaction.SystemException se )
+            {
+                String msg = "TM encountered an unexpected error condition.";
+                throw new ResourceAcquisitionFailedException( msg, se );
+            }
+        }
+        return con;
+    }
+    
+    private Transaction getCurrentTransaction()
+        throws NotInTransactionException
+    {
+        try
+        {
+            Transaction tx = transactionManager.getTransaction();
+    
+            if ( tx == null )
+            {
+                throw new NotInTransactionException( "No transaction found "
+                    + "for current thread" );
+            }
+    
+            return tx;
+        }
+        catch ( SystemException se )
+        {
+            throw new NotInTransactionException( "Error fetching transaction "
+                + "for current thread", se );
+        }
+    }
+
+    private class TxCommitHook implements Synchronization
+    {
+        private final Transaction tx;
+
+        TxCommitHook( Transaction tx )
+        {
+            this.tx = tx;
+        }
+
+        public void afterCompletion( int param )
+        {
+            try
+            {
+                releaseConnections( tx );
+            }
+            catch ( Throwable t )
+            {
+                t.printStackTrace();
+                log.severe( "Unable to delist resources for tx." );
+            }
+        }
+
+        public void beforeCompletion()
+        {
+            try
+            {
+                delistResourcesForTransaction();
+            }
+            catch ( Throwable t )
+            {
+                t.printStackTrace();
+                log.severe( "Unable to delist resources for tx." );
+            }
+        }
+
+        private void releaseConnections( Transaction tx )
+        {
+            try
+            {
+                releaseResourceConnectionsForTransaction( tx );
+            }
+            catch ( Throwable t )
+            {
+                t.printStackTrace();
+                log.severe( "Error while releasing resources for tx." );
+            }
+        }
+    }
+
+    void delistResourcesForTransaction() throws NotInTransactionException
+    {
+        Transaction tx = this.getCurrentTransaction();
+        ResourceConnection con = txConnectionMap.get( tx );
+        if ( con != null )
+        {
+            try
+            {
+                tx.delistResource( con.getXAResource(), XAResource.TMSUCCESS );
+            }
+            catch ( Exception e )
+            {
+                e.printStackTrace();
+                log.severe( "Failed to delist resource '" + con
+                    + "' from current transaction." );
+                throw new RuntimeException( e );
+            }
+        }
+    }
+    
+    void releaseResourceConnectionsForTransaction( Transaction tx )
+        throws NotInTransactionException
+    {
+        ResourceConnection con = txConnectionMap.remove( tx );
+        if ( con != null )
+        {
+            con.destroy();
+        }
     }
 }

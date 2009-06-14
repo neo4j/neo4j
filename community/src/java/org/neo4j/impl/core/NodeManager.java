@@ -79,8 +79,8 @@ public class NodeManager
     private final ReentrantLock loadLocks[] = 
         new ReentrantLock[LOCK_STRIPE_COUNT]; 
 
-    NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager,
-        TransactionManager transactionManager, 
+    NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager, 
+        LockReleaser lockReleaser, TransactionManager transactionManager, 
         PersistenceManager persistenceManager, IdGenerator idGenerator )
     {
         this.cacheManager = cacheManager;
@@ -88,8 +88,9 @@ public class NodeManager
         this.transactionManager = transactionManager;
         this.propertyIndexManager = new PropertyIndexManager(
             transactionManager, persistenceManager, idGenerator );
-        this.lockReleaser = new LockReleaser( lockManager, transactionManager,
-            propertyIndexManager, this );
+        this.lockReleaser = lockReleaser; 
+        lockReleaser.setNodeManager( this );
+        lockReleaser.setPropertyIndexManager( propertyIndexManager );
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
         this.traverserFactory = new InternalTraverserFactory();

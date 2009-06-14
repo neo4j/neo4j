@@ -497,9 +497,15 @@ public class TxManager implements TransactionManager
         }
         tx = new TransactionImpl( this );
         txThreadMap.put( thread, tx );
+        // start record written on resource enlistment
+    }
+    
+    // called when a resource gets enlisted
+    void writeStartRecord( byte globalId[] ) throws SystemException
+    {
         try
         {
-            getTxLog().txStart( tx.getGlobalId() );
+            getTxLog().txStart( globalId );
         }
         catch ( IOException e )
         {
@@ -613,7 +619,10 @@ public class TxManager implements TransactionManager
             txThreadMap.remove( thread );
             try
             {
-                getTxLog().txDone( tx.getGlobalId() );
+                if ( tx.isGlobalStartRecordWritten() )
+                {
+                    getTxLog().txDone( tx.getGlobalId() );
+                }
             }
             catch ( IOException e )
             {
@@ -640,7 +649,10 @@ public class TxManager implements TransactionManager
         txThreadMap.remove( thread );
         try
         {
-            getTxLog().txDone( tx.getGlobalId() );
+            if ( tx.isGlobalStartRecordWritten() )
+            {
+                getTxLog().txDone( tx.getGlobalId() );
+            }
         }
         catch ( IOException e )
         {
@@ -676,7 +688,10 @@ public class TxManager implements TransactionManager
         txThreadMap.remove( thread );
         try
         {
-            getTxLog().txDone( tx.getGlobalId() );
+            if ( tx.isGlobalStartRecordWritten() )
+            {
+                getTxLog().txDone( tx.getGlobalId() );
+            }
         }
         catch ( IOException e )
         {
@@ -729,7 +744,10 @@ public class TxManager implements TransactionManager
             txThreadMap.remove( thread );
             try
             {
-                getTxLog().txDone( tx.getGlobalId() );
+                if ( tx.isGlobalStartRecordWritten() )
+                {
+                    getTxLog().txDone( tx.getGlobalId() );
+                }
             }
             catch ( IOException e )
             {
