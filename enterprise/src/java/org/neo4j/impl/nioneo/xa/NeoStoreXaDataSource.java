@@ -442,4 +442,9 @@ public class NeoStoreXaDataSource extends XaDataSource
     {
         xaContainer.getLogicalLog().makeBackupSlave();
     }
+    
+    NeoReadTransaction getReadOnlyTransaction()
+    {
+        return new NeoReadTransaction( neoStore );
+    }
 }

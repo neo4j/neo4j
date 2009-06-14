@@ -43,29 +43,35 @@ public class NeoModule
     private static final int INDEX_COUNT = 2500;
 
     private final TransactionManager transactionManager;
-    private final NodeManager nodeManager;
-    private final PersistenceManager persistenceManager;
+    private final AdaptiveCacheManager cacheManager;
+    private final LockManager lockManager;
+    private final IdGenerator idGenerator;
+    
+    private NodeManager nodeManager;
 
     public NeoModule( AdaptiveCacheManager cacheManager,
         LockManager lockManager, TransactionManager transactionManager,
-        PersistenceManager persistenceManager, IdGenerator idGenerator )
+        IdGenerator idGenerator )
     {
+        this.cacheManager = cacheManager;
+        this.lockManager = lockManager;
         this.transactionManager = transactionManager;
-        this.persistenceManager = persistenceManager;
-        nodeManager = new NodeManager( cacheManager, lockManager,
-            transactionManager, persistenceManager, idGenerator );
+        this.idGenerator = idGenerator;
     }
 
     public void init()
     {
     }
 
-    public void start( Map<Object,Object> params )
+    public void start( LockReleaser lockReleaser, 
+        PersistenceManager persistenceManager, Map<Object,Object> params )
     {
         if ( !startIsOk )
         {
             return;
         }
+        nodeManager = new NodeManager( cacheManager, lockManager, lockReleaser, 
+            transactionManager, persistenceManager, idGenerator );
         // load and verify from PS
         RelationshipTypeData relTypes[] = null;
         PropertyIndexData propertyIndexes[] = null;
@@ -154,8 +160,9 @@ public class NeoModule
 
     public void reload( Map<Object,Object> params )
     {
-        stop();
-        start( params );
+        throw new UnsupportedOperationException();
+//        stop();
+//        start( params );
     }
 
     public void stop()
@@ -177,10 +184,5 @@ public class NeoModule
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         return nodeManager.getRelationshipTypes();
-    }
-
-    public LockReleaser getLockReleaser()
-    {
-        return nodeManager.getLockReleaser();
     }
 }
