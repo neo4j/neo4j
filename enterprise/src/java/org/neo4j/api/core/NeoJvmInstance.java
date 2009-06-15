@@ -152,10 +152,12 @@ class NeoJvmInstance
 
         config.getEventModule().start();
         config.getTxModule().start();
-        config.getPersistenceModule().start( persistenceSource );
+        config.getPersistenceModule().start( config.getTxModule().getTxManager(), 
+            persistenceSource );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
-        config.getNeoModule().start( params );
+        config.getNeoModule().start( config.getLockReleaser(),  
+            config.getPersistenceModule().getPersistenceManager(), params );
         if ( lucene != null )
         {
             config.getTxModule().getXaDataSourceManager().unregisterDataSource(
@@ -268,12 +270,12 @@ class NeoJvmInstance
             cacheManager = new AdaptiveCacheManager();
             txModule = new TxModule( this.storeDir );
             lockManager = new LockManager( txModule.getTxManager() );
-            persistenceModule = new PersistenceModule( txModule.getTxManager() );
+            lockReleaser = new LockReleaser( lockManager, 
+                txModule.getTxManager() );
+            persistenceModule = new PersistenceModule(); // txModule.getTxManager() );
             idGeneratorModule = new IdGeneratorModule();
             neoModule = new NeoModule( cacheManager, lockManager, txModule
-                .getTxManager(), persistenceModule.getPersistenceManager(), 
-                idGeneratorModule.getIdGenerator() );
-            lockReleaser = neoModule.getLockReleaser();
+                .getTxManager(), idGeneratorModule.getIdGenerator() );
         }
 
         /**
