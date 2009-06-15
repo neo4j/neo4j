@@ -1,9 +1,16 @@
 Remote Neo
 
     Remote Neo is a tool for introspecting a running Neo4j instance from
-    a different process.
+    a different process. The implementation is not speedy enough to be used
+    as the main access channel to Neo4j for actual applications.
 
-    Remote Neo is not intended for integration into applications.
+    The intended use case is to start a Remote Neo server as part of the
+    main application, and then connect to that server from a client such
+    as {{{http://wiki.neo4j.org/content/Neoclipse}Neoclipse}} to introspect
+    the live graph without having to stop the application. As Remote Neo is
+    a full implementation of the Neo4j interface it is also possible to
+    connect jobs that do small modifications of the graph through it, or
+    some automated reporting.
 
 Getting Started
 
