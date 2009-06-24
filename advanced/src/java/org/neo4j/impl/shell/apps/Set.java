@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.shell.apps;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.api.core.Node;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
@@ -31,6 +34,18 @@ import org.neo4j.util.shell.ShellException;
  */
 public class Set extends NodeOrRelationshipApp
 {
+    private static final Map<String, Class<?>> VALUE_TYPE_NAMES =
+        new HashMap<String, Class<?>>();
+    {
+        VALUE_TYPE_NAMES.put( "boolean", Boolean.class );
+        VALUE_TYPE_NAMES.put( "byte", Byte.class );
+        VALUE_TYPE_NAMES.put( "short", Short.class );
+        VALUE_TYPE_NAMES.put( "int", Integer.class );
+        VALUE_TYPE_NAMES.put( "Long", Long.class );
+        VALUE_TYPE_NAMES.put( "float", Long.class );
+        VALUE_TYPE_NAMES.put( "double", Long.class );
+    }
+    
     /**
      * Constructs a new "set" application.
      */
@@ -38,7 +53,7 @@ public class Set extends NodeOrRelationshipApp
     {
         super();
         this.addValueType( "t", new OptionContext( OptionValueType.MUST,
-            "Value type, String, Integer, Long, Byte a.s.o." ) );
+            "Value type, String, int, long, byte a.s.o. Default is String" ) );
     }
 
     @Override
@@ -81,24 +96,31 @@ public class Set extends NodeOrRelationshipApp
     {
         String type = parser.options().containsKey( "t" ) ? parser.options()
             .get( "t" ) : String.class.getName();
-        Class<?> cls = null;
-        try
+        Class<?> cls = VALUE_TYPE_NAMES.get( type );
+        
+        if ( cls != null )
         {
-            cls = Class.forName( type );
-        }
-        catch ( ClassNotFoundException e )
-        {
-            // Ok
+            try
+            {
+                cls = Class.forName( type );
+            }
+            catch ( ClassNotFoundException e )
+            {
+                // Ok
+            }
         }
 
-        try
+        if ( cls != null )
         {
-            cls = Class.forName( String.class.getPackage().getName() + "."
-                + type );
-        }
-        catch ( ClassNotFoundException e )
-        {
-            // Ok
+            try
+            {
+                cls = Class.forName( String.class.getPackage().getName() + "." +
+                    type );
+            }
+            catch ( ClassNotFoundException e )
+            {
+                // Ok
+            }
         }
 
         if ( cls == null )
