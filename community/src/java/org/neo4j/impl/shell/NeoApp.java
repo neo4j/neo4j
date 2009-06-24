@@ -202,6 +202,33 @@ public abstract class NeoApp extends AbstractApp
             patternOrNull.matcher( value ).find();
     }
     
+    protected <T extends Enum<T>> Enum<T> parseEnum( Class<T> enumClass,
+        String name, Enum<T> defaultValue  )
+    {
+        if ( name == null )
+        {
+            return defaultValue;
+        }
+        
+        name = name.toLowerCase();
+        for ( T enumConstant : enumClass.getEnumConstants() )
+        {
+            if ( enumConstant.name().equalsIgnoreCase( name ) )
+            {
+                return enumConstant;
+            }
+        }
+        for ( T enumConstant : enumClass.getEnumConstants() )
+        {
+            if ( enumConstant.name().toLowerCase().startsWith( name ) )
+            {
+                return enumConstant;
+            }
+        }
+        throw new IllegalArgumentException( "No '" + name + "' or '" +
+            name + ".*' in " + enumClass );
+    }
+    
     private static class NeoAppRelationshipType implements RelationshipType
     {
         private String name;

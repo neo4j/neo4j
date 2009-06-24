@@ -40,8 +40,8 @@ public class Rm extends NodeOrRelationshipApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
-        throws ShellException
+    protected String exec( AppCommandParser parser, Session session,
+        Output out ) throws ShellException
     {
         if ( parser.arguments().isEmpty() )
         {
