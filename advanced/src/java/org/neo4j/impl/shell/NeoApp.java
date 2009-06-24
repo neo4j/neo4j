@@ -41,7 +41,8 @@ public abstract class NeoApp extends AbstractApp
 {
     private static final String NODE_KEY = "CURRENT_NODE";
 
-    protected static Node getCurrentNode( NeoShellServer server, Session session )
+    protected static Node getCurrentNode( NeoShellServer server,
+        Session session )
     {
         Number id = (Number) safeGet( session, NODE_KEY );
         Node node = null;
@@ -79,40 +80,14 @@ public abstract class NeoApp extends AbstractApp
     
     protected Direction getDirection( String direction ) throws ShellException
     {
-        return this.getDirection( direction, Direction.OUTGOING );
+        return getDirection( direction, Direction.OUTGOING );
     }
 
     protected Direction getDirection( String direction,
         Direction defaultDirection ) throws ShellException
     {
-        if ( direction == null )
-        {
-            return defaultDirection;
-        }
-
-        Direction result = null;
-        try
-        {
-            result = Direction.valueOf( direction.toUpperCase() );
-        }
-        catch ( Exception e )
-        {
-            if ( direction.equalsIgnoreCase( "o" ) )
-            {
-                result = Direction.OUTGOING;
-            }
-            else if ( direction.equalsIgnoreCase( "i" ) )
-            {
-                result = Direction.INCOMING;
-            }
-        }
-
-        if ( result == null )
-        {
-            throw new ShellException( "Unknown direction " + direction
-                + " (may be " + directionAlternatives() + ")" );
-        }
-        return result;
+        return ( Direction ) parseEnum(
+            Direction.class, direction, defaultDirection ); 
     }
 
     protected Node getNodeById( long id )
@@ -161,8 +136,8 @@ public abstract class NeoApp extends AbstractApp
      */
     public static String getDisplayNameForNode( Node node )
     {
-        return node != null ? getDisplayNameForNode( node.getId() )
-            : getDisplayNameForNode( (Long) null );
+        return node != null ? getDisplayNameForNode( node.getId() ) :
+            getDisplayNameForNode( ( Long ) null );
     }
 
     /**
@@ -176,34 +151,35 @@ public abstract class NeoApp extends AbstractApp
         return "(" + nodeId + ")";
     }
 
-    protected String fixCaseSensitivity( String string,
-        boolean caseSensitive )
+    protected static String fixCaseSensitivity( String string,
+        boolean caseInsensitive )
     {
-        return caseSensitive ? string : string.toLowerCase();
+        return caseInsensitive ? string.toLowerCase() : string;
     }
     
-    protected Pattern newPattern( String pattern, boolean caseSensitive )
+    protected static Pattern newPattern( String pattern,
+        boolean caseInsensitive )
     {
         return pattern == null ? null : Pattern.compile(
-            fixCaseSensitivity( pattern, caseSensitive ) );
+            fixCaseSensitivity( pattern, caseInsensitive ) );
     }
     
-    protected boolean matches( Pattern patternOrNull, String value,
-        boolean caseSensitive, boolean exactMatch )
+    protected static boolean matches( Pattern patternOrNull, String value,
+        boolean caseInsensitive, boolean loose )
     {
         if ( patternOrNull == null )
         {
             return true;
         }
         
-        value = fixCaseSensitivity( value, caseSensitive );
-        return exactMatch ?
-            patternOrNull.matcher( value ).matches() :
-            patternOrNull.matcher( value ).find();
+        value = fixCaseSensitivity( value, caseInsensitive );
+        return loose ?
+            patternOrNull.matcher( value ).find() :
+            patternOrNull.matcher( value ).matches();
     }
     
-    protected <T extends Enum<T>> Enum<T> parseEnum( Class<T> enumClass,
-        String name, Enum<T> defaultValue  )
+    protected static <T extends Enum<T>> Enum<T> parseEnum(
+        Class<T> enumClass, String name, Enum<T> defaultValue  )
     {
         if ( name == null )
         {
