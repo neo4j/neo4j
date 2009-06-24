@@ -64,15 +64,16 @@ public class Ls extends NodeOrRelationshipApp
             "Filters will only match if the entire value matches " +
             "(exact match)" ) );
         this.addValueType( "e", new OptionContext( OptionValueType.MUST,
-            "Temporarily select a connected relationship to do the "
-                + "operation on" ) );
+            "Temporarily select a connected relationship to do " +
+            "the operation on" ) );
     }
 
     @Override
     public String getDescription()
     {
-        return "Lists the current node. Optionally supply node id for "
-            + "listing a certain node: ls <node-id>";
+        return "Lists the contents of the current node. Optionally supply " +
+            "node id for listing\n" +
+            "a certain node using \"ls <node-id>\"";
     }
 
     @Override
@@ -155,18 +156,6 @@ public class Ls extends NodeOrRelationshipApp
         }
     }
     
-    private String fixCaseSensitivity( String string,
-        boolean caseSensitive )
-    {
-        return caseSensitive ? string : string.toLowerCase();
-    }
-    
-    private Pattern newPattern( String pattern, boolean caseSensitive )
-    {
-        return pattern == null ? null : Pattern.compile(
-            fixCaseSensitivity( pattern, caseSensitive ) );
-    }
-
     private void displayRelationships( AppCommandParser parser,
         NodeOrRelationship thing, Output out,
         boolean verbose, String filter, boolean caseSensitiveFilters,
@@ -189,20 +178,6 @@ public class Ls extends NodeOrRelationshipApp
             displayRelationships( thing, out, verbose, Direction.INCOMING,
                 "<--[", "]--", filter, caseSensitiveFilters, exactFilterMatch );
         }
-    }
-    
-    private boolean matches( Pattern patternOrNull, String value,
-        boolean caseSensitive, boolean exactMatch )
-    {
-        if ( patternOrNull == null )
-        {
-            return true;
-        }
-        
-        value = fixCaseSensitivity( value, caseSensitive );
-        return exactMatch ?
-            patternOrNull.matcher( value ).matches() :
-            patternOrNull.matcher( value ).find();
     }
     
     private void displayRelationships( NodeOrRelationship thing,

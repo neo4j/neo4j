@@ -20,6 +20,7 @@
 package org.neo4j.impl.shell;
 
 import java.rmi.RemoteException;
+import java.util.regex.Pattern;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
@@ -75,7 +76,7 @@ public abstract class NeoApp extends AbstractApp
     {
         return new NeoAppRelationshipType( name );
     }
-
+    
     protected Direction getDirection( String direction ) throws ShellException
     {
         return this.getDirection( direction, Direction.OUTGOING );
@@ -175,6 +176,32 @@ public abstract class NeoApp extends AbstractApp
         return "(" + nodeId + ")";
     }
 
+    protected String fixCaseSensitivity( String string,
+        boolean caseSensitive )
+    {
+        return caseSensitive ? string : string.toLowerCase();
+    }
+    
+    protected Pattern newPattern( String pattern, boolean caseSensitive )
+    {
+        return pattern == null ? null : Pattern.compile(
+            fixCaseSensitivity( pattern, caseSensitive ) );
+    }
+    
+    protected boolean matches( Pattern patternOrNull, String value,
+        boolean caseSensitive, boolean exactMatch )
+    {
+        if ( patternOrNull == null )
+        {
+            return true;
+        }
+        
+        value = fixCaseSensitivity( value, caseSensitive );
+        return exactMatch ?
+            patternOrNull.matcher( value ).matches() :
+            patternOrNull.matcher( value ).find();
+    }
+    
     private static class NeoAppRelationshipType implements RelationshipType
     {
         private String name;
