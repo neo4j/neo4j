@@ -98,7 +98,7 @@ public class Set extends NodeOrRelationshipApp
             .get( "t" ) : String.class.getName();
         Class<?> cls = VALUE_TYPE_NAMES.get( type );
         
-        if ( cls != null )
+        if ( cls == null )
         {
             try
             {
@@ -110,7 +110,7 @@ public class Set extends NodeOrRelationshipApp
             }
         }
 
-        if ( cls != null )
+        if ( cls == null )
         {
             try
             {

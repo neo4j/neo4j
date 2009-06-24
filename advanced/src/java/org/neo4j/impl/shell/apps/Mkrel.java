@@ -19,6 +19,8 @@
  */
 package org.neo4j.impl.shell.apps;
 
+import java.rmi.RemoteException;
+
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.RelationshipType;
@@ -58,7 +60,7 @@ public class Mkrel extends NeoApp
 
     @Override
     protected String exec( AppCommandParser parser, Session session, Output out )
-        throws ShellException
+        throws ShellException, RemoteException
     {
         boolean createNode = parser.options().containsKey( "c" );
         boolean suppliedNode = parser.options().containsKey( "n" );
@@ -90,6 +92,11 @@ public class Mkrel extends NeoApp
         Node endNode = direction == Direction.OUTGOING ? node : this
             .getCurrentNode( session );
         startNode.createRelationshipTo( endNode, type );
+        if ( createNode )
+        {
+            out.println( "New node " + getDisplayNameForNode( node ) +
+                " created" );
+        }
         return null;
     }
 }
