@@ -20,7 +20,7 @@
 package org.neo4j.impl.shell.apps;
 
 import java.rmi.RemoteException;
-import java.util.regex.Pattern;
+import java.util.Map;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
@@ -55,14 +55,26 @@ public class Ls extends NodeOrRelationshipApp
         this.addValueType( "r", new OptionContext( OptionValueType.NONE,
             "Lists relationships" ) );
         this.addValueType( "f", new OptionContext( OptionValueType.MUST,
-            "Filters property keys/relationship types (regexp string)" ) );
-        this.addValueType( "g", new OptionContext( OptionValueType.MUST,
-            "Filters property values (regexp string)" ) );
-        this.addValueType( "s", new OptionContext( OptionValueType.NONE,
-            "Case sensitive filters" ) );
-        this.addValueType( "x", new OptionContext( OptionValueType.NONE,
-            "Filters will only match if the entire value matches " +
-            "(exact match)" ) );
+            "Filters node property keys/values. Supplied either as a single " +
+            "value\n" +
+            "or as a JSON string where both keys and values can " +
+            "contain regex.\n" +
+            "Starting/ending {} brackets are optional. Examples:\n" +
+            "\"username\"\n" +
+            "   property/relationship 'username' gets listed\n" +
+            "\".*name: ma.*, age: ''\"\n" +
+            "   properties with keys matching '.*name' and values matching " +
+            "'ma.*'\n" +
+            "   gets listed, as well as the 'age' property. Also " +
+            "relationships\n" +
+            "   matching '.*name' or 'age' gets listed" ) );
+        this.addValueType( "i", new OptionContext( OptionValueType.NONE,
+            "Filters are case-insensitive (case-sensitive by default)" ) );
+        this.addValueType( "l", new OptionContext( OptionValueType.NONE,
+            "Filters matches more loosely, i.e. it's considered a match if " +
+            "just\n" +
+            "a part of a value matches the pattern, not necessarily " +
+            "the whole value" ) );
         this.addValueType( "e", new OptionContext( OptionValueType.MUST,
             "Temporarily select a connected relationship to do " +
             "the operation on" ) );
@@ -84,10 +96,10 @@ public class Ls extends NodeOrRelationshipApp
         boolean displayValues = verbose || !parser.options().containsKey( "q" );
         boolean displayProperties = parser.options().containsKey( "p" );
         boolean displayRelationships = parser.options().containsKey( "r" );
-        boolean caseSensitiveFilters = parser.options().containsKey( "s" );
-        boolean exactFilterMatch = parser.options().containsKey( "x" );
-        String keyFilter = parser.options().get( "f" );
-        String valueFilter = parser.options().get( "g" );
+        boolean caseInsensitiveFilters = parser.options().containsKey( "i" );
+        boolean looseFilters = parser.options().containsKey( "l" );
+        String filterString = parser.options().get( "f" );
+        Map<String, Object> filterMap = parseFilter( filterString, out );
         if ( !displayProperties && !displayRelationships )
         {
             displayProperties = true;
@@ -109,39 +121,48 @@ public class Ls extends NodeOrRelationshipApp
         if ( displayProperties )
         {
             this.displayProperties( thing, out, displayValues, verbose,
-                keyFilter, valueFilter, caseSensitiveFilters,
-                exactFilterMatch );
+                filterMap, caseInsensitiveFilters, looseFilters );
         }
         if ( displayRelationships )
         {
             this.displayRelationships( parser, thing, out,
-                verbose, keyFilter, caseSensitiveFilters, exactFilterMatch );
+                verbose, filterMap, caseInsensitiveFilters, looseFilters );
         }
         return null;
     }
 
     private void displayProperties( NodeOrRelationship thing, Output out,
-        boolean displayValues, boolean verbose, String keyFilter,
-        String valueFilter, boolean caseSensitiveFilters,
-        boolean exactFilterMatch ) throws RemoteException
+        boolean displayValues, boolean verbose, Map<String, Object> filterMap,
+        boolean caseInsensitiveFilters, boolean looseFilters )
+        throws RemoteException
     {
         int longestKey = this.findLongestKey( thing );
-        Pattern keyPattern = newPattern( keyFilter, caseSensitiveFilters );
-        Pattern valuePattern = newPattern( valueFilter, caseSensitiveFilters );
         for ( String key : thing.getPropertyKeys() )
         {
-            if ( !matches( keyPattern, key, caseSensitiveFilters,
-                exactFilterMatch ) )
-            {
-                continue;
-            }
+            boolean matches = filterMap.isEmpty();
             Object value = thing.getProperty( key );
-            if ( !matches( valuePattern, value.toString(),
-                caseSensitiveFilters, exactFilterMatch ) )
+            for ( Map.Entry<String, Object> filter : filterMap.entrySet() )
+            {
+                if ( matches( newPattern( filter.getKey(),
+                    caseInsensitiveFilters ), key, caseInsensitiveFilters,
+                    looseFilters ) )
+                {
+                    String filterValue = filter.getValue() != null ?
+                        filter.getValue().toString() : null;
+                    if ( matches( newPattern( filterValue,
+                        caseInsensitiveFilters ), value.toString(),
+                        caseInsensitiveFilters, looseFilters ) )
+                    {
+                        matches = true;
+                        break;
+                    }
+                }
+            }
+            if ( !matches )
             {
                 continue;
             }
-
+            
             out.print( "*" + key );
             if ( displayValues )
             {
@@ -157,10 +178,9 @@ public class Ls extends NodeOrRelationshipApp
     }
     
     private void displayRelationships( AppCommandParser parser,
-        NodeOrRelationship thing, Output out,
-        boolean verbose, String filter, boolean caseSensitiveFilters,
-        boolean exactFilterMatch )
-        throws ShellException, RemoteException
+        NodeOrRelationship thing, Output out, boolean verbose,
+        Map<String, Object> filterMap, boolean caseInsensitiveFilters,
+        boolean looseFilters ) throws ShellException, RemoteException
     {
         String directionFilter = parser.options().get( "d" );
         Direction direction = this.getDirection( directionFilter );
@@ -171,29 +191,42 @@ public class Ls extends NodeOrRelationshipApp
         if ( displayOutgoing )
         {
             displayRelationships( thing, out, verbose, Direction.OUTGOING,
-                "--[", "]-->", filter, caseSensitiveFilters, exactFilterMatch );
+                "--[", "]-->", filterMap, caseInsensitiveFilters,
+                looseFilters );
         }
         if ( displayIncoming )
         {
             displayRelationships( thing, out, verbose, Direction.INCOMING,
-                "<--[", "]--", filter, caseSensitiveFilters, exactFilterMatch );
+                "<--[", "]--", filterMap, caseInsensitiveFilters,
+                looseFilters );
         }
     }
     
     private void displayRelationships( NodeOrRelationship thing,
         Output out, boolean verbose, Direction direction, String prefixString,
-        String postfixString, String filter, boolean caseSensitiveFilters,
-        boolean exactFilterMatch ) throws ShellException, RemoteException
+        String postfixString, Map<String, Object> filterMap,
+        boolean caseInsensitiveFilters, boolean looseFilters )
+        throws ShellException, RemoteException
     {
-        Pattern typeFilter = newPattern( filter, caseSensitiveFilters );
         for ( Relationship rel : thing.getRelationships( direction ) )
         {
             String type = rel.getType().name();
-            if ( !matches( typeFilter, type, caseSensitiveFilters,
-                exactFilterMatch ) )
+            boolean matches = filterMap.isEmpty();
+            for ( String filter : filterMap.keySet() )
+            {
+                if ( matches( newPattern( filter, caseInsensitiveFilters ),
+                    type, caseInsensitiveFilters, looseFilters ) )
+                {
+                    matches = true;
+                    break;
+                }
+            }
+            
+            if ( !matches )
             {
                 continue;
             }
+            
             StringBuffer buf = new StringBuffer(
                 getDisplayNameForCurrentNode() );
             buf.append( " " + prefixString ).append( rel.getType().name() );
