@@ -25,7 +25,7 @@ public class StartLocalClient
     {
         if ( args.length == 0 )
         {
-            System.out.println( "ERROR: To start a local neo service and a" +
+            System.out.println( "ERROR: To start a local neo service and a " +
                 "shell client on top of that you need to supply a path to a " +
                 "neo store or just a new path where a new neo store will " +
                 "be created if it doesn't exist" );

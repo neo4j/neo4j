@@ -54,11 +54,11 @@ public class Gsh extends AbstractApp
 	{
 		GshExecutor anExecutor = new GshExecutor();
 		return "Runs groovy scripts. Usage: gsh <groovy script line>\n" +
-			"  Example: gsh --doSomething arg1 \"arg 2\" " +
-			"--doSomethingElse arg1\n" +
-			"Where the groovy scripts doSomething.groovy and " +
-			"doSomethingElse.groovy exists in one of " +
-			"environment variable\n" + anExecutor.getPathKey() +
+			"Example: gsh --doSomething arg1 \"arg 2\" " +
+			"--doSomethingElse arg1\n\n" +
+			"Groovy scripts doSomething.groovy and " +
+			"doSomethingElse.groovy must exist\n" +
+			"in one of environment variable " + anExecutor.getPathKey() +
 			" paths (default is " + anExecutor.getDefaultPaths() + ")";
 	}
 }

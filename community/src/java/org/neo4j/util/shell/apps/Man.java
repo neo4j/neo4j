@@ -23,6 +23,7 @@ import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 import org.neo4j.util.shell.AbstractApp;
 import org.neo4j.util.shell.AbstractAppServer;
@@ -65,11 +66,25 @@ public class Man extends AbstractApp
 				hasOptions = true;
 				String description = this.fixDesciption(
 					app.getDescription( option ) );
+				String[] descriptionLines =
+				    description.split( Pattern.quote( "\n" ) );
 				OptionValueType type = app.getOptionValueType( option );
-				println( out, "-" + option + "\t" + description + " " +
-				( type == OptionValueType.NONE ? "" : "" ) +
-				( type == OptionValueType.MAY ? "(may have value)" : "" ) +
-				( type == OptionValueType.MUST ? "(must have value)" : "" ) );
+				for ( int i = 0; i < descriptionLines.length; i++ )
+				{
+				    String line = "";
+				    if ( i == 0 )
+				    {
+				        line = "-" + option;
+				    }
+				    line += "\t ";
+				    line += descriptionLines[ i ];
+				    if ( i == descriptionLines.length - 1 )
+				    {
+//				        line += type.getDescription();
+				    }
+				    
+				    println( out, line );
+				}
 			}
 			if ( hasOptions )
 			{
@@ -103,7 +118,7 @@ public class Man extends AbstractApp
 	
 	private void println( Output out, String string ) throws RemoteException
 	{
-		out.println( "\t" + string );
+		out.println( "  " + string );
 	}
 
 	private App getApp( AppCommandParser parser ) throws ShellException

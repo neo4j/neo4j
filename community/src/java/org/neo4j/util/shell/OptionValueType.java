@@ -27,15 +27,29 @@ public enum OptionValueType
 	/**
 	 * No value is to be specified.
 	 */
-	NONE,
+	NONE( "" ),
 	
 	/**
 	 * There may be a value supplied.
 	 */
-	MAY,
+	MAY( "(may have value)" ),
 	
 	/**
 	 * There must be a supplied value.
 	 */
-	MUST,
+	MUST( "(must have value" ),
+	
+	;
+	
+	private String description;
+	
+	private OptionValueType( String description )
+	{
+	    this.description = description;
+	}
+	
+	public String getDescription()
+	{
+	    return this.description;
+	}
 }

@@ -41,11 +41,11 @@ public class Jsh extends AbstractApp
 		JshExecutor anExecutor = new JshExecutor();
 		return
 			"Runs python (jython) scripts. Usage: jsh <python script line>\n" +
-			"  Example: jsh --doSomething arg1 \"arg 2\" " +
-			"--doSomethingElse arg1\n" +
-			"Where the python scripts doSomething.py and " +
-			"doSomethingElse.py exists in one of " +
-			"environment variable\n" + anExecutor.getPathKey() +
+			"Example: jsh --doSomething arg1 \"arg 2\" " +
+			"--doSomethingElse arg1\n\n" +
+			"Python scripts doSomething.py and doSomethingElse.py " +
+			"must exist\n" +
+			"in one of environment variable " + anExecutor.getPathKey() +
 			" paths (default is " + anExecutor.getDefaultPaths() + ")";
 	}
 }
