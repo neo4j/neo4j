@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
 import org.neo4j.api.core.Direction;
@@ -29,18 +28,31 @@ public class Trav extends NeoApp
         this.addValueType( "o", new OptionContext( OptionValueType.MUST,
             "The traversal order [BREADTH_FIRST/DEPTH_FIRST/breadth/depth]" ) );
         this.addValueType( "r", new OptionContext( OptionValueType.MUST,
-            "The relationship type(s) w/ optional direction\n" +
-            "(also supports regex matching of relationship types),\n" +
-            "f.ex. MY_REL_TYPE:OUTGOING,.*_HAS_.*'" ) );
+            "The relationship type(s) expressed as a JSON string " +
+            "(supports regex\n" +
+            "matching of the types) f.ex. " +
+            "\"MY_REL_TYPE:out,.*_HAS_.*:both\".\n" +
+            "Matching is case-insensitive." ) );
         this.addValueType( "f", new OptionContext( OptionValueType.MUST,
-            "Filters node property keys (regex string)" ) );
-        this.addValueType( "g", new OptionContext( OptionValueType.MUST,
-            "Filters node property values (regex string)" ) );
-        this.addValueType( "s", new OptionContext( OptionValueType.NONE,
-            "Case sensitive filters" ) );
-        this.addValueType( "x", new OptionContext( OptionValueType.NONE,
-            "Filters will only match if the entire value matches " +
-            "(exact match)" ) );
+            "Filters node property keys/values. Supplied either as a single " +
+            "value\n" +
+            "or as a JSON string where both keys and values can " +
+            "contain regex.\n" +
+            "Starting/ending {} brackets are optional. Examples:\n" +
+            "\"username\"\n" +
+            "   nodes which has property 'username' gets listed\n" +
+            "\".*name: ma.*, age: ''\"\n" +
+            "   nodes which has any key matching '.*name' where the " +
+            "property value\n" +
+            "   for that key matches 'ma.*' AND has the 'age' property " +
+            "gets listed" ) );
+        this.addValueType( "i", new OptionContext( OptionValueType.NONE,
+            "Filters are case-insensitive (case-sensitive by default)" ) );
+        this.addValueType( "l", new OptionContext( OptionValueType.NONE,
+            "Filters matches more loosely, i.e. it's considered a match if " +
+            "just\n" +
+            "a part of a value matches the pattern, not necessarily " +
+            "the whole value" ) );
         this.addValueType( "c", new OptionContext( OptionValueType.MUST,
         	"Command to run for each returned node. Use $n as a node-id " +
         	"replacement.\n" +
@@ -64,7 +76,7 @@ public class Trav extends NeoApp
         Output out ) throws ShellException, RemoteException
     {
         Node node = this.getCurrentNode( session );
-        Object[] relationshipTypes = parseRelationshipTypes( parser );
+        Object[] relationshipTypes = parseRelationshipTypes( parser, out );
         if ( relationshipTypes.length == 0 )
         {
             out.println( "No matching relationship types" );
@@ -76,14 +88,11 @@ public class Trav extends NeoApp
             parseReturnableEvaluator( parser );
         Order order = parseOrder( parser );
         
-        String nodeKeyFilter = parser.options().get( "f" );
-        String nodeValueFilter = parser.options().get( "g" );
-        boolean caseSensitiveFilters = parser.options().containsKey( "s" );
-        boolean exactFilterMatch = parser.options().containsKey( "x" );
-        Pattern nodeKeyPattern =
-            newPattern( nodeKeyFilter, caseSensitiveFilters );
-        Pattern nodeValuePattern =
-            newPattern( nodeValueFilter, caseSensitiveFilters );
+        String filterString = parser.options().get( "f" );
+        Map<String, Object> filterMap = filterString != null ?
+            parseFilter( filterString, out ) : null;
+        boolean caseInsensitiveFilters = parser.options().containsKey( "i" );
+        boolean looseFilters = parser.options().containsKey( "l" );
         String commandToRun = parser.options().get( "c" );
         String[] commandsToRun = commandToRun != null ?
             commandToRun.split( Pattern.quote( "&&" ) ) : new String[ 0 ];
@@ -92,23 +101,46 @@ public class Trav extends NeoApp
             returnableEvaluator, relationshipTypes ) )
         {
             boolean hit = false;
-            if ( nodeKeyFilter == null && nodeValueFilter == null )
+            if ( filterMap == null )
             {
                 hit = true;
             }
             else
             {
+                Map<String, Boolean> matchPerFilterKey =
+                    new HashMap<String, Boolean>();
                 for ( String key : traversedNode.getPropertyKeys() )
                 {
-                    hit = matches( nodeKeyPattern, key, caseSensitiveFilters,
-                        exactFilterMatch );
-                    Object value = traversedNode.getProperty( key );
-                    hit = hit && matches( nodeValuePattern, value.toString(),
-                        caseSensitiveFilters, exactFilterMatch );
-                    if ( hit )
+                    for ( Map.Entry<String, Object> filterEntry :
+                        filterMap.entrySet() )
                     {
-                        break;
+                        String filterKey = filterEntry.getKey();
+                        if ( matchPerFilterKey.containsKey( filterKey ) )
+                        {
+                            continue;
+                        }
+                        
+                        if ( matches( newPattern( filterKey,
+                            caseInsensitiveFilters ), key,
+                            caseInsensitiveFilters, looseFilters ) )
+                        {
+                            Object value = traversedNode.getProperty( key );
+                            String filterPattern =
+                                filterEntry.getValue() != null ?
+                                filterEntry.getValue().toString() : null;
+                            if ( matches( newPattern( filterPattern,
+                                caseInsensitiveFilters ), value.toString(),
+                                caseInsensitiveFilters, looseFilters ) )
+                            {
+                                matchPerFilterKey.put( filterKey, true );
+                            }
+                        }
                     }
+                }
+                
+                if ( matchPerFilterKey.size() == filterMap.size() )
+                {
+                    hit = true;
                 }
             }
             if ( hit )
@@ -120,8 +152,8 @@ public class Trav extends NeoApp
         	    {
             		String line = templateString( command, "\\$", data );
             		getServer().interpretLine( line, session, out );
-            		out.println();
             	}
+                out.println();
             }
         }
         return null;
@@ -197,8 +229,8 @@ public class Trav extends NeoApp
         return StopEvaluator.END_OF_GRAPH;
     }
 
-    private Object[] parseRelationshipTypes( AppCommandParser parser )
-        throws ShellException
+    private Object[] parseRelationshipTypes( AppCommandParser parser,
+        Output out ) throws ShellException, RemoteException
     {
         String option = parser.options().get( "r" );
         List<Object> result = new ArrayList<Object>();
@@ -213,7 +245,7 @@ public class Trav extends NeoApp
         }
         else
         {
-            StringTokenizer typeTokenizer = new StringTokenizer( option, "," );
+            Map<String, Object> map = parseFilter( option, out );
             List<RelationshipType> allRelationshipTypes =
             	new ArrayList<RelationshipType>();
             for ( RelationshipType type :
@@ -222,23 +254,18 @@ public class Trav extends NeoApp
             	allRelationshipTypes.add( type );
             }
             
-            while ( typeTokenizer.hasMoreTokens() )
+            for ( Map.Entry<String, Object> entry : map.entrySet() )
             {
-                String typeToken = typeTokenizer.nextToken();
-                StringTokenizer directionTokenizer = new StringTokenizer(
-                    typeToken, ":" );
-                String type = directionTokenizer.nextToken();
-                Direction direction = getDirection(
-                    directionTokenizer.hasMoreTokens() ?
-                        directionTokenizer.nextToken() : null,
-                        Direction.BOTH );
+                String type = entry.getKey();
+                Direction direction = getDirection( ( String ) entry.getValue(),
+                    Direction.BOTH );
                 
                 Pattern typePattern = Pattern.compile( type );
                 for ( RelationshipType relationshipType : allRelationshipTypes )
                 {
                     if ( relationshipType.name().equals( type ) ||
                     	matches( typePattern, relationshipType.name(),
-                        false, true ) )
+                        true, false ) )
                     {
                         result.add( relationshipType );
                         result.add( direction );
