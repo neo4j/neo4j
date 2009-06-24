@@ -25,6 +25,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.util.shell.json.JSONException;
+import org.neo4j.util.shell.json.JSONObject;
+
 /**
  * Common implementation of an {@link App}.
  */
@@ -123,6 +126,73 @@ public abstract class AbstractApp implements App
 		{
 			throw new RuntimeException( e );
 		}
+	}
+	
+	protected static Map<String, Object> parseFilter( String filterString,
+	    Output out ) throws RemoteException
+	{
+	    if ( filterString == null )
+	    {
+	        return new HashMap<String, Object>();
+	    }
+	    
+	    Map<String, Object> map = null;
+	    String signsOfJSON = ":";
+	    int numberOfSigns = 0;
+	    for ( int i = 0; i < signsOfJSON.length(); i++ )
+	    {
+	        if ( filterString.contains(
+	            String.valueOf( signsOfJSON.charAt( i ) ) ) )
+	        {
+	            numberOfSigns++;
+	        }
+	    }
+	    
+	    if ( numberOfSigns >= 1 )
+	    {
+            String jsonString = filterString;
+            if ( !jsonString.startsWith( "{" ) )
+            {
+                jsonString = "{" + jsonString;
+            }
+            if ( !jsonString.endsWith( "}" ) )
+            {
+                jsonString += "}";
+            }
+            try
+            {
+                map = parseJSONMap( jsonString );
+            }
+            catch ( JSONException e )
+            {
+                out.println( "parser: \"" + filterString + "\" hasn't got " +
+                	"correct JSON formatting: " + e.getMessage() );
+            }
+	    }
+	    else
+	    {
+	        map = new HashMap<String, Object>();
+	        map.put( filterString, null );
+	    }
+	    return map;
+	}
+
+    private static Map<String, Object> parseJSONMap( String jsonString )
+        throws JSONException
+	{
+        JSONObject object = new JSONObject( jsonString );
+        Map<String, Object> result = new HashMap<String, Object>();
+        for ( String name : JSONObject.getNames( object ) )
+        {
+            Object value = object.get( name );
+            if ( value != null && value instanceof String &&
+                ( ( String ) value ).length() == 0 )
+            {
+                value = null;
+            }
+            result.put( name, value );
+        }
+        return result;
 	}
 	
 	/**
