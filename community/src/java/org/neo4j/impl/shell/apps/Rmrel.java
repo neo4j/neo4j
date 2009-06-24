@@ -53,14 +53,14 @@ public class Rmrel extends NeoApp
         this.addValueType( "r", new OptionContext( OptionValueType.MUST,
             "The relationship id." ) );
         this.addValueType( "d", new OptionContext( OptionValueType.NONE,
-            "Must be supplied if the affected other node gets decoupled "
-                + "after this operation so that it gets deleted." ) );
+            "Must be supplied if the affected other node gets decoupled\n" +
+            "after this operation so that it gets deleted." ) );
     }
 
     @Override
     public String getDescription()
     {
-        return "Removes a relationship";
+        return "Deletes a relationship";
     }
 
     @Override
