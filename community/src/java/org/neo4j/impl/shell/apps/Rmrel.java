@@ -50,7 +50,7 @@ public class Rmrel extends NeoApp
      */
     public Rmrel()
     {
-        this.addValueType( "r", new OptionContext( OptionValueType.MUST,
+        this.addValueType( "e", new OptionContext( OptionValueType.MUST,
             "The relationship id." ) );
         this.addValueType( "d", new OptionContext( OptionValueType.NONE,
             "Must be supplied if the affected other node gets decoupled\n" +
@@ -67,15 +67,15 @@ public class Rmrel extends NeoApp
     protected String exec( AppCommandParser parser, Session session, Output out )
         throws ShellException
     {
-        if ( parser.options().get( "r" ) == null )
+        if ( parser.options().get( "e" ) == null )
         {
             throw new ShellException(
                 "Must supply relationship id (-r <id>) to delete" );
         }
 
         Node currentNode = this.getCurrentNode( session );
-        Relationship rel = findRel( currentNode, Long.parseLong( parser
-            .options().get( "r" ) ) );
+        Relationship rel = findRel( currentNode, Long.parseLong(
+            parser.options().get( "e" ) ) );
         rel.delete();
         if ( !currentNode.equals(
             getNeoServer().getNeo().getReferenceNode() ) &&
