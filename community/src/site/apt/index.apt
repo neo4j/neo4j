@@ -105,7 +105,7 @@ public final class RemoteNeoServerFactory
         return server;
     }
 
-    public void RemoteNeoServerFactory addIndex(String id, IndexService service)
+    public RemoteNeoServerFactory addIndex(String id, IndexService service)
     {
         indexes.put(id, service);
         return this;
