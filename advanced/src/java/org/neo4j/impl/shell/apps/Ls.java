@@ -19,8 +19,15 @@
  */
 package org.neo4j.impl.shell.apps;
 
+import java.lang.reflect.Array;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
@@ -130,14 +137,56 @@ public class Ls extends NodeOrRelationshipApp
         }
         return null;
     }
+    
+    private Iterable<String> sortKeys( Iterable<String> source )
+    {
+        List<String> list = new ArrayList<String>();
+        for ( String item : source )
+        {
+            list.add( item );
+        }
+        Collections.sort( list, new Comparator<String>()
+        {
+            public int compare( String item1, String item2 )
+            {
+                return item1.toLowerCase().compareTo( item2.toLowerCase() );
+            }
+        } );
+        return list;
+    }
+    
+    private Iterable<Relationship> sortRelationships(
+        Iterable<Relationship> source )
+    {
+        Map<String, Collection<Relationship>> map =
+            new TreeMap<String, Collection<Relationship>>();
+        for ( Relationship rel : source )
+        {
+            String type = rel.getType().name().toLowerCase();
+            Collection<Relationship> rels = map.get( type );
+            if ( rels == null )
+            {
+                rels = new ArrayList<Relationship>();
+                map.put( type, rels );
+            }
+            rels.add( rel );
+        }
+        
+        Collection<Relationship> result = new ArrayList<Relationship>();
+        for ( Collection<Relationship> rels : map.values() )
+        {
+            result.addAll( rels );
+        }
+        return result;
+    }
 
     private void displayProperties( NodeOrRelationship thing, Output out,
         boolean displayValues, boolean verbose, Map<String, Object> filterMap,
         boolean caseInsensitiveFilters, boolean looseFilters )
         throws RemoteException
     {
-        int longestKey = this.findLongestKey( thing );
-        for ( String key : thing.getPropertyKeys() )
+        int longestKey = findLongestKey( thing );
+        for ( String key : sortKeys( thing.getPropertyKeys() ) )
         {
             boolean matches = filterMap.isEmpty();
             Object value = thing.getProperty( key );
@@ -167,16 +216,41 @@ public class Ls extends NodeOrRelationshipApp
             if ( displayValues )
             {
                 this.printMany( out, " ", longestKey - key.length() + 1 );
-                out.print( "=[" + value + "]" );
+                out.print( "=" + format( value ) );
                 if ( verbose )
                 {
-                    out.print( " (" + this.getNiceType( value ) + ")" );
+                    out.print( " (" + getNiceType( value ) + ")" );
                 }
             }
             out.println( "" );
         }
     }
     
+    private static String format( Object value )
+    {
+        String result = null;
+        if ( value.getClass().isArray() )
+        {
+            StringBuffer buffer = new StringBuffer();
+            int length = Array.getLength( value );
+            for ( int i = 0; i < length; i++ )
+            {
+                Object singleValue = Array.get( value, i );
+                if ( i > 0 )
+                {
+                    buffer.append( "," );
+                }
+                buffer.append( "[" + singleValue + "]" );
+            }
+            result = buffer.toString();
+        }
+        else
+        {
+            result = "[" + value + "]";
+        }
+        return result;
+    }
+
     private void displayRelationships( AppCommandParser parser,
         NodeOrRelationship thing, Output out, boolean verbose,
         Map<String, Object> filterMap, boolean caseInsensitiveFilters,
@@ -208,7 +282,8 @@ public class Ls extends NodeOrRelationshipApp
         boolean caseInsensitiveFilters, boolean looseFilters )
         throws ShellException, RemoteException
     {
-        for ( Relationship rel : thing.getRelationships( direction ) )
+        for ( Relationship rel : sortRelationships(
+            thing.getRelationships( direction ) ) )
         {
             String type = rel.getType().name();
             boolean matches = filterMap.isEmpty();
@@ -241,14 +316,12 @@ public class Ls extends NodeOrRelationshipApp
         }
     }
 
-    private String getNiceType( Object value )
+    private static String getNiceType( Object value )
     {
-        String cls = value.getClass().getName();
-        return cls.substring(
-            String.class.getPackage().getName().length() + 1 );
+        return Set.getValueTypeName( value.getClass() );
     }
 
-    private int findLongestKey( NodeOrRelationship thing )
+    private static int findLongestKey( NodeOrRelationship thing )
     {
         int length = 0;
         for ( String key : thing.getPropertyKeys() )
