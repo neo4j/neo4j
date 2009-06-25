@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.util.shell.json.JSONArray;
 import org.neo4j.util.shell.json.JSONException;
 import org.neo4j.util.shell.json.JSONObject;
 
@@ -194,7 +195,25 @@ public abstract class AbstractApp implements App
         }
         return result;
 	}
-	
+    
+    protected static Object[] parseArray( String string )
+    {
+        try
+        {
+            JSONArray array = new JSONArray( string );
+            Object[] result = new Object[ array.length() ];
+            for ( int i = 0; i < result.length; i++ )
+            {
+                result[ i ] = array.get( i );
+            }
+            return result;
+        }
+        catch ( JSONException e )
+        {
+            throw new IllegalArgumentException( e.getMessage(), e );
+        }
+    }
+    
 	/**
 	 * Groups an {@link OptionValueType} and a description.
 	 */
