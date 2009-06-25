@@ -19,6 +19,7 @@
  */
 package org.neo4j.impl.shell.apps;
 
+import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,16 +35,95 @@ import org.neo4j.util.shell.ShellException;
  */
 public class Set extends NodeOrRelationshipApp
 {
-    private static final Map<String, Class<?>> VALUE_TYPE_NAMES =
-        new HashMap<String, Class<?>>();
+    private static class ValueTypeContext
     {
-        VALUE_TYPE_NAMES.put( "boolean", Boolean.class );
-        VALUE_TYPE_NAMES.put( "byte", Byte.class );
-        VALUE_TYPE_NAMES.put( "short", Short.class );
-        VALUE_TYPE_NAMES.put( "int", Integer.class );
-        VALUE_TYPE_NAMES.put( "Long", Long.class );
-        VALUE_TYPE_NAMES.put( "float", Long.class );
-        VALUE_TYPE_NAMES.put( "double", Long.class );
+        private final Class<?> fundamentalClass;
+        private final Class<?> boxClass;
+        private final Class<?> fundamentalArrayClass;
+        private final Class<?> boxArrayClass;
+        
+        ValueTypeContext( Class<?> fundamentalClass, Class<?> boxClass,
+            Class<?> fundamentalArrayClass, Class<?> boxArrayClass )
+        {
+            this.fundamentalClass = fundamentalClass;
+            this.boxClass = boxClass;
+            this.fundamentalArrayClass = fundamentalArrayClass;
+            this.boxArrayClass = boxArrayClass;
+        }
+        
+        public String getName()
+        {
+            return fundamentalClass.equals( boxClass ) ?
+                boxClass.getSimpleName() : fundamentalClass.getSimpleName();
+        }
+        
+        public String getArrayName()
+        {
+            return getName() + "[]";
+        }
+    }
+    
+    private static class ValueType
+    {
+        private final ValueTypeContext context;
+        private final boolean isArray;
+        
+        ValueType( ValueTypeContext context, boolean isArray )
+        {
+            this.context = context;
+            this.isArray = isArray;
+        }
+    }
+    
+    private static final Map<String, ValueType> NAME_TO_VALUE_TYPE =
+        new HashMap<String, ValueType>();
+    static
+    {
+        mapNameToValueType( new ValueTypeContext( boolean.class,
+            Boolean.class, boolean[].class, Boolean[].class ) );
+        mapNameToValueType( new ValueTypeContext(
+            byte.class, Byte.class, byte[].class, Byte[].class ) );
+        mapNameToValueType( new ValueTypeContext( char.class,
+            Character.class, char[].class, Character[].class ) );
+        mapNameToValueType( new ValueTypeContext(
+            short.class, Short.class, short[].class, Short[].class ) );
+        mapNameToValueType( new ValueTypeContext(
+            int.class, Integer.class, int[].class, Integer[].class ) );
+        mapNameToValueType( new ValueTypeContext(
+            long.class, Long.class, long[].class, Long[].class ) );
+        mapNameToValueType( new ValueTypeContext(
+            float.class, Float.class, float[].class, Float[].class ) );
+        mapNameToValueType( new ValueTypeContext(
+            double.class, Double.class, double[].class, Double[].class ) );
+        mapNameToValueType( new ValueTypeContext(
+            String.class, String.class, String[].class, String[].class ) );
+    }
+    
+    private static final Map<Class<?>, String> VALUE_TYPE_TO_NAME =
+        new HashMap<Class<?>, String>();
+    static
+    {
+        for ( Map.Entry<String, ValueType> entry :
+            NAME_TO_VALUE_TYPE.entrySet() )
+        {
+            ValueTypeContext context = entry.getValue().context;
+            VALUE_TYPE_TO_NAME.put( context.fundamentalClass,
+                context.getName() );
+            VALUE_TYPE_TO_NAME.put( context.boxClass,
+                context.getName() );
+            VALUE_TYPE_TO_NAME.put( context.fundamentalArrayClass,
+                context.getArrayName() );
+            VALUE_TYPE_TO_NAME.put( context.boxArrayClass,
+                context.getArrayName() );
+        }
+    }
+    
+    private static void mapNameToValueType( ValueTypeContext context )
+    {
+        NAME_TO_VALUE_TYPE.put( context.getName(),
+            new ValueType( context, false ) );
+        NAME_TO_VALUE_TYPE.put( context.getArrayName(),
+            new ValueType( context, true ) );
     }
     
     /**
@@ -53,7 +133,13 @@ public class Set extends NodeOrRelationshipApp
     {
         super();
         this.addValueType( "t", new OptionContext( OptionValueType.MUST,
-            "Value type, String, int, long, byte a.s.o. Default is String" ) );
+            "Value type, f.ex: String, String[], int, long[], byte a.s.o.\n" +
+            "If an array type is supplied the value(s) are given in a " +
+            "JSON-style\n" +
+            "array format, f.ex:\n" +
+            "[321,45324] for an int[] or\n" +
+            "\"['The first string','The second string here']\" for a " +
+            "String[]" ) );
     }
 
     @Override
@@ -61,29 +147,25 @@ public class Set extends NodeOrRelationshipApp
     {
         return "Sets a property on the current node. Usage: set <key> <value>";
     }
+    
+    protected static String getValueTypeName( Class<?> cls )
+    {
+        return VALUE_TYPE_TO_NAME.get( cls );
+    }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
-        throws ShellException
+    protected String exec( AppCommandParser parser, Session session,
+        Output out ) throws ShellException
     {
         if ( parser.arguments().size() < 2 )
         {
-            throw new ShellException( "Must supply key and value, "
-                + "like: set -t String title \"This is a neo node\"" );
+            throw new ShellException( "Must supply key and value, " +
+                "like: set title \"This is a neo node\"" );
         }
 
         String key = parser.arguments().get( 0 );
-        Class<?> type = this.getValueType( parser );
-        Object value = null;
-        try
-        {
-            value = type.getConstructor( String.class ).newInstance(
-                parser.arguments().get( 1 ) );
-        }
-        catch ( Exception e )
-        {
-            throw new ShellException( e );
-        }
+        ValueType valueType = getValueType( parser );
+        Object value = parseValue( parser.arguments().get( 1 ), valueType );
 
         Node node = this.getCurrentNode( session );
         NodeOrRelationship thing = getNodeOrRelationship( node, parser );
@@ -91,42 +173,86 @@ public class Set extends NodeOrRelationshipApp
         return null;
     }
 
-    private Class<?> getValueType( AppCommandParser parser )
+    private static Object parseValue( String stringValue, ValueType valueType )
+    {
+        Object result = null;
+        if ( valueType.isArray )
+        {
+            Class<?> componentType = valueType.context.boxClass;
+            Object[] rawArray = parseArray( stringValue );
+            result = Array.newInstance( componentType, rawArray.length );
+            for ( int i = 0; i < rawArray.length; i++ )
+            {
+                Array.set( result, i,
+                    parseValue( rawArray[ i ].toString(), componentType ) );
+            }
+        }
+        else
+        {
+            Class<?> componentType = valueType.context.boxClass;
+            result = parseValue( stringValue, componentType );
+        }
+        return result;
+    }
+
+    private static Object parseValue( String value, Class<?> type )
+    {
+        // TODO Are you tellin' me this can't be done in a better way?
+        Object result = null;
+        if ( type.equals( String.class ) )
+        {
+            result = value;
+        }
+        else if ( type.equals( Boolean.class ) )
+        {
+            result = Boolean.parseBoolean( value );
+        }
+        else if ( type.equals( Byte.class ) )
+        {
+            result = Byte.parseByte( value );
+        }
+        else if ( type.equals( Character.class ) )
+        {
+            result = value.charAt( 0 );
+        }
+        else if ( type.equals( Short.class ) )
+        {
+            result = Short.parseShort( value );
+        }
+        else if ( type.equals( Integer.class ) )
+        {
+            result = Integer.parseInt( value );
+        }
+        else if ( type.equals( Long.class ) )
+        {
+            result = Long.parseLong( value );
+        }
+        else if ( type.equals( Float.class ) )
+        {
+            result = Float.parseFloat( value );
+        }
+        else if ( type.equals( Double.class ) )
+        {
+            result = Double.parseDouble( value );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Invalid type " + type );
+        }
+        return result;
+    }
+
+    private static ValueType getValueType( AppCommandParser parser )
         throws ShellException
     {
-        String type = parser.options().containsKey( "t" ) ? parser.options()
-            .get( "t" ) : String.class.getName();
-        Class<?> cls = VALUE_TYPE_NAMES.get( type );
+        String type = parser.options().containsKey( "t" ) ?
+            parser.options().get( "t" ) : String.class.getSimpleName();
+        ValueType valueType = NAME_TO_VALUE_TYPE.get( type );
         
-        if ( cls == null )
-        {
-            try
-            {
-                cls = Class.forName( type );
-            }
-            catch ( ClassNotFoundException e )
-            {
-                // Ok
-            }
-        }
-
-        if ( cls == null )
-        {
-            try
-            {
-                cls = Class.forName( String.class.getPackage().getName() + "." +
-                    type );
-            }
-            catch ( ClassNotFoundException e )
-            {
-                // Ok
-            }
-        }
-
-        if ( cls == null )
+        if ( valueType == null )
         {
             throw new ShellException( "Invalid value type '" + type + "'" );
         }
-        return cls;
+        return valueType;
     }
 }
