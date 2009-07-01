@@ -363,7 +363,7 @@ public class LockReleaser
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
-                    throw new RuntimeException( "Unkown status: " + param );
+                    throw new RuntimeException( "Unknown status: " + param );
                 }
             }
         }
@@ -383,7 +383,7 @@ public class LockReleaser
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
-                    throw new RuntimeException( "Unkown status: " + param );
+                    throw new RuntimeException( "Unknown status: " + param );
                 }
             }
         }

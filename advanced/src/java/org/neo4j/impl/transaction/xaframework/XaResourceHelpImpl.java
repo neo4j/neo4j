@@ -128,7 +128,7 @@ public abstract class XaResourceHelpImpl implements XaResource
         }
         else
         {
-            throw new XAException( "Unkown flag[" + flags + "]" );
+            throw new XAException( "Unknown flag[" + flags + "]" );
         }
     }
 

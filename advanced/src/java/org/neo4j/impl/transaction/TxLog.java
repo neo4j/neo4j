@@ -384,7 +384,7 @@ public class TxLog
             }
             else
             {
-                throw new IOException( "Unkown type: " + recordType );
+                throw new IOException( "Unknown type: " + recordType );
             }
             if ( (buffer.limit() - buffer.position()) < 
                 (3 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE) )

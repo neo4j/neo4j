@@ -103,7 +103,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new XAException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
 
         if ( status.getActive() )
@@ -117,7 +117,7 @@ public class XaResourceManager
     {
         if ( xidMap.get( xid ) == null )
         {
-            throw new XAException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
         if ( xaResourceMap.get( xaResource ) != null )
         {
@@ -141,7 +141,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new XAException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
         if ( !status.getActive() )
         {
@@ -154,7 +154,7 @@ public class XaResourceManager
     {
         if ( xidMap.get( xid ) == null )
         {
-            throw new XAException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
         Xid xidEntry = xaResourceMap.remove( xaResource );
         if ( xidEntry == null )
@@ -270,7 +270,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new XAException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
@@ -301,7 +301,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new IOException( "Unkown xid[" + xid + "]" );
+            throw new IOException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
@@ -333,7 +333,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new XAException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         txOrderMap.put( xid, nextTxOrder++ );
@@ -348,7 +348,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new XAException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         txOrderMap.put( xid, nextTxOrder++ );
@@ -364,7 +364,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new XAException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
@@ -412,7 +412,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new XAException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
@@ -452,7 +452,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new XAException( "Unkown xid[" + xid + "]" );
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         txStatus.markAsRollback();
@@ -475,7 +475,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
-            throw new IOException( "Unkown xid[" + xid + "]" );
+            throw new IOException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();

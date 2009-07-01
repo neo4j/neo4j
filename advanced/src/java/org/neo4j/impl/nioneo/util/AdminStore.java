@@ -497,7 +497,7 @@ public class AdminStore
             }
             else if ( inUse != RECORD_NOT_IN_USE )
             {
-                System.out.println( "Unkown record at: " + i );
+                System.out.println( "Unknown record at: " + i );
                 System.out.println( "In use flag was: " + inUse );
             }
             i++;
@@ -647,7 +647,7 @@ public class AdminStore
             }
             else if ( inUse != RECORD_NOT_IN_USE )
             {
-                System.out.println( "Unkown record at: " + i );
+                System.out.println( "Unknown record at: " + i );
                 System.out.println( "In use flag was: " + inUse );
             }
             if ( dot != 0 && i % dot == 0 )
@@ -717,7 +717,7 @@ public class AdminStore
             }
             else if ( inUse != RECORD_NOT_IN_USE )
             {
-                System.out.println( "Unkown record at: " + i );
+                System.out.println( "Unknown record at: " + i );
                 System.out.println( "In use flag was: " + inUse );
             }
             if ( dot != 0 && i % dot == 0 )
@@ -790,7 +790,7 @@ public class AdminStore
             }
             else if ( inUse != RECORD_NOT_IN_USE )
             {
-                System.out.println( "Unkown record at: " + i );
+                System.out.println( "Unknown record at: " + i );
                 System.out.println( "In use flag was: " + inUse );
             }
             if ( dot != 0 && i % dot == 0 )
@@ -892,7 +892,7 @@ public class AdminStore
             }
             else if ( inUse != RECORD_NOT_IN_USE )
             {
-                System.out.println( "Unkown record at: " + i );
+                System.out.println( "Unknown record at: " + i );
                 System.out.println( "In use flag was: " + inUse );
             }
             if ( dot != 0 && i % dot == 0 )
@@ -1115,7 +1115,7 @@ public class AdminStore
             }
             else if ( inUse != BLOCK_NOT_IN_USE )
             {
-                System.out.println( "Unkown record at: " + i );
+                System.out.println( "Unknown record at: " + i );
                 System.out.println( "In use flag was: " + inUse );
             }
             if ( dot != 0 && i % dot == 0 )
