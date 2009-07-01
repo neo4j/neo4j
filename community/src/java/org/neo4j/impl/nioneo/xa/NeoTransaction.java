@@ -223,7 +223,7 @@ class NeoTransaction extends XaTransaction
         }
         else
         {
-            throw new RuntimeException( "Unkown command " + xaCommand );
+            throw new RuntimeException( "Unknown command " + xaCommand );
         }
     }
 
@@ -316,7 +316,7 @@ class NeoTransaction extends XaTransaction
                             }
                             else
                             {
-                                throw new RuntimeException( "Unkown type" );
+                                throw new RuntimeException( "Unknown type" );
                             }
                         }
                     }
@@ -922,7 +922,7 @@ class NeoTransaction extends XaTransaction
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new RuntimeException( "Unkown type: " + type );
+        throw new RuntimeException( "Unknown type: " + type );
     }
 
     public Object propertyGetValue( int id )
@@ -983,7 +983,7 @@ class NeoTransaction extends XaTransaction
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new RuntimeException( "Unkown type: " + type );
+        throw new RuntimeException( "Unknown type: " + type );
     }
 
     void nodeRemoveProperty( int nodeId, int propertyId )

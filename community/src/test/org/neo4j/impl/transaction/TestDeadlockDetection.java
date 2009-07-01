@@ -108,7 +108,7 @@ public class TestDeadlockDetection extends TestCase
                         case QUIT_TASK:
                             break;
                         default:
-                            throw new RuntimeException( "Unkown task "
+                            throw new RuntimeException( "Unknown task "
                                 + nextTask );
                     }
                 }

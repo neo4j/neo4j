@@ -689,7 +689,7 @@ public class NodeManager
             }
             else
             {
-                throw new RuntimeException( "Unkown lock type: " + lockType );
+                throw new RuntimeException( "Unknown lock type: " + lockType );
             }
         }
         catch ( IllegalResourceException e )
@@ -710,7 +710,7 @@ public class NodeManager
         }
         else
         {
-            throw new RuntimeException( "Unkown lock type: " + lockType );
+            throw new RuntimeException( "Unknown lock type: " + lockType );
         }
     }
 

@@ -413,7 +413,7 @@ public class TestNeoStore extends AbstractNeoTestCase
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new IOException( "Unkown type" );
+        throw new IOException( "Unknown type" );
     }
 
     private void validateNodeRel1( int node, int prop1, int prop2, int prop3,

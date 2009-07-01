@@ -585,7 +585,7 @@ class TransactionImpl implements Transaction
                     statusString = "READONLY";
                     break;
                 default:
-                    statusString = "UNKOWN";
+                    statusString = "UNKNOWN";
             }
 
             return "Xid[" + xid + "] XAResource[" + resource + "] Status["

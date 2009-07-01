@@ -265,7 +265,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         if ( inUse != Record.IN_USE.byteValue() )
         {
             throw new StoreFailureException( "Record[" + id + 
-                "] unkown in use flag[" + inUse + "]" );
+                "] unknown in use flag[" + inUse + "]" );
         }
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
@@ -417,7 +417,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unkown store version " + version  + 
+        throw new RuntimeException( "Unknown store version " + version  + 
             " Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );

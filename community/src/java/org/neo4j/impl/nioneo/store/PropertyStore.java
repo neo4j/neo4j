@@ -216,7 +216,7 @@ public class PropertyStore extends AbstractStore implements Store
                 }
                 else
                 {
-                    throw new RuntimeException( "Unkown dynamic record" );
+                    throw new RuntimeException( "Unknown dynamic record" );
                 }
             }
         }
@@ -369,7 +369,7 @@ public class PropertyStore extends AbstractStore implements Store
             case 10:
                 return PropertyType.SHORT;
             default:
-                throw new StoreFailureException( "Unkown enum type:" + type );
+                throw new StoreFailureException( "Unknown enum type:" + type );
         }
     }
     
@@ -422,7 +422,7 @@ public class PropertyStore extends AbstractStore implements Store
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new RuntimeException( "Unkown type: " + type );
+        throw new RuntimeException( "Unknown type: " + type );
     }
 
     @Override
@@ -531,7 +531,7 @@ public class PropertyStore extends AbstractStore implements Store
         }
         else
         {
-            throw new IllegalArgumentException( "Unkown property type on: "
+            throw new IllegalArgumentException( "Unknown property type on: "
                 + value );
         }
     }
@@ -637,7 +637,7 @@ public class PropertyStore extends AbstractStore implements Store
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unkown store version " + version  + 
+        throw new RuntimeException( "Unknown store version " + version  + 
             " Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );

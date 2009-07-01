@@ -532,7 +532,7 @@ class DynamicArrayStore extends AbstractDynamicStore
             }
             return array;
         }
-        throw new RuntimeException( "Unkown array type[" + type + "]" );
+        throw new RuntimeException( "Unknown array type[" + type + "]" );
     }
 
     public Object getArray( int blockId )
@@ -555,7 +555,7 @@ class DynamicArrayStore extends AbstractDynamicStore
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unkown store version " + version  + 
+        throw new RuntimeException( "Unknown store version " + version  + 
             " Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );

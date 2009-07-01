@@ -187,9 +187,9 @@ public class TxManager implements TransactionManager
             else
             {
                 tmOk = false;
-                log.severe( "Unkown active tx log file[" + txLog.getName()
+                log.severe( "Unknown active tx log file[" + txLog.getName()
                     + "], unable to switch." );
-                throw new IOException( "Unkown txLogFile[" + txLog.getName()
+                throw new IOException( "Unknown txLogFile[" + txLog.getName()
                     + "] not equals to either [" + txLog1FileName + "] or ["
                     + txLog2FileName + "]" );
             }
@@ -256,7 +256,7 @@ public class TxManager implements TransactionManager
                     }
                     else
                     {
-                        log.warning( "Unkown xid: " + xids[i] );
+                        log.warning( "Unknown xid: " + xids[i] );
                     }
                 }
             }

@@ -208,7 +208,7 @@ public class NodeStore extends AbstractStore implements Store
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unkown store version " + version  + 
+        throw new RuntimeException( "Unknown store version " + version  + 
             " Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );

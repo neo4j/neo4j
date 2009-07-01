@@ -85,7 +85,7 @@ public class TestJtaCompliance extends AbstractNeoTestCase
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( "Unkown state of TM" );
+            throw new RuntimeException( "Unknown state of TM" );
         }
         if ( tx != null )
         {
