@@ -219,7 +219,7 @@ public class XaLogicalLog
             }
             else
             {
-                throw new IllegalStateException( "Unkown active log: " + c );
+                throw new IllegalStateException( "Unknown active log: " + c );
             }
         }
         if ( !useMemoryMapped )
@@ -716,7 +716,7 @@ public class XaLogicalLog
                 + "no records in logical log." );
             fileChannel.close();
             boolean success = FileUtils.renameFile( new File( logFileName ), 
-                new File( logFileName + "_unkown_timestamp_" + 
+                new File( logFileName + "_unknown_timestamp_" + 
                     System.currentTimeMillis() + ".log" ) );
             assert success;
             fileChannel = new RandomAccessFile( logFileName, 
@@ -789,7 +789,7 @@ public class XaLogicalLog
                 return false;
             default:
                 throw new IOException( "Internal recovery failed, "
-                    + "unkown log entry[" + entry + "]" );
+                    + "unknown log entry[" + entry + "]" );
         }
     }
 
@@ -918,7 +918,7 @@ public class XaLogicalLog
                     return false;
                 default:
                     throw new IOException( "Internal recovery failed, "
-                        + "unkown log entry[" + entry + "]" );
+                        + "unknown log entry[" + entry + "]" );
             }
         }
 
@@ -1233,7 +1233,7 @@ public class XaLogicalLog
                     break;
                 default:
                     throw new IOException( "Log rotation failed, "
-                        + "unkown log entry[" + entry + "]" );
+                        + "unknown log entry[" + entry + "]" );
             }
             buffer.clear();
             buffer.limit( 1 );

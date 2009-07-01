@@ -636,7 +636,7 @@ abstract class Command extends XaCommand
                 case 10:
                     return PropertyType.SHORT;
             }
-            throw new RuntimeException( "Unkown property type:" + type );
+            throw new RuntimeException( "Unknown property type:" + type );
         }
 
         @Override
@@ -781,7 +781,7 @@ abstract class Command extends XaCommand
                 return RelationshipTypeCommand.readCommand( neoStore,
                     byteChannel, buffer );
             default:
-                throw new IOException( "Unkown command type[" + commandType
+                throw new IOException( "Unknown command type[" + commandType
                     + "]" );
         }
     }

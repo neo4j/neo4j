@@ -198,7 +198,7 @@ class NeoReadTransaction
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new RuntimeException( "Unkown type: " + type );
+        throw new RuntimeException( "Unknown type: " + type );
     }
 
     public Object propertyGetValue( int id )
@@ -255,7 +255,7 @@ class NeoReadTransaction
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new RuntimeException( "Unkown type: " + type );
+        throw new RuntimeException( "Unknown type: " + type );
     }
 
     String getPropertyIndex( int id )
