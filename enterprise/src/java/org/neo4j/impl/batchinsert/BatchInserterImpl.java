@@ -116,6 +116,7 @@ public class BatchInserterImpl implements BatchInserter
         nodeRecord.setInUse( true );
         nodeRecord.setCreated();
         nodeRecord.setNextProp( createPropertyChain( properties ) );
+        getNodeStore().updateRecord( nodeRecord );
     }
     
     public long createRelationship( long node1, long node2, RelationshipType
