@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>4</version>
+    <version>5</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -12,8 +12,14 @@
   <groupId>org.neo4j</groupId>
   <artifactId>remote-neo</artifactId>
   <version>0.2-SNAPSHOT</version>
-  <name>Remote Neo</name>
+  <name>Neo4j - Remote Neo</name>
   <description></description>
+
+  <properties>
+    <bundle.namespace>org.neo4j</bundle.namespace>
+  </properties>
+
+  <packaging>bundle</packaging>
 
   <scm>
     <connection>
