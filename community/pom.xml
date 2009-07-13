@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>4</version>
+    <version>5</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -12,11 +12,17 @@
   <groupId>org.neo4j</groupId>
   <artifactId>shell</artifactId>
   <version>1.0-b9-SNAPSHOT</version>
-  <name>Generic shell</name>
+  <name>Neo4j - Generic shell</name>
   <description>
 A generic command shell with a client and server part
     </description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
+
+  <properties>
+    <bundle.namespace>org.neo4j.util.shell</bundle.namespace>
+  </properties>
+
+  <packaging>bundle</packaging>
 
   <scm>
     <connection>
