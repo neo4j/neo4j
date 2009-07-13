@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>4</version>
+    <version>5</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -12,12 +12,18 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo</artifactId>
   <version>1.0-b9-SNAPSHOT</version>
-  <name>Neo</name>
+  <name>Neo4j - Neo</name>
   <description>
 Neo4j is a lightweight, embedded Java database designed to store data structured
 as graphs rather than tables. For more information, see http://neo4j.org.
     </description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
+
+  <properties>
+    <bundle.namespace>org.neo4j</bundle.namespace>
+  </properties>
+
+  <packaging>bundle</packaging> 
 
   <scm>
     <connection>
