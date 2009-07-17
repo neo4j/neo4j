@@ -1,0 +1,10 @@
+#-----------------------------------------------------------------
+# Use this file to add customized Bnd instructions for the bundle
+#-----------------------------------------------------------------
+
+Import-Package: javax.transaction;version="1.1",*
+
+# ABK: using DynamicImport-Package is inelegant, but will do for now. 
+# The registration of services should be revised to
+# use alternate facilities for injecting the implementation classes. 
+DynamicImport-Package: *
