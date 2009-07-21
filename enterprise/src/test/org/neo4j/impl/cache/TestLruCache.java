@@ -57,7 +57,7 @@ public class TestLruCache extends TestCase
             "TestCache", 70, null );
         try
         {
-            cache.add( null, new Object() );
+            cache.put( null, new Object() );
             fail( "Null key should throw exception" );
         }
         catch ( IllegalArgumentException e )
@@ -65,7 +65,7 @@ public class TestLruCache extends TestCase
         }
         try
         {
-            cache.add( new Object(), null );
+            cache.put( new Object(), null );
             fail( "Null element should throw exception" );
         }
         catch ( IllegalArgumentException e )
@@ -87,7 +87,7 @@ public class TestLruCache extends TestCase
         catch ( IllegalArgumentException e )
         { // good
         }
-        cache.add( new Object(), new Object() );
+        cache.put( new Object(), new Object() );
         cache.clear();
     }
 
@@ -100,7 +100,8 @@ public class TestLruCache extends TestCase
             super( name, maxSize, null );
         }
 
-        protected void elementCleaned( E element )
+        @Override
+        public void elementCleaned( E element )
         {
             cleanedElement = element;
         }
@@ -125,14 +126,14 @@ public class TestLruCache extends TestCase
         Integer key4 = new Integer( 4 );
         String s5 = new String( "5" );
         Integer key5 = new Integer( 5 );
-        cache.add( key1, s1 );
-        cache.add( key2, s2 );
-        cache.add( key3, s3 );
+        cache.put( key1, s1 );
+        cache.put( key2, s2 );
+        cache.put( key3, s3 );
         cache.get( key2 );
         assertEquals( null, cache.getLastCleanedElement() );
-        cache.add( key4, s4 );
+        cache.put( key4, s4 );
         assertEquals( s1, cache.getLastCleanedElement() );
-        cache.add( key5, s5 );
+        cache.put( key5, s5 );
         assertEquals( s3, cache.getLastCleanedElement() );
         int size = cache.size();
         assertEquals( 3, size );
@@ -159,18 +160,18 @@ public class TestLruCache extends TestCase
         Integer key4 = new Integer( 4 );
         String s5 = new String( "5" );
         Integer key5 = new Integer( 5 );
-        cache.add( key1, s1 );
-        cache.add( key2, s2 );
-        cache.add( key3, s3 );
+        cache.put( key1, s1 );
+        cache.put( key2, s2 );
+        cache.put( key3, s3 );
         cache.get( key2 );
         assertEquals( null, cache.getLastCleanedElement() );
         assertEquals( cache.maxSize(), cache.size() );
         cache.resize( 5 );
         assertEquals( 5, cache.maxSize() );
         assertEquals( 3, cache.size() );
-        cache.add( key4, s4 );
+        cache.put( key4, s4 );
         assertEquals( null, cache.getLastCleanedElement() );
-        cache.add( key5, s5 );
+        cache.put( key5, s5 );
         assertEquals( null, cache.getLastCleanedElement() );
         assertEquals( cache.maxSize(), cache.size() );
         cache.resize( 4 );
