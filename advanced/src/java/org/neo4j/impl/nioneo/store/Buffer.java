@@ -238,6 +238,7 @@ public class Buffer
 
     public String toString()
     {
-        return "Buffer[" + buf + "," + persistenceWindow + "]";
+        return "Buffer[[" + buf.position() + "," + buf.capacity() + "]," + 
+            persistenceWindow + "]";
     }
 }
