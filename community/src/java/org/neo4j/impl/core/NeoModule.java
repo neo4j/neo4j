@@ -70,8 +70,14 @@ public class NeoModule
         {
             return;
         }
+        boolean useNewCache = true;
+        if ( params.containsKey( "use_old_cache" ) && 
+            params.get( "use_old_cache" ).equals( "true" ) )
+        {
+            useNewCache = false;
+        }
         nodeManager = new NodeManager( cacheManager, lockManager, lockReleaser, 
-            transactionManager, persistenceManager, idGenerator );
+            transactionManager, persistenceManager, idGenerator, useNewCache );
         // load and verify from PS
         RelationshipTypeData relTypes[] = null;
         PropertyIndexData propertyIndexes[] = null;
