@@ -28,12 +28,13 @@ import java.util.Map;
  * The cache has a <CODE>maxSize</CODE> set and when the number of cached
  * elements exceeds that limit the least recently used element will be removed.
  */
-public class LruCache<K,E> extends Cache<K,E>
+public class LruCache<K,E> implements Cache<K,E>
 {
     private final String name;
     int maxSize = 1000;
     private boolean resizing = false;
-
+    private boolean adaptive = false;
+    
     private final AdaptiveCacheManager cacheManager;
 
     private Map<K,E> cache = new LinkedHashMap<K,E>( 500, 0.75f, true )
@@ -98,7 +99,7 @@ public class LruCache<K,E> extends Cache<K,E>
         return this.name;
     }
 
-    public synchronized void add( K key, E element )
+    public synchronized void put( K key, E element )
     {
         if ( key == null || element == null )
         {
@@ -198,5 +199,19 @@ public class LruCache<K,E> extends Cache<K,E>
     boolean isResizing()
     {
         return resizing;
+    }
+
+    public void elementCleaned( E element )
+    {
+    }
+
+    public boolean isAdaptive()
+    {
+        return adaptive;
+    }
+
+    public void setAdaptiveStatus( boolean status )
+    {
+        this.adaptive = status;
     }
 }

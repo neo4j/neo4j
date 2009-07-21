@@ -31,14 +31,14 @@ package org.neo4j.impl.cache;
  * statistics/reportable cache architecture. Emil will code that in four hours
  * when he has time.
  */
-public abstract class Cache<K,E>
+public interface Cache<K,V>
 {
     /**
      * Returns the name of the cache.
      * 
      * @return name of the cache
      */
-    public abstract String getName();
+    public String getName();
 
     /**
      * Adds <CODE>element</CODE> to cache.
@@ -48,7 +48,7 @@ public abstract class Cache<K,E>
      * @param element
      *            the element to cache
      */
-    public abstract void add( K key, E element );
+    public void put( K key, V value );
 
     /**
      * Removes the element for <CODE>key</CODE> from cache and returns it. If
@@ -60,7 +60,7 @@ public abstract class Cache<K,E>
      * @return the removed element or <CODE>null</CODE> if element didn't
      *         exist
      */
-    public abstract E remove( K key );
+    public V remove( K key );
 
     /**
      * Returns the cached element for <CODE>key</CODE>. If the element isn't
@@ -70,45 +70,27 @@ public abstract class Cache<K,E>
      *            the key for the element
      * @return the cached element or <CODE>null</CODE> if element didn't exist
      */
-    public abstract E get( K key );
+    public V get( K key );
 
     /**
      * Removing all cached elements.
      */
-    public abstract void clear();
+    public void clear();
 
     /**
      * Returns the cache size.
      * 
      * @return cache size
      */
-    public abstract int size();
+    public int size();
 
-    /**
-     * If cache is self cleaning this method will be invoked with the element
-     * cleaned. Override this implementation (that does nothing) if needed.
-     * 
-     * @param element
-     *            cache element that has been removed
-     */
-    protected void elementCleaned( E element )
-    {
-        // do nothing
-    }
+    void elementCleaned( V value );
+    
+    public int maxSize();
 
-    public abstract int maxSize();
+    public void resize( int newSize );
 
-    public abstract void resize( int newSize );
+    public boolean isAdaptive();
 
-    private boolean isAdaptive = false;
-
-    boolean isAdaptive()
-    {
-        return isAdaptive;
-    }
-
-    void setAdaptiveStatus( boolean status )
-    {
-        isAdaptive = status;
-    }
+    public void setAdaptiveStatus( boolean status );
 }

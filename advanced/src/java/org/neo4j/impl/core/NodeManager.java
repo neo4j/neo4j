@@ -36,7 +36,9 @@ import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.cache.AdaptiveCacheManager;
+import org.neo4j.impl.cache.Cache;
 import org.neo4j.impl.cache.LruCache;
+import org.neo4j.impl.cache.SoftLruCache;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
@@ -56,8 +58,8 @@ public class NodeManager
 
     private int referenceNodeId = 0;
     
-    private final LruCache<Integer,NodeImpl> nodeCache;
-    private final LruCache<Integer,RelationshipImpl> relCache;
+    private final Cache<Integer,NodeImpl> nodeCache;
+    private final Cache<Integer,RelationshipImpl> relCache;
     private final AdaptiveCacheManager cacheManager;
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
@@ -81,7 +83,8 @@ public class NodeManager
 
     NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager, 
         LockReleaser lockReleaser, TransactionManager transactionManager, 
-        PersistenceManager persistenceManager, IdGenerator idGenerator )
+        PersistenceManager persistenceManager, IdGenerator idGenerator, 
+        boolean useNewCaches )
     {
         this.cacheManager = cacheManager;
         this.lockManager = lockManager;
@@ -96,11 +99,20 @@ public class NodeManager
         this.traverserFactory = new InternalTraverserFactory();
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator );
-
-        nodeCache = new LruCache<Integer,NodeImpl>( "NodeCache", 1500,
-            this.cacheManager );
-        relCache = new LruCache<Integer,RelationshipImpl>( "RelationshipCache",
-            3500, this.cacheManager );
+        if ( useNewCaches )
+        {
+            nodeCache = new SoftLruCache<Integer,NodeImpl>( 
+                "NodeCache" );
+            relCache = new SoftLruCache<Integer,RelationshipImpl>( 
+                "RelationshipCache" );
+        }
+        else
+        {
+            nodeCache = new LruCache<Integer,NodeImpl>( "NodeCache", 1500,
+                this.cacheManager );
+            relCache = new LruCache<Integer,RelationshipImpl>( 
+                "RelationshipCache", 3500, this.cacheManager );
+        }
         for ( int i = 0; i < loadLocks.length; i++ )
         {
             loadLocks[i] = new ReentrantLock();
@@ -201,8 +213,8 @@ public class NodeManager
     public void start( Map<Object,Object> params )
     {
         parseParams( params );
-        nodeCache.setMaxSize( maxNodeCacheSize );
-        relCache.setMaxSize( maxRelCacheSize );
+        nodeCache.resize( maxNodeCacheSize );
+        relCache.resize( maxRelCacheSize );
         if ( useAdaptiveCache )
         {
             cacheManager.registerCache( nodeCache, adaptiveCacheHeapRatio,
@@ -233,7 +245,7 @@ public class NodeManager
         try
         {
             persistenceManager.nodeCreate( id );
-            nodeCache.add( (int) node.getId(), node );
+            nodeCache.put( (int) node.getId(), node );
             success = true;
             return new NodeProxy( id, this );
         }
@@ -294,7 +306,7 @@ public class NodeManager
                 endNodeId );
             firstNode.addRelationship( type, id );
             secondNode.addRelationship( type, id );
-            relCache.add( (int) rel.getId(), rel );
+            relCache.put( (int) rel.getId(), rel );
             success = true;
             return new RelationshipProxy( id, this );
         }
@@ -372,7 +384,7 @@ public class NodeManager
             {
                 throw new NotFoundException( "Node[" + nodeId + "]" );
             }
-            nodeCache.add( nodeId, node );
+            nodeCache.put( nodeId, node );
             return new NodeProxy( nodeId, this );
         }
         finally
@@ -401,7 +413,7 @@ public class NodeManager
             {
                 return null;
             }
-            nodeCache.add( nodeId, node );
+            nodeCache.put( nodeId, node );
             return node;
         }
         finally
@@ -430,7 +442,7 @@ public class NodeManager
             {
                 throw new NotFoundException( "Node[" + nodeId + "] not found." );
             }
-            nodeCache.add( nodeId, node );
+            nodeCache.put( nodeId, node );
             return node;
         }
         finally
@@ -494,7 +506,7 @@ public class NodeManager
             final int endNodeId = data.secondNode();
             relationship = new RelationshipImpl( relId, startNodeId, endNodeId,
                 type, false, this );
-            relCache.add( relId, relationship );
+            relCache.put( relId, relationship );
             return new RelationshipProxy( relId, this );
         }
         finally
@@ -541,7 +553,7 @@ public class NodeManager
             }
             relationship = new RelationshipImpl( relId, data.firstNode(),
                 data.secondNode(), type, false, this );
-            relCache.add( relId, relationship );
+            relCache.put( relId, relationship );
             return relationship;
         }
         finally
@@ -584,7 +596,7 @@ public class NodeManager
                     assert type != null;
                     relImpl = new RelationshipImpl( relId, rel.firstNode(),
                         rel.secondNode(), type, false, this );
-                    relCache.add( relId, relImpl );
+                    relCache.put( relId, relImpl );
                 }
                 else
                 {
@@ -640,12 +652,14 @@ public class NodeManager
 
     int getNodeMaxCacheSize()
     {
-        return nodeCache.maxSize();
+        // return nodeCache.maxSize();
+        return -1;
     }
 
     int getRelationshipMaxCacheSize()
     {
-        return relCache.maxSize();
+        // return relCache.maxSize();
+        return -1;
     }
 
     public void clearCache()

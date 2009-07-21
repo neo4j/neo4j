@@ -19,6 +19,7 @@
  */
 package org.neo4j.impl.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -37,6 +38,9 @@ public class AdaptiveCacheManager
     private final List<AdaptiveCacheElement> caches = 
         new LinkedList<AdaptiveCacheElement>();
 
+    private final List<SoftLruCache<?,?>> softCaches = 
+        new ArrayList<SoftLruCache<?,?>>();
+    
     private AdaptiveCacheWorker workerThread;
 
     public synchronized void registerCache( Cache<?,?> cache, float ratio,
@@ -46,6 +50,12 @@ public class AdaptiveCacheManager
         {
             throw new IllegalArgumentException( " cache=" + cache + " ratio ="
                 + ratio + " minSize=" + minSize );
+        }
+        
+        if ( cache instanceof SoftLruCache )
+        {
+            softCaches.add( (SoftLruCache<?,?>) cache );
+            return;
         }
         
         for ( AdaptiveCacheElement element : caches )
@@ -71,6 +81,11 @@ public class AdaptiveCacheManager
         if ( cache == null )
         {
             throw new IllegalArgumentException( "Null cache" );
+        }
+        if ( cache instanceof SoftLruCache )
+        {
+            softCaches.remove( cache );
+            return;
         }
         Iterator<AdaptiveCacheElement> itr = caches.iterator();
         while ( itr.hasNext() )
@@ -100,6 +115,10 @@ public class AdaptiveCacheManager
 
     private void parseParams( Map<Object,Object> params )
     {
+        if ( params == null )
+        {
+            return;
+        }
         if ( params.containsKey( "adaptive_cache_worker_sleep_time" ) )
         {
             Object value = params.get( "adaptive_cache_worker_sleep_time" );
@@ -190,14 +209,15 @@ public class AdaptiveCacheManager
             this.sleepTime = sleepTime;
         }
 
-        public void run()
+        public synchronized void run()
         {
             while ( !done )
             {
                 try
                 {
                     adaptCaches();
-                    Thread.sleep( sleepTime );
+                    adaptSoftCaches();
+                    this.wait( sleepTime );
                 }
                 catch ( InterruptedException e )
                 { 
@@ -226,6 +246,14 @@ public class AdaptiveCacheManager
         }
     }
 
+    public synchronized void adaptSoftCaches()
+    {
+        for ( SoftLruCache<?,?> cache : softCaches )
+        {
+            cache.pollAll();
+        }
+    }
+    
     public void adaptCache( Cache<?,?> cache )
     {
         if ( cache == null )
@@ -239,6 +267,7 @@ public class AdaptiveCacheManager
             adaptCache( element );
         }
     }
+    
 
     private void adaptCache( AdaptiveCacheElement element )
     {
