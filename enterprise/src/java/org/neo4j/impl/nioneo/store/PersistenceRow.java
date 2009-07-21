@@ -105,9 +105,9 @@ class PersistenceRow extends LockableWindow
     
     void writeOut()
     {
+        ByteBuffer byteBuffer = buffer.getBuffer();
         if ( getOperationType() == OperationType.WRITE )
         {
-            ByteBuffer byteBuffer = buffer.getBuffer();
             byteBuffer.clear();
             try
             {
@@ -120,8 +120,8 @@ class PersistenceRow extends LockableWindow
                 throw new StoreFailureException( "Unable to write record["
                     + position + "] @[" + position * recordSize + "]", e );
             }
-            byteBuffer.clear();
         }
+        byteBuffer.clear();
     }
 
     public int size()
