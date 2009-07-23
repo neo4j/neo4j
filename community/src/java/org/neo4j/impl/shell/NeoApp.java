@@ -24,8 +24,11 @@ import java.util.regex.Pattern;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
+import org.neo4j.impl.shell.apps.NodeOrRelationship;
+import org.neo4j.impl.shell.apps.NodeOrRelationship.TypedId;
 import org.neo4j.util.shell.AbstractApp;
 import org.neo4j.util.shell.App;
 import org.neo4j.util.shell.AppCommandParser;
@@ -39,35 +42,49 @@ import org.neo4j.util.shell.ShellException;
  */
 public abstract class NeoApp extends AbstractApp
 {
-    private static final String NODE_KEY = "CURRENT_NODE";
-
-    protected static Node getCurrentNode( NeoShellServer server,
+    private static final String CURRENT_KEY = "CURRENT_DIR";
+    
+    protected static NodeOrRelationship getCurrent( NeoShellServer server,
         Session session )
     {
-        Number id = (Number) safeGet( session, NODE_KEY );
-        Node node = null;
-        if ( id == null )
+        String currentThing = ( String ) safeGet( session, CURRENT_KEY );
+        NodeOrRelationship result = null;
+        if ( currentThing == null )
         {
-            node = server.getNeo().getReferenceNode();
-            setCurrentNode( session, node );
+            result = NodeOrRelationship.wrap(
+                server.getNeo().getReferenceNode() );
+            setCurrent( session, result );
         }
         else
         {
-            node = server.getNeo().getNodeById( id.longValue() );
+            TypedId typedId = new TypedId( currentThing );
+            result = getThingById( server, typedId );
         }
-        return node;
+        return result;
     }
-
-    protected Node getCurrentNode( Session session )
+    
+    protected NodeOrRelationship getCurrent( Session session )
     {
-        return getCurrentNode( getNeoServer(), session );
+        return getCurrent( getNeoServer(), session );
     }
-
-    protected static void setCurrentNode( Session session, Node node )
+    
+    protected static void setCurrent( Session session,
+        NodeOrRelationship current )
     {
-        safeSet( session, NODE_KEY, node.getId() );
+        safeSet( session, CURRENT_KEY, current.getTypedId().toString() );
     }
-
+    
+    protected void assertCurrentIsNode( Session session )
+        throws ShellException
+    {
+        NodeOrRelationship current = getCurrent( session );
+        if ( !current.isNode() )
+        {
+            throw new ShellException(
+                "You must stand on a node to be able to do this" );
+        }
+    }
+    
     protected NeoShellServer getNeoServer()
     {
         return (NeoShellServer) this.getServer();
@@ -88,6 +105,28 @@ public abstract class NeoApp extends AbstractApp
     {
         return ( Direction ) parseEnum(
             Direction.class, direction, defaultDirection ); 
+    }
+    
+    protected static NodeOrRelationship getThingById( NeoShellServer server,
+        TypedId typedId )
+    {
+        NodeOrRelationship result = null;
+        if ( typedId.isNode() )
+        {
+            result = NodeOrRelationship.wrap(
+                server.getNeo().getNodeById( typedId.getId() ) );
+        }
+        else
+        {
+            result = NodeOrRelationship.wrap(
+                server.getNeo().getRelationshipById( typedId.getId() ) );
+        }
+        return result;
+    }
+    
+    protected NodeOrRelationship getThingById( TypedId typedId )
+    {
+        return getThingById( getNeoServer(), typedId );
     }
 
     protected Node getNodeById( long id )
@@ -123,34 +162,54 @@ public abstract class NeoApp extends AbstractApp
     protected abstract String exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException, RemoteException;
 
-    protected String getDisplayNameForCurrentNode()
+    protected String getDisplayNameForCurrent( Session session )
     {
-        return "(me)";
+        NodeOrRelationship current = getCurrent( session );
+        return current.isNode() ? "(me)" : "<me>";
     }
 
     /**
-     * Returns the display name for a {@link Node}.
-     * @param node
-     *            the node to get the name-representation for.
+     * @param thing the thing to get the name-representation for.
      * @return the display name for a {@link Node}.
      */
+    public static String getDisplayName( NodeOrRelationship thing )
+    {
+        return getDisplayName( thing != null ? thing.getTypedId() : null );
+    }
+    
+    public static String getDisplayName( TypedId typedId )
+    {
+        if ( typedId == null )
+        {
+            return getDisplayNameForNode( ( Long ) null );
+        }
+        
+        return typedId.isNode() ? getDisplayNameForNode( typedId.getId() ) :
+            getDisplayNameForRelationship( typedId.getId() );
+    }
+
     public static String getDisplayNameForNode( Node node )
     {
-        return node != null ? getDisplayNameForNode( node.getId() ) :
-            getDisplayNameForNode( ( Long ) null );
+        return getDisplayNameForNode( node != null ? node.getId() : null );
     }
-
-    /**
-     * Returns the display name for a {@link Node}.
-     * @param nodeId
-     *            the node id to get the name-representation for.
-     * @return the display name for a {@link Node}.
-     */
+    
     public static String getDisplayNameForNode( Long nodeId )
     {
         return "(" + nodeId + ")";
     }
-
+    
+    public static String getDisplayNameForRelationship(
+        Relationship relationship )
+    {
+        return getDisplayNameForRelationship( relationship != null ?
+            relationship.getId() : null );
+    }
+    
+    public static String getDisplayNameForRelationship( Long relationshipId )
+    {
+        return "<" + relationshipId + ">";
+    }
+    
     protected static String fixCaseSensitivity( String string,
         boolean caseInsensitive )
     {

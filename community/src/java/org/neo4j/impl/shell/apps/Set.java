@@ -23,7 +23,7 @@ import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.api.core.Node;
+import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -31,9 +31,9 @@ import org.neo4j.util.shell.Session;
 import org.neo4j.util.shell.ShellException;
 
 /**
- * Sets a property for the current node.
+ * Sets a property for the current node or relationship.
  */
-public class Set extends NodeOrRelationshipApp
+public class Set extends NeoApp
 {
     private static class ValueTypeContext
     {
@@ -145,7 +145,8 @@ public class Set extends NodeOrRelationshipApp
     @Override
     public String getDescription()
     {
-        return "Sets a property on the current node. Usage: set <key> <value>";
+        return "Sets a property on the current node or relationship.\n" +
+        	"Usage: set <key> <value>";
     }
     
     protected static String getValueTypeName( Class<?> cls )
@@ -160,15 +161,14 @@ public class Set extends NodeOrRelationshipApp
         if ( parser.arguments().size() < 2 )
         {
             throw new ShellException( "Must supply key and value, " +
-                "like: set title \"This is a neo node\"" );
+                "like: set title \"This is a my title\"" );
         }
 
         String key = parser.arguments().get( 0 );
         ValueType valueType = getValueType( parser );
         Object value = parseValue( parser.arguments().get( 1 ), valueType );
 
-        Node node = this.getCurrentNode( session );
-        NodeOrRelationship thing = getNodeOrRelationship( node, parser );
+        NodeOrRelationship thing = getCurrent( session );
         thing.setProperty( key, value );
         return null;
     }

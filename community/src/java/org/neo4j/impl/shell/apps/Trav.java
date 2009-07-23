@@ -75,7 +75,9 @@ public class Trav extends NeoApp
     protected String exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException, RemoteException
     {
-        Node node = this.getCurrentNode( session );
+        assertCurrentIsNode( session );
+        
+        Node node = this.getCurrent( session ).asNode();
         Object[] relationshipTypes = parseRelationshipTypes( parser, out );
         if ( relationshipTypes.length == 0 )
         {
