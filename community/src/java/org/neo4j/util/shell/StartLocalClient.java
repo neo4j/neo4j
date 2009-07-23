@@ -41,6 +41,7 @@ public class StartLocalClient
         {
             System.err.println( "Can't start client with local neo service: " +
                 e );
+            e.printStackTrace( System.err );
         }
     }
 
