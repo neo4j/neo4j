@@ -31,14 +31,17 @@ import org.neo4j.api.core.Relationship;
  * that code. Please make this interface follow the Node/Relationship
  * interfaces.
  */
-abstract class NodeOrRelationship
+public abstract class NodeOrRelationship
 {
-    static NodeOrRelationship wrap( Node node )
+    public static final String TYPE_NODE = "n";
+    public static final String TYPE_RELATIONSHIP = "r";
+    
+    public static NodeOrRelationship wrap( Node node )
     {
         return new WrapNode( node );
     }
 
-    static NodeOrRelationship wrap( Relationship rel )
+    public static NodeOrRelationship wrap( Relationship rel )
     {
         return new WrapRelationship( rel );
     }
@@ -49,7 +52,7 @@ abstract class NodeOrRelationship
     {
         this.nodeOrRelationship = nodeOrRelationship;
     }
-
+    
     public boolean isNode()
     {
         return nodeOrRelationship instanceof Node;
@@ -69,7 +72,14 @@ abstract class NodeOrRelationship
     {
         return (Relationship) nodeOrRelationship;
     }
-
+    
+    public TypedId getTypedId()
+    {
+        return new TypedId( getType(), getId() );
+    }
+    
+    abstract String getType();
+    
     public abstract long getId();
 
     public abstract boolean hasProperty( String key );
@@ -84,8 +94,6 @@ abstract class NodeOrRelationship
 
     public abstract Iterable<String> getPropertyKeys();
 
-    public abstract Iterable<Object> getPropertyValues();
-
     public abstract Iterable<Relationship> getRelationships( Direction direction );
 
     static class WrapNode extends NodeOrRelationship
@@ -98,6 +106,12 @@ abstract class NodeOrRelationship
         private Node object()
         {
             return asNode();
+        }
+        
+        @Override
+        public String getType()
+        {
+            return TYPE_NODE;
         }
 
         @Override
@@ -140,12 +154,6 @@ abstract class NodeOrRelationship
         public Iterable<String> getPropertyKeys()
         {
             return object().getPropertyKeys();
-        }
-
-        @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            return object().getPropertyValues();
         }
 
         @Override
@@ -166,6 +174,12 @@ abstract class NodeOrRelationship
         {
             return asRelationship();
         }
+        
+        @Override
+        public String getType()
+        {
+            return TYPE_RELATIONSHIP;
+        }
 
         @Override
         public long getId()
@@ -210,15 +224,76 @@ abstract class NodeOrRelationship
         }
 
         @Override
-        public Iterable<Object> getPropertyValues()
-        {
-            return object().getPropertyValues();
-        }
-
-        @Override
         public Iterable<Relationship> getRelationships( Direction direction )
         {
             return new ArrayList<Relationship>();
+        }
+    }
+    
+    public static class TypedId
+    {
+        private final String type;
+        private final long id;
+        private final boolean isNode;
+        
+        public TypedId( String typedId )
+        {
+            this( typedId.substring( 0, 1 ),
+                Long.parseLong( typedId.substring( 1 ) ) );
+        }
+        
+        public TypedId( String type, long id )
+        {
+            this.type = type;
+            this.id = id;
+            this.isNode = type.equals( TYPE_NODE );
+        }
+        
+        public String getType()
+        {
+            return this.type;
+        }
+        
+        public long getId()
+        {
+            return this.id;
+        }
+        
+        public boolean isNode()
+        {
+            return this.isNode;
+        }
+        
+        public boolean isRelationship()
+        {
+            return !this.isNode;
+        }
+        
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( !( o instanceof TypedId ) )
+            {
+                return false;
+            }
+            TypedId other = ( TypedId ) o;
+            return this.type.equals( other.type ) &&
+                this.id == other.id;
+        }
+        
+        @Override
+        public int hashCode()
+        {
+            int code = 7;
+            code = 31 * code + new Long( this.id ).hashCode();
+            code = 31 * code + this.type.hashCode();
+            return code;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return this.type + this.id;
         }
     }
 }

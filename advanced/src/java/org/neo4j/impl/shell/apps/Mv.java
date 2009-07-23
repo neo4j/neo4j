@@ -19,7 +19,7 @@
  */
 package org.neo4j.impl.shell.apps;
 
-import org.neo4j.api.core.Node;
+import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -30,7 +30,7 @@ import org.neo4j.util.shell.ShellException;
  * Mimics the POSIX application with the same name, i.e. renames a property. It
  * could also (regarding POSIX) move nodes, but it doesn't).
  */
-public class Mv extends NodeOrRelationshipApp
+public class Mv extends NeoApp
 {
     /**
      * Constructs a new "mv" application.
@@ -45,7 +45,8 @@ public class Mv extends NodeOrRelationshipApp
     @Override
     public String getDescription()
     {
-        return "Renames a property. Usage: mv <key> <new-key>";
+        return "Renames a property on a node or relationship. " +
+        	"Usage: mv <key> <new-key>";
     }
 
     @Override
@@ -54,25 +55,24 @@ public class Mv extends NodeOrRelationshipApp
     {
         if ( parser.arguments().size() < 2 )
         {
-            throw new ShellException( "Must supply <from-key> <to-key> "
-                + "arguments, like: mv name \"given name\"" );
+            throw new ShellException( "Must supply <from-key> <to-key> " +
+                "arguments, like: mv name \"given_name\"" );
         }
         String fromKey = parser.arguments().get( 0 );
         String toKey = parser.arguments().get( 1 );
         boolean mayOverwrite = parser.options().containsKey( "o" );
-        Node node = this.getCurrentNode( session );
-        NodeOrRelationship thing = getNodeOrRelationship( node, parser );
+        NodeOrRelationship thing = getCurrent( session );
         if ( !thing.hasProperty( fromKey ) )
         {
-            throw new ShellException( "Property '" + fromKey
-                + "' doesn't exist" );
+            throw new ShellException( "Property '" + fromKey +
+                "' doesn't exist" );
         }
         if ( thing.hasProperty( toKey ) )
         {
             if ( !mayOverwrite )
             {
-                throw new ShellException( "Property '" + toKey
-                    + "' already exists, supply -o flag to overwrite" );
+                throw new ShellException( "Property '" + toKey +
+                    "' already exists, supply -o flag to overwrite" );
             }
             else
             {

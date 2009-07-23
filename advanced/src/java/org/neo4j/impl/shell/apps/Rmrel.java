@@ -32,7 +32,6 @@ import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.shell.NeoApp;
-import org.neo4j.impl.shell.NeoShellServer;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -50,7 +49,7 @@ public class Rmrel extends NeoApp
      */
     public Rmrel()
     {
-        this.addValueType( "e", new OptionContext( OptionValueType.MUST,
+        this.addValueType( "r", new OptionContext( OptionValueType.MUST,
             "The relationship id." ) );
         this.addValueType( "d", new OptionContext( OptionValueType.NONE,
             "Must be supplied if the affected other node gets decoupled\n" +
@@ -67,15 +66,17 @@ public class Rmrel extends NeoApp
     protected String exec( AppCommandParser parser, Session session, Output out )
         throws ShellException
     {
-        if ( parser.options().get( "e" ) == null )
+        assertCurrentIsNode( session );
+        
+        if ( parser.options().get( "r" ) == null )
         {
             throw new ShellException(
                 "Must supply relationship id (-r <id>) to delete" );
         }
 
-        Node currentNode = this.getCurrentNode( session );
+        Node currentNode = this.getCurrent( session ).asNode();
         Relationship rel = findRel( currentNode, Long.parseLong(
-            parser.options().get( "e" ) ) );
+            parser.options().get( "r" ) ) );
         rel.delete();
         if ( !currentNode.equals(
             getNeoServer().getNeo().getReferenceNode() ) &&
@@ -144,8 +145,7 @@ public class Rmrel extends NeoApp
             filterList.add( Direction.BOTH );
         }
 
-        Node refNode = ((NeoShellServer) this.getServer()).getNeo()
-            .getReferenceNode();
+        Node refNode = getNeoServer().getNeo().getReferenceNode();
         Traverser traverser = node.traverse( Order.DEPTH_FIRST,
             StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL,
             filterList.toArray() );

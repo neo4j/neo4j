@@ -25,6 +25,7 @@ import java.util.List;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.impl.shell.NeoApp;
+import org.neo4j.impl.shell.apps.NodeOrRelationship.TypedId;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -43,37 +44,43 @@ public class Cd extends NeoApp
     public static final String WORKING_DIR_KEY = "WORKING_DIR";
 
     /**
-     * Constructs a new application.
+     * Constructs a new cd application.
      */
     public Cd()
     {
         this.addValueType( "a", new OptionContext( OptionValueType.NONE,
-            "Absolute id, doesn't need to be connected to current node" ) );
+            "Absolute id, new primitive doesn't need to be connected to " +
+            "the\ncurrent one" ) );
+        this.addValueType( "r", new OptionContext( OptionValueType.NONE,
+            "Makes the supplied id represent a relationship instead of " +
+            "a node" ) );
     }
 
     @Override
     public String getDescription()
     {
-        return "Changes the current node. Usage: cd <node-id>";
+        return "Changes the current node or relationship, i.e. traverses " +
+       		"one step to another\nnode or relationship. Usage: cd <id>";
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
-        throws ShellException, RemoteException
+    protected String exec( AppCommandParser parser, Session session,
+        Output out ) throws ShellException, RemoteException
     {
-        List<Long> paths = readPaths( session );
+        List<TypedId> paths = readPaths( session );
 
-        Node currentNode = getCurrentNode( session );
-        Node newNode = null;
+        NodeOrRelationship current = getCurrent( session );
+        NodeOrRelationship newThing = null;
         if ( parser.arguments().isEmpty() )
         {
-            newNode = getNeoServer().getNeo().getReferenceNode();
+            newThing = NodeOrRelationship.wrap(
+                getNeoServer().getNeo().getReferenceNode() );
             paths.clear();
         }
         else
         {
             String arg = parser.arguments().get( 0 );
-            long newId = currentNode.getId();
+            TypedId newId = current.getTypedId();
             if ( arg.equals( ".." ) )
             {
                 if ( paths.size() > 0 )
@@ -84,35 +91,103 @@ public class Cd extends NeoApp
             else if ( arg.equals( "." ) )
             {
             }
+            else if ( arg.equals( "start" ) || arg.equals( "end" ) )
+            {
+                newId = getStartOrEnd( current, arg );
+                paths.add( current.getTypedId() );
+            }
             else
             {
-                newId = Long.parseLong( arg );
-                if ( newId == currentNode.getId() )
+                long suppliedId = Long.parseLong( arg );
+                if ( parser.options().containsKey( "r" ) )
                 {
-                    throw new ShellException( "Can't cd to the current node" );
+                    newId = new TypedId( NodeOrRelationship.TYPE_RELATIONSHIP,
+                        suppliedId );
+                }
+                else
+                {
+                    newId = new TypedId( NodeOrRelationship.TYPE_NODE,
+                        suppliedId );
+                }
+                if ( newId.equals( current.getTypedId() ) )
+                {
+                    throw new ShellException( "Can't cd to where you stand" );
                 }
                 boolean absolute = parser.options().containsKey( "a" );
-                if ( !absolute && !this.nodeIsConnected( currentNode, newId ) )
+                if ( !absolute && !this.isConnected( current, newId ) )
                 {
-                    throw new ShellException( "Node " + newId
-                        + " isn't connected to the current node, use -a to "
-                        + "force it to go to that node anyway" );
+                    throw new ShellException( getDisplayName( newId ) +
+                        " isn't connected to the current primitive," +
+                        " use -a to force it to go there anyway" );
                 }
-                paths.add( currentNode.getId() );
+                paths.add( current.getTypedId() );
             }
-            newNode = this.getNodeById( newId );
+            newThing = this.getThingById( newId );
         }
 
-        setCurrentNode( session, newNode );
+        setCurrent( session, newThing );
         session.set( WORKING_DIR_KEY, this.makePath( paths ) );
         return null;
     }
 
-    private boolean nodeIsConnected( Node currentNode, long newId )
+    private TypedId getStartOrEnd( NodeOrRelationship current, String arg )
+        throws ShellException
     {
-        for ( Relationship rel : currentNode.getRelationships() )
+        if ( !current.isRelationship() )
         {
-            if ( rel.getOtherNode( currentNode ).getId() == newId )
+            throw new ShellException( "Only allowed on relationships" );
+        }
+        Node newNode = null;
+        if ( arg.equals( "start" ) )
+        {
+            newNode = current.asRelationship().getStartNode();
+        }
+        else if ( arg.equals( "end" ) )
+        {
+            newNode = current.asRelationship().getEndNode();
+        }
+        else
+        {
+            throw new ShellException( "Unknown alias '" + arg + "'" );
+        }
+        return NodeOrRelationship.wrap( newNode ).getTypedId();
+    }
+
+    private boolean isConnected( NodeOrRelationship current, TypedId newId )
+        throws ShellException
+    {
+        if ( current.isNode() )
+        {
+            Node currentNode = current.asNode();
+            for ( Relationship rel : currentNode.getRelationships() )
+            {
+                if ( newId.isNode() )
+                {
+                    if ( rel.getOtherNode( currentNode ).getId() ==
+                        newId.getId() )
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    if ( rel.getId() == newId.getId() )
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        else
+        {
+            if ( newId.isRelationship() )
+            {
+                return false;
+            }
+            
+            Relationship relationship = current.asRelationship();
+            if ( relationship.getStartNode().getId() == newId.getId() ||
+                relationship.getEndNode().getId() == newId.getId() )
             {
                 return true;
             }
@@ -122,38 +197,36 @@ public class Cd extends NeoApp
 
     /**
      * Reads the session variable specified in {@link #WORKING_DIR_KEY} and
-     * returns it as a list of node ids.
-     * @param session
-     *            the session to read from.
+     * returns it as a list of {@link TypedId}s.
+     * @param session the session to read from.
      * @return the working directory as a list.
-     * @throws RemoteException
-     *             if an RMI error occurs.
+     * @throws RemoteException if an RMI error occurs.
      */
-    public static List<Long> readPaths( Session session )
+    public static List<TypedId> readPaths( Session session )
         throws RemoteException
     {
-        List<Long> list = new ArrayList<Long>();
+        List<TypedId> list = new ArrayList<TypedId>();
         String path = (String) session.get( WORKING_DIR_KEY );
         if ( path != null && path.trim().length() > 0 )
         {
-            for ( String id : path.split( "," ) )
+            for ( String typedId : path.split( "," ) )
             {
-                list.add( new Long( id ) );
+                list.add( new TypedId( typedId ) );
             }
         }
         return list;
     }
 
-    private String makePath( List<Long> paths )
+    private String makePath( List<TypedId> paths )
     {
         StringBuffer buffer = new StringBuffer();
-        for ( Long id : paths )
+        for ( TypedId typedId : paths )
         {
             if ( buffer.length() > 0 )
             {
                 buffer.append( "," );
             }
-            buffer.append( id );
+            buffer.append( typedId.toString() );
         }
         return buffer.length() > 0 ? buffer.toString() : null;
     }
