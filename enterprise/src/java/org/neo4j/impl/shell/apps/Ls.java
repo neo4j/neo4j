@@ -30,8 +30,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
+import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -40,9 +40,9 @@ import org.neo4j.util.shell.ShellException;
 
 /**
  * Mimics the POSIX application with the same name, i.e. lists
- * properties/relationships on a node.
+ * properties/relationships on a node or a relationship.
  */
-public class Ls extends NodeOrRelationshipApp
+public class Ls extends NeoApp
 {
     /**
      * Constructs a new "ls" application.
@@ -82,22 +82,19 @@ public class Ls extends NodeOrRelationshipApp
             "just\n" +
             "a part of a value matches the pattern, not necessarily " +
             "the whole value" ) );
-        this.addValueType( "e", new OptionContext( OptionValueType.MUST,
-            "Temporarily select a connected relationship to do " +
-            "the operation on" ) );
     }
 
     @Override
     public String getDescription()
     {
-        return "Lists the contents of the current node. Optionally supply " +
-            "node id for listing\n" +
-            "a certain node using \"ls <node-id>\"";
+        return "Lists the contents of the current node or relationship. " +
+        	"Optionally supply\n" +
+            "node id for listing a certain node using \"ls <node-id>\"";
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
-        throws ShellException, RemoteException
+    protected String exec( AppCommandParser parser, Session session,
+        Output out ) throws ShellException, RemoteException
     {
         boolean verbose = parser.options().containsKey( "v" );
         boolean displayValues = verbose || !parser.options().containsKey( "q" );
@@ -113,18 +110,17 @@ public class Ls extends NodeOrRelationshipApp
             displayRelationships = true;
         }
 
-        Node node = null;
+        NodeOrRelationship thing = null;
         if ( parser.arguments().isEmpty() )
         {
-            node = this.getCurrentNode( session );
+            thing = this.getCurrent( session );
         }
         else
         {
-            node = this.getNodeById( Long
-                .parseLong( parser.arguments().get( 0 ) ) );
+            thing = NodeOrRelationship.wrap( this.getNodeById( Long
+                .parseLong( parser.arguments().get( 0 ) ) ) );
         }
 
-        NodeOrRelationship thing = getNodeOrRelationship( node, parser );
         if ( displayProperties )
         {
             this.displayProperties( thing, out, displayValues, verbose,
@@ -132,7 +128,7 @@ public class Ls extends NodeOrRelationshipApp
         }
         if ( displayRelationships )
         {
-            this.displayRelationships( parser, thing, out,
+            this.displayRelationships( parser, thing, session, out,
                 verbose, filterMap, caseInsensitiveFilters, looseFilters );
         }
         return null;
@@ -252,7 +248,7 @@ public class Ls extends NodeOrRelationshipApp
     }
 
     private void displayRelationships( AppCommandParser parser,
-        NodeOrRelationship thing, Output out, boolean verbose,
+        NodeOrRelationship thing, Session session, Output out, boolean verbose,
         Map<String, Object> filterMap, boolean caseInsensitiveFilters,
         boolean looseFilters ) throws ShellException, RemoteException
     {
@@ -264,22 +260,23 @@ public class Ls extends NodeOrRelationshipApp
             || direction == Direction.INCOMING;
         if ( displayOutgoing )
         {
-            displayRelationships( thing, out, verbose, Direction.OUTGOING,
-                "--[", "]-->", filterMap, caseInsensitiveFilters,
-                looseFilters );
+            displayRelationships( thing, session, out, verbose,
+                Direction.OUTGOING, "--[", "]-->", filterMap,
+                caseInsensitiveFilters, looseFilters );
         }
         if ( displayIncoming )
         {
-            displayRelationships( thing, out, verbose, Direction.INCOMING,
-                "<--[", "]--", filterMap, caseInsensitiveFilters,
-                looseFilters );
+            displayRelationships( thing, session, out, verbose,
+                Direction.INCOMING, "<--[", "]--", filterMap,
+                caseInsensitiveFilters, looseFilters );
         }
     }
     
     private void displayRelationships( NodeOrRelationship thing,
-        Output out, boolean verbose, Direction direction, String prefixString,
-        String postfixString, Map<String, Object> filterMap,
-        boolean caseInsensitiveFilters, boolean looseFilters )
+        Session session, Output out, boolean verbose, Direction direction,
+        String prefixString, String postfixString,
+        Map<String, Object> filterMap, boolean caseInsensitiveFilters,
+        boolean looseFilters )
         throws ShellException, RemoteException
     {
         for ( Relationship rel : sortRelationships(
@@ -303,11 +300,12 @@ public class Ls extends NodeOrRelationshipApp
             }
             
             StringBuffer buf = new StringBuffer(
-                getDisplayNameForCurrentNode() );
+                getDisplayNameForCurrent( session ) );
             buf.append( " " + prefixString ).append( rel.getType().name() );
             if ( verbose )
             {
-                buf.append( ", " ).append( rel.getId() );
+                buf.append( ", " ).append( getDisplayNameForRelationship(
+                    rel.getId() ) );
             }
             buf.append( postfixString + " " );
             buf.append( getDisplayNameForNode( direction == Direction.OUTGOING ?

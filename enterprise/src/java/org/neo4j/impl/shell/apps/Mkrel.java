@@ -23,6 +23,7 @@ import java.rmi.RemoteException;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
@@ -62,6 +63,8 @@ public class Mkrel extends NeoApp
     protected String exec( AppCommandParser parser, Session session, Output out )
         throws ShellException, RemoteException
     {
+        assertCurrentIsNode( session );
+        
         boolean createNode = parser.options().containsKey( "c" );
         boolean suppliedNode = parser.options().containsKey( "n" );
         Node node = null;
@@ -87,16 +90,18 @@ public class Mkrel extends NeoApp
         RelationshipType type = this.getRelationshipType( parser.options().get(
             "t" ) );
         Direction direction = this.getDirection( parser.options().get( "d" ) );
-        Node startNode = direction == Direction.OUTGOING ? this
-            .getCurrentNode( session ) : node;
-        Node endNode = direction == Direction.OUTGOING ? node : this
-            .getCurrentNode( session );
-        startNode.createRelationshipTo( endNode, type );
+        Node currentNode = getCurrent( session ).asNode();
+        Node startNode = direction == Direction.OUTGOING ? currentNode : node;
+        Node endNode = direction == Direction.OUTGOING ? node : currentNode;
+        Relationship relationship =
+            startNode.createRelationshipTo( endNode, type );
         if ( createNode )
         {
-            out.println( "New node " + getDisplayNameForNode( node ) +
+            out.println( "Node " + getDisplayNameForNode( node ) +
                 " created" );
         }
+        out.println( "Relationship " +
+            getDisplayNameForRelationship( relationship ) + " created" );
         return null;
     }
 }
