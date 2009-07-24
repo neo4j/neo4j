@@ -212,7 +212,7 @@ public class Ls extends NeoApp
             if ( displayValues )
             {
                 this.printMany( out, " ", longestKey - key.length() + 1 );
-                out.print( "=" + format( value ) );
+                out.print( "=" + format( value, true ) );
                 if ( verbose )
                 {
                     out.print( " (" + getNiceType( value ) + ")" );
@@ -222,7 +222,7 @@ public class Ls extends NeoApp
         }
     }
     
-    private static String format( Object value )
+    public static String format( Object value, boolean includeFraming )
     {
         String result = null;
         if ( value.getClass().isArray() )
@@ -236,15 +236,21 @@ public class Ls extends NeoApp
                 {
                     buffer.append( "," );
                 }
-                buffer.append( "[" + singleValue + "]" );
+                buffer.append( frame( singleValue.toString(),
+                    includeFraming ) );
             }
             result = buffer.toString();
         }
         else
         {
-            result = "[" + value + "]";
+            result = frame( value.toString(), includeFraming );
         }
         return result;
+    }
+    
+    public static String frame( String string, boolean frame )
+    {
+        return frame ? "[" + string + "]" : string;
     }
 
     private void displayRelationships( AppCommandParser parser,
@@ -261,13 +267,13 @@ public class Ls extends NeoApp
         if ( displayOutgoing )
         {
             displayRelationships( thing, session, out, verbose,
-                Direction.OUTGOING, "--[", "]-->", filterMap,
+                Direction.OUTGOING, "--", "-->", filterMap,
                 caseInsensitiveFilters, looseFilters );
         }
         if ( displayIncoming )
         {
             displayRelationships( thing, session, out, verbose,
-                Direction.INCOMING, "<--[", "]--", filterMap,
+                Direction.INCOMING, "<--", "--", filterMap,
                 caseInsensitiveFilters, looseFilters );
         }
     }
@@ -301,15 +307,12 @@ public class Ls extends NeoApp
             
             StringBuffer buf = new StringBuffer(
                 getDisplayNameForCurrent( session ) );
-            buf.append( " " + prefixString ).append( rel.getType().name() );
-            if ( verbose )
-            {
-                buf.append( ", " ).append( getDisplayNameForRelationship(
-                    rel.getId() ) );
-            }
+            buf.append( " " + prefixString ).append( getDisplayName(
+                getNeoServer(), session, rel, verbose ) );
             buf.append( postfixString + " " );
-            buf.append( getDisplayNameForNode( direction == Direction.OUTGOING ?
-                rel.getEndNode() : rel.getStartNode() ) );
+            buf.append( getDisplayName( getNeoServer(), session,
+                direction == Direction.OUTGOING ? rel.getEndNode() :
+                    rel.getStartNode() ) );
             out.println( buf );
         }
     }

@@ -147,7 +147,8 @@ public class Trav extends NeoApp
             }
             if ( hit )
             {
-        		out.println( getDisplayNameForNode( traversedNode ) );
+        		out.println( getDisplayName( getNeoServer(), session,
+        		    traversedNode ) );
                 Map<String, Object> data = new HashMap<String, Object>();
                 data.put( "n", traversedNode.getId() );
         	    for ( String command : commandsToRun )

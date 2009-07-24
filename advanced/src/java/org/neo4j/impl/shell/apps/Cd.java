@@ -116,7 +116,8 @@ public class Cd extends NeoApp
                 boolean absolute = parser.options().containsKey( "a" );
                 if ( !absolute && !this.isConnected( current, newId ) )
                 {
-                    throw new ShellException( getDisplayName( newId ) +
+                    throw new ShellException(
+                        getDisplayName( getNeoServer(), session, newId ) +
                         " isn't connected to the current primitive," +
                         " use -a to force it to go there anyway" );
                 }
