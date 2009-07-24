@@ -41,11 +41,12 @@ public class Pwd extends NeoApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
-        throws RemoteException
+    protected String exec( AppCommandParser parser, Session session,
+        Output out ) throws RemoteException
     {
         NodeOrRelationship current = this.getCurrent( session );
-        out.println( "Current is " + getDisplayName( current ) );
+        out.println( "Current is " +
+            getDisplayName( getNeoServer(), session, current ) );
 
         String path = stringifyPath( Cd.readPaths( session ), session );
         if ( path.length() > 0 )
@@ -64,7 +65,8 @@ public class Pwd extends NeoApp
         StringBuilder path = new StringBuilder();
         for ( TypedId id : pathIds )
         {
-            path.append( getDisplayName( id ) ).append( "-->" );
+            path.append(
+                getDisplayName( getNeoServer(), session, id ) ).append( "-->" );
         }
         return path.append( getDisplayNameForCurrent( session ) ).toString();
     }
