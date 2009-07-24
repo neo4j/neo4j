@@ -27,9 +27,11 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
+import org.neo4j.impl.shell.apps.Ls;
 import org.neo4j.impl.shell.apps.NodeOrRelationship;
 import org.neo4j.impl.shell.apps.NodeOrRelationship.TypedId;
 import org.neo4j.util.shell.AbstractApp;
+import org.neo4j.util.shell.AbstractClient;
 import org.neo4j.util.shell.App;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
@@ -172,42 +174,96 @@ public abstract class NeoApp extends AbstractApp
      * @param thing the thing to get the name-representation for.
      * @return the display name for a {@link Node}.
      */
-    public static String getDisplayName( NodeOrRelationship thing )
+    public static String getDisplayName( NeoShellServer server,
+        Session session, NodeOrRelationship thing )
     {
-        return getDisplayName( thing != null ? thing.getTypedId() : null );
+        if ( thing.isNode() )
+        {
+            return getDisplayName( server, session, thing.asNode() );
+        }
+        else
+        {
+            return getDisplayName( server, session, thing.asRelationship(),
+                true );
+        }
     }
     
-    public static String getDisplayName( TypedId typedId )
+    public static String getDisplayName( NeoShellServer server,
+        Session session, TypedId typedId )
     {
-        if ( typedId == null )
-        {
-            return getDisplayNameForNode( ( Long ) null );
-        }
-        
-        return typedId.isNode() ? getDisplayNameForNode( typedId.getId() ) :
-            getDisplayNameForRelationship( typedId.getId() );
+        return getDisplayName( server, session,
+            getThingById( server, typedId ) );
     }
 
-    public static String getDisplayNameForNode( Node node )
+    public static String getDisplayName( NeoShellServer server,
+        Session session, Node node )
     {
-        return getDisplayNameForNode( node != null ? node.getId() : null );
+        StringBuffer result = new StringBuffer(
+//            "(" + node.getId() + ")" );
+            "(" + node.getId() );
+        String title = findTitle( server, session, node );
+        if ( title != null )
+        {
+//            result.append( " " + title );
+            result.append( ", " + title );
+        }
+        result.append( ")" );
+        return result.toString();
     }
     
-    public static String getDisplayNameForNode( Long nodeId )
+    private static String findTitle( NeoShellServer server, Session session,
+        Node node )
     {
-        return "(" + nodeId + ")";
+        String keys = ( String ) safeGet( session,
+            AbstractClient.TITLE_KEYS_KEY );
+        if ( keys == null )
+        {
+            return null;
+        }
+        
+        String[] titleKeys = keys.split( Pattern.quote( "," ) );
+        Pattern[] patterns = new Pattern[ titleKeys.length ];
+        for ( int i = 0; i < titleKeys.length; i++ )
+        {
+            patterns[ i ] = Pattern.compile( titleKeys[ i ] );
+        }
+        for ( String nodeKey : node.getPropertyKeys() )
+        {
+            for ( Pattern pattern : patterns )
+            {
+                if ( matches( pattern, nodeKey, false, false ) )
+                {
+                    return trimLength( session,
+                        Ls.format( node.getProperty( nodeKey ), false ) );
+                }
+            }
+        }
+        return null;
     }
-    
-    public static String getDisplayNameForRelationship(
-        Relationship relationship )
+
+    private static String trimLength( Session session, String string )
     {
-        return getDisplayNameForRelationship( relationship != null ?
-            relationship.getId() : null );
+        String maxLengthString = ( String )
+            safeGet( session, AbstractClient.TITLE_MAX_LENGTH );
+        int maxLength = maxLengthString != null ?
+            Integer.parseInt( maxLengthString ) : Integer.MAX_VALUE;
+        if ( string.length() > maxLength )
+        {
+            string = string.substring( 0, maxLength ) + "...";
+        }
+        return string;
     }
-    
-    public static String getDisplayNameForRelationship( Long relationshipId )
+
+    public static String getDisplayName( NeoShellServer server,
+        Session session, Relationship relationship, boolean verbose )
     {
-        return "<" + relationshipId + ">";
+        StringBuffer result = new StringBuffer( "<" );
+        if ( verbose )
+        {
+            result.append( relationship.getId() + ", " );
+        }
+        result.append( relationship.getType().name() + ">" );
+        return result.toString();
     }
     
     protected static String fixCaseSensitivity( String string,
@@ -230,7 +286,7 @@ public abstract class NeoApp extends AbstractApp
         {
             return true;
         }
-        
+
         value = fixCaseSensitivity( value, caseInsensitive );
         return loose ?
             patternOrNull.matcher( value ).find() :

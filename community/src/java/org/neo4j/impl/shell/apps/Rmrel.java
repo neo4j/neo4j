@@ -63,8 +63,8 @@ public class Rmrel extends NeoApp
     }
 
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
-        throws ShellException
+    protected String exec( AppCommandParser parser, Session session,
+        Output out ) throws ShellException
     {
         assertCurrentIsNode( session );
         
@@ -93,7 +93,7 @@ public class Rmrel extends NeoApp
             if ( !deleteOtherNodeWhenEmpty )
             {
                 throw new ShellException( "Since the node " +
-                    getDisplayNameForNode( otherNode ) +
+                    getDisplayName( getNeoServer(), session, otherNode ) +
                     " would be decoupled after this, you must supply the" +
                     " -d (for delete-when-decoupled) so that the other node " +
                     "(" + otherNode + ") may be deleted" );

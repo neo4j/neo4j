@@ -97,11 +97,11 @@ public class Mkrel extends NeoApp
             startNode.createRelationshipTo( endNode, type );
         if ( createNode )
         {
-            out.println( "Node " + getDisplayNameForNode( node ) +
-                " created" );
+            out.println( "Node " + getDisplayName(
+                getNeoServer(), session, node ) + " created" );
         }
-        out.println( "Relationship " +
-            getDisplayNameForRelationship( relationship ) + " created" );
+        out.println( "Relationship " + getDisplayName(
+            getNeoServer(), session, relationship, true ) + " created" );
         return null;
     }
 }
