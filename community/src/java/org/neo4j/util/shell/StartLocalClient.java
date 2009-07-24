@@ -19,7 +19,7 @@
  */
 package org.neo4j.util.shell;
 
-public class StartLocalClient
+public class StartLocalClient extends AbstractStarter
 {
     public static void main( String[] args )
     {
@@ -35,18 +35,19 @@ public class StartLocalClient
         String neoDbPath = args[ 0 ];
         try
         {
-            tryStartLocalServerAndClient( neoDbPath );
+            tryStartLocalServerAndClient( neoDbPath, args );
         }
         catch ( Exception e )
         {
             System.err.println( "Can't start client with local neo service: " +
                 e );
             e.printStackTrace( System.err );
+            System.exit( 1 );
         }
     }
 
-    private static void tryStartLocalServerAndClient( String neoDbPath )
-        throws Exception
+    private static void tryStartLocalServerAndClient( String neoDbPath,
+        String[] args ) throws Exception
     {
         final LocalNeoShellServer server =
             new LocalNeoShellServer( neoDbPath );
@@ -61,7 +62,9 @@ public class StartLocalClient
         
         System.out.println( "NOTE: Using local neo service at '" +
             neoDbPath + "'" );
-        new SameJvmClient( server ).grabPrompt();
+        ShellClient client = new SameJvmClient( server );
+        setSessionVariablesFromArgs( client, args );
+        client.grabPrompt();
         server.shutdown();
     }
 }

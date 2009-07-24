@@ -23,7 +23,7 @@ package org.neo4j.util.shell;
  * Convenience main class for starting a client which connects to a remote
  * server. Which port/name to connect to may be specified as arguments.
  */
-public class StartRemoteClient
+public class StartRemoteClient extends AbstractStarter
 {
 	/**
 	 * Starts a client and connects to a remote server.
@@ -34,11 +34,15 @@ public class StartRemoteClient
 		try
 		{
 			printGreeting( args );
-			ShellLobby.startClient( getPort( args ), getShellName( args ) );
+			ShellClient client = ShellLobby.newClient(
+			    getPort( args ), getShellName( args ) );
+			setSessionVariablesFromArgs( client, args );
+			client.grabPrompt();
 		}
 		catch ( Exception e )
 		{
 			System.err.println( "Can't start client shell: " + e );
+			System.exit( 1 );
 		}
 	}
 	
@@ -52,11 +56,29 @@ public class StartRemoteClient
 		}
 	}
 	
+	private static String getArg( String[] args, int index )
+	{
+	    int counter = 0;
+	    for ( String arg : args )
+	    {
+	        if ( !arg.startsWith( "-" ) )
+	        {
+	            if ( counter == index )
+	            {
+	                return arg;
+	            }
+	            counter++;
+	        }
+	    }
+	    throw new ArrayIndexOutOfBoundsException();
+	}
+	
 	private static int getPort( String[] args )
 	{
 		try
 		{
-			return args[ 0 ] != null ? Integer.parseInt( args [ 0 ] ) :
+		    String arg = getArg( args, 0 );
+			return arg != null ? Integer.parseInt( arg ) :
 				AbstractServer.DEFAULT_PORT;
 		}
 		catch ( ArrayIndexOutOfBoundsException e )
@@ -70,7 +92,8 @@ public class StartRemoteClient
 	{
 		try
 		{
-			return args[ 1 ] != null ? args [ 1 ] : AbstractServer.DEFAULT_NAME;
+		    String arg = getArg( args, 1 );
+			return arg != null ? arg : AbstractServer.DEFAULT_NAME;
 		}
 		catch ( ArrayIndexOutOfBoundsException e )
 		{

@@ -50,11 +50,9 @@ public abstract class ShellLobby
 	 * communicate with.
 	 * @return the new shell client.
 	 */
-	public static ShellClient startClient( ShellServer server )
+	public static ShellClient newClient( ShellServer server )
 	{
-		ShellClient client = new SameJvmClient( server );
-		client.grabPrompt();
-		return client;
+		return new SameJvmClient( server );
 	}
 	
 	/**
@@ -65,10 +63,10 @@ public abstract class ShellLobby
 	 * @throws ShellException if no server was found at the RMI location.
 	 * @return the new shell client.
 	 */
-	public static ShellClient startClient( int port, String name )
+	public static ShellClient newClient( int port, String name )
 		throws ShellException
 	{
-		return startClient( RmiLocation.location( "localhost", port, name ) );
+		return newClient( RmiLocation.location( "localhost", port, name ) );
 	}
 
 	/**
@@ -78,11 +76,9 @@ public abstract class ShellLobby
 	 * @throws ShellException if no server was found at the RMI location.
 	 * @return the new shell client.
 	 */
-	public static ShellClient startClient( RmiLocation serverLocation )
+	public static ShellClient newClient( RmiLocation serverLocation )
 		throws ShellException
 	{
-		ShellClient client = new RemoteClient( serverLocation );
-		client.grabPrompt();
-		return client;
+		return new RemoteClient( serverLocation );
 	}
 }
