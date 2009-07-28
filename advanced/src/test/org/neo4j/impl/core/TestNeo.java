@@ -19,6 +19,7 @@
  */
 package org.neo4j.impl.core;
 
+import java.util.Iterator;
 import java.util.Random;
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.NeoService;
@@ -293,6 +294,12 @@ public class TestNeo extends AbstractNeoTestCase
             }
             assertTrue( found );
             assertEquals( count, oldCount + 1 );
+            
+            // Tests a bug in the "all nodes" iterator
+            Iterator<Node> allNodesIterator =
+                getEmbeddedNeo().getAllNodes().iterator();
+            assertNotNull( allNodesIterator.next() );
+            
             newNode.delete();
             newTransaction();
             found = false;
@@ -308,6 +315,6 @@ public class TestNeo extends AbstractNeoTestCase
             assertTrue( !found );
             assertEquals( count, oldCount );
         }
-        // else we skip test, takes to long
+        // else we skip test, takes too long
     }
 }
