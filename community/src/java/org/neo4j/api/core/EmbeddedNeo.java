@@ -437,12 +437,13 @@ public final class EmbeddedNeo implements NeoService
         
         public synchronized Node next()
         {
-            Node nextNode = currentNode;
-            currentNode = null;
-            if ( nextNode == null )
+            if ( !hasNext() )
             {
                 throw new NoSuchElementException();
             }
+            
+            Node nextNode = currentNode;
+            currentNode = null;
             return nextNode;
         }
         
