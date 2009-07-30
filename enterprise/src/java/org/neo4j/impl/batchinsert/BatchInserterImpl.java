@@ -503,7 +503,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private RelationshipRecord getRelationshipRecord( long id )
     {
-        if ( id < 0 || id >= getNodeStore().getHighId() )
+        if ( id < 0 || id >= getRelationshipStore().getHighId() )
         {
             throw new IllegalArgumentException( "id=" + id );
         }
