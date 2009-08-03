@@ -53,6 +53,11 @@ public class PersistenceManager
         this.transactionManager = transactionManager;
         this.persistenceSource = persistenceSource;
     }
+    
+    public PersistenceSource getPersistenceSource()
+    {
+        return persistenceSource;
+    }
 
     public boolean loadLightNode( int id )
     {
