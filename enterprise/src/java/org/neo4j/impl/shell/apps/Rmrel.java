@@ -49,8 +49,6 @@ public class Rmrel extends NeoApp
      */
     public Rmrel()
     {
-        this.addValueType( "r", new OptionContext( OptionValueType.MUST,
-            "The relationship id." ) );
         this.addValueType( "d", new OptionContext( OptionValueType.NONE,
             "Must be supplied if the affected other node gets decoupled\n" +
             "after this operation so that it gets deleted." ) );
@@ -59,7 +57,7 @@ public class Rmrel extends NeoApp
     @Override
     public String getDescription()
     {
-        return "Deletes a relationship";
+        return "Deletes a relationship\nUsage: rmrel <relationship id>";
     }
 
     @Override
@@ -68,15 +66,15 @@ public class Rmrel extends NeoApp
     {
         assertCurrentIsNode( session );
         
-        if ( parser.options().get( "r" ) == null )
+        if ( parser.arguments().isEmpty() )
         {
             throw new ShellException(
-                "Must supply relationship id (-r <id>) to delete" );
+                "Must supply relationship id to delete as the first argument" );
         }
 
         Node currentNode = this.getCurrent( session ).asNode();
         Relationship rel = findRel( currentNode, Long.parseLong(
-            parser.options().get( "r" ) ) );
+            parser.arguments().get( 0 ) ) );
         rel.delete();
         if ( !currentNode.equals(
             getNeoServer().getNeo().getReferenceNode() ) &&
