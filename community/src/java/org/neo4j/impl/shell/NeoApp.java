@@ -227,9 +227,9 @@ public abstract class NeoApp extends AbstractApp
         {
             patterns[ i ] = Pattern.compile( titleKeys[ i ] );
         }
-        for ( String nodeKey : node.getPropertyKeys() )
+        for ( Pattern pattern : patterns )
         {
-            for ( Pattern pattern : patterns )
+            for ( String nodeKey : node.getPropertyKeys() )
             {
                 if ( matches( pattern, nodeKey, false, false ) )
                 {
