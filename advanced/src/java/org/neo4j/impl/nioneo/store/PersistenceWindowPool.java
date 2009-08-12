@@ -315,7 +315,7 @@ class PersistenceWindowPool
         {
             return;
         }
-        if ( availableMem > 0 && availableMem < blockSize * 10 )
+        if ( availableMem > 0 && availableMem < blockSize * 10l )
         {
             logWarn( "Unable to use " + availableMem
                 + "b as memory mapped windows, need at least " + blockSize * 10

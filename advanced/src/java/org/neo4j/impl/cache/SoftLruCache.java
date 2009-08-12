@@ -13,7 +13,6 @@ public class SoftLruCache<K,V> implements Cache<K,V>
         new SoftReferenceQueue<K,V>();
     
     private final String name;
-    private boolean adaptive = false;
     
     public SoftLruCache( String name )
     {

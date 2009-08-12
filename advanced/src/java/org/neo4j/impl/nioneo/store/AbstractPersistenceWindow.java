@@ -86,8 +86,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
             }
             ByteBuffer byteBuffer = buffer.getBuffer();
             byteBuffer.clear();
-            int count = getFileChannel().read( byteBuffer,
-                position * recordSize );
+            getFileChannel().read( byteBuffer, position * recordSize );
             byteBuffer.clear();
         }
         catch ( IOException e )
