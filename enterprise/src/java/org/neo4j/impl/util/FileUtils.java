@@ -1,4 +1,4 @@
-package org.neo4j.impl.nioneo.util;
+package org.neo4j.impl.util;
 
 import java.io.File;
 import java.io.IOException;
