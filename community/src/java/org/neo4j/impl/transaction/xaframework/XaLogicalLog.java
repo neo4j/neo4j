@@ -33,9 +33,9 @@ import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.impl.nioneo.util.FileUtils;
 import org.neo4j.impl.transaction.XidImpl;
 import org.neo4j.impl.util.ArrayMap;
+import org.neo4j.impl.util.FileUtils;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In

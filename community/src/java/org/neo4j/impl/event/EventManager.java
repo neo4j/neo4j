@@ -145,10 +145,6 @@ public class EventManager
     {
         synchronized ( eventElements )
         {
-            if ( eventElements == null )
-            {
-                return null;
-            }
             if ( !eventElements.isEmpty() )
             {
                 try

@@ -104,6 +104,8 @@ public class NeoStore extends AbstractStore
         return RECORD_SIZE;
     }
 
+    private static final Random r = new Random( System.currentTimeMillis() );
+    
     /**
      * Creates the neo,node,relationship,property and relationship type stores.
      * 
@@ -125,7 +127,7 @@ public class NeoStore extends AbstractStore
         neoStore.nextId(); neoStore.nextId(); neoStore.nextId();
         long time = System.currentTimeMillis();
         neoStore.setCreationTime( time );
-        neoStore.setRandomNumber( new Random( time ).nextLong() );
+        neoStore.setRandomNumber( r.nextLong() );
         neoStore.setVersion( 0 );
         neoStore.close();
     }
@@ -280,7 +282,7 @@ public class NeoStore extends AbstractStore
         {
             ByteBuffer buffer = ByteBuffer.wrap( new byte[ 3 * RECORD_SIZE ] );
             long time = System.currentTimeMillis();
-            long random = new Random( time ).nextLong();
+            long random = r.nextLong();
             buffer.put( Record.IN_USE.byteValue() ).putLong( time );
             buffer.put( Record.IN_USE.byteValue() ).putLong( random );
             buffer.put( Record.IN_USE.byteValue() ).putLong( 0 );
