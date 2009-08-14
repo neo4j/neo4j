@@ -1,3 +1,27 @@
+1.0-b8 (2009-08-14)
+-------------------
+
+-Enhancements
+o Increased number of primitives that can be handled by adding one more bit.
+o Batch Inserter is now available, http://wiki.neo4j.org/content/Batch_Insert
+o Added a "windows mode" that use plain Java buffers instead of memory mapped.
+o Read only transactions have been optimized and now have much less overhead
+o New cache implementation based on soft references, faster get, more 
+  concurrent and memory efficient 
+o OSGi enabled
+
+-Bug fixes
+o Fixed all known batch inserter bugs.
+o Fixed a bug that could cause multiple remove of same property to fail (should 
+  just return null if it doesn't exist).
+
+-Shell
+o Output of "man" command has been improved.
+o Added a traverser command allowing to create custom traverses within the 
+  shell.
+o Added support of setting and listing array types.
+o "cd" command can now position itself on a relationship.
+
 1.0-b8 (2009-05-03)
 -------------------
 
