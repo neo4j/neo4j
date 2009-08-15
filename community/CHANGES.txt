@@ -1,3 +1,11 @@
+1.0-b9 (2009-08-15)
+------------------
+
+o Added a traverser command for creating custom traversers.
+o Added support of setting and listing array types.
+o "cd" command can now position itself on a relationship.
+o Output of "man" command has been improved.
+
 1.0-b8 (2009-05-03)
 -------------------
 
