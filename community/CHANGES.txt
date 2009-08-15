@@ -1,26 +1,27 @@
-1.0-b8 (2009-08-14)
+1.0-b9 (2009-08-14)
 -------------------
 
 -Enhancements
-o Increased number of primitives that can be handled by adding one more bit.
-o Batch Inserter is now available, http://wiki.neo4j.org/content/Batch_Insert
-o Added a "windows mode" that use plain Java buffers instead of memory mapped.
-o Read only transactions have been optimized and now have much less overhead
-o New cache implementation based on soft references, faster get, more 
-  concurrent and memory efficient 
-o OSGi enabled
+o Core: New 'batch insert' mode, see http://wiki.neo4j.org/content/Batch_Insert,
+  typically used for initial import of bulk data.
+o Core: Added a "Windows mode" that uses plain Java buffers instead of mmap().
+o Core: Expanded id space for all primitives by adding one more bit.
+o Core: Read only transactions have been optimized to have much less overhead.
+o Core: New cache implementation based on soft references, which employs faster
+  gets and is more concurrent and memory efficient.
+o Core: OSGi enabled [thanks Andreas Kollegger]
+
+-Minor enhancements, changes and tweaks
+o Shell: Added a traverser command for creating custom traversers.
+o Shell: Added support of setting and listing array types.
+o Shell: "cd" command can now position itself on a relationship.
+o Shell: Output of "man" command has been improved.
 
 -Bug fixes
-o Fixed all known batch inserter bugs.
-o Fixed a bug that could cause multiple remove of same property to fail (should 
-  just return null if it doesn't exist).
+o Core: Fixed all known batch inserter bugs.
+o Core: Fixed a bug that could cause multiple remove of same property to fail
+  (should just return null if it doesn't exist).
 
--Shell
-o Output of "man" command has been improved.
-o Added a traverser command allowing to create custom traverses within the 
-  shell.
-o Added support of setting and listing array types.
-o "cd" command can now position itself on a relationship.
 
 1.0-b8 (2009-05-03)
 -------------------
@@ -78,6 +79,7 @@ o Testing on Windows Vista platform has revealed a strange performance
   requests to Neo (10x performance decrease has been observed on same hardware).
   For production systems we recommend using GNU Linux or Solaris OS with Sun's
   1.6 JVM for best performance.
+
 
 1.0-b7 (2008-09-29)
 ------------------
