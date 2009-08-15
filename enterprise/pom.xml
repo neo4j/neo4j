@@ -11,7 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo</artifactId>
-  <version>1.0-b9-SNAPSHOT</version>
+  <version>1.0-b10-SNAPSHOT</version>
   <name>Neo4j - Neo</name>
   <description>
 Neo4j is a lightweight, embedded Java database designed to store data structured
@@ -106,7 +106,7 @@ as graphs rather than tables. For more information, see http://neo4j.org.
           <includes>
             <include>org/neo4j/api/**</include>
           </includes>
-          <comparisonVersion>1.0-b8</comparisonVersion>
+          <comparisonVersion>1.0-b9</comparisonVersion>
         </configuration>
       </plugin>
     </plugins>
@@ -121,7 +121,7 @@ as graphs rather than tables. For more information, see http://neo4j.org.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>shell</artifactId>
-      <version>1.0-b9-SNAPSHOT</version>
+      <version>1.0-b10-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -158,8 +158,8 @@ as graphs rather than tables. For more information, see http://neo4j.org.
           <includes>
             <include>org/neo4j/api/**</include>
           </includes>
-          <version>1.0-b9-SNAPSHOT</version>
-          <comparisonVersion>1.0-b8</comparisonVersion>
+          <version>1.0-b10-SNAPSHOT</version>
+          <comparisonVersion>1.0-b9</comparisonVersion>
         </configuration>
       </plugin>
     </plugins>
