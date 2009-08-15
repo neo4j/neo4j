@@ -14,7 +14,7 @@ import java.util.Stack;
 
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.util.FilteringIterable;
+import org.neo4j.commons.iterator.FilteringIterable;
 import org.neo4j.util.matching.filter.AbstractFilterExpression;
 import org.neo4j.util.matching.filter.FilterBinaryNode;
 import org.neo4j.util.matching.filter.FilterExpression;
