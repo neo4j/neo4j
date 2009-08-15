@@ -28,8 +28,8 @@ public class EmbeddedNeoResource extends AbstractResource implements
 
     EmbeddedNeoResource( final EmbeddedNeo neo )
     {
-        super( neo.getConfig().getPersistenceModule().getPersistenceSource()
-            .getXaDataSource() );
+        super( neo.getConfig().getPersistenceModule().getPersistenceManager()
+            .getPersistenceSource().getXaDataSource() );
         this.neo = neo;
         this.xaDsm = neo.getConfig().getTxModule().getXaDataSourceManager();
     }
@@ -47,7 +47,7 @@ public class EmbeddedNeoResource extends AbstractResource implements
     public XaDataSourceResource getDataSource()
     {
         XaDataSource ds = neo.getConfig().getPersistenceModule()
-            .getPersistenceSource().getXaDataSource();
+            .getPersistenceManager().getPersistenceSource().getXaDataSource();
         if ( ds == null )
         {
             return null;
