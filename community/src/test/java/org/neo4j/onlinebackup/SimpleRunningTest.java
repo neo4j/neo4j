@@ -43,7 +43,8 @@ public class SimpleRunningTest
 
         EmbeddedNeo neo = Util.startNeoInstance( STORE_LOCATION_DIR );
         ((NeoStoreXaDataSource) neo.getConfig().getPersistenceModule()
-            .getPersistenceSource().getXaDataSource()).keepLogicalLogs( true );
+            .getPersistenceManager().getPersistenceSource()
+            .getXaDataSource()).keepLogicalLogs( true );
 
         Transaction tx = neo.beginTx();
         try
@@ -65,7 +66,8 @@ public class SimpleRunningTest
     {
         EmbeddedNeo neo = Util.startNeoInstance( STORE_LOCATION_DIR );
         ((NeoStoreXaDataSource) neo.getConfig().getPersistenceModule()
-            .getPersistenceSource().getXaDataSource()).keepLogicalLogs( true );
+            .getPersistenceManager().getPersistenceSource().getXaDataSource())
+            .keepLogicalLogs( true );
         System.out.println( "backing up original db without any changes" );
         tryBackup( neo, BACKUP_LOCATION_DIR, 1 );
 

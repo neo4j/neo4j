@@ -49,7 +49,8 @@ public class MultiRunningTest
 
         EmbeddedNeo neo = Util.startNeoInstance( STORE_LOCATION_DIR );
         XaDataSource neoStoreXaDataSource = neo.getConfig()
-            .getPersistenceModule().getPersistenceSource().getXaDataSource();
+            .getPersistenceModule().getPersistenceManager()
+            .getPersistenceSource().getXaDataSource();
         neoStoreXaDataSource.keepLogicalLogs( true );
 
         IndexService indexService = new LuceneIndexService( neo );
@@ -79,7 +80,8 @@ public class MultiRunningTest
         System.out.println( "starting tests" );
         EmbeddedNeo neo = Util.startNeoInstance( STORE_LOCATION_DIR );
         ((NeoStoreXaDataSource) neo.getConfig().getPersistenceModule()
-            .getPersistenceSource().getXaDataSource()).keepLogicalLogs( true );
+            .getPersistenceManager().getPersistenceSource()
+            .getXaDataSource()).keepLogicalLogs( true );
         IndexService indexService = new LuceneIndexService( neo );
         XaDataSourceManager xaDsm = neo.getConfig().getTxModule()
             .getXaDataSourceManager();
