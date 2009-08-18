@@ -573,6 +573,30 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         return allBytes;
     }
 
+    private int findHighIdBackwards() throws IOException
+    {
+        FileChannel fileChannel = getFileChannel();
+        int recordSize = getBlockSize();
+        long fileSize = fileChannel.size();
+        long highId = fileSize / recordSize;
+        ByteBuffer byteBuffer = ByteBuffer.allocate( 1 );
+        for ( long i = highId; i > 0; i-- )
+        {
+            fileChannel.position( i * recordSize );
+            if ( fileChannel.read( byteBuffer ) > 0 )
+            {
+                byteBuffer.flip();
+                byte inUse = byteBuffer.get();
+                byteBuffer.clear();
+                if ( inUse != 0 )
+                {
+                    return (int) i;
+                }
+            }
+        }
+        return 0;
+    }
+    
     /**
      * Rebuilds the internal id generator keeping track of what blocks are free
      * or taken.
@@ -605,27 +629,41 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         try
         {
             long fileSize = fileChannel.size();
+            boolean fullRebuild = true;
+            if ( getConfig() != null )
+            {
+                String mode = (String) 
+                    getConfig().get( "rebuild_idgenerators_fast" );
+                if ( mode != null && mode.toLowerCase().equals( "true" ) )
+                {
+                    fullRebuild = false;
+                    highId = findHighIdBackwards();
+                }
+            }
             ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
             LinkedList<Integer> freeIdList = new LinkedList<Integer>();
-            for ( long i = 1; i * getBlockSize() < fileSize; i++ )
+            if ( fullRebuild )
             {
-                fileChannel.position( i * getBlockSize() );
-                fileChannel.read( byteBuffer );
-                byteBuffer.flip();
-                byte inUse = byteBuffer.get();
-                byteBuffer.flip();
-                nextBlockId();
-                if ( inUse == Record.NOT_IN_USE.byteValue() )
+                for ( long i = 1; i * getBlockSize() < fileSize; i++ )
                 {
-                    freeIdList.add( (int) i );
-                }
-                else
-                {
-                    highId = (int) i;
-                    while ( !freeIdList.isEmpty() )
+                    fileChannel.position( i * getBlockSize() );
+                    fileChannel.read( byteBuffer );
+                    byteBuffer.flip();
+                    byte inUse = byteBuffer.get();
+                    byteBuffer.flip();
+                    nextBlockId();
+                    if ( inUse == Record.NOT_IN_USE.byteValue() )
                     {
-                        freeBlockId( freeIdList.removeFirst() );
-                        defraggedCount++;
+                        freeIdList.add( (int) i );
+                    }
+                    else
+                    {
+                        highId = (int) i;
+                        while ( !freeIdList.isEmpty() )
+                        {
+                            freeBlockId( freeIdList.removeFirst() );
+                            defraggedCount++;
+                        }
                     }
                 }
             }
