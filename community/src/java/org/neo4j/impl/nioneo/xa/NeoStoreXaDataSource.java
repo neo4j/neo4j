@@ -126,6 +126,7 @@ public class NeoStoreXaDataSource extends XaDataSource
             }
         }
         String store = (String) config.get( "neo_store" );
+        config.put( "rebuild_idgenerators_fast", "true" );
         File file = new File( store );
         String create = config.getProperty( "create" );
         if ( !file.exists() && "true".equals( create ) )
