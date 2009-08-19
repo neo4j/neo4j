@@ -97,7 +97,10 @@ public class Trav extends NeoApp
         assertCurrentIsNode( session );
         
         Node node = this.getCurrent( session ).asNode();
-        Object[] relationshipTypes = parseRelationshipTypes( parser, out );
+        boolean caseInsensitiveFilters = parser.options().containsKey( "i" );
+        boolean looseFilters = parser.options().containsKey( "l" );
+        Object[] relationshipTypes = parseRelationshipTypes( parser, out,
+            caseInsensitiveFilters, looseFilters );
         if ( relationshipTypes.length == 0 )
         {
             out.println( "No matching relationship types" );
@@ -112,8 +115,6 @@ public class Trav extends NeoApp
         String filterString = parser.options().get( "f" );
         Map<String, Object> filterMap = filterString != null ?
             parseFilter( filterString, out ) : null;
-        boolean caseInsensitiveFilters = parser.options().containsKey( "i" );
-        boolean looseFilters = parser.options().containsKey( "l" );
         String commandToRun = parser.options().get( "c" );
         String[] commandsToRun = commandToRun != null ?
             commandToRun.split( Pattern.quote( "&&" ) ) : new String[ 0 ];
@@ -252,7 +253,8 @@ public class Trav extends NeoApp
     }
 
     private Object[] parseRelationshipTypes( AppCommandParser parser,
-        Output out ) throws ShellException, RemoteException
+        Output out, boolean caseInsensitiveFilters, boolean looseFilters )
+        throws ShellException, RemoteException
     {
         String option = parser.options().get( "r" );
         List<Object> result = new ArrayList<Object>();
@@ -282,12 +284,13 @@ public class Trav extends NeoApp
                 Direction direction = getDirection( ( String ) entry.getValue(),
                     Direction.BOTH );
                 
-                Pattern typePattern = Pattern.compile( type );
+                Pattern typePattern =
+                    newPattern( type, caseInsensitiveFilters );
                 for ( RelationshipType relationshipType : allRelationshipTypes )
                 {
                     if ( relationshipType.name().equals( type ) ||
                     	matches( typePattern, relationshipType.name(),
-                        true, false ) )
+                    	    caseInsensitiveFilters, looseFilters ) )
                     {
                         result.add( relationshipType );
                         result.add( direction );
