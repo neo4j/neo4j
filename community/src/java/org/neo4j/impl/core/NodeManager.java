@@ -41,6 +41,7 @@ import org.neo4j.impl.cache.LruCache;
 import org.neo4j.impl.cache.SoftLruCache;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
+import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.persistence.IdGenerator;
@@ -577,6 +578,58 @@ public class NodeManager
         return persistenceManager.loadPropertyValue( id );
     }
 
+    RelationshipChainPosition getRelationshipChainPosition( NodeImpl node )
+    {
+        return persistenceManager.getRelationshipChainPosition( 
+            (int) node.getId() );
+    }
+    
+    ArrayMap<String,IntArray> getMoreRelationships( NodeImpl node ) 
+    {
+        try
+        {
+            int nodeId = (int) node.getId();
+            RelationshipChainPosition position = node.getRelChainPosition();
+            Iterable<RelationshipData> rels = 
+                persistenceManager.getMoreRelationships( nodeId, position );
+            ArrayMap<String,IntArray> newRelationshipMap = 
+                new ArrayMap<String,IntArray>();
+            for ( RelationshipData rel : rels )
+            {
+                int relId = rel.getId();
+                RelationshipImpl relImpl = relCache.get( relId );
+                RelationshipType type = null;
+                if ( relImpl == null )
+                {
+                    type = getRelationshipTypeById( rel.relationshipType() );
+                    assert type != null;
+                    relImpl = new RelationshipImpl( relId, rel.firstNode(),
+                        rel.secondNode(), type, false, this );
+                    relCache.put( relId, relImpl );
+                }
+                else
+                {
+                    type = relImpl.getType();
+                }
+                IntArray relationshipSet = newRelationshipMap.get( 
+                    type.name() );
+                if ( relationshipSet == null )
+                {
+                    relationshipSet = new IntArray();
+                    newRelationshipMap.put( type.name(), relationshipSet );
+                }
+                relationshipSet.add( relId );
+            }
+            return newRelationshipMap;
+        }
+        catch ( Exception e )
+        {
+            log.severe( "Failed loading more relationships for [" + 
+                node + "]" );
+            throw new RuntimeException( e );
+        }
+    }
+    
     ArrayMap<String,IntArray> loadRelationships( NodeImpl node )
     {
         try

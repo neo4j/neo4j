@@ -20,16 +20,18 @@
 package org.neo4j.impl.core;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.Node;
 import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.Relationship;
+import org.neo4j.api.core.RelationshipType;
 
 class IntArrayIterator implements Iterable<Relationship>,
     Iterator<Relationship>
@@ -38,38 +40,43 @@ class IntArrayIterator implements Iterable<Relationship>,
         .getLogger( IntArrayIterator.class.getName() );
 
     private Iterator<RelTypeElementIterator> typeIterator;
-    private Iterator<Integer> currentTypeIterator = null;
-    private Node fromNode;
+    private RelTypeElementIterator currentTypeIterator = null;
+    private NodeImpl fromNode;
     private Direction direction = null;
     private Relationship nextElement = null;
     private final NodeManager nodeManager;
     private int position = 0;
+    private final RelationshipType types[];
 
-    IntArrayIterator( List<RelTypeElementIterator> rels, Node fromNode,
-        Direction direction, NodeManager nodeManager )
+    private Set<String> visitedTypes = new HashSet<String>();
+    
+    IntArrayIterator( List<RelTypeElementIterator> rels, NodeImpl fromNode,
+        Direction direction, NodeManager nodeManager, RelationshipType[] types )
     {
         this.typeIterator = rels.iterator();
         if ( typeIterator.hasNext() )
         {
             currentTypeIterator = typeIterator.next();
+            visitedTypes.add( currentTypeIterator.getType() );
         }
         else
         {
-            currentTypeIterator = Collections.EMPTY_LIST.iterator();
+            currentTypeIterator = new NullRelTypeElement();
         }
         this.fromNode = fromNode;
         this.direction = direction;
         this.nodeManager = nodeManager;
+        this.types = types;
     }
 
-    IntArrayIterator( Iterator<RelTypeElementIterator> rels, Node fromNode,
-        Direction direction, NodeManager nodeManager )
-    {
-        this.typeIterator = rels;
-        this.fromNode = fromNode;
-        this.direction = direction;
-        this.nodeManager = nodeManager;
-    }
+//    IntArrayIterator( Iterator<RelTypeElementIterator> rels, NodeImpl fromNode,
+//        Direction direction, NodeManager nodeManager )
+//    {
+//        this.typeIterator = rels;
+//        this.fromNode = fromNode;
+//        this.direction = direction;
+//        this.nodeManager = nodeManager;
+//    }
     
     public Iterator<Relationship> iterator()
     {
@@ -115,9 +122,45 @@ class IntArrayIterator implements Iterable<Relationship>,
                         "Unable to get relationship " + nextId, e );
                 }
             }
-            while ( !currentTypeIterator.hasNext() && typeIterator.hasNext() )
+            while ( !currentTypeIterator.hasNext() )
             {
-                currentTypeIterator = typeIterator.next();
+                if ( typeIterator.hasNext() )
+                {
+                    currentTypeIterator = typeIterator.next();
+                    visitedTypes.add( currentTypeIterator.getType() );
+                }
+                else 
+                {
+                    boolean gotMore = fromNode.getMoreRelationships();
+                    List<RelTypeElementIterator> list = Collections.EMPTY_LIST;
+                    if ( types.length == 0 )
+                    {
+                        list = fromNode.getAllRelationships();
+                    }
+                    else
+                    {
+                        list = fromNode.getAllRelationshipsOfType( types );
+                    }
+                    Iterator<RelTypeElementIterator> itr = list.iterator();
+                    while ( itr.hasNext() )
+                    {
+                        RelTypeElementIterator element = itr.next();
+                        if ( visitedTypes.contains( element.getType() ) )
+                        {
+                            itr.remove();
+                        }
+                    }
+                    typeIterator = list.iterator();
+                    if ( typeIterator.hasNext() )
+                    {
+                        currentTypeIterator = typeIterator.next();
+                        visitedTypes.add( currentTypeIterator.getType() );
+                    }
+                    if ( !gotMore )
+                    {
+                        break;
+                    }
+                }
             }
          } while ( currentTypeIterator.hasNext() );
         // no next element found
