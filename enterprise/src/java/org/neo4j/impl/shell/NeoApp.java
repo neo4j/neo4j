@@ -89,7 +89,7 @@ public abstract class NeoApp extends AbstractApp
     
     protected NeoShellServer getNeoServer()
     {
-        return (NeoShellServer) this.getServer();
+        return ( NeoShellServer ) this.getServer();
     }
 
     protected RelationshipType getRelationshipType( String name )

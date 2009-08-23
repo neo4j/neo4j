@@ -23,7 +23,17 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import org.neo4j.api.core.NeoService;
 import org.neo4j.api.core.Transaction;
+import org.neo4j.impl.shell.apps.Cd;
+import org.neo4j.impl.shell.apps.Gsh;
+import org.neo4j.impl.shell.apps.Jsh;
 import org.neo4j.impl.shell.apps.Ls;
+import org.neo4j.impl.shell.apps.Mkrel;
+import org.neo4j.impl.shell.apps.Mv;
+import org.neo4j.impl.shell.apps.Pwd;
+import org.neo4j.impl.shell.apps.Rm;
+import org.neo4j.impl.shell.apps.Rmrel;
+import org.neo4j.impl.shell.apps.Set;
+import org.neo4j.impl.shell.apps.Trav;
 import org.neo4j.util.shell.AbstractClient;
 import org.neo4j.util.shell.BashVariableInterpreter;
 import org.neo4j.util.shell.Session;
@@ -49,7 +59,7 @@ public class NeoShellServer extends SimpleAppServer
     public NeoShellServer( NeoService neo ) throws RemoteException
     {
         super();
-        this.addPackage( Ls.class.getPackage().getName() );
+        addNeoApps();
         this.neo = neo;
         this.bashInterpreter = new BashVariableInterpreter();
         this.bashInterpreter.addReplacer( "W", new WorkingDirReplacer() );
@@ -63,6 +73,21 @@ public class NeoShellServer extends SimpleAppServer
     public String welcome()
     {
         return "Welcome to NeoShell\n" + Help.getHelpString( this );
+    }
+    
+    private void addNeoApps()
+    {
+        addApp( Cd.class );
+        addApp( Gsh.class );
+        addApp( Jsh.class );
+        addApp( Ls.class );
+        addApp( Mkrel.class );
+        addApp( Mv.class );
+        addApp( Pwd.class );
+        addApp( Rm.class );
+        addApp( Rmrel.class );
+        addApp( Set.class );
+        addApp( Trav.class );
     }
 
     @Override
