@@ -21,8 +21,12 @@ package org.neo4j.util.shell;
 
 import java.rmi.RemoteException;
 
+import org.neo4j.util.shell.apps.Env;
+import org.neo4j.util.shell.apps.Export;
+import org.neo4j.util.shell.apps.Help;
 import org.neo4j.util.shell.apps.Man;
 import org.neo4j.util.shell.apps.extra.Gsh;
+import org.neo4j.util.shell.apps.extra.Jsh;
 
 /**
  * A common concrete implement of an {@link AppShellServer} which contains
@@ -37,15 +41,24 @@ public class SimpleAppServer extends AbstractAppServer
 	public SimpleAppServer() throws RemoteException
 	{
 		super();
-		this.addPackage( Man.class.getPackage().getName() );
+		addStandardApps();
 	}
 	
-	protected void addExtraPackage()
+	protected void addStandardApps()
 	{
-		this.addPackage( Gsh.class.getPackage().getName() );
+	    addApp( Env.class );
+	    addApp( Export.class );
+	    addApp( Help.class );
+	    addApp( Man.class );
 	}
 	
-	private App findBuiltInApp( String command )
+	protected void addExtraApps()
+	{
+	    addApp( Gsh.class );
+	    addApp( Jsh.class );
+	}
+	
+	protected App findBuiltInApp( String command )
 	{
 		return null;
 	}

@@ -19,85 +19,53 @@
  */
 package org.neo4j.util.shell;
 
+import java.util.Map;
+
 /**
  * Convenience main class for starting a client which connects to a remote
  * server. Which port/name to connect to may be specified as arguments.
  */
 public class StartRemoteClient extends AbstractStarter
 {
-	/**
-	 * Starts a client and connects to a remote server.
-	 * @param args may contain RMI port/name to the server.
-	 */
-	public static void main( String[] args )
-	{
-		try
-		{
-			printGreeting( args );
-			ShellClient client = ShellLobby.newClient(
-			    getPort( args ), getShellName( args ) );
-			setSessionVariablesFromArgs( client, args );
-			client.grabPrompt();
-		}
-		catch ( Exception e )
-		{
-			System.err.println( "Can't start client shell: " + e );
-			System.exit( 1 );
-		}
-	}
-	
-	private static void printGreeting( String[] args )
-	{
-		if ( args.length == 0 )
-		{
-			System.out.println( "NOTE: No port or RMI name specified, using " +
-				"default port " + AbstractServer.DEFAULT_PORT + " and name '" +
-				AbstractServer.DEFAULT_NAME + "'." );
-		}
-	}
-	
-	private static String getArg( String[] args, int index )
-	{
-	    int counter = 0;
-	    for ( String arg : args )
-	    {
-	        if ( !arg.startsWith( "-" ) )
-	        {
-	            if ( counter == index )
-	            {
-	                return arg;
-	            }
-	            counter++;
-	        }
-	    }
-	    throw new ArrayIndexOutOfBoundsException();
-	}
-	
-	private static int getPort( String[] args )
-	{
-		try
-		{
-		    String arg = getArg( args, 0 );
-			return arg != null ? Integer.parseInt( arg ) :
-				AbstractServer.DEFAULT_PORT;
-		}
-		catch ( ArrayIndexOutOfBoundsException e )
-		// Intentionally let NumberFormat propagate out to user
-		{
-			return AbstractServer.DEFAULT_PORT;
-		}
-	}
-	
-	private static String getShellName( String[] args )
-	{
-		try
-		{
-		    String arg = getArg( args, 1 );
-			return arg != null ? arg : AbstractServer.DEFAULT_NAME;
-		}
-		catch ( ArrayIndexOutOfBoundsException e )
-		{
-			return AbstractServer.DEFAULT_NAME;
-		}
-	}
+    public static final String ARG_PORT = "port";
+    public static final String ARG_NAME = "name";
+    
+    /**
+     * Starts a client and connects to a remote server.
+     * 
+     * @param args may contain RMI port/name to the server.
+     */
+    public static void main( String[] args )
+    {
+        try
+        {
+            Map<String, String> argMap = parseArgs( args );
+            int port = getPort( argMap );
+            String name = getShellName( argMap );
+            ShellClient client = ShellLobby.newClient( port, name );
+            System.out.println( "NOTE: Using remote neo at port=" + port +
+                " and RMI name=" + name );
+            setSessionVariablesFromArgs( client, args );
+            client.grabPrompt();
+        }
+        catch ( Exception e )
+        {
+            System.err.println( "Can't start remote client shell: " + e );
+            e.printStackTrace( System.err );
+            System.exit( 1 );
+        }
+    }
+
+    private static int getPort( Map<String, String> argMap )
+    {
+        String arg = argMap.get( ARG_PORT );
+        return arg != null ? Integer.parseInt( arg ) :
+            AbstractServer.DEFAULT_PORT;
+    }
+
+    private static String getShellName( Map<String, String> argMap )
+    {
+        String arg = argMap.get( ARG_NAME );
+        return arg != null ? arg : AbstractServer.DEFAULT_NAME;
+    }
 }

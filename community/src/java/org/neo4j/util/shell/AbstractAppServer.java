@@ -19,11 +19,10 @@
  */
 package org.neo4j.util.shell;
 
-import java.lang.reflect.Modifier;
 import java.rmi.RemoteException;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
@@ -35,8 +34,8 @@ import java.util.TreeSet;
 public abstract class AbstractAppServer extends AbstractServer
 	implements AppShellServer
 {
-	private Set<String> packages = new HashSet<String>();
-//	private Set<String> availableCommands;
+	private Map<String, Class<? extends App>> apps =
+	    new TreeMap<String, Class<? extends App>>();
 
 	/**
 	 * Constructs a new server.
@@ -48,53 +47,35 @@ public abstract class AbstractAppServer extends AbstractServer
 		super();
 	}
 
-	/**
-	 * Adds a package to scan for apps.
-	 * @param pkg the java package, f.ex. "org.neo4j.util.shell.apps".
-	 */
-	public void addPackage( String pkg )
+	public void addApp( Class<? extends App> appClass )
 	{
-		this.packages.add( pkg );
+		this.apps.put( appClass.getSimpleName().toLowerCase(), appClass );
 	}
 	
-	/**
-	 * @return packages added by {@link #addPackage(String)}.
-	 */
-	public Set<String> getPackages()
+	public Set<Class<? extends App>> getApps()
 	{
-		return new HashSet<String>( packages );
+		return new TreeSet<Class<? extends App>>( this.apps.values() );
 	}
 
 	public App findApp( String command )
 	{
-		for ( String pkg : this.packages )
-		{
-			String name = pkg + "." +
-				command.substring( 0, 1 ).toUpperCase() +
-				command.substring( 1, command.length() ).toLowerCase();
-			try
-			{
-				Class<?> cls = Class.forName( name );
-				if ( !cls.isInterface() && App.class.isAssignableFrom( cls ) &&
-					!Modifier.isAbstract( cls.getModifiers() ) )
-				{
-					App theApp = ( App ) cls.newInstance();
-					theApp.setServer( this );
-					return theApp;
-				}
-			}
-			catch ( Exception e )
-			{
-			}
-			catch ( NoClassDefFoundError e )
-			{
-				// Well, if you at the prompt hit the name 'nodeorrelationship'
-				// f.ex. then a NoClassDefFoundError will be thrown since
-				// there exists a class by that name, but the case is wrong.
-				// In this particular case the class is NodeOrRelationship.
-			}
-		}
-		return null;
+	    Class<? extends App> app = this.apps.get( command );
+	    if ( app == null )
+	    {
+	        return null;
+	    }
+	    
+	    App result = null;
+	    try
+        {
+            result = app.newInstance();
+            ( ( AbstractApp ) result ).setServer( this );
+        }
+        catch ( Exception e )
+        {
+            // TODO It's OK, or is it?
+        }
+        return result;
 	}
 
 	public String interpretLine( String line, Session session, Output out )
@@ -112,18 +93,6 @@ public abstract class AbstractAppServer extends AbstractServer
 	@Override
 	public Iterable<String> getAllAvailableCommands()
 	{
-		return findAllApps();
-	}
-	
-	protected Set<String> findAllApps()
-	{
-		Collection<? extends Class<?>> apps = ClassLister.
-			listClassesExtendingOrImplementing( App.class, this.packages );
-		Set<String> set = new TreeSet<String>();
-		for ( Class<?> app : apps )
-		{
-			set.add( app.getSimpleName().toLowerCase() );
-		}
-		return set;
+		return this.apps.keySet();
 	}
 }

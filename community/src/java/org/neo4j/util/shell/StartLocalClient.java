@@ -19,20 +19,26 @@
  */
 package org.neo4j.util.shell;
 
+import java.util.Map;
+
 public class StartLocalClient extends AbstractStarter
 {
+    public static final String ARG_PATH = "path";
+    
     public static void main( String[] args )
     {
-        if ( args.length == 0 )
+        Map<String, String> argMap = parseArgs( args );
+        String neoDbPath = argMap.get( ARG_PATH );
+        if ( neoDbPath == null )
         {
-            System.out.println( "ERROR: To start a local neo service and a " +
+            System.err.println( "ERROR: To start a local neo service and a " +
                 "shell client on top of that you need to supply a path to a " +
                 "neo store or just a new path where a new neo store will " +
-                "be created if it doesn't exist" );
+                "be created if it doesn't exist. -" + ARG_PATH +
+                " /my/path/here" );
             return;
         }
         
-        String neoDbPath = args[ 0 ];
         try
         {
             tryStartLocalServerAndClient( neoDbPath, args );

@@ -61,11 +61,12 @@ A generic command shell with a client and server part
         <configuration>
           <archive>
             <manifest>
-              <mainClass>org.neo4j.util.shell.StartRemoteClient</mainClass>
+              <mainClass>org.neo4j.util.shell.StartClient</mainClass>
               <packageName>org.neo4j.util.shell</packageName>
             </manifest>
             <manifestEntries>
               <url>http://neo4j.org</url>
+              <Class-Path>neo-${version}.jar jta-1.1.jar</Class-Path>
             </manifestEntries>
           </archive>
         </configuration>
