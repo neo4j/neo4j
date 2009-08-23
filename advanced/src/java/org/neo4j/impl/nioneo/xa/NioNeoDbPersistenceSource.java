@@ -25,6 +25,7 @@ import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
+import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
@@ -260,6 +261,18 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
                 "This is a read only transaction, " + 
                 "this method should never be invoked" );
         }
+
+        public RelationshipChainPosition getRelationshipChainPosition( 
+            int nodeId )
+        {
+            return neoTransaction.getRelationshipChainPosition( nodeId );
+        }
+
+        public Iterable<RelationshipData> getMoreRelationships( int nodeId,  
+            RelationshipChainPosition position )
+        {
+            return neoTransaction.getMoreRelationships( nodeId, position );
+        }
     }
 
     private static class NioNeoDbResourceConnection implements
@@ -415,6 +428,18 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         public void createRelationshipType( int id, String name )
         {
             relTypeConsumer.addRelationshipType( id, name );
+        }
+
+        public RelationshipChainPosition getRelationshipChainPosition( 
+            int nodeId )
+        {
+            return relConsumer.getRelationshipChainPosition( nodeId );
+        }
+
+        public Iterable<RelationshipData> getMoreRelationships( int nodeId, 
+            RelationshipChainPosition position )
+        {
+            return relConsumer.getMoreRelationships( nodeId, position );
         }
     }
 

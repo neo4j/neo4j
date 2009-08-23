@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.neo4j.impl.util.IntArray;
 
-class RelTypeElement implements RelTypeElementIterator
+class RelTypeElement extends RelTypeElementIterator
 {
     private final IntArray src;
     private final IntArray add;
@@ -35,18 +35,20 @@ class RelTypeElement implements RelTypeElementIterator
     private int position = 0;
     private Integer nextElement = null;
     
-    static RelTypeElementIterator create( IntArray src, IntArray add, 
-        IntArray remove )
+    static RelTypeElementIterator create( String type, NodeImpl node, 
+        IntArray src, IntArray add, IntArray remove )
     {
         if ( add == null && remove == null )
         {
-            return new FastRelTypeElement( src );
+            return new FastRelTypeElement( type, node, src );
         }
-        return new RelTypeElement( src, add, remove );
+        return new RelTypeElement( type, node, src, add, remove );
     }
     
-    private RelTypeElement( IntArray src, IntArray add, IntArray remove )
+    private RelTypeElement( String type, NodeImpl node, IntArray src, 
+        IntArray add, IntArray remove )
     {
+        super( type, node );
         this.src = src;
         if ( src == null )
         {
@@ -72,20 +74,6 @@ class RelTypeElement implements RelTypeElementIterator
         {
             return true;
         }
-        while ( !srcTraversed && position < src.length() )
-        {
-            int value = src.get( position++ );
-            if ( position >= src.length() )
-            {
-                srcTraversed = true;
-                position = 0;
-            }
-            if ( !remove.contains( value ) )
-            {
-                nextElement = value;
-                return true;
-            }
-        }
         while ( !addTraversed && position < add.length() )
         {
             int value = add.get( position++ );
@@ -94,6 +82,26 @@ class RelTypeElement implements RelTypeElementIterator
                 addTraversed = true;
                 position = 0;
             }
+            if ( !remove.contains( value ) )
+            {
+                nextElement = value;
+                return true;
+            }
+        }
+        while ( !srcTraversed )
+        {
+            if ( position >= src.length() )
+            {
+                while ( getNode().getMoreRelationships() && 
+                    position >= src.length() );
+                if ( position >= src.length() )
+                {
+                    srcTraversed = true;
+                    position = 0;
+                    return false;
+                }
+            }
+            int value = src.get( position++ );
             if ( !remove.contains( value ) )
             {
                 nextElement = value;

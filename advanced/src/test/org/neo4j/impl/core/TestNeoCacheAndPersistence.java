@@ -20,7 +20,11 @@
 package org.neo4j.impl.core;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import javax.transaction.TransactionManager;
 
@@ -28,6 +32,7 @@ import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
+import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
 import org.neo4j.impl.AbstractNeoTestCase;
 import org.neo4j.impl.MyRelTypes;
@@ -393,5 +398,120 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
         rel.delete();
         node1.delete();
         node2.delete();
+    }
+    
+    public void testRelationshipCahinIterator()
+    {
+        Node node1 = getNeo().createNode();
+        Node node2 = getNeo().createNode();
+        Relationship rels[] = new Relationship[100];
+        for ( int i = 0; i < rels.length; i++ )
+        {
+            if ( i < 50 )
+            {
+                rels[i] = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            }
+            else
+            {
+                rels[i] = node2.createRelationshipTo( node1, MyRelTypes.TEST );
+            }
+        }
+        newTransaction();
+        getNodeManager().clearCache();
+        Iterable<Relationship> relIterable = node1.getRelationships();
+        for ( Relationship rel : rels )
+        {
+            rel.delete();
+        }
+        newTransaction();
+        for ( Relationship rel : relIterable )
+        {
+            System.out.println( rel );
+        }
+        node1.delete();
+        node2.delete();
+    }
+    
+    public void testLowGrabSize()
+    {
+        Map<String,String> config = new HashMap<String,String>();
+        config.put( "relationship_grab_size", "1" );
+        EmbeddedNeo neo = new EmbeddedNeo( "var/neo2", config );
+        Transaction tx = neo.beginTx();
+        Node node1 = neo.createNode();
+        Node node2 = neo.createNode();
+        node1.createRelationshipTo( node2, MyRelTypes.TEST );
+        node2.createRelationshipTo( node1, MyRelTypes.TEST2 );
+        node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL );
+        tx.success();
+        tx.finish();
+        tx = neo.beginTx();
+        Set<Relationship> rels = new HashSet<Relationship>();
+        RelationshipType types[] = new RelationshipType[] { 
+            MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL };
+        neo.getConfig().getNeoModule().getNodeManager().clearCache();
+        
+        for ( Relationship rel : node1.getRelationships( types ) )
+        {
+            assertTrue( rels.add( rel ) );
+        }
+        assertEquals( 3, rels.size() );
+        rels.clear();
+        neo.getConfig().getNeoModule().getNodeManager().clearCache();
+        for ( Relationship rel : node1.getRelationships() )
+        {
+            assertTrue( rels.add( rel ) );
+        }
+        assertEquals( 3, rels.size() );
+
+        rels.clear();
+        neo.getConfig().getNeoModule().getNodeManager().clearCache();
+        for ( Relationship rel : node2.getRelationships( types ) )
+        {
+            assertTrue( rels.add( rel ) );
+        }
+        assertEquals( 3, rels.size() );
+        rels.clear();
+        neo.getConfig().getNeoModule().getNodeManager().clearCache();
+        for ( Relationship rel : node2.getRelationships() )
+        {
+            assertTrue( rels.add( rel ) );
+        }
+        assertEquals( 3, rels.size() );
+
+        rels.clear();
+        neo.getConfig().getNeoModule().getNodeManager().clearCache();
+        for ( Relationship rel : node1.getRelationships( Direction.OUTGOING ) )
+        {
+            assertTrue( rels.add( rel ) );
+        }
+        assertEquals( 2, rels.size() );
+        rels.clear();
+        neo.getConfig().getNeoModule().getNodeManager().clearCache();
+        for ( Relationship rel : node1.getRelationships( Direction.INCOMING ) )
+        {
+            assertTrue( rels.add( rel ) );
+        }
+        assertEquals( 1, rels.size() );    
+        
+
+        rels.clear();
+        neo.getConfig().getNeoModule().getNodeManager().clearCache();
+        for ( Relationship rel : node2.getRelationships( Direction.OUTGOING ) )
+        {
+            assertTrue( rels.add( rel ) );
+        }
+        assertEquals( 1, rels.size() );
+        rels.clear();
+        neo.getConfig().getNeoModule().getNodeManager().clearCache();
+        for ( Relationship rel : node2.getRelationships( Direction.INCOMING ) )
+        {
+            assertTrue( rels.add( rel ) );
+        }
+        assertEquals( 2, rels.size() );
+        
+        tx.success();
+        tx.finish();
+        neo.shutdown();
     }
 }

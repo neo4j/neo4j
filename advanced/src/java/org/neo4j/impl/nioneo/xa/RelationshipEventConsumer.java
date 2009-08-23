@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
+import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -122,4 +123,9 @@ public interface RelationshipEventConsumer
      *             if unable to get the relationship
      */
     public RelationshipData getRelationship( int id );
+
+    public RelationshipChainPosition getRelationshipChainPosition( int nodeId );
+
+    public Iterable<RelationshipData> getMoreRelationships( int nodeId, 
+        RelationshipChainPosition position );
 }

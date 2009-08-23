@@ -199,6 +199,23 @@ public class RelationshipStore extends AbstractStore implements Store
         return record;
     }
 
+    private RelationshipRecord getFullRecord( int id, PersistenceWindow window )
+    {
+        Buffer buffer = window.getOffsettedBuffer( id );
+        byte inUse = buffer.get();
+        boolean inUseFlag = ((inUse & Record.IN_USE.byteValue()) == 
+            Record.IN_USE.byteValue());
+        RelationshipRecord record = new RelationshipRecord( id,
+            buffer.getInt(), buffer.getInt(), buffer.getInt() );
+        record.setInUse( inUseFlag );
+        record.setFirstPrevRel( buffer.getInt() );
+        record.setFirstNextRel( buffer.getInt() );
+        record.setSecondPrevRel( buffer.getInt() );
+        record.setSecondNextRel( buffer.getInt() );
+        record.setNextProp( buffer.getInt() );
+        return record;
+    }
+    
     public String toString()
     {
         return "RelStore";
@@ -222,5 +239,27 @@ public class RelationshipStore extends AbstractStore implements Store
             " Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
+    }
+
+    public RelationshipRecord getChainRecord( int relId )
+    {
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( relId, OperationType.READ );
+        }
+        catch ( StoreFailureException e )
+        {
+            // ok to high id
+            return null;
+        }
+        try
+        {
+            return getFullRecord( relId, window );
+        }
+        finally
+        {
+            releaseWindow( window );
+        }
     }
 }

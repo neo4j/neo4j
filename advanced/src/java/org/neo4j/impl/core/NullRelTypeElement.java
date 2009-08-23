@@ -18,26 +18,27 @@
  */
 package org.neo4j.impl.core;
 
-import java.util.Iterator;
+import java.util.NoSuchElementException;
 
-public abstract class RelTypeElementIterator implements Iterator<Integer>
+class NullRelTypeElement extends RelTypeElementIterator
 {
-    private final String type;
-    private final NodeImpl node;
-    
-    RelTypeElementIterator( String type, NodeImpl node )
+    NullRelTypeElement()
     {
-        this.type = type;
-        this.node = node;
+        super( null, null );
     }
-    
-    NodeImpl getNode()
+
+    public boolean hasNext()
     {
-        return node;
+        return false;
     }
-    
-    public String getType()
+
+    public Integer next()
     {
-        return type;
+        throw new NoSuchElementException();
+    }
+
+    public void remove()
+    {
+        throw new UnsupportedOperationException();
     }
 }

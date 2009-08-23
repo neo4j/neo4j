@@ -28,6 +28,7 @@ import org.neo4j.impl.nioneo.store.NodeStore;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
+import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
@@ -283,6 +284,20 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         public RelationshipData getRelationship( int id )
         {
             return xaCon.getNeoTransaction().relationshipLoad( id );
+        }
+
+        public RelationshipChainPosition getRelationshipChainPosition( 
+            int nodeId )
+        {
+            return xaCon.getNeoTransaction().getRelationshipChainPosition( 
+                nodeId );
+        }
+
+        public Iterable<RelationshipData> getMoreRelationships( int nodeId, 
+            RelationshipChainPosition position )
+        {
+            return xaCon.getNeoTransaction().getMoreRelationships( nodeId, 
+                position );
         }
     };
 

@@ -43,15 +43,34 @@ public class NeoStore extends AbstractStore
     private PropertyStore propStore;
     private RelationshipStore relStore;
     private RelationshipTypeStore relTypeStore;
+    
+    private final int REL_GRAB_SIZE;
 
     public NeoStore( Map<?,?> config )
     {
         super( (String) config.get( "neo_store" ), config );
+        if ( getConfig() != null )
+        {
+            String grabSize = (String) getConfig().get( "relationship_grab_size" );
+            if ( grabSize != null )
+            {
+                REL_GRAB_SIZE = Integer.parseInt( grabSize ); 
+            }
+            else
+            {
+                REL_GRAB_SIZE = 100;
+            }
+        }
+        else
+        {
+            REL_GRAB_SIZE = 100;
+        }
     }
 
     public NeoStore( String fileName )
     {
         super( fileName );
+        REL_GRAB_SIZE = 100;
     }
 
     /**
@@ -309,5 +328,10 @@ public class NeoStore extends AbstractStore
             " Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
+    }
+
+    public int getRelationshipGrabSize()
+    {
+        return REL_GRAB_SIZE;
     }
 }

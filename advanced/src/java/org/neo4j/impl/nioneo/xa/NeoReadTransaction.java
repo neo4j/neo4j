@@ -33,6 +33,7 @@ import org.neo4j.impl.nioneo.store.PropertyRecord;
 import org.neo4j.impl.nioneo.store.PropertyStore;
 import org.neo4j.impl.nioneo.store.PropertyType;
 import org.neo4j.impl.nioneo.store.Record;
+import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
@@ -53,6 +54,11 @@ class NeoReadTransaction
         return neoStore.getNodeStore();
     }
 
+    private int getRelGrabSize()
+    {
+        return neoStore.getRelationshipGrabSize();
+    }
+    
     private RelationshipStore getRelationshipStore()
     {
         return neoStore.getRelationshipStore();
@@ -79,6 +85,57 @@ class NeoReadTransaction
         return null;
     }
 
+    public RelationshipChainPosition getRelationshipChainPosition( int nodeId )
+    {
+        NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
+        int nextRel = nodeRecord.getNextRel();
+        return new RelationshipChainPosition( nextRel );
+    }
+
+    public Iterable<RelationshipData> getMoreRelationships( int nodeId, 
+        RelationshipChainPosition position )
+    {
+        int nextRel = position.getNextRecord();
+        List<RelationshipData> rels = new ArrayList<RelationshipData>();
+        for ( int i = 0; i < getRelGrabSize() && 
+            nextRel != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
+        {
+            RelationshipRecord relRecord = 
+                getRelationshipStore().getChainRecord( nextRel );
+            if ( relRecord == null )
+            {
+                // return what we got so far
+                position.setNextRecord( Record.NO_NEXT_RELATIONSHIP.intValue() );
+                return rels;
+            }
+            int firstNode = relRecord.getFirstNode();
+            int secondNode = relRecord.getSecondNode();
+            if ( relRecord.inUse() )
+            {
+                rels.add( new RelationshipData( relRecord.getId(), firstNode, 
+                    secondNode, relRecord.getType() ) );
+            }
+            else
+            {
+                i--;
+            }
+            if ( firstNode == nodeId )
+            {
+                nextRel = relRecord.getFirstNextRel();
+            }
+            else if ( secondNode == nodeId )
+            {
+                nextRel = relRecord.getSecondNextRel();
+            }
+            else
+            {
+                throw new RuntimeException( "GAH" );
+            }
+        }
+        position.setNextRecord( nextRel );
+        return rels;
+    }
+    
     public Iterable<RelationshipData> nodeGetRelationships( int nodeId )
     {
         NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
