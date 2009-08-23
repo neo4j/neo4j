@@ -27,6 +27,7 @@ import org.neo4j.impl.shell.apps.NodeOrRelationship.TypedId;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
+import org.neo4j.util.shell.ShellException;
 
 /**
  * Mimics the POSIX application with the same name, i.e. prints the current
@@ -42,7 +43,7 @@ public class Pwd extends NeoApp
 
     @Override
     protected String exec( AppCommandParser parser, Session session,
-        Output out ) throws RemoteException
+        Output out ) throws ShellException, RemoteException
     {
         NodeOrRelationship current = this.getCurrent( session );
         out.println( "Current is " +
@@ -57,6 +58,7 @@ public class Pwd extends NeoApp
     }
 
     private String stringifyPath( List<TypedId> pathIds, Session session )
+        throws ShellException
     {
         if ( pathIds.isEmpty() )
         {

@@ -37,6 +37,7 @@ import org.neo4j.impl.shell.apps.Trav;
 import org.neo4j.util.shell.AbstractClient;
 import org.neo4j.util.shell.BashVariableInterpreter;
 import org.neo4j.util.shell.Session;
+import org.neo4j.util.shell.ShellException;
 import org.neo4j.util.shell.ShellServer;
 import org.neo4j.util.shell.SimpleAppServer;
 import org.neo4j.util.shell.BashVariableInterpreter.Replacer;
@@ -92,7 +93,7 @@ public class NeoShellServer extends SimpleAppServer
 
     @Override
     public Serializable interpretVariable( String key, Serializable value,
-        Session session )
+        Session session ) throws ShellException
     {
         Transaction tx = getNeo().beginTx();
         try
@@ -127,6 +128,7 @@ public class NeoShellServer extends SimpleAppServer
     public static class WorkingDirReplacer implements Replacer
     {
         public String getReplacement( ShellServer server, Session session )
+            throws ShellException
         {
             return NeoApp.getDisplayName( ( NeoShellServer ) server, session,
                 NeoApp.getCurrent( ( NeoShellServer ) server,

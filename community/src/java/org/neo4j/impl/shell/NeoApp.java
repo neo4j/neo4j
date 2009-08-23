@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Node;
+import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
@@ -47,7 +48,7 @@ public abstract class NeoApp extends AbstractApp
     private static final String CURRENT_KEY = "CURRENT_DIR";
     
     protected static NodeOrRelationship getCurrent( NeoShellServer server,
-        Session session )
+        Session session ) throws ShellException
     {
         String currentThing = ( String ) safeGet( session, CURRENT_KEY );
         NodeOrRelationship result = null;
@@ -66,6 +67,7 @@ public abstract class NeoApp extends AbstractApp
     }
     
     protected NodeOrRelationship getCurrent( Session session )
+        throws ShellException
     {
         return getCurrent( getNeoServer(), session );
     }
@@ -110,23 +112,40 @@ public abstract class NeoApp extends AbstractApp
     }
     
     protected static NodeOrRelationship getThingById( NeoShellServer server,
-        TypedId typedId )
+        TypedId typedId ) throws ShellException
     {
         NodeOrRelationship result = null;
         if ( typedId.isNode() )
         {
-            result = NodeOrRelationship.wrap(
-                server.getNeo().getNodeById( typedId.getId() ) );
+            try
+            {
+                result = NodeOrRelationship.wrap(
+                    server.getNeo().getNodeById( typedId.getId() ) );
+            }
+            catch ( NotFoundException e )
+            {
+                throw new ShellException( "Node " + typedId.getId() +
+                    " not found", e );
+            }
         }
         else
         {
-            result = NodeOrRelationship.wrap(
-                server.getNeo().getRelationshipById( typedId.getId() ) );
+            try
+            {
+                result = NodeOrRelationship.wrap(
+                    server.getNeo().getRelationshipById( typedId.getId() ) );
+            }
+            catch ( NotFoundException e )
+            {
+                throw new ShellException( "Relationship " + typedId.getId() +
+                    " not found", e );
+            }
         }
         return result;
     }
     
     protected NodeOrRelationship getThingById( TypedId typedId )
+        throws ShellException
     {
         return getThingById( getNeoServer(), typedId );
     }
@@ -165,6 +184,7 @@ public abstract class NeoApp extends AbstractApp
         Output out ) throws ShellException, RemoteException;
 
     protected String getDisplayNameForCurrent( Session session )
+        throws ShellException
     {
         NodeOrRelationship current = getCurrent( session );
         return current.isNode() ? "(me)" : "<me>";
@@ -189,7 +209,7 @@ public abstract class NeoApp extends AbstractApp
     }
     
     public static String getDisplayName( NeoShellServer server,
-        Session session, TypedId typedId )
+        Session session, TypedId typedId ) throws ShellException
     {
         return getDisplayName( server, session,
             getThingById( server, typedId ) );
