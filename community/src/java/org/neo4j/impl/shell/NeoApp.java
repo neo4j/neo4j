@@ -125,7 +125,7 @@ public abstract class NeoApp extends AbstractApp
             catch ( NotFoundException e )
             {
                 throw new ShellException( "Node " + typedId.getId() +
-                    " not found", e );
+                    " not found" );
             }
         }
         else
@@ -138,7 +138,7 @@ public abstract class NeoApp extends AbstractApp
             catch ( NotFoundException e )
             {
                 throw new ShellException( "Relationship " + typedId.getId() +
-                    " not found", e );
+                    " not found" );
             }
         }
         return result;
