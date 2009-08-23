@@ -33,6 +33,8 @@ import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.nioneo.store.PropertyData;
+import org.neo4j.impl.nioneo.store.Record;
+import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.util.ArrayMap;
 import org.neo4j.impl.util.IntArray;
@@ -40,7 +42,10 @@ import org.neo4j.impl.util.IntArray;
 class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 {
     private ArrayMap<String,IntArray> relationshipMap = null;
-
+    // private RelationshipGrabber relationshipGrabber = null;
+    private RelationshipChainPosition relChainPosition = null;
+    
+    
     NodeImpl( int id, NodeManager nodeManager )
     {
         super( id, nodeManager );
@@ -53,6 +58,8 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         if ( newNode )
         {
             relationshipMap = new ArrayMap<String,IntArray>();
+            relChainPosition = new RelationshipChainPosition( 
+                Record.NO_NEXT_RELATIONSHIP.intValue() );
         }
     }
 
@@ -76,7 +83,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         return nodeManager.loadProperties( this );
     }
     
-    private List<RelTypeElementIterator> getAllRelationships()
+    List<RelTypeElementIterator> getAllRelationships()
     {
         ensureFullRelationships();
         List<RelTypeElementIterator> relTypeList = 
@@ -93,7 +100,11 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
             {
                 add = addMap.get( type );
             }
-            relTypeList.add( RelTypeElement.create( src, add, remove ) );
+            if ( src != null || add != null )
+            {
+                relTypeList.add( RelTypeElement.create( type, this, src, add, 
+                    remove ) );
+            }
         }
         if ( addMap != null )
         {
@@ -104,15 +115,15 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
                     IntArray remove = nodeManager.getCowRelationshipRemoveMap(
                         this, type );
                     IntArray add = addMap.get( type );
-                    relTypeList.add( RelTypeElement.create( null, add, 
-                        remove ) );
+                    relTypeList.add( RelTypeElement.create( type, this, null, 
+                        add, remove ) );
                 }
             }
         }
         return relTypeList;
     }
     
-    private List<RelTypeElementIterator> getAllRelationshipsOfType( 
+    List<RelTypeElementIterator> getAllRelationshipsOfType( 
         RelationshipType... types)
     {
         ensureFullRelationships();
@@ -125,7 +136,11 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
                 this, type.name() );
             IntArray add = nodeManager.getCowRelationshipAddMap( this, 
                 type.name() );
-            relTypeList.add( RelTypeElement.create( src, add, remove ) );
+            if ( src != null || add != null )
+            {
+                relTypeList.add( RelTypeElement.create( type.name(), this, src, 
+                    add, remove ) );
+            }
         }
         return relTypeList;
     }
@@ -133,35 +148,37 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     public Iterable<Relationship> getRelationships()
     {
         return new IntArrayIterator( getAllRelationships(), this,
-            Direction.BOTH, nodeManager );
+            Direction.BOTH, nodeManager, new RelationshipType[0] );
     }
 
     public Iterable<Relationship> getRelationships( Direction dir )
     {
         return new IntArrayIterator( getAllRelationships(), this, dir,
-            nodeManager );
+            nodeManager, new RelationshipType[0] );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType type )
     {
+        RelationshipType types[] = new RelationshipType[] { type };
         return new IntArrayIterator( 
-            getAllRelationshipsOfType( new RelationshipType[] { type } ), 
-            this, Direction.BOTH, nodeManager );
+            getAllRelationshipsOfType( types ), 
+            this, Direction.BOTH, nodeManager, types );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
         return new IntArrayIterator( 
             getAllRelationshipsOfType(types ), 
-            this, Direction.BOTH, nodeManager );
+            this, Direction.BOTH, nodeManager, types );
     }
 
     public Relationship getSingleRelationship( RelationshipType type,
         Direction dir )
     {
+        RelationshipType types[] = new RelationshipType[] { type };
         Iterator<Relationship> rels = new IntArrayIterator( 
-            getAllRelationshipsOfType( new RelationshipType[] { type } ), 
-            this, dir, nodeManager );
+            getAllRelationshipsOfType( types ), 
+            this, dir, nodeManager, types );
         if ( !rels.hasNext() )
         {
             return null;
@@ -178,9 +195,10 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     public Iterable<Relationship> getRelationships( RelationshipType type,
         Direction dir )
     {
-        return new IntArrayIterator( 
-            getAllRelationshipsOfType( new RelationshipType[] { type } ), 
-            this, dir, nodeManager );
+        RelationshipType types[] = new RelationshipType[] { type };
+        return new IntArrayIterator(  
+            getAllRelationshipsOfType( types ), 
+            this, dir, nodeManager, types );
     }
     
     public void delete()
@@ -296,11 +314,42 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
     {
         if ( relationshipMap == null )
         {
-            this.relationshipMap = nodeManager.loadRelationships( this );
+            this.relChainPosition = 
+                nodeManager.getRelationshipChainPosition( this );
+            this.relationshipMap = new ArrayMap<String,IntArray>();
+            getMoreRelationships();
             return true;
         }
         return false;
     }
+    
+    synchronized boolean getMoreRelationships()
+    {
+        if ( !relChainPosition.hasMore() )
+        {
+            return false;
+        }
+        ArrayMap<String,IntArray> addMap = nodeManager.getMoreRelationships( 
+            this );  
+        if ( addMap.size() == 0 )
+        {
+            return false;
+        }
+        for ( String type : addMap.keySet() )
+        {
+            IntArray addRels = addMap.get( type );
+            IntArray srcRels = relationshipMap.get( type );
+            if ( srcRels == null )
+            {
+                relationshipMap.put( type, addRels );
+            }
+            else
+            {
+                srcRels.addAll( addRels );
+            }
+        }
+        return true;
+    }    
 
     public Relationship createRelationshipTo( Node otherNode,
         RelationshipType type )
@@ -448,5 +497,10 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
                      remove ) );
             }
         }
+    }
+
+    RelationshipChainPosition getRelChainPosition()
+    {
+        return relChainPosition;
     }
 }

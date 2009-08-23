@@ -31,6 +31,7 @@ import org.neo4j.api.core.NotInTransactionException;
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
+import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.xa.NioNeoDbPersistenceSource;
@@ -79,6 +80,17 @@ public class PersistenceManager
         return getReadOnlyResource().loadPropertyIndexes( maxCount );
     }
 
+    public RelationshipChainPosition getRelationshipChainPosition( int nodeId )
+    {
+        return getReadOnlyResource().getRelationshipChainPosition( nodeId );
+    }
+    
+    public Iterable<RelationshipData> getMoreRelationships( int nodeId,  
+        RelationshipChainPosition position )
+    {
+        return getReadOnlyResource().getMoreRelationships( nodeId, position );
+    }
+    
     public Iterable<RelationshipData> loadRelationships( int nodeId )
     {
         return getReadOnlyResource().nodeLoadRelationships( nodeId );

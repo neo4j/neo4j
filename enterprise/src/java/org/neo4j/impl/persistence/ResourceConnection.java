@@ -24,6 +24,7 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
+import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.util.ArrayMap;
@@ -87,4 +88,9 @@ public interface ResourceConnection
     public void createPropertyIndex( String key, int id );
 
     public void createRelationshipType( int id, String name );
+
+    public RelationshipChainPosition getRelationshipChainPosition( int nodeId );
+
+    public Iterable<RelationshipData> getMoreRelationships( int nodeId,  
+        RelationshipChainPosition position );
 }

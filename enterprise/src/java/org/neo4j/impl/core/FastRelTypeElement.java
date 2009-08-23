@@ -22,15 +22,16 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.impl.util.IntArray;
 
-class FastRelTypeElement implements RelTypeElementIterator
+class FastRelTypeElement extends RelTypeElementIterator
 {
     private final IntArray src;
 
     private int position = 0;
     private Integer nextElement = null;
     
-    FastRelTypeElement( IntArray src )
+    FastRelTypeElement( String type, NodeImpl node, IntArray src )
     {
+        super( type, node );
         if ( src == null )
         {
             this.src = new IntArray();
@@ -46,6 +47,11 @@ class FastRelTypeElement implements RelTypeElementIterator
         if ( nextElement != null )
         {
             return true;
+        }
+        if ( position >= src.length() )
+        {
+            while ( getNode().getMoreRelationships() && 
+                position >= src.length() );
         }
         while ( position < src.length() )
         {
