@@ -148,7 +148,7 @@ public class LocalNeoShellServer extends SimpleAppServer
 
     @Override
     public Serializable interpretVariable( String key, Serializable value,
-        Session session ) throws RemoteException
+        Session session ) throws ShellException, RemoteException
     {
         return this.getNeoServer().interpretVariable( key, value, session );
     }

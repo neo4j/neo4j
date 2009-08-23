@@ -68,7 +68,7 @@ public class BashVariableInterpreter
 	 * @return the interpreted string.
 	 */
 	public String interpret( String string, ShellServer server,
-		Session session )
+		Session session ) throws ShellException
 	{
 		for ( String key : REPLACERS.keySet() )
 		{
@@ -90,7 +90,8 @@ public class BashVariableInterpreter
 		 * @param session the environment of the interpretation.
 		 * @return the replacement.
 		 */
-		String getReplacement( ShellServer server, Session session );
+		String getReplacement( ShellServer server, Session session )
+		    throws ShellException;
 	}
 	
 	/**

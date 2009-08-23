@@ -74,7 +74,7 @@ public abstract class AbstractServer extends UnicastRemoteObject
 	}
 	
 	public Serializable interpretVariable( String key, Serializable value,
-		Session session ) throws RemoteException
+		Session session ) throws ShellException, RemoteException
 	{
 		return session.get( key );
 	}

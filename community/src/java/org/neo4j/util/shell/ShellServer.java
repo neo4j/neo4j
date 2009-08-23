@@ -62,7 +62,7 @@ public interface ShellServer extends Remote
 	 * @throws RemoteException RMI error.
 	 */
 	Serializable interpretVariable( String key, Serializable value,
-		Session session ) throws RemoteException;
+		Session session ) throws ShellException, RemoteException;
  
 	/**
 	 * @return a nice welcome for a client. Typically a client connects and
