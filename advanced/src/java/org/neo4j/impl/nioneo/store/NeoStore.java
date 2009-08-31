@@ -88,21 +88,33 @@ public class NeoStore extends AbstractStore
         nodeStore = new NodeStore( getStorageFileName() + ".nodestore.db",
             getConfig() );
     }
-
+    
     /**
      * Closes the node,relationship,property and relationship type stores.
      */
     @Override
     protected void closeStorage()
     {
-        relTypeStore.close();
-        relTypeStore = null;
-        propStore.close();
-        propStore = null;
-        relStore.close();
-        relStore = null;
-        nodeStore.close();
-        nodeStore = null;
+        if ( relTypeStore != null )
+        {
+            relTypeStore.close();
+            relTypeStore = null;
+        }
+        if ( propStore != null )
+        {
+            propStore.close();
+            propStore = null;
+        }
+        if ( relStore != null )
+        {
+            relStore.close();
+            relStore = null;
+        }
+        if ( nodeStore != null )
+        {
+            nodeStore.close();
+            nodeStore = null;
+        }
     }
 
     public void flushAll()

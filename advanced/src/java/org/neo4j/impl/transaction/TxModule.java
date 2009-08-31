@@ -51,7 +51,7 @@ public class TxModule
     private String dataSourceConfigFile = null;
     private String txLogDir = "var/tm";
 
-    private final TxManager txManager;
+    private final TransactionManager txManager;
     private final XaDataSourceManager xaDsManager;
 
     public TxModule( String txLogDir )
@@ -59,6 +59,19 @@ public class TxModule
         this.txLogDir = txLogDir;
         this.txManager = new TxManager( txLogDir );
         this.xaDsManager = new XaDataSourceManager();
+    }
+    
+    public TxModule( boolean readOnly )
+    {
+        if ( readOnly )
+        {
+            this.txManager = new ReadOnlyTxManager(); 
+            this.xaDsManager = new XaDataSourceManager();
+        }
+        else
+        {
+            throw new IllegalStateException( "Read only must be set for this constructor" );
+        }
     }
 
     public void init()
@@ -75,7 +88,14 @@ public class TxModule
         {
             new XaDataSourceConfigFileParser().parse( dataSourceConfigFile );
         }
-        txManager.init( xaDsManager );
+        if ( txManager instanceof TxManager )
+        {
+            ((TxManager)txManager).init( xaDsManager );
+        }
+        else
+        {
+            ((ReadOnlyTxManager)txManager).init( xaDsManager );
+        }
         startIsOk = false;
     }
 
@@ -104,7 +124,14 @@ public class TxModule
     public void stop()
     {
         xaDsManager.unregisterAllDataSources();
-        txManager.stop();
+        if ( txManager instanceof TxManager )
+        {
+            ((TxManager)txManager).stop();
+        }
+        else
+        {
+            ((ReadOnlyTxManager)txManager).stop();
+        }
     }
 
     public void destroy()

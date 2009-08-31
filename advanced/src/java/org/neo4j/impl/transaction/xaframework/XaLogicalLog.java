@@ -663,7 +663,7 @@ public class XaLogicalLog
     {
         if ( fileChannel == null || !fileChannel.isOpen() )
         {
-            log.info( "Logical log: " + fileName + " already closed" );
+            log.fine( "Logical log: " + fileName + " already closed" );
             return;
         }
         long endPosition = writeBuffer.getFileChannelPosition();

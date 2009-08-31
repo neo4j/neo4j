@@ -48,6 +48,8 @@ public class NeoModule
     private final IdGenerator idGenerator;
     
     private NodeManager nodeManager;
+    
+    private boolean readOnly = false;
 
     public NeoModule( AdaptiveCacheManager cacheManager,
         LockManager lockManager, TransactionManager transactionManager,
@@ -59,6 +61,17 @@ public class NeoModule
         this.idGenerator = idGenerator;
     }
 
+    public NeoModule( AdaptiveCacheManager cacheManager,
+        LockManager lockManager, TransactionManager transactionManager,
+        IdGenerator idGenerator, boolean readOnly )
+    {
+        this.cacheManager = cacheManager;
+        this.lockManager = lockManager;
+        this.transactionManager = transactionManager;
+        this.idGenerator = idGenerator;
+        this.readOnly = readOnly;
+    }
+    
     public void init()
     {
     }
@@ -76,8 +89,17 @@ public class NeoModule
         {
             useNewCache = false;
         }
-        nodeManager = new NodeManager( cacheManager, lockManager, lockReleaser, 
-            transactionManager, persistenceManager, idGenerator, useNewCache );
+        if ( !readOnly )
+        {
+            nodeManager = new NodeManager( cacheManager, lockManager, lockReleaser, 
+                transactionManager, persistenceManager, idGenerator, useNewCache );
+        }
+        else
+        {
+            nodeManager = new ReadOnlyNodeManager( cacheManager, lockManager, 
+                lockReleaser, transactionManager, persistenceManager, 
+                idGenerator, useNewCache );
+        }
         // load and verify from PS
         RelationshipTypeData relTypes[] = null;
         PropertyIndexData propertyIndexes[] = null;
@@ -111,16 +133,6 @@ public class NeoModule
         }
         nodeManager.start( params );
         startIsOk = false;
-    }
-
-    public int getNodeCacheSize()
-    {
-        return nodeManager.getNodeMaxCacheSize();
-    }
-
-    public int getRelationshipCacheSize()
-    {
-        return nodeManager.getRelationshipMaxCacheSize();
     }
 
     public void setReferenceNodeId( Integer nodeId )

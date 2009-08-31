@@ -113,8 +113,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             throw new StoreFailureException( "Unable to create store "
                 + fileName, e );
         }
-        IdGenerator.createGenerator( fileName + ".id" );
-        IdGenerator idGenerator = new IdGenerator( fileName + ".id", 1 );
+        IdGeneratorImpl.createGenerator( fileName + ".id" );
+        IdGenerator idGenerator = new IdGeneratorImpl( fileName + ".id", 1 );
         idGenerator.nextId(); // reserv first for blockSize
         idGenerator.close();
     }
@@ -157,16 +157,16 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             }
             if ( !expectedVersion.equals( new String( version ) ) )
             {
-                if ( !versionFound( new String( version ) ) )
+                if ( !versionFound( new String( version ) ) && !isReadOnly() )
                 {
                     setStoreNotOk();
                 }
             }
-            if ( (fileSize - version.length) % blockSize != 0 )
+            if ( (fileSize - version.length) % blockSize != 0 && !isReadOnly() )
             {
                 setStoreNotOk();
             }
-            if ( getStoreOk() )
+            if ( getStoreOk() && !isReadOnly() )
             {
                 getFileChannel().truncate( fileSize - version.length );
             }
@@ -178,7 +178,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         try
         {
-            openIdGenerator();
+            if ( !isReadOnly() )
+            {
+                openIdGenerator();
+            }
+            else
+            {
+                openReadOnlyIdGenerator( getBlockSize() );
+            }
         }
         catch ( StoreFailureException e )
         {
@@ -186,7 +193,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
             getBlockSize(), getFileChannel(), getMappedMem(), 
-            getIfMemoryMapped() ) );
+            getIfMemoryMapped(), isReadOnly() ) );
     }
 
     /**
@@ -620,7 +627,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             boolean success = file.delete();
             assert success;
         }
-        IdGenerator.createGenerator( getStorageFileName() + ".id" );
+        IdGeneratorImpl.createGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
         nextBlockId(); // reserved first block containing blockSize
         FileChannel fileChannel = getFileChannel();
