@@ -301,7 +301,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             boolean success = file.delete();
             assert success;
         }
-        IdGenerator.createGenerator( getStorageFileName() + ".id" );
+        IdGeneratorImpl.createGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
         FileChannel fileChannel = getFileChannel();
         long highId = -1;

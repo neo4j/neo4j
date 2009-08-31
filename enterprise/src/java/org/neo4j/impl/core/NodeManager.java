@@ -630,50 +630,6 @@ public class NodeManager
         }
     }
     
-    ArrayMap<String,IntArray> loadRelationships( NodeImpl node )
-    {
-        try
-        {
-            Iterable<RelationshipData> rels = 
-                persistenceManager.loadRelationships( (int) node.getId() );
-            ArrayMap<String,IntArray> newRelationshipMap = 
-                new ArrayMap<String,IntArray>();
-            for ( RelationshipData rel : rels )
-            {
-                int relId = rel.getId();
-                RelationshipImpl relImpl = relCache.get( relId );
-                RelationshipType type = null;
-                if ( relImpl == null )
-                {
-                    type = getRelationshipTypeById( rel.relationshipType() );
-                    assert type != null;
-                    relImpl = new RelationshipImpl( relId, rel.firstNode(),
-                        rel.secondNode(), type, false, this );
-                    relCache.put( relId, relImpl );
-                }
-                else
-                {
-                    type = relImpl.getType();
-                }
-                IntArray relationshipSet = newRelationshipMap.get( 
-                    type.name() );
-                if ( relationshipSet == null )
-                {
-                    relationshipSet = new IntArray();
-                    newRelationshipMap.put( type.name(), relationshipSet );
-                }
-                relationshipSet.add( relId );
-            }
-            return newRelationshipMap;
-        }
-        catch ( Exception e )
-        {
-            log.severe( "Failed loading relationships for node[" + node.getId()
-                + "]" );
-            throw new RuntimeException( e );
-        }
-    }
-
     ArrayMap<Integer,PropertyData> loadProperties( NodeImpl node )
     {
         try
@@ -894,7 +850,7 @@ public class NodeManager
         persistenceManager.nodeRemoveProperty( nodeId, propertyId );
     }
 
-    public void deleteRelationship( RelationshipImpl rel )
+    void deleteRelationship( RelationshipImpl rel )
     {
         int relId = (int) rel.getId();
         persistenceManager.relDelete( relId );

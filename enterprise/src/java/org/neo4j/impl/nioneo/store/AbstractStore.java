@@ -27,6 +27,8 @@ import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.neo4j.impl.core.ReadOnlyNeoException;
+
 /**
  * An abstract representation of a store. A store is a file that contains
  * records. Each record has a fixed size (<CODE>getRecordSize()</CODE>) so
@@ -92,7 +94,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             throw new StoreFailureException( "Unable to create store "
                 + fileName, e );
         }
-        IdGenerator.createGenerator( fileName + ".id" );
+        IdGeneratorImpl.createGenerator( fileName + ".id" );
     }
 
     public AbstractStore( String fileName, Map<?,?> config )
@@ -117,12 +119,12 @@ public abstract class AbstractStore extends CommonAbstractStore
             {
                 getFileChannel().position( fileSize - version.length );
             }
-            else
+            else if ( !isReadOnly() )
             {
                 setStoreNotOk();
             }
             getFileChannel().read( buffer );
-            if ( !expectedVersion.equals( new String( version ) ) )
+            if ( !expectedVersion.equals( new String( version ) ) && !isReadOnly() )
             {
                 if ( !versionFound( new String( version ) ) )
                 {
@@ -130,11 +132,11 @@ public abstract class AbstractStore extends CommonAbstractStore
                 }
             }
             if ( getRecordSize() != 0
-                && (fileSize - version.length) % getRecordSize() != 0 )
+                && (fileSize - version.length) % getRecordSize() != 0  && !isReadOnly() )
             {
                 setStoreNotOk();
             }
-            if ( getStoreOk() )
+            if ( getStoreOk() && !isReadOnly() )
             {
                 getFileChannel().truncate( fileSize - version.length );
             }
@@ -146,7 +148,14 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
         try
         {
-            openIdGenerator();
+            if ( !isReadOnly() )
+            {
+                openIdGenerator();
+            }
+            else
+            {
+                openReadOnlyIdGenerator( getRecordSize() );
+            }
         }
         catch ( StoreFailureException e )
         {
@@ -154,7 +163,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
             getRecordSize(), getFileChannel(), getMappedMem(), 
-            getIfMemoryMapped() ) );
+            getIfMemoryMapped(), isReadOnly() ) );
     }
 
     /**
@@ -211,6 +220,10 @@ public abstract class AbstractStore extends CommonAbstractStore
      */
     protected void rebuildIdGenerator()
     {
+        if ( isReadOnly() )
+        {
+            throw new ReadOnlyNeoException();
+        }
         // TODO: fix this hardcoding
         final byte RECORD_NOT_IN_USE = 0;
 
@@ -223,7 +236,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             boolean success = file.delete();
             assert success;
         }
-        IdGenerator.createGenerator( getStorageFileName() + ".id" );
+        IdGeneratorImpl.createGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
         FileChannel fileChannel = getFileChannel();
         long highId = 1;

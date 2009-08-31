@@ -32,66 +32,40 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
-
 import javax.transaction.TransactionManager;
-
-import org.neo4j.api.core.NeoJvmInstance.Config;
+import org.neo4j.api.core.ReadOnlyNeoJvmInstance.Config;
 import org.neo4j.impl.core.NodeManager;
 import org.neo4j.impl.shell.NeoShellServer;
 import org.neo4j.util.shell.AbstractServer;
 
-/**
- * An implementation of {@link NeoService} that is used to embed Neo in an
- * application. You typically instantiate it by invoking the
- * {@link #EmbeddedNeo(String) single argument constructor} that takes a path to
- * a directory where Neo will store its data files, as such: <code>
- * <pre>
- * NeoService neo = new EmbeddedNeo( &quot;var/neo&quot; );
- * // ... use neo
- * neo.shutdown();
- * </pre>
- * </code> For more information, see {@link NeoService}.
- */
-public final class EmbeddedNeo implements NeoService
+public final class EmbeddedReadOnlyNeo implements NeoService
 {
 	public static final int DEFAULT_SHELL_PORT = AbstractServer.DEFAULT_PORT;
 	public static final String DEFAULT_SHELL_NAME = AbstractServer.DEFAULT_NAME;
 	
-    private static Logger log = Logger.getLogger( EmbeddedNeo.class.getName() );
+    private static Logger log = Logger.getLogger( 
+        EmbeddedReadOnlyNeo.class.getName() );
     private NeoShellServer shellServer;
     private Transaction placeboTransaction = null;
-    private final NeoJvmInstance neoJvmInstance;
+    private final ReadOnlyNeoJvmInstance neoJvmInstance;
     private final NodeManager nodeManager;
     private final String storeDir;
 
-    /**
-     * Creates an embedded {@link NeoService} with a store located in
-     * <code>storeDir</code>, which will be created if it doesn't already
-     * exist.
-     * @param storeDir the store directory for the neo db files
-     */
-    public EmbeddedNeo( String storeDir )
+    public EmbeddedReadOnlyNeo( String storeDir )
     {
         this.storeDir = storeDir;
         this.shellServer = null;
-        neoJvmInstance = new NeoJvmInstance( storeDir, true );
+        neoJvmInstance = new ReadOnlyNeoJvmInstance( storeDir, true );
         neoJvmInstance.start();
         nodeManager = neoJvmInstance.getConfig().getNeoModule()
             .getNodeManager();
     }
 
-    /**
-     * A non-standard way of creating an embedded {@link NeoService}
-     * with a set of configuration parameters. Will most likely be removed in
-     * future releases.
-     * @param storeDir the store directory for the db files
-     * @param params configuration parameters
-     */
-    public EmbeddedNeo( String storeDir, Map<String,String> params )
+    public EmbeddedReadOnlyNeo( String storeDir, Map<String,String> params )
     {
         this.storeDir = storeDir;
         this.shellServer = null;
-        neoJvmInstance = new NeoJvmInstance( storeDir, true );
+        neoJvmInstance = new ReadOnlyNeoJvmInstance( storeDir, true );
         neoJvmInstance.start( params );
         nodeManager = neoJvmInstance.getConfig().getNeoModule()
             .getNodeManager();
@@ -135,7 +109,6 @@ public final class EmbeddedNeo implements NeoService
         return stringProps;
     }
 
-    // private accessor for the remote shell (started with enableRemoteShell())
     private NeoShellServer getShellServer()
     {
         return this.shellServer;

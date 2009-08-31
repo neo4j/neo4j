@@ -22,6 +22,7 @@ package org.neo4j.impl.nioneo.xa;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.impl.core.PropertyIndex;
+import org.neo4j.impl.core.ReadOnlyNeoException;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.nioneo.store.PropertyStore;
@@ -88,6 +89,10 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 
     public ResourceConnection createResourceConnection()
     {
+        if ( xaDs.isReadOnly() )
+        {
+            throw new ReadOnlyNeoException();
+        }
         return new NioNeoDbResourceConnection( this.xaDs );
     }
     

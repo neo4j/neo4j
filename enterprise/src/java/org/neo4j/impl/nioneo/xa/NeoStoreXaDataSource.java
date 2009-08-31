@@ -20,11 +20,9 @@
 package org.neo4j.impl.nioneo.xa;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
@@ -70,7 +68,8 @@ public class NeoStoreXaDataSource extends XaDataSource
     private final LockManager lockManager;
     private final LockReleaser lockReleaser;
     private final String storeDir;
-
+    private boolean readOnly = false;
+    
     private boolean logApplied = false;
 
     /**
@@ -93,15 +92,19 @@ public class NeoStoreXaDataSource extends XaDataSource
      * @throws IOException
      *             If unable to create data source
      */
-    public NeoStoreXaDataSource( Map<Object,Object> params ) throws IOException,
+    public NeoStoreXaDataSource( Map<Object,Object> config ) throws IOException,
         InstantiationException
     {
-        super( params );
-        this.lockManager = (LockManager) params.get( LockManager.class );
-        this.lockReleaser = (LockReleaser) params.get( LockReleaser.class );
-        String configFileName = (String) params.get( "config" );
-        storeDir = (String) params.get( "store_dir" );
-        Properties config = new Properties();
+        super( config );
+        if ( config.get( "read_only" ) != null )
+        {
+            readOnly = (Boolean) config.get( "read_only" );
+        }
+        this.lockManager = (LockManager) config.get( LockManager.class );
+        this.lockReleaser = (LockReleaser) config.get( LockReleaser.class );
+        // String configFileName = (String) params.get( "config" );
+        storeDir = (String) config.get( "store_dir" );
+/*        Properties config = new Properties();
         if ( configFileName != null )
         {
             FileInputStream inputStream = new FileInputStream( configFileName );
@@ -113,8 +116,8 @@ public class NeoStoreXaDataSource extends XaDataSource
             {
                 inputStream.close();
             }
-        }
-        Iterator itr = params.entrySet().iterator();
+        }*/
+/*        Iterator itr = params.entrySet().iterator();
         while ( itr.hasNext() )
         {
             Map.Entry entry = (Map.Entry) itr.next();
@@ -124,12 +127,12 @@ public class NeoStoreXaDataSource extends XaDataSource
                 config.setProperty( (String) entry.getKey(), (String) entry
                     .getValue() );
             }
-        }
+        }*/
         String store = (String) config.get( "neo_store" );
         config.put( "rebuild_idgenerators_fast", "true" );
         File file = new File( store );
-        String create = config.getProperty( "create" );
-        if ( !file.exists() && "true".equals( create ) )
+        String create = "" + config.get( "create" );
+        if ( !readOnly && !file.exists() && "true".equals( create ) )
         {
             autoCreatePath( store );
             NeoStore.createStore( store );
@@ -137,9 +140,12 @@ public class NeoStoreXaDataSource extends XaDataSource
 
         neoStore = new NeoStore( config );
         xaContainer = XaContainer.create( (String) config.get( "logical_log" ),
-            new CommandFactory( neoStore ), new TransactionFactory(), params );
+            new CommandFactory( neoStore ), new TransactionFactory(), config );
 
-        xaContainer.openLogicalLog();
+        if ( !readOnly )
+        {
+            xaContainer.openLogicalLog();
+        }
         if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
         {
             neoStore.makeStoreOk();
@@ -447,5 +453,10 @@ public class NeoStoreXaDataSource extends XaDataSource
     NeoReadTransaction getReadOnlyTransaction()
     {
         return new NeoReadTransaction( neoStore );
+    }
+
+    public boolean isReadOnly()
+    {
+        return readOnly;
     }
 }

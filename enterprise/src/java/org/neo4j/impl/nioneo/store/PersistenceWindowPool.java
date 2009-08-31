@@ -56,13 +56,14 @@ class PersistenceWindowPool
     private static Logger log = Logger.getLogger( PersistenceWindowPool.class
         .getName() );
     private static final int REFRESH_BRICK_COUNT = 5000;
+    private final FileChannel.MapMode mapMode;
 
     private int hit = 0;
     private int miss = 0;
     private int switches = 0;
     private int ooe = 0;
     private boolean useMemoryMapped = true;
-
+    
     /**
      * Create new pool for a store.
      * 
@@ -79,13 +80,21 @@ class PersistenceWindowPool
      */
     PersistenceWindowPool( String storeName, int blockSize,
         FileChannel fileChannel, long mappedMem, 
-        boolean useMemoryMappedBuffers )
+        boolean useMemoryMappedBuffers, boolean readOnly )
     {
         this.storeName = storeName;
         this.blockSize = blockSize;
         this.fileChannel = fileChannel;
         this.availableMem = mappedMem;
         this.useMemoryMapped = useMemoryMappedBuffers;
+        if ( readOnly )
+        {
+            mapMode = FileChannel.MapMode.READ_ONLY;
+        }
+        else
+        {
+            mapMode = FileChannel.MapMode.READ_WRITE;
+        }
         setupBricks();
         dumpStatus();
     }
@@ -527,7 +536,7 @@ class PersistenceWindowPool
         {
              return new MappedPersistenceWindow( 
                 brick * brickSize / blockSize, blockSize, 
-                brickSize, fileChannel );
+                brickSize, fileChannel, mapMode );
         }
         PlainPersistenceWindow dpw = 
             new PlainPersistenceWindow( 

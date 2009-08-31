@@ -35,7 +35,7 @@ class MappedPersistenceWindow extends LockableWindow
     private int totalSize = -1;
 
     MappedPersistenceWindow( long position, int recordSize, int totalSize,
-        FileChannel channel )
+        FileChannel channel, FileChannel.MapMode mapMode )
     {
         super( channel );
         assert recordSize > 0 : "Record size[" + recordSize
@@ -51,7 +51,7 @@ class MappedPersistenceWindow extends LockableWindow
         buffer = new Buffer( this );
         try
         {
-            buffer.setByteBuffer( channel.map( FileChannel.MapMode.READ_WRITE,
+            buffer.setByteBuffer( channel.map( mapMode,
                 position * recordSize, totalSize ) );
         }
         catch ( IOException e )
