@@ -28,6 +28,8 @@ import java.nio.channels.FileLock;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.neo4j.impl.core.ReadOnlyNeoException;
+
 /**
  * Contains common implementation for {@link AbstractStore} and
  * {@link AbstractDynamicStore}.
@@ -107,6 +109,8 @@ public abstract class CommonAbstractStore
     private FileLock fileLock;
 
     private Map<?,?> config = null;
+    
+    private boolean readOnly = false;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -136,6 +140,11 @@ public abstract class CommonAbstractStore
         loadStorage();
         initStorage();
     }
+    
+    boolean isReadOnly()
+    {
+        return readOnly;
+    }
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>.
@@ -164,6 +173,14 @@ public abstract class CommonAbstractStore
 
     private void checkStorage()
     {
+        if ( config != null )
+        {
+            Boolean isReadOnly = (Boolean) config.get( "read_only" );
+            if ( isReadOnly != null )
+            {
+                readOnly = isReadOnly;
+            }
+        }
         if ( !new File( storageFileName ).exists() )
         {
             throw new IllegalStateException( "No such store[" + storageFileName
@@ -171,8 +188,16 @@ public abstract class CommonAbstractStore
         }
         try
         {
-            this.fileChannel = new RandomAccessFile( storageFileName, "rw" )
-                .getChannel();
+            if ( !readOnly )
+            {
+                this.fileChannel = new RandomAccessFile( storageFileName, "rw" )
+                    .getChannel();
+            }
+            else
+            {
+                this.fileChannel = new RandomAccessFile( storageFileName, "r" )
+                    .getChannel();
+            }
         }
         catch ( IOException e )
         {
@@ -181,13 +206,16 @@ public abstract class CommonAbstractStore
         }
         try
         {
-            this.fileLock = this.fileChannel.tryLock();
-            if ( fileLock == null )
+            if ( !readOnly )
             {
-                fileChannel.close();
-                throw new IllegalStateException( "Unable to lock store ["
-                    + storageFileName + "], this is usually a result of some "
-                    + "other Neo running using the same store." );
+                this.fileLock = this.fileChannel.tryLock();
+                if ( fileLock == null )
+                {
+                    fileChannel.close();
+                    throw new IllegalStateException( "Unable to lock store ["
+                        + storageFileName + "], this is usually a result of some "
+                        + "other Neo running using the same store." );
+                }
             }
         }
         catch ( IOException e )
@@ -203,6 +231,11 @@ public abstract class CommonAbstractStore
      */
     protected void setStoreNotOk()
     {
+        if ( readOnly )
+        {
+            throw new StoreFailureException( 
+                "Cannot start up on non clean store as read only" );
+        }
         storeOk = false;
     }
 
@@ -358,6 +391,10 @@ public abstract class CommonAbstractStore
     {
         if ( !storeOk )
         {
+            if ( readOnly )
+            {
+                throw new ReadOnlyNeoException();
+            }
             rebuildIdGenerator();
             storeOk = true;
         }
@@ -365,6 +402,10 @@ public abstract class CommonAbstractStore
 
     public void rebuildIdGenerators()
     {
+        if ( readOnly )
+        {
+            throw new ReadOnlyNeoException();
+        }
         rebuildIdGenerator();
     }
     
@@ -461,8 +502,21 @@ public abstract class CommonAbstractStore
      */
     protected void openIdGenerator()
     {
-        idGenerator = new IdGenerator( storageFileName + ".id",
+        idGenerator = new IdGeneratorImpl( storageFileName + ".id",
             DEFAULT_ID_GRAB_SIZE );
+    }
+    
+    protected void openReadOnlyIdGenerator( int recordSize )
+    {
+        try
+        {
+            idGenerator = new ReadOnlyIdGenerator( storageFileName + ".id", 
+                fileChannel.size() / recordSize );
+        }
+        catch ( IOException e )
+        {
+            throw new StoreFailureException( e );
+        }
     }
 
     /**
@@ -503,6 +557,18 @@ public abstract class CommonAbstractStore
             windowPool.close();
             windowPool = null;
         }
+        if ( isReadOnly() )
+        {
+            try
+            {
+                fileChannel.close();
+            }
+            catch ( IOException e )
+            {
+                throw new StoreFailureException( e );
+            }
+            return;
+        }
         long highId = idGenerator.getHighId();
         int recordSize = -1;
         if ( this instanceof AbstractDynamicStore )
@@ -517,26 +583,40 @@ public abstract class CommonAbstractStore
         boolean success = false;
         IOException storedIoe = null;
         // hack for WINBLOWS
-        for ( int i = 0; i < 10; i++ )
+        if ( !readOnly )
+        {
+            for ( int i = 0; i < 10; i++ )
+            {
+                try
+                {
+                    fileChannel.position( highId * recordSize );
+                    ByteBuffer buffer = ByteBuffer.wrap( 
+                        getTypeAndVersionDescriptor().getBytes() );
+                    fileChannel.write( buffer );
+                    fileChannel.truncate( fileChannel.position() );
+                    fileChannel.force( false );
+                    fileLock.release();
+                    fileChannel.close();
+                    fileChannel = null;
+                    success = true;
+                    break;
+                }
+                catch ( IOException e )
+                {
+                    storedIoe = e;
+                    System.gc();
+                }
+            }
+        }
+        else
         {
             try
             {
-                fileChannel.position( highId * recordSize );
-                ByteBuffer buffer = ByteBuffer.wrap( 
-                    getTypeAndVersionDescriptor().getBytes() );
-                fileChannel.write( buffer );
-                fileChannel.truncate( fileChannel.position() );
-                fileChannel.force( false );
-                fileLock.release();
                 fileChannel.close();
-                fileChannel = null;
-                success = true;
-                break;
             }
             catch ( IOException e )
             {
-                storedIoe = e;
-                System.gc();
+                e.printStackTrace();
             }
         }
         if ( !success )
