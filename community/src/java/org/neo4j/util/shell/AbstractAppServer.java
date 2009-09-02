@@ -20,6 +20,7 @@
 package org.neo4j.util.shell;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -93,6 +94,6 @@ public abstract class AbstractAppServer extends AbstractServer
 	@Override
 	public Iterable<String> getAllAvailableCommands()
 	{
-		return this.apps.keySet();
+		return new ArrayList<String>( apps.keySet() );
 	}
 }
