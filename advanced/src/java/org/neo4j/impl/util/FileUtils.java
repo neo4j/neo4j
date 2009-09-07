@@ -114,4 +114,18 @@ public class FileUtils
         } // ok
         System.gc();
     }
+    
+    public static String fixSeparatorsInPath( String path )
+    {
+        String fileSeparator = System.getProperty( "file.separator" );
+        if ( "\\".equals( fileSeparator ) )
+        {
+            path = path.replace( '/', '\\' );
+        }
+        else if ( "/".equals( fileSeparator ) )
+        {
+            path = path.replace( '\\', '/' );
+        }
+        return path;
+    }
 }
