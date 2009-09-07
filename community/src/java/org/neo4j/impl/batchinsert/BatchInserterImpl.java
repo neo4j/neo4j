@@ -45,6 +45,7 @@ import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.impl.util.FileUtils;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -521,17 +522,10 @@ public class BatchInserterImpl implements BatchInserter
                     + storeDir + "] for Neo store." );
             }
         }
+        dir = FileUtils.fixSeparatorsInPath( dir );
         String fileSeparator = System.getProperty( "file.separator" );
-        if ( "\\".equals( fileSeparator ) )
-        {
-            dir = dir.replace( '/', '\\' );
-        }
-        else if ( "/".equals( fileSeparator ) )
-        {
-            dir = dir.replace( '\\', '/' );
-        }
         String store = dir + fileSeparator + "neostore";
-        if ( !new File( store).exists() )
+        if ( !new File( store ).exists() )
         {
             NeoStore.createStore( store );
         }
