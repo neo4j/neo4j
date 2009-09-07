@@ -35,6 +35,7 @@ import org.neo4j.impl.persistence.PersistenceModule;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.TxModule;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.impl.util.FileUtils;
 
 class NeoJvmInstance
 {
@@ -113,7 +114,7 @@ class NeoJvmInstance
         }
         config = new Config( storeDir, params );
         // create NioNeo DB persistence source
-        storeDir = convertFileSeparators( storeDir );
+        storeDir = FileUtils.fixSeparatorsInPath( storeDir );
         String separator = System.getProperty( "file.separator" );
         String store = storeDir + separator + "neostore";
         params.put( "store_dir", storeDir );
@@ -197,21 +198,6 @@ class NeoJvmInstance
         params.put( LockManager.class, lockManager );
         return txModule.registerDataSource( "lucene", className, resourceId,
             params, true );
-    }
-
-    private String convertFileSeparators( String fileName )
-    {
-        String fileSeparator = System.getProperty( "file.separator" );
-        if ( "\\".equals( fileSeparator ) )
-        {
-            return fileName.replace( '/', '\\' );
-        }
-        else if ( "/".equals( fileSeparator ) )
-        {
-            return fileName.replace( '\\', '/' );
-        }
-        // dont know what to do
-        return fileName;
     }
 
     /**
