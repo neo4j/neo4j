@@ -25,22 +25,25 @@ import java.util.Set;
 
 public class LocalNeoShellServer extends SimpleAppServer
 {
-    private String neoDirectory;
+    private final String neoDirectory;
+    private final boolean readOnly;
     private Object neoServiceInstance;
     private SimpleAppServer neoServer;
 
-    public LocalNeoShellServer( String neoDirectory ) throws RemoteException
-    {
-        super();
-        this.neoDirectory = neoDirectory;
-    }
-
-    public LocalNeoShellServer( Object neoServiceInstance )
+    public LocalNeoShellServer( String neoDirectory, boolean readOnly )
         throws RemoteException
     {
         super();
-        this.neoServiceInstance = neoServiceInstance;
+        this.neoDirectory = neoDirectory;
+        this.readOnly = readOnly;
     }
+
+//    public LocalNeoShellServer( Object neoServiceInstance )
+//        throws RemoteException
+//    {
+//        super();
+//        this.neoServiceInstance = neoServiceInstance;
+//    }
 
     private SimpleAppServer getNeoServer()
     {
@@ -86,7 +89,9 @@ public class LocalNeoShellServer extends SimpleAppServer
     private SimpleAppServer instantiateNewNeoServer() throws ShellException
     {
         String neoServiceClassName = "org.neo4j.api.core.NeoService";
-        String neoClassName = "org.neo4j.api.core.EmbeddedNeo";
+        String neoClassName = this.readOnly ?
+            "org.neo4j.api.core.EmbeddedReadOnlyNeo" :
+            "org.neo4j.api.core.EmbeddedNeo";
         String neoShellServerClassName = "org.neo4j.impl.shell.NeoShellServer";
         try
         {

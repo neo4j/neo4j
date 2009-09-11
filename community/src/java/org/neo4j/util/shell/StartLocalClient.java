@@ -24,6 +24,7 @@ import java.util.Map;
 public class StartLocalClient extends AbstractStarter
 {
     public static final String ARG_PATH = "path";
+    public static final String ARG_READONLY = "readonly";
     
     public static void main( String[] args )
     {
@@ -41,7 +42,9 @@ public class StartLocalClient extends AbstractStarter
         
         try
         {
-            tryStartLocalServerAndClient( neoDbPath, args );
+            boolean readOnly =
+                stringAsBoolean( argMap.get( ARG_READONLY ), true );
+            tryStartLocalServerAndClient( neoDbPath, readOnly, args );
         }
         catch ( Exception e )
         {
@@ -53,10 +56,10 @@ public class StartLocalClient extends AbstractStarter
     }
 
     private static void tryStartLocalServerAndClient( String neoDbPath,
-        String[] args ) throws Exception
+        boolean readOnly, String[] args ) throws Exception
     {
         final LocalNeoShellServer server =
-            new LocalNeoShellServer( neoDbPath );
+            new LocalNeoShellServer( neoDbPath, readOnly );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
             @Override

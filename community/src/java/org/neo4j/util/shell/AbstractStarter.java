@@ -99,28 +99,18 @@ public class AbstractStarter
                     int nextIndex = i + 1;
                     String value = nextIndex < args.length ?
                         args[ nextIndex ] : null;
-                    value = isOption( value ) ? null : value;
+                    value = value == null || isOption( value ) ? null : value;
                     map.put( key, value );
                 }
             }
         }
         return map;
     }
-
-//    protected static String getArg( String[] args, String name )
-//    {
-//        for ( String arg : args )
-//        {
-//            if ( arg.startsWith( "-" ) )
-//            {
-//                arg = arg.substring( 1 );
-//                String[] keyAndValue = splitArgIntoKeyAndValue( arg );
-//                if ( keyAndValue[ 0 ].equals( name ) )
-//                {
-//                    return keyAndValue[ 1 ];
-//                }
-//            }
-//        }
-//        return null;
-//    }
+    
+    protected static Boolean stringAsBoolean( String stringOrNull,
+        Boolean defaultValue )
+    {
+        return stringOrNull != null ? new Boolean( stringOrNull ) :
+            defaultValue;
+    }
 }
