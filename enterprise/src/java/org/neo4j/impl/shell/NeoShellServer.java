@@ -21,6 +21,8 @@ package org.neo4j.impl.shell;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
+
+import org.neo4j.api.core.EmbeddedReadOnlyNeo;
 import org.neo4j.api.core.NeoService;
 import org.neo4j.api.core.Transaction;
 import org.neo4j.impl.shell.apps.Cd;
@@ -64,10 +66,21 @@ public class NeoShellServer extends SimpleAppServer
         this.neo = neo;
         this.bashInterpreter = new BashVariableInterpreter();
         this.bashInterpreter.addReplacer( "W", new WorkingDirReplacer() );
-        this.setProperty( AbstractClient.PROMPT_KEY, "neo-sh \\W$ " );
+        this.setProperty( AbstractClient.PROMPT_KEY, getNeoShellPrompt() );
         this.setProperty( AbstractClient.TITLE_KEYS_KEY,
             ".*name.*,.*title.*" );
         this.setProperty( AbstractClient.TITLE_MAX_LENGTH, "40" );
+    }
+    
+    protected String getNeoShellPrompt()
+    {
+        String name = "neo-sh";
+        if ( this.neo instanceof EmbeddedReadOnlyNeo )
+        {
+            name += "[readonly]";
+        }
+        name += " \\W$ ";
+        return name;
     }
 
     @Override
