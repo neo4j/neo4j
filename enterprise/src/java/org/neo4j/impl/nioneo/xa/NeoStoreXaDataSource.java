@@ -292,6 +292,7 @@ public class NeoStoreXaDataSource extends XaDataSource
                 + "all transactions have been resolved" );
             logger.fine( "Rebuilding id generators as needed. "
                 + "This can take a while for large stores..." );
+            neoStore.flushAll();
             neoStore.makeStoreOk();
             logger.fine( "Rebuild of id generators complete." );
         }
