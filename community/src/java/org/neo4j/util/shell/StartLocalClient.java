@@ -42,17 +42,77 @@ public class StartLocalClient extends AbstractStarter
         
         try
         {
-            boolean readOnly =
+            boolean readOnly = argMap.containsKey( ARG_READONLY ) &&
                 stringAsBoolean( argMap.get( ARG_READONLY ), true );
             tryStartLocalServerAndClient( neoDbPath, readOnly, args );
         }
         catch ( Exception e )
         {
-            System.err.println( "Can't start client with local neo service: " +
-                e );
-            e.printStackTrace( System.err );
-            System.exit( 1 );
+            if ( storeWasLocked( e ) )
+            {
+                if ( wantToConnectReadOnlyInstead() )
+                {
+                    try
+                    {
+                        tryStartLocalServerAndClient( neoDbPath, true, args );
+                    }
+                    catch ( Exception innerException )
+                    {
+                        handleException( innerException );
+                    }
+                }
+                else
+                {
+                    handleException( e );
+                }
+            }
+            else
+            {
+                handleException( e );
+            }
         }
+        System.exit( 0 );
+    }
+
+    private static boolean wantToConnectReadOnlyInstead()
+    {
+        Console console = new StandardConsole();
+        console.format( "\nThe store seem locked. Start a read-only client " +
+        	"instead (y/n) [y]? " );
+        String input = console.readLine();
+        return input.length() == 0 || input.equals( "y" );
+    }
+
+    private static boolean storeWasLocked( Exception e )
+    {
+        // TODO Fix this when a specific exception is thrown
+        return mineException( e, IllegalStateException.class,
+            "Unable to lock store" );
+    }
+
+    private static boolean mineException( Throwable e,
+        Class<IllegalStateException> eClass, String startOfMessage )
+    {
+        if ( eClass.isInstance( e ) &&
+            e.getMessage().startsWith( startOfMessage ) )
+        {
+            return true;
+        }
+        
+        Throwable cause = e.getCause();
+        if ( cause != null )
+        {
+            return mineException( cause, eClass, startOfMessage );
+        }
+        return false;
+    }
+
+    private static void handleException( Exception e )
+    {
+        System.err.println( "Can't start client with local neo service: " +
+            e );
+        e.printStackTrace( System.err );
+        System.exit( 1 );
     }
 
     private static void tryStartLocalServerAndClient( String neoDbPath,
