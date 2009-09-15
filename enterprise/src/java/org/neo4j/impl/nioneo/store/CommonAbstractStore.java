@@ -107,7 +107,8 @@ public abstract class CommonAbstractStore
     private PersistenceWindowPool windowPool;
     private boolean storeOk = true;
     private FileLock fileLock;
-
+    private boolean grabFileLock = true;
+    
     private Map<?,?> config = null;
     
     private boolean readOnly = false;
@@ -136,6 +137,14 @@ public abstract class CommonAbstractStore
     {
         this.storageFileName = fileName;
         this.config = config;
+        if ( config != null )
+        {
+            String fileLock = (String) config.get( "grab_file_lock" );
+            if ( fileLock != null && fileLock.toLowerCase().equals( "false" ) )
+            {
+                grabFileLock = false;
+            }
+        }
         checkStorage();
         loadStorage();
         initStorage();
@@ -206,7 +215,7 @@ public abstract class CommonAbstractStore
         }
         try
         {
-            if ( !readOnly )
+            if ( !readOnly && grabFileLock )
             {
                 this.fileLock = this.fileChannel.tryLock();
                 if ( fileLock == null )
