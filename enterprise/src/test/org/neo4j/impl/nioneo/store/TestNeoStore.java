@@ -347,8 +347,10 @@ public class TestNeoStore extends AbstractNeoTestCase
             }
             for ( int i = 0; i < 3; i++ )
             {
+                RelationshipChainPosition pos = 
+                    rStore.getRelationshipChainPosition( nodeIds[i] );
                 for ( RelationshipData rel : 
-                    nStore.getRelationships( nodeIds[i] ) )
+                    rStore.getMoreRelationships( nodeIds[i], pos ) )
                 {
                     rStore.deleteRelationship( rel.getId() );
                 }
@@ -456,7 +458,10 @@ public class TestNeoStore extends AbstractNeoTestCase
         }
         assertEquals( 3, count );
         count = 0;
-        for ( RelationshipData rel : nStore.getRelationships( node ) )
+        RelationshipChainPosition pos = 
+            rStore.getRelationshipChainPosition( node );
+        for ( RelationshipData rel : 
+            rStore.getMoreRelationships( node, pos ) )
         {
             if ( rel.getId() == rel1 )
             {
@@ -517,7 +522,10 @@ public class TestNeoStore extends AbstractNeoTestCase
         }
         assertEquals( 3, count );
         count = 0;
-        for ( RelationshipData rel : nStore.getRelationships( node ) )
+        RelationshipChainPosition pos = 
+            rStore.getRelationshipChainPosition( node );
+        for ( RelationshipData rel : 
+            rStore.getMoreRelationships( node, pos ) )
         {
             if ( rel.getId() == rel1 )
             {
@@ -698,11 +706,15 @@ public class TestNeoStore extends AbstractNeoTestCase
         assertEquals( secondNode, relData.secondNode() );
         assertEquals( relType, relData.relationshipType() );
         rStore.deleteRelationship( rel );
+        RelationshipChainPosition firstPos = 
+            rStore.getRelationshipChainPosition( firstNode );
         Iterator<RelationshipData> first = 
-            nStore.getRelationships( firstNode ).iterator();
+            rStore.getMoreRelationships( firstNode, firstPos ).iterator();
         first.next();
+        RelationshipChainPosition secondPos = 
+            rStore.getRelationshipChainPosition( secondNode );
         Iterator<RelationshipData> second = 
-            nStore.getRelationships( secondNode ).iterator();
+            rStore.getMoreRelationships( secondNode, secondPos ).iterator();
         second.next();
         assertTrue( !first.hasNext() );
         assertTrue( !second.hasNext() );
@@ -750,10 +762,14 @@ public class TestNeoStore extends AbstractNeoTestCase
         assertEquals( secondNode, relData.secondNode() );
         assertEquals( relType, relData.relationshipType() );
         rStore.deleteRelationship( rel );
+        RelationshipChainPosition firstPos = 
+            rStore.getRelationshipChainPosition( firstNode );
         Iterator<RelationshipData> first = 
-            nStore.getRelationships( firstNode ).iterator();
+            rStore.getMoreRelationships( firstNode, firstPos ).iterator();
+        RelationshipChainPosition secondPos = 
+            rStore.getRelationshipChainPosition( secondNode );
         Iterator<RelationshipData> second = 
-            nStore.getRelationships( secondNode ).iterator();
+            rStore.getMoreRelationships( secondNode, secondPos ).iterator();
         assertTrue( !first.hasNext() );
         assertTrue( !second.hasNext() );
     }
@@ -796,8 +812,10 @@ public class TestNeoStore extends AbstractNeoTestCase
         assertEquals( 3, count );
         assertEquals( 2, nStore.getProperties( node ).size() );
 
+        RelationshipChainPosition pos = 
+            rStore.getRelationshipChainPosition( node );
         Iterator<RelationshipData> rels = 
-            nStore.getRelationships( node ).iterator();
+            rStore.getMoreRelationships( node, pos ).iterator();
         assertTrue( !rels.hasNext() );
         nStore.deleteNode( node );
     }
@@ -839,8 +857,10 @@ public class TestNeoStore extends AbstractNeoTestCase
         }
         assertEquals( 3, count );
         assertEquals( 2, nStore.getProperties( node ).size() );
+        RelationshipChainPosition pos = 
+            rStore.getRelationshipChainPosition( node );
         Iterator<RelationshipData> rels = 
-            nStore.getRelationships( node ).iterator();
+            rStore.getMoreRelationships( node, pos ).iterator();
         assertTrue( !rels.hasNext() );
         nStore.deleteNode( node );
     }
@@ -878,8 +898,10 @@ public class TestNeoStore extends AbstractNeoTestCase
             startTx();
             for ( int i = 0; i < 3; i++ )
             {
+                RelationshipChainPosition pos = 
+                    rStore.getRelationshipChainPosition( nodeIds[i] );
                 for ( RelationshipData rel : 
-                    nStore.getRelationships( nodeIds[i] ) )
+                    rStore.getMoreRelationships( nodeIds[i], pos ) )
                 {
                     rStore.deleteRelationship( rel.getId() );
                 }
@@ -922,8 +944,10 @@ public class TestNeoStore extends AbstractNeoTestCase
             startTx();
             for ( int i = 0; i < 3; i++ )
             {
+                RelationshipChainPosition pos = 
+                    rStore.getRelationshipChainPosition( nodeIds[i] );
                 for ( RelationshipData rel : 
-                    nStore.getRelationships( nodeIds[i] ) )
+                    rStore.getMoreRelationships( nodeIds[i], pos ) )
                 {
                     rStore.deleteRelationship( rel.getId() );
                 }

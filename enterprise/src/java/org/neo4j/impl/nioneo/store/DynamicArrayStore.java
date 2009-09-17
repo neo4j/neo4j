@@ -420,7 +420,8 @@ class DynamicArrayStore extends AbstractDynamicStore
         {
             return allocateFromShort( startBlock, (Short[]) array );
         }
-        throw new RuntimeException( array + " not a valid array type." );
+        throw new IllegalArgumentException( array + 
+            " not a valid array type." );
     }
 
     public Object getRightArray( byte[] bArray )
@@ -532,7 +533,7 @@ class DynamicArrayStore extends AbstractDynamicStore
             }
             return array;
         }
-        throw new RuntimeException( "Unknown array type[" + type + "]" );
+        throw new InvalidRecordException( "Unknown array type[" + type + "]" );
     }
 
     public Object getArray( int blockId )
@@ -555,8 +556,8 @@ class DynamicArrayStore extends AbstractDynamicStore
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unknown store version " + version  + 
-            " Please make sure you are not running old Neo4j kernel " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  + 
+            "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
     }

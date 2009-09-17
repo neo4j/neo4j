@@ -17,21 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.impl.nioneo.store;
+package org.neo4j.impl.transaction;
 
-public abstract class StoreFailureException extends RuntimeException
+public class TransactionFailureException extends RuntimeException
 {
-    public StoreFailureException( String msg )
+    public TransactionFailureException( String msg )
     {
         super( msg );
     }
-
-    public StoreFailureException( Throwable cause )
-    {
-        super( cause );
-    }
-
-    public StoreFailureException( String msg, Throwable cause )
+    
+    public TransactionFailureException( String msg, Throwable cause )
     {
         super( msg, cause );
     }

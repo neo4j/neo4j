@@ -19,19 +19,19 @@
  */
 package org.neo4j.impl.nioneo.store;
 
-public abstract class StoreFailureException extends RuntimeException
+public class UnderlyingStorageException extends StoreFailureException
 {
-    public StoreFailureException( String msg )
+    public UnderlyingStorageException( String msg )
     {
         super( msg );
     }
 
-    public StoreFailureException( Throwable cause )
+    public UnderlyingStorageException( Throwable cause )
     {
         super( cause );
     }
 
-    public StoreFailureException( String msg, Throwable cause )
+    public UnderlyingStorageException( String msg, Throwable cause )
     {
         super( msg, cause );
     }

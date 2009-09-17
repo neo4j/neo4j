@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
+import org.neo4j.api.core.NotFoundException;
+
 public class FileUtils
 {
     private static int WINDOWS_RETRY_COUNT = 3;
@@ -52,12 +54,12 @@ public class FileUtils
     {
         if ( !srcFile.exists() )
         {
-            throw new RuntimeException( "Source file[" + srcFile.getName()
+            throw new NotFoundException( "Source file[" + srcFile.getName()
                 + "] not found" );
         }
         if ( renameToFile.exists() )
         {
-            throw new RuntimeException( "Source file[" + renameToFile.getName()
+            throw new NotFoundException( "Source file[" + renameToFile.getName()
                 + "] not found" );
         }
         int count = 0;

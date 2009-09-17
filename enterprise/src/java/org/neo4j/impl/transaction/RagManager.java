@@ -104,12 +104,12 @@ class RagManager
         List<Transaction> lockingTxList = resourceMap.get( resource );
         if ( lockingTxList == null )
         {
-            throw new RuntimeException( resource + " not found in resource map" );
+            throw new LockException( resource + " not found in resource map" );
         }
 
         if ( !lockingTxList.remove( tx ) )
         {
-            throw new RuntimeException( tx + "not found in locking tx list" );
+            throw new LockException( tx + "not found in locking tx list" );
         }
         if ( lockingTxList.size() == 0 )
         {
@@ -121,7 +121,7 @@ class RagManager
     {
         if ( waitingTxMap.remove( tx ) == null )
         {
-            throw new RuntimeException( tx + " not waiting on " + resource );
+            throw new LockException( tx + " not waiting on " + resource );
         }
     }
 
@@ -132,13 +132,13 @@ class RagManager
         List<Transaction> lockingTxList = resourceMap.get( resource );
         if ( lockingTxList == null )
         {
-            throw new RuntimeException( "Illegal resource[" + resource
+            throw new LockException( "Illegal resource[" + resource
                 + "], not found in map" );
         }
 
         if ( waitingTxMap.get( tx ) != null )
         {
-            throw new RuntimeException( tx + " already waiting for resource" );
+            throw new LockException( tx + " already waiting for resource" );
         }
 
         Iterator<Transaction> itr = lockingTxList.iterator();
@@ -302,7 +302,8 @@ class RagManager
         }
         catch ( SystemException e )
         {
-            throw new RuntimeException( e );
+            throw new TransactionFailureException( 
+                "Could not get current transaction.", e );
         }
     }
 }

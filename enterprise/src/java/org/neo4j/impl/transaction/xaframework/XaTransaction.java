@@ -22,6 +22,8 @@ package org.neo4j.impl.transaction.xaframework;
 import java.io.IOException;
 import javax.transaction.xa.XAException;
 
+import org.neo4j.impl.transaction.TransactionFailureException;
+
 /**
  * <CODE>XaTransaction</CODE> holds all the commands that participate in the
  * transaction and then either rollbacks or commits them. Here are two example
@@ -223,12 +225,12 @@ public abstract class XaTransaction
     {
         if ( committed )
         {
-            throw new RuntimeException(
+            throw new TransactionFailureException(
                 "Cannot add command to committed transaction" );
         }
         if ( rolledback )
         {
-            throw new RuntimeException(
+            throw new TransactionFailureException(
                 "Cannot add command to rolled back transaction" );
         }
         doAddCommand( command );
@@ -238,7 +240,7 @@ public abstract class XaTransaction
         }
         catch ( IOException e )
         {
-            throw new RuntimeException(
+            throw new TransactionFailureException(
                 "Unable to write command to logical log.", e );
         }
     }

@@ -33,7 +33,7 @@ import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
-import org.neo4j.impl.nioneo.store.StoreFailureException;
+import org.neo4j.impl.transaction.TransactionFailureException;
 import org.neo4j.impl.transaction.xaframework.XaConnection;
 import org.neo4j.impl.transaction.xaframework.XaConnectionHelpImpl;
 import org.neo4j.impl.transaction.xaframework.XaResourceHelpImpl;
@@ -151,7 +151,8 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         }
         catch ( XAException e )
         {
-            throw new StoreFailureException( "Unable to get transaction.", e );
+            throw new TransactionFailureException( 
+                "Unable to get transaction.", e );
         }
     }
 
@@ -228,10 +229,10 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             return xaCon.getNeoTransaction().nodeGetProperties( nodeId );
         }
 
-        public Iterable<RelationshipData> getRelationships( int nodeId )
+        /*public Iterable<RelationshipData> getRelationships( int nodeId )
         {
             return xaCon.getNeoTransaction().nodeGetRelationships( nodeId );
-        }
+        }*/
     };
 
     private class RelationshipEventConsumerImpl implements

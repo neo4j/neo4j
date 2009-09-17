@@ -110,7 +110,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to create store "
+            throw new UnderlyingStorageException( "Unable to create store "
                 + fileName, e );
         }
         IdGeneratorImpl.createGenerator( fileName + ".id" );
@@ -152,8 +152,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             blockSize = buffer.getInt();
             if ( blockSize <= 0 )
             {
-                throw new StoreFailureException( "Illegal block size: " + 
-                    blockSize );
+                throw new InvalidRecordException( "Illegal block size: " + 
+                    blockSize + " in " + getStorageFileName() );
             }
             if ( !expectedVersion.equals( new String( version ) ) )
             {
@@ -173,7 +173,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to load storage "
+            throw new UnderlyingStorageException( "Unable to load storage "
                 + getStorageFileName(), e );
         }
         try
@@ -187,7 +187,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 openReadOnlyIdGenerator( getBlockSize() );
             }
         }
-        catch ( StoreFailureException e )
+        catch ( InvalidIdGeneratorException e )
         {
             setStoreNotOk();
         }
@@ -416,7 +416,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         byte inUse = buffer.get();
         if ( inUse != Record.IN_USE.byteValue() )
         {
-            throw new StoreFailureException( "Block not inUse[" + inUse
+            throw new InvalidRecordException( "Block not inUse[" + inUse
                 + "] blockId[" + blockId + "]" );
         }
         record.setInUse( true );
@@ -428,7 +428,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         if ( nextBlock != Record.NO_NEXT_BLOCK.intValue()
             && nrOfBytes < dataSize || nrOfBytes > dataSize )
         {
-            throw new StoreFailureException( "Next block set[" + nextBlock
+            throw new InvalidRecordException( "Next block set[" + nextBlock
                 + "] current block illegal size[" + nrOfBytes + "/" + dataSize
                 + "]" );
         }
@@ -445,7 +445,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         byte inUse = buffer.get();
         if ( inUse != Record.IN_USE.byteValue() )
         {
-            throw new StoreFailureException( "Not in use [" + inUse
+            throw new InvalidRecordException( "Not in use [" + inUse
                 + "] blockId[" + blockId + "]" );
         }
         record.setInUse( true );
@@ -457,7 +457,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         if ( nextBlock != Record.NO_NEXT_BLOCK.intValue()
             && nrOfBytes < dataSize || nrOfBytes > dataSize )
         {
-            throw new StoreFailureException( "Next block set[" + nextBlock
+            throw new InvalidRecordException( "Next block set[" + nextBlock
                 + "] current block illegal size[" + nrOfBytes + "/" + dataSize
                 + "]" );
         }
@@ -511,14 +511,15 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             byte inUse = buffer.get();
             if ( inUse != Record.IN_USE.byteValue() )
             {
-                throw new StoreFailureException( "Not in use [" + inUse
+                throw new InvalidRecordException( "Not in use [" + inUse
                     + "] blockId[" + blockId + "]" );
             }
             int prevBlock = buffer.getInt();
             if ( prevBlock != Record.NO_PREV_BLOCK.intValue() )
             {
-                throw new StoreFailureException(
-                    "Start block has previous block set" );
+                throw new InvalidRecordException(
+                    "Start[" + blockId + "] block has previous[" + prevBlock +
+                    "] block set" );
             }
             int nextBlock = blockId;
             int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
@@ -530,7 +531,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 if ( nextBlock != Record.NO_NEXT_BLOCK.intValue()
                     && nrOfBytes < dataSize || nrOfBytes > dataSize )
                 {
-                    throw new StoreFailureException( "Next block set["
+                    throw new InvalidRecordException( "Next block set["
                         + nextBlock + "] current block illegal size["
                         + nrOfBytes + "/" + dataSize + "]" );
                 }
@@ -545,13 +546,13 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                     inUse = buffer.get();
                     if ( inUse != Record.IN_USE.byteValue() )
                     {
-                        throw new StoreFailureException( "Next block["
+                        throw new InvalidRecordException( "Next block["
                             + nextBlock + "] not in use [" + inUse + "]" );
                     }
                     if ( buffer.getInt() != prevBlock )
                     {
-                        throw new StoreFailureException(
-                            "Previous block don't match" );
+                        throw new InvalidRecordException(
+                            "Previous[" + prevBlock + "] block don't match" );
                     }
                 }
             }
@@ -615,7 +616,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
     {
         if ( getBlockSize() <= 0 )
         {
-            throw new StoreFailureException( "Illegal blockSize: " + 
+            throw new InvalidRecordException( "Illegal blockSize: " + 
                 getBlockSize() );
         }
         logger.fine( "Rebuilding id generator for[" + getStorageFileName()
@@ -677,8 +678,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to rebuild id generator "
-                + getStorageFileName(), e );
+            throw new UnderlyingStorageException( 
+                "Unable to rebuild id generator " + getStorageFileName(), e );
         }
         setHighId( highId + 1 );
         logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId()

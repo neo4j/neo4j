@@ -24,6 +24,7 @@ import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.nioneo.store.PropertyData;
+import org.neo4j.impl.transaction.LockException;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -84,15 +85,8 @@ class RelationshipImpl extends NeoPrimitive implements Relationship,
 
     public Node[] getNodes()
     {
-        try
-        {
-            return new Node[] { new NodeProxy( startNodeId, nodeManager ),
-                new NodeProxy( endNodeId, nodeManager ) };
-        }
-        catch ( NotFoundException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return new Node[] { new NodeProxy( startNodeId, nodeManager ),
+            new NodeProxy( endNodeId, nodeManager ) };
     }
 
     public Node getOtherNode( Node node )
@@ -105,7 +99,7 @@ class RelationshipImpl extends NeoPrimitive implements Relationship,
         {
             return new NodeProxy( startNodeId, nodeManager );
         }
-        throw new RuntimeException( "Node[" + node.getId()
+        throw new NotFoundException( "Node[" + node.getId()
             + "] not connected to this relationship[" + getId() + "]" );
     }
 
@@ -210,7 +204,7 @@ class RelationshipImpl extends NeoPrimitive implements Relationship,
             }
             if ( releaseFailed )
             {
-                throw new RuntimeException( "Unable to release locks ["
+                throw new LockException( "Unable to release locks ["
                     + startNode + "," + endNode + "] in relationship delete->"
                     + this );
             }

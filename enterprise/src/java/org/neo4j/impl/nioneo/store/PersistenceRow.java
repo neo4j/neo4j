@@ -62,7 +62,7 @@ class PersistenceRow extends LockableWindow
     {
         if ( (id & 0xFFFFFFFFL) != buffer.position() )
         {
-            throw new StoreFailureException( "Id[" + id + 
+            throw new InvalidRecordException( "Id[" + id + 
                 "] not equal to buffer position[" + buffer.position() + "]" );
         }
         return buffer;
@@ -98,7 +98,7 @@ class PersistenceRow extends LockableWindow
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to load position["
+            throw new UnderlyingStorageException( "Unable to load position["
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }
@@ -117,7 +117,7 @@ class PersistenceRow extends LockableWindow
             }
             catch ( IOException e )
             {
-                throw new StoreFailureException( "Unable to write record["
+                throw new UnderlyingStorageException( "Unable to write record["
                     + position + "] @[" + position * recordSize + "]", e );
             }
         }

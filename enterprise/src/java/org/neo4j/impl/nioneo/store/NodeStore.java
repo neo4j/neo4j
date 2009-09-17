@@ -129,7 +129,7 @@ public class NodeStore extends AbstractStore implements Store
         {
             window = acquireWindow( id, OperationType.READ );
         }
-        catch ( StoreFailureException e )
+        catch ( InvalidRecordException e )
         {
             // ok id to high
             return false;
@@ -161,7 +161,7 @@ public class NodeStore extends AbstractStore implements Store
             {
                 return null;
             }
-            throw new StoreFailureException( "Record[" + id + "] not in use" );
+            throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
         NodeRecord nodeRecord = new NodeRecord( id );
         nodeRecord.setInUse( inUse );
@@ -208,8 +208,8 @@ public class NodeStore extends AbstractStore implements Store
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unknown store version " + version  + 
-            " Please make sure you are not running old Neo4j kernel " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  + 
+            "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
     }

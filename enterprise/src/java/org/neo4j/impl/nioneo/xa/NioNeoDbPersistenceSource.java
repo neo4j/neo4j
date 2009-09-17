@@ -59,7 +59,8 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         xaDs = (NeoStoreXaDataSource) xaDsManager.getXaDataSource( "nioneodb" );
         if ( xaDs == null )
         {
-            throw new RuntimeException( "Unable to get nioneodb datasource" );
+            throw new IllegalStateException( 
+                "Unable to get nioneodb datasource" );
         }
         readOnlyResourceConnection = new ReadOnlyResourceConnection( xaDs );
     }
@@ -238,11 +239,6 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return neoTransaction.nodeGetProperties( nodeId );
         }
 
-        public Iterable<RelationshipData> nodeLoadRelationships( int nodeId )
-        {
-            return neoTransaction.nodeGetRelationships( nodeId );
-        }
-
         public RelationshipData relLoadLight( int id )
         {
             return neoTransaction.relationshipLoad( id );
@@ -408,11 +404,6 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId )
         {
             return nodeConsumer.getProperties( nodeId );
-        }
-
-        public Iterable<RelationshipData> nodeLoadRelationships( int nodeId )
-        {
-            return nodeConsumer.getRelationships( nodeId );
         }
 
         public RelationshipData relLoadLight( int id )
