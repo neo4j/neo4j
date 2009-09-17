@@ -19,20 +19,11 @@
  */
 package org.neo4j.impl.transaction;
 
-import java.io.IOException;
 import java.util.Map;
 
 import javax.transaction.TransactionManager;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 /**
  * Can reads a XA data source configuration file and registers all the data
@@ -48,7 +39,6 @@ public class TxModule
     private static final String MODULE_NAME = "TxModule";
 
     private boolean startIsOk = true;
-    private String dataSourceConfigFile = null;
     private String txLogDir = "var/tm";
 
     private final TransactionManager txManager;
@@ -84,10 +74,6 @@ public class TxModule
         {
             return;
         }
-        if ( dataSourceConfigFile != null )
-        {
-            new XaDataSourceConfigFileParser().parse( dataSourceConfigFile );
-        }
         if ( txManager instanceof TxManager )
         {
             ((TxManager)txManager).init( xaDsManager );
@@ -97,22 +83,6 @@ public class TxModule
             ((ReadOnlyTxManager)txManager).init( xaDsManager );
         }
         startIsOk = false;
-    }
-
-    /**
-     * Sets a XA data source configuration file.
-     * 
-     * @param fileName
-     *            The filename of the configuration file
-     */
-    public void setXaDataSourceConfig( String fileName )
-    {
-        this.dataSourceConfigFile = fileName;
-    }
-
-    public String getXaDataSourceConfig()
-    {
-        return dataSourceConfigFile;
     }
 
     public void reload()
@@ -143,99 +113,6 @@ public class TxModule
         return MODULE_NAME;
     }
 
-    private class XaDataSourceConfigFileParser
-    {
-        void parse( String file )
-        {
-            try
-            {
-                DocumentBuilder builder = DocumentBuilderFactory.newInstance()
-                    .newDocumentBuilder();
-                Document document = builder.parse( file );
-
-                Element root = (Element) document.getElementsByTagName(
-                    "datasources" ).item( 0 );
-
-                NodeList list = root.getElementsByTagName( "xadatasource" );
-                for ( int i = 0; i < list.getLength(); i++ )
-                {
-                    this.parseXaDataSourceElement( (Element) list.item( i ) );
-                }
-            }
-            catch ( ParserConfigurationException e )
-            {
-                throw new RuntimeException( "Error parsing " + file, e );
-            }
-            catch ( SAXException e )
-            {
-                throw new RuntimeException( "Error parsing " + file, e );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( "Error parsing " + file, e );
-            }
-        }
-
-        private void parseXaDataSourceElement( Element element )
-        {
-            XaDataSourceManager xaDsMgr = xaDsManager;
-            NamedNodeMap attributes = element.getAttributes();
-            String name = attributes.getNamedItem( "name" ).getNodeValue();
-            name = name.toLowerCase();
-            if ( xaDsMgr.hasDataSource( name ) )
-            {
-                throw new RuntimeException( "Data source[" + name
-                    + "] has already been registered" );
-            }
-            String fqn = attributes.getNamedItem( "class" ).getNodeValue();
-            String branchId = attributes.getNamedItem( "branchid" )
-                .getNodeValue();
-            if ( !branchId.startsWith( "0x" ) )
-            {
-                throw new RuntimeException( "Unable to parse branch id["
-                    + branchId + "] on " + name + "[" + fqn
-                    + "], branch id should start with \"0x\""
-                    + " since they are hexadecimal" );
-            }
-            if ( branchId.length() != 8 )
-            {
-                throw new RuntimeException( "Unable to parse branch id["
-                    + branchId + "] on " + name + "[" + fqn
-                    + "], branch id must be a 3 byte hexadecimal number" );
-            }
-            byte resourceId[] = getBranchId( branchId.substring( 2, branchId
-                .length() ) );
-            Map<String,String> params = new java.util.HashMap<String,String>();
-            NodeList list = element.getElementsByTagName( "param" );
-            // java.util.Iterator i = element.elementIterator( "param" );
-            for ( int i = 0; i < list.getLength(); i++ )
-            {
-                Element param = (Element) list.item( i );
-                attributes = param.getAttributes();
-                String key = attributes.getNamedItem( "name" ).getNodeValue();
-                String value = attributes.getNamedItem( "value" )
-                    .getNodeValue();
-                params.put( key, value );
-            }
-            try
-            {
-                XaDataSource dataSource = xaDsMgr.create( fqn, params );
-                xaDsMgr.registerDataSource( name, dataSource, resourceId );
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( "Could not create data source "
-                    + name + "[" + fqn + "]", e );
-            }
-        }
-
-        private byte[] getBranchId( String branchId )
-        {
-            byte resourceId[] = branchId.getBytes();
-            return resourceId;
-        }
-    }
-
     /**
      * Use this method to add data source that can participate in transactions
      * if you don't want a data source configuration file.
@@ -257,7 +134,7 @@ public class TxModule
         String name = dsName.toLowerCase();
         if ( xaDsMgr.hasDataSource( name ) )
         {
-            throw new RuntimeException( "Data source[" + name
+            throw new TransactionFailureException( "Data source[" + name
                 + "] has already been registered" );
         }
         try
@@ -268,7 +145,8 @@ public class TxModule
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( "Could not create data source [" + name
+            throw new TransactionFailureException( 
+                "Could not create data source [" + name
                 + "], see nested exception for cause of error", e );
         }
     }
@@ -284,7 +162,7 @@ public class TxModule
             {
                 return xaDsMgr.getXaDataSource( name );
             }
-            throw new RuntimeException( "Data source[" + name
+            throw new TransactionFailureException( "Data source[" + name
                 + "] has already been registered" );
         }
         try
@@ -295,8 +173,8 @@ public class TxModule
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( "Could not create data source " + name
-                + "[" + name + "]", e );
+            throw new TransactionFailureException( 
+                "Could not create data source " + name + "[" + name + "]", e );
         }
     }
 

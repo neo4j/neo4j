@@ -35,6 +35,7 @@ import org.neo4j.api.core.NotInTransactionException;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
+import org.neo4j.impl.transaction.TransactionFailureException;
 import org.neo4j.impl.util.ArrayMap;
 import org.neo4j.impl.util.IntArray;
 
@@ -168,7 +169,8 @@ public class LockReleaser
             }
             catch ( Exception e )
             {
-                throw new RuntimeException( e );
+                throw new TransactionFailureException( 
+                    "Failed to register lock release synchronization hook", e );
             }
         }
     }
@@ -181,7 +183,8 @@ public class LockReleaser
         }
         catch ( SystemException e )
         {
-            throw new RuntimeException( "Unable to get transaction", e );
+            throw new TransactionFailureException( 
+                "Failed to get current transaction.", e );
         }
     }
 
@@ -363,7 +366,8 @@ public class LockReleaser
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
-                    throw new RuntimeException( "Unknown status: " + param );
+                    throw new TransactionFailureException( 
+                        "Unknown transaction status: " + param );
                 }
             }
         }
@@ -383,7 +387,8 @@ public class LockReleaser
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
-                    throw new RuntimeException( "Unknown status: " + param );
+                    throw new TransactionFailureException( 
+                        "Unknown transaction status: " + param );
                 }
             }
         }
@@ -599,8 +604,6 @@ public class LockReleaser
 
         public void beforeCompletion()
         {
-            // TODO Auto-generated method stub
-            
         }
     }
 }

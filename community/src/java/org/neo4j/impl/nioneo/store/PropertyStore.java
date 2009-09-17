@@ -216,7 +216,7 @@ public class PropertyStore extends AbstractStore implements Store
                 }
                 else
                 {
-                    throw new RuntimeException( "Unknown dynamic record" );
+                    throw new InvalidRecordException( "Unknown dynamic record" );
                 }
             }
         }
@@ -332,7 +332,7 @@ public class PropertyStore extends AbstractStore implements Store
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( buffer.get() != Record.IN_USE.byteValue() )
         {
-            throw new StoreFailureException( "Record[" + id + "] not in use" );
+            throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
         PropertyRecord record = new PropertyRecord( id );
         record.setType( getEnumType( buffer.getInt() ) );
@@ -369,7 +369,7 @@ public class PropertyStore extends AbstractStore implements Store
             case 10:
                 return PropertyType.SHORT;
             default:
-                throw new StoreFailureException( "Unknown enum type:" + type );
+                throw new InvalidRecordException( "Unknown enum type:" + type );
         }
     }
     
@@ -422,7 +422,8 @@ public class PropertyStore extends AbstractStore implements Store
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new RuntimeException( "Unknown type: " + type );
+        throw new InvalidRecordException( "Unknown type: " + type  + 
+            " for record " + propertyRecord );
     }
 
     @Override
@@ -605,7 +606,8 @@ public class PropertyStore extends AbstractStore implements Store
                 }
                 else
                 {
-                    throw new RuntimeException( "Assert" );
+                    throw new InvalidRecordException( 
+                        "Expected byte data on record " + record );
                 }
                 recordToFind = record.getNextBlock();
                 // TODO: make opti here, high chance next is right one
@@ -637,8 +639,8 @@ public class PropertyStore extends AbstractStore implements Store
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unknown store version " + version  + 
-            " Please make sure you are not running old Neo4j kernel " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  + 
+            "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
     }

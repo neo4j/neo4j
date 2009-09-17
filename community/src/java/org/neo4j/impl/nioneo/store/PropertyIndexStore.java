@@ -134,7 +134,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
             {
                 record = getRecord( i );
             }
-            catch ( StoreFailureException t )
+            catch ( InvalidRecordException t )
             {
                 continue;
             }
@@ -233,7 +233,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
         boolean inUse = (buffer.get() == Record.IN_USE.byteValue());
         if ( !inUse )
         {
-            throw new StoreFailureException( "Record[" + id + "] not in use" );
+            throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
         PropertyIndexRecord record = new PropertyIndexRecord( id );
         record.setInUse( inUse );
@@ -333,8 +333,8 @@ public class PropertyIndexStore extends AbstractStore implements Store
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unknown store version " + version  + 
-            " Please make sure you are not running old Neo4j kernel " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  + 
+            "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
     }

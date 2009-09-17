@@ -22,6 +22,7 @@ package org.neo4j.impl.nioneo.xa;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeRecord;
 import org.neo4j.impl.nioneo.store.NodeStore;
@@ -37,7 +38,6 @@ import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
-import org.neo4j.impl.nioneo.store.StoreFailureException;
 import org.neo4j.impl.util.ArrayMap;
 
 class NeoReadTransaction
@@ -129,48 +129,21 @@ class NeoReadTransaction
             }
             else
             {
-                throw new RuntimeException( "GAH" );
+                throw new InvalidRecordException( "Node[" + nodeId + 
+                    "] not part of firstNode[" + firstNode + 
+                    "] or secondNode[" + secondNode + "]" );
             }
         }
         position.setNextRecord( nextRel );
         return rels;
     }
     
-    public Iterable<RelationshipData> nodeGetRelationships( int nodeId )
-    {
-        NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
-        int nextRel = nodeRecord.getNextRel();
-        List<RelationshipData> rels = new ArrayList<RelationshipData>();
-        while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RelationshipRecord relRecord = 
-                getRelationshipStore().getRecord( nextRel );
-            int firstNode = relRecord.getFirstNode();
-            int secondNode = relRecord.getSecondNode();
-            rels.add( new RelationshipData( nextRel, firstNode, secondNode,
-                relRecord.getType() ) );
-            if ( firstNode == nodeId )
-            {
-                nextRel = relRecord.getFirstNextRel();
-            }
-            else if ( secondNode == nodeId )
-            {
-                nextRel = relRecord.getSecondNextRel();
-            }
-            else
-            {
-                throw new RuntimeException( "GAH" );
-            }
-        }
-        return rels;
-    }
-
     public ArrayMap<Integer,PropertyData> relGetProperties( int relId )
     {
         RelationshipRecord relRecord = getRelationshipStore().getRecord( relId );
         if ( !relRecord.inUse() )
         {
-            throw new StoreFailureException( "Relationship[" + relId + 
+            throw new InvalidRecordException( "Relationship[" + relId + 
                 "] not in use" );
         }
         int nextProp = relRecord.getNextProp();
@@ -255,7 +228,8 @@ class NeoReadTransaction
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new RuntimeException( "Unknown type: " + type );
+        throw new InvalidRecordException( "Unknown type: " + type + 
+            " on " + propertyRecord );
     }
 
     public Object propertyGetValue( int id )
@@ -312,7 +286,8 @@ class NeoReadTransaction
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new RuntimeException( "Unknown type: " + type );
+        throw new InvalidRecordException( "Unkown type: " + type + 
+            " on " + propertyRecord );
     }
 
     String getPropertyIndex( int id )

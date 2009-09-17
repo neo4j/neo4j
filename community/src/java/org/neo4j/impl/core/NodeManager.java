@@ -46,7 +46,7 @@ import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
-import org.neo4j.impl.transaction.IllegalResourceException;
+import org.neo4j.impl.transaction.LockException;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.traversal.InternalTraverserFactory;
@@ -278,7 +278,7 @@ public class NodeManager
         if ( firstNode == null )
         {
             setRollbackOnly();
-            throw new RuntimeException( "First node[" + startNode.getId()
+            throw new NotFoundException( "First node[" + startNode.getId()
                 + "] deleted" );
         }
         int endNodeId = (int) endNode.getId();
@@ -286,7 +286,7 @@ public class NodeManager
         if ( secondNode == null )
         {
             setRollbackOnly();
-            throw new RuntimeException( "Second node[" + endNode.getId()
+            throw new NotFoundException( "Second node[" + endNode.getId()
                 + "] deleted" );
         }
         int id = idGenerator.nextId( Relationship.class );
@@ -347,7 +347,7 @@ public class NodeManager
             }
             if ( releaseFailed )
             {
-                throw new RuntimeException( "Unable to release locks ["
+                throw new LockException( "Unable to release locks ["
                     + startNode + "," + endNode + "] in relationship create->"
                     + rel );
             }
@@ -499,7 +499,7 @@ public class NodeManager
             RelationshipType type = getRelationshipTypeById( typeId ); 
             if ( type == null )
             {
-                throw new RuntimeException( "Relationship[" + data.getId()
+                throw new NotFoundException( "Relationship[" + data.getId()
                     + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
@@ -548,7 +548,7 @@ public class NodeManager
             RelationshipType type = getRelationshipTypeById( typeId );
             if ( type == null )
             {
-                throw new RuntimeException( "Relationship[" + data.getId()
+                throw new NotFoundException( "Relationship[" + data.getId()
                     + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
@@ -586,77 +586,50 @@ public class NodeManager
     
     ArrayMap<String,IntArray> getMoreRelationships( NodeImpl node ) 
     {
-        try
+        int nodeId = (int) node.getId();
+        RelationshipChainPosition position = node.getRelChainPosition();
+        Iterable<RelationshipData> rels = 
+            persistenceManager.getMoreRelationships( nodeId, position );
+        ArrayMap<String,IntArray> newRelationshipMap = 
+            new ArrayMap<String,IntArray>();
+        for ( RelationshipData rel : rels )
         {
-            int nodeId = (int) node.getId();
-            RelationshipChainPosition position = node.getRelChainPosition();
-            Iterable<RelationshipData> rels = 
-                persistenceManager.getMoreRelationships( nodeId, position );
-            ArrayMap<String,IntArray> newRelationshipMap = 
-                new ArrayMap<String,IntArray>();
-            for ( RelationshipData rel : rels )
+            int relId = rel.getId();
+            RelationshipImpl relImpl = relCache.get( relId );
+            RelationshipType type = null;
+            if ( relImpl == null )
             {
-                int relId = rel.getId();
-                RelationshipImpl relImpl = relCache.get( relId );
-                RelationshipType type = null;
-                if ( relImpl == null )
-                {
-                    type = getRelationshipTypeById( rel.relationshipType() );
-                    assert type != null;
-                    relImpl = new RelationshipImpl( relId, rel.firstNode(),
-                        rel.secondNode(), type, false, this );
-                    relCache.put( relId, relImpl );
-                }
-                else
-                {
-                    type = relImpl.getType();
-                }
-                IntArray relationshipSet = newRelationshipMap.get( 
-                    type.name() );
-                if ( relationshipSet == null )
-                {
-                    relationshipSet = new IntArray();
-                    newRelationshipMap.put( type.name(), relationshipSet );
-                }
-                relationshipSet.add( relId );
+                type = getRelationshipTypeById( rel.relationshipType() );
+                assert type != null;
+                relImpl = new RelationshipImpl( relId, rel.firstNode(),
+                    rel.secondNode(), type, false, this );
+                relCache.put( relId, relImpl );
             }
-            return newRelationshipMap;
+            else
+            {
+                type = relImpl.getType();
+            }
+            IntArray relationshipSet = newRelationshipMap.get( 
+                type.name() );
+            if ( relationshipSet == null )
+            {
+                relationshipSet = new IntArray();
+                newRelationshipMap.put( type.name(), relationshipSet );
+            }
+            relationshipSet.add( relId );
         }
-        catch ( Exception e )
-        {
-            log.severe( "Failed loading more relationships for [" + 
-                node + "]" );
-            throw new RuntimeException( e );
-        }
+        return newRelationshipMap;
     }
     
     ArrayMap<Integer,PropertyData> loadProperties( NodeImpl node )
     {
-        try
-        {
-            return persistenceManager.loadNodeProperties( (int) node.getId() );
-        }
-        catch ( Exception e )
-        {
-            log.severe( "Failed loading properties for node[" + node.getId()
-                + "]" );
-            throw new RuntimeException( e );
-        }
+        return persistenceManager.loadNodeProperties( (int) node.getId() );
     }
 
     ArrayMap<Integer,PropertyData> loadProperties( RelationshipImpl relationship )
     {
-        try
-        {
-            return persistenceManager.loadRelProperties( 
-                (int) relationship.getId() );
-        }
-        catch ( Exception e )
-        {
-            log.severe( "Failed loading properties for relationship["
-                + relationship.getId() + "]" );
-            throw new RuntimeException( e );
-        }
+        return persistenceManager.loadRelProperties( 
+            (int) relationship.getId() );
     }
 
     int getNodeMaxCacheSize()
@@ -700,24 +673,17 @@ public class NodeManager
 
     void acquireLock( Object resource, LockType lockType )
     {
-        try
+        if ( lockType == LockType.READ )
         {
-            if ( lockType == LockType.READ )
-            {
-                lockManager.getReadLock( resource );
-            }
-            else if ( lockType == LockType.WRITE )
-            {
-                lockManager.getWriteLock( resource );
-            }
-            else
-            {
-                throw new RuntimeException( "Unknown lock type: " + lockType );
-            }
+            lockManager.getReadLock( resource );
         }
-        catch ( IllegalResourceException e )
+        else if ( lockType == LockType.WRITE )
         {
-            throw new RuntimeException( e );
+            lockManager.getWriteLock( resource );
+        }
+        else
+        {
+            throw new LockException( "Unknown lock type: " + lockType );
         }
     }
 
@@ -733,7 +699,7 @@ public class NodeManager
         }
         else
         {
-            throw new RuntimeException( "Unknown lock type: " + lockType );
+            throw new LockException( "Unknown lock type: " + lockType );
         }
     }
 

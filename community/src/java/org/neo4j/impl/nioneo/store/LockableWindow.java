@@ -22,6 +22,8 @@ package org.neo4j.impl.nioneo.store;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 
+import org.neo4j.impl.transaction.LockException;
+
 /**
  * Makes a {@link PersistenceWindow} "lockable" meaning it can be locked by a
  * thread during a operation making sure no other thread use the same window
@@ -108,7 +110,7 @@ abstract class LockableWindow implements PersistenceWindow
         Thread currentThread = Thread.currentThread();
         if ( lockCount == 0 )
         {
-            throw new RuntimeException( "" + currentThread
+            throw new LockException( "" + currentThread
                 + " don't have window lock on " + this );
         }
         lockCount--;

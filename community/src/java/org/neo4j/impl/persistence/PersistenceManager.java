@@ -19,6 +19,7 @@
  */
 package org.neo4j.impl.persistence;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.transaction.Synchronization;
@@ -35,6 +36,7 @@ import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.xa.NioNeoDbPersistenceSource;
+import org.neo4j.impl.transaction.TransactionFailureException;
 import org.neo4j.impl.util.ArrayMap;
 
 public class PersistenceManager
@@ -91,11 +93,6 @@ public class PersistenceManager
         return getReadOnlyResource().getMoreRelationships( nodeId, position );
     }
     
-    public Iterable<RelationshipData> loadRelationships( int nodeId )
-    {
-        return getReadOnlyResource().nodeLoadRelationships( nodeId );
-    }
-
     public ArrayMap<Integer,PropertyData> loadNodeProperties( int nodeId )
     {
         return getReadOnlyResource().nodeLoadProperties( nodeId );
@@ -262,8 +259,8 @@ public class PersistenceManager
             }
             catch ( Throwable t )
             {
-                t.printStackTrace();
-                log.severe( "Unable to delist resources for tx." );
+                log.log( Level.SEVERE, 
+                    "Unable to release connections for " + tx, t );
             }
         }
 
@@ -275,8 +272,8 @@ public class PersistenceManager
             }
             catch ( Throwable t )
             {
-                t.printStackTrace();
-                log.severe( "Unable to delist resources for tx." );
+                log.log( Level.SEVERE, 
+                    "Unable to delist resources for " + tx, t );
             }
         }
 
@@ -288,8 +285,8 @@ public class PersistenceManager
             }
             catch ( Throwable t )
             {
-                t.printStackTrace();
-                log.severe( "Error while releasing resources for tx." );
+                log.log( Level.SEVERE, 
+                    "Error releasing resources for " + tx, t );
             }
         }
     }
@@ -304,12 +301,11 @@ public class PersistenceManager
             {
                 tx.delistResource( con.getXAResource(), XAResource.TMSUCCESS );
             }
-            catch ( Exception e )
+            catch ( SystemException e )
             {
-                e.printStackTrace();
-                log.severe( "Failed to delist resource '" + con
-                    + "' from current transaction." );
-                throw new RuntimeException( e );
+                throw new TransactionFailureException(
+                    "Failed to delist resource '" + con + 
+                    "' from current transaction.", e );
             }
         }
     }

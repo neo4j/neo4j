@@ -19,6 +19,7 @@
  */
 package org.neo4j.impl.batchinsert;
 
+import org.neo4j.api.core.NotFoundException;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -59,7 +60,7 @@ public class PropertyIndexHolder
         String stringKey = idToIndex.get( keyId );
         if ( stringKey == null )
         {
-            throw new RuntimeException( "No such property index[" + keyId + 
+            throw new NotFoundException( "No such property index[" + keyId + 
                 "]" );
         }
         return stringKey;

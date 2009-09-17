@@ -25,21 +25,16 @@ import java.util.Map;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.impl.cache.AdaptiveCacheManager;
 import org.neo4j.impl.core.LockReleaser;
-import org.neo4j.impl.core.NeoModule;
-import org.neo4j.impl.event.EventModule;
 import org.neo4j.impl.nioneo.xa.NioNeoDbPersistenceSource;
-import org.neo4j.impl.persistence.IdGeneratorModule;
-import org.neo4j.impl.persistence.PersistenceModule;
 import org.neo4j.impl.transaction.LockManager;
+import org.neo4j.impl.transaction.TransactionFailureException;
 import org.neo4j.impl.transaction.TxModule;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.impl.util.FileUtils;
 
 class NeoJvmInstance
 {
-
     private static final String NIO_NEO_DB_CLASS = "org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource";
     private static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
@@ -56,6 +51,7 @@ class NeoJvmInstance
     }
 
     private Config config = null;
+
     private NioNeoDbPersistenceSource persistenceSource = null;
 
     public Config getConfig()
@@ -129,15 +125,18 @@ class NeoJvmInstance
             NIO_NEO_DB_CLASS, resourceId, params );
         // hack for lucene index recovery if in path
         XaDataSource lucene = null;
-        try
+        if ( !config.isReadOnly() )
         {
-            Class clazz = Class.forName( LUCENE_DS_CLASS );
-            cleanWriteLocksInLuceneDirectory( storeDir + "/lucene" );
-            lucene = registerLuceneDataSource( clazz.getName(), config
-                .getTxModule(), storeDir + "/lucene", config.getLockManager() );
-        }
-        catch ( ClassNotFoundException e )
-        { // ok index util not on class path
+            try
+            {
+                Class clazz = Class.forName( LUCENE_DS_CLASS );
+                cleanWriteLocksInLuceneDirectory( storeDir + "/lucene" );
+                lucene = registerLuceneDataSource( clazz.getName(), config
+                    .getTxModule(), storeDir + "/lucene", config.getLockManager() );
+            }
+            catch ( ClassNotFoundException e )
+            { // ok index util not on class path
+            }
         }
         // System.setProperty( "neo.tx_log_directory", storeDir );
         persistenceSource = new NioNeoDbPersistenceSource();
@@ -233,101 +232,6 @@ class NeoJvmInstance
         started = false;
     }
 
-    public static class Config
-    {
-        private EventModule eventModule;
-        private AdaptiveCacheManager cacheManager;
-        private TxModule txModule;
-        private LockManager lockManager;
-        private LockReleaser lockReleaser;
-        private PersistenceModule persistenceModule;
-        private boolean create = false;
-        private String persistenceSourceName;
-        private IdGeneratorModule idGeneratorModule;
-        private NeoModule neoModule;
-        private String storeDir;
-        private final Map<Object,Object> params;
-
-        Config( String storeDir, Map<Object,Object> params )
-        {
-            this.storeDir = storeDir;
-            this.params = params;
-            eventModule = new EventModule();
-            cacheManager = new AdaptiveCacheManager();
-            txModule = new TxModule( this.storeDir );
-            lockManager = new LockManager( txModule.getTxManager() );
-            lockReleaser = new LockReleaser( lockManager, 
-                txModule.getTxManager() );
-            persistenceModule = new PersistenceModule(); // txModule.getTxManager() );
-            idGeneratorModule = new IdGeneratorModule();
-            neoModule = new NeoModule( cacheManager, lockManager, txModule
-                .getTxManager(), idGeneratorModule.getIdGenerator() );
-        }
-
-        /**
-         * Sets the persistence source for neo to use. If this method is never
-         * called default persistence source is used (NioNeo DB).
-         * 
-         * @param name
-         *            fqn name of persistence source to use
-         */
-        void setNeoPersistenceSource( String name, boolean create )
-        {
-            persistenceSourceName = name;
-            this.create = create;
-        }
-
-        String getPersistenceSource()
-        {
-            return persistenceSourceName;
-        }
-
-        boolean getCreatePersistenceSource()
-        {
-            return create;
-        }
-
-        public EventModule getEventModule()
-        {
-            return eventModule;
-        }
-
-        public TxModule getTxModule()
-        {
-            return txModule;
-        }
-
-        public NeoModule getNeoModule()
-        {
-            return neoModule;
-        }
-
-        public PersistenceModule getPersistenceModule()
-        {
-            return persistenceModule;
-        }
-
-        IdGeneratorModule getIdGeneratorModule()
-        {
-            return idGeneratorModule;
-        }
-
-        public LockManager getLockManager()
-        {
-            return lockManager;
-        }
-
-        public LockReleaser getLockReleaser()
-        {
-            return lockReleaser;
-        }
-
-        public Map<Object,Object> getParams()
-        {
-            return this.params;
-        }
-    }
-
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         return config.getNeoModule().getRelationshipTypes();
@@ -341,7 +245,8 @@ class NeoJvmInstance
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( e );
+            throw new TransactionFailureException( 
+                "Unable to get transaction.", e );
         }
     }
 

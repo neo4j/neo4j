@@ -33,6 +33,7 @@ import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
+import org.neo4j.impl.transaction.TransactionFailureException;
 import org.neo4j.impl.transaction.XidImpl;
 import org.neo4j.impl.util.ArrayMap;
 import org.neo4j.impl.util.FileUtils;
@@ -623,7 +624,7 @@ public class XaLogicalLog
                     "rw" ).getChannel();
                 FileUtils.truncateFile( channel, endPosition );
             }
-            catch ( Exception e )
+            catch ( IOException e )
             {
                 log.log( Level.WARNING, 
                     "Failed to truncate log at correct size", e );
@@ -1329,7 +1330,8 @@ public class XaLogicalLog
             buffer.position( 0 );
             if ( writeToLog.write( buffer ) != 5 )
             {
-                throw new RuntimeException( "Unable to write command header" );
+                throw new TransactionFailureException( 
+                    "Unable to write command header" );
             }
         }
         XaCommand command = cf.readCommand( fileChannel, buffer );
@@ -1379,7 +1381,8 @@ public class XaLogicalLog
         buffer.position( 0 );
         if ( writeToLog != null && writeToLog.write( buffer ) != 5 )
         {
-            throw new RuntimeException( "Unable to write 1P commit entry" );
+            throw new TransactionFailureException( 
+                "Unable to write 1P commit entry" );
         }
     }
 
@@ -1406,7 +1409,8 @@ public class XaLogicalLog
         buffer.position( 0 );
         if ( writeToLog != null && writeToLog.write( buffer ) != 5 )
         {
-            throw new RuntimeException( "Unable to write 2P commit entry" );
+            throw new TransactionFailureException( 
+                "Unable to write 2P commit entry" );
         }
     }
     
@@ -1432,7 +1436,8 @@ public class XaLogicalLog
         buffer.position( 0 );
         if ( writeToLog != null && writeToLog.write( buffer ) != 5 )
         {
-            throw new RuntimeException( "Unable to write prepare entry" );
+            throw new TransactionFailureException( 
+                "Unable to write prepare entry" );
         }
     }
 
@@ -1474,7 +1479,8 @@ public class XaLogicalLog
         if ( writeToLog != null && 
             writeToLog.write( buffer ) != 3 + 8 + xidLength )
         {
-            throw new RuntimeException( "Unable to write tx start xid" );
+            throw new TransactionFailureException( 
+                "Unable to write tx start xid" );
         }
     }
 

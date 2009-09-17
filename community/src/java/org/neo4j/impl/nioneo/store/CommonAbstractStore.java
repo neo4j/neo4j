@@ -210,7 +210,7 @@ public abstract class CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to open file "
+            throw new UnderlyingStorageException( "Unable to open file "
                 + storageFileName, e );
         }
         try
@@ -229,7 +229,7 @@ public abstract class CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to lock store["
+            throw new UnderlyingStorageException( "Unable to lock store["
                 + storageFileName + "]" );
         }
     }
@@ -242,7 +242,7 @@ public abstract class CommonAbstractStore
     {
         if ( readOnly )
         {
-            throw new StoreFailureException( 
+            throw new UnderlyingStorageException( 
                 "Cannot start up on non clean store as read only" );
         }
         storeOk = false;
@@ -448,7 +448,7 @@ public abstract class CommonAbstractStore
         if ( !isInRecoveryMode()
             && ( position > idGenerator.getHighId() || !storeOk) )
         {
-            throw new StoreFailureException( "Position[" + position
+            throw new InvalidRecordException( "Position[" + position
                 + "] requested for operation is high id["
                 + idGenerator.getHighId() + "] or store is flagged as dirty["
                 + storeOk + "]" );
@@ -524,7 +524,7 @@ public abstract class CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( e );
+            throw new UnderlyingStorageException( e );
         }
     }
 
@@ -574,7 +574,7 @@ public abstract class CommonAbstractStore
             }
             catch ( IOException e )
             {
-                throw new StoreFailureException( e );
+                throw new UnderlyingStorageException( e );
             }
             return;
         }
@@ -630,7 +630,7 @@ public abstract class CommonAbstractStore
         }
         if ( !success )
         {
-            throw new StoreFailureException( "Unable to close store "
+            throw new UnderlyingStorageException( "Unable to close store "
                 + getStorageFileName(), storedIoe );
         }
     }

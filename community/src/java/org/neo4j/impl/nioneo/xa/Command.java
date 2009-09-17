@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.logging.Logger;
 
 import org.neo4j.impl.nioneo.store.DynamicRecord;
+import org.neo4j.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeRecord;
 import org.neo4j.impl.nioneo.store.NodeStore;
@@ -636,7 +637,7 @@ abstract class Command extends XaCommand
                 case 10:
                     return PropertyType.SHORT;
             }
-            throw new RuntimeException( "Unknown property type:" + type );
+            throw new InvalidRecordException( "Unknown property type:" + type );
         }
 
         @Override

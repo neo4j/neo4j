@@ -19,20 +19,10 @@
  */
 package org.neo4j.impl.nioneo.store;
 
-public abstract class StoreFailureException extends RuntimeException
+public class IllegalStoreVersionException extends StoreFailureException
 {
-    public StoreFailureException( String msg )
+    public IllegalStoreVersionException( String msg )
     {
         super( msg );
-    }
-
-    public StoreFailureException( Throwable cause )
-    {
-        super( cause );
-    }
-
-    public StoreFailureException( String msg, Throwable cause )
-    {
-        super( msg, cause );
     }
 }

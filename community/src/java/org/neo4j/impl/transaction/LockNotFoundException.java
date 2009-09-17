@@ -19,7 +19,7 @@
  */
 package org.neo4j.impl.transaction;
 
-public class LockNotFoundException extends RuntimeException
+public class LockNotFoundException extends LockException
 {
     public LockNotFoundException()
     {

@@ -127,14 +127,7 @@ class PersistenceWindowPool
                 if ( brickIndex < brickArray.length )
                 {
                     window = brickArray[brickIndex].getWindow();
-                    if ( window != null && !window.encapsulates( position ) )
-                    {
-                        log.severe( "NIONEO: FOR pos=" + position
-                            + " brickIndex=" + brickIndex + " blockSize="
-                            + blockSize + " brickSize=" + brickSize
-                            + " window=" + window );
-                        throw new RuntimeException( "assssert" );
-                    }
+                    // assert window == null || window.encapsulates( position );
                     brickArray[brickIndex].setHit();
                 }
                 else
@@ -245,8 +238,8 @@ class PersistenceWindowPool
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Failed to flush file channel "
-                + storeName, e );
+            throw new UnderlyingStorageException( 
+                "Failed to flush file channel " + storeName, e );
         }
     }
 
@@ -317,8 +310,8 @@ class PersistenceWindowPool
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to get file size for "
-                + storeName, e );
+            throw new UnderlyingStorageException( 
+                "Unable to get file size for " + storeName, e );
         }
         if ( blockSize == 0 )
         {
@@ -577,8 +570,8 @@ class PersistenceWindowPool
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to get file size for "
-                + storeName, e );
+            throw new UnderlyingStorageException( 
+                "Unable to get file size for " + storeName, e );
         }
     }
 

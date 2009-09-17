@@ -19,6 +19,7 @@
  */
 package org.neo4j.impl.batchinsert;
 
+import org.neo4j.api.core.NotFoundException;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.util.ArrayMap;
 
@@ -59,7 +60,7 @@ public class RelationshipTypeHolder
         String name = idToName.get( id );
         if ( name == null )
         {
-            throw new RuntimeException( "No such relationship type[" + id + 
+            throw new NotFoundException( "No such relationship type[" + id + 
                 "]" );
         }
         return name;
