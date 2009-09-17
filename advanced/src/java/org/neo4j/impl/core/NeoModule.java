@@ -22,6 +22,11 @@ package org.neo4j.impl.core;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.NotSupportedException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.api.core.Node;
@@ -33,6 +38,7 @@ import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
 import org.neo4j.impl.transaction.LockManager;
+import org.neo4j.impl.transaction.TransactionFailureException;
 
 public class NeoModule
 {
@@ -103,28 +109,11 @@ public class NeoModule
         // load and verify from PS
         RelationshipTypeData relTypes[] = null;
         PropertyIndexData propertyIndexes[] = null;
-        try
-        {
-            transactionManager.begin();
-            relTypes = persistenceManager.loadAllRelationshipTypes();
-            propertyIndexes = persistenceManager.loadPropertyIndexes( 
-                INDEX_COUNT );
-            transactionManager.commit();
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            try
-            {
-                transactionManager.rollback();
-            }
-            catch ( Exception ee )
-            {
-                ee.printStackTrace();
-                log.severe( "Unable to rollback tx" );
-            }
-            throw new RuntimeException( "Unable to load all relationships", e );
-        }
+        beginTx();
+        relTypes = persistenceManager.loadAllRelationshipTypes();
+        propertyIndexes = persistenceManager.loadPropertyIndexes( 
+            INDEX_COUNT );
+        commitTx();
         nodeManager.addRawRelationshipTypes( relTypes );
         nodeManager.addPropertyIndexes( propertyIndexes );
         if ( propertyIndexes.length < INDEX_COUNT )
@@ -134,7 +123,57 @@ public class NeoModule
         nodeManager.start( params );
         startIsOk = false;
     }
-
+    
+    private void beginTx()
+    {
+        try
+        {
+            transactionManager.begin();
+        }
+        catch ( NotSupportedException e )
+        {
+            throw new TransactionFailureException( 
+                "Unable to begin transaction.", e );
+        }
+        catch ( SystemException e )
+        {
+            throw new TransactionFailureException( 
+                "Unable to begin transaction.", e );
+        }
+    }
+    
+    private void commitTx()
+    {
+        try
+        {
+            transactionManager.commit();
+        }
+        catch ( SecurityException e )
+        {
+            throw new TransactionFailureException( "Failed to commit.", e );
+        }
+        catch ( IllegalStateException e )
+        {
+            throw new TransactionFailureException( "Failed to commit.", e );
+        }
+        catch ( RollbackException e )
+        {
+            throw new TransactionFailureException( "Failed to commit.", e );
+        }
+        catch ( HeuristicMixedException e )
+        {
+            throw new TransactionFailureException( "Failed to commit.", e );
+        }
+        catch ( HeuristicRollbackException e )
+        {
+            throw new TransactionFailureException( "Failed to commit.", e );
+        }
+        catch ( SystemException e )
+        {
+            throw new TransactionFailureException( "Failed to commit.", e );
+        }
+    }
+    
     public void setReferenceNodeId( Integer nodeId )
     {
         nodeManager.setReferenceNodeId( nodeId.intValue() );
@@ -162,25 +201,13 @@ public class NeoModule
 
     public void createNewReferenceNode()
     {
-        try
-        {
-            Node node = nodeManager.createNode();
-            nodeManager.setReferenceNodeId( (int) node.getId() );
-            log.fine( "Created a new reference node. " + 
-                "Current reference node is now " + node );
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            log.severe( "Unable to create new reference node." );
-        }
+        Node node = nodeManager.createNode();
+        nodeManager.setReferenceNodeId( (int) node.getId() );
     }
 
     public void reload( Map<Object,Object> params )
     {
         throw new UnsupportedOperationException();
-//        stop();
-//        start( params );
     }
 
     public void stop()

@@ -31,6 +31,7 @@ import java.util.Map.Entry;
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
+import org.neo4j.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeRecord;
 import org.neo4j.impl.nioneo.store.NodeStore;
@@ -45,6 +46,7 @@ import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.impl.util.FileUtils;
 
 public class BatchInserterImpl implements BatchInserter
@@ -164,7 +166,7 @@ public class BatchInserterImpl implements BatchInserter
             }
             else
             {
-                throw new RuntimeException( firstNode + " dont match "
+                throw new InvalidRecordException( firstNode + " dont match "
                     + nextRel );
             }
             getRelationshipStore().updateRecord( nextRel );
@@ -183,7 +185,7 @@ public class BatchInserterImpl implements BatchInserter
             }
             else
             {
-                throw new RuntimeException( firstNode + " dont match "
+                throw new InvalidRecordException( secondNode + " dont match "
                     + nextRel );
             }
             getRelationshipStore().updateRecord( nextRel );
@@ -252,7 +254,9 @@ public class BatchInserterImpl implements BatchInserter
             }
             else
             {
-                throw new RuntimeException( "GAH" );
+                throw new InvalidRecordException( "Node[" + nodeId + 
+                    "] not part of firstNode[" + firstNode + 
+                    "] or secondNode[" + secondNode + "]" );
             }
         }
         return ids;
@@ -282,7 +286,9 @@ public class BatchInserterImpl implements BatchInserter
             }
             else
             {
-                throw new RuntimeException( "GAH" );
+                throw new InvalidRecordException( "Node[" + nodeId + 
+                    "] not part of firstNode[" + firstNode + 
+                    "] or secondNode[" + secondNode + "]" );
             }
         }
         return rels;
@@ -518,7 +524,8 @@ public class BatchInserterImpl implements BatchInserter
         {
             if ( !directories.mkdirs() )
             {
-                throw new RuntimeException( "Unable to create directory path["
+                throw new UnderlyingStorageException( 
+                    "Unable to create directory path["
                     + storeDir + "] for Neo store." );
             }
         }

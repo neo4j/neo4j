@@ -91,7 +91,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to load position["
+            throw new UnderlyingStorageException( "Unable to load position["
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }
@@ -108,7 +108,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to write record["
+            throw new UnderlyingStorageException( "Unable to write record["
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }

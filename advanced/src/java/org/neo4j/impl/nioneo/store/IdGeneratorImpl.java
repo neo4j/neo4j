@@ -157,7 +157,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
         if ( nextFreeId >= OVERFLOW_ID || nextFreeId < 0  )
         {
-            throw new StoreFailureException( "Id capacity exceeded" );
+            throw new UnderlyingStorageException( "Id capacity exceeded" );
         }
         return nextFreeId++;
     }
@@ -301,8 +301,8 @@ public class IdGeneratorImpl implements IdGenerator
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to close id generator "
-                + fileName, e );
+            throw new UnderlyingStorageException( 
+                "Unable to close id generator " + fileName, e );
         }
     }
 
@@ -349,8 +349,8 @@ public class IdGeneratorImpl implements IdGenerator
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to create id generator"
-                + fileName, e );
+            throw new UnderlyingStorageException( 
+                "Unable to create id generator" + fileName, e );
         }
     }
 
@@ -365,7 +365,7 @@ public class IdGeneratorImpl implements IdGenerator
             if ( totalBytesRead != HEADER_SIZE )
             {
                 fileChannel.close();
-                throw new StoreFailureException(
+                throw new InvalidIdGeneratorException(
                     "Unable to read header, bytes read: " + totalBytesRead );
             }
             buffer.flip();
@@ -373,7 +373,7 @@ public class IdGeneratorImpl implements IdGenerator
             if ( storageStatus != CLEAN_GENERATOR )
             {
                 fileChannel.close();
-                throw new StoreFailureException( "Sticky generator[ "
+                throw new InvalidIdGeneratorException( "Sticky generator[ "
                     + fileName
                     + "] delete this id generator and build a new one" );
             }
@@ -389,8 +389,8 @@ public class IdGeneratorImpl implements IdGenerator
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to init id generator "
-                + fileName, e );
+            throw new UnderlyingStorageException( 
+                "Unable to init id generator " + fileName, e );
         }
     }
 
@@ -433,7 +433,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException(
+            throw new UnderlyingStorageException(
                 "Failed reading defragged id batch", e );
         }
     }
@@ -463,8 +463,8 @@ public class IdGeneratorImpl implements IdGenerator
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to write defragged id "
-                + " batch", e );
+            throw new UnderlyingStorageException( 
+                "Unable to write defragged id " + " batch", e );
         }
     }
 

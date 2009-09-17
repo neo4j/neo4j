@@ -23,7 +23,6 @@ import java.io.IOException;
 
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
-import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.util.ArrayMap;
 
 /**
@@ -116,15 +115,4 @@ public interface NodeEventConsumer
      *             If unable to get the properties
      */
     public ArrayMap<Integer,PropertyData> getProperties( int nodeId );
-
-    /**
-     * Returns all relationships connected to the node.
-     * 
-     * @param nodeId
-     *            The id of the node
-     * @return An array containing all relationships connected to the node
-     * @throws IOException
-     *             If unable to get the relationships
-     */
-    public Iterable<RelationshipData> getRelationships( int nodeId );
 }

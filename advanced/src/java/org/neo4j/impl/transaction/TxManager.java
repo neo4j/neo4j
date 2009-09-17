@@ -122,9 +122,9 @@ public class TxManager implements TransactionManager
                     + new String( fileName ).trim();
                 if ( !new File( currentTxLog ).exists() )
                 {
-                    throw new RuntimeException( "Unable to start TM, "
-                        + "active tx log file[" + currentTxLog + 
-                        "] not found." );
+                    throw new TransactionFailureException( 
+                        "Unable to start TM, " + "active tx log file[" + 
+                        currentTxLog + "] not found." );
                 }
                 txLog = new TxLog( currentTxLog );
             }
@@ -134,7 +134,8 @@ public class TxManager implements TransactionManager
                     || new File( txLogDir + separator + txLog2FileName )
                         .exists() )
                 {
-                    throw new RuntimeException( "Unable to start TM, "
+                    throw new TransactionFailureException( 
+                        "Unable to start TM, "
                         + "no active tx log file found but found either "
                         + txLog1FileName + " or " + txLog2FileName
                         + " file, please set one of them as active or "
@@ -164,9 +165,8 @@ public class TxManager implements TransactionManager
         }
         catch ( IOException e )
         {
-            e.printStackTrace();
             log.severe( "Unable to start TM" );
-            throw new RuntimeException( e );
+            throw new TransactionFailureException( "Unable to start TM", e );
         }
     }
 
@@ -293,7 +293,7 @@ public class TxManager implements TransactionManager
                         .getBranchQualifier() );
                     if ( !resourceMap.containsKey( resource ) )
                     {
-                        throw new RuntimeException(
+                        throw new TransactionFailureException(
                             "Couldn't find XAResource for " + xids[i] );
                     }
                     log.fine( "Commiting tx seq[" + seq + "][" + 
@@ -309,8 +309,8 @@ public class TxManager implements TransactionManager
                 Resource resource = new Resource( xid.getBranchQualifier() );
                 if ( !resourceMap.containsKey( resource ) )
                 {
-                    throw new RuntimeException( "Couldn't find XAResource for "
-                        + xid );
+                    throw new TransactionFailureException( 
+                        "Couldn't find XAResource for " + xid );
                 }
                 log.fine( "Rollback " + xid + " ... " );
                 resourceMap.get( resource ).rollback( xid );
@@ -326,7 +326,7 @@ public class TxManager implements TransactionManager
         }
         catch ( XAException e )
         {
-            throw new RuntimeException( e );
+            throw new TransactionFailureException( "Recovery failed." + e );
         }
     }
 
@@ -341,7 +341,7 @@ public class TxManager implements TransactionManager
             TxLog.Record startRecord = dListItr.next();
             if ( startRecord.getType() != TxLog.TX_START )
             {
-                throw new RuntimeException(
+                throw new TransactionFailureException(
                     "First record not a start record, type="
                         + startRecord.getType() );
             }
@@ -355,8 +355,8 @@ public class TxManager implements TransactionManager
                 {
                     if ( markedCommit != -1 )
                     {
-                        throw new RuntimeException( "Already marked commit "
-                            + startRecord );
+                        throw new TransactionFailureException( 
+                            "Already marked commit " + startRecord );
                     }
                     branchSet.add( new Resource( record.getBranchId() ) );
                 }
@@ -364,15 +364,15 @@ public class TxManager implements TransactionManager
                 {
                     if ( markedCommit != -1 )
                     {
-                        throw new RuntimeException( "Already marked commit "
-                            + startRecord );
+                        throw new TransactionFailureException( 
+                            "Already marked commit " + startRecord );
                     }
                     markedCommit = record.getSequenceNumber();
                 }
                 else
                 {
-                    throw new RuntimeException( "Illegal record type["
-                        + record.getType() + "]" );
+                    throw new TransactionFailureException( 
+                        "Illegal record type[" + record.getType() + "]" );
                 }
             }
             Iterator<Resource> resourceItr = branchSet.iterator();
@@ -398,7 +398,6 @@ public class TxManager implements TransactionManager
                 rollbackList.addAll( xids );
             }
         }
-
     }
 
     private static class NonCompletedTransaction
@@ -585,7 +584,7 @@ public class TxManager implements TransactionManager
                 {
                     // this should never be
                     tmOk = false;
-                    throw new RuntimeException(
+                    throw new TransactionFailureException(
                         "commit threw exception but status is committed?", e );
                 }
             }

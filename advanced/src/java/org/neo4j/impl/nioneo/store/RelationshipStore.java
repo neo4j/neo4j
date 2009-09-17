@@ -105,7 +105,7 @@ public class RelationshipStore extends AbstractStore implements Store
         {
             window = acquireWindow( id, OperationType.READ );
         }
-        catch ( StoreFailureException e )
+        catch ( InvalidRecordException e )
         {
             // ok to high id
             return null;
@@ -186,7 +186,7 @@ public class RelationshipStore extends AbstractStore implements Store
             {
                 return null;
             }
-            throw new StoreFailureException( "Record[" + id + "] not in use" );
+            throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
         RelationshipRecord record = new RelationshipRecord( id,
             buffer.getInt(), buffer.getInt(), buffer.getInt() );
@@ -235,8 +235,8 @@ public class RelationshipStore extends AbstractStore implements Store
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unknown store version " + version  + 
-            " Please make sure you are not running old Neo4j kernel " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  + 
+            "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
     }
@@ -248,7 +248,7 @@ public class RelationshipStore extends AbstractStore implements Store
         {
             window = acquireWindow( relId, OperationType.READ );
         }
-        catch ( StoreFailureException e )
+        catch ( InvalidRecordException e )
         {
             // ok to high id
             return null;

@@ -75,8 +75,6 @@ public interface ResourceConnection
 
     public PropertyIndexData[] loadPropertyIndexes( int maxCount );
 
-    public Iterable<RelationshipData> nodeLoadRelationships( int nodeId );
-
     public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId );
 
     public ArrayMap<Integer,PropertyData> relLoadProperties( int relId );

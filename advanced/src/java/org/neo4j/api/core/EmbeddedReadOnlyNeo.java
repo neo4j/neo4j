@@ -19,56 +19,30 @@
  */
 package org.neo4j.api.core;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.Serializable;
-import java.rmi.RemoteException;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Properties;
-import java.util.Set;
-import java.util.Map.Entry;
-import java.util.logging.Logger;
-import javax.transaction.TransactionManager;
-import org.neo4j.api.core.ReadOnlyNeoJvmInstance.Config;
-import org.neo4j.impl.core.NodeManager;
-import org.neo4j.impl.shell.NeoShellServer;
-import org.neo4j.util.shell.AbstractServer;
 
 public final class EmbeddedReadOnlyNeo implements NeoService
 {
-	public static final int DEFAULT_SHELL_PORT = AbstractServer.DEFAULT_PORT;
-	public static final String DEFAULT_SHELL_NAME = AbstractServer.DEFAULT_NAME;
-	
-    private static Logger log = Logger.getLogger( 
-        EmbeddedReadOnlyNeo.class.getName() );
-    private NeoShellServer shellServer;
-    private Transaction placeboTransaction = null;
-    private final ReadOnlyNeoJvmInstance neoJvmInstance;
-    private final NodeManager nodeManager;
-    private final String storeDir;
+    private static Map<String,String> readOnlyParams = 
+        new HashMap<String,String>();
+
+    static 
+    {
+        readOnlyParams.put( "read_only", "true" );
+    };
+    
+    private final EmbeddedNeoImpl neoImpl; 
 
     public EmbeddedReadOnlyNeo( String storeDir )
     {
-        this.storeDir = storeDir;
-        this.shellServer = null;
-        neoJvmInstance = new ReadOnlyNeoJvmInstance( storeDir, true );
-        neoJvmInstance.start();
-        nodeManager = neoJvmInstance.getConfig().getNeoModule()
-            .getNodeManager();
+        this( storeDir, readOnlyParams );
     }
 
     public EmbeddedReadOnlyNeo( String storeDir, Map<String,String> params )
     {
-        this.storeDir = storeDir;
-        this.shellServer = null;
-        neoJvmInstance = new ReadOnlyNeoJvmInstance( storeDir, true );
-        neoJvmInstance.start( params );
-        nodeManager = neoJvmInstance.getConfig().getNeoModule()
-            .getNodeManager();
+        this.neoImpl = new EmbeddedNeoImpl( storeDir, params, this );
     }
 
     /**
@@ -80,38 +54,7 @@ public final class EmbeddedReadOnlyNeo implements NeoService
      */
     public static Map<String,String> loadConfigurations( String file )
     {
-        Properties props = new Properties();
-        try
-        {
-            FileInputStream stream = new FileInputStream( new File( file ) );
-            try
-            {
-                props.load( stream );
-            }
-            finally
-            {
-                stream.close();
-            }
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Unable to load properties file["
-                + file + "]", e );
-        }
-        Set<Entry<Object,Object>> entries = props.entrySet();
-        Map<String,String> stringProps = new HashMap<String,String>();
-        for ( Entry entry : entries )
-        {
-            String key = (String) entry.getKey();
-            String value = (String) entry.getValue();
-            stringProps.put( key, value );
-        }
-        return stringProps;
-    }
-
-    private NeoShellServer getShellServer()
-    {
-        return this.shellServer;
+        return EmbeddedNeoImpl.loadConfigurations( file );
     }
 
     /*
@@ -120,7 +63,7 @@ public final class EmbeddedReadOnlyNeo implements NeoService
      */
     public Node createNode()
     {
-        return nodeManager.createNode();
+        return neoImpl.createNode();
     }
 
     /*
@@ -129,7 +72,7 @@ public final class EmbeddedReadOnlyNeo implements NeoService
      */
     public Node getNodeById( long id )
     {
-        return nodeManager.getNodeById( (int) id );
+        return neoImpl.getNodeById( id );
     }
 
     /*
@@ -138,7 +81,7 @@ public final class EmbeddedReadOnlyNeo implements NeoService
      */
     public Relationship getRelationshipById( long id )
     {
-        return nodeManager.getRelationshipById( (int) id );
+        return neoImpl.getRelationshipById( id );
     }
 
     /*
@@ -147,7 +90,7 @@ public final class EmbeddedReadOnlyNeo implements NeoService
      */
     public Node getReferenceNode()
     {
-        return nodeManager.getReferenceNode();
+        return neoImpl.getReferenceNode();
     }
 
     /*
@@ -156,18 +99,7 @@ public final class EmbeddedReadOnlyNeo implements NeoService
      */
     public void shutdown()
     {
-        if ( getShellServer() != null )
-        {
-            try
-            {
-                getShellServer().shutdown();
-            }
-            catch ( Throwable t )
-            {
-                log.warning( "Error shutting down shell server: " + t );
-            }
-        }
-        neoJvmInstance.shutdown();
+        neoImpl.shutdown();
     }
 
     /*
@@ -176,7 +108,7 @@ public final class EmbeddedReadOnlyNeo implements NeoService
      */
     public boolean enableRemoteShell()
     {
-        return this.enableRemoteShell( null );
+        return neoImpl.enableRemoteShell();
     }
 
     /*
@@ -186,49 +118,7 @@ public final class EmbeddedReadOnlyNeo implements NeoService
     public boolean enableRemoteShell(
         final Map<String,Serializable> initialProperties )
     {
-        Map<String,Serializable> properties = initialProperties;
-        if ( properties == null )
-        {
-            properties = Collections.emptyMap();
-        }
-        try
-        {
-            if ( shellDependencyAvailable() )
-            {
-                this.shellServer = new NeoShellServer( this );
-                Object port = properties.get( "port" );
-                Object name = properties.get( "name" );
-                this.shellServer.makeRemotelyAvailable(
-                    port != null ? (Integer) port : DEFAULT_SHELL_PORT,
-                    name != null ? (String) name : DEFAULT_SHELL_NAME );
-                return true;
-            }
-            else
-            {
-                log.info( "Shell library not available. Neo shell not "
-                    + "started. Please add the Neo4j shell jar to the "
-                    + "classpath." );
-                return false;
-            }
-        }
-        catch ( RemoteException e )
-        {
-            throw new IllegalStateException( "Can't start remote neo shell: "
-                + e );
-        }
-    }
-
-    private boolean shellDependencyAvailable()
-    {
-        try
-        {
-            Class.forName( "org.neo4j.util.shell.ShellServer" );
-            return true;
-        }
-        catch ( Throwable t )
-        {
-            return false;
-        }
+        return neoImpl.enableRemoteShell( initialProperties );
     }
 
     /*
@@ -237,61 +127,15 @@ public final class EmbeddedReadOnlyNeo implements NeoService
      */
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return neoJvmInstance.getRelationshipTypes();
+        return neoImpl.getRelationshipTypes();
     }
 
+    /**
+     * @throws TransactionFailureException if unable to start transaction
+     */
     public Transaction beginTx()
     {
-        if ( neoJvmInstance.transactionRunning() )
-        {
-            if ( placeboTransaction == null )
-            {
-                placeboTransaction = new PlaceboTransaction( neoJvmInstance
-                    .getTransactionManager() );
-            }
-            return placeboTransaction;
-        }
-        TransactionManager txManager = neoJvmInstance.getTransactionManager();
-        try
-        {
-            txManager.begin();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-        return new TransactionImpl( txManager );
-    }
-
-    private static class PlaceboTransaction implements Transaction
-    {
-        private final TransactionManager transactionManager;
-
-        PlaceboTransaction( TransactionManager transactionManager )
-        {
-            // we should override all so null is ok
-            this.transactionManager = transactionManager;
-        }
-
-        public void failure()
-        {
-            try
-            {
-                transactionManager.getTransaction().setRollbackOnly();
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-
-        public void success()
-        {
-        }
-
-        public void finish()
-        {
-        }
+        return neoImpl.beginTx();
     }
 
     /**
@@ -302,129 +146,21 @@ public final class EmbeddedReadOnlyNeo implements NeoService
      */
     public Config getConfig()
     {
-        return neoJvmInstance.getConfig();
+        return neoImpl.getConfig();
     }
 
-    private static class TransactionImpl implements Transaction
-    {
-        private boolean success = false;
-
-        private final TransactionManager transactionManager;
-
-        TransactionImpl( TransactionManager transactionManager )
-        {
-            this.transactionManager = transactionManager;
-        }
-
-        public void failure()
-        {
-            this.success = false;
-            try
-            {
-                transactionManager.getTransaction().setRollbackOnly();
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-
-        public void success()
-        {
-            success = true;
-        }
-
-        public void finish()
-        {
-            try
-            {
-                if ( success )
-                {
-                    if ( transactionManager.getTransaction() != null )
-                    {
-                        transactionManager.getTransaction().commit();
-                    }
-                }
-                else
-                {
-                    if ( transactionManager.getTransaction() != null )
-                    {
-                        transactionManager.getTransaction().rollback();
-                    }
-                }
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-    }
-    
     public String toString()
     {
-        return super.toString() + " [" + storeDir + "]";
+        return super.toString() + " [" + neoImpl.getStoreDir() + "]";
     }
     
     public String getStoreDir()
     {
-        return storeDir;
+        return neoImpl.getStoreDir();
     }
     
     public Iterable<Node> getAllNodes()
     {
-        return new Iterable<Node>() {
-            public Iterator<Node> iterator() {
-                long highId = (nodeManager.getHighestPossibleIdInUse(Node.class)
-                        & 0xFFFFFFFFL);
-                return new AllNodesIterator(highId);
-            }
-        };
-    }
-    
-    // TODO: temporary all nodes getter, fix this with better implementation
-    // (no NotFoundException to control flow)
-    private class AllNodesIterator implements Iterator<Node>
-    {
-        private final long highId;
-        private long currentNodeId = 0;
-        private Node currentNode = null;
-        
-        AllNodesIterator( long highId )
-        {
-            this.highId = highId;
-        }
-
-        public synchronized boolean hasNext()
-        {
-            while ( currentNode == null && currentNodeId <= highId )
-            {
-                try
-                {
-                    currentNode = getNodeById( currentNodeId++ );
-                }
-                catch ( NotFoundException e )
-                {
-                    // ok we try next
-                }
-            }
-            return currentNode != null;
-        }
-        
-        public synchronized Node next()
-        {
-            if ( !hasNext() )
-            {
-                throw new NoSuchElementException();
-            }
-            
-            Node nextNode = currentNode;
-            currentNode = null;
-            return nextNode;
-        }
-        
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
+        return neoImpl.getAllNodes();
     }
 }

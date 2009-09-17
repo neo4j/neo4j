@@ -34,6 +34,7 @@ import org.neo4j.api.core.NotInTransactionException;
 import org.neo4j.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
+import org.neo4j.impl.transaction.TransactionFailureException;
 import org.neo4j.impl.util.ArrayMap;
 
 public class PropertyIndexManager
@@ -161,13 +162,10 @@ public class PropertyIndexManager
         {
             return transactionManager.getTransaction();
         }
-        catch ( javax.transaction.SystemException e )
-        {
-            throw new NotInTransactionException( e );
-        }
         catch ( Exception e )
         {
-            throw new NotInTransactionException( e );
+            throw new TransactionFailureException( 
+                "Unable to get transaction.", e );
         }
     }
 

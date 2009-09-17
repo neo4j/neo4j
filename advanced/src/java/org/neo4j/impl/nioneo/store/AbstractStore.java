@@ -91,7 +91,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to create store "
+            throw new UnderlyingStorageException( "Unable to create store "
                 + fileName, e );
         }
         IdGeneratorImpl.createGenerator( fileName + ".id" );
@@ -143,7 +143,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to load store "
+            throw new UnderlyingStorageException( "Unable to load store "
                 + getStorageFileName(), e );
         }
         try
@@ -157,7 +157,7 @@ public abstract class AbstractStore extends CommonAbstractStore
                 openReadOnlyIdGenerator( getRecordSize() );
             }
         }
-        catch ( StoreFailureException e )
+        catch ( InvalidIdGeneratorException e )
         {
             setStoreNotOk();
         }
@@ -287,8 +287,8 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to rebuild id generator "
-                + getStorageFileName(), e );
+            throw new UnderlyingStorageException( 
+                "Unable to rebuild id generator " + getStorageFileName(), e );
         }
         setHighId( highId + 1 );
         logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId()

@@ -222,7 +222,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             {
                 record = getRecord( i );
             }
-            catch ( StoreFailureException e )
+            catch ( InvalidRecordException e )
             {
                 break;
             }
@@ -264,7 +264,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         }
         if ( inUse != Record.IN_USE.byteValue() )
         {
-            throw new StoreFailureException( "Record[" + id + 
+            throw new InvalidRecordException( "Record[" + id + 
                 "] unknown in use flag[" + inUse + "]" );
         }
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
@@ -337,8 +337,8 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         }
         catch ( IOException e )
         {
-            throw new StoreFailureException( "Unable to rebuild id generator "
-                + getStorageFileName(), e );
+            throw new UnderlyingStorageException( 
+                "Unable to rebuild id generator " + getStorageFileName(), e );
         }
         setHighId( highId );
         logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId() );
@@ -417,8 +417,8 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unknown store version " + version  + 
-            " Please make sure you are not running old Neo4j kernel " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  + 
+            "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
     }

@@ -166,12 +166,12 @@ public class XaDataSourceManager
             }
             catch ( XAException e )
             {
-                throw new RuntimeException( "Unable to check is same resource",
-                    e );
+                throw new TransactionFailureException( 
+                    "Unable to check is same resource", e );
             }
         }
-        throw new RuntimeException( "Unable to find mapping for XAResource["
-            + xaResource + "]" );
+        throw new TransactionFailureException( 
+            "Unable to find mapping for XAResource[" + xaResource + "]" );
     }
 
     synchronized XAResource getXaResource( byte branchId[] )
@@ -179,8 +179,9 @@ public class XaDataSourceManager
         XaDataSource dataSource = branchIdMapping.get( new String( branchId ) );
         if ( dataSource == null )
         {
-            throw new RuntimeException( "No mapping found for branchId[0x"
-                + new String( branchId ) + "]" );
+            throw new TransactionFailureException( 
+                "No mapping found for branchId[0x" +
+                new String( branchId ) + "]" );
         }
         return dataSource.getXaConnection().getXaResource();
     }

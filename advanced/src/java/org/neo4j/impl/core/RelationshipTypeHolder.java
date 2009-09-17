@@ -30,6 +30,7 @@ import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.persistence.IdGenerator;
 import org.neo4j.impl.persistence.PersistenceManager;
+import org.neo4j.impl.transaction.TransactionFailureException;
 import org.neo4j.impl.util.ArrayMap;
 
 class RelationshipTypeHolder
@@ -202,8 +203,8 @@ class RelationshipTypeHolder
             addRelType( name, createrThread.getRelTypeId() );
             return createrThread.getRelTypeId();
         }
-        throw new RuntimeException( "Unable to create relationship type "
-            + name );
+        throw new TransactionFailureException( 
+            "Unable to create relationship type " + name );
     }
 
     void addRelType( String name, Integer id )

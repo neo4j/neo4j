@@ -62,7 +62,8 @@ public class IdGeneratorModule
 
     public synchronized void reload()
     {
-        throw new RuntimeException( "IdGenerator does not support reload" );
+        throw new UnsupportedOperationException( 
+            "IdGenerator does not support reload" );
     }
 
     public synchronized void stop()

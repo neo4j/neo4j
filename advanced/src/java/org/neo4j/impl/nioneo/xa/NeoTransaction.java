@@ -35,6 +35,7 @@ import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.core.LockReleaser;
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
+import org.neo4j.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.impl.nioneo.store.NeoStore;
 import org.neo4j.impl.nioneo.store.NodeRecord;
 import org.neo4j.impl.nioneo.store.NodeStore;
@@ -52,7 +53,6 @@ import org.neo4j.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
-import org.neo4j.impl.nioneo.store.StoreFailureException;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.xaframework.XaCommand;
@@ -158,7 +158,7 @@ class NeoTransaction extends XaTransaction
             if ( !record.inUse() && record.getNextRel() != 
                 Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                throw new StoreFailureException( "Node record " + record
+                throw new InvalidRecordException( "Node record " + record
                     + " still has relationships" );
             }
             Command.NodeCommand command = new Command.NodeCommand( 
@@ -224,7 +224,7 @@ class NeoTransaction extends XaTransaction
         }
         else
         {
-            throw new RuntimeException( "Unknown command " + xaCommand );
+            throw new IllegalArgumentException( "Unknown command " + xaCommand );
         }
     }
 
@@ -317,7 +317,8 @@ class NeoTransaction extends XaTransaction
                             }
                             else
                             {
-                                throw new RuntimeException( "Unknown type" );
+                                throw new InvalidRecordException( 
+                                    "Unknown type on " + dynamicRecord );
                             }
                         }
                     }
@@ -579,7 +580,8 @@ class NeoTransaction extends XaTransaction
             }
             else
             {
-                throw new RuntimeException( prevRel + " don't match " + rel );
+                throw new InvalidRecordException( 
+                    prevRel + " don't match " + rel );
             }
         }
         // update first node next
@@ -606,7 +608,8 @@ class NeoTransaction extends XaTransaction
             }
             else
             {
-                throw new RuntimeException( nextRel + " don't match " + rel );
+                throw new InvalidRecordException( nextRel + " don't match " 
+                    + rel );
             }
         }
         // update second node prev
@@ -633,7 +636,8 @@ class NeoTransaction extends XaTransaction
             }
             else
             {
-                throw new RuntimeException( prevRel + " don't match " + rel );
+                throw new InvalidRecordException( prevRel + " don't match " + 
+                    rel );
             }
         }
         // update second node next
@@ -660,7 +664,8 @@ class NeoTransaction extends XaTransaction
             }
             else
             {
-                throw new RuntimeException( nextRel + " don't match " + rel );
+                throw new InvalidRecordException( nextRel + " don't match " + 
+                    rel );
             }
         }
     }
@@ -727,60 +732,15 @@ class NeoTransaction extends XaTransaction
             }
             else
             {
-                throw new RuntimeException( "GAH" );
+                throw new InvalidRecordException( "Node[" + nodeId + 
+                    "] not part of firstNode[" + firstNode + 
+                    "] or secondNode[" + secondNode + "]" );
             }
         }
         position.setNextRecord( nextRel );
         return rels;
     }
     
-    public Iterable<RelationshipData> nodeGetRelationships( int nodeId )
-    {
-        NodeRecord nodeRecord = getNodeRecord( nodeId );
-        if ( nodeRecord == null )
-        {
-            nodeRecord = getNodeStore().getRecord( nodeId );
-        }
-        else
-        {
-            if ( !nodeRecord.inUse() )
-            {
-                throw new StoreFailureException( "Node[" + nodeId + 
-                    "] not in use" );
-            }
-        }
-        int nextRel = nodeRecord.getNextRel();
-        List<RelationshipData> rels = new ArrayList<RelationshipData>();
-        while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RelationshipRecord relRecord = getRelationshipRecord( nextRel );
-            if ( relRecord == null )
-            {
-                relRecord = getRelationshipStore().getRecord( nextRel );
-            }
-            int firstNode = relRecord.getFirstNode();
-            int secondNode = relRecord.getSecondNode();
-            if ( !relRecord.isCreated() )
-            {
-                rels.add( new RelationshipData( nextRel, firstNode, secondNode,
-                    relRecord.getType() ) );
-            }
-            if ( firstNode == nodeId )
-            {
-                nextRel = relRecord.getFirstNextRel();
-            }
-            else if ( secondNode == nodeId )
-            {
-                nextRel = relRecord.getSecondNextRel();
-            }
-            else
-            {
-                throw new RuntimeException( "GAH" );
-            }
-        }
-        return rels;
-    }
-
     private void updateNodes( RelationshipRecord rel )
     {
         if ( rel.getFirstPrevRel() == Record.NO_PREV_RELATIONSHIP.intValue() )
@@ -884,7 +844,7 @@ class NeoTransaction extends XaTransaction
         }
         if ( !relRecord.inUse() )
         {
-            throw new StoreFailureException( "Relationship[" + relId + 
+            throw new InvalidRecordException( "Relationship[" + relId + 
                 "] not in use" );
         }
         int nextProp = relRecord.getNextProp();
@@ -917,7 +877,7 @@ class NeoTransaction extends XaTransaction
         }
         else if ( !nodeRecord.inUse() )
         {
-            throw new StoreFailureException( "Node[" + nodeId + 
+            throw new InvalidRecordException( "Node[" + nodeId + 
                 "] not in use" );
         }
             
@@ -991,7 +951,8 @@ class NeoTransaction extends XaTransaction
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new RuntimeException( "Unknown type: " + type );
+        throw new InvalidRecordException( "Unknown type: " + type + 
+            " on " + propertyRecord );
     }
 
     public Object propertyGetValue( int id )
@@ -1052,7 +1013,8 @@ class NeoTransaction extends XaTransaction
         {
             return (short) propertyRecord.getPropBlock();
         }
-        throw new RuntimeException( "Unknown type: " + type );
+        throw new InvalidRecordException( "Unknown type: " + type + 
+            " on " + propertyRecord );
     }
 
     void nodeRemoveProperty( int nodeId, int propertyId )
@@ -1374,7 +1336,7 @@ class NeoTransaction extends XaTransaction
             }
             else
             {
-                throw new RuntimeException( firstNode + " dont match "
+                throw new InvalidRecordException( firstNode + " dont match "
                     + nextRel );
             }
         }
@@ -1401,7 +1363,7 @@ class NeoTransaction extends XaTransaction
             }
             else
             {
-                throw new RuntimeException( firstNode + " dont match "
+                throw new InvalidRecordException( secondNode + " dont match "
                     + nextRel );
             }
         }

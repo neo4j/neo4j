@@ -324,7 +324,7 @@ public class NeoStore extends AbstractStore
             }
             catch ( IOException e )
             {
-                throw new StoreFailureException( e );
+                throw new UnderlyingStorageException( e );
             }
             rebuildIdGenerator();
             closeIdGenerator();
@@ -336,8 +336,8 @@ public class NeoStore extends AbstractStore
             closeIdGenerator();
             return true;
         }
-        throw new RuntimeException( "Unknown store version " + version  + 
-            " Please make sure you are not running old Neo4j kernel " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  + 
+            "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
     }
