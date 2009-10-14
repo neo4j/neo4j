@@ -43,10 +43,10 @@ public class FindSinglePath
 {
     private HashMap<Node,List<Relationship>> predecessors1;
     private HashMap<Node,List<Relationship>> predecessors2;
-    private int maxDepth;
-    private Node startNode;
-    private Node endNode;
-    private RelationshipType relationshipType;
+    private final int maxDepth;
+    private final Node startNode;
+    private final Node endNode;
+    private final Object[] relTypesAndDirections;
     private boolean doneCalculation;
     Node matchNode;
 
@@ -94,9 +94,9 @@ public class FindSinglePath
         PathReturnEval returnEval2 = new PathReturnEval( predecessors2,
             predecessors1 );
         Traverser trav1 = startNode.traverse( Order.BREADTH_FIRST, stopEval1,
-            returnEval1, relationshipType, Direction.BOTH );
+            returnEval1, relTypesAndDirections ); // relationshipTypes, directions );
         Traverser trav2 = endNode.traverse( Order.BREADTH_FIRST, stopEval2,
-            returnEval2, relationshipType, Direction.BOTH );
+            returnEval2, relTypesAndDirections ); // relationshipTypes, directions );
         Iterator<Node> itr1 = trav1.iterator();
         Iterator<Node> itr2 = trav2.iterator();
         while ( itr1.hasNext() || itr2.hasNext() )
@@ -138,6 +138,7 @@ public class FindSinglePath
             return currentPos.depth() >= maximumDepth;
         }
     }
+    
     private static class PathReturnEval implements ReturnableEvaluator
     {
         final Map<Node,List<Relationship>> myNodes;
@@ -182,37 +183,6 @@ public class FindSinglePath
     }
 
     /**
-     * Set the maximum depth.
-     * @param maxDepth
-     */
-    public void setMaxDepth( int maxDepth )
-    {
-        this.maxDepth = maxDepth;
-    }
-
-    /**
-     * Set the end node. Will reset the calculation.
-     * @param endNode
-     *            the endNode to set
-     */
-    public void setEndNode( Node endNode )
-    {
-        reset();
-        this.endNode = endNode;
-    }
-
-    /**
-     * Set the start node. Will reset the calculation.
-     * @param startNode
-     *            the startNode to set
-     */
-    public void setStartNode( Node startNode )
-    {
-        this.startNode = startNode;
-        reset();
-    }
-
-    /**
      * @param startNode
      *            The node in which the path should start.
      * @param endNode
@@ -229,10 +199,28 @@ public class FindSinglePath
         reset();
         this.startNode = startNode;
         this.endNode = endNode;
-        this.relationshipType = relationshipType;
+        this.relTypesAndDirections = new Object[2];
+        this.relTypesAndDirections[0] = relationshipType;
+        this.relTypesAndDirections[1] = Direction.BOTH;
         this.maxDepth = maxDepth;
     }
 
+    public FindSinglePath( Node startNode, Node endNode,
+        RelationshipType[] relationshipTypes, Direction[] directions, int maxDepth )
+    {
+        super();
+        reset();
+        this.startNode = startNode;
+        this.endNode = endNode;
+        relTypesAndDirections = new Object[ relationshipTypes.length * 2 ];
+        for ( int i = 0; i < relationshipTypes.length; i++ )
+        {
+            relTypesAndDirections[i*2] = relationshipTypes[i];
+            relTypesAndDirections[i*2 + 1] = directions[i];
+        }
+        this.maxDepth = maxDepth;
+    }
+    
     /**
      * @return One of the shortest paths found or null.
      */
