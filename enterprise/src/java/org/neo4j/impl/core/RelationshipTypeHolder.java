@@ -63,6 +63,12 @@ class RelationshipTypeHolder
             relTranslation.put( types[i].getId(), types[i].getName() );
         }
     }
+    
+    void addRawRelationshipType( RelationshipTypeData type )
+    {
+        relTypes.put( type.getName(), type.getId() );
+        relTranslation.put( type.getId(), type.getName() );
+    }
 
     public RelationshipType addValidRelationshipType( String name,
         boolean create )

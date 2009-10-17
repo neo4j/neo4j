@@ -907,4 +907,14 @@ public class NodeManager
     {
         return this.lockReleaser;
     }
+
+    void addRelationshipType( RelationshipTypeData type )
+    {
+        relTypeHolder.addRawRelationshipType( type );
+    }
+
+    void addPropertyIndex( PropertyIndexData index )
+    {
+        propertyIndexManager.addPropertyIndex( index );
+    }
 }
