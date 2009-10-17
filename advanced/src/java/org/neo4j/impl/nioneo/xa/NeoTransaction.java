@@ -51,6 +51,7 @@ import org.neo4j.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.impl.nioneo.store.RelationshipData;
 import org.neo4j.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.impl.nioneo.store.RelationshipStore;
+import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.impl.transaction.LockManager;
@@ -359,13 +360,32 @@ class NeoTransaction extends XaTransaction
     {
         lockReleaser.removeNodeFromCache( id );
     }
+    
+    private void addRelationshipType( int id )
+    {
+        RelationshipTypeData type = 
+            neoStore.getRelationshipTypeStore().getRelationshipType( id );
+        lockReleaser.addRelationshipType( type );
+    }
 
+    private void addPropertyIndexCommand( int id )
+    {
+        PropertyIndexData index = 
+            neoStore.getPropertyStore().getIndexStore().getPropertyIndex( id );
+        lockReleaser.addPropertyIndex( index );
+    }
+    
     public void doCommit() throws XAException
     {
         if ( !isRecovered() && !prepared )
         {
             throw new XAException( "Cannot commit non prepared transaction["
                 + getIdentifier() + "]" );
+        }
+        if ( isRecovered() )
+        {
+            commitRecovered();
+            return;
         }
         try
         {
@@ -420,6 +440,67 @@ class NeoTransaction extends XaTransaction
             relTypeCommands.clear();
         }
     }
+
+    private void commitRecovered()
+    {
+        try
+        {
+            committed = true;
+            CommandSorter sorter = new CommandSorter();
+            // reltypes
+            java.util.Collections.sort( relTypeCommands, sorter );
+            for ( Command.RelationshipTypeCommand command : relTypeCommands )
+            {
+                command.execute();
+                addRelationshipType( command.getKey() );
+            }
+            // nodes
+            java.util.Collections.sort( nodeCommands, sorter );
+            for ( Command.NodeCommand command : nodeCommands )
+            {
+                command.execute();
+                removeNodeFromCache( command.getKey() );
+            }
+            // relationships
+            java.util.Collections.sort( relCommands, sorter );
+            for ( Command.RelationshipCommand command : relCommands )
+            {
+                command.execute();
+                removeRelationshipFromCache( command.getKey() );
+            }
+            java.util.Collections.sort( propIndexCommands, sorter );
+            for ( Command.PropertyIndexCommand command : propIndexCommands )
+            {
+                command.execute();
+                addPropertyIndexCommand( command.getKey() );
+            }
+            // properties
+            java.util.Collections.sort( propCommands, sorter );
+            for ( Command.PropertyCommand command : propCommands )
+            {
+                command.execute();
+            }
+            if ( !isRecovered() )
+            {
+                lockReleaser.commit();
+            }
+        }
+        finally
+        {
+            nodeRecords.clear();
+            propertyRecords.clear();
+            relRecords.clear();
+            relTypeRecords.clear();
+            propIndexRecords.clear();
+
+            nodeCommands.clear();
+            propCommands.clear();
+            propIndexCommands.clear();
+            relCommands.clear();
+            relTypeCommands.clear();
+        }
+    }
+    
 
     private RelationshipTypeStore getRelationshipTypeStore()
     {

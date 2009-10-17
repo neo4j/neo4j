@@ -834,6 +834,17 @@ public class XaLogicalLog
         return new RandomAccessFile( name, "r" ).getChannel();
     }
     
+    public long getLogicalLogLength( long version )
+    {
+        String name = fileName + ".v" + version;
+        File file = new File( name );
+        if ( !file.exists() )
+        {
+            return -1;
+        }
+        return file.length();
+    }
+    
     public boolean hasLogicalLog( long version )
     {
         String name = fileName + ".v" + version;
@@ -1539,5 +1550,16 @@ public class XaLogicalLog
         {
             startEntryPosition = newPosition;
         }
+    }
+
+    public synchronized FileChannel createLogForWrite( long version ) 
+        throws IOException
+    {
+        if ( hasLogicalLog( version ) )
+        {
+            throw new IOException( "Log[" + version + "] already exist" );
+        }
+        String name = fileName + ".v" + version;
+        return new RandomAccessFile( name, "rw" ).getChannel();
     }
 }

@@ -145,6 +145,13 @@ public class PropertyIndexStore extends AbstractStore implements Store
         return indexList.toArray( new PropertyIndexData[indexList.size()] );
     }
 
+    public PropertyIndexData getPropertyIndex( int id )
+    {
+        PropertyIndexRecord record = getRecord( id );
+        return new PropertyIndexData( record.getId(), 
+            getStringFor( record ) );
+    }
+    
     public PropertyIndexRecord getRecord( int id )
     {
         PropertyIndexRecord record;
