@@ -117,6 +117,12 @@ public class PropertyIndexManager
         }
     }
 
+    void addPropertyIndex( PropertyIndexData rawIndex )
+    {
+        addPropertyIndex( new PropertyIndex( rawIndex.getValue(), 
+            rawIndex.getKeyId() ) );
+    }
+    
     public PropertyIndex getIndexFor( int keyId )
     {
         PropertyIndex index = idToIndexMap.get( keyId );

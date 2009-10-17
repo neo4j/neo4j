@@ -33,6 +33,8 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.api.core.NotInTransactionException;
 import org.neo4j.impl.nioneo.store.PropertyData;
+import org.neo4j.impl.nioneo.store.PropertyIndexData;
+import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.TransactionFailureException;
@@ -578,6 +580,16 @@ public class LockReleaser
         nodeManager.removeNodeFromCache( nodeId );
     }
 
+    public void addRelationshipType( RelationshipTypeData type )
+    {
+        nodeManager.addRelationshipType( type );
+    }
+
+    public void addPropertyIndex( PropertyIndexData index )
+    {
+        nodeManager.addPropertyIndex( index );
+    }
+    
     public void removeRelationshipFromCache( int id )
     {
         nodeManager.removeRelationshipFromCache( id );
@@ -606,4 +618,5 @@ public class LockReleaser
         {
         }
     }
+
 }
