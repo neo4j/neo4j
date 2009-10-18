@@ -152,6 +152,22 @@ public class PropertyIndexStore extends AbstractStore implements Store
             getStringFor( record ) );
     }
     
+    public PropertyIndexData getPropertyIndex( int id, boolean recovered )
+    {
+        assert recovered;
+        try
+        {
+            setRecovered();
+            PropertyIndexRecord record = getRecord( id );
+            return new PropertyIndexData( record.getId(), 
+                getStringFor( record ) );
+        }
+        finally
+        {
+            unsetRecovered();
+        }
+    }
+    
     public PropertyIndexRecord getRecord( int id )
     {
         PropertyIndexRecord record;

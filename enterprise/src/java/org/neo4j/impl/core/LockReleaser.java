@@ -577,27 +577,42 @@ public class LockReleaser
 
     public void removeNodeFromCache( int nodeId )
     {
-        nodeManager.removeNodeFromCache( nodeId );
+        if ( nodeManager != null )
+        {
+            nodeManager.removeNodeFromCache( nodeId );
+        }
     }
 
     public void addRelationshipType( RelationshipTypeData type )
     {
-        nodeManager.addRelationshipType( type );
+        if ( nodeManager != null )
+        {
+            nodeManager.addRelationshipType( type );
+        }
     }
 
     public void addPropertyIndex( PropertyIndexData index )
     {
-        nodeManager.addPropertyIndex( index );
+        if ( nodeManager != null )
+        {
+            nodeManager.addPropertyIndex( index );
+        }
     }
     
     public void removeRelationshipFromCache( int id )
     {
-        nodeManager.removeRelationshipFromCache( id );
+        if ( nodeManager != null )
+        {
+            nodeManager.removeRelationshipFromCache( id );
+        }
     }
     
     public void removeRelationshipTypeFromCache( int id )
     {
-        nodeManager.removeRelationshipTypeFromCache( id );
+        if ( nodeManager != null )
+        {
+            nodeManager.removeRelationshipTypeFromCache( id );
+        }
     }
     
     private class ReadOnlyTxReleaser implements Synchronization 

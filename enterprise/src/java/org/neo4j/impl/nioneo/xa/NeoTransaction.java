@@ -363,15 +363,36 @@ class NeoTransaction extends XaTransaction
     
     private void addRelationshipType( int id )
     {
-        RelationshipTypeData type = 
-            neoStore.getRelationshipTypeStore().getRelationshipType( id );
+        setRecovered();
+        RelationshipTypeData type;
+        if ( isRecovered() )
+        {
+            type = neoStore.getRelationshipTypeStore().getRelationshipType( 
+                id, true );
+        }
+        else
+        {
+            type = neoStore.getRelationshipTypeStore().getRelationshipType( 
+                id );
+        }
         lockReleaser.addRelationshipType( type );
     }
 
     private void addPropertyIndexCommand( int id )
     {
-        PropertyIndexData index = 
-            neoStore.getPropertyStore().getIndexStore().getPropertyIndex( id );
+        PropertyIndexData index;
+        if ( isRecovered() )
+        {
+            index = 
+                neoStore.getPropertyStore().getIndexStore().getPropertyIndex( 
+                    id, true );
+        }
+        else
+        {
+            index = 
+                neoStore.getPropertyStore().getIndexStore().getPropertyIndex( 
+                    id );
+        }
         lockReleaser.addPropertyIndex( index );
     }
     
