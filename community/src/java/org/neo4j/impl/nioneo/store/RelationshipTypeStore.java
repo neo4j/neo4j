@@ -204,6 +204,22 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         return record;
     }
 
+    public RelationshipTypeData getRelationshipType( int id, boolean recovered )
+    {
+        assert recovered;
+        try
+        {
+            setRecovered();
+            RelationshipTypeRecord record = getRecord( id );
+            String name = getStringFor( record );
+            return new RelationshipTypeData( id, name );
+        }
+        finally
+        {
+            unsetRecovered();
+        }
+    }
+    
     public RelationshipTypeData getRelationshipType( int id )
     {
         RelationshipTypeRecord record = getRecord( id );
