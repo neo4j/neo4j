@@ -634,4 +634,12 @@ public class LockReleaser
         }
     }
 
+    public void clearCache()
+    {
+        if ( nodeManager != null )
+        {
+            nodeManager.clearCache();
+        }
+    }
+
 }

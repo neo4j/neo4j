@@ -22,7 +22,6 @@ package org.neo4j.impl.nioneo.xa;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 import java.util.Properties;
@@ -467,8 +466,8 @@ public class NeoStoreXaDataSource extends XaDataSource
         return readOnly;
     }
 
-    public FileChannel createLogForWrite( long version ) throws IOException
+    public String getFileName( long version )
     {
-        return xaContainer.getLogicalLog().createLogForWrite( version );
+        return xaContainer.getLogicalLog().getFileName( version );
     }
 }

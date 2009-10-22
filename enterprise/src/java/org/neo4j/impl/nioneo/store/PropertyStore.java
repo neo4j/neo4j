@@ -444,6 +444,14 @@ public class PropertyStore extends AbstractStore implements Store
         super.rebuildIdGenerators();
     }
     
+    public void updateIdGenerators()
+    {
+        propertyIndexStore.updateIdGenerators();
+        stringPropertyStore.updateHighId();
+        arrayPropertyStore.updateHighId();
+        this.updateHighId();
+    }    
+    
     private Collection<DynamicRecord> allocateStringRecords( int valueBlockId,
         char[] chars )
     {

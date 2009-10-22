@@ -322,7 +322,10 @@ public abstract class CommonAbstractStore
      */
     protected void setHighId( long highId )
     {
-        idGenerator.setHighId( highId );
+        if ( idGenerator != null )
+        {
+            idGenerator.setHighId( highId );
+        }
     }
     
     protected boolean getIfMemoryMapped()

@@ -418,6 +418,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         super.rebuildIdGenerators();
     }
 
+    public void updateIdGenerators()
+    {
+        typeNameStore.updateHighId();
+        this.updateHighId();
+    }
 
     @Override
     protected boolean versionFound( String version )

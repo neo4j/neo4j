@@ -94,6 +94,12 @@ public class PropertyIndexStore extends AbstractStore implements Store
         keyPropertyStore.rebuildIdGenerators();
         super.rebuildIdGenerators();
     }
+
+    public void updateIdGenerators()
+    {
+        keyPropertyStore.updateHighId();
+        this.updateHighId();
+    }
     
     public void freeBlockId( int id )
     {
