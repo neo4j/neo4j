@@ -300,6 +300,15 @@ public class NeoStore extends AbstractStore
         nodeStore.rebuildIdGenerators();
         super.rebuildIdGenerators();
     }
+
+    public void updateIdGenerators()
+    {
+        this.updateHighId();
+        relTypeStore.updateIdGenerators();
+        propStore.updateIdGenerators();
+        relStore.updateHighId();
+        nodeStore.updateHighId();
+    }
     
     @Override
     protected boolean versionFound( String version )

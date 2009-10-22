@@ -54,6 +54,7 @@ import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.LockType;
 import org.neo4j.impl.transaction.xaframework.XaCommand;
@@ -500,7 +501,9 @@ class NeoTransaction extends XaTransaction
             for ( Command.PropertyCommand command : propCommands )
             {
                 command.execute();
+                removePropertyFromCache( command );
             }
+            neoStore.updateIdGenerators();
             if ( !isRecovered() )
             {
                 lockReleaser.commit();
@@ -522,6 +525,11 @@ class NeoTransaction extends XaTransaction
         }
     }
     
+
+    private void removePropertyFromCache( PropertyCommand command )
+    {
+        lockReleaser.clearCache();
+    }
 
     private RelationshipTypeStore getRelationshipTypeStore()
     {

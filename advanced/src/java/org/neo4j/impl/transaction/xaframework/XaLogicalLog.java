@@ -1552,14 +1552,8 @@ public class XaLogicalLog
         }
     }
 
-    public synchronized FileChannel createLogForWrite( long version ) 
-        throws IOException
+    public String getFileName( long version ) 
     {
-        if ( hasLogicalLog( version ) )
-        {
-            throw new IOException( "Log[" + version + "] already exist" );
-        }
-        String name = fileName + ".v" + version;
-        return new RandomAccessFile( name, "rw" ).getChannel();
+        return fileName + ".v" + version;
     }
 }
