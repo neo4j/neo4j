@@ -1,7 +1,11 @@
-package org.neo4j.ha;
+package org.neo4j.onlinebackup.net;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+
+import org.neo4j.onlinebackup.ha.ReadOnlySlave;
 
 public class HandleMasterConnection extends ConnectionJob
 {
@@ -20,8 +24,10 @@ public class HandleMasterConnection extends ConnectionJob
     private final ReadOnlySlave slave;
     
     private int retries = 0;
+    private File tempFile;
     private FileChannel logToWrite = null;
     private long logLength = -1;
+    private long logVersionWriting = -1;
     private long masterVersion = -1;
     
     public HandleMasterConnection( Connection connection, ReadOnlySlave slave, 
@@ -74,7 +80,11 @@ public class HandleMasterConnection extends ConnectionJob
                 {
                     try
                     {
-                        logToWrite = slave.setupLogForWrite( version );
+                        logVersionWriting = version;
+                        tempFile = File.createTempFile( "logical-log", 
+                            Long.toString( version ) );
+                        logToWrite = new RandomAccessFile( tempFile, 
+                            "rw").getChannel();
                     }
                     catch ( IOException e )
                     {
@@ -280,6 +290,11 @@ public class HandleMasterConnection extends ConnectionJob
                         setStatus( Status.GET_MESSAGE );
                     }
                     logToWrite.close();
+                    tempFile.renameTo( 
+                        new File( slave.getLogName( logVersionWriting ) ) );
+                    logVersionWriting = -1;
+                    tempFile = null;
+                    logToWrite = null;
                     slave.tryApplyNewLog();
                 }
                 return true;

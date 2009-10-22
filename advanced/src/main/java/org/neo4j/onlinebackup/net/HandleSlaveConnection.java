@@ -1,7 +1,9 @@
-package org.neo4j.ha;
+package org.neo4j.onlinebackup.net;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
+
+import org.neo4j.onlinebackup.ha.Master;
 
 public class HandleSlaveConnection extends ConnectionJob
 {
@@ -214,7 +216,7 @@ public class HandleSlaveConnection extends ConnectionJob
         log( "Setup log: " + logVersionToSend );
         try
         {
-            System.out.println( logToSend.read( buffer ) );
+            logToSend.read( buffer );
         }
         catch ( IOException e )
         {

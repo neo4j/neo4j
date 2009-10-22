@@ -1,4 +1,6 @@
-package org.neo4j.ha;
+package org.neo4j.onlinebackup.net;
+
+import org.neo4j.onlinebackup.ha.Master;
 
 public class HandleIncommingSlaveJob extends ConnectionJob
 {
