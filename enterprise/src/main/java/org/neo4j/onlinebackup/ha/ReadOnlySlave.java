@@ -1,13 +1,18 @@
-package org.neo4j.ha;
+package org.neo4j.onlinebackup.ha;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.Map;
 
 import org.neo4j.api.core.EmbeddedReadOnlyNeo;
 import org.neo4j.api.core.NeoService;
 import org.neo4j.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.onlinebackup.net.Callback;
+import org.neo4j.onlinebackup.net.ConnectToMasterJob;
+import org.neo4j.onlinebackup.net.Connection;
+import org.neo4j.onlinebackup.net.Job;
+import org.neo4j.onlinebackup.net.JobEater;
+import org.neo4j.onlinebackup.net.SocketException;
 
 public class ReadOnlySlave implements Callback
 {
@@ -79,6 +84,16 @@ public class ReadOnlySlave implements Callback
         return neo;
     }
     
+    public String getMasterIp()
+    {
+        return masterIp;
+    }
+    
+    public int getMasterPort()
+    {
+        return masterPort;
+    }
+    
     public void jobExecuted( Job job )
     {
         if ( job instanceof ConnectToMasterJob )
@@ -112,9 +127,9 @@ public class ReadOnlySlave implements Callback
         return xaDs.hasLogicalLog( version );
     }
 
-    public FileChannel setupLogForWrite( long version ) throws IOException
+    public String getLogName( long version )
     {
-        return xaDs.createLogForWrite( version );
+        return xaDs.getFileName( version );
     }
 
     public void shutdown()
@@ -124,16 +139,14 @@ public class ReadOnlySlave implements Callback
         neo.shutdown();
     }
 
-    void tryApplyNewLog()
+    public void tryApplyNewLog()
     {
         long nextVersion = xaDs.getCurrentLogVersion();
-        if ( xaDs.hasLogicalLog( nextVersion ) )
+        while ( xaDs.hasLogicalLog( nextVersion ) )
         {
            logApplier.applyLog( nextVersion );
+           nextVersion++;
         }
-        else
-        {
-            // TODO: request version
-        }
+        // 
     }
 }
