@@ -1,4 +1,4 @@
-package org.neo4j.ha;
+package org.neo4j.onlinebackup.ha;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -11,6 +11,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.NeoService;
 import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.onlinebackup.net.AcceptJob;
+import org.neo4j.onlinebackup.net.Callback;
+import org.neo4j.onlinebackup.net.Connection;
+import org.neo4j.onlinebackup.net.HandleIncommingSlaveJob;
+import org.neo4j.onlinebackup.net.HandleSlaveConnection;
+import org.neo4j.onlinebackup.net.Job;
+import org.neo4j.onlinebackup.net.JobEater;
+import org.neo4j.onlinebackup.net.SocketException;
 
 public class Master implements Callback
 {
@@ -51,6 +59,11 @@ public class Master implements Callback
     public NeoService getNeoService()
     {
         return neo;
+    }
+    
+    public int getPort()
+    {
+        return this.port;
     }
     
     public void jobExecuted( Job job )

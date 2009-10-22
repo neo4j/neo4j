@@ -1,4 +1,4 @@
-package org.neo4j.ha;
+package org.neo4j.onlinebackup.net;
 
 public abstract class Job
 {
@@ -72,7 +72,7 @@ public abstract class Job
     
     protected void log( String message )
     {
-        System.out.println( getStatus() + " " + this + ": " + message );
+        // System.out.println( getStatus() + " " + this + ": " + message );
     }
 
     protected void log( String message, Throwable cause )
