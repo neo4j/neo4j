@@ -687,4 +687,18 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         closeIdGenerator();
         openIdGenerator();
     }
+
+
+    protected void updateHighId()
+    {
+        try
+        {
+            long highId = getFileChannel().size() / getBlockSize();
+            super.setHighId( highId );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
 }

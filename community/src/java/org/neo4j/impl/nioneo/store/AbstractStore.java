@@ -186,6 +186,19 @@ public abstract class AbstractStore extends CommonAbstractStore
     {
         super.setHighId( id );
     }
+    
+    protected void updateHighId()
+    {
+        try
+        {
+            long highId = getFileChannel().size() / getRecordSize();
+            setHighId( highId );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
 
     private int findHighIdBackwards() throws IOException
     {
