@@ -1,3 +1,10 @@
+1.0-b10 (2009-11-02)
+--------------------
+
+o Added the ability to start a local shell client in read-only mode.
+o Fixed some problems with exceptions and improved classpath handling 
+  of jta and neo4j to make it easier to start a local client.
+
 1.0-b9 (2009-08-15)
 ------------------
 
