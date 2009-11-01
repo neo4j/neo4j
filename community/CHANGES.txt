@@ -1,3 +1,26 @@
+1.0-b10 (2009-11-02)
+--------------------
+
+-Enhancements, new features and major changes
+o Core: Read-only mode. It is now possible to start multiple read only 
+  NeoServices to the same store (using EmbeddedReadOnlyNeo).
+o Core:  Improved depth first traversal speed on nodes with many 
+  relationships by loading relationships on demand. This will also
+  reduce the stress on GC when traversing over a node with many
+  relationships since much fewer objects will be created.
+
+-Minor enhancements, changes and tweaks
+o Core: Faster rebuild of id generators after a crash
+o Core: Exception cleanup removing bad code either catching Throwable or 
+  throwing RuntimeException.
+o Core: Fixed so a read only NeoService can apply a logical log from a 
+  backup.
+
+-Bug Fixes
+o Fixed a bug when using plain buffers instead of memory mapped ones that 
+  could case recovery to fail due to buffers not being flushed properly.
+
+
 1.0-b9 (2009-08-14)
 -------------------
 
