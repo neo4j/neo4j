@@ -22,8 +22,8 @@ package org.neo4j.impl.shell.apps;
 import java.rmi.RemoteException;
 import java.util.List;
 
-import org.neo4j.impl.shell.NeoApp;
-import org.neo4j.impl.shell.apps.NodeOrRelationship.TypedId;
+import org.neo4j.impl.shell.NodeOrRelationship;
+import org.neo4j.impl.shell.TypedId;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;

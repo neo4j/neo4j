@@ -19,7 +19,7 @@
  */
 package org.neo4j.impl.shell.apps;
 
-import org.neo4j.impl.shell.NeoApp;
+import org.neo4j.impl.shell.NodeOrRelationship;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
