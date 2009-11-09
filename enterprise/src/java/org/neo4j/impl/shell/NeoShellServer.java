@@ -31,6 +31,7 @@ import org.neo4j.impl.shell.apps.Jsh;
 import org.neo4j.impl.shell.apps.Ls;
 import org.neo4j.impl.shell.apps.Mkrel;
 import org.neo4j.impl.shell.apps.Mv;
+import org.neo4j.impl.shell.apps.NeoApp;
 import org.neo4j.impl.shell.apps.Pwd;
 import org.neo4j.impl.shell.apps.Rm;
 import org.neo4j.impl.shell.apps.Rmrel;

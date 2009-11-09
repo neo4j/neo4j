@@ -19,7 +19,6 @@
  */
 package org.neo4j.impl.shell.apps;
 
-import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.App;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
