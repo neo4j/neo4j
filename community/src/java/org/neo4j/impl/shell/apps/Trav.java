@@ -32,7 +32,6 @@ import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.ReturnableEvaluator;
 import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.Traverser.Order;
-import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;

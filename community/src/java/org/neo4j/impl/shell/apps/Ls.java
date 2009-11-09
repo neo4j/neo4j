@@ -19,7 +19,6 @@
  */
 package org.neo4j.impl.shell.apps;
 
-import java.lang.reflect.Array;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +30,7 @@ import java.util.TreeMap;
 
 import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.Relationship;
-import org.neo4j.impl.shell.NeoApp;
+import org.neo4j.impl.shell.NodeOrRelationship;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -222,37 +221,6 @@ public class Ls extends NeoApp
         }
     }
     
-    public static String format( Object value, boolean includeFraming )
-    {
-        String result = null;
-        if ( value.getClass().isArray() )
-        {
-            StringBuffer buffer = new StringBuffer();
-            int length = Array.getLength( value );
-            for ( int i = 0; i < length; i++ )
-            {
-                Object singleValue = Array.get( value, i );
-                if ( i > 0 )
-                {
-                    buffer.append( "," );
-                }
-                buffer.append( frame( singleValue.toString(),
-                    includeFraming ) );
-            }
-            result = buffer.toString();
-        }
-        else
-        {
-            result = frame( value.toString(), includeFraming );
-        }
-        return result;
-    }
-    
-    public static String frame( String string, boolean frame )
-    {
-        return frame ? "[" + string + "]" : string;
-    }
-
     private void displayRelationships( AppCommandParser parser,
         NodeOrRelationship thing, Session session, Output out, boolean verbose,
         Map<String, Object> filterMap, boolean caseInsensitiveFilters,

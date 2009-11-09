@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
@@ -31,7 +30,6 @@ import org.neo4j.api.core.ReturnableEvaluator;
 import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
-import org.neo4j.impl.shell.NeoApp;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.OptionValueType;
 import org.neo4j.util.shell.Output;
@@ -130,8 +128,7 @@ public class Rmrel extends NeoApp
 
     private Iterable<RelationshipType> getAllRelationshipTypes()
     {
-        return ((EmbeddedNeo) this.getNeoServer().getNeo())
-            .getRelationshipTypes();
+        return this.getNeoServer().getNeo().getRelationshipTypes();
     }
 
     private boolean hasPathToRefNode( Node node )

@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.impl.shell;
+package org.neo4j.impl.shell.apps;
 
+import java.lang.reflect.Array;
 import java.rmi.RemoteException;
 import java.util.regex.Pattern;
 
@@ -28,9 +29,9 @@ import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
-import org.neo4j.impl.shell.apps.Ls;
-import org.neo4j.impl.shell.apps.NodeOrRelationship;
-import org.neo4j.impl.shell.apps.NodeOrRelationship.TypedId;
+import org.neo4j.impl.shell.NeoShellServer;
+import org.neo4j.impl.shell.NodeOrRelationship;
+import org.neo4j.impl.shell.TypedId;
 import org.neo4j.util.shell.AbstractApp;
 import org.neo4j.util.shell.AbstractClient;
 import org.neo4j.util.shell.App;
@@ -47,7 +48,7 @@ public abstract class NeoApp extends AbstractApp
 {
     private static final String CURRENT_KEY = "CURRENT_DIR";
     
-    protected static NodeOrRelationship getCurrent( NeoShellServer server,
+    public static NodeOrRelationship getCurrent( NeoShellServer server,
         Session session ) throws ShellException
     {
         String currentThing = ( String ) safeGet( session, CURRENT_KEY );
@@ -254,7 +255,7 @@ public abstract class NeoApp extends AbstractApp
                 if ( matches( pattern, nodeKey, false, false ) )
                 {
                     return trimLength( session,
-                        Ls.format( node.getProperty( nodeKey ), false ) );
+                        format( node.getProperty( nodeKey ), false ) );
                 }
             }
         }
@@ -338,6 +339,37 @@ public abstract class NeoApp extends AbstractApp
         }
         throw new IllegalArgumentException( "No '" + name + "' or '" +
             name + ".*' in " + enumClass );
+    }
+    
+    protected static String frame( String string, boolean frame )
+    {
+        return frame ? "[" + string + "]" : string;
+    }
+    
+    protected static String format( Object value, boolean includeFraming )
+    {
+        String result = null;
+        if ( value.getClass().isArray() )
+        {
+            StringBuffer buffer = new StringBuffer();
+            int length = Array.getLength( value );
+            for ( int i = 0; i < length; i++ )
+            {
+                Object singleValue = Array.get( value, i );
+                if ( i > 0 )
+                {
+                    buffer.append( "," );
+                }
+                buffer.append( frame( singleValue.toString(),
+                    includeFraming ) );
+            }
+            result = buffer.toString();
+        }
+        else
+        {
+            result = frame( value.toString(), includeFraming );
+        }
+        return result;
     }
     
     private static class NeoAppRelationshipType implements RelationshipType
