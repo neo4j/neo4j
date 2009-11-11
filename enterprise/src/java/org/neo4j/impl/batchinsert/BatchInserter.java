@@ -128,7 +128,7 @@ public interface BatchInserter
      * @param relId the relationship id.
      * @return a simple relationship wrapper for the relationship.
      */
-    public SimpleRelationship getRelatoinshipById( long relId );
+    public SimpleRelationship getRelationshipById( long relId );
     
     /**
      * Sets the properties of a relationship. This method will remove any 
@@ -153,7 +153,7 @@ public interface BatchInserter
      * @param relId the id of the relationship.
      * @return map contining the relationship's properties.
      */
-    public Map getRelationshipProperties( long relId );
+    public Map<String,Object> getRelationshipProperties( long relId );
 
     /**
      * Shuts down this batch inserter syncing all changes that are still only 
