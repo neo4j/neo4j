@@ -294,7 +294,7 @@ public class BatchInserterImpl implements BatchInserter
         return rels;
     }
     
-    public SimpleRelationship getRelatoinshipById( long relId )
+    public SimpleRelationship getRelationshipById( long relId )
     {
         RelationshipRecord record = getRelationshipRecord( relId );
         RelationshipType type = new RelationshipTypeImpl( 
@@ -303,7 +303,7 @@ public class BatchInserterImpl implements BatchInserter
             record.getSecondNode(), type );
     }
     
-    public Map getRelationshipProperties( long relId )
+    public Map<String,Object> getRelationshipProperties( long relId )
     {
         RelationshipRecord record = getRelationshipRecord( relId );
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )

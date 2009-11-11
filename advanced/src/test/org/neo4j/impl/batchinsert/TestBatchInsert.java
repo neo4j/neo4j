@@ -78,7 +78,7 @@ public class TestBatchInsert extends TestCase
         long node2 = neo.createNode( null );
         long rel1 = neo.createRelationship( node1, node2, RelTypes.BATCH_TEST, 
             null );
-        SimpleRelationship rel = neo.getRelatoinshipById( rel1 );
+        SimpleRelationship rel = neo.getRelationshipById( rel1 );
         assertEquals( rel.getStartNode(), node1 );
         assertEquals( rel.getEndNode(), node2 );
         assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
