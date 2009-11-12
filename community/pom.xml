@@ -11,7 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>graph-matching</artifactId>
-  <version>0.6-SNAPSHOT</version>
+  <version>0.7-SNAPSHOT</version>
   <name>graph matching for neo.</name>
   <description>A graph pattern matcher for Neo.</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
@@ -72,7 +72,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo</artifactId>
-      <version>1.0-b10-SNAPSHOT</version>
+      <version>1.0-b11-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
