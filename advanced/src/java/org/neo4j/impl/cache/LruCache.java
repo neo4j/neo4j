@@ -129,7 +129,7 @@ public class LruCache<K,E> implements Cache<K,E>
 
     public synchronized void clear()
     {
-        cache.clear();
+        resizeInternal( 0 );
     }
 
     public synchronized int size()
@@ -166,13 +166,18 @@ public class LruCache<K,E> implements Cache<K,E>
      */
     public synchronized void resize( int newMaxSize )
     {
+        if ( newMaxSize < 1 )
+        {
+            throw new IllegalArgumentException( "newMaxSize=" + newMaxSize );
+        }
+        resizeInternal( newMaxSize );
+    }
+    
+    private void resizeInternal( int newMaxSize )
+    {
         resizing = true;
         try
         {
-            if ( newMaxSize < 1 )
-            {
-                throw new IllegalArgumentException( "newMaxSize=" + newMaxSize );
-            }
             if ( newMaxSize >= size() )
             {
                 maxSize = newMaxSize;

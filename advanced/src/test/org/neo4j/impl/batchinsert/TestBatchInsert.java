@@ -26,6 +26,9 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.neo4j.api.core.NeoService;
+import org.neo4j.api.core.Node;
+import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 
 public class TestBatchInsert extends TestCase
@@ -104,6 +107,49 @@ public class TestBatchInsert extends TestCase
             assertEquals( rel.getStartNode(), startNode );
         }
         neo.setNodeProperties( startNode, properties );
+        neo.shutdown();
+    }
+    
+    private void setProperties( Node node )
+    {
+        for ( String key : properties.keySet() )
+        {
+            node.setProperty( key, properties.get( key ) );
+        }
+    }
+
+    private void setProperties( Relationship rel )
+    {
+        for ( String key : properties.keySet() )
+        {
+            rel.setProperty( key, properties.get( key ) );
+        }
+    }
+    
+    public void testWithNeoService()
+    {
+        BatchInserter batchInserter = new 
+            BatchInserterImpl( "var/neo-batch" );
+        NeoService neo = batchInserter.getNeoService();
+        Node startNode = neo.createNode();
+        setProperties( startNode );
+        Node endNodes[] = new Node[25];
+        Set<Relationship> rels = new HashSet<Relationship>();
+        for ( int i = 0; i < 25; i++ )
+        {
+            endNodes[i] = neo.createNode();
+            setProperties( endNodes[i] );
+            Relationship rel = startNode.createRelationshipTo( endNodes[i], 
+                relTypeArray[i % 5] ); 
+            rels.add( rel );
+            setProperties( rel ); 
+        }
+        for ( Relationship rel : startNode.getRelationships() )
+        {
+            assertTrue( rels.contains( rel ) );
+            assertEquals( rel.getStartNode(), startNode );
+        }
+        setProperties( startNode );
         neo.shutdown();
     }
 }
