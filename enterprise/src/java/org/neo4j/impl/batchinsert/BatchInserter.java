@@ -21,6 +21,7 @@ package org.neo4j.impl.batchinsert;
 
 import java.util.Map;
 
+import org.neo4j.api.core.NeoService;
 import org.neo4j.api.core.RelationshipType;
 
 /**
@@ -179,4 +180,9 @@ public interface BatchInserter
      */
     public long getReferenceNode();
         
+    /**
+     * 
+     * @return a NeoService that does not support deletion and transactions
+     */
+    public NeoService getNeoService();
 }

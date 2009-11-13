@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.neo4j.api.core.EmbeddedNeo;
+import org.neo4j.api.core.NeoService;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.InvalidRecordException;
@@ -56,6 +57,8 @@ public class BatchInserterImpl implements BatchInserter
     
     private final PropertyIndexHolder indexHolder;
     private final RelationshipTypeHolder typeHolder; 
+    
+    private final NeoServiceBatchImpl neoService;
     
     public BatchInserterImpl( String storeDir )
     {
@@ -85,6 +88,7 @@ public class BatchInserterImpl implements BatchInserter
         RelationshipTypeData[] types = 
             getRelationshipTypeStore().getRelationshipTypes();
         typeHolder = new RelationshipTypeHolder( types );
+        neoService = new NeoServiceBatchImpl( this );
     }
     
     public long createNode( Map<String,Object> properties )
@@ -315,6 +319,7 @@ public class BatchInserterImpl implements BatchInserter
     
     public void shutdown()
     {
+        neoService.shutdown();
         neoStore.close();
     }
 
@@ -556,5 +561,10 @@ public class BatchInserterImpl implements BatchInserter
             return 0;
         }
         return -1;
+    }
+    
+    public NeoService getNeoService()
+    {
+        return neoService;
     }
 }
