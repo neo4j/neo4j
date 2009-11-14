@@ -21,11 +21,13 @@ package org.neo4j.impl.batchinsert;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.neo4j.api.core.Direction;
 import org.neo4j.api.core.NeoService;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
@@ -150,6 +152,40 @@ public class TestBatchInsert extends TestCase
             assertEquals( rel.getStartNode(), startNode );
         }
         setProperties( startNode );
+        neo.shutdown();
+    }
+    
+    public void testNeoServiceGetRelationships()
+    {
+        BatchInserter batchInserter = new 
+        BatchInserterImpl( "var/neo-batch" );
+        NeoService neo = batchInserter.getNeoService();
+        Node startNode = neo.createNode();
+        for ( int i = 0; i < 5; i++ )
+        {
+            Node endNode = neo.createNode();
+            startNode.createRelationshipTo( endNode, relTypeArray[i] ); 
+        }
+        for ( int i = 0; i < 5; i++ )
+        {
+            assertTrue( startNode.getSingleRelationship( 
+                relTypeArray[i], Direction.OUTGOING ) != null );
+        }
+        for ( int i = 0; i < 5; i++ )
+        {
+            Iterator<Relationship> relItr = 
+                startNode.getRelationships( relTypeArray[i], 
+                    Direction.OUTGOING ).iterator();
+            relItr.next();
+            assertTrue( !relItr.hasNext() );
+        }
+        for ( int i = 0; i < 5; i++ )
+        {
+            Iterator<Relationship> relItr = 
+                startNode.getRelationships( relTypeArray[i] ).iterator();
+            relItr.next();
+            assertTrue( !relItr.hasNext() );
+        }
         neo.shutdown();
     }
 }
