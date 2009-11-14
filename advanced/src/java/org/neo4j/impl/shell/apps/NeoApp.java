@@ -34,7 +34,6 @@ import org.neo4j.impl.shell.NodeOrRelationship;
 import org.neo4j.impl.shell.TypedId;
 import org.neo4j.util.shell.AbstractApp;
 import org.neo4j.util.shell.AbstractClient;
-import org.neo4j.util.shell.App;
 import org.neo4j.util.shell.AppCommandParser;
 import org.neo4j.util.shell.Output;
 import org.neo4j.util.shell.Session;
