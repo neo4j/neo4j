@@ -599,7 +599,10 @@ class NeoServiceBatchImpl implements NeoService
                         }
                     }
                 }
-                nextElement = possibleRel;
+                else
+                {
+                    nextElement = possibleRel;
+                }
             }
         }
 
