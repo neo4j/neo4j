@@ -34,7 +34,6 @@ import org.neo4j.impl.nioneo.store.RelationshipStore;
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.impl.transaction.TransactionFailureException;
-import org.neo4j.impl.transaction.xaframework.XaConnection;
 import org.neo4j.impl.transaction.xaframework.XaConnectionHelpImpl;
 import org.neo4j.impl.transaction.xaframework.XaResourceHelpImpl;
 import org.neo4j.impl.transaction.xaframework.XaResourceManager;

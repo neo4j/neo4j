@@ -20,7 +20,6 @@
 package org.neo4j.impl.nioneo.store;
 
 import java.io.IOException;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 /**
