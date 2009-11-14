@@ -19,7 +19,6 @@
  */
 package org.neo4j.impl.nioneo.store;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
