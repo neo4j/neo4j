@@ -193,7 +193,7 @@ class NeoServiceBatchImpl implements NeoService
             RelationshipBatchImpl rel = new RelationshipBatchImpl( 
                 new SimpleRelationship( (int)relId, (int) id, 
                     (int) otherNode.getId(), type ), neoService, emptyProps() );
-            neoService.addRelationshipToCache( id, rel );
+            neoService.addRelationshipToCache( relId, rel );
             return rel;
         }
         
