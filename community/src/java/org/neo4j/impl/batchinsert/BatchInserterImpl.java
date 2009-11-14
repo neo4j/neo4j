@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 
 import org.neo4j.api.core.EmbeddedNeo;
 import org.neo4j.api.core.NeoService;
+import org.neo4j.api.core.NotFoundException;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.impl.nioneo.store.DynamicRecord;
 import org.neo4j.impl.nioneo.store.InvalidRecordException;
@@ -319,7 +320,7 @@ public class BatchInserterImpl implements BatchInserter
     
     public void shutdown()
     {
-        neoService.shutdown();
+        neoService.clearCaches();
         neoStore.close();
     }
 
@@ -508,7 +509,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         if ( id < 0 || id >= getNodeStore().getHighId() )
         {
-            throw new IllegalArgumentException( "id=" + id );
+            throw new NotFoundException( "id=" + id );
         }
         return getNodeStore().getRecord( (int) (id & 0xFFFFFFFF) );
     }
@@ -517,7 +518,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         if ( id < 0 || id >= getRelationshipStore().getHighId() )
         {
-            throw new IllegalArgumentException( "id=" + id );
+            throw new NotFoundException( "id=" + id );
         }
         return getRelationshipStore().getRecord( (int) (id & 0xFFFFFFFF) );
     }
