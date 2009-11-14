@@ -150,8 +150,7 @@ class NeoServiceBatchImpl implements NeoService
 
     public void shutdown()
     {
-        nodes.clear();
-        rels.clear();
+        batchInserter.shutdown();
     }
 
     static class FakeTransaction implements Transaction
@@ -608,5 +607,11 @@ class NeoServiceBatchImpl implements NeoService
         {
             throw new UnsupportedOperationException();
         }
+    }
+
+    void clearCaches()
+    {
+        nodes.clear();
+        rels.clear();
     }
 }
