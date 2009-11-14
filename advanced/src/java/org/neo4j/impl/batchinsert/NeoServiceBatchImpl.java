@@ -19,6 +19,7 @@ import org.neo4j.api.core.Transaction;
 import org.neo4j.api.core.Traverser;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.impl.cache.LruCache;
+import org.neo4j.impl.nioneo.store.InvalidRecordException;
 
 class NeoServiceBatchImpl implements NeoService
 {
@@ -101,9 +102,16 @@ class NeoServiceBatchImpl implements NeoService
         NodeBatchImpl node = nodes.get( id );
         if ( node == null )
         {
-            node = new NodeBatchImpl( id, this, 
-                batchInserter.getNodeProperties( id ) );
-            nodes.put( id, node );
+            try
+            {
+                node = new NodeBatchImpl( id, this, 
+                    batchInserter.getNodeProperties( id ) );
+                nodes.put( id, node );
+            }
+            catch ( InvalidRecordException e )
+            {
+                throw new NotFoundException( e );
+            }
         }
         return node;
     }
@@ -118,12 +126,19 @@ class NeoServiceBatchImpl implements NeoService
         RelationshipBatchImpl rel = rels.get( id );
         if ( rel == null )
         {
-            SimpleRelationship simpleRel = 
-                batchInserter.getRelationshipById( id );
-            Map<String,Object> props = 
-                batchInserter.getRelationshipProperties( id );
-            rel = new RelationshipBatchImpl( simpleRel, this, props ); 
-            rels.put( id, rel );
+            try
+            {
+                SimpleRelationship simpleRel = 
+                    batchInserter.getRelationshipById( id );
+                Map<String,Object> props = 
+                    batchInserter.getRelationshipProperties( id );
+                rel = new RelationshipBatchImpl( simpleRel, this, props ); 
+                rels.put( id, rel );
+            }
+            catch ( InvalidRecordException e )
+            {
+                throw new NotFoundException( e );
+            }
         }
         return rel;
     }
@@ -577,7 +592,8 @@ class NeoServiceBatchImpl implements NeoService
                 {
                     for ( RelationshipType type : types )
                     {
-                        if ( type.equals( possibleRel.getType() ) )
+                        if ( type.name().equals( 
+                            possibleRel.getType().name() ) )
                         {
                             nextElement = possibleRel;
                             break;
