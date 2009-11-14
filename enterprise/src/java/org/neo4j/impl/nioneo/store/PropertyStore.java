@@ -20,7 +20,6 @@
 package org.neo4j.impl.nioneo.store;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Iterator;

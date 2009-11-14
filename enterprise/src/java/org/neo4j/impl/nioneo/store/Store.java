@@ -19,8 +19,6 @@
  */
 package org.neo4j.impl.nioneo.store;
 
-import java.io.IOException;
-
 /**
  * Common interface for the node,relationship,property and relationship type
  * stores.

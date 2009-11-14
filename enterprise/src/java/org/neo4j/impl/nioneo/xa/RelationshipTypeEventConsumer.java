@@ -19,8 +19,6 @@
  */
 package org.neo4j.impl.nioneo.xa;
 
-import java.io.IOException;
-
 import org.neo4j.impl.nioneo.store.RelationshipTypeData;
 
 public interface RelationshipTypeEventConsumer

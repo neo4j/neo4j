@@ -19,8 +19,6 @@
  */
 package org.neo4j.impl.nioneo.xa;
 
-import java.io.IOException;
-
 import org.neo4j.impl.core.PropertyIndex;
 import org.neo4j.impl.nioneo.store.PropertyData;
 import org.neo4j.impl.util.ArrayMap;

@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
-import java.util.Properties;
 import java.util.logging.Logger;
 
 import org.neo4j.api.core.Node;
@@ -42,7 +41,6 @@ import org.neo4j.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.impl.transaction.xaframework.XaConnection;
 import org.neo4j.impl.transaction.xaframework.XaContainer;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.impl.transaction.xaframework.XaResource;
 import org.neo4j.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.impl.util.ArrayMap;
