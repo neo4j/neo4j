@@ -5,6 +5,13 @@ import java.util.NoSuchElementException;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 
+/**
+ * Represents a position were we are in the pattern itself. So the
+ * {@link PatternMatcher} starts matching from a starting point,
+ * on a {@link PatternNode} and when trying to find a complete match (a complete
+ * match is a graph) it uses the {@link PatternPosition} to know where in
+ * the matching pattern we are at the moment.
+ */
 class PatternPosition
 {
 	private Node currentNode;

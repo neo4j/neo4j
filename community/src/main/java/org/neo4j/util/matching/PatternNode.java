@@ -144,17 +144,17 @@ public class PatternNode
 		return this.label;
 	}
 	
-	Set<String> getPropertiesExist()
+	public Set<String> getPropertiesExist()
 	{
 		return this.propertiesExist;
 	}
 	
-	Set<String> getPropertiesEqual()
+	public Set<String> getPropertiesEqual()
 	{
 		return this.propertiesEqual.keySet();
 	}
 	
-	Object[] getPropertyValue( String propertyName )
+	public Object[] getPropertyValue( String propertyName )
 	{
 		return this.propertiesEqual.get( propertyName );
 	}
