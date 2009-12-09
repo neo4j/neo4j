@@ -35,19 +35,19 @@ import java.util.logging.Logger;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.api.core.ShellService.ShellNotAvailableException;
 import org.neo4j.impl.core.NodeManager;
-import org.neo4j.impl.shell.NeoShellServer;
 import org.neo4j.impl.transaction.TransactionFailureException;
-import org.neo4j.util.shell.AbstractServer;
 
 class EmbeddedNeoImpl
 {
-    public static final int DEFAULT_SHELL_PORT = AbstractServer.DEFAULT_PORT;
-    public static final String DEFAULT_SHELL_NAME = AbstractServer.DEFAULT_NAME;
+//    public static final int DEFAULT_SHELL_PORT = AbstractServer.DEFAULT_PORT;
+//    public static final String DEFAULT_SHELL_NAME = AbstractServer.DEFAULT_NAME;
     
     private static Logger log = Logger.getLogger( 
         EmbeddedNeoImpl.class.getName() );
-    private NeoShellServer shellServer;
+//    private NeoShellServer shellServer;
+    private ShellService shellService;
     private Transaction placeboTransaction = null;
     private final NeoJvmInstance neoJvmInstance;
     private final NeoService neoService;
@@ -63,7 +63,7 @@ class EmbeddedNeoImpl
     public EmbeddedNeoImpl( String storeDir, NeoService neoService )
     {
         this.storeDir = storeDir;
-        this.shellServer = null;
+//        this.shellServer = null;
         neoJvmInstance = new NeoJvmInstance( storeDir, true );
         neoJvmInstance.start();
         nodeManager = neoJvmInstance.getConfig().getNeoModule()
@@ -81,7 +81,7 @@ class EmbeddedNeoImpl
     public EmbeddedNeoImpl( String storeDir, Map<String,String> params, NeoService neoService )
     {
         this.storeDir = storeDir;
-        this.shellServer = null;
+//        this.shellServer = null;
         neoJvmInstance = new NeoJvmInstance( storeDir, true );
         neoJvmInstance.start( params );
         nodeManager = neoJvmInstance.getConfig().getNeoModule()
@@ -128,10 +128,10 @@ class EmbeddedNeoImpl
     }
 
     // private accessor for the remote shell (started with enableRemoteShell())
-    private NeoShellServer getShellServer()
-    {
-        return this.shellServer;
-    }
+//    private NeoShellServer getShellServer()
+//    {
+//        return this.shellServer;
+//    }
 
     /*
      * (non-Javadoc)
@@ -175,11 +175,11 @@ class EmbeddedNeoImpl
      */
     public void shutdown()
     {
-        if ( getShellServer() != null )
+        if ( this.shellService != null )
         {
             try
             {
-                getShellServer().shutdown();
+                this.shellService.shutdown();
             }
             catch ( Throwable t )
             {
@@ -205,6 +205,11 @@ class EmbeddedNeoImpl
     public boolean enableRemoteShell(
         final Map<String,Serializable> initialProperties )
     {
+        if ( shellService != null )
+        {
+            throw new IllegalStateException( "Shell already enabled" );
+        }
+        
         Map<String,Serializable> properties = initialProperties;
         if ( properties == null )
         {
@@ -212,43 +217,52 @@ class EmbeddedNeoImpl
         }
         try
         {
-            if ( shellDependencyAvailable() )
-            {
-                this.shellServer = new NeoShellServer( neoService );
-                Object port = properties.get( "port" );
-                Object name = properties.get( "name" );
-                this.shellServer.makeRemotelyAvailable(
-                    port != null ? (Integer) port : DEFAULT_SHELL_PORT,
-                    name != null ? (String) name : DEFAULT_SHELL_NAME );
-                return true;
-            }
-            else
-            {
-                log.info( "Shell library not available. Neo shell not "
-                    + "started. Please add the Neo4j shell jar to the "
-                    + "classpath." );
-                return false;
-            }
+            shellService = new ShellService( this.neoService, properties );
+//            if ( shellDependencyAvailable() )
+//            {
+//                this.shellServer = new NeoShellServer( neoService );
+//                Object port = properties.get( "port" );
+//                Object name = properties.get( "name" );
+//                this.shellServer.makeRemotelyAvailable(
+//                    port != null ? (Integer) port : DEFAULT_SHELL_PORT,
+//                    name != null ? (String) name : DEFAULT_SHELL_NAME );
+//                return true;
+//            }
+//            else
+//            {
+//                log.info( "Shell library not available. Neo shell not "
+//                    + "started. Please add the Neo4j shell jar to the "
+//                    + "classpath." );
+//                return false;
+//            }
+            return true;
         }
         catch ( RemoteException e )
         {
-            throw new IllegalStateException( "Can't start remote neo shell: "
-                + e );
+            throw new IllegalStateException( "Can't start remote neo shell",
+                e );
         }
-    }
-
-    private boolean shellDependencyAvailable()
-    {
-        try
+        catch ( ShellNotAvailableException e )
         {
-            Class.forName( "org.neo4j.util.shell.ShellServer" );
-            return true;
-        }
-        catch ( Throwable t )
-        {
+            log.info( "Shell library not available. Neo shell not " +
+                "started. Please add the Neo4j shell jar to the classpath." );
+            e.printStackTrace();
             return false;
         }
     }
+
+//    private boolean shellDependencyAvailable()
+//    {
+//        try
+//        {
+//            Class.forName( "org.neo4j.util.shell.ShellServer" );
+//            return true;
+//        }
+//        catch ( Throwable t )
+//        {
+//            return false;
+//        }
+//    }
 
     /*
      * (non-Javadoc)
