@@ -1,92 +1,150 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <parent>
-    <groupId>org.neo4j</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>5</version>
-  </parent>
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<parent>
+		<groupId>org.neo4j</groupId>
+		<artifactId>parent-pom</artifactId>
+		<version>5</version>
+	</parent>
 
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.neo4j</groupId>
-  <artifactId>shell</artifactId>
-  <version>1.0-b11-SNAPSHOT</version>
-  <name>Neo4j - Generic shell</name>
-  <description>
-A generic command shell with a client and server part
-    </description>
-  <url>http://components.neo4j.org/${project.artifactId}/</url>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.neo4j</groupId>
+	<artifactId>shell</artifactId>
+	<version>1.0-b11-SNAPSHOT</version>
+	<name>Neo4j - Generic shell</name>
+	<description>
+		A generic command shell with a client and server part
+	</description>
+	<url>http://components.neo4j.org/${project.artifactId}/</url>
 
-  <properties>
-    <bundle.namespace>org.neo4j.shell</bundle.namespace>
-  </properties>
+	<properties>
+		<jline.version>0.9.94</jline.version>
+		<jta.version>1.1</jta.version>
+		<neo.version>1.0-b11-SNAPSHOT</neo.version>
+		<bundle.namespace>org.neo4j.util.shell</bundle.namespace>
+	</properties>
 
-  <packaging>bundle</packaging>
+	<packaging>bundle</packaging>
 
-  <scm>
-    <connection>
-            scm:svn:https://svn.neo4j.org/components/${project.artifactId}/trunk/
-        </connection>
-    <url>https://trac.neo4j.org/browser/components/${project.artifactId}
-        </url>
-  </scm>
+	<scm>
+		<connection>
+			scm:svn:https://svn.neo4j.org/components/${project.artifactId}/trunk/
+		</connection>
+		<url>https://trac.neo4j.org/browser/components/${project.artifactId}
+		</url>
+	</scm>
+	<contributors>
+		<contributor>
+			<name>Peter Neubauer</name>
+			<email>peter [at] neotechnology.com</email>
+			<organization>Neo Technology</organization>
+			<organizationUrl>http://www.neotechnology.com</organizationUrl>
+			<timezone>+1</timezone>
+		</contributor>
+	</contributors>
 
-  <licenses>
-    <license>
-      <name>GNU Affero General Public License, Version 3</name>
-      <url>https://svn.neo4j.org/components/${project.artifactId}/trunk/LICENSE.txt
-            </url>
-    </license>
-  </licenses>
+	<licenses>
+		<license>
+			<name>GNU Affero General Public License, Version 3</name>
+			<url>https://svn.neo4j.org/components/${project.artifactId}/trunk/LICENSE.txt
+			</url>
+		</license>
+	</licenses>
 
-  <developers>
-    <developer>
-      <id>mattias</id>
-      <name>Mattias Persson</name>
-      <email>mattias [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
+	<developers>
+		<developer>
+			<id>mattias</id>
+			<name>Mattias Persson</name>
+			<email>mattias [at] neotechnology.com</email>
+			<timezone>+1</timezone>
+			<roles>
+				<role>Developer</role>
+			</roles>
+		</developer>
+	</developers>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>org.neo4j.shell.StartClient</mainClass>
-              <packageName>org.neo4j.shell</packageName>
-            </manifest>
-            <manifestEntries>
-              <url>http://neo4j.org</url>
-              <Class-Path>neo-${version}.jar jta-1.1.jar</Class-Path>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+	<build>
+		<resources>
+			<resource>
+				<directory>src/bin</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
+		<sourceDirectory>src/main/java</sourceDirectory>
+		<testSourceDirectory>src/test/java</testSourceDirectory>
+		<plugins>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>filter-scripts</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>resources</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<appendAssemblyId>true</appendAssemblyId>
+					<descriptors>
+						<descriptor>src/assembly/default.xml</descriptor>
+					</descriptors>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly-default</id>
+						<phase>package</phase>
+						<goals>
+							<goal>attached</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>org.neo4j.util.shell.StartClient</mainClass>
+							<packageName>org.neo4j.util.shell</packageName>
+						</manifest>
+						<manifestEntries>
+							<url>http://neo4j.org</url>
+							<Class-Path>neo-${version}.jar jta-1.1.jar</Class-Path>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo</artifactId>
-      <version>${version}</version>
-    </dependency>
-    <!--
-      If you add the jLine library (at least version 0.9.94) to the classpath of
-      the client then you'll get enhanced prompt abilities. Much like regular
-      bash etc.
-    -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.1</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+	<dependencies>
+		<!--
+			If you add the jLine library (at least version 0.9.94) to the
+			classpath of the client then you'll get enhanced prompt abilities.
+			Much like regular bash etc.
+		-->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo</artifactId>
+			<version>${neo.version}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>jline</groupId>
+			<artifactId>jline</artifactId>
+			<version>${jline.version}</version>
+			<scope>compile</scope>
+		</dependency>
+
+	</dependencies>
 </project>
