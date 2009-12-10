@@ -23,11 +23,21 @@ import java.util.Map;
 
 import org.neo4j.shell.neo.LocalNeoShellServer;
 
+/**
+ * Starts a {@link LocalNeoShellServer} and connects a client to it in the
+ * same JVM.
+ */
 public class StartLocalClient extends AbstractStarter
 {
-    public static final String ARG_PATH = "path";
-    public static final String ARG_READONLY = "readonly";
+    static final String ARG_PATH = "path";
+    static final String ARG_READONLY = "readonly";
     
+    /**
+     * Starts a {@link LocalNeoShellServer} and connects a client to it in
+     * the same JVM.
+     * @param args contains information about which neo store to use (the path
+     * on disk).
+     */
     public static void main( String[] args )
     {
         Map<String, String> argMap = parseArgs( args );

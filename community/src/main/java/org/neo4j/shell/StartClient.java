@@ -2,8 +2,21 @@ package org.neo4j.shell;
 
 import java.util.Map;
 
+import org.neo4j.api.core.NeoService;
+import org.neo4j.shell.neo.LocalNeoShellServer;
+
+/**
+ * Can start clients, either via {@link StartRemoteClient} or
+ * {@link StartLocalClient}.
+ */
 public class StartClient extends AbstractStarter
 {
+    /**
+     * Starts a client, remote or local depending on the arguments.
+     * @param args the arguments from the command line. Can contain
+     * information about whether to start a local {@link LocalNeoShellServer}
+     * or connect to an already running {@link NeoService}.
+     */
     public static void main( String[] args )
     {
         printUsage();

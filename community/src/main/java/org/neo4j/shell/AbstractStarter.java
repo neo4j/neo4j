@@ -9,6 +9,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ * Abstract class with common functionality for classes which starts up clients
+ * or servers.
+ */
 public class AbstractStarter
 {
     protected static void setSessionVariablesFromArgs(

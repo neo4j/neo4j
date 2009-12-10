@@ -31,16 +31,30 @@ import org.neo4j.api.core.Relationship;
  * that code. Please make this interface follow the Node/Relationship
  * interfaces.
  */
-public abstract class NodeOrRelationship
+abstract class NodeOrRelationship
 {
+    /**
+     * The type which identifies a {@link TypedId} that it is a {@link Node}.
+     */
     public static final String TYPE_NODE = "n";
+    /**
+     * The type which identifies a {@link TypedId} that it is a{@link Relationship}.
+     */
     public static final String TYPE_RELATIONSHIP = "r";
     
+    /**
+     * @param node the {@link Node} to wrap.
+     * @return a {@link Node} wrapped in a {@link NodeOrRelationship}.
+     */
     public static NodeOrRelationship wrap( Node node )
     {
         return new WrapNode( node );
     }
 
+    /**
+     * @param rel the {@link Relationship} to wrap.
+     * @return a {@link Relationship} wrapped in a {@link NodeOrRelationship}.
+     */
     public static NodeOrRelationship wrap( Relationship rel )
     {
         return new WrapRelationship( rel );
@@ -53,26 +67,44 @@ public abstract class NodeOrRelationship
         this.nodeOrRelationship = nodeOrRelationship;
     }
     
+    /**
+     * @return whether or not the underlying object is a {@link Node}. 
+     */
     public boolean isNode()
     {
         return nodeOrRelationship instanceof Node;
     }
 
+    /**
+     * @return the underlying {@link Node} if {@link #isNode()} should return
+     * {@code true}, otherwise a {@link ClassCastException} will be thrown.
+     */
     public Node asNode()
     {
         return (Node) nodeOrRelationship;
     }
 
+    /**
+     * @return whether or not the underlying object is a {@link Relationship}. 
+     */
     public boolean isRelationship()
     {
         return nodeOrRelationship instanceof Relationship;
     }
 
+    /**
+     * @return the underlying {@link Relationship} if {@link #isRelationship()}
+     * should return {@code true}, otherwise a {@link ClassCastException}
+     * will be thrown.
+     */
     public Relationship asRelationship()
     {
         return (Relationship) nodeOrRelationship;
     }
     
+    /**
+     * @return the {@link TypedId} for this 
+     */
     public TypedId getTypedId()
     {
         return new TypedId( getType(), getId() );
@@ -80,21 +112,53 @@ public abstract class NodeOrRelationship
     
     abstract String getType();
     
+    /**
+     * @return the underlying objects id.
+     */
     public abstract long getId();
 
+    /**
+     * @param key the property key
+     * @return whether or not the underlying object has property {@code key}.
+     */
     public abstract boolean hasProperty( String key );
 
+    /**
+     * @param key the property key
+     * @return the result from the underlying object
+     */
     public abstract Object getProperty( String key );
 
+    /**
+     * @param key the property key
+     * @param defaultValue the default value
+     * @return the result from the underlying object
+     */
     public abstract Object getProperty( String key, Object defaultValue );
 
+    /**
+     * @param key the property key
+     * @param value the property value
+     */
     public abstract void setProperty( String key, Object value );
 
+    /**
+     * @param key the property key
+     * @return the old property value or {@code null} if there was none.
+     */
     public abstract Object removeProperty( String key );
 
+    /**
+     * @return the property keys for the underlying object.
+     */
     public abstract Iterable<String> getPropertyKeys();
 
-    public abstract Iterable<Relationship> getRelationships( Direction direction );
+    /**
+     * @param direction the {@link Direction} of the relationships.
+     * @return the {@link Relationship}s for the underlying object.
+     */
+    public abstract Iterable<Relationship> getRelationships(
+        Direction direction );
 
     static class WrapNode extends NodeOrRelationship
     {
@@ -227,73 +291,6 @@ public abstract class NodeOrRelationship
         public Iterable<Relationship> getRelationships( Direction direction )
         {
             return new ArrayList<Relationship>();
-        }
-    }
-    
-    public static class TypedId
-    {
-        private final String type;
-        private final long id;
-        private final boolean isNode;
-        
-        public TypedId( String typedId )
-        {
-            this( typedId.substring( 0, 1 ),
-                Long.parseLong( typedId.substring( 1 ) ) );
-        }
-        
-        public TypedId( String type, long id )
-        {
-            this.type = type;
-            this.id = id;
-            this.isNode = type.equals( TYPE_NODE );
-        }
-        
-        public String getType()
-        {
-            return this.type;
-        }
-        
-        public long getId()
-        {
-            return this.id;
-        }
-        
-        public boolean isNode()
-        {
-            return this.isNode;
-        }
-        
-        public boolean isRelationship()
-        {
-            return !this.isNode;
-        }
-        
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( !( o instanceof TypedId ) )
-            {
-                return false;
-            }
-            TypedId other = ( TypedId ) o;
-            return this.type.equals( other.type ) &&
-                this.id == other.id;
-        }
-        
-        @Override
-        public int hashCode()
-        {
-            int code = 7;
-            code = 31 * code + new Long( this.id ).hashCode();
-            code = 31 * code + this.type.hashCode();
-            return code;
-        }
-        
-        @Override
-        public String toString()
-        {
-            return this.type + this.id;
         }
     }
 }

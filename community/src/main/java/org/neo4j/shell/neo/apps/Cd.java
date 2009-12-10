@@ -30,8 +30,6 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.neo.NodeOrRelationship;
-import org.neo4j.shell.neo.TypedId;
 
 /**
  * Mimics the POSIX application with the same name, i.e. traverses to a node.

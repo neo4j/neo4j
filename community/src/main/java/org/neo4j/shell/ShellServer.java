@@ -59,6 +59,7 @@ public interface ShellServer extends Remote
 	 * @param session the client session to get necessary values from to
 	 * help the interpretation.
 	 * @return the interpreted value.
+	 * @throws ShellException if some error should occur.
 	 * @throws RemoteException RMI error.
 	 */
 	Serializable interpretVariable( String key, Serializable value,

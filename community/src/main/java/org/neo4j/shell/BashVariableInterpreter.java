@@ -66,6 +66,7 @@ public class BashVariableInterpreter
 	 * @param server the server which runs the interpretation.
 	 * @param session the session (or environment) of the interpretation.
 	 * @return the interpreted string.
+	 * @throws ShellException if there should be some communication error.
 	 */
 	public String interpret( String string, ShellServer server,
 		Session session ) throws ShellException
@@ -89,6 +90,7 @@ public class BashVariableInterpreter
 		 * @param server the server which runs the interpretation.
 		 * @param session the environment of the interpretation.
 		 * @return the replacement.
+		 * @throws ShellException if there should be some communication error.
 		 */
 		String getReplacement( ShellServer server, Session session )
 		    throws ShellException;

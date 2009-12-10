@@ -28,6 +28,9 @@ import java.util.Map;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.ShellException;
 
+/**
+ * Runs Python scripts.
+ */
 public class JshExecutor extends ScriptExecutor
 {
 	static

@@ -38,8 +38,15 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
+/**
+ * Traverses the graph using
+ * {@link Node#traverse(Order, StopEvaluator, ReturnableEvaluator, Object...)}.
+ */
 public class Trav extends NeoApp
 {
+    /**
+     * Constructs a new command which can traverse the graph.
+     */
     public Trav()
     {
         super();

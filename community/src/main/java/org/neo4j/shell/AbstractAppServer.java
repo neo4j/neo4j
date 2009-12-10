@@ -48,11 +48,14 @@ public abstract class AbstractAppServer extends AbstractServer
 		super();
 	}
 
-	public void addApp( Class<? extends App> appClass )
+	protected void addApp( Class<? extends App> appClass )
 	{
 		this.apps.put( appClass.getSimpleName().toLowerCase(), appClass );
 	}
 	
+	/**
+	 * @return a list of the {@link App}s this server manages.
+	 */
 	public Set<Class<? extends App>> getApps()
 	{
 		return new TreeSet<Class<? extends App>>( this.apps.values() );

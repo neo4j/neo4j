@@ -31,6 +31,10 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.SimpleAppServer;
 
+/**
+ * Manages the lifecycle of a local {@link NeoService} and a
+ * {@link NeoShellServer}.
+ */
 public class LocalNeoShellServer extends SimpleAppServer
 {
     private final String neoDirectory;
@@ -38,6 +42,16 @@ public class LocalNeoShellServer extends SimpleAppServer
     private NeoService neoService;
     private NeoShellServer neoShellServer;
 
+    /**
+     * Starts a local neo shell server and a {@link NeoService}.
+     * 
+     * @param neoDirectory the directory on disk to use a neo store.
+     * @param readOnly if the {@link NeoService} should be read-only or not.
+     * If {@code true} then it won't take a lock on the neo store, making
+     * it possible to connect to a store which as used simultaneously by
+     * another process.
+     * @throws RemoteException if some error occured regarding instantiation.
+     */
     public LocalNeoShellServer( String neoDirectory, boolean readOnly )
         throws RemoteException
     {
@@ -48,14 +62,7 @@ public class LocalNeoShellServer extends SimpleAppServer
         this.neoService = this.readOnly ?
             new EmbeddedReadOnlyNeo( neoDirectory ) :
             new EmbeddedNeo( neoDirectory );
-        try
-        {
-            this.neoShellServer = new NeoShellServer( neoService );
-        }
-        catch ( RemoteException e )
-        {
-            throw new RuntimeException( e );
-        }
+        this.neoShellServer = new NeoShellServer( neoService );
     }
 
     private void shutdownServer()

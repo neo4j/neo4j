@@ -173,7 +173,7 @@ public abstract class ScriptExecutor
 	protected abstract void ensureDependenciesAreInClasspath()
 		throws ShellException;
 
-	public static class ArgReader implements Iterator<String>
+	static class ArgReader implements Iterator<String>
 	{
 		private static final int START_INDEX = -1;
 		

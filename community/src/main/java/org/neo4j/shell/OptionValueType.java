@@ -48,6 +48,9 @@ public enum OptionValueType
 	    this.description = description;
 	}
 	
+	/**
+	 * @return the description for this option.
+	 */
 	public String getDescription()
 	{
 	    return this.description;

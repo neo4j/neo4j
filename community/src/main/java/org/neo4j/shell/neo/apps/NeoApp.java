@@ -37,8 +37,6 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.neo.NeoShellServer;
-import org.neo4j.shell.neo.NodeOrRelationship;
-import org.neo4j.shell.neo.TypedId;
 
 /**
  * An implementation of {@link App} which has common methods and functionality
@@ -48,6 +46,14 @@ public abstract class NeoApp extends AbstractApp
 {
     private static final String CURRENT_KEY = "CURRENT_DIR";
     
+    /**
+     * @param server the {@link NeoShellServer} to get the current
+     * {@link NodeOrRelationship} from.
+     * @param session the {@link Session} used by the client.
+     * @return the current {@link NodeOrRelationship} the client stands on
+     * at the moment.
+     * @throws ShellException if some error occured.
+     */
     public static NodeOrRelationship getCurrent( NeoShellServer server,
         Session session ) throws ShellException
     {
@@ -192,6 +198,8 @@ public abstract class NeoApp extends AbstractApp
     }
 
     /**
+     * @param server the {@link NeoShellServer} to run at.
+     * @param session the {@link Session} used by the client.
      * @param thing the thing to get the name-representation for.
      * @return the display name for a {@link Node}.
      */
@@ -209,6 +217,13 @@ public abstract class NeoApp extends AbstractApp
         }
     }
     
+    /**
+     * @param server the {@link NeoShellServer} to run at.
+     * @param session the {@link Session} used by the client.
+     * @param typedId the id for the item to display.
+     * @return a display string for the {@code typedId}.
+     * @throws ShellException if an error occurs.
+     */
     public static String getDisplayName( NeoShellServer server,
         Session session, TypedId typedId ) throws ShellException
     {
@@ -216,6 +231,12 @@ public abstract class NeoApp extends AbstractApp
             getThingById( server, typedId ) );
     }
 
+    /**
+     * @param server the {@link NeoShellServer} to run at.
+     * @param session the {@link Session} used by the client.
+     * @param node the {@link Node} to get a display string for.
+     * @return a display string for {@code node}.
+     */
     public static String getDisplayName( NeoShellServer server,
         Session session, Node node )
     {
@@ -275,6 +296,13 @@ public abstract class NeoApp extends AbstractApp
         return string;
     }
 
+    /**
+     * @param server the {@link NeoShellServer} to run at.
+     * @param session the {@link Session} used by the client.
+     * @param relationship the {@link Relationship} to get a display name for.
+     * @param verbose whether or not to include the relationship id as well.
+     * @return a display string for the {@code relationship}.
+     */
     public static String getDisplayName( NeoShellServer server,
         Session session, Relationship relationship, boolean verbose )
     {

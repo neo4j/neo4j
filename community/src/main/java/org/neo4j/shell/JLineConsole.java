@@ -32,7 +32,7 @@ public class JLineConsole implements Console
 	private Object completor;
 	private boolean successfulGrabAvailableCommands = true;
 	
-	public static JLineConsole newConsoleOrNullIfNotFound( ShellClient client )
+	static JLineConsole newConsoleOrNullIfNotFound( ShellClient client )
 	{
 		try
 		{

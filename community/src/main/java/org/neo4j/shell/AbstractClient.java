@@ -219,7 +219,7 @@ public abstract class AbstractClient implements ShellClient
         return this.console.readLine();
     }
 
-    public static String[] getExitCommands()
+    static String[] getExitCommands()
     {
         return EXIT_COMMANDS.toArray( new String[ EXIT_COMMANDS.size() ] );
     }

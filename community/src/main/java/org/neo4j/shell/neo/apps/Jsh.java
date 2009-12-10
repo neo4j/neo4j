@@ -26,7 +26,7 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
 /**
- * Wraps a {@link org.neo4j.shell.apps.extra.util.shell.apps.extra.Jsh} in a {@link NeoApp} to be
+ * Wraps a {@link org.neo4j.shell.apps.extra.Jsh} in a {@link NeoApp} to be
  * wrapped in a transaction among other things.
  */
 public class Jsh extends NeoApp

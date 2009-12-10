@@ -19,6 +19,10 @@
  */
 package org.neo4j.shell;
 
+/**
+ * Mimics the class with the same name which exists in Java 1.6
+ * (not in Java 1.5).
+ */
 public interface Console
 {
 	/**

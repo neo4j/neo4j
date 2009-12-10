@@ -28,7 +28,6 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.neo.NodeOrRelationship;
 
 /**
  * Sets a property for the current node or relationship.

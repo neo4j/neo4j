@@ -25,6 +25,9 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
+/**
+ * Runs Python scripts (Jython).
+ */
 public class Jsh extends AbstractApp
 {
 	public String execute( AppCommandParser parser, Session session,

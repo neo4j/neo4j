@@ -27,8 +27,8 @@ import java.util.Map;
  */
 public class StartRemoteClient extends AbstractStarter
 {
-    public static final String ARG_PORT = "port";
-    public static final String ARG_NAME = "name";
+    static final String ARG_PORT = "port";
+    static final String ARG_NAME = "name";
     
     /**
      * Starts a client and connects to a remote server.
