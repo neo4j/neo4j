@@ -52,8 +52,6 @@ A generic command shell with a client and server part
   </developers>
 
   <build>
-    <sourceDirectory>src/java</sourceDirectory>
-    <testSourceDirectory>src/test</testSourceDirectory>
     <plugins>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
