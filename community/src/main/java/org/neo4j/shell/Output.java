@@ -38,7 +38,6 @@ public interface Output extends Appendable, Remote
 	
 	/**
 	 * Prints a new line to the output.
-	 * @param object the object to print (the string representation of it).
 	 * @throws RemoteException RMI error.
 	 */
 	void println() throws RemoteException;
