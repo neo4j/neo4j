@@ -50,6 +50,8 @@ public class Mkrel extends NeoApp
             "The direction: " + this.directionAlternatives() + "." ) );
         this.addValueType( "c", new OptionContext( OptionValueType.NONE,
             "Supplied if there should be created a new node" ) );
+        this.addValueType( "v", new OptionContext( OptionValueType.NONE,
+            "Verbose mode: display created nodes/relationships" ) );
     }
 
     @Override
@@ -94,13 +96,17 @@ public class Mkrel extends NeoApp
         Node endNode = direction == Direction.OUTGOING ? node : currentNode;
         Relationship relationship =
             startNode.createRelationshipTo( endNode, type );
-        if ( createNode )
+        boolean verbose = parser.options().containsKey( "v" );
+        if ( createNode && verbose )
         {
             out.println( "Node " + getDisplayName(
                 getNeoServer(), session, node ) + " created" );
         }
-        out.println( "Relationship " + getDisplayName(
-            getNeoServer(), session, relationship, true ) + " created" );
+        if ( verbose )
+        {
+            out.println( "Relationship " + getDisplayName(
+                getNeoServer(), session, relationship, true ) + " created" );
+        }
         return null;
     }
 }
