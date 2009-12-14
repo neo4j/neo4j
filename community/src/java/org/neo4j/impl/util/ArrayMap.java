@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class ArrayMap<K,V>
 {
@@ -75,7 +74,7 @@ public class ArrayMap<K,V>
             }
             else
             {
-                propertyMap = new HashMap<K,V>();
+                propertyMap = new HashMap<K,V>( arrayEntries.length * 2 );
                 for ( int i = 0; i < arrayCount; i++ )
                 {
                     propertyMap.put( arrayEntries[i].getKey(), arrayEntries[i]
@@ -109,7 +108,7 @@ public class ArrayMap<K,V>
             }
             else
             {
-                propertyMap = new ConcurrentHashMap<K,V>();
+                propertyMap = new HashMap<K,V>( arrayEntries.length * 2 );
                 for ( int i = 0; i < arrayCount; i++ )
                 {
                     propertyMap.put( arrayEntries[i].getKey(), arrayEntries[i]
