@@ -42,6 +42,7 @@ public final class EmbeddedReadOnlyNeo implements NeoService
 
     public EmbeddedReadOnlyNeo( String storeDir, Map<String,String> params )
     {
+        params.put( "read_only", "true" );
         this.neoImpl = new EmbeddedNeoImpl( storeDir, params, this );
     }
 
