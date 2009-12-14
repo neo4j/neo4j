@@ -21,7 +21,7 @@
 		<jline.version>0.9.94</jline.version>
 		<jta.version>1.1</jta.version>
 		<neo.version>1.0-b11-SNAPSHOT</neo.version>
-		<bundle.namespace>org.neo4j.util.shell</bundle.namespace>
+		<bundle.namespace>org.neo4j.shell</bundle.namespace>
 	</properties>
 
 	<packaging>bundle</packaging>
@@ -108,8 +108,8 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>org.neo4j.util.shell.StartClient</mainClass>
-							<packageName>org.neo4j.util.shell</packageName>
+							<mainClass>org.neo4j.shell.StartClient</mainClass>
+							<packageName>org.neo4j.shell</packageName>
 						</manifest>
 						<manifestEntries>
 							<url>http://neo4j.org</url>
