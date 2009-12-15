@@ -47,7 +47,7 @@ public class NeoAlgoTestCase extends TestCase
     protected void setUp() throws Exception
     {
         super.setUp();
-        neo = new EmbeddedNeo( "var/algotest" );
+        neo = new EmbeddedNeo( "target/var/algotest" );
         tx = neo.beginTx();
         graph = new SimpleGraphBuilder( neo, MyRelTypes.R1 );
     }
