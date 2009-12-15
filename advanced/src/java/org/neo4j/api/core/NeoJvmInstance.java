@@ -198,41 +198,41 @@ class NeoJvmInstance
     private void sendUdpPingStarted()
     {
         sessionId = r.nextLong();
-        sendUdpPing( NEO_STARTED, sessionId );
+        final ByteBuffer buf = setupUdpPing( NEO_STARTED, sessionId );
         timer.schedule( new TimerTask()
         {
             @Override
             public void run()
             {
-                sendUdpPingRunning();
+                SocketAddress host = new InetSocketAddress( UDP_HOST, UDP_PORT );
+                new UdpPinger( buf, host ).sendPing();
             }
-        }, UDP_PING_DELAY );
+        }, 0 );
+        timer.schedule( new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                ByteBuffer buffer = setupUdpPing( NEO_RUNNING, sessionId );
+                SocketAddress host = new InetSocketAddress( UDP_HOST, UDP_PORT );
+                new UdpPinger( buffer, host ).sendPing();
+            }
+        }, UDP_PING_DELAY, UDP_PING_DELAY );
     }
 
-    private void sendUdpPingRunning()
-    {
-        sendUdpPing( NEO_RUNNING, 3 );
-        timer.schedule( new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                sendUdpPingRunning();
-            }
-        }, UDP_PING_DELAY );
-    }
-    
     private void sendUdpPingShutdown()
     {
-        sendUdpPing( NEO_SHUTDOWN, sessionId );
+        ByteBuffer buf = setupUdpPing( NEO_SHUTDOWN, sessionId );
+        SocketAddress host = new InetSocketAddress( UDP_HOST, UDP_PORT );
+        new UdpPinger( buf, host ).sendPing();
     }
     
-    private void sendUdpPing( byte event, long sessionId )
+    private ByteBuffer setupUdpPing( byte event, long sessionId )
     {
         NeoStoreXaDataSource xaDs = 
             (NeoStoreXaDataSource) persistenceSource.getXaDataSource();
         ByteBuffer buf = ByteBuffer.allocate( 73 );
-        buf.put( NEO_STARTED );
+        buf.put( event );
         buf.putLong( sessionId );
         buf.putLong( xaDs.getRandomIdentifier() );
         buf.putLong( xaDs.getCreationTime() );
@@ -243,8 +243,7 @@ class NeoJvmInstance
         buf.putLong( xaDs.getNumberOfIdsInUse( RelationshipType.class ) );
         buf.putLong( xaDs.getNumberOfIdsInUse( PropertyIndex.class ) );
         buf.flip();
-        SocketAddress host = new InetSocketAddress( UDP_HOST, UDP_PORT );
-        new UdpPinger( buf, host ).sendPing();
+        return buf;
     }
     
     private void cleanWriteLocksInLuceneDirectory( String luceneDir )

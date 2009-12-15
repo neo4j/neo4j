@@ -17,24 +17,19 @@ public class UdpPinger
     
     public void sendPing()
     {
-        new Thread()
+        try
         {
-            public void run()
-            {
-                try
-                {
-                    DatagramChannel sendChannel = DatagramChannel.open();
-                    // blocking but will still just throw it at OS since it is
-                    // UDP (will not block, just fail)
-                    // one time try, ignore 0 bytes sent
-                    sendChannel.send( buf, host );
-                    sendChannel.close();
-                }
-                catch ( Exception e )
-                {
-                    // ok we tried
-                }
-            }
-        }.start();
+            DatagramChannel sendChannel = DatagramChannel.open();
+            // blocking but will still just throw it at OS since it is
+            // UDP (will not block, just fail)
+            // one time try, ignore 0 bytes sent
+            sendChannel.send( buf, host );
+            sendChannel.close();
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            // ok we tried
+        }
     }
 }
