@@ -57,7 +57,7 @@ abstract public class NeoAlgoBenchmark
 
     protected void setUpGlobal()
     {
-        setUpGlobal( "var/benchmarkdata" );
+        setUpGlobal( "target/benchmarkdata" );
     }
 
     protected void tearDownGlobal()
@@ -155,10 +155,10 @@ abstract public class NeoAlgoBenchmark
      */
     protected boolean saveStatistic( long milliSeconds, boolean print )
     {
-        String fileName = "var/benchmarkstatistics/" + getTestId();
+        String fileName = "target/benchmarkstatistics/" + getTestId();
         String data = "";
         // Make directory
-        new File( "var/benchmarkstatistics/" ).mkdirs();
+        new File( "target/benchmarkstatistics/" ).mkdirs();
         // Read
         try
         {
