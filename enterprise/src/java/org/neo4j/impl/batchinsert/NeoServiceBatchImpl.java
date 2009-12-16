@@ -40,7 +40,7 @@ class NeoServiceBatchImpl implements NeoService
         };
         
     private final LruCache<Long,RelationshipBatchImpl> rels = 
-        new LruCache<Long,RelationshipBatchImpl>( "RelCache", 100000, null )
+        new LruCache<Long,RelationshipBatchImpl>( "RelCache", 10000, null )
         {
             @Override
             public void elementCleaned( RelationshipBatchImpl rel )
