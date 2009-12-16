@@ -34,7 +34,7 @@ public class TestTxSuspendResume extends AbstractNeoTestCase
 
     public void testMultipleTxSameThread() throws Exception
     {
-        EmbeddedNeo neo2 = new EmbeddedNeo( "var/test-neo2" );
+        EmbeddedNeo neo2 = new EmbeddedNeo( getNeoPath( "test-neo2" ) );
         TransactionManager tm = neo2.getConfig().getTxModule().getTxManager();
         tm.begin();
         Node refNode = neo2.getReferenceNode();
