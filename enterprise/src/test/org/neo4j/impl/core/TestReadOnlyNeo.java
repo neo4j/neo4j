@@ -38,7 +38,7 @@ public class TestReadOnlyNeo extends AbstractNeoTestCase
     
     public void testSimple()
     {
-        NeoService readNeo = new EmbeddedReadOnlyNeo( "var/neo-test" );
+        NeoService readNeo = new EmbeddedReadOnlyNeo( getNeoPath( "neo-test" ) );
         Transaction tx = readNeo.beginTx();
         int count = 0;
         for ( Node node : readNeo.getAllNodes() )

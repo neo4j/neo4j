@@ -32,6 +32,7 @@ import org.neo4j.api.core.NeoService;
 import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
+import org.neo4j.impl.AbstractNeoTestCase;
 
 public class TestBatchInsert extends TestCase
 {
@@ -75,10 +76,15 @@ public class TestBatchInsert extends TestCase
         properties.put( "key18", new char[] {1,2,3,4,5,6,7,8,9} );
     }
     
+    private BatchInserter newBatchInserter()
+    {
+        return new BatchInserterImpl(
+            AbstractNeoTestCase.getNeoPath( "neo-batch" ) );
+    }
+    
     public void testSimple()
     {
-        BatchInserter neo = new 
-            BatchInserterImpl( "var/neo-batch" );
+        BatchInserter neo = newBatchInserter();
         long node1 = neo.createNode( null );
         long node2 = neo.createNode( null );
         long rel1 = neo.createRelationship( node1, node2, RelTypes.BATCH_TEST, 
@@ -92,8 +98,7 @@ public class TestBatchInsert extends TestCase
     
     public void testMore()
     {
-        BatchInserter neo = new 
-            BatchInserterImpl( "var/neo-batch" );
+        BatchInserter neo = newBatchInserter();
         long startNode = neo.createNode( properties );
         long endNodes[] = new long[25];
         Set<Long> rels = new HashSet<Long>();
@@ -130,8 +135,7 @@ public class TestBatchInsert extends TestCase
     
     public void testWithNeoService()
     {
-        BatchInserter batchInserter = new 
-            BatchInserterImpl( "var/neo-batch" );
+        BatchInserter batchInserter = newBatchInserter();
         NeoService neo = batchInserter.getNeoService();
         Node startNode = neo.createNode();
         setProperties( startNode );
@@ -157,8 +161,7 @@ public class TestBatchInsert extends TestCase
     
     public void testNeoServiceGetRelationships()
     {
-        BatchInserter batchInserter = new 
-        BatchInserterImpl( "var/neo-batch" );
+        BatchInserter batchInserter = newBatchInserter();
         NeoService neo = batchInserter.getNeoService();
         Node startNode = neo.createNode();
         for ( int i = 0; i < 5; i++ )

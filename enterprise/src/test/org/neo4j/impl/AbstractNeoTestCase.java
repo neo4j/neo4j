@@ -30,6 +30,8 @@ import org.neo4j.impl.core.TestNeo;
 
 public abstract class AbstractNeoTestCase extends TestCase
 {
+    protected static final String NEO_BASE_PATH = "target/var/";
+    
     public AbstractNeoTestCase( String testName )
     {
         super( testName );
@@ -58,10 +60,15 @@ public abstract class AbstractNeoTestCase extends TestCase
         TestSuite suite = new TestSuite( TestNeo.class );
         return suite;
     }
+    
+    public static String getNeoPath( String endPath )
+    {
+        return NEO_BASE_PATH + endPath;
+    }
 
     public void setUp()
     {
-        neo = new EmbeddedNeo( "var/neo-test" );
+        neo = new EmbeddedNeo( getNeoPath( "neo-test" ) );
         tx = neo.beginTx();
     }
 
