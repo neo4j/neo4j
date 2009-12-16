@@ -260,7 +260,7 @@ public class TestNeo extends AbstractNeoTestCase
 
     public void testMultipleNeos()
     {
-        NeoService neo2 = new EmbeddedNeo( "var/test-neo2" );
+        NeoService neo2 = new EmbeddedNeo( getNeoPath( "test-neo2" ) );
         Transaction tx2 = neo2.beginTx();
         getNeo().createNode();
         neo2.createNode();

@@ -436,7 +436,7 @@ public class TestNeoCacheAndPersistence extends AbstractNeoTestCase
     {
         Map<String,String> config = new HashMap<String,String>();
         config.put( "relationship_grab_size", "1" );
-        EmbeddedNeo neo = new EmbeddedNeo( "var/neo2", config );
+        EmbeddedNeo neo = new EmbeddedNeo( getNeoPath( "neo2" ), config );
         Transaction tx = neo.beginTx();
         Node node1 = neo.createNode();
         Node node2 = neo.createNode();
