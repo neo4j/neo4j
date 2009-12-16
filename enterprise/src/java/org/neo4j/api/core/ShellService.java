@@ -43,7 +43,7 @@ class ShellService
         Integer port = ( Integer )
             getConfig( config, "port", "DEFAULT_PORT" );
         String name = ( String )
-            getConfig( config, "port", "DEFAULT_NAME" );
+            getConfig( config, "name", "DEFAULT_NAME" );
         try
         {
             Class<?> shellServerClass =
