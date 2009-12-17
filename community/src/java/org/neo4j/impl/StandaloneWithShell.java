@@ -21,6 +21,7 @@ package org.neo4j.impl;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
@@ -51,12 +52,13 @@ public class StandaloneWithShell
 			} );
 	}
 	
-	private void initialize()
+	private void initialize( Map<String, String> arguments )
 	{
-		this.embeddedNeo = new EmbeddedNeo( "var/neo" );
+	    String path = arguments.get( "path" );
+		this.embeddedNeo = new EmbeddedNeo( path );
 		Map<String, Serializable> shellProperties = Collections.emptyMap();
 		getNeo().enableRemoteShell( shellProperties );
-		log.info( "Neo started" );
+		log.info( "Neo started at '" + path + "'" );
 	}
 	
 	private void blockUntilShutdown()
@@ -95,15 +97,33 @@ public class StandaloneWithShell
 		}		
 	}
 
-	public void execute()
+	public void execute( Map<String, String> arguments )
 	{
 		addShutdownHook();
-		initialize();
+		initialize( arguments );
 		blockUntilShutdown();
 	}
 	
 	public static void main( String[] args )
 	{
-		new StandaloneWithShell().execute();
+	    Map<String, String> arguments = new HashMap<String, String>();
+	    for ( int i = 0; i < args.length; i++ )
+	    {
+	        String arg = args[ i ];
+	        if ( arg.startsWith( "-" ) )
+	        {
+	            String key = arg.substring( 1 );
+	            String value = ++i < args.length ? args[ i ] : null;
+	            arguments.put( key, value );
+	        }
+	    }
+	    if ( !arguments.containsKey( "path" ) )
+	    {
+	        System.out.println(
+	            "Use -path <path> to control the neo4j store path" );
+	        return;
+	    }
+	    
+		new StandaloneWithShell().execute( arguments );
 	}
 }
