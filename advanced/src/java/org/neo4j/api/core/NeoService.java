@@ -146,7 +146,7 @@ public interface NeoService
         Map<String, Serializable> initialProperties );
  
     /**
-     * Starts a new transaction.
+     * Starts a new transaction and associates it with the current thread.
      * @return a new transaction instance
      */
     public Transaction beginTx();

@@ -182,6 +182,10 @@ public class LruCache<K,E> implements Cache<K,E>
             {
                 maxSize = newMaxSize;
             }
+            else if ( newMaxSize == 0 )
+            {
+                cache.clear();
+            }
             else
             {
                 maxSize = newMaxSize;
