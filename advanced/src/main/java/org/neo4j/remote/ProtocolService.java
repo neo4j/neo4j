@@ -1,7 +1,10 @@
 /*
- * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright (c) 2008-2009 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
  * 
- * This program is free software: you can redistribute it and/or modify
+ * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -12,7 +15,7 @@
  * GNU Affero General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.remote;
 
@@ -53,9 +56,12 @@ final class ProtocolService
 
     private final Map<String, Set<RemoteSiteFactory>> implementations = new HashMap<String, Set<RemoteSiteFactory>>();
     private final Iterable<RemoteSiteFactory> factories;
-    
-    private static abstract class CheckingIterable implements Iterable<RemoteSiteFactory> {
-		public Iterator<RemoteSiteFactory> iterator() {
+
+    private static abstract class CheckingIterable implements
+        Iterable<RemoteSiteFactory>
+    {
+        public Iterator<RemoteSiteFactory> iterator()
+        {
             try
             {
                 final Iterator<?> iterator = provideIterator();
@@ -116,12 +122,11 @@ final class ProtocolService
             }
             catch ( Exception ex )
             {
-                return Arrays.asList( new RemoteSiteFactory[ 0 ] )
-                    .iterator();
+                return Arrays.asList( new RemoteSiteFactory[ 0 ] ).iterator();
             }
-		}
+        }
 
-		abstract Iterator<?> provideIterator() throws Exception;
+        abstract Iterator<?> provideIterator() throws Exception;
     };
 
     ProtocolService()
@@ -137,11 +142,13 @@ final class ProtocolService
             @SuppressWarnings( "unchecked" )
             final Iterable<RemoteSiteFactory> iter = ( ( Iterable<RemoteSiteFactory> ) loadMethod
                 .invoke( null, RemoteSiteFactory.class ) );
-            result = new CheckingIterable(){
-            	@Override
-            	Iterator<?> provideIterator() {
-            		return iter.iterator();
-            	}
+            result = new CheckingIterable()
+            {
+                @Override
+                Iterator<?> provideIterator()
+                {
+                    return iter.iterator();
+                }
             };
         }
         catch ( Exception ex )
@@ -154,12 +161,14 @@ final class ProtocolService
                 Class<?> serviceClass = Class.forName( "sun.misc.Service" );
                 final Method providersMethod = serviceClass.getMethod(
                     "providers", Class.class );
-                result = new CheckingIterable() {
-                	@Override
-                	Iterator<?> provideIterator() throws Exception {
-                		return( Iterator<?> ) providersMethod
-                			.invoke( null, RemoteSiteFactory.class );
-                	}
+                result = new CheckingIterable()
+                {
+                    @Override
+                    Iterator<?> provideIterator() throws Exception
+                    {
+                        return ( Iterator<?> ) providersMethod.invoke( null,
+                            RemoteSiteFactory.class );
+                    }
                 };
             }
             catch ( Exception e )
@@ -234,13 +243,13 @@ final class ProtocolService
                 }
             }
         }
-        if (comma)
+        if ( comma )
         {
-        	return result.toString();
+            return result.toString();
         }
         else
         {
-        	return "None!";
+            return "None!";
         }
     }
 }

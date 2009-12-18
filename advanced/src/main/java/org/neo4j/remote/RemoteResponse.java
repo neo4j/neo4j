@@ -1,7 +1,10 @@
 /*
- * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright (c) 2008-2009 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
  * 
- * This program is free software: you can redistribute it and/or modify
+ * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -12,7 +15,7 @@
  * GNU Affero General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.remote;
 
@@ -119,7 +122,8 @@ public abstract class RemoteResponse<T> implements Serializable
         public RemoteResponse<IterableSpecification<String>> buildPartialStringResponse(
             int moreToken, String... strings )
         {
-            return new IterableResponse<String>( this, true, moreToken, strings );
+            return new IterableResponse<String>( this, true, moreToken, -1,
+                strings );
         }
 
         /**
@@ -132,7 +136,7 @@ public abstract class RemoteResponse<T> implements Serializable
         public RemoteResponse<IterableSpecification<String>> buildFinalStringResponse(
             String... strings )
         {
-            return new IterableResponse<String>( this, false, 0, strings );
+            return new IterableResponse<String>( this, false, 0, -1, strings );
         }
 
         /**
@@ -145,10 +149,10 @@ public abstract class RemoteResponse<T> implements Serializable
          * @return The partial response for the node iterator request.
          */
         public RemoteResponse<IterableSpecification<NodeSpecification>> buildPartialNodeResponse(
-            int moreToken, NodeSpecification... nodes )
+            int moreToken, long size, NodeSpecification... nodes )
         {
             return new IterableResponse<NodeSpecification>( this, true,
-                moreToken, nodes );
+                moreToken, size, nodes );
         }
 
         /**
@@ -159,10 +163,10 @@ public abstract class RemoteResponse<T> implements Serializable
          * @return The partial response for the node iterator request.
          */
         public RemoteResponse<IterableSpecification<NodeSpecification>> buildFinalNodeResponse(
-            NodeSpecification... nodes )
+            long size, NodeSpecification... nodes )
         {
             return new IterableResponse<NodeSpecification>( this, false, 0,
-                nodes );
+                size, nodes );
         }
 
         /**
@@ -178,7 +182,7 @@ public abstract class RemoteResponse<T> implements Serializable
             int moreToken, RelationshipSpecification... relationships )
         {
             return new IterableResponse<RelationshipSpecification>( this, true,
-                moreToken, relationships );
+                moreToken, -1, relationships );
         }
 
         /**
@@ -192,7 +196,7 @@ public abstract class RemoteResponse<T> implements Serializable
             RelationshipSpecification... relationships )
         {
             return new IterableResponse<RelationshipSpecification>( this,
-                false, 0, relationships );
+                false, 0, -1, relationships );
         }
 
         /**
@@ -278,21 +282,24 @@ public abstract class RemoteResponse<T> implements Serializable
         private static final long serialVersionUID = 1L;
         private final boolean hasMore;
         private final int moreToken;
+        private final long size;
         private final T[] content;
 
         private IterableResponse( ResponseBuilder builder, boolean hasMore,
-            int moreToken, T[] content )
+            int moreToken, long size, T[] content )
         {
             super( builder );
             this.hasMore = hasMore;
             this.moreToken = moreToken;
+            this.size = size;
             this.content = content;
         }
 
         @Override
         IterableSpecification<T> value()
         {
-            return new IterableSpecification<T>( hasMore, moreToken, content );
+            return new IterableSpecification<T>( hasMore, moreToken, size,
+                content );
         }
     }
 

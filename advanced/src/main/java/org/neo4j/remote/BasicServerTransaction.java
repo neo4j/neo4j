@@ -1,7 +1,10 @@
 /*
- * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright (c) 2008-2009 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
  * 
- * This program is free software: you can redistribute it and/or modify
+ * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -12,7 +15,7 @@
  * GNU Affero General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.remote;
 
@@ -116,18 +119,18 @@ final class BasicServerTransaction
     }
 
     private RemoteResponse<IterableSpecification<NodeSpecification>> nodes(
-        int token, SimpleIterator<NodeSpecification> iterator )
+        int token, long size, SimpleIterator<NodeSpecification> iterator )
     {
         NodeSpecification[] result = consume( token, nodIter, iterator,
             server.nodesBatchSize( iterator.count() ) ).toArray(
             new NodeSpecification[ 0 ] );
         if ( iterator.hasNext() )
         {
-            return response().buildPartialNodeResponse( token, result );
+            return response().buildPartialNodeResponse( token, size, result );
         }
         else
         {
-            return response().buildFinalNodeResponse( result );
+            return response().buildFinalNodeResponse( size, result );
         }
     }
 
@@ -289,13 +292,17 @@ final class BasicServerTransaction
     {
         resume();
         SimpleIterator<NodeSpecification> iterator;
-        try {
+        long size;
+        try
+        {
+            size = server.getTotalNumberOfNodes( connection.neo );
             iterator = server.getAllNodes( connection.neo );
-        } catch ( RuntimeException ex )
+        }
+        catch ( RuntimeException ex )
         {
             return response().buildErrorResponse( ex );
         }
-        return nodes( nodTokenPool++, iterator );
+        return nodes( nodTokenPool++, size, iterator );
     }
 
     RemoteResponse<Void> deleteRelationship( long relationshipId )
@@ -358,7 +365,7 @@ final class BasicServerTransaction
         {
             return response().buildErrorResponse( ex );
         }
-        return nodes( requestToken, nodes );
+        return nodes( requestToken, -1, nodes );
     }
 
     RemoteResponse<IterableSpecification<String>> getMorePropertyKeys(
@@ -617,7 +624,7 @@ final class BasicServerTransaction
         {
             return response().buildErrorResponse( ex );
         }
-        return nodes( nodTokenPool++, nodes );
+        return nodes( nodTokenPool++, nodes.size(), nodes );
     }
 
     RemoteResponse<Void> indexNode( int indexId, long nodeId, String key,

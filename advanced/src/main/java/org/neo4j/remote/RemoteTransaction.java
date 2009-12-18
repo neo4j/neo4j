@@ -1,7 +1,10 @@
 /*
- * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright (c) 2008-2009 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
  * 
- * This program is free software: you can redistribute it and/or modify
+ * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -12,7 +15,7 @@
  * GNU Affero General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.remote;
 
@@ -29,6 +32,8 @@ import org.neo4j.api.core.StopEvaluator;
 import org.neo4j.api.core.Transaction;
 import org.neo4j.api.core.TraversalPosition;
 import org.neo4j.api.core.Traverser.Order;
+import org.neo4j.remote.RemoteNeoEngine.BatchIterable;
+import org.neo4j.util.index.IndexHits;
 
 class RemoteTransaction implements Transaction
 {
@@ -257,7 +262,8 @@ class RemoteTransaction implements Transaction
 
     Iterable<Node> getAllNodes()
     {
-        return new ConversionIterable<NodeSpecification, Node>( engine.getAllNodes( id ) )
+        return new ConversionIterable<NodeSpecification, Node>( engine
+            .getAllNodes( id ) )
         {
             @Override
             Node convert( NodeSpecification source )
@@ -422,9 +428,9 @@ class RemoteTransaction implements Transaction
 
     // Index operations
 
-    Iterable<Node> getIndexNodes( int indexId, String key, Object value )
+    IndexHits<Node> getIndexNodes( int indexId, String key, Object value )
     {
-        return new ConversionIterable<NodeSpecification, Node>( engine
+        return new IndexHitsImpl( engine
             .getIndexNodes( id, indexId, key, value ) )
         {
             @Override
@@ -478,6 +484,22 @@ class RemoteTransaction implements Transaction
                     iter.remove();
                 }
             };
+        }
+    }
+    private static abstract class IndexHitsImpl extends
+        ConversionIterable<NodeSpecification, Node> implements IndexHits<Node>
+    {
+        private final int size;
+
+        IndexHitsImpl( BatchIterable<NodeSpecification> nodes )
+        {
+            super( nodes );
+            size = ( int ) nodes.size();
+        }
+
+        public int size()
+        {
+            return size;
         }
     }
 }

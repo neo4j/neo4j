@@ -1,7 +1,10 @@
 /*
- * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright (c) 2008-2009 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
  * 
- * This program is free software: you can redistribute it and/or modify
+ * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -12,7 +15,7 @@
  * GNU Affero General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.remote;
 
@@ -143,7 +146,7 @@ final class RemoteNeoEngine
             @Override
             IterableSpecification<NodeSpecification> init()
             {
-                return receive( connection.getAllNodes(txId) );
+                return receive( connection.getAllNodes( txId ) );
             }
 
             @Override
@@ -333,22 +336,40 @@ final class RemoteNeoEngine
 
     // indexing
 
-    Iterable<NodeSpecification> getIndexNodes( final int txId,
+    BatchIterable<NodeSpecification> getIndexNodes( final int txId,
         final int indexId, final String key, final Object value )
     {
         return new BatchIterable<NodeSpecification>()
         {
+            private IterableSpecification<NodeSpecification> received = null;
+
+            synchronized IterableSpecification<NodeSpecification> initialize(
+                boolean reset )
+            {
+                if ( reset || received == null )
+                {
+                    received = receive( connection.getIndexNodes( txId,
+                        indexId, key, value ) );
+                }
+                return received;
+            }
+
             @Override
             IterableSpecification<NodeSpecification> init()
             {
-                return receive( connection.getIndexNodes( txId, indexId, key,
-                    value ) );
+                return initialize( true );
             }
 
             @Override
             IterableSpecification<NodeSpecification> more( int requestToken )
             {
                 return receive( connection.getMoreNodes( txId, requestToken ) );
+            }
+
+            @Override
+            long size()
+            {
+                return initialize( false ).size();
             }
         };
     }
@@ -364,7 +385,7 @@ final class RemoteNeoEngine
         receive( connection.removeIndexNode( txId, indexId, nodeId, key, value ) );
     }
 
-    private static abstract class BatchIterable<T> implements Iterable<T>
+    static abstract class BatchIterable<T> implements Iterable<T>
     {
         public final Iterator<T> iterator()
         {
@@ -407,6 +428,12 @@ final class RemoteNeoEngine
                     throw new UnsupportedOperationException();
                 }
             };
+        }
+
+        long size()
+        {
+            throw new UnsupportedOperationException(
+                "This iterable has no size." );
         }
 
         abstract IterableSpecification<T> init();

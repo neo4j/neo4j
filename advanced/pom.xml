@@ -15,7 +15,7 @@
   <description></description>
 
   <properties>
-    <bundle.namespace>org.neo4j</bundle.namespace>
+    <bundle.namespace>org.neo4j.remote</bundle.namespace>
   </properties>
  
   <packaging>bundle</packaging>
