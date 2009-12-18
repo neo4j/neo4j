@@ -1,7 +1,10 @@
 /*
- * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright (c) 2008-2009 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
  * 
- * This program is free software: you can redistribute it and/or modify
+ * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -12,7 +15,7 @@
  * GNU Affero General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.remote;
 
@@ -26,15 +29,26 @@ package org.neo4j.remote;
  */
 public final class IterableSpecification<T> implements EncodedObject
 {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
+    private final long size;
     final T[] content;
     final int token;
     final boolean hasMore;
 
-    IterableSpecification( boolean hasMore, int token, T[] content )
+    IterableSpecification( boolean hasMore, int token, long size, T[] content )
     {
         this.hasMore = hasMore;
         this.token = token;
+        this.size = size;
         this.content = content;
+    }
+
+    long size()
+    {
+        if ( size < 0 )
+        {
+            throw new UnsupportedOperationException( "Size was not specified." );
+        }
+        return size;
     }
 }

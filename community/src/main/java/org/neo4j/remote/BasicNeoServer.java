@@ -1,7 +1,10 @@
 /*
- * Copyright 2008-2009 Network Engine for Objects in Lund AB [neotechnology.com]
+ * Copyright (c) 2008-2009 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
  * 
- * This program is free software: you can redistribute it and/or modify
+ * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
@@ -12,7 +15,7 @@
  * GNU Affero General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.remote;
 
@@ -32,6 +35,7 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.remote.RemoteResponse.ResponseBuilder;
+import org.neo4j.util.index.IndexHits;
 import org.neo4j.util.index.IndexService;
 
 /**
@@ -611,9 +615,9 @@ public abstract class BasicNeoServer implements RemoteSite
     SimpleIterator<NodeSpecification> getIndexNodes( NeoService neo,
         int indexId, String key, Object value )
     {
-        final Iterable<Node> nodes = indexes[ indexId ].index.getNodes( key,
+        final IndexHits<Node> nodes = indexes[ indexId ].index.getNodes( key,
             value );
-        return new SimpleIterator<NodeSpecification>()
+        return new SimpleIterator<NodeSpecification>( nodes.size() )
         {
             Iterator<Node> iter = nodes.iterator();
 
@@ -642,5 +646,19 @@ public abstract class BasicNeoServer implements RemoteSite
     {
         indexes[ indexId ].index.removeIndex( neo.getNodeById( nodeId ), key,
             value );
+    }
+
+    public long getTotalNumberOfNodes( NeoService neo )
+    {
+        if ( neo instanceof EmbeddedNeo )
+        {
+            EmbeddedNeo embedded = ( EmbeddedNeo ) neo;
+            return embedded.getConfig().getNeoModule().getNodeManager()
+                .getNumberOfIdsInUse( Node.class );
+        }
+        else
+        {
+            return -1;
+        }
     }
 }

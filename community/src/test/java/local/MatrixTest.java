@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2008 "Neo Technology,"
+ * Copyright (c) 2008-2009 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -49,7 +49,7 @@ import org.neo4j.remote.RemoteIndexService;
 import org.neo4j.remote.RemoteNeo;
 import org.neo4j.remote.sites.LocalSite;
 import org.neo4j.util.index.IndexService;
-import org.neo4j.util.index.NeoIndexService;
+import org.neo4j.util.index.LuceneIndexService;
 
 public class MatrixTest
 {
@@ -64,7 +64,7 @@ public class MatrixTest
     {
         backend = new EmbeddedNeo( "target/neo" );
         server = new LocalSite( backend );
-        nodeIndex = new NeoIndexService( backend );
+        nodeIndex = new LuceneIndexService( backend );
         server.registerIndexService( "node index", nodeIndex );
     }
 
@@ -115,6 +115,7 @@ public class MatrixTest
         agentSmith = neo.createNode();
         theArchitect = neo.createNode();
         // Define relationships
+        @SuppressWarnings( "unused" )
         Relationship aKm, aKt, mKt, mKc, cKs, sCa, tLa;
         aKm = mrAndersson.createRelationshipTo( morpheus, MatrixRelation.KNOWS );
         aKt = mrAndersson.createRelationshipTo( trinity, MatrixRelation.KNOWS );
@@ -162,6 +163,7 @@ public class MatrixTest
                 "Cypher", "Agent Smith" ) ), actual );
     }
 
+    @SuppressWarnings( "serial" )
     private static void verifyHackersInNetworkOf( Node thomas )
         throws Exception
     {
