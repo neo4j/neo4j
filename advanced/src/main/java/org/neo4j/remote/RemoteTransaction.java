@@ -33,6 +33,7 @@ import org.neo4j.api.core.Transaction;
 import org.neo4j.api.core.TraversalPosition;
 import org.neo4j.api.core.Traverser.Order;
 import org.neo4j.remote.RemoteNeoEngine.BatchIterable;
+import org.neo4j.remote.RemoteNeoEngine.CloseableIteratorWithSize;
 import org.neo4j.util.index.IndexHits;
 
 class RemoteTransaction implements Transaction
@@ -430,8 +431,9 @@ class RemoteTransaction implements Transaction
 
     IndexHits<Node> getIndexNodes( int indexId, String key, Object value )
     {
-        return new IndexHitsImpl( engine
-            .getIndexNodes( id, indexId, key, value ) )
+        BatchIterable<NodeSpecification> iter = engine.getIndexNodes( id,
+            indexId, key, value );
+        return new IndexHitsImpl( iter )
         {
             @Override
             Node convert( NodeSpecification source )
@@ -465,7 +467,7 @@ class RemoteTransaction implements Transaction
 
         public Iterator<T> iterator()
         {
-            return new Iterator<T>()
+            return new CloseableIterator<T>()
             {
                 Iterator<F> iter = source.iterator();
 
@@ -483,23 +485,62 @@ class RemoteTransaction implements Transaction
                 {
                     iter.remove();
                 }
+
+                @SuppressWarnings( "unchecked" )
+                public void close()
+                {
+                    if ( source instanceof CloseableIterator )
+                    {
+                        ( ( CloseableIterator ) source ).close();
+                    }
+                }
             };
         }
     }
-    private static abstract class IndexHitsImpl extends
-        ConversionIterable<NodeSpecification, Node> implements IndexHits<Node>
+    private static abstract class IndexHitsImpl implements IndexHits<Node>,
+        CloseableIterator<Node>
     {
-        private final int size;
+        private final CloseableIteratorWithSize<NodeSpecification> nodes;
 
         IndexHitsImpl( BatchIterable<NodeSpecification> nodes )
         {
-            super( nodes );
-            size = ( int ) nodes.size();
+            this.nodes = nodes.iterator();
         }
 
-        public int size()
+        abstract Node convert( NodeSpecification source );
+
+        public final Iterator<Node> iterator()
         {
-            return size;
+            return this;
+        }
+
+        @SuppressWarnings( "unchecked" )
+        public final void close()
+        {
+            if ( nodes instanceof CloseableIterator )
+            {
+                ( ( CloseableIterator ) nodes ).close();
+            }
+        }
+
+        public final int size()
+        {
+            return ( int ) nodes.size();
+        }
+
+        public final boolean hasNext()
+        {
+            return nodes.hasNext();
+        }
+
+        public final Node next()
+        {
+            return convert( nodes.next() );
+        }
+
+        public final void remove()
+        {
+            nodes.remove();
         }
     }
 }

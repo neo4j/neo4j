@@ -169,6 +169,13 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
             .getMoreRelationshipTypes( transactionId, requestToken );
     }
 
+    public RemoteResponse<Void> closeRelationshipTypeIterator(
+        int transactionId, int requestToken )
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     public RemoteResponse<NodeSpecification> createNode( int transactionId )
     {
         return connection.createNode( transactionId );
@@ -199,6 +206,13 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
         int transactionId, int requestToken )
     {
         return connection.getMoreNodes( transactionId, requestToken );
+    }
+
+    public RemoteResponse<Void> closeNodeIterator( int transactionId,
+        int requestToken )
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     public RemoteResponse<RelationshipSpecification> createRelationship(
@@ -234,6 +248,13 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
         int transactionId, int requestToken )
     {
         return connection.getMoreRelationships( transactionId, requestToken );
+    }
+
+    public RemoteResponse<Void> closeRelationshipIterator( int transactionId,
+        int requestToken )
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     public RemoteResponse<Void> deleteRelationship( int transactionId,
@@ -285,6 +306,13 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
         int transactionId, int requestToken )
     {
         return connection.getMorePropertyKeys( transactionId, requestToken );
+    }
+
+    public RemoteResponse<Void> closePropertyKeyIterator( int transactionId,
+        int requestToken )
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     public RemoteResponse<Boolean> hasNodeProperty( int transactionId,

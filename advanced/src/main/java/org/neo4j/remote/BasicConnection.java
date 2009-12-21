@@ -139,6 +139,12 @@ final class BasicConnection implements RemoteConnection
         return transaction( transactionId ).getMoreNodes( requestToken );
     }
 
+    public RemoteResponse<Void> closeNodeIterator( int transactionId,
+        int requestToken )
+    {
+        return transaction( transactionId ).closeNodeIterator( requestToken );
+    }
+
     public RemoteResponse<RelationshipSpecification> createRelationship(
         int transactionId, String relationshipTypeName, long startNodeId,
         long endNodeId )
@@ -178,6 +184,13 @@ final class BasicConnection implements RemoteConnection
         return transaction( transactionId ).getMorePropertyKeys( requestToken );
     }
 
+    public RemoteResponse<Void> closePropertyKeyIterator( int transactionId,
+        int requestToken )
+    {
+        return transaction( transactionId ).closePropertyKeyIterator(
+            requestToken );
+    }
+
     public RemoteResponse<IterableSpecification<String>> getMoreRelationshipTypes(
         int transactionId, int requestToken )
     {
@@ -185,10 +198,24 @@ final class BasicConnection implements RemoteConnection
             requestToken );
     }
 
+    public RemoteResponse<Void> closeRelationshipTypeIterator(
+        int transactionId, int requestToken )
+    {
+        return transaction( transactionId ).closeRelationshipTypeIterator(
+            requestToken );
+    }
+
     public RemoteResponse<IterableSpecification<RelationshipSpecification>> getMoreRelationships(
         int transactionId, int requestToken )
     {
         return transaction( transactionId ).getMoreRelationships( requestToken );
+    }
+
+    public RemoteResponse<Void> closeRelationshipIterator( int transactionId,
+        int requestToken )
+    {
+        return transaction( transactionId ).closeRelationshipIterator(
+            requestToken );
     }
 
     public RemoteResponse<Object> getNodeProperty( int transactionId,

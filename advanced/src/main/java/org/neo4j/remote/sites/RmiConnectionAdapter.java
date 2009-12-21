@@ -147,6 +147,20 @@ class RmiConnectionAdapter implements RemoteConnection
         }
     }
 
+    public RemoteResponse<Void> closeRelationshipTypeIterator(
+        int transactionId, int requestToken )
+    {
+        try
+        {
+            return rmi().closeRelationshipTypeIterator( transactionId,
+                requestToken );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
+
     public RemoteResponse<IterableSpecification<NodeSpecification>> getAllNodes(
         int transactionId )
     {
@@ -221,6 +235,19 @@ class RmiConnectionAdapter implements RemoteConnection
         }
     }
 
+    public RemoteResponse<Void> closeNodeIterator( int transactionId,
+        int requestToken )
+    {
+        try
+        {
+            return rmi().closeNodeIterator( transactionId, requestToken );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
+
     public RemoteResponse<RelationshipSpecification> createRelationship(
         int transactionId, String relationshipTypeName, long startNodeId,
         long endNodeId )
@@ -283,6 +310,20 @@ class RmiConnectionAdapter implements RemoteConnection
         try
         {
             return rmi().getMoreRelationships( transactionId, requestToken );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
+
+    public RemoteResponse<Void> closeRelationshipIterator( int transactionId,
+        int requestToken )
+    {
+        try
+        {
+            return rmi()
+                .closeRelationshipIterator( transactionId, requestToken );
         }
         catch ( RemoteException ex )
         {
@@ -390,6 +431,19 @@ class RmiConnectionAdapter implements RemoteConnection
         try
         {
             return rmi().getMorePropertyKeys( transactionId, requestToken );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
+
+    public RemoteResponse<Void> closePropertyKeyIterator( int transactionId,
+        int requestToken )
+    {
+        try
+        {
+            return rmi().closePropertyKeyIterator( transactionId, requestToken );
         }
         catch ( RemoteException ex )
         {

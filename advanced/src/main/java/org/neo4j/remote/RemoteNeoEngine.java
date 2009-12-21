@@ -136,6 +136,13 @@ final class RemoteNeoEngine
                 return receive( connection.getMoreRelationshipTypes( txId,
                     requestToken ) );
             }
+
+            @Override
+            void done( int requestToken )
+            {
+                receive( connection.closeRelationshipTypeIterator( txId,
+                    requestToken ) );
+            }
         };
     }
 
@@ -153,6 +160,12 @@ final class RemoteNeoEngine
             IterableSpecification<NodeSpecification> more( int requestToken )
             {
                 return receive( connection.getMoreNodes( txId, requestToken ) );
+            }
+
+            @Override
+            void done( int requestToken )
+            {
+                receive( connection.closeNodeIterator( txId, requestToken ) );
             }
         };
     }
@@ -210,6 +223,13 @@ final class RemoteNeoEngine
                 return receive( connection.getMoreRelationships( txId,
                     requestToken ) );
             }
+
+            @Override
+            void done( int requestToken )
+            {
+                receive( connection.closeRelationshipIterator( txId,
+                    requestToken ) );
+            }
         };
     }
 
@@ -230,6 +250,13 @@ final class RemoteNeoEngine
                 int requestToken )
             {
                 return receive( connection.getMoreRelationships( txId,
+                    requestToken ) );
+            }
+
+            @Override
+            void done( int requestToken )
+            {
+                receive( connection.closeRelationshipIterator( txId,
                     requestToken ) );
             }
         };
@@ -288,6 +315,13 @@ final class RemoteNeoEngine
                 return receive( connection.getMorePropertyKeys( txId,
                     requestToken ) );
             }
+
+            @Override
+            void done( int requestToken )
+            {
+                receive( connection.closePropertyKeyIterator( txId,
+                    requestToken ) );
+            }
         };
     }
 
@@ -307,6 +341,13 @@ final class RemoteNeoEngine
             IterableSpecification<String> more( int requestToken )
             {
                 return receive( connection.getMorePropertyKeys( txId,
+                    requestToken ) );
+            }
+
+            @Override
+            void done( int requestToken )
+            {
+                receive( connection.closePropertyKeyIterator( txId,
                     requestToken ) );
             }
         };
@@ -341,23 +382,11 @@ final class RemoteNeoEngine
     {
         return new BatchIterable<NodeSpecification>()
         {
-            private IterableSpecification<NodeSpecification> received = null;
-
-            synchronized IterableSpecification<NodeSpecification> initialize(
-                boolean reset )
-            {
-                if ( reset || received == null )
-                {
-                    received = receive( connection.getIndexNodes( txId,
-                        indexId, key, value ) );
-                }
-                return received;
-            }
-
             @Override
             IterableSpecification<NodeSpecification> init()
             {
-                return initialize( true );
+                return receive( connection.getIndexNodes( txId, indexId, key,
+                    value ) );
             }
 
             @Override
@@ -367,9 +396,9 @@ final class RemoteNeoEngine
             }
 
             @Override
-            long size()
+            void done( int requestToken )
             {
-                return initialize( false ).size();
+                receive( connection.closeNodeIterator( txId, requestToken ) );
             }
         };
     }
@@ -385,26 +414,33 @@ final class RemoteNeoEngine
         receive( connection.removeIndexNode( txId, indexId, nodeId, key, value ) );
     }
 
+    interface CloseableIteratorWithSize<T> extends CloseableIterator<T>
+    {
+        long size();
+    }
+
     static abstract class BatchIterable<T> implements Iterable<T>
     {
-        public final Iterator<T> iterator()
+        public final CloseableIteratorWithSize<T> iterator()
         {
             final IterableSpecification<T> spec = init();
-            return new Iterator<T>()
+            return new CloseableIteratorWithSize<T>()
             {
                 int index = 0;
                 T[] content = spec.content;
                 int token = spec.token;
                 boolean hasMore = spec.hasMore;
+                long size = spec.size;
 
                 public boolean hasNext()
                 {
-                    return index < content.length || hasMore;
+                    return content != null
+                        && ( index < content.length || hasMore );
                 }
 
                 public T next()
                 {
-                    if ( index < content.length )
+                    if ( content != null && index < content.length )
                     {
                         return content[ index++ ];
                     }
@@ -423,22 +459,44 @@ final class RemoteNeoEngine
                     }
                 }
 
+                public long size()
+                {
+                    if ( size < 0 )
+                    {
+                        throw new UnsupportedOperationException(
+                            "This iterator has no size." );
+                    }
+                    return size;
+                }
+
+                public void close()
+                {
+                    if ( content != null )
+                    {
+                        done( token );
+                        hasMore = false;
+                        content = null;
+                    }
+                }
+
                 public void remove()
                 {
                     throw new UnsupportedOperationException();
                 }
-            };
-        }
 
-        long size()
-        {
-            throw new UnsupportedOperationException(
-                "This iterable has no size." );
+                @Override
+                protected void finalize()
+                {
+                    close(); // Make sure that the iterator is closed
+                }
+            };
         }
 
         abstract IterableSpecification<T> init();
 
         abstract IterableSpecification<T> more( int requestToken );
+
+        abstract void done( int requestToken );
     }
 
     int getIndexId( String name )

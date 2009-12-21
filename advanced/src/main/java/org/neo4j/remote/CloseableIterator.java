@@ -19,27 +19,9 @@
  */
 package org.neo4j.remote;
 
-/**
- * Serialized object representing an iterator.
- * 
- * @author Tobias Ivarsson
- * 
- * @param <T>
- *            the content type of the iterator.
- */
-public final class IterableSpecification<T> implements EncodedObject
-{
-    private static final long serialVersionUID = 2L;
-    final long size;
-    final T[] content;
-    final int token;
-    final boolean hasMore;
+import java.util.Iterator;
 
-    IterableSpecification( boolean hasMore, int token, long size, T[] content )
-    {
-        this.hasMore = hasMore;
-        this.token = token;
-        this.size = size;
-        this.content = content;
-    }
+interface CloseableIterator<T> extends Iterator<T>
+{
+    void close();
 }
