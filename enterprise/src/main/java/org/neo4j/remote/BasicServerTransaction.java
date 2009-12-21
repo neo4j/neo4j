@@ -352,6 +352,19 @@ final class BasicServerTransaction
         return relationships( requestToken, relationships );
     }
 
+    RemoteResponse<Void> closeRelationshipIterator( int requestToken )
+    {
+        try
+        {
+            getRelationships( requestToken );
+        }
+        catch ( RuntimeException ex )
+        {
+            return response().buildErrorResponse( ex );
+        }
+        return response().buildVoidResponse();
+    }
+
     RemoteResponse<IterableSpecification<NodeSpecification>> getMoreNodes(
         int requestToken )
     {
@@ -366,6 +379,19 @@ final class BasicServerTransaction
             return response().buildErrorResponse( ex );
         }
         return nodes( requestToken, -1, nodes );
+    }
+
+    RemoteResponse<Void> closeNodeIterator( int requestToken )
+    {
+        try
+        {
+            getNodes( requestToken );
+        }
+        catch ( RuntimeException ex )
+        {
+            return response().buildErrorResponse( ex );
+        }
+        return response().buildVoidResponse();
     }
 
     RemoteResponse<IterableSpecification<String>> getMorePropertyKeys(
@@ -384,6 +410,19 @@ final class BasicServerTransaction
         return keys( requestToken, strings );
     }
 
+    RemoteResponse<Void> closePropertyKeyIterator( int requestToken )
+    {
+        try
+        {
+            getStrings( requestToken );
+        }
+        catch ( RuntimeException ex )
+        {
+            return response().buildErrorResponse( ex );
+        }
+        return response().buildVoidResponse();
+    }
+
     RemoteResponse<IterableSpecification<String>> getMoreRelationshipTypes(
         int requestToken )
     {
@@ -398,6 +437,19 @@ final class BasicServerTransaction
             return response().buildErrorResponse( ex );
         }
         return types( requestToken, strings );
+    }
+
+    RemoteResponse<Void> closeRelationshipTypeIterator( int requestToken )
+    {
+        try
+        {
+            getStrings( requestToken );
+        }
+        catch ( RuntimeException ex )
+        {
+            return response().buildErrorResponse( ex );
+        }
+        return response().buildVoidResponse();
     }
 
     RemoteResponse<Object> getNodeProperty( long nodeId, String key )

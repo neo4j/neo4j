@@ -48,6 +48,9 @@ interface RmiConnection extends Remote
     RemoteResponse<IterableSpecification<String>> getMoreRelationshipTypes(
         int transactionId, int requestToken ) throws RemoteException;
 
+    RemoteResponse<Void> closeRelationshipTypeIterator( int transactionId,
+        int requestToken ) throws RemoteException;
+
     RemoteResponse<NodeSpecification> createNode( int transactionId )
         throws RemoteException;
 
@@ -66,6 +69,9 @@ interface RmiConnection extends Remote
     RemoteResponse<IterableSpecification<NodeSpecification>> getMoreNodes(
         int transactionId, int requestToken ) throws RemoteException;
 
+    RemoteResponse<Void> closeNodeIterator( int transactionId, int requestToken )
+        throws RemoteException;
+
     RemoteResponse<RelationshipSpecification> createRelationship(
         int transactionId, String relationshipTypeName, long startNodeId,
         long endNodeId ) throws RemoteException;
@@ -83,6 +89,9 @@ interface RmiConnection extends Remote
 
     RemoteResponse<IterableSpecification<RelationshipSpecification>> getMoreRelationships(
         int transactionId, int requestToken ) throws RemoteException;
+
+    RemoteResponse<Void> closeRelationshipIterator( int transactionId,
+        int requestToken ) throws RemoteException;
 
     RemoteResponse<Void> deleteRelationship( int transactionId,
         long relationshipId ) throws RemoteException;
@@ -107,6 +116,9 @@ interface RmiConnection extends Remote
 
     RemoteResponse<IterableSpecification<String>> getMorePropertyKeys(
         int transactionId, int requestToken ) throws RemoteException;
+
+    RemoteResponse<Void> closePropertyKeyIterator( int transactionId,
+        int requestToken ) throws RemoteException;
 
     RemoteResponse<Boolean> hasNodeProperty( int transactionId, long nodeId,
         String key ) throws RemoteException;
