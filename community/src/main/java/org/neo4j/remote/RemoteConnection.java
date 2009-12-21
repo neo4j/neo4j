@@ -93,6 +93,19 @@ public interface RemoteConnection
         int transactionId, int requestToken );
 
     /**
+     * Close an iterator over relationship types.
+     * 
+     * @param transactionId
+     *            The id that represents the transaction the operation is
+     *            executed in.
+     * @param requestToken
+     *            An id that represents the request.
+     * @return nothing.
+     */
+    RemoteResponse<Void> closeRelationshipTypeIterator( int transactionId,
+        int requestToken );
+
+    /**
      * Create a new node.
      * 
      * @param transactionId
@@ -155,6 +168,18 @@ public interface RemoteConnection
      */
     RemoteResponse<IterableSpecification<NodeSpecification>> getMoreNodes(
         int transactionId, int requestToken );
+
+    /**
+     * Close an iterator over nodes.
+     * 
+     * @param transactionId
+     *            The id that represents the transaction the operation is
+     *            executed in.
+     * @param requestToken
+     *            An id that represents the request.
+     * @return nothing.
+     */
+    RemoteResponse<Void> closeNodeIterator( int transactionId, int requestToken );
 
     /**
      * Create a new relationship.
@@ -228,6 +253,19 @@ public interface RemoteConnection
      */
     RemoteResponse<IterableSpecification<RelationshipSpecification>> getMoreRelationships(
         int transactionId, int requestToken );
+
+    /**
+     * Close an iterator over relationships.
+     * 
+     * @param transactionId
+     *            The id that represents the transaction the operation is
+     *            executed in.
+     * @param requestToken
+     *            An id that represents the request.
+     * @return nothing.
+     */
+    RemoteResponse<Void> closeRelationshipIterator( int transactionId,
+        int requestToken );
 
     /**
      * Delete a relationship.
@@ -337,6 +375,19 @@ public interface RemoteConnection
      */
     RemoteResponse<IterableSpecification<String>> getMorePropertyKeys(
         int transactionId, int requestToken );
+
+    /**
+     * Close an iterator over property keys.
+     * 
+     * @param transactionId
+     *            The id that represents the transaction the operation is
+     *            executed in.
+     * @param requestToken
+     *            An id that represents the request.
+     * @return nothing.
+     */
+    RemoteResponse<Void> closePropertyKeyIterator( int transactionId,
+        int requestToken );
 
     /**
      * Check if a node has a specific property.
