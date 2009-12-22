@@ -318,7 +318,15 @@ public class TxLog
             byte recordType = buffer.get();
             if ( recordType == TX_START )
             {
+                if ( !buffer.hasRemaining() )
+                {
+                    break;
+                }
                 byte globalId[] = new byte[buffer.get()];
+                if ( buffer.limit() - buffer.position() < globalId.length )
+                {
+                    break;
+                }
                 buffer.get( globalId );
                 Xid xid = new XidImpl( globalId, new byte[0] );
                 if ( recordMap.containsKey( xid ) )
@@ -334,8 +342,17 @@ public class TxLog
             }
             else if ( recordType == BRANCH_ADD )
             {
+                if ( buffer.limit() - buffer.position() < 2 )
+                {
+                    break;
+                }
                 byte globalId[] = new byte[buffer.get()];
                 byte branchId[] = new byte[buffer.get()];
+                if ( buffer.limit() - buffer.position() < 
+                    globalId.length + branchId.length )
+                {
+                    break;
+                }
                 buffer.get( globalId );
                 buffer.get( branchId );
                 Xid xid = new XidImpl( globalId, new byte[0] );
@@ -351,7 +368,15 @@ public class TxLog
             }
             else if ( recordType == MARK_COMMIT )
             {
+                if ( !buffer.hasRemaining() )
+                {
+                    break;
+                }
                 byte globalId[] = new byte[buffer.get()];
+                if ( buffer.limit() - buffer.position() < globalId.length )
+                {
+                    break;
+                }
                 buffer.get( globalId );
                 Xid xid = new XidImpl( globalId, new byte[0] );
                 if ( !recordMap.containsKey( xid ) )
@@ -367,7 +392,15 @@ public class TxLog
             }
             else if ( recordType == TX_DONE )
             {
+                if ( !buffer.hasRemaining() )
+                {
+                    break;
+                }
                 byte globalId[] = new byte[buffer.get()];
+                if ( buffer.limit() - buffer.position() < globalId.length )
+                {
+                    break;
+                }
                 buffer.get( globalId );
                 Xid xid = new XidImpl( globalId, new byte[0] );
                 if ( !recordMap.containsKey( xid ) )

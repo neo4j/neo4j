@@ -66,10 +66,10 @@ public class LruCache<K,E> implements Cache<K,E>
         }
     }
 
-    public void setMaxSize( int maxSize )
-    {
-        this.maxSize = maxSize;
-    }
+//    public void setMaxSize( int maxSize )
+//    {
+//        this.maxSize = maxSize;
+//    }
 
     /**
      * Creates a LRU cache. If <CODE>maxSize < 1</CODE> an
