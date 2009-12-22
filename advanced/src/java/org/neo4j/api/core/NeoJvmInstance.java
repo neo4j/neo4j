@@ -20,28 +20,18 @@
 package org.neo4j.api.core;
 
 import java.io.File;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import javax.transaction.TransactionManager;
 
 import org.neo4j.impl.core.LockReleaser;
-import org.neo4j.impl.core.PropertyIndex;
-import org.neo4j.impl.nioneo.store.PropertyStore;
-import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.impl.transaction.LockManager;
 import org.neo4j.impl.transaction.TransactionFailureException;
 import org.neo4j.impl.transaction.TxModule;
 import org.neo4j.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.impl.util.FileUtils;
-import org.neo4j.impl.util.UdpPinger;
 
 class NeoJvmInstance
 {
@@ -54,8 +44,6 @@ class NeoJvmInstance
     private boolean create;
     private String storeDir;
     
-    private final Timer timer = new Timer();
-
     NeoJvmInstance( String storeDir, boolean create )
     {
         this.storeDir = storeDir;
@@ -176,74 +164,7 @@ class NeoJvmInstance
                 "lucene" );
             lucene = null;
         }
-        String sendPing = (String) params.get( "send_udp_ping" );
-        if ( sendPing == null || !sendPing.toLowerCase().equals( "no" ) )
-        {
-            sendUdpPingStarted();
-            
-        }
         started = true;
-    }
-    
-    private static final byte NEO_STARTED = 1;
-    private static final byte NEO_SHUTDOWN = 2;
-    private static final byte NEO_RUNNING = 3;
-    private static final String UDP_HOST = "127.0.0.1";
-    private static final int UDP_PORT = 27090;
-    private static final long UDP_PING_DELAY = 1000*60*60*24; // 24h
-    private static final Random r = new Random( System.currentTimeMillis() );
-    
-    private long sessionId = -1;
-    
-    private void sendUdpPingStarted()
-    {
-        sessionId = r.nextLong();
-        final ByteBuffer buf = setupUdpPing( NEO_STARTED, sessionId );
-        timer.schedule( new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                SocketAddress host = new InetSocketAddress( UDP_HOST, UDP_PORT );
-                new UdpPinger( buf, host ).sendPing();
-            }
-        }, 0 );
-        timer.schedule( new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                ByteBuffer buffer = setupUdpPing( NEO_RUNNING, sessionId );
-                SocketAddress host = new InetSocketAddress( UDP_HOST, UDP_PORT );
-                new UdpPinger( buffer, host ).sendPing();
-            }
-        }, UDP_PING_DELAY, UDP_PING_DELAY );
-    }
-
-    private void sendUdpPingShutdown()
-    {
-        ByteBuffer buf = setupUdpPing( NEO_SHUTDOWN, sessionId );
-        SocketAddress host = new InetSocketAddress( UDP_HOST, UDP_PORT );
-        new UdpPinger( buf, host ).sendPing();
-    }
-    
-    private ByteBuffer setupUdpPing( byte event, long sessionId )
-    {
-        NeoStoreXaDataSource xaDs = 
-            (NeoStoreXaDataSource) persistenceSource.getXaDataSource();
-        ByteBuffer buf = ByteBuffer.allocate( 73 );
-        buf.put( event );
-        buf.putLong( sessionId );
-        buf.putLong( xaDs.getRandomIdentifier() );
-        buf.putLong( xaDs.getCreationTime() );
-        buf.putLong( xaDs.getCurrentLogVersion() );
-        buf.putLong( xaDs.getNumberOfIdsInUse( Node.class ) );
-        buf.putLong( xaDs.getNumberOfIdsInUse( Relationship.class ) );
-        buf.putLong( xaDs.getNumberOfIdsInUse( PropertyStore.class ) );
-        buf.putLong( xaDs.getNumberOfIdsInUse( RelationshipType.class ) );
-        buf.putLong( xaDs.getNumberOfIdsInUse( PropertyIndex.class ) );
-        buf.flip();
-        return buf;
     }
     
     private void cleanWriteLocksInLuceneDirectory( String luceneDir )
@@ -295,12 +216,6 @@ class NeoJvmInstance
     {
         if ( started )
         {
-            timer.cancel();
-            String sendPing = (String) config.getParams().get( "send_udp_ping" );
-            if ( sendPing == null || !sendPing.toLowerCase().equals( "no" ) )
-            {
-                sendUdpPingShutdown();
-            }
             config.getNeoModule().stop();
             config.getIdGeneratorModule().stop();
             persistenceSource.stop();
