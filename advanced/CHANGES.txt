@@ -1,3 +1,15 @@
+1.0-b11 (2009-12-27)
+--------------------
+
+- Minor Enhancements, changes and tweaks
+o Removed compile-time dependency on shell component.
+o BatchInserter now has a NeoService version.
+o Tweaked array map implementation some.
+
+-Bug fixes
+o Fixed problem with half entries in global tx log (due to disk full).
+o Fixed some bugs in batch inserter.
+
 1.0-b10 (2009-11-02)
 --------------------
 
