@@ -146,7 +146,7 @@
 			<scope>compile</scope>
 			<exclusions>
 				<exclusion>
-					<groupId>junit</groupId> <!-- Exclude Project-D from Project-B -->
+					<groupId>junit</groupId>
 					<artifactId>junit</artifactId>
 				</exclusion>
 			</exclusions>
