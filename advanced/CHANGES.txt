@@ -3,11 +3,11 @@
 
 - Minor Enhancements, changes and tweaks
 o Removed compile-time dependency on shell component.
-o BatchInserter now has a NeoService version.
-o Tweaked array map implementation some.
+o Batch inserter now has a NeoService version.
+o Minor tweak of concurrency characteristics of array map implementation.
 
 -Bug fixes
-o Fixed problem with half entries in global tx log (due to disk full).
+o Fixed problem with half entries in global tx log (due to full disk).
 o Fixed some bugs in batch inserter.
 
 1.0-b10 (2009-11-02)
