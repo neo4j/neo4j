@@ -144,6 +144,12 @@
 			<artifactId>jline</artifactId>
 			<version>${jline.version}</version>
 			<scope>compile</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>junit</groupId> <!-- Exclude Project-D from Project-B -->
+					<artifactId>junit</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 	</dependencies>
