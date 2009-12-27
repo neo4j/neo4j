@@ -2,7 +2,7 @@
 --------------------
 
 o Dependency relationship between neo4j and shell changed. Instead of neo4j
-  being compile-time dependant on shell it's the other way around.
+  being compile-time dependent on shell it's the other way around.
   It starts a ShellServer using reflections.
 o Some package renaming (org.neo4j.util.shell --> org.neo4j.shell).
 o Neo4j Apps moved from the neo component to the shell component
