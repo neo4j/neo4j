@@ -15,9 +15,9 @@ import org.neo4j.api.core.Node;
 import org.neo4j.api.core.Relationship;
 import org.neo4j.api.core.RelationshipType;
 import org.neo4j.api.core.Transaction;
-import org.neo4j.util.shell.LocalNeoShellServer;
-import org.neo4j.util.shell.SameJvmClient;
-import org.neo4j.util.shell.ShellServer;
+import org.neo4j.shell.neo.LocalNeoShellServer;
+import org.neo4j.shell.SameJvmClient;
+import org.neo4j.shell.ShellServer;
 
 public class ShellExample
 {
