@@ -112,11 +112,16 @@ as graphs rather than tables. For more information, see http://neo4j.org.
   </build>
 
   <dependencies>
-    <dependency>
+    <!-- dependency>
       <groupId>javax.transaction</groupId>
       <artifactId>jta</artifactId>
       <version>1.1</version>
-    </dependency>
+    </dependency-->
+    <dependency>
+     <groupId>org.apache.geronimo.specs</groupId>
+     <artifactId>geronimo-jta_1.1_spec</artifactId>
+     <version>1.1.1</version>
+   </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
