@@ -10,10 +10,10 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>kernel</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0-rc-SNAPSHOT</version>
   <name>Neo4j - Graph Database Kernel</name>
   <description>
-Neo4j is a lightweight, embedded Java database designed to store data structured
+Neo4j kernel is a lightweight, embedded Java database designed to store data structured
 as graphs rather than tables. For more information, see http://neo4j.org.
     </description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
@@ -101,20 +101,15 @@ as graphs rather than tables. For more information, see http://neo4j.org.
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
           <includes>
-            <include>org/neo4j/api/**</include>
+            <include>org/neo4j/graphdb/**</include>
           </includes>
-          <comparisonVersion>1.0-b9</comparisonVersion>
+          <comparisonVersion>1.0-b11</comparisonVersion>
         </configuration>
       </plugin>
     </plugins>
   </build>
 
   <dependencies>
-    <!-- dependency>
-      <groupId>javax.transaction</groupId>
-      <artifactId>jta</artifactId>
-      <version>1.1</version>
-    </dependency-->
     <dependency>
      <groupId>org.apache.geronimo.specs</groupId>
      <artifactId>geronimo-jta_1.1_spec</artifactId>
@@ -133,7 +128,7 @@ as graphs rather than tables. For more information, see http://neo4j.org.
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <subpackages>org.neo4j.api</subpackages>
+          <subpackages>org.neo4j.graphdb</subpackages>
           <links>
             <link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
           </links>
@@ -152,10 +147,10 @@ as graphs rather than tables. For more information, see http://neo4j.org.
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
           <includes>
-            <include>org/neo4j/api/**</include>
+            <include>org/neo4j/graphdb/**</include>
           </includes>
-          <version>1.0-b11-SNAPSHOT</version>
-          <comparisonVersion>1.0-b10</comparisonVersion>
+          <version>1.0-rc-SNAPSHOT</version>
+          <comparisonVersion>1.0-b11</comparisonVersion>
         </configuration>
       </plugin>
     </plugins>
