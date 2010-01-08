@@ -5,8 +5,8 @@ jta-1_1.jar to your classpath.
 
 To get started here is a short description of some of the important packages:
 
-o impl.core, implementation of the Neo4j API
-o impl.nioneo, native store implementation
-o impl.transaction, TM + RWLocks implementation
-o impl.transaction.xaframework, XA framework to make non XA resources XA enabled
+o kernel & kernel.impl.core, implementation of the Neo4j API
+o kernel.impl.nioneo, native store implementation
+o kernel.impl.transaction, TM + RWLocks implementation
+o kernel.impl.transaction.xaframework, make non XA resources XA enabled
 
