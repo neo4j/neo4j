@@ -1,3 +1,9 @@
+1.0-rc (2010-01-10)
+------------------
+
+o API: moved API to org.neo4j.grapdb and implementation to 
+  org.neo4j.kernel.impl
+
 1.0-b11 (2009-12-27)
 --------------------
 
