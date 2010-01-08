@@ -17,44 +17,38 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.apps;
+package org.neo4j.shell.kernel.apps;
 
-import java.io.Serializable;
-import java.rmi.RemoteException;
-
+import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.impl.AbstractApp;
 
 /**
- * Mimics the Bash application "env" and uses the client session {@link Session}
- * as the data container.
+ * Wraps a {@link org.neo4j.shell.apps.extra.Gsh} in a
+ * {@link GraphDatabaseApp} to be wrapped in a transaction among other things.
  */
-public class Env extends AbstractApp
+public class Gsh extends GraphDatabaseApp
 {
-	@Override
-	public String getDescription()
-	{
-		return "Lists all environment variables";
-	}
-	
-	public String execute( AppCommandParser parser, Session session,
-		Output out ) throws ShellException
-	{
-		try
-		{
-			for ( String key : session.keys() )
-			{
-				Serializable value = session.get( key );
-				out.println( key + "=" + ( value == null ? "" : value ) );
-			}
-			return null;
-		}
-		catch ( RemoteException e )
-		{
-			throw new ShellException( e );
-		}
-	}
+    private App sh = new org.neo4j.shell.apps.extra.Gsh();
+
+    @Override
+    public String getDescription()
+    {
+        return this.sh.getDescription();
+    }
+
+    @Override
+    public String getDescription( String option )
+    {
+        return this.sh.getDescription( option );
+    }
+
+    @Override
+    protected String exec( AppCommandParser parser, Session session, Output out )
+        throws ShellException
+    {
+        return sh.execute( parser, session, out );
+    }
 }

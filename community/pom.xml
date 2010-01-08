@@ -10,7 +10,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j</groupId>
 	<artifactId>shell</artifactId>
-	<version>1.0-b11-SNAPSHOT</version>
+	<version>1.0-rc-SNAPSHOT</version>
 	<name>Neo4j - Generic shell</name>
 	<description>
 		A generic command shell with a client and server part
@@ -20,7 +20,7 @@
 	<properties>
 		<jline.version>0.9.94</jline.version>
 		<jta.version>1.1</jta.version>
-		<neo.version>1.0-b11-SNAPSHOT</neo.version>
+		<neo.version>${version}</neo.version>
 		<bundle.namespace>org.neo4j.shell</bundle.namespace>
 	</properties>
 
@@ -113,7 +113,7 @@
 						</manifest>
 						<manifestEntries>
 							<url>http://neo4j.org</url>
-							<Class-Path>neo-${version}.jar jta-1.1.jar</Class-Path>
+							<Class-Path>kernel-${neo.version}.jar jta-${jta.version}.jar</Class-Path>
 						</manifestEntries>
 					</archive>
 				</configuration>
@@ -135,8 +135,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.neo4j</groupId>
-			<artifactId>neo</artifactId>
-			<version>${neo.version}</version>
+			<artifactId>kernel</artifactId>
+			<version>${version}</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>

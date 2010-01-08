@@ -24,17 +24,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.regex.Pattern;
 
-import org.neo4j.shell.AbstractApp;
-import org.neo4j.shell.AbstractAppServer;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.AppShellServer;
-import org.neo4j.shell.ClassLister;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
+import org.neo4j.shell.impl.AbstractApp;
+import org.neo4j.shell.impl.AbstractAppServer;
+import org.neo4j.shell.impl.ClassLister;
 
 /**
  * Prints a short manual for an {@link App}.

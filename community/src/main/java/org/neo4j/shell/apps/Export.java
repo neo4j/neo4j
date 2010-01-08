@@ -19,11 +19,11 @@
  */
 package org.neo4j.shell.apps;
 
-import org.neo4j.shell.AbstractApp;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.impl.AbstractApp;
 
 /**
  * Mimics the Bash application "export" and uses the client session

@@ -19,11 +19,11 @@
  */
 package org.neo4j.shell.apps.extra;
 
-import org.neo4j.shell.AbstractApp;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.impl.AbstractApp;
 
 /**
  * A way to execute groovy scripts from the shell. It doesn't use the groovy

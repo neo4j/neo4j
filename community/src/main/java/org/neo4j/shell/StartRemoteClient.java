@@ -21,6 +21,9 @@ package org.neo4j.shell;
 
 import java.util.Map;
 
+import org.neo4j.shell.impl.AbstractServer;
+import org.neo4j.shell.impl.AbstractStarter;
+
 /**
  * Convenience main class for starting a client which connects to a remote
  * server. Which port/name to connect to may be specified as arguments.

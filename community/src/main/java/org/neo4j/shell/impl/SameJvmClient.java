@@ -17,36 +17,43 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell;
+package org.neo4j.shell.impl;
 
-import java.rmi.RemoteException;
-
-import org.neo4j.shell.apps.extra.GshExecutor;
-import org.neo4j.shell.impl.AbstractClient;
-import org.neo4j.shell.impl.AbstractServer;
+import org.neo4j.shell.Output;
+import org.neo4j.shell.Session;
+import org.neo4j.shell.ShellClient;
+import org.neo4j.shell.ShellServer;
 
 /**
- * A common {@link ShellServer} implementation which is specialized in just
- * executing groovy scripts.
+ * An implementation of {@link ShellClient} optimized to use with a server
+ * in the same JVM.
  */
-public class GshServer extends AbstractServer
+public class SameJvmClient extends AbstractClient
 {
+	private Output out = new SystemOutput();
+	private ShellServer server;
+	private Session session = new SameJvmSession();
+	
 	/**
-	 * Constructs a new groovy shell server.
-	 * @throws RemoteException if an RMI exception occurs.
+	 * @param server the server to communicate with.
 	 */
-	public GshServer() throws RemoteException
+	public SameJvmClient( ShellServer server )
 	{
-		super();
-		this.setProperty( AbstractClient.PROMPT_KEY, "gsh$ " );
+		this.server = server;
+	}
+	
+	public Output getOutput()
+	{
+		return this.out;
 	}
 
-	public String interpretLine( String line, Session session, Output out )
-		throws ShellException, RemoteException
+	public ShellServer getServer()
 	{
-		session.set( AbstractClient.STACKTRACES_KEY, true );
-		GshExecutor gsh = new GshExecutor();
-		gsh.execute( line, session, out );
-		return null;
+		return this.server;
+	}
+
+	public Session session()
+	{
+		return this.session;
 	}
 }

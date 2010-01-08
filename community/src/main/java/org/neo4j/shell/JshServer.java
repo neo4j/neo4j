@@ -22,6 +22,8 @@ package org.neo4j.shell;
 import java.rmi.RemoteException;
 
 import org.neo4j.shell.apps.extra.JshExecutor;
+import org.neo4j.shell.impl.AbstractClient;
+import org.neo4j.shell.impl.AbstractServer;
 
 /**
  * A common {@link ShellServer} implementation which is specialized in just

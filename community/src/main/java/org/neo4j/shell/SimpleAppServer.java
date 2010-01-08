@@ -27,6 +27,7 @@ import org.neo4j.shell.apps.Help;
 import org.neo4j.shell.apps.Man;
 import org.neo4j.shell.apps.extra.Gsh;
 import org.neo4j.shell.apps.extra.Jsh;
+import org.neo4j.shell.impl.AbstractAppServer;
 
 /**
  * A common concrete implement of an {@link AppShellServer} which contains

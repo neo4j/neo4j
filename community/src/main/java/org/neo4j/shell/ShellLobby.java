@@ -19,6 +19,10 @@
  */
 package org.neo4j.shell;
 
+import org.neo4j.shell.impl.RemoteClient;
+import org.neo4j.shell.impl.RmiLocation;
+import org.neo4j.shell.impl.SameJvmClient;
+
 /**
  * A convenience class for creating servers clients as well as finding remote
  * servers.

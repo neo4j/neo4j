@@ -21,10 +21,15 @@ package org.neo4j.shell;
 
 import java.util.Map;
 
-import org.neo4j.shell.neo.LocalNeoShellServer;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.shell.impl.AbstractStarter;
+import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.impl.StandardConsole;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 /**
- * Starts a {@link LocalNeoShellServer} and connects a client to it in the
+ * Starts a {@link GraphDatabaseShellServer} and connects a client to it in the
  * same JVM.
  */
 public class StartLocalClient extends AbstractStarter
@@ -33,7 +38,7 @@ public class StartLocalClient extends AbstractStarter
     static final String ARG_READONLY = "readonly";
     
     /**
-     * Starts a {@link LocalNeoShellServer} and connects a client to it in
+     * Starts a {@link GraphDatabaseShellServer} and connects a client to it in
      * the same JVM.
      * @param args contains information about which neo store to use (the path
      * on disk).
@@ -126,26 +131,32 @@ public class StartLocalClient extends AbstractStarter
         e.printStackTrace( System.err );
         System.exit( 1 );
     }
-
-    private static void tryStartLocalServerAndClient( String neoDbPath,
+    
+    private static void tryStartLocalServerAndClient( String dbPath,
         boolean readOnly, String[] args ) throws Exception
     {
-        final LocalNeoShellServer server =
-            new LocalNeoShellServer( neoDbPath, readOnly );
+        final GraphDatabaseService graph = readOnly ?
+            new EmbeddedGraphDatabase( dbPath ) :
+            new EmbeddedGraphDatabase( dbPath );
+        
+        final GraphDatabaseShellServer server =
+            new GraphDatabaseShellServer( graph );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
             @Override
             public void run()
             {
                 server.shutdown();
+                graph.shutdown();
             }
         } );
         
         System.out.println( "NOTE: Using local neo service at '" +
-            neoDbPath + "'" );
+            dbPath + "'" );
         ShellClient client = new SameJvmClient( server );
         setSessionVariablesFromArgs( client, args );
         client.grabPrompt();
         server.shutdown();
+        graph.shutdown();
     }
 }

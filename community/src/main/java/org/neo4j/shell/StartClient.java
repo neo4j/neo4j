@@ -21,8 +21,10 @@ package org.neo4j.shell;
 
 import java.util.Map;
 
-import org.neo4j.api.core.NeoService;
-import org.neo4j.shell.neo.LocalNeoShellServer;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.shell.impl.AbstractServer;
+import org.neo4j.shell.impl.AbstractStarter;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 /**
  * Can start clients, either via {@link StartRemoteClient} or
@@ -33,8 +35,9 @@ public class StartClient extends AbstractStarter
     /**
      * Starts a client, remote or local depending on the arguments.
      * @param args the arguments from the command line. Can contain
-     * information about whether to start a local {@link LocalNeoShellServer}
-     * or connect to an already running {@link NeoService}.
+     * information about whether to start a local
+     * {@link GraphDatabaseShellServer} or connect to an already running
+     * {@link GraphDatabaseService}.
      */
     public static void main( String[] args )
     {

@@ -17,36 +17,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell;
+package org.neo4j.shell.impl;
 
-import java.rmi.RemoteException;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.neo4j.shell.apps.extra.GshExecutor;
-import org.neo4j.shell.impl.AbstractClient;
-import org.neo4j.shell.impl.AbstractServer;
+import org.neo4j.shell.Session;
 
 /**
- * A common {@link ShellServer} implementation which is specialized in just
- * executing groovy scripts.
+ * A {@link Session} optimized to use with a {@link SameJvmClient}.
  */
-public class GshServer extends AbstractServer
+public class SameJvmSession implements Session
 {
-	/**
-	 * Constructs a new groovy shell server.
-	 * @throws RemoteException if an RMI exception occurs.
-	 */
-	public GshServer() throws RemoteException
+	private Map<String, Serializable> properties =
+		new HashMap<String, Serializable>();
+	
+	public void set( String key, Serializable value )
 	{
-		super();
-		this.setProperty( AbstractClient.PROMPT_KEY, "gsh$ " );
+		this.properties.put( key, value );
+	}
+	
+	public Serializable get( String key )
+	{
+		return this.properties.get( key );
 	}
 
-	public String interpretLine( String line, Session session, Output out )
-		throws ShellException, RemoteException
+	public Serializable remove( String key )
 	{
-		session.set( AbstractClient.STACKTRACES_KEY, true );
-		GshExecutor gsh = new GshExecutor();
-		gsh.execute( line, session, out );
-		return null;
+		return this.properties.remove( key );
+	}
+
+	public String[] keys()
+	{
+		return this.properties.keySet().toArray(
+			new String[ this.properties.size() ] );
 	}
 }

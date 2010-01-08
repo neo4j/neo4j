@@ -17,36 +17,48 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell;
+package org.neo4j.shell.impl;
 
-import java.rmi.RemoteException;
+import java.io.Serializable;
 
-import org.neo4j.shell.apps.extra.GshExecutor;
-import org.neo4j.shell.impl.AbstractClient;
-import org.neo4j.shell.impl.AbstractServer;
+import org.neo4j.shell.Output;
 
 /**
- * A common {@link ShellServer} implementation which is specialized in just
- * executing groovy scripts.
+ * An implementation of {@link Output} optimized to use with a
+ * {@link SameJvmClient}.
  */
-public class GshServer extends AbstractServer
+public class SystemOutput implements Output
 {
-	/**
-	 * Constructs a new groovy shell server.
-	 * @throws RemoteException if an RMI exception occurs.
-	 */
-	public GshServer() throws RemoteException
+	public void print( Serializable object )
 	{
-		super();
-		this.setProperty( AbstractClient.PROMPT_KEY, "gsh$ " );
+		System.out.print( object );
+	}
+	
+	public void println()
+	{
+		System.out.println();
 	}
 
-	public String interpretLine( String line, Session session, Output out )
-		throws ShellException, RemoteException
+	public void println( Serializable object )
 	{
-		session.set( AbstractClient.STACKTRACES_KEY, true );
-		GshExecutor gsh = new GshExecutor();
-		gsh.execute( line, session, out );
-		return null;
+		System.out.println( object );
+	}
+
+	public Appendable append( char ch )
+	{
+		this.print( ch );
+		return this;
+	}
+
+	public Appendable append( CharSequence sequence )
+	{
+		this.println( RemoteOutput.asString( sequence ) );
+		return this;
+	}
+
+	public Appendable append( CharSequence sequence, int start, int end )
+	{
+		this.print( RemoteOutput.asString( sequence ).substring( start, end ) );
+		return this;
 	}
 }
