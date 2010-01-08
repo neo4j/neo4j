@@ -1,0 +1,110 @@
+/*
+ * Copyright (c) 2002-2009 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ * 
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl;
+
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.TestNeo;
+
+public abstract class AbstractNeoTestCase extends TestCase
+{
+    protected static final String NEO_BASE_PATH = "target/var/";
+    
+    public AbstractNeoTestCase( String testName )
+    {
+        super( testName );
+    }
+
+    private GraphDatabaseService neo;
+    private Transaction tx;
+
+    public GraphDatabaseService getNeo()
+    {
+        return neo;
+    }
+
+    public EmbeddedGraphDatabase getEmbeddedNeo()
+    {
+        return (EmbeddedGraphDatabase) neo;
+    }
+
+    public Transaction getTransaction()
+    {
+        return tx;
+    }
+
+    public static Test suite()
+    {
+        TestSuite suite = new TestSuite( TestNeo.class );
+        return suite;
+    }
+    
+    public static String getNeoPath( String endPath )
+    {
+        return NEO_BASE_PATH + endPath;
+    }
+
+    public void setUp()
+    {
+        neo = new EmbeddedGraphDatabase( getNeoPath( "neo-test" ) );
+        tx = neo.beginTx();
+    }
+
+    public void tearDown()
+    {
+        tx.finish();
+        neo.shutdown();
+    }
+
+    public void setTransaction( Transaction tx )
+    {
+        this.tx = tx;
+    }
+
+    public void newTransaction()
+    {
+        if ( tx != null )
+        {
+            tx.success();
+            tx.finish();
+        }
+        tx = neo.beginTx();
+    }
+    
+    public void commit()
+    {
+        if ( tx != null )
+        {
+            tx.success();
+            tx.finish();
+        }
+    }
+    
+    public NodeManager getNodeManager()
+    {
+        return ((EmbeddedGraphDatabase) neo).getConfig().getNeoModule().getNodeManager();
+    }
+}
