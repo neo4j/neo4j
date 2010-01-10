@@ -23,19 +23,19 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.NeoService;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.remote.RemoteResponse.ResponseBuilder;
 
 final class BasicConnection implements RemoteConnection
 {
     private final AtomicInteger txIdPool = new AtomicInteger();
-    private final BasicNeoServer server;
-    final NeoService neo;
+    private final BasicGraphDatabaseServer server;
+    final GraphDatabaseService neo;
     private final Map<Integer, BasicServerTransaction> transactions = new ConcurrentHashMap<Integer, BasicServerTransaction>();
     private transient boolean open = true;
 
-    BasicConnection( BasicNeoServer server, NeoService neo )
+    BasicConnection( BasicGraphDatabaseServer server, GraphDatabaseService neo )
     {
         this.server = server;
         this.neo = neo;

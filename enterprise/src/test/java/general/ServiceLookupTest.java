@@ -29,10 +29,10 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.remote.RemoteNeo;
-import org.neo4j.remote.sites.LocalSite;
-import org.neo4j.remote.sites.RmiSite;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.remote.RemoteGraphDatabase;
+import org.neo4j.remote.transports.LocalGraphDatabase;
+import org.neo4j.remote.transports.RmiTransport;
 
 public class ServiceLookupTest
 {
@@ -58,7 +58,7 @@ public class ServiceLookupTest
 	@Test
 	public void testLocalSite() throws Exception
 	{
-		NeoService neo = new RemoteNeo(
+		GraphDatabaseService neo = new RemoteGraphDatabase(
 				"file://" + new File(PATH).getAbsolutePath() );
 		neo.shutdown();
 	}
@@ -67,7 +67,7 @@ public class ServiceLookupTest
 	public void testRmiSite() throws Exception
 	{
 		Assume.assumeTrue( setupRmi() );
-		NeoService neo = new RemoteNeo( RMI_RESOURCE );
+		GraphDatabaseService neo = new RemoteGraphDatabase( RMI_RESOURCE );
 		neo.shutdown();
 	}
 	
@@ -75,7 +75,7 @@ public class ServiceLookupTest
 	{
 		try
 		{
-			RmiSite.register( new LocalSite( PATH ), RMI_RESOURCE );
+			RmiTransport.register( new LocalGraphDatabase( PATH ), RMI_RESOURCE );
 		}
 		catch ( ConnectException ex )
 		{
@@ -95,7 +95,7 @@ public class ServiceLookupTest
 	public void testTcpSite() throws Exception
 	{
 		// TODO: set up server
-		NeoService neo = new RemoteNeo( "tcp://localhost" );
+		GraphDatabaseService neo = new RemoteGraphDatabase( "tcp://localhost" );
 		neo.shutdown();
 		// TODO: shut down server
 	}

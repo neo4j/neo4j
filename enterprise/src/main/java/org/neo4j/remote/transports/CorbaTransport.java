@@ -17,22 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.remote.sites;
+package org.neo4j.remote.transports;
 
 import java.net.URI;
 
-import org.neo4j.remote.RemoteSite;
-import org.neo4j.remote.RemoteSiteFactory;
+import org.neo4j.remote.ConnectionTarget;
+import org.neo4j.remote.Transport;
 
-/*public*/final class CorbaSiteFactory extends RemoteSiteFactory
+/*public*/final class CorbaTransport extends Transport
 {
-    public CorbaSiteFactory()
+    public CorbaTransport()
     {
         super( "corbaname", "corbaloc" );
     }
 
     @Override
-    protected RemoteSite create( URI resourceUri )
+    protected ConnectionTarget create( URI resourceUri )
     {
         String scheme = resourceUri.getScheme();
         if ( "corbaloc".equals( scheme ) )

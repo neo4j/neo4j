@@ -19,9 +19,9 @@
  */
 package org.neo4j.remote;
 
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 
 final class RemoteRelationship extends RemotePropertyContainer implements
     Relationship
@@ -30,7 +30,7 @@ final class RemoteRelationship extends RemotePropertyContainer implements
     private final RemoteNode startNode;
     private final RemoteNode endNode;
 
-    RemoteRelationship( RemoteNeoEngine txService, long id,
+    RemoteRelationship( RemoteGraphDbEngine txService, long id,
         RelationshipType type, RemoteNode start, RemoteNode end )
     {
         super( txService, id );
@@ -112,7 +112,7 @@ final class RemoteRelationship extends RemotePropertyContainer implements
         return type;
     }
 
-    public boolean isType( RelationshipType type )
+    public boolean isType( @SuppressWarnings( "hiding" ) RelationshipType type )
     {
         return this.type.name().equals( type.name() );
     }

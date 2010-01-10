@@ -21,15 +21,15 @@ package org.neo4j.remote;
 
 import java.util.Iterator;
 
-import org.neo4j.api.core.NotFoundException;
-import org.neo4j.api.core.PropertyContainer;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
 
 abstract class RemotePropertyContainer implements PropertyContainer
 {
-    final RemoteNeoEngine engine;
+    final RemoteGraphDbEngine engine;
     final long id;
 
-    RemotePropertyContainer( RemoteNeoEngine engine, long id )
+    RemotePropertyContainer( RemoteGraphDbEngine engine, long id )
     {
         this.engine = engine;
         this.id = id;

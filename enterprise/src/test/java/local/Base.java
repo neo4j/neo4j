@@ -24,21 +24,21 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.remote.RemoteNeo;
-import org.neo4j.remote.sites.LocalSite;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.remote.RemoteGraphDatabase;
+import org.neo4j.remote.transports.LocalGraphDatabase;
 
 abstract class Base {
 
     private static final String STORE_DIR = "target/neo";
     private StringBuffer buffer;
 
-    private NeoService neo;
+    private GraphDatabaseService neo;
     private PrintStream stream;
-    private NeoService embeddedNeo;
+    private GraphDatabaseService embeddedNeo;
 
-    protected NeoService neo() {
+    protected GraphDatabaseService neo() {
         return neo;
     }
 
@@ -59,8 +59,8 @@ abstract class Base {
                 buffer.append((char) b);
             }
         });
-        embeddedNeo = new EmbeddedNeo(STORE_DIR);
-        neo = new RemoteNeo(new LocalSite(embeddedNeo));
+        embeddedNeo = new EmbeddedGraphDatabase(STORE_DIR);
+        neo = new RemoteGraphDatabase(new LocalGraphDatabase(embeddedNeo));
     }
 
     public void tearDown() {

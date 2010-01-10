@@ -30,12 +30,12 @@ import java.util.Set;
 
 final class ProtocolService
 {
-    RemoteSite get( URI resourceUri )
+    ConnectionTarget get( URI resourceUri )
     {
         return getSiteFactory( resourceUri ).create( resourceUri );
     }
 
-    synchronized void register( RemoteSiteFactory factory )
+    synchronized void register( Transport factory )
     {
         if ( factory == null )
         {
@@ -44,30 +44,31 @@ final class ProtocolService
         }
         for ( String protocol : factory.protocols )
         {
-            Set<RemoteSiteFactory> factories = implementations.get( protocol );
+            @SuppressWarnings( "hiding" )
+            Set<Transport> factories = implementations.get( protocol );
             if ( factories == null )
             {
-                factories = new HashSet<RemoteSiteFactory>();
+                factories = new HashSet<Transport>();
                 implementations.put( protocol, factories );
             }
             factories.add( factory );
         }
     }
 
-    private final Map<String, Set<RemoteSiteFactory>> implementations = new HashMap<String, Set<RemoteSiteFactory>>();
-    private final Iterable<RemoteSiteFactory> factories;
+    private final Map<String, Set<Transport>> implementations = new HashMap<String, Set<Transport>>();
+    private final Iterable<Transport> factories;
 
     private static abstract class CheckingIterable implements
-        Iterable<RemoteSiteFactory>
+        Iterable<Transport>
     {
-        public Iterator<RemoteSiteFactory> iterator()
+        public Iterator<Transport> iterator()
         {
             try
             {
                 final Iterator<?> iterator = provideIterator();
-                return new Iterator<RemoteSiteFactory>()
+                return new Iterator<Transport>()
                 {
-                    RemoteSiteFactory cached = null;
+                    Transport cached = null;
 
                     public boolean hasNext()
                     {
@@ -80,8 +81,7 @@ final class ProtocolService
                             {
                                 try
                                 {
-                                    cached = ( RemoteSiteFactory ) iterator
-                                        .next();
+                                    cached = ( Transport ) iterator.next();
                                     return true;
                                 }
                                 // FIXME: be more specific than Throwable
@@ -95,7 +95,7 @@ final class ProtocolService
                         return false;
                     }
 
-                    public RemoteSiteFactory next()
+                    public Transport next()
                     {
                         if ( hasNext() )
                         {
@@ -122,7 +122,7 @@ final class ProtocolService
             }
             catch ( Exception ex )
             {
-                return Arrays.asList( new RemoteSiteFactory[ 0 ] ).iterator();
+                return Arrays.asList( new Transport[ 0 ] ).iterator();
             }
         }
 
@@ -131,7 +131,7 @@ final class ProtocolService
 
     ProtocolService()
     {
-        Iterable<RemoteSiteFactory> result;
+        Iterable<Transport> result;
         // First, try Java 6 API, since it is standardized.
         try
         {
@@ -140,8 +140,8 @@ final class ProtocolService
             Method loadMethod = serviceLoaderClass.getMethod( "load",
                 Class.class );
             @SuppressWarnings( "unchecked" )
-            final Iterable<RemoteSiteFactory> iter = ( ( Iterable<RemoteSiteFactory> ) loadMethod
-                .invoke( null, RemoteSiteFactory.class ) );
+            final Iterable<Transport> iter = ( ( Iterable<Transport> ) loadMethod
+                .invoke( null, Transport.class ) );
             result = new CheckingIterable()
             {
                 @Override
@@ -153,8 +153,8 @@ final class ProtocolService
         }
         catch ( Exception ex )
         {
-            Iterable<RemoteSiteFactory> empty = Arrays
-                .asList( new RemoteSiteFactory[ 0 ] );
+            Iterable<Transport> empty = Arrays
+                .asList( new Transport[ 0 ] );
             // If that fails, try the SUN specific Java 5 implementation.
             try
             {
@@ -167,7 +167,7 @@ final class ProtocolService
                     Iterator<?> provideIterator() throws Exception
                     {
                         return ( Iterator<?> ) providersMethod.invoke( null,
-                            RemoteSiteFactory.class );
+                            Transport.class );
                     }
                 };
             }
@@ -179,12 +179,12 @@ final class ProtocolService
         factories = result;
     }
 
-    private synchronized RemoteSiteFactory getSiteFactory( URI resourceUri )
+    private synchronized Transport getSiteFactory( URI resourceUri )
     {
-        RemoteSiteFactory result = loadSiteFactory( resourceUri );
+        Transport result = loadSiteFactory( resourceUri );
         if ( result == null )
         {
-            for ( RemoteSiteFactory factory : factories )
+            for ( Transport factory : factories )
             {
                 register( factory );
             }
@@ -196,18 +196,18 @@ final class ProtocolService
         }
         throw new RuntimeException(
             "No implementation available to handle resource URI: "
-                + resourceUri + "\nSupported protocoll are: " + allProtocols() );
+                + resourceUri + "\nSupported protocolls are: " + allProtocols() );
     }
 
-    private RemoteSiteFactory loadSiteFactory( URI resourceUri )
+    private Transport loadSiteFactory( URI resourceUri )
     {
         String protocol = resourceUri.getScheme();
-        Iterable<RemoteSiteFactory> factories = implementations.get( protocol );
+        Iterable<Transport> factories = implementations.get( protocol );
         if ( factories == null )
         {
             return null;
         }
-        for ( RemoteSiteFactory factory : factories )
+        for ( Transport factory : factories )
         {
             try
             {
@@ -228,9 +228,9 @@ final class ProtocolService
     {
         boolean comma = false;
         StringBuilder result = new StringBuilder();
-        for ( Iterable<RemoteSiteFactory> factories : implementations.values() )
+        for ( Iterable<Transport> factories : implementations.values() )
         {
-            for ( RemoteSiteFactory factory : factories )
+            for ( Transport factory : factories )
             {
                 for ( String protocol : factory.protocols )
                 {

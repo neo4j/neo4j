@@ -19,19 +19,18 @@
  */
 package org.neo4j.remote;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.NotInTransactionException;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.ReturnableEvaluator;
-import org.neo4j.api.core.StopEvaluator;
-import org.neo4j.api.core.TraversalPosition;
-import org.neo4j.api.core.Traverser.Order;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ReturnableEvaluator;
+import org.neo4j.graphdb.StopEvaluator;
+import org.neo4j.graphdb.TraversalPosition;
+import org.neo4j.graphdb.Traverser.Order;
 
-final class RemoteNeoEngine
+final class RemoteGraphDbEngine
 {
     private final ThreadLocal<RemoteTransaction> current = new ThreadLocal<RemoteTransaction>();
     private final RemoteConnection connection;
@@ -39,7 +38,7 @@ final class RemoteNeoEngine
     private final Map<String, RelationshipType> typesCache = null;
     private final LocalTraversalService traversal = new LocalTraversalService();
 
-    RemoteNeoEngine( RemoteConnection connection, ConfigurationModule module )
+    RemoteGraphDbEngine( RemoteConnection connection, ConfigurationModule module )
     {
         this.connection = connection;
         this.factory = new ConfigurationFactory( module, connection
@@ -447,6 +446,7 @@ final class RemoteNeoEngine
                     else if ( hasMore )
                     {
                         index = 0;
+                        @SuppressWarnings( "hiding" )
                         IterableSpecification<T> spec = more( token );
                         content = spec.content;
                         token = spec.token;

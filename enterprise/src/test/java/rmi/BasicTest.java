@@ -30,21 +30,21 @@ import junit.framework.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.PropertyContainer;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Transaction;
-import org.neo4j.remote.RemoteNeo;
-import org.neo4j.remote.sites.LocalSite;
-import org.neo4j.remote.sites.RmiSite;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.remote.RemoteGraphDatabase;
+import org.neo4j.remote.transports.LocalGraphDatabase;
+import org.neo4j.remote.transports.RmiTransport;
 
 public class BasicTest
 {
 	private static final String RMI_RESOURCE = "rmi://localhost/"
 		+ BasicTest.class.getSimpleName();
-	private static NeoService neo;
+	private static GraphDatabaseService neo;
 	
 	@BeforeClass
 	public static void setUp() throws Exception
@@ -62,7 +62,7 @@ public class BasicTest
 		Exception onRegister = null;
 		try
 		{
-			RmiSite.register( new LocalSite( "target/neo" ), RMI_RESOURCE );
+			RmiTransport.register( new LocalGraphDatabase( "target/neo" ), RMI_RESOURCE );
 		}
 		catch (Exception ex)
 		{
@@ -70,7 +70,7 @@ public class BasicTest
 		}
 		try
 		{
-			neo = new RemoteNeo( new RmiSite( new URI( RMI_RESOURCE ) ) );
+			neo = new RemoteGraphDatabase( RMI_RESOURCE );
 		}
 		catch (Exception ex)
 		{

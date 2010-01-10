@@ -32,38 +32,38 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.ReturnableEvaluator;
-import org.neo4j.api.core.StopEvaluator;
-import org.neo4j.api.core.Transaction;
-import org.neo4j.api.core.TraversalPosition;
-import org.neo4j.api.core.Traverser;
-import org.neo4j.api.core.Traverser.Order;
-import org.neo4j.remote.BasicNeoServer;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ReturnableEvaluator;
+import org.neo4j.graphdb.StopEvaluator;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TraversalPosition;
+import org.neo4j.graphdb.Traverser;
+import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.remote.BasicGraphDatabaseServer;
 import org.neo4j.remote.RemoteIndexService;
-import org.neo4j.remote.RemoteNeo;
-import org.neo4j.remote.sites.LocalSite;
-import org.neo4j.util.index.IndexService;
-import org.neo4j.util.index.LuceneIndexService;
+import org.neo4j.remote.RemoteGraphDatabase;
+import org.neo4j.remote.transports.LocalGraphDatabase;
+import org.neo4j.index.IndexService;
+import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class MatrixTest
 {
-    private static EmbeddedNeo backend;
+    private static EmbeddedGraphDatabase backend;
 
-    private static BasicNeoServer server;
+    private static BasicGraphDatabaseServer server;
 
     private static IndexService nodeIndex;
 
     @BeforeClass
     public static void startBackend()
     {
-        backend = new EmbeddedNeo( "target/neo" );
-        server = new LocalSite( backend );
+        backend = new EmbeddedGraphDatabase( "target/neo" );
+        server = new LocalGraphDatabase( backend );
         nodeIndex = new LuceneIndexService( backend );
         server.registerIndexService( "node index", nodeIndex );
     }
@@ -75,14 +75,14 @@ public class MatrixTest
         backend.shutdown();
     }
 
-    private NeoService neo;
+    private GraphDatabaseService neo;
 
     private IndexService index;
 
     @Before
     public void connect()
     {
-        neo = new RemoteNeo( server );
+        neo = new RemoteGraphDatabase( server );
         index = new RemoteIndexService( neo, "node index" );
     }
 
@@ -103,7 +103,7 @@ public class MatrixTest
         KNOWS, CODED_BY, LOVES
     }
 
-    private static void defineMatrix( NeoService neo, IndexService index )
+    private static void defineMatrix( GraphDatabaseService neo, IndexService index )
         throws Exception
     {
         // Define nodes

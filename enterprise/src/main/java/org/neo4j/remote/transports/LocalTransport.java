@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.remote.sites;
+package org.neo4j.remote.transports;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,28 +25,28 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.remote.RemoteSite;
-import org.neo4j.remote.RemoteSiteFactory;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.remote.ConnectionTarget;
+import org.neo4j.remote.Transport;
 
 /**
- * A {@link RemoteSiteFactory} that creates {@link LocalSite}s.
+ * A {@link Transport} that creates {@link LocalGraphDatabase}s.
  * @author Tobias Ivarsson
  */
-public final class LocalSiteFactory extends RemoteSiteFactory
+public final class LocalTransport extends Transport
 {
     /**
-     * Create a new {@link RemoteSiteFactory} for the file:// protocol.
+     * Create a new {@link Transport} for the file:// protocol.
      */
-    public LocalSiteFactory()
+    public LocalTransport()
     {
         super( "file" );
     }
 
     @Override
-    protected RemoteSite create( URI resourceUri )
+    protected ConnectionTarget create( URI resourceUri )
     {
-        return new LocalSite( getNeoService( new File( resourceUri
+        return new LocalGraphDatabase( getGraphDbService( new File( resourceUri
             .getSchemeSpecificPart() ) ) );
     }
 
@@ -56,9 +56,9 @@ public final class LocalSiteFactory extends RemoteSiteFactory
         return "file".equals( resourceUri.getScheme() );
     }
 
-    private static Map<String, NeoServiceContainer> instances = new HashMap<String, NeoServiceContainer>();
+    private static Map<String, GraphDbContainer> instances = new HashMap<String, GraphDbContainer>();
 
-    static synchronized NeoServiceContainer getNeoService( File file )
+    static synchronized GraphDbContainer getGraphDbService( File file )
     {
         String path;
         try
@@ -69,10 +69,10 @@ public final class LocalSiteFactory extends RemoteSiteFactory
         {
             path = file.getAbsolutePath();
         }
-        NeoServiceContainer neo = instances.get( path );
+        GraphDbContainer neo = instances.get( path );
         if ( neo == null )
         {
-            neo = new NeoServiceContainer( new EmbeddedNeo( path ) );
+            neo = new GraphDbContainer( new EmbeddedGraphDatabase( path ) );
             Runtime.getRuntime().addShutdownHook( new Thread( neo ) );
             instances.put( path, neo );
         }

@@ -20,7 +20,7 @@
 package org.neo4j.remote;
 
 /**
- * Serialized object representing a {@link org.neo4j.api.core.Node}.
+ * Serialized object representing a {@link org.neo4j.graphdb.Node}.
  * 
  * @author Tobias Ivarsson
  */

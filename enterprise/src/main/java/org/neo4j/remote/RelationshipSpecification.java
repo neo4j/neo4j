@@ -19,7 +19,7 @@
  */
 package org.neo4j.remote;
 
-import org.neo4j.api.core.Relationship;
+import org.neo4j.graphdb.Relationship;
 
 /**
  * Serialized object representing a {@link Relationship}.

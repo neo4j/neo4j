@@ -24,48 +24,48 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 
-import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Transaction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 
 /**
- * A remote connection to a running Neo instance, providing access to the Neo
- * API.
+ * A remote connection to a running {@link GraphDatabaseService Graph Database}
+ * instance, providing access to the Neo4j Graph Database API.
  * @author Tobias Ivarsson
  */
-public final class RemoteNeo implements NeoService
+public final class RemoteGraphDatabase implements GraphDatabaseService
 {
     private static final ProtocolService protocol = new ProtocolService();
 
-    private final RemoteNeoEngine engine;
+    private final RemoteGraphDbEngine engine;
 
     /**
-     * Creates a new remote Neo connection.
+     * Creates a new remote graph database connection.
      * @param site
      *            The connection layer to be used.
      */
-    public RemoteNeo( RemoteSite site )
+    public RemoteGraphDatabase( ConnectionTarget site )
     {
         this( null, site );
     }
 
     /**
-     * Creates a new remote Neo connection.
+     * Creates a new remote graph database connection.
      * @param config
      *            the {@link ConfigurationModule} containing the configurations
-     *            of the subsystems of Neo.
+     *            of the subsystems of the graph database.
      * @param site
      *            The connection layer to be used.
      */
-    public RemoteNeo( ConfigurationModule config, RemoteSite site )
+    public RemoteGraphDatabase( ConfigurationModule config, ConnectionTarget site )
     {
         this( site.connect(), config );
     }
 
     /**
-     * Creates a new remote Neo connection.
+     * Creates a new remote graph database connection.
      * @param site
      *            The connection layer to be used.
      * @param username
@@ -74,16 +74,16 @@ public final class RemoteNeo implements NeoService
      * @param password
      *            the password for the user to log in as on the remote site.
      */
-    public RemoteNeo( RemoteSite site, String username, String password )
+    public RemoteGraphDatabase( ConnectionTarget site, String username, String password )
     {
         this( null, site, username, password );
     }
 
     /**
-     * Creates a new remote Neo connection.
+     * Creates a new remote graph database connection.
      * @param config
      *            the {@link ConfigurationModule} containing the configurations
-     *            of the subsystems of Neo.
+     *            of the subsystems of the graph database.
      * @param site
      *            The connection layer to be used.
      * @param username
@@ -92,44 +92,44 @@ public final class RemoteNeo implements NeoService
      * @param password
      *            the password for the user to log in as on the remote site.
      */
-    public RemoteNeo( ConfigurationModule config, RemoteSite site,
+    public RemoteGraphDatabase( ConfigurationModule config, ConnectionTarget site,
         String username, String password )
     {
         this( site.connect( username, password ), config );
     }
 
     /**
-     * Create a remote Neo connection. Select implementation depending on the
+     * Create a remote graph database connection. Select implementation depending on the
      * supplied URI.
      * @param resourceUri
      *            the URI where the connection resource is located.
      * @throws URISyntaxException
      *             if the resource URI is malformed.
      */
-    public RemoteNeo( String resourceUri ) throws URISyntaxException
+    public RemoteGraphDatabase( String resourceUri ) throws URISyntaxException
     {
         this( null, resourceUri );
     }
 
     /**
-     * Create a remote Neo connection. Select implementation depending on the
+     * Create a remote graph database connection. Select implementation depending on the
      * supplied URI.
      * @param config
      *            the {@link ConfigurationModule} containing the configurations
-     *            of the subsystems of Neo.
+     *            of the subsystems of the graph database.
      * @param resourceUri
      *            the URI where the connection resource is located.
      * @throws URISyntaxException
      *             if the resource URI is malformed.
      */
-    public RemoteNeo( ConfigurationModule config, String resourceUri )
+    public RemoteGraphDatabase( ConfigurationModule config, String resourceUri )
         throws URISyntaxException
     {
         this( config, protocol.get( new URI( resourceUri ) ) );
     }
 
     /**
-     * Create a remote Neo connection. Select implementation depending on the
+     * Create a remote graph database connection. Select implementation depending on the
      * supplied URI.
      * @param resourceUri
      *            the URI where the connection resource is located.
@@ -141,18 +141,18 @@ public final class RemoteNeo implements NeoService
      * @throws URISyntaxException
      *             if the resource URI is malformed.
      */
-    public RemoteNeo( String resourceUri, String username, String password )
+    public RemoteGraphDatabase( String resourceUri, String username, String password )
         throws URISyntaxException
     {
         this( null, resourceUri, username, password );
     }
 
     /**
-     * Create a remote Neo connection. Select implementation depending on the
+     * Create a remote graph database connection. Select implementation depending on the
      * supplied URI.
      * @param config
      *            the {@link ConfigurationModule} containing the configurations
-     *            of the subsystems of Neo.
+     *            of the subsystems of the graph database.
      * @param resourceUri
      *            the URI where the connection resource is located.
      * @param username
@@ -163,29 +163,29 @@ public final class RemoteNeo implements NeoService
      * @throws URISyntaxException
      *             if the resource URI is malformed.
      */
-    public RemoteNeo( ConfigurationModule config, String resourceUri,
+    public RemoteGraphDatabase( ConfigurationModule config, String resourceUri,
         String username, String password ) throws URISyntaxException
     {
         this( config, protocol.get( new URI( resourceUri ) ), username,
             password );
     }
 
-    private RemoteNeo( RemoteConnection connection, ConfigurationModule config )
+    private RemoteGraphDatabase( RemoteConnection connection, ConfigurationModule config )
     {
-        this.engine = new RemoteNeoEngine( connection, config );
+        this.engine = new RemoteGraphDbEngine( connection, config );
     }
 
     /**
-     * Register a {@link RemoteSite} implementation with a specified protocol.
+     * Register a {@link ConnectionTarget} implementation with a specified protocol.
      * @param factory
      *            a factory to create the site once it's required.
      */
-    public static void registerProtocol( RemoteSiteFactory factory )
+    public static void registerProtocol( Transport factory )
     {
         protocol.register( factory );
     }
 
-    // NeoService implementation
+    // GraphDatabaseService implementation
 
     public Transaction beginTx()
     {
@@ -229,22 +229,22 @@ public final class RemoteNeo implements NeoService
         engine.shutdown();
     }
 
-    RemoteNeoEngine getEngine()
+    RemoteGraphDbEngine getEngine()
     {
         return engine;
     }
 
-    // These are scheduled to be removed from the NeoService interface.
+    // These are scheduled to be removed from the GraphDatabaseService interface.
     public boolean enableRemoteShell()
     {
-        // NOTE This might not be something that we wish to support in RemoteNeo
+        // NOTE This might not be something that we wish to support in RemoteGraphDatabase
         return false;
     }
 
     public boolean enableRemoteShell(
         Map<String, Serializable> initialProperties )
     {
-        // NOTE This might not be something that we wish to support in RemoteNeo
+        // NOTE This might not be something that we wish to support in RemoteGraphDatabase
         return false;
     }
 }

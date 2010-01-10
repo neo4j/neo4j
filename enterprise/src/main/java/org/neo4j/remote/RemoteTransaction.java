@@ -22,19 +22,19 @@ package org.neo4j.remote;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.NotFoundException;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.ReturnableEvaluator;
-import org.neo4j.api.core.StopEvaluator;
-import org.neo4j.api.core.Transaction;
-import org.neo4j.api.core.TraversalPosition;
-import org.neo4j.api.core.Traverser.Order;
-import org.neo4j.remote.RemoteNeoEngine.BatchIterable;
-import org.neo4j.remote.RemoteNeoEngine.CloseableIteratorWithSize;
-import org.neo4j.util.index.IndexHits;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ReturnableEvaluator;
+import org.neo4j.graphdb.StopEvaluator;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TraversalPosition;
+import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.remote.RemoteGraphDbEngine.BatchIterable;
+import org.neo4j.remote.RemoteGraphDbEngine.CloseableIteratorWithSize;
+import org.neo4j.index.IndexHits;
 
 class RemoteTransaction implements Transaction
 {
@@ -140,7 +140,7 @@ class RemoteTransaction implements Transaction
 
     // Internal state
 
-    private final RemoteNeoEngine engine;
+    private final RemoteGraphDbEngine engine;
     final int id;
     private final Map<Long, RemoteNode> nodeCache = null;
     private final Map<Long, RemoteRelationship> relationshipCache = null;
@@ -151,7 +151,7 @@ class RemoteTransaction implements Transaction
         return "RemoteTransaction[" + engine + ", id=" + id + "]";
     }
 
-    RemoteTransaction( RemoteNeoEngine txService, int id )
+    RemoteTransaction( RemoteGraphDbEngine txService, int id )
     {
         this.engine = txService;
         this.id = id;
@@ -246,7 +246,7 @@ class RemoteTransaction implements Transaction
         return newNode( engine.createNode( id ) );
     }
 
-    RemoteNode getNodeById( long id )
+    RemoteNode getNodeById( @SuppressWarnings( "hiding" ) long id )
     {
         return getNode( id, false );
     }
@@ -327,7 +327,7 @@ class RemoteTransaction implements Transaction
             startNode.id, endNode.id ) );
     }
 
-    RemoteRelationship getRelationshipById( long id )
+    RemoteRelationship getRelationshipById( @SuppressWarnings( "hiding" ) long id )
     {
         return getRelationship( id, null );
     }
@@ -463,7 +463,7 @@ class RemoteTransaction implements Transaction
             this.source = source;
         }
 
-        abstract T convert( F source );
+        abstract T convert( @SuppressWarnings( "hiding" ) F source );
 
         public Iterator<T> iterator()
         {

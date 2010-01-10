@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.remote.sites;
+package org.neo4j.remote.transports;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -25,68 +25,73 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.rmi.Naming;
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 
-import org.neo4j.api.core.NeoService;
-import org.neo4j.remote.RemoteConnection;
-import org.neo4j.remote.BasicNeoServer;
-import org.neo4j.remote.RemoteSite;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.remote.BasicGraphDatabaseServer;
+import org.neo4j.remote.ConnectionTarget;
+import org.neo4j.remote.Transport;
 
 /**
- * A {@link RemoteSite} that uses RMI for communication. Connecting to an RMI
- * site is as simple as creating a new instance of this class. To expose a
- * {@link NeoService} for remote connections via RMI, use the static
- * {@link #register(BasicNeoServer, String)} method of this class.
+ * A {@link Transport} that communicates with a remote graph database using RMI.
+ * 
  * @author Tobias Ivarsson
  */
-public final class RmiSite implements RemoteSite
+public final class RmiTransport extends Transport
 {
-    private final URI uri;
-
     /**
-     * Creates a new {@link RemoteSite} that uses RMI for its communication.
-     * @param resourceUri
-     *            the RMI resource name in URL form.
+     * Create a new {@link Transport} for the rmi:// protocol.
      */
-    public RmiSite( URI resourceUri )
+    public RmiTransport()
     {
-        uri = resourceUri;
+        super( "rmi" );
+    }
+
+    @Override
+    protected boolean handlesUri( URI resourceUri )
+    {
+        return "rmi".equals( resourceUri.getScheme() );
+    }
+
+    @Override
+    protected ConnectionTarget create( URI resourceUri )
+    {
+        return new RmiTarget( resourceUri );
     }
 
     /**
-     * Registers a {@link NeoService} as a {@link RmiSite} with a given name. If
+     * Registers a {@link GraphDatabaseService} as an RMI service with a given name. If
      * a resource is already registered with the specified name, that resources
      * is replaced. Use {@link Naming#unbind(String)} to unregister the
-     * {@link NeoService}.
+     * {@link GraphDatabaseService}.
      * @param server
-     *            the Neo server to register as an RMI service.
+     *            the graph database server to register as an RMI service.
      * @param resourceUri
-     *            the name in URL form to register the exported Neo server as.
+     *            the name in URL form to register the exported graph database server as.
      * @throws RemoteException
      *             if the RMI registry could not be contacted.
      * @throws MalformedURLException
      *             if the <code>resourceUri</code> is not properly formatted.
      */
-    public static void register( BasicNeoServer server, String resourceUri )
+    public static void register( BasicGraphDatabaseServer server, String resourceUri )
         throws RemoteException, MalformedURLException
     {
         Naming.rebind( resourceUri, RmiConnectionServer.setup( server ) );
     }
 
     /**
-     * Registers a {@link NeoService} as a {@link RmiSite} with a given name on
+     * Registers a {@link GraphDatabaseService} as an RMI service with a given name on
      * a given port. If a resource is already registered with the specified
      * name, that resources is replaced. Use {@link Naming#unbind(String)} to
-     * unregister the {@link NeoService}.
+     * unregister the {@link GraphDatabaseService}.
      * @param server
-     *            the Neo server to register as an RMI service.
+     *            the graph database server to register as an RMI service.
      * @param resourceUri
-     *            the name in URL form to register the exported Neo server as.
+     *            the name in URL form to register the exported graph database server as.
      * @param port
      *            the port number on which the remote object receives calls (if
      *            port is zero, an anonymous port is chosen).
@@ -95,22 +100,22 @@ public final class RmiSite implements RemoteSite
      * @throws MalformedURLException
      *             if the <code>resourceUri</code> is not properly formatted.
      */
-    public static void register( BasicNeoServer server, String resourceUri,
+    public static void register( BasicGraphDatabaseServer server, String resourceUri,
         int port ) throws RemoteException, MalformedURLException
     {
         Naming.rebind( resourceUri, RmiConnectionServer.setup( server, port ) );
     }
 
     /**
-     * Registers a {@link NeoService} as a {@link RmiSite} with a given name on
+     * Registers a {@link GraphDatabaseService} as an RMI service with a given name on
      * a given port. Uses the specified socket factories to get the sockets for
      * the connections. If a resource is already registered with the specified
      * name, that resources is replaced. Use {@link Naming#unbind(String)} to
-     * unregister the {@link NeoService}.
+     * unregister the {@link GraphDatabaseService}.
      * @param server
-     *            the Neo server to register as an RMI service.
+     *            the graph database server to register as an RMI service.
      * @param resourceUri
-     *            the name in URL form to register the exported Neo server as.
+     *            the name in URL form to register the exported graph database server as.
      * @param port
      *            the port number on which the remote object receives calls (if
      *            port is zero, an anonymous port is chosen).
@@ -124,7 +129,7 @@ public final class RmiSite implements RemoteSite
      * @throws MalformedURLException
      *             if the <code>resourceUri</code> is not properly formatted.
      */
-    public static void register( BasicNeoServer server, String resourceUri,
+    public static void register( BasicGraphDatabaseServer server, String resourceUri,
         int port, RMIClientSocketFactory csf, RMIServerSocketFactory ssf )
         throws RemoteException, MalformedURLException
     {
@@ -133,12 +138,12 @@ public final class RmiSite implements RemoteSite
     }
 
     /**
-     * Start a stand alone Remote Neo / RMI server.
+     * Start a stand alone Remote graph database / RMI server.
      * <p />
      * Usage:
      * 
      * <pre>
-     * java -cp neo.jar:jta.jar:remote-neo.jar org.neo4j.remote.sites.RmiSite PATH RESOURCE_URI
+     * java -cp kernel.jar:jta.jar:remote.jar org.neo4j.remote.sites.RmiSite PATH RESOURCE_URI
      * </pre>
      * <p />
      * If the host in the <code>RESOURCE_URI</code> resolves to the local host a
@@ -161,17 +166,17 @@ public final class RmiSite implements RemoteSite
     public static void main( String[] args ) throws RemoteException,
         IllegalArgumentException
     {
-        String usage = "Usage: " + RmiSite.class.getName()
-            + " <Neo dir> <rmi resource uri>";
+        String usage = "Usage: " + RmiTarget.class.getName()
+            + " <GraphDB dir> <rmi resource uri>";
         if ( args.length < 2 )
         {
             throw new IllegalArgumentException( usage );
         }
         // Instantiate the Neo4j server
-        final LocalSite server;
+        final LocalGraphDatabase server;
         try
         {
-            server = new LocalSite( args[ 0 ] );
+            server = new LocalGraphDatabase( args[ 0 ] );
         }
         catch ( RuntimeException ex )
         {
@@ -185,8 +190,8 @@ public final class RmiSite implements RemoteSite
         Method registerIndexMethod;
         try
         {
-            indexService = Class.forName( "org.neo4j.util.index.IndexService" );
-            registerIndexMethod = BasicNeoServer.class.getDeclaredMethod(
+            indexService = Class.forName( "org.neo4j.index.IndexService" );
+            registerIndexMethod = BasicGraphDatabaseServer.class.getDeclaredMethod(
                 "registerIndexService", String.class, indexService );
         }
         catch ( Exception ex )
@@ -213,7 +218,7 @@ public final class RmiSite implements RemoteSite
             try
             {
                 Class<?> cls = Class.forName( className );
-                Constructor<?> ctor = cls.getConstructor( NeoService.class );
+                Constructor<?> ctor = cls.getConstructor( GraphDatabaseService.class );
                 Object index = ctor.newInstance( server.neo.service );
                 registerIndexMethod.invoke( server, indexName, index );
                 System.out.println( "Registered index service: " + indexName );
@@ -273,56 +278,5 @@ public final class RmiSite implements RemoteSite
         }
         System.out.println( "Neo4j RMI server registered at: " + args[ 1 ] );
         System.out.println( "Press Ctrl+C to stop serving." );
-    }
-
-    private RmiLoginSite site()
-    {
-        try
-        {
-            return ( RmiLoginSite ) Naming.lookup( uri.toString() );
-        }
-        catch ( MalformedURLException e )
-        {
-            throw new RuntimeException(
-                "Could not connect to the RMI site at \"" + uri + "\"", e );
-        }
-        catch ( RemoteException e )
-        {
-            throw new RuntimeException(
-                "Could not connect to the RMI site at \"" + uri + "\"", e );
-        }
-        catch ( NotBoundException e )
-        {
-            throw new RuntimeException(
-                "Could not connect to the RMI site at \"" + uri + "\"", e );
-        }
-    }
-
-    public RemoteConnection connect()
-    {
-        RmiLoginSite site = site();
-        try
-        {
-            RmiConnection rmic = site.connect();
-            return new RmiConnectionAdapter( rmic );
-        }
-        catch ( RemoteException e )
-        {
-            throw new RuntimeException( "Could not initiate connection.", e );
-        }
-    }
-
-    public RemoteConnection connect( String username, String password )
-    {
-        RmiLoginSite site = site();
-        try
-        {
-            RmiConnection rmic = site.connect( username, password );
-            return new RmiConnectionAdapter( rmic );
-        }
-        catch ( RemoteException e )
-        {
-            throw new RuntimeException( "Could not initiate connection.", e );
-        }
     }
 }

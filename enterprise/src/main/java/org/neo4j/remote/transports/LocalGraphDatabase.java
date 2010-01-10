@@ -17,62 +17,62 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.remote.sites;
+package org.neo4j.remote.transports;
 
 import java.io.File;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.remote.BasicNeoServer;
-import org.neo4j.remote.RemoteSite;
-import org.neo4j.util.index.IndexService;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.remote.BasicGraphDatabaseServer;
+import org.neo4j.remote.ConnectionTarget;
+import org.neo4j.index.IndexService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
- * An implementation of {@link RemoteSite} that isn't really remote. This
+ * An implementation of {@link ConnectionTarget} that isn't really remote. This
  * implementation is useful for implementing servers for other
- * {@link RemoteSite}s and for testing purposes.
+ * {@link ConnectionTarget}s and for testing purposes.
  * @author Tobias Ivarsson
  */
-public final class LocalSite extends BasicNeoServer
+public final class LocalGraphDatabase extends BasicGraphDatabaseServer
 {
     /**
-     * Create a new local {@link RemoteSite}.
+     * Create a new local {@link ConnectionTarget}.
      * @param neo
-     *            The {@link NeoService} to connect to with this site.
+     *            The {@link GraphDatabaseService} to connect to with this site.
      */
-    public LocalSite( NeoService neo )
+    public LocalGraphDatabase( GraphDatabaseService neo )
     {
-        this( new NeoServiceContainer( neo ) );
+        this( new GraphDbContainer( neo ) );
     }
 
     /**
-     * Create a new local {@link RemoteSite}.
+     * Create a new local {@link ConnectionTarget}.
      * @param path
-     *            The path to the Neo store.
+     *            The path to the Neo graph database store.
      */
-    public LocalSite( String path )
+    public LocalGraphDatabase( String path )
     {
-        this( LocalSiteFactory.getNeoService( new File( path ) ) );
+        this( LocalTransport.getGraphDbService( new File( path ) ) );
     }
 
-    final NeoServiceContainer neo;
+    final GraphDbContainer neo;
 
-    LocalSite( NeoServiceContainer neo )
+    LocalGraphDatabase( GraphDbContainer neo )
     {
         super( getTransactionManagerFor( neo.service ) );
         this.neo = neo;
     }
 
     @Override
-    protected NeoService connectNeo()
+    protected GraphDatabaseService connectGraphDatabase()
     {
         return neo.service;
     }
 
     @Override
-    protected NeoService connectNeo( String username, String password )
+    protected GraphDatabaseService connectGraphDatabase( String username, String password )
     {
         return neo.service;
     }
@@ -84,11 +84,11 @@ public final class LocalSite extends BasicNeoServer
         neo.addIndexService( index );
     }
 
-    private static TransactionManager getTransactionManagerFor( NeoService neo )
+    private static TransactionManager getTransactionManagerFor( GraphDatabaseService neo )
     {
-        if ( neo instanceof EmbeddedNeo )
+        if ( neo instanceof EmbeddedGraphDatabase )
         {
-            return ( ( EmbeddedNeo ) neo ).getConfig().getTxModule()
+            return ( ( EmbeddedGraphDatabase ) neo ).getConfig().getTxModule()
                 .getTxManager();
         }
         else

@@ -144,6 +144,8 @@ public abstract class RemoteResponse<T> implements Serializable
          * 
          * @param moreToken
          *            the token used to get the further parts of the iterator.
+         * @param size
+         *            the total size of the iterable or a negative number for unknown.
          * @param nodes
          *            the nodes to return in this batch.
          * @return The partial response for the node iterator request.
@@ -157,7 +159,8 @@ public abstract class RemoteResponse<T> implements Serializable
 
         /**
          * Create a final response for a node iterator request.
-         * 
+         * @param size
+         *            the total size of the iterable or a negative number for unknown.
          * @param nodes
          *            the nodes to return in this batch.
          * @return The partial response for the node iterator request.
