@@ -67,8 +67,8 @@ class ShellService
             getConfig( config, "name", "DEFAULT_NAME" );
         try
         {
-            Class<?> shellServerClass =
-                Class.forName( "org.neo4j.shell.neo.NeoShellServer" );
+            Class<?> shellServerClass = Class.forName(
+                "org.neo4j.shell.kernel.GraphDatabaseShellServer" );
             Object shellServer = shellServerClass.getConstructor(
                 GraphDatabaseService.class ).newInstance( graphDb );
             shellServer.getClass().getMethod( "makeRemotelyAvailable",
@@ -91,7 +91,7 @@ class ShellService
             try
             {
                 result = ( Serializable ) Class.forName(
-                    "org.neo4j.shell.AbstractServer" ).
+                    "org.neo4j.shell.impl.AbstractServer" ).
                         getDeclaredField( defaultVariableName ).get( null );
             }
             catch ( Exception e )
@@ -106,7 +106,8 @@ class ShellService
     {
         try
         {
-            shellServer.getClass().getMethod( "shutdown" ).invoke( shellServer );
+            shellServer.getClass().getMethod( "shutdown" ).invoke(
+                shellServer );
             return true;
         }
         catch ( Exception e )
