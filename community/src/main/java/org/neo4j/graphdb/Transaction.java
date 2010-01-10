@@ -28,7 +28,7 @@ package org.neo4j.graphdb;
  * the idiomatic use of programmatic transactions in Neo:
  * 
  * <pre><code>
- * Transaction tx = neo.beginTx();
+ * Transaction tx = graphDb.beginTx();
  * try
  * {
  * 	... // any operation that works with the node space

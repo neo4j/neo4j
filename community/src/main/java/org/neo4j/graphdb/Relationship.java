@@ -40,7 +40,7 @@ package org.neo4j.graphdb;
  * relation to {@link Direction#OUTGOING} and {@link Direction#INCOMING} are
  * defined so that the assertions in the following code are <code>true</code>:
  * <code><pre>
- * Node a = neo.createNode(), b = neo.createNode();
+ * Node a = graphDb.createNode(), b = graphDb.createNode();
  * Relationship rel = a.createRelationshipTo( b, MyRels.REL_TYPE );
  * // Now we have: (a) --- REL_TYPE ---&gt; (b)
  * 
