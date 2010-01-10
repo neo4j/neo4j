@@ -191,28 +191,28 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     
     private static class NodeBatchImpl implements Node
     {
-        private final BatchGraphDatabaseImpl neoService;
+        private final BatchGraphDatabaseImpl graphDbService;
         
         private final long id;
         private final Map<String,Object> properties;
         
-        NodeBatchImpl( long id, BatchGraphDatabaseImpl neoService, 
+        NodeBatchImpl( long id, BatchGraphDatabaseImpl graphDbService, 
             Map<String,Object> properties )
         {
             this.id = id;
-            this.neoService = neoService;
+            this.graphDbService = graphDbService;
             this.properties = properties;
         }
         
         public Relationship createRelationshipTo( Node otherNode, 
             RelationshipType type )
         {
-            long relId = neoService.getBatchInserter().createRelationship( id, 
+            long relId = graphDbService.getBatchInserter().createRelationship( id, 
                 otherNode.getId(), type, null );
             RelationshipBatchImpl rel = new RelationshipBatchImpl( 
                 new SimpleRelationship( (int)relId, (int) id, 
-                    (int) otherNode.getId(), type ), neoService, emptyProps() );
-            neoService.addRelationshipToCache( relId, rel );
+                    (int) otherNode.getId(), type ), graphDbService, emptyProps() );
+            graphDbService.addRelationshipToCache( relId, rel );
             return rel;
         }
         
@@ -235,8 +235,8 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             RelationshipType[] types )
         {
             Iterable<Long> relIds = 
-                neoService.getBatchInserter().getRelationshipIds( id );
-            return new RelIterator( neoService, relIds, id, dir, types ); 
+                graphDbService.getBatchInserter().getRelationshipIds( id );
+            return new RelIterator( graphDbService, relIds, id, dir, types ); 
         }
         
         public Iterable<Relationship> getRelationships()
@@ -401,15 +401,15 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     private static class RelationshipBatchImpl implements Relationship
     {
         private final SimpleRelationship rel;
-        private final BatchGraphDatabaseImpl neoService;
+        private final BatchGraphDatabaseImpl graphDbService;
         private final Map<String,Object> properties;
         
         
         RelationshipBatchImpl( SimpleRelationship rel, 
-            BatchGraphDatabaseImpl neoService, Map<String,Object> properties )
+            BatchGraphDatabaseImpl graphDbService, Map<String,Object> properties )
         {
             this.rel = rel;
-            this.neoService = neoService;
+            this.graphDbService = graphDbService;
             this.properties = properties;
         }
         
@@ -425,7 +425,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
         public Node getEndNode()
         {
-            return neoService.getNodeById( rel.getEndNode() );
+            return graphDbService.getNodeById( rel.getEndNode() );
         }
 
         public long getId()
@@ -455,7 +455,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
         public Node getStartNode()
         {
-            return neoService.getNodeById( rel.getStartNode() );
+            return graphDbService.getNodeById( rel.getStartNode() );
         }
 
         public RelationshipType getType()
@@ -543,7 +543,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         Iterable<Relationship>, Iterator<Relationship>
     {
 
-        private final BatchGraphDatabaseImpl neoService;
+        private final BatchGraphDatabaseImpl graphDbService;
         private final Iterable<Long> relIds;
         private final Iterator<Long> relItr;
         private final long nodeId;
@@ -552,10 +552,10 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         
         private Relationship nextElement;
         
-        RelIterator( BatchGraphDatabaseImpl neoService, Iterable<Long> relIds, 
+        RelIterator( BatchGraphDatabaseImpl graphDbService, Iterable<Long> relIds, 
             long nodeId, Direction dir, RelationshipType[] types )
         {
-            this.neoService = neoService;
+            this.graphDbService = graphDbService;
             this.relIds = relIds;
             this.relItr = relIds.iterator();
             this.nodeId = nodeId;
@@ -565,7 +565,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         
         public Iterator<Relationship> iterator()
         {
-            return new RelIterator( neoService, relIds, nodeId, dir, types );
+            return new RelIterator( graphDbService, relIds, nodeId, dir, types );
         }
 
         public boolean hasNext()
@@ -595,7 +595,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             while ( nextElement == null && relItr.hasNext() )
             {
                 Relationship possibleRel = 
-                    neoService.getRelationshipById( relItr.next() );
+                    graphDbService.getRelationshipById( relItr.next() );
                 if ( dir == Direction.OUTGOING && 
                     possibleRel.getEndNode().getId() == nodeId )
                 {

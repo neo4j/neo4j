@@ -27,28 +27,28 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.TestNeo;
+import org.neo4j.kernel.impl.core.TestNeo4j;
 
-public abstract class AbstractNeoTestCase extends TestCase
+public abstract class AbstractNeo4jTestCase extends TestCase
 {
-    protected static final String NEO_BASE_PATH = "target/var/";
+    protected static final String NEO4J_BASE_PATH = "target/var/";
     
-    public AbstractNeoTestCase( String testName )
+    public AbstractNeo4jTestCase( String testName )
     {
         super( testName );
     }
 
-    private GraphDatabaseService neo;
+    private GraphDatabaseService graphDb;
     private Transaction tx;
 
-    public GraphDatabaseService getNeo()
+    public GraphDatabaseService getGraphDb()
     {
-        return neo;
+        return graphDb;
     }
 
-    public EmbeddedGraphDatabase getEmbeddedNeo()
+    public EmbeddedGraphDatabase getEmbeddedGraphDb()
     {
-        return (EmbeddedGraphDatabase) neo;
+        return (EmbeddedGraphDatabase) graphDb;
     }
 
     public Transaction getTransaction()
@@ -58,25 +58,25 @@ public abstract class AbstractNeoTestCase extends TestCase
 
     public static Test suite()
     {
-        TestSuite suite = new TestSuite( TestNeo.class );
+        TestSuite suite = new TestSuite( TestNeo4j.class );
         return suite;
     }
     
-    public static String getNeoPath( String endPath )
+    public static String getStorePath( String endPath )
     {
-        return NEO_BASE_PATH + endPath;
+        return NEO4J_BASE_PATH + endPath;
     }
 
     public void setUp()
     {
-        neo = new EmbeddedGraphDatabase( getNeoPath( "neo-test" ) );
-        tx = neo.beginTx();
+        graphDb = new EmbeddedGraphDatabase( getStorePath( "neo-test" ) );
+        tx = graphDb.beginTx();
     }
 
     public void tearDown()
     {
         tx.finish();
-        neo.shutdown();
+        graphDb.shutdown();
     }
 
     public void setTransaction( Transaction tx )
@@ -91,7 +91,7 @@ public abstract class AbstractNeoTestCase extends TestCase
             tx.success();
             tx.finish();
         }
-        tx = neo.beginTx();
+        tx = graphDb.beginTx();
     }
     
     public void commit()
@@ -105,6 +105,6 @@ public abstract class AbstractNeoTestCase extends TestCase
     
     public NodeManager getNodeManager()
     {
-        return ((EmbeddedGraphDatabase) neo).getConfig().getNeoModule().getNodeManager();
+        return ((EmbeddedGraphDatabase) graphDb).getConfig().getNeoModule().getNodeManager();
     }
 }

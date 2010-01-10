@@ -43,9 +43,9 @@ public class SpringTransactionManager implements TransactionManager
     { 
     }
     
-    public SpringTransactionManager( GraphDatabaseService neo )
+    public SpringTransactionManager( GraphDatabaseService neo4j )
     {
-        this.tm = ((EmbeddedGraphDatabase) neo).getConfig().getTxModule().getTxManager();
+        this.tm = ((EmbeddedGraphDatabase) neo4j).getConfig().getTxModule().getTxManager();
     }
     
     public void begin() throws NotSupportedException, SystemException

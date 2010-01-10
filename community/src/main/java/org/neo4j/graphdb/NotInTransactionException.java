@@ -20,7 +20,7 @@
 package org.neo4j.graphdb;
 
 /**
- * An exception that is thrown whenever a Neo API operation that requires a 
+ * An exception that is thrown whenever an API operation that requires a 
  * transaction is executed but no transaction is running.
  * <p>
  * Note, currently this exception is not guaranteed to be thrown. A read only 

@@ -47,16 +47,12 @@ import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 
 class EmbeddedGraphDbImpl
 {
-//    public static final int DEFAULT_SHELL_PORT = AbstractServer.DEFAULT_PORT;
-//    public static final String DEFAULT_SHELL_NAME = AbstractServer.DEFAULT_NAME;
-    
     private static Logger log = Logger.getLogger( 
         EmbeddedGraphDbImpl.class.getName() );
-//    private NeoShellServer shellServer;
     private ShellService shellService;
     private Transaction placeboTransaction = null;
-    private final GraphDbInstance neoJvmInstance;
-    private final GraphDatabaseService neoService;
+    private final GraphDbInstance graphDbInstance;
+    private final GraphDatabaseService graphDbService;
     private final NodeManager nodeManager;
     private final String storeDir;
 
@@ -64,17 +60,16 @@ class EmbeddedGraphDbImpl
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already
      * exist.
-     * @param storeDir the store directory for the neo db files
+     * @param storeDir the store directory for the Neo4j db files
      */
-    public EmbeddedGraphDbImpl( String storeDir, GraphDatabaseService neoService )
+    public EmbeddedGraphDbImpl( String storeDir, GraphDatabaseService graphDbService )
     {
         this.storeDir = storeDir;
-//        this.shellServer = null;
-        neoJvmInstance = new GraphDbInstance( storeDir, true );
-        neoJvmInstance.start();
-        nodeManager = neoJvmInstance.getConfig().getNeoModule()
+        graphDbInstance = new GraphDbInstance( storeDir, true );
+        graphDbInstance.start();
+        nodeManager = graphDbInstance.getConfig().getNeoModule()
             .getNodeManager();
-        this.neoService = neoService;
+        this.graphDbService = graphDbService;
     }
 
     /**
@@ -84,15 +79,15 @@ class EmbeddedGraphDbImpl
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
      */
-    public EmbeddedGraphDbImpl( String storeDir, Map<String,String> params, GraphDatabaseService neoService )
+    public EmbeddedGraphDbImpl( String storeDir, Map<String,String> params, 
+        GraphDatabaseService graphDbService )
     {
         this.storeDir = storeDir;
-//        this.shellServer = null;
-        neoJvmInstance = new GraphDbInstance( storeDir, true );
-        neoJvmInstance.start( params );
-        nodeManager = neoJvmInstance.getConfig().getNeoModule()
+        graphDbInstance = new GraphDbInstance( storeDir, true );
+        graphDbInstance.start( params );
+        nodeManager = graphDbInstance.getConfig().getNeoModule()
             .getNodeManager();
-        this.neoService = neoService;
+        this.graphDbService = graphDbService;
     }
 
     /**
@@ -133,12 +128,6 @@ class EmbeddedGraphDbImpl
         return stringProps;
     }
 
-    // private accessor for the remote shell (started with enableRemoteShell())
-//    private NeoShellServer getShellServer()
-//    {
-//        return this.shellServer;
-//    }
-
     public Node createNode()
     {
         return nodeManager.createNode();
@@ -172,7 +161,7 @@ class EmbeddedGraphDbImpl
                 log.warning( "Error shutting down shell server: " + t );
             }
         }
-        neoJvmInstance.shutdown();
+        graphDbInstance.shutdown();
     }
 
     public boolean enableRemoteShell()
@@ -195,56 +184,26 @@ class EmbeddedGraphDbImpl
         }
         try
         {
-            shellService = new ShellService( this.neoService, properties );
-//            if ( shellDependencyAvailable() )
-//            {
-//                this.shellServer = new NeoShellServer( neoService );
-//                Object port = properties.get( "port" );
-//                Object name = properties.get( "name" );
-//                this.shellServer.makeRemotelyAvailable(
-//                    port != null ? (Integer) port : DEFAULT_SHELL_PORT,
-//                    name != null ? (String) name : DEFAULT_SHELL_NAME );
-//                return true;
-//            }
-//            else
-//            {
-//                log.info( "Shell library not available. Neo shell not "
-//                    + "started. Please add the Neo4j shell jar to the "
-//                    + "classpath." );
-//                return false;
-//            }
+            shellService = new ShellService( this.graphDbService, properties );
             return true;
         }
         catch ( RemoteException e )
         {
-            throw new IllegalStateException( "Can't start remote neo shell",
+            throw new IllegalStateException( "Can't start remote Neo4j shell",
                 e );
         }
         catch ( ShellNotAvailableException e )
         {
-            log.info( "Shell library not available. Neo shell not " +
+            log.info( "Shell library not available. Neo4j shell not " +
                 "started. Please add the Neo4j shell jar to the classpath." );
             e.printStackTrace();
             return false;
         }
     }
 
-//    private boolean shellDependencyAvailable()
-//    {
-//        try
-//        {
-//            Class.forName( "org.neo4j.util.shell.ShellServer" );
-//            return true;
-//        }
-//        catch ( Throwable t )
-//        {
-//            return false;
-//        }
-//    }
-
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return neoJvmInstance.getRelationshipTypes();
+        return graphDbInstance.getRelationshipTypes();
     }
 
     /**
@@ -252,16 +211,16 @@ class EmbeddedGraphDbImpl
      */
     public Transaction beginTx()
     {
-        if ( neoJvmInstance.transactionRunning() )
+        if ( graphDbInstance.transactionRunning() )
         {
             if ( placeboTransaction == null )
             {
-                placeboTransaction = new PlaceboTransaction( neoJvmInstance
+                placeboTransaction = new PlaceboTransaction( graphDbInstance
                     .getTransactionManager() );
             }
             return placeboTransaction;
         }
-        TransactionManager txManager = neoJvmInstance.getTransactionManager();
+        TransactionManager txManager = graphDbInstance.getTransactionManager();
         try
         {
             txManager.begin();
@@ -313,7 +272,7 @@ class EmbeddedGraphDbImpl
      */
     public Config getConfig()
     {
-        return neoJvmInstance.getConfig();
+        return graphDbInstance.getConfig();
     }
 
     private static class TransactionImpl implements Transaction

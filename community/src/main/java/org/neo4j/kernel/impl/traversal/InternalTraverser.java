@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Node;
 
 /**
  * A utility class that represents an arbitrary traversal over a nodespace. A
- * Traverser is used as a tool for a NEO client programmer to easily traverse
+ * Traverser is used as a tool for a Neo4j client programmer to easily traverse
  * the node space according a complex set of rules.
  * <P>
  * A Traverser is created by invoking any of the factory methods in

@@ -25,10 +25,9 @@ import javax.transaction.xa.Xid;
 
 public class XidImpl implements Xid
 {
-    private static final int FORMAT_ID = 0x4E454E31; // NEO format identidier
+    // Neo4j ('N' 'E'  'O') format identifier
+    private static final int FORMAT_ID = 0x4E454E31; 
 
-    // hardcoded for now, we don't have distribution yet but
-    // this should change later
     private static final byte INSTANCE_ID[] = new byte[] { 'N', 'E', 'O', 'K',
         'E', 'R', 'N', 'L', '\0' };
 

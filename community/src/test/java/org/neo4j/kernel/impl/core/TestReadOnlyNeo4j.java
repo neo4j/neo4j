@@ -25,13 +25,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.ReadOnlyNeoException;
 
-public class TestReadOnlyNeo extends AbstractNeoTestCase
+public class TestReadOnlyNeo4j extends AbstractNeo4jTestCase
 {
 
-    public TestReadOnlyNeo( String testName )
+    public TestReadOnlyNeo4j( String testName )
     {
         super( testName );
     }
@@ -39,10 +39,11 @@ public class TestReadOnlyNeo extends AbstractNeoTestCase
     
     public void testSimple()
     {
-        GraphDatabaseService readNeo = new EmbeddedReadOnlyGraphDatabase( getNeoPath( "neo-test" ) );
-        Transaction tx = readNeo.beginTx();
+        GraphDatabaseService readGraphDb = new EmbeddedReadOnlyGraphDatabase( 
+            getStorePath( "neo-test" ) );
+        Transaction tx = readGraphDb.beginTx();
         int count = 0;
-        for ( Node node : readNeo.getAllNodes() )
+        for ( Node node : readGraphDb.getAllNodes() )
         {
             for ( Relationship rel : node.getRelationships() )
             {
@@ -63,16 +64,16 @@ public class TestReadOnlyNeo extends AbstractNeoTestCase
         }
         tx.success();
         tx.finish();
-        tx = readNeo.beginTx();
+        tx = readGraphDb.beginTx();
         try
         {
-            readNeo.createNode();
+            readGraphDb.createNode();
         }
         catch ( ReadOnlyNeoException e )
         {
             // good
         }
         tx.finish();
-        readNeo.shutdown();
+        readGraphDb.shutdown();
     }
 }

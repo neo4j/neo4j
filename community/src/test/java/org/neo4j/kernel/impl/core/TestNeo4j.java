@@ -28,14 +28,14 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.NeoModule;
 import org.neo4j.kernel.impl.core.NodeManager;
 
-public class TestNeo extends AbstractNeoTestCase
+public class TestNeo4j extends AbstractNeo4jTestCase
 {
-    public TestNeo( String testName )
+    public TestNeo4j( String testName )
     {
         super( testName );
     }
@@ -47,7 +47,7 @@ public class TestNeo extends AbstractNeoTestCase
         try
         {
             // get old reference node if one is set
-            oldReferenceNode = getNeo().getReferenceNode();
+            oldReferenceNode = getGraphDb().getReferenceNode();
         }
         catch ( RuntimeException e )
         {
@@ -55,17 +55,17 @@ public class TestNeo extends AbstractNeoTestCase
         }
         try
         {
-            NeoModule neoModule = ((EmbeddedGraphDatabase) getNeo()).getConfig()
+            NeoModule neoModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
                 .getNeoModule();
 
-            Node newReferenceNode = getNeo().createNode();
+            Node newReferenceNode = getGraphDb().createNode();
             neoModule.setReferenceNodeId( (int) newReferenceNode.getId() );
-            assertEquals( newReferenceNode, getNeo().getReferenceNode() );
+            assertEquals( newReferenceNode, getGraphDb().getReferenceNode() );
             newReferenceNode.delete();
             if ( oldReferenceNode != null )
             {
                 neoModule.setReferenceNodeId( (int) oldReferenceNode.getId() );
-                assertEquals( oldReferenceNode, getNeo().getReferenceNode() );
+                assertEquals( oldReferenceNode, getGraphDb().getReferenceNode() );
             }
         }
         catch ( Exception e )
@@ -81,9 +81,9 @@ public class TestNeo extends AbstractNeoTestCase
         Node secondNode = null;
         Relationship rel = null;
         // Create nodes and a relationship between them
-        firstNode = getNeo().createNode();
+        firstNode = getGraphDb().createNode();
         assertNotNull( "Failure creating first node", firstNode );
-        secondNode = getNeo().createNode();
+        secondNode = getGraphDb().createNode();
         assertNotNull( "Failure creating second node", secondNode );
         rel = firstNode.createRelationshipTo( secondNode, MyRelTypes.TEST );
         assertNotNull( "Relationship is null", rel );
@@ -159,7 +159,7 @@ public class TestNeo extends AbstractNeoTestCase
     // TODO: fix this testcase
     public void testIdUsageInfo()
     {
-        NeoModule neoModule = ((EmbeddedGraphDatabase) getNeo()).getConfig()
+        NeoModule neoModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
             .getNeoModule();
         NodeManager nm = neoModule.getNodeManager();
         long nodeCount = nm.getNumberOfIdsInUse( Node.class );
@@ -198,12 +198,12 @@ public class TestNeo extends AbstractNeoTestCase
         // assertEquals( nodeCount, nm.getNumberOfIdsInUse( Node.class ) );
         // assertEquals( relCount, nm.getNumberOfIdsInUse( Relationship.class )
         // );
-        setTransaction( getNeo().beginTx() );
+        setTransaction( getGraphDb().beginTx() );
     }
 
     public void testRandomPropertyName()
     {
-        Node node1 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
         String key = "random_"
             + new Random( System.currentTimeMillis() ).nextLong();
         node1.setProperty( key, "value" );
@@ -215,18 +215,18 @@ public class TestNeo extends AbstractNeoTestCase
     {
         Transaction tx = getTransaction();
         tx.finish();
-        tx = getNeo().beginTx();
+        tx = getGraphDb().beginTx();
         Node node;
         try
         {
-            node = getNeo().createNode();
+            node = getGraphDb().createNode();
             tx.success();
         }
         finally
         {
             tx.finish();
         }
-        tx = getNeo().beginTx();
+        tx = getGraphDb().beginTx();
         try
         {
             node.setProperty( "test", new String[] { "value1" } );
@@ -236,7 +236,7 @@ public class TestNeo extends AbstractNeoTestCase
         {
             tx.finish();
         }
-        tx = getNeo().beginTx();
+        tx = getGraphDb().beginTx();
         try
         {
             node.setProperty( "test", new String[] { "value1", "value2" } );
@@ -246,7 +246,7 @@ public class TestNeo extends AbstractNeoTestCase
         {
             tx.finish();
         }
-        tx = getNeo().beginTx();
+        tx = getGraphDb().beginTx();
         try
         {
             String[] value = (String[]) node.getProperty( "test" );
@@ -258,14 +258,14 @@ public class TestNeo extends AbstractNeoTestCase
         {
             tx.finish();
         }
-        setTransaction( getNeo().beginTx() );
+        setTransaction( getGraphDb().beginTx() );
     }
 
     public void testMultipleNeos()
     {
-        GraphDatabaseService neo2 = new EmbeddedGraphDatabase( getNeoPath( "test-neo2" ) );
+        GraphDatabaseService neo2 = new EmbeddedGraphDatabase( getStorePath( "test-neo2" ) );
         Transaction tx2 = neo2.beginTx();
-        getNeo().createNode();
+        getGraphDb().createNode();
         neo2.createNode();
         tx2.success();
         tx2.finish();
@@ -278,16 +278,16 @@ public class TestNeo extends AbstractNeoTestCase
         if ( highId >= 0 && highId < 10000 )
         {
             int count = 0;
-            for ( Node node : getEmbeddedNeo().getAllNodes() )
+            for ( Node node : getEmbeddedGraphDb().getAllNodes() )
             {
                 count++;
             }
             boolean found = false;
-            Node newNode = getNeo().createNode();
+            Node newNode = getGraphDb().createNode();
             newTransaction();
             int oldCount = count;
             count = 0;
-            for ( Node node : getEmbeddedNeo().getAllNodes() )
+            for ( Node node : getEmbeddedGraphDb().getAllNodes() )
             {
                 count++;
                 if ( node.equals( newNode ) )
@@ -300,14 +300,14 @@ public class TestNeo extends AbstractNeoTestCase
             
             // Tests a bug in the "all nodes" iterator
             Iterator<Node> allNodesIterator =
-                getEmbeddedNeo().getAllNodes().iterator();
+                getEmbeddedGraphDb().getAllNodes().iterator();
             assertNotNull( allNodesIterator.next() );
             
             newNode.delete();
             newTransaction();
             found = false;
             count = 0;
-            for ( Node node : getEmbeddedNeo().getAllNodes() )
+            for ( Node node : getEmbeddedGraphDb().getAllNodes() )
             {
                 count++;
                 if ( node.equals( newNode ) )

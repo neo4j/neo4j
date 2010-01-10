@@ -32,12 +32,12 @@ public class StandaloneWithShell
 {
 	private static Logger log = Logger.getLogger(
 		StandaloneWithShell.class.getName() );	
-	private GraphDatabaseService embeddedNeo;
+	private GraphDatabaseService embeddedDb;
 	private AtomicBoolean shutdownInitiated = new AtomicBoolean( false );
 	
 	private GraphDatabaseService getNeo()
 	{
-		return this.embeddedNeo;
+		return this.embeddedDb;
 	}
 	
 	private void addShutdownHook()
@@ -55,10 +55,10 @@ public class StandaloneWithShell
 	private void initialize( Map<String, String> arguments )
 	{
 	    String path = arguments.get( "path" );
-		this.embeddedNeo = new EmbeddedGraphDatabase( path );
+		this.embeddedDb = new EmbeddedGraphDatabase( path );
 		Map<String, Serializable> shellProperties = Collections.emptyMap();
 		getNeo().enableRemoteShell( shellProperties );
-		log.info( "Neo started at '" + path + "'" );
+		log.info( "Neo4j started at '" + path + "'" );
 	}
 	
 	private void blockUntilShutdown()
@@ -87,7 +87,7 @@ public class StandaloneWithShell
 				if ( getNeo() != null )
 				{
 					getNeo().shutdown();			
-					this.embeddedNeo = null;
+					this.embeddedDb = null;
 				}
 			}
 			catch ( Throwable t )

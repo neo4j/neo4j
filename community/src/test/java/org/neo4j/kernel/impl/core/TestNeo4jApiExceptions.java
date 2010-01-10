@@ -24,28 +24,28 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
-public class TestNeoApiExceptions extends AbstractNeoTestCase
+public class TestNeo4jApiExceptions extends AbstractNeo4jTestCase
 {
-    public TestNeoApiExceptions( String testName )
+    public TestNeo4jApiExceptions( String testName )
     {
         super( testName );
     }
 
     public void testNotInTransactionException()
     {
-        Node node1 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
         node1.setProperty( "test", 1 );
-        Node node2 = getNeo().createNode();
-        Node node3 = getNeo().createNode();
+        Node node2 = getGraphDb().createNode();
+        Node node3 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.setProperty( "test", 11 );
         commit();
         try
         {
-            getNeo().createNode();
+            getGraphDb().createNode();
             fail( "Create node with no transaction should throw exception" ); 
         }
         catch ( NotInTransactionException e )
@@ -107,8 +107,8 @@ public class TestNeoApiExceptions extends AbstractNeoTestCase
     
     public void testNotFoundException()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         long nodeId = node1.getId();
         long relId = rel.getId();
@@ -118,7 +118,7 @@ public class TestNeoApiExceptions extends AbstractNeoTestCase
         newTransaction();
         try
         {
-            getNeo().getNodeById( nodeId );
+            getGraphDb().getNodeById( nodeId );
             fail( "Get node by id on deleted node should throw exception" );
         }
         catch ( NotFoundException e )
@@ -126,7 +126,7 @@ public class TestNeoApiExceptions extends AbstractNeoTestCase
         }
         try
         {
-            getNeo().getRelationshipById( relId );
+            getGraphDb().getRelationshipById( relId );
             fail( "Get relationship by id on deleted node should " + 
                 "throw exception" );
         }
