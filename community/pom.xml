@@ -9,9 +9,9 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>remote-neo</artifactId>
-  <version>0.4-SNAPSHOT</version>
-  <name>Neo4j - Remote Neo</name>
+  <artifactId>remote-graphdb</artifactId>
+  <version>0.5-SNAPSHOT</version>
+  <name>Neo4j - Remote Graph Database</name>
   <description></description>
 
   <properties>
@@ -22,7 +22,7 @@
 
   <scm>
     <connection>
-      scm:svn:https://svn.neo4j.org/components/remote-neo/trunk
+      scm:svn:https://svn.neo4j.org/components/remote-graphdb/trunk
     </connection>
   </scm>
 
@@ -41,13 +41,13 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo</artifactId>
-      <version>1.0-b11-SNAPSHOT</version>
+      <artifactId>kernel</artifactId>
+      <version>1.0-rc-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>index-util</artifactId>
-      <version>0.9-SNAPSHOT</version>
+      <artifactId>index</artifactId>
+      <version>1.0-b1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -57,18 +57,51 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>idlj-maven-plugin</artifactId>
+        <version>1.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <compiler>idlj</compiler>
+          <sources>
+            <source>
+              <packagePrefixes>
+                <packagePrefix>
+                  <type>remote_neo4j</type>
+                  <prefix>org.neo4j.remote.impl.corba</prefix>
+                </packagePrefix>
+              </packagePrefixes>
+              <compatible>false</compatible>
+              <emitStubs>true</emitStubs>
+              <emitSkeletons>true</emitSkeletons>
+            </source>
+          </sources>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <reporting>
     <plugins>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <subpackages>org.neo4j.remote</subpackages>
           <!-- exclude broken inspect API from JavaDoc until fixed -->
-          <excludePackageNames>org.neo4j.remote.inspect</excludePackageNames>
+          <excludePackageNames>org.neo4j.remote.inspect:*.impl</excludePackageNames>
+          <!-- breaks exclude: <subpackages>org.neo4j.remote</subpackages> -->
           <links>
             <link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
-            <link>http://components.neo4j.org/neo/apidocs/</link>
-            <link>http://components.neo4j.org/index-util/apidocs/</link>
+            <link>http://components.neo4j.org/kernel/apidocs/</link>
+            <link>http://components.neo4j.org/index/apidocs/</link>
           </links>
           <quiet>true</quiet>
         </configuration>

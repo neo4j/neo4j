@@ -17,33 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.remote.sites;
+package org.neo4j.remote.transports;
 
 import java.net.URI;
 
-import org.neo4j.remote.RemoteSite;
-import org.neo4j.remote.RemoteSiteFactory;
+import org.neo4j.remote.ConnectionTarget;
+import org.neo4j.remote.Transport;
 
 /**
- * A {@link RemoteSiteFactory} that creates {@link RemoteSite}s for the raw
+ * A {@link Transport} that creates {@link ConnectionTarget}s for the raw
  * tcp-protocol. The format of a tcp URI is <code>tcp://host[:port]</code>,
  * where host can be either a host name or an IP address.
  * @author Tobias Ivarsson
  */
-/*public*/final class TcpSiteFactory extends RemoteSiteFactory
+/*public*/final class TcpTransport extends Transport
 {
     private static final int DEFAULT_PORT = 0;
 
     /**
-     * Create a new {@link RemoteSiteFactory} for the raw tcp:// protocol.
+     * Create a new {@link Transport} for the raw tcp:// protocol.
      */
-    public TcpSiteFactory()
+    public TcpTransport()
     {
         super( "tcp", "tcps" );
     }
 
     @Override
-    protected RemoteSite create( URI resourceUri )
+    protected ConnectionTarget create( URI resourceUri )
     {
         if ( !handlesUri( resourceUri ) )
         {
@@ -56,7 +56,7 @@ import org.neo4j.remote.RemoteSiteFactory;
         {
             port = DEFAULT_PORT;
         }
-        return new CustomProtocolSite( host, port, useSSL );
+        return new CustomProtocolTarget( host, port, useSSL );
     }
 
     @Override

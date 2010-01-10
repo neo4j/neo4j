@@ -20,7 +20,7 @@
 package org.neo4j.remote;
 
 /**
- * Specification of the configuration of a {@link RemoteNeo} instance. NOTE:
+ * Specification of the configuration of a {@link RemoteGraphDatabase} instance. NOTE:
  * this is not specified yet.
  * 
  * @author Tobias Ivarsson

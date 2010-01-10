@@ -25,23 +25,23 @@ import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.neo4j.api.core.NeoService;
+import org.neo4j.graphdb.GraphDatabaseService;
 
 /**
- * A Remote Neo server that uses a custom protocol for communication with the
+ * A remote graph database server that uses a custom protocol for communication with the
  * client.
  * @author Tobias Ivarsson
  */
-public final class CustomNeoServer
+public final class CustomGraphDatabaseServer
 {
-    private final NeoService neo;
+    private final GraphDatabaseService neo;
     private final ServerSocketChannel channel;
     private final ExecutorService exec;
 
     /**
-     * Create a new Custom protocol Remote Neo server.
+     * Create a new Custom protocol remote graph database server.
      * @param neo
-     *            the {@link NeoService} used to back the server.
+     *            the {@link GraphDatabaseService} used to back the server.
      * @param endpoint
      *            The address to listen for incoming connections on.
      * @param useSSL
@@ -50,13 +50,13 @@ public final class CustomNeoServer
      * @throws IOException
      *             If opening or binding the server socket fails.
      */
-    public CustomNeoServer( NeoService neo, SocketAddress endpoint,
+    public CustomGraphDatabaseServer( GraphDatabaseService neo, SocketAddress endpoint,
         boolean useSSL ) throws IOException
     {
         if ( neo == null )
         {
             throw new NullPointerException(
-                "The neo implementation may not be null." );
+                "The graph database implementation may not be null." );
         }
         if ( useSSL )
         {
