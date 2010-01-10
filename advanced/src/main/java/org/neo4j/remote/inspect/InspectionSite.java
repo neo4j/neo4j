@@ -27,15 +27,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.remote.RemoteConnection;
-import org.neo4j.remote.RemoteSite;
+import org.neo4j.remote.ConnectionTarget;
 
 /**
  * A remote site that wraps another remote site for inspection purposes.
  * @author Tobias Ivarsson
  */
-public final class InspectionSite implements RemoteSite
+public final class InspectionSite implements ConnectionTarget
 {
-    private final RemoteSite site;
+    private final ConnectionTarget site;
     private final Inspector inspector;
     private static final Map<Method, Method> inspectorMethods;
     static
@@ -65,7 +65,7 @@ public final class InspectionSite implements RemoteSite
      *            the inspector to receive the messages from the inspection
      *            site.
      */
-    public InspectionSite( RemoteSite site, Inspector inspector )
+    public InspectionSite( ConnectionTarget site, Inspector inspector )
     {
         this.site = site;
         this.inspector = inspector;

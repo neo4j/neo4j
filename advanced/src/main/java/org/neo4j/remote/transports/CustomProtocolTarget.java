@@ -17,28 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.remote.sites;
+package org.neo4j.remote.transports;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-import org.neo4j.remote.CustomNeoServer;
+import org.neo4j.remote.CustomGraphDatabaseServer;
 import org.neo4j.remote.RemoteConnection;
-import org.neo4j.remote.RemoteSite;
+import org.neo4j.remote.ConnectionTarget;
 
 /**
- * A {@link RemoteSite} that connects to a Neo server through a custom
+ * A {@link ConnectionTarget} that connects to a graph database server through a custom
  * communication protocol.
  * 
  * @author Tobias Ivarsson
  */
-/*public*/final class CustomProtocolSite implements RemoteSite
+final class CustomProtocolTarget implements ConnectionTarget
 {
     private final SocketAddress remote;
     private final boolean useSSL;
 
     /**
-     * Create a new {@link RemoteSite} that connects to a Neo server through a
+     * Create a new {@link ConnectionTarget} that connects to a graph database server through a
      * custom communication protocol.
      * @param host
      *            The server host to connect to.
@@ -48,7 +48,7 @@ import org.neo4j.remote.RemoteSite;
      *            <code>true</code> if the server is using SSL to secure the
      *            communication.
      */
-    public CustomProtocolSite( String host, int port, boolean useSSL )
+    public CustomProtocolTarget( String host, int port, boolean useSSL )
     {
         this.remote = new InetSocketAddress( host, port );
         this.useSSL = useSSL;
@@ -56,11 +56,11 @@ import org.neo4j.remote.RemoteSite;
 
     public RemoteConnection connect()
     {
-        return CustomNeoServer.connect( remote, useSSL );
+        return CustomGraphDatabaseServer.connect( remote, useSSL );
     }
 
     public RemoteConnection connect( String username, String password )
     {
-        return CustomNeoServer.connect( remote, useSSL, username, password );
+        return CustomGraphDatabaseServer.connect( remote, useSSL, username, password );
     }
 }

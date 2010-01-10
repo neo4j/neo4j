@@ -19,7 +19,7 @@
  */
 package org.neo4j.remote;
 
-import org.neo4j.api.core.Direction;
+import org.neo4j.graphdb.Direction;
 
 /**
  * Represents a connection to a remote site.

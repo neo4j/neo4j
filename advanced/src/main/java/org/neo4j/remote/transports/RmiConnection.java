@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.remote.sites;
+package org.neo4j.remote.transports;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-import org.neo4j.api.core.Direction;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.remote.ClientConfigurator;
 import org.neo4j.remote.Configuration;
 import org.neo4j.remote.IterableSpecification;

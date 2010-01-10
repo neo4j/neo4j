@@ -19,7 +19,7 @@
  */
 package org.neo4j.remote;
 
-import org.neo4j.api.core.RelationshipType;
+import org.neo4j.graphdb.RelationshipType;
 
 class RelType implements RelationshipType
 {

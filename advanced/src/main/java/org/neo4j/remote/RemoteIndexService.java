@@ -21,43 +21,43 @@ package org.neo4j.remote;
 
 import java.util.Iterator;
 
-import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.Node;
-import org.neo4j.util.index.IndexHits;
-import org.neo4j.util.index.IndexService;
-import org.neo4j.util.index.Isolation;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.index.IndexHits;
+import org.neo4j.index.IndexService;
+import org.neo4j.index.Isolation;
 
 /**
  * An implementation of {@link IndexService} for the client side of
- * {@link RemoteNeo}. This requires that {@link IndexService}s are registered on
+ * {@link RemoteGraphDatabase}. This requires that {@link IndexService}s are registered on
  * the server using
- * {@link BasicNeoServer#registerIndexService(String, IndexService)}.
+ * {@link BasicGraphDatabaseServer#registerIndexService(String, IndexService)}.
  * 
  * @author Tobias Ivarsson
  */
 public final class RemoteIndexService implements IndexService
 {
-    private RemoteNeoEngine engine;
+    private RemoteGraphDbEngine engine;
     private final int id;
 
     /**
      * Create a new client for an {@link IndexService}.
      * 
      * @param neo
-     *            The {@link RemoteNeo} that owns the index.
+     *            The {@link RemoteGraphDatabase} that owns the index.
      * @param name
      *            the token that the {@link IndexService} was registered under
      *            on the server (in
-     *            {@link BasicNeoServer#registerIndexService(String, IndexService)}
+     *            {@link BasicGraphDatabaseServer#registerIndexService(String, IndexService)}
      *            ).
      */
-    public RemoteIndexService( NeoService neo, String name )
+    public RemoteIndexService( GraphDatabaseService neo, String name )
     {
-        this.engine = ( ( RemoteNeo ) neo ).getEngine();
+        this.engine = ( ( RemoteGraphDatabase ) neo ).getEngine();
         this.id = this.engine().getIndexId( name );
     }
 
-    private RemoteNeoEngine engine()
+    private RemoteGraphDbEngine engine()
     {
         if ( engine == null )
         {

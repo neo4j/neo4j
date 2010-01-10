@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.remote.sites;
+package org.neo4j.remote.transports;
 
 import java.rmi.RemoteException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 import java.rmi.server.UnicastRemoteObject;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.remote.BasicNeoServer;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.remote.BasicGraphDatabaseServer;
 import org.neo4j.remote.ClientConfigurator;
 import org.neo4j.remote.Configuration;
 import org.neo4j.remote.IterableSpecification;
@@ -33,34 +33,34 @@ import org.neo4j.remote.NodeSpecification;
 import org.neo4j.remote.RelationshipSpecification;
 import org.neo4j.remote.RemoteConnection;
 import org.neo4j.remote.RemoteResponse;
-import org.neo4j.remote.RemoteSite;
+import org.neo4j.remote.ConnectionTarget;
 
 class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
 {
     private static final long serialVersionUID = 1L;
 
     private static class LoginServer extends UnicastRemoteObject implements
-        RmiLoginSite
+        RmiRemoteTarget
     {
         private static final long serialVersionUID = 1L;
-        private final RemoteSite site;
+        private final ConnectionTarget site;
         private int port = 0;
         private RMIClientSocketFactory client = null;
         private RMIServerSocketFactory server = null;
 
-        LoginServer( RemoteSite site ) throws RemoteException
+        LoginServer( ConnectionTarget site ) throws RemoteException
         {
             this.site = site;
         }
 
-        LoginServer( RemoteSite site, int port ) throws RemoteException
+        LoginServer( ConnectionTarget site, int port ) throws RemoteException
         {
             super( port );
             this.port = port;
             this.site = site;
         }
 
-        LoginServer( RemoteSite site, int port, RMIClientSocketFactory client,
+        LoginServer( ConnectionTarget site, int port, RMIClientSocketFactory client,
             RMIServerSocketFactory server ) throws RemoteException
         {
             super( port, client, server );
@@ -98,18 +98,18 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
 
     private final transient RemoteConnection connection;
 
-    static RmiLoginSite setup( BasicNeoServer server ) throws RemoteException
+    static RmiRemoteTarget setup( BasicGraphDatabaseServer server ) throws RemoteException
     {
         return new LoginServer( server );
     }
 
-    static RmiLoginSite setup( BasicNeoServer server, int port )
+    static RmiRemoteTarget setup( BasicGraphDatabaseServer server, int port )
         throws RemoteException
     {
         return new LoginServer( server, port );
     }
 
-    static RmiLoginSite setup( BasicNeoServer server, int port,
+    static RmiRemoteTarget setup( BasicGraphDatabaseServer server, int port,
         RMIClientSocketFactory clientSocket, RMIServerSocketFactory serverSocket )
         throws RemoteException
     {

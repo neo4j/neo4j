@@ -20,11 +20,12 @@
 package org.neo4j.remote;
 
 /**
- * Represents a connection layer used to communicate with a Neo instance in a
- * remote process.
+ * Represents a server that a {@link RemoteGraphDatabase graph database client}
+ * can connect to.
+ * 
  * @author Tobias Ivarsson
  */
-public interface RemoteSite
+public interface ConnectionTarget
 {
     /**
      * Connect to the remote site.

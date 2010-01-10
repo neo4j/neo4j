@@ -1,3 +1,0 @@
-org.neo4j.remote.sites.LocalSiteFactory
-org.neo4j.remote.sites.RmiSiteFactory
-org.neo4j.remote.sites.TcpSiteFactory

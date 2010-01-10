@@ -28,41 +28,41 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.remote.RemoteResponse.ResponseBuilder;
-import org.neo4j.util.index.IndexHits;
-import org.neo4j.util.index.IndexService;
+import org.neo4j.index.IndexHits;
+import org.neo4j.index.IndexService;
 
 /**
- * A Basic implementation of a Server for remote Neo. This implementation relies
- * on the {@link NeoService} API to perform the actions of the Remote Neo
+ * A Basic implementation of a Server for a remote graph database. This implementation relies
+ * on the {@link GraphDatabaseService} API to perform the actions of the remote graph database
  * communication protocol.
  * 
  * To make a concrete implementation the subclass needs to implement the two
- * abstract methods that provide a {@link NeoService} implementation upon
+ * abstract methods that provide a {@link GraphDatabaseService} implementation upon
  * connection. One for authenticated connection and one for unauthenticated
  * connection. One also needs to provide the transaction manager used by the
- * {@link NeoService} to the constructor of the server.
+ * {@link GraphDatabaseService} to the constructor of the server.
  * 
  * @author Tobias Ivarsson
  */
-public abstract class BasicNeoServer implements RemoteSite
+public abstract class BasicGraphDatabaseServer implements ConnectionTarget
 {
     private static final int DEFAULT_BATCH_SIZE = 10;
     private final TransactionManager txManager;
     private IndexSpec[] indexes = {};
 
     /**
-     * Create a new server for remote Neo.
+     * Create a new server for a remote graph database.
      * @param txManager
      *            The transaction manager to use on the server.
      */
-    protected BasicNeoServer( TransactionManager txManager )
+    protected BasicGraphDatabaseServer( TransactionManager txManager )
     {
         if ( txManager == null )
         {
@@ -74,9 +74,9 @@ public abstract class BasicNeoServer implements RemoteSite
 
     /**
      * Create an unauthenticated connection.
-     * @return The {@link NeoService} implementation to use for the connection.
+     * @return The {@link GraphDatabaseService} implementation to use for the connection.
      */
-    protected abstract NeoService connectNeo();
+    protected abstract GraphDatabaseService connectGraphDatabase();
 
     /**
      * Create an authenticated connection.
@@ -84,9 +84,9 @@ public abstract class BasicNeoServer implements RemoteSite
      *            The name of the authenticating user.
      * @param password
      *            The password for the authenticating user.
-     * @return The {@link NeoService} implementation to use for the connection.
+     * @return The {@link GraphDatabaseService} implementation to use for the connection.
      */
-    protected abstract NeoService connectNeo( String username, String password );
+    protected abstract GraphDatabaseService connectGraphDatabase( String username, String password );
 
     /**
      * Get the size of the next batch of {@link Node}s sent to the client in an
@@ -242,13 +242,13 @@ public abstract class BasicNeoServer implements RemoteSite
         }
     }
 
-    void buildResponse( NeoService neo, ResponseBuilder builder )
+    void buildResponse( GraphDatabaseService neo, ResponseBuilder builder )
     {
         // TODO: implement this. Might need redefined interface.
         // This is where extra information for the caches is sent to the client.
     }
 
-    void buildResponse( NeoService neo, Object transactionId,
+    void buildResponse( GraphDatabaseService neo, Object transactionId,
         ResponseVisitor responseState )
     {
         // TODO: implement this. Might need redefined interface.
@@ -257,12 +257,12 @@ public abstract class BasicNeoServer implements RemoteSite
 
     public final RemoteConnection connect()
     {
-        return new BasicConnection( this, connectNeo() );
+        return new BasicConnection( this, connectGraphDatabase() );
     }
 
     public RemoteConnection connect( String username, String password )
     {
-        return new BasicConnection( this, connectNeo( username, password ) );
+        return new BasicConnection( this, connectGraphDatabase( username, password ) );
     }
 
     private void suspendTransaction()
@@ -329,19 +329,19 @@ public abstract class BasicNeoServer implements RemoteSite
         return new BasicServerTransaction( this, connection, tx );
     }
 
-    // Neo actions
+    // Graph database actions
 
-    SimpleIterator<String> getRelationshipTypes( NeoService neo )
+    SimpleIterator<String> getRelationshipTypes( GraphDatabaseService neo )
     {
         final Iterator<RelationshipType> types;
-        if ( neo instanceof EmbeddedNeo )
+        if ( neo instanceof EmbeddedGraphDatabase )
         {
-            types = ( ( EmbeddedNeo ) neo ).getRelationshipTypes().iterator();
+            types = ( ( EmbeddedGraphDatabase ) neo ).getRelationshipTypes().iterator();
         }
         else
         {
             throw new UnsupportedOperationException(
-                "Cannot get the relationship types from this Neo server." );
+                "Cannot get the relationship types from this graph database server." );
         }
         return new SimpleIterator<String>()
         {
@@ -359,17 +359,17 @@ public abstract class BasicNeoServer implements RemoteSite
         };
     }
 
-    long createNode( NeoService neo )
+    long createNode( GraphDatabaseService neo )
     {
         return neo.createNode().getId();
     }
 
-    long getReferenceNode( NeoService neo )
+    long getReferenceNode( GraphDatabaseService neo )
     {
         return neo.getReferenceNode().getId();
     }
 
-    SimpleIterator<NodeSpecification> getAllNodes( NeoService neo )
+    SimpleIterator<NodeSpecification> getAllNodes( GraphDatabaseService neo )
     {
         final Iterator<Node> nodes = neo.getAllNodes().iterator();
         return new SimpleIterator<NodeSpecification>()
@@ -388,7 +388,7 @@ public abstract class BasicNeoServer implements RemoteSite
         };
     }
 
-    boolean hasNodeWithId( NeoService neo, long nodeId )
+    boolean hasNodeWithId( GraphDatabaseService neo, long nodeId )
     {
         Node node = null;
         try
@@ -401,12 +401,12 @@ public abstract class BasicNeoServer implements RemoteSite
         return node != null;
     }
 
-    void deleteNode( NeoService neo, long nodeId )
+    void deleteNode( GraphDatabaseService neo, long nodeId )
     {
         neo.getNodeById( nodeId ).delete();
     }
 
-    long createRelationship( NeoService neo, String relationshipTypeName,
+    long createRelationship( GraphDatabaseService neo, String relationshipTypeName,
         long startNodeId, long endNodeId )
     {
         return neo.getNodeById( startNodeId ).createRelationshipTo(
@@ -414,7 +414,7 @@ public abstract class BasicNeoServer implements RemoteSite
             .getId();
     }
 
-    RelationshipSpecification getRelationshipById( NeoService neo,
+    RelationshipSpecification getRelationshipById( GraphDatabaseService neo,
         long relationshipId )
     {
         return new RelationshipSpecification( neo
@@ -422,7 +422,7 @@ public abstract class BasicNeoServer implements RemoteSite
     }
 
     SimpleIterator<RelationshipSpecification> getAllRelationships(
-        NeoService neo, long nodeId, Direction direction )
+        GraphDatabaseService neo, long nodeId, Direction direction )
     {
         final Iterator<Relationship> relationships = neo.getNodeById( nodeId )
             .getRelationships( direction ).iterator();
@@ -442,7 +442,7 @@ public abstract class BasicNeoServer implements RemoteSite
         };
     }
 
-    SimpleIterator<RelationshipSpecification> getRelationships( NeoService neo,
+    SimpleIterator<RelationshipSpecification> getRelationships( GraphDatabaseService neo,
         final long nodeId, final Direction direction,
         String[] relationshipTypeNames )
     {
@@ -504,38 +504,38 @@ public abstract class BasicNeoServer implements RemoteSite
         };
     }
 
-    void deleteRelationship( NeoService neo, long relationshipId )
+    void deleteRelationship( GraphDatabaseService neo, long relationshipId )
     {
         neo.getRelationshipById( relationshipId ).delete();
     }
 
-    Object getNodeProperty( NeoService neo, long nodeId, String key )
+    Object getNodeProperty( GraphDatabaseService neo, long nodeId, String key )
     {
         return neo.getNodeById( nodeId ).getProperty( key, null );
     }
 
-    Object getRelationshipProperty( NeoService neo, long relationshipId,
+    Object getRelationshipProperty( GraphDatabaseService neo, long relationshipId,
         String key )
     {
         return neo.getRelationshipById( relationshipId )
             .getProperty( key, null );
     }
 
-    Object setNodeProperty( NeoService neo, long nodeId, String key,
+    Object setNodeProperty( GraphDatabaseService neo, long nodeId, String key,
         Object value )
     {
         neo.getNodeById( nodeId ).setProperty( key, value );
         return null;
     }
 
-    Object setRelationshipProperty( NeoService neo, long relationshipId,
+    Object setRelationshipProperty( GraphDatabaseService neo, long relationshipId,
         String key, Object value )
     {
         neo.getRelationshipById( relationshipId ).setProperty( key, value );
         return null;
     }
 
-    SimpleIterator<String> getNodePropertyKeys( NeoService neo, long nodeId )
+    SimpleIterator<String> getNodePropertyKeys( GraphDatabaseService neo, long nodeId )
     {
         final Iterator<String> keys = neo.getNodeById( nodeId )
             .getPropertyKeys().iterator();
@@ -555,7 +555,7 @@ public abstract class BasicNeoServer implements RemoteSite
         };
     }
 
-    SimpleIterator<String> getRelationshipPropertyKeys( NeoService neo,
+    SimpleIterator<String> getRelationshipPropertyKeys( GraphDatabaseService neo,
         long relationshipId )
     {
         final Iterator<String> keys = neo.getRelationshipById( relationshipId )
@@ -576,23 +576,23 @@ public abstract class BasicNeoServer implements RemoteSite
         };
     }
 
-    boolean hasNodeProperty( NeoService neo, long nodeId, String key )
+    boolean hasNodeProperty( GraphDatabaseService neo, long nodeId, String key )
     {
         return neo.getNodeById( nodeId ).hasProperty( key );
     }
 
-    boolean hasRelationshipProperty( NeoService neo, long relationshiId,
+    boolean hasRelationshipProperty( GraphDatabaseService neo, long relationshiId,
         String key )
     {
         return neo.getRelationshipById( relationshiId ).hasProperty( key );
     }
 
-    Object removeNodeProperty( NeoService neo, long nodeId, String key )
+    Object removeNodeProperty( GraphDatabaseService neo, long nodeId, String key )
     {
         return neo.getNodeById( nodeId ).removeProperty( key );
     }
 
-    Object removeRelationshipProperty( NeoService neo, long relationshipId,
+    Object removeRelationshipProperty( GraphDatabaseService neo, long relationshipId,
         String key )
     {
         return neo.getRelationshipById( relationshipId ).removeProperty( key );
@@ -612,7 +612,7 @@ public abstract class BasicNeoServer implements RemoteSite
             + indexName + "\" registered." );
     }
 
-    SimpleIterator<NodeSpecification> getIndexNodes( NeoService neo,
+    SimpleIterator<NodeSpecification> getIndexNodes( GraphDatabaseService neo,
         int indexId, String key, Object value )
     {
         final IndexHits<Node> nodes = indexes[ indexId ].index.getNodes( key,
@@ -635,24 +635,24 @@ public abstract class BasicNeoServer implements RemoteSite
         };
     }
 
-    void indexNode( NeoService neo, int indexId, long nodeId, String key,
+    void indexNode( GraphDatabaseService neo, int indexId, long nodeId, String key,
         Object value )
     {
         indexes[ indexId ].index.index( neo.getNodeById( nodeId ), key, value );
     }
 
-    void removeIndexNode( NeoService neo, int indexId, long nodeId, String key,
+    void removeIndexNode( GraphDatabaseService neo, int indexId, long nodeId, String key,
         Object value )
     {
         indexes[ indexId ].index.removeIndex( neo.getNodeById( nodeId ), key,
             value );
     }
 
-    public long getTotalNumberOfNodes( NeoService neo )
+    public long getTotalNumberOfNodes( GraphDatabaseService neo )
     {
-        if ( neo instanceof EmbeddedNeo )
+        if ( neo instanceof EmbeddedGraphDatabase )
         {
-            EmbeddedNeo embedded = ( EmbeddedNeo ) neo;
+            EmbeddedGraphDatabase embedded = ( EmbeddedGraphDatabase ) neo;
             return embedded.getConfig().getNeoModule().getNodeManager()
                 .getNumberOfIdsInUse( Node.class );
         }

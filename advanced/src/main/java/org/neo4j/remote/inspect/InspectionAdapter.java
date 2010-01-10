@@ -21,7 +21,7 @@ package org.neo4j.remote.inspect;
 
 import java.io.PrintStream;
 
-import org.neo4j.api.core.Direction;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.remote.RemoteConnection;
 import org.neo4j.remote.RemoteResponse;
 

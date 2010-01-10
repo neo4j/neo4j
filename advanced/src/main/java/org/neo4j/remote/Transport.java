@@ -23,18 +23,18 @@ import java.net.URI;
 import java.util.Arrays;
 
 /**
- * An object that specifies which URIs a specific {@link RemoteSite} can handle,
- * and can create instances of that {@link RemoteSite}. The contract for
+ * An object that specifies which URIs a specific {@link ConnectionTarget} can handle,
+ * and can create instances of that {@link ConnectionTarget}. The contract for
  * extending this class is that each instance of the same extending class should
  * behave in the same way, they will be treated as equal by the framework.
  * @author Tobias Ivarsson
  */
-public abstract class RemoteSiteFactory
+public abstract class Transport
 {
     final String[] protocols;
 
     /**
-     * Create a new {@link RemoteSiteFactory} that supports the protocols
+     * Create a new {@link Transport} that supports the protocols
      * specified by the supplied protocol schema identifiers. A protocol scheme
      * identifier consists of alphanumeric characters or any of the characters
      * "-.+". The first character of the scheme identifier is always an
@@ -46,7 +46,7 @@ public abstract class RemoteSiteFactory
      * @throws IllegalArgumentException
      *             if no protocols where specified.
      */
-    protected RemoteSiteFactory( String... protocols )
+    protected Transport( String... protocols )
     {
         if ( protocols == null || protocols.length == 0 )
         {
@@ -56,15 +56,15 @@ public abstract class RemoteSiteFactory
     }
 
     /**
-     * Create a RemoteSite that connects to a remote Neo resource on the
+     * Create a RemoteSite that connects to a remote graph database resource on the
      * specified URI. If login is required the supplied user name and password
      * are used.
      * @param resourceUri
-     *            the URI of the remote Neo resource.
-     * @return an instance of the specific {@link RemoteSite}, that connects to
+     *            the URI of the remote graph database resource.
+     * @return an instance of the specific {@link ConnectionTarget}, that connects to
      *         the specified URI.
      */
-    protected abstract RemoteSite create( URI resourceUri );
+    protected abstract ConnectionTarget create( URI resourceUri );
 
     /**
      * Determine if this remote site can handle the specified URI. In it's most
@@ -75,7 +75,7 @@ public abstract class RemoteSiteFactory
      * supported by this remote site. A well behaving implementation returns
      * <code>false</code> instead of throwing an exception.
      * @param resourceUri
-     *            the URI of the remote Neo resource.
+     *            the URI of the remote graph database resource.
      * @return <code>true</code> if this site can handle the specified URI.
      */
     protected abstract boolean handlesUri( URI resourceUri );

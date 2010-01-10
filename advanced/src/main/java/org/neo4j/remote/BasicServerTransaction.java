@@ -30,12 +30,12 @@ import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
-import org.neo4j.api.core.Direction;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.remote.RemoteResponse.ResponseBuilder;
 
 final class BasicServerTransaction
 {
-    private final BasicNeoServer server;
+    private final BasicGraphDatabaseServer server;
     private final Transaction transaction;
     private final BasicConnection connection;
     final Integer id;
@@ -46,7 +46,7 @@ final class BasicServerTransaction
     private final Map<Integer, SimpleIterator<NodeSpecification>> nodIter = new HashMap<Integer, SimpleIterator<NodeSpecification>>();
     private final Map<Integer, SimpleIterator<String>> strIter = new HashMap<Integer, SimpleIterator<String>>();
 
-    BasicServerTransaction( BasicNeoServer server, BasicConnection connection,
+    BasicServerTransaction( BasicGraphDatabaseServer server, BasicConnection connection,
         Transaction transaction )
     {
         this.server = server;
@@ -212,6 +212,7 @@ final class BasicServerTransaction
     RemoteResponse<NodeSpecification> createNode()
     {
         resume();
+        @SuppressWarnings( "hiding" )
         long id;
         try
         {
@@ -243,6 +244,7 @@ final class BasicServerTransaction
         String relationshipTypeName, long startNodeId, long endNodeId )
     {
         resume();
+        @SuppressWarnings( "hiding" )
         long id;
         try
         {
@@ -486,6 +488,7 @@ final class BasicServerTransaction
     RemoteResponse<NodeSpecification> getReferenceNode()
     {
         resume();
+        @SuppressWarnings( "hiding" )
         long id;
         try
         {

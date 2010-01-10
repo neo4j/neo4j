@@ -17,15 +17,38 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.remote.sites;
+package org.neo4j.remote.transports;
 
-import java.rmi.Remote;
-import java.rmi.RemoteException;
+import java.util.Collection;
+import java.util.LinkedList;
 
-interface RmiLoginSite extends Remote
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.index.IndexService;
+
+class GraphDbContainer implements Runnable
 {
-    RmiConnection connect() throws RemoteException;
+    final GraphDatabaseService service;
+    private final Collection<IndexService> indexServices = new LinkedList<IndexService>();
 
-    RmiConnection connect( String username, String password )
-        throws RemoteException;
+    GraphDbContainer( GraphDatabaseService neo )
+    {
+        this.service = neo;
+    }
+
+    void addIndexService( IndexService index )
+    {
+        this.indexServices.add( index );
+    }
+
+    /*
+     * This container is usable as a shutdown hook for the NeoService it contains
+     */
+    public void run()
+    {
+        for ( IndexService index : indexServices )
+        {
+            index.shutdown();
+        }
+        this.service.shutdown();
+    }
 }
