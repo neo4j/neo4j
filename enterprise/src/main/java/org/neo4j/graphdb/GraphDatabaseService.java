@@ -31,8 +31,8 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * <code>EmbeddedGraphDatabase</code> instance as follows:
  * <code>
  * <pre>GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "var/graphDb" );
- * // ... use neo
- * neo.shutdown();</pre>
+ * // ... use Neo4j
+ * graphDb.shutdown();</pre>
  * </code>
  * GraphDatabaseService provides operations to {@link #enableRemoteShell enable the shell},
  * {@link #createNode() create nodes}, {@link #getNodeById(long) get nodes
