@@ -81,9 +81,6 @@ class MemoryMappedLogBuffer implements LogBuffer
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.impl.transaction.xaframework.ILogBuffer#put(byte)
-     */
     public LogBuffer put( byte b ) throws IOException
     {
         if ( mappedBuffer == null || 
@@ -104,9 +101,6 @@ class MemoryMappedLogBuffer implements LogBuffer
         return this;
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.impl.transaction.xaframework.ILogBuffer#putInt(int)
-     */
     public LogBuffer putInt( int i ) throws IOException
     {
         if ( mappedBuffer == null || 
@@ -127,9 +121,6 @@ class MemoryMappedLogBuffer implements LogBuffer
         return this;
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.impl.transaction.xaframework.ILogBuffer#putLong(long)
-     */
     public LogBuffer putLong( long l ) throws IOException
     {
         if ( mappedBuffer == null || 
@@ -150,9 +141,6 @@ class MemoryMappedLogBuffer implements LogBuffer
         return this;
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.impl.transaction.xaframework.ILogBuffer#put(byte[])
-     */
     public LogBuffer put( byte[] bytes ) throws IOException
     {
         if ( mappedBuffer == null || 
@@ -173,9 +161,6 @@ class MemoryMappedLogBuffer implements LogBuffer
         return this;
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.impl.transaction.xaframework.ILogBuffer#put(char[])
-     */
     public LogBuffer put( char[] chars ) throws IOException
     {
         if ( mappedBuffer == null || 
@@ -207,9 +192,6 @@ class MemoryMappedLogBuffer implements LogBuffer
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.impl.transaction.xaframework.ILogBuffer#force()
-     */
     public void force() throws IOException
     {
         if ( mappedBuffer != null )

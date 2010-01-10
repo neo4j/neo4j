@@ -223,7 +223,7 @@ public abstract class CommonAbstractStore
                     fileChannel.close();
                     throw new IllegalStateException( "Unable to lock store ["
                         + storageFileName + "], this is usually a result of some "
-                        + "other Neo running using the same store." );
+                        + "other Neo4j kernel running using the same store." );
                 }
             }
         }

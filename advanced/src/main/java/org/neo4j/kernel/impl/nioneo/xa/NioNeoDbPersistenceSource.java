@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
  * The NioNeo persistence source implementation. If this class is registered as
- * persistence source for Neo operations that are performed on the node space
+ * persistence source for Neo4j kernel operations that are performed on the node space
  * will be forwarded to this class {@link ResourceConnection} implementation.
  */
 public class NioNeoDbPersistenceSource implements PersistenceSource
@@ -441,7 +441,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 
     public String toString()
     {
-        return "A Nio Neo Db persistence source to [" + dataSourceName + "]";
+        return "A persistence source to [" + dataSourceName + "]";
     }
 
     public int nextId( Class<?> clazz )

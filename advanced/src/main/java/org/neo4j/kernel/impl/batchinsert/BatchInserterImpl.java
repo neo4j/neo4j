@@ -59,7 +59,7 @@ public class BatchInserterImpl implements BatchInserter
     private final PropertyIndexHolder indexHolder;
     private final RelationshipTypeHolder typeHolder; 
     
-    private final BatchGraphDatabaseImpl neoService;
+    private final BatchGraphDatabaseImpl graphDbService;
     
     public BatchInserterImpl( String storeDir )
     {
@@ -89,7 +89,7 @@ public class BatchInserterImpl implements BatchInserter
         RelationshipTypeData[] types = 
             getRelationshipTypeStore().getRelationshipTypes();
         typeHolder = new RelationshipTypeHolder( types );
-        neoService = new BatchGraphDatabaseImpl( this );
+        graphDbService = new BatchGraphDatabaseImpl( this );
     }
     
     public long createNode( Map<String,Object> properties )
@@ -320,7 +320,7 @@ public class BatchInserterImpl implements BatchInserter
     
     public void shutdown()
     {
-        neoService.clearCaches();
+        graphDbService.clearCaches();
         neoStore.close();
     }
 
@@ -532,7 +532,7 @@ public class BatchInserterImpl implements BatchInserter
             {
                 throw new UnderlyingStorageException( 
                     "Unable to create directory path["
-                    + storeDir + "] for Neo store." );
+                    + storeDir + "] for Neo4j kernel store." );
             }
         }
         dir = FileUtils.fixSeparatorsInPath( dir );
@@ -566,6 +566,6 @@ public class BatchInserterImpl implements BatchInserter
     
     public GraphDatabaseService getGraphDbService()
     {
-        return neoService;
+        return graphDbService;
     }
 }

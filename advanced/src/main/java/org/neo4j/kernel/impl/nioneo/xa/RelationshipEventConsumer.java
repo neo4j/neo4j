@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
- * Defines the operations in Neo that are relationship related.
+ * Defines the operations in Neo4j kernel that are relationship related.
  */
 public interface RelationshipEventConsumer
 {

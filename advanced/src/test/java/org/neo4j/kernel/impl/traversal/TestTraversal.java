@@ -32,10 +32,10 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
-public class TestTraversal extends AbstractNeoTestCase
+public class TestTraversal extends AbstractNeo4jTestCase
 {
     public TestTraversal( String testName )
     {
@@ -48,7 +48,7 @@ public class TestTraversal extends AbstractNeoTestCase
     public void testSanityChecks1() throws Exception
     {
         // Valid data
-        Node root = getNeo().createNode();
+        Node root = getGraphDb().createNode();
         RelationshipType[] traversableRels = new RelationshipType[] { MyRelTypes.TEST, };
         // Null traversable relationships
         this.sanityCheckTraverser( "Sanity check failed: null traversable "
@@ -74,7 +74,7 @@ public class TestTraversal extends AbstractNeoTestCase
     {
         // ------------- with traverser direction -------------
         // Valid data
-        Node root = getNeo().createNode();
+        Node root = getGraphDb().createNode();
         RelationshipType[] traversableRels = new RelationshipType[] { MyRelTypes.TEST, };
         Direction[] traversableDirs = new Direction[] { Direction.OUTGOING };
 
@@ -683,20 +683,20 @@ public class TestTraversal extends AbstractNeoTestCase
         {
             // Create population
             Node[] nodeSpace = new Node[] { null, // empty
-                getNeo().createNode(), // 1 [root]
-                getNeo().createNode(), // 2
-                getNeo().createNode(), // 3
-                getNeo().createNode(), // 4
-                getNeo().createNode(), // 5
-                getNeo().createNode(), // 6
-                getNeo().createNode(), // 7
-                getNeo().createNode(), // 8
-                getNeo().createNode(), // 9
-                getNeo().createNode(), // 10
-                getNeo().createNode(), // 11
-                getNeo().createNode(), // 12
-                getNeo().createNode(), // 13
-                getNeo().createNode(), // 14
+                getGraphDb().createNode(), // 1 [root]
+                getGraphDb().createNode(), // 2
+                getGraphDb().createNode(), // 3
+                getGraphDb().createNode(), // 4
+                getGraphDb().createNode(), // 5
+                getGraphDb().createNode(), // 6
+                getGraphDb().createNode(), // 7
+                getGraphDb().createNode(), // 8
+                getGraphDb().createNode(), // 9
+                getGraphDb().createNode(), // 10
+                getGraphDb().createNode(), // 11
+                getGraphDb().createNode(), // 12
+                getGraphDb().createNode(), // 13
+                getGraphDb().createNode(), // 14
             };
 
             String key = "node.test.id";

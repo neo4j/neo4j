@@ -31,13 +31,13 @@ import org.neo4j.graphdb.GraphDatabaseService;
  */
 class ShellService
 {
-    private final GraphDatabaseService neo;
+    private final GraphDatabaseService graphDb;
     private final Object shellServer;
     
     ShellService( GraphDatabaseService neo, Map<String, Serializable> config )
         throws ShellNotAvailableException, RemoteException
     {
-        this.neo = neo;
+        this.graphDb = neo;
         if ( !shellDependencyAvailable() )
         {
             throw new ShellNotAvailableException();
@@ -70,7 +70,7 @@ class ShellService
             Class<?> shellServerClass =
                 Class.forName( "org.neo4j.shell.neo.NeoShellServer" );
             Object shellServer = shellServerClass.getConstructor(
-                GraphDatabaseService.class ).newInstance( neo );
+                GraphDatabaseService.class ).newInstance( graphDb );
             shellServer.getClass().getMethod( "makeRemotelyAvailable",
                 Integer.TYPE, String.class ).invoke( shellServer, port, name );
             return shellServer;

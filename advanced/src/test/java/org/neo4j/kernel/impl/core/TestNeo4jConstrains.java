@@ -26,18 +26,18 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.NodeManager;
 
-public class TestNeoConstrains extends AbstractNeoTestCase
+public class TestNeo4jConstrains extends AbstractNeo4jTestCase
 {
     private Level level1 = null;
     private Level level2 = null;
 
     private String key = "testproperty";
 
-    public TestNeoConstrains( String testName )
+    public TestNeo4jConstrains( String testName )
     {
         super( testName );
     }
@@ -47,10 +47,10 @@ public class TestNeoConstrains extends AbstractNeoTestCase
         super.setUp();
         // turn off logging since the code may print nasty stacktrace
         Logger log = Logger
-            .getLogger( "org.neo4j.impl.persistence.PersistenceLayerMonitor" );
+            .getLogger( "org.neo4j.kernel.impl.persistence.PersistenceLayerMonitor" );
         level1 = log.getLevel();
         log.setLevel( Level.OFF );
-        log = Logger.getLogger( "org.neo4j.impl.core.NeoConstraintsListener" );
+        log = Logger.getLogger( "org.neo4j.kernel.impl.core.NeoConstraintsListener" );
         level2 = log.getLevel();
         log.setLevel( Level.OFF );
     }
@@ -58,17 +58,17 @@ public class TestNeoConstrains extends AbstractNeoTestCase
     public void tearDown()
     {
         Logger log = Logger
-            .getLogger( "org.neo4j.impl.persistence.BusinessLayerMonitor" );
+            .getLogger( "org.neo4j.kernel.impl.persistence.BusinessLayerMonitor" );
         log.setLevel( level1 );
-        log = Logger.getLogger( "org.neo4j.impl.core.NeoConstraints" );
+        log = Logger.getLogger( "org.neo4j.kernel.impl.core.NeoConstraints" );
         log.setLevel( level2 );
         super.tearDown();
     }
 
     public void testDeleteNodeWithRel1()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         node1.createRelationshipTo( node2, MyRelTypes.TEST );
         node1.delete();
         try
@@ -82,13 +82,13 @@ public class TestNeoConstrains extends AbstractNeoTestCase
         {
             // good
         }
-        setTransaction( getNeo().beginTx() );
+        setTransaction( getGraphDb().beginTx() );
     }
 
     public void testDeleteNodeWithRel2()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         node1.createRelationshipTo( node2, MyRelTypes.TEST );
         node2.delete();
         node1.delete();
@@ -103,15 +103,15 @@ public class TestNeoConstrains extends AbstractNeoTestCase
         {
             // good
         }
-        setTransaction( getNeo().beginTx() );
+        setTransaction( getGraphDb().beginTx() );
     }
 
     public void testDeleteNodeWithRel3()
     {
         // make sure we can delete in wrong order
-        Node node0 = getNeo().createNode();
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node0 = getGraphDb().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel0 = node0.createRelationshipTo( node1, MyRelTypes.TEST );
         Relationship rel1 = node0.createRelationshipTo( node2, MyRelTypes.TEST );
         node1.delete();
@@ -119,7 +119,7 @@ public class TestNeoConstrains extends AbstractNeoTestCase
         Transaction tx = getTransaction();
         tx.success();
         tx.finish();
-        setTransaction( getNeo().beginTx() );
+        setTransaction( getGraphDb().beginTx() );
         node2.delete();
         rel1.delete();
         node0.delete();
@@ -127,12 +127,12 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 
     public void testCreateRelOnDeletedNode()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Transaction tx = getTransaction();
         tx.success();
         tx.finish();
-        tx = getNeo().beginTx();
+        tx = getGraphDb().beginTx();
         node1.delete();
         try
         {
@@ -151,14 +151,14 @@ public class TestNeoConstrains extends AbstractNeoTestCase
         catch ( Exception e )
         { // good
         }
-        setTransaction( getNeo().beginTx() );
+        setTransaction( getGraphDb().beginTx() );
         node2.delete();
         node1.delete();
     }
 
     public void testAddPropertyDeletedNode()
     {
-        Node node = getNeo().createNode();
+        Node node = getGraphDb().createNode();
         node.delete();
         try
         {
@@ -173,7 +173,7 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 
     public void testRemovePropertyDeletedNode()
     {
-        Node node = getNeo().createNode();
+        Node node = getGraphDb().createNode();
         node.setProperty( key, new Integer( 1 ) );
         node.delete();
         try
@@ -192,7 +192,7 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 
     public void testChangePropertyDeletedNode()
     {
-        Node node = getNeo().createNode();
+        Node node = getGraphDb().createNode();
         node.setProperty( key, new Integer( 1 ) );
         node.delete();
         try
@@ -211,8 +211,8 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 
     public void testAddPropertyDeletedRelationship()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.delete();
         try
@@ -232,8 +232,8 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 
     public void testRemovePropertyDeletedRelationship()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.setProperty( key, new Integer( 1 ) );
         rel.delete();
@@ -255,8 +255,8 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 
     public void testChangePropertyDeletedRelationship()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.setProperty( key, new Integer( 1 ) );
         rel.delete();
@@ -278,7 +278,7 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 
     public void testMultipleDeleteNode()
     {
-        Node node1 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
         node1.delete();
         try
         {
@@ -296,8 +296,8 @@ public class TestNeoConstrains extends AbstractNeoTestCase
 
     public void testMultipleDeleteRelationship()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.delete();
         node1.delete();
@@ -323,7 +323,7 @@ public class TestNeoConstrains extends AbstractNeoTestCase
         log.setLevel( Level.OFF );
         try
         {
-            Node node1 = getNeo().createNode();
+            Node node1 = getGraphDb().createNode();
             try
             {
                 node1.setProperty( key, new Object() );
@@ -342,18 +342,18 @@ public class TestNeoConstrains extends AbstractNeoTestCase
             catch ( Exception e )
             {
             } // good
-            setTransaction( getNeo().beginTx() );
+            setTransaction( getGraphDb().beginTx() );
             try
             {
-                getNeo().getNodeById( (int) node1.getId() );
+                getGraphDb().getNodeById( (int) node1.getId() );
                 fail( "Node should not exist, previous tx didn't rollback" );
             }
             catch ( NotFoundException e )
             {
                 // good
             }
-            node1 = getNeo().createNode();
-            Node node2 = getNeo().createNode();
+            node1 = getGraphDb().createNode();
+            Node node2 = getGraphDb().createNode();
             Relationship rel = node1.createRelationshipTo( node2,
                 MyRelTypes.TEST );
             try
@@ -374,10 +374,10 @@ public class TestNeoConstrains extends AbstractNeoTestCase
             catch ( Exception e )
             {
             } // good
-            setTransaction( getNeo().beginTx() );
+            setTransaction( getGraphDb().beginTx() );
             try
             {
-                getNeo().getNodeById( (int) node1.getId() );
+                getGraphDb().getNodeById( (int) node1.getId() );
                 fail( "Node should not exist, previous tx didn't rollback" );
             }
             catch ( NotFoundException e )
@@ -386,7 +386,7 @@ public class TestNeoConstrains extends AbstractNeoTestCase
             }
             try
             {
-                getNeo().getNodeById( (int) node2.getId() );
+                getGraphDb().getNodeById( (int) node2.getId() );
                 fail( "Node should not exist, previous tx didn't rollback" );
             }
             catch ( NotFoundException e )

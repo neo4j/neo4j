@@ -29,13 +29,13 @@ import javax.transaction.xa.Xid;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
-public class TestJtaCompliance extends AbstractNeoTestCase
+public class TestJtaCompliance extends AbstractNeo4jTestCase
 {
     // the TransactionManager to use when testing for JTA compliance
     private TransactionManager tm;
@@ -55,7 +55,7 @@ public class TestJtaCompliance extends AbstractNeoTestCase
     {
         super.setUp();
         getTransaction().finish();
-        TxModule txModule = getEmbeddedNeo().getConfig().getTxModule();
+        TxModule txModule = getEmbeddedGraphDb().getConfig().getTxModule();
         tm = txModule.getTxManager();
         xaDsMgr = txModule.getXaDataSourceManager();
         java.util.Map<String,FakeXAResource> map1 = new java.util.HashMap<String,FakeXAResource>();

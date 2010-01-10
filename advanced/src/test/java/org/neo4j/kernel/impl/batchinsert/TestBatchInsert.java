@@ -32,7 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.batchinsert.SimpleRelationship;
@@ -82,42 +82,42 @@ public class TestBatchInsert extends TestCase
     private BatchInserter newBatchInserter()
     {
         return new BatchInserterImpl(
-            AbstractNeoTestCase.getNeoPath( "neo-batch" ) );
+            AbstractNeo4jTestCase.getStorePath( "neo-batch" ) );
     }
     
     public void testSimple()
     {
-        BatchInserter neo = newBatchInserter();
-        long node1 = neo.createNode( null );
-        long node2 = neo.createNode( null );
-        long rel1 = neo.createRelationship( node1, node2, RelTypes.BATCH_TEST, 
+        BatchInserter graphDb = newBatchInserter();
+        long node1 = graphDb.createNode( null );
+        long node2 = graphDb.createNode( null );
+        long rel1 = graphDb.createRelationship( node1, node2, RelTypes.BATCH_TEST, 
             null );
-        SimpleRelationship rel = neo.getRelationshipById( rel1 );
+        SimpleRelationship rel = graphDb.getRelationshipById( rel1 );
         assertEquals( rel.getStartNode(), node1 );
         assertEquals( rel.getEndNode(), node2 );
         assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
-        neo.shutdown();
+        graphDb.shutdown();
     }
     
     public void testMore()
     {
-        BatchInserter neo = newBatchInserter();
-        long startNode = neo.createNode( properties );
+        BatchInserter graphDb = newBatchInserter();
+        long startNode = graphDb.createNode( properties );
         long endNodes[] = new long[25];
         Set<Long> rels = new HashSet<Long>();
         for ( int i = 0; i < 25; i++ )
         {
-            endNodes[i] = neo.createNode( properties );
-            rels.add( neo.createRelationship( startNode, endNodes[i], 
+            endNodes[i] = graphDb.createNode( properties );
+            rels.add( graphDb.createRelationship( startNode, endNodes[i], 
                 relTypeArray[i % 5], properties ) );
         }
-        for ( SimpleRelationship rel : neo.getRelationships( startNode ) )
+        for ( SimpleRelationship rel : graphDb.getRelationships( startNode ) )
         {
             assertTrue( rels.contains( rel.getId() ) );
             assertEquals( rel.getStartNode(), startNode );
         }
-        neo.setNodeProperties( startNode, properties );
-        neo.shutdown();
+        graphDb.setNodeProperties( startNode, properties );
+        graphDb.shutdown();
     }
     
     private void setProperties( Node node )
@@ -136,17 +136,17 @@ public class TestBatchInsert extends TestCase
         }
     }
     
-    public void testWithNeoService()
+    public void testWithGraphDbService()
     {
         BatchInserter batchInserter = newBatchInserter();
-        GraphDatabaseService neo = batchInserter.getGraphDbService();
-        Node startNode = neo.createNode();
+        GraphDatabaseService graphDb = batchInserter.getGraphDbService();
+        Node startNode = graphDb.createNode();
         setProperties( startNode );
         Node endNodes[] = new Node[25];
         Set<Relationship> rels = new HashSet<Relationship>();
         for ( int i = 0; i < 25; i++ )
         {
-            endNodes[i] = neo.createNode();
+            endNodes[i] = graphDb.createNode();
             setProperties( endNodes[i] );
             Relationship rel = startNode.createRelationshipTo( endNodes[i], 
                 relTypeArray[i % 5] ); 
@@ -159,17 +159,17 @@ public class TestBatchInsert extends TestCase
             assertEquals( rel.getStartNode(), startNode );
         }
         setProperties( startNode );
-        neo.shutdown();
+        graphDb.shutdown();
     }
     
-    public void testNeoServiceGetRelationships()
+    public void testGraphDbServiceGetRelationships()
     {
         BatchInserter batchInserter = newBatchInserter();
-        GraphDatabaseService neo = batchInserter.getGraphDbService();
-        Node startNode = neo.createNode();
+        GraphDatabaseService graphDb = batchInserter.getGraphDbService();
+        Node startNode = graphDb.createNode();
         for ( int i = 0; i < 5; i++ )
         {
-            Node endNode = neo.createNode();
+            Node endNode = graphDb.createNode();
             startNode.createRelationshipTo( endNode, relTypeArray[i] ); 
         }
         for ( int i = 0; i < 5; i++ )
@@ -192,6 +192,6 @@ public class TestBatchInsert extends TestCase
             relItr.next();
             assertTrue( !relItr.hasNext() );
         }
-        neo.shutdown();
+        graphDb.shutdown();
     }
 }

@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.persistence;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
- * A data resource that Neo uses to persist entities.
+ * A data resource that Neo4j kernel uses to persist entities.
  * <P>
- * All persistence sources for Neo should implement this interface.
+ * All persistence sources for the kernel should implement this interface.
  */
 public interface PersistenceSource
 {

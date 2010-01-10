@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NeoModule;
 
-public class TestPropertyTypes extends AbstractNeoTestCase
+public class TestPropertyTypes extends AbstractNeo4jTestCase
 {
     private Node node1 = null;
 
@@ -36,7 +36,7 @@ public class TestPropertyTypes extends AbstractNeoTestCase
     public void setUp()
     {
         super.setUp();
-        node1 = getNeo().createNode();
+        node1 = getGraphDb().createNode();
     }
 
     public void tearDown()
@@ -48,7 +48,7 @@ public class TestPropertyTypes extends AbstractNeoTestCase
 
     private void clearCache()
     {
-        NeoModule neoModule = ((EmbeddedGraphDatabase) getNeo()).getConfig()
+        NeoModule neoModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
             .getNeoModule();
         neoModule.getNodeManager().clearCache();
     }
