@@ -51,32 +51,32 @@ import org.neo4j.shell.kernel.apps.Trav;
  */
 public class GraphDatabaseShellServer extends SimpleAppServer
 {
-    private GraphDatabaseService neo;
+    private GraphDatabaseService graphDb;
     private BashVariableInterpreter bashInterpreter;
 
     /**
-     * @param neo the {@link GraphDatabaseService} instance to use with the
+     * @param graphDb the {@link GraphDatabaseService} instance to use with the
      * shell server.
      * @throws RemoteException if an RMI error occurs.
      */
-    public GraphDatabaseShellServer( GraphDatabaseService neo )
+    public GraphDatabaseShellServer( GraphDatabaseService graphDb )
         throws RemoteException
     {
         super();
         addNeoApps();
-        this.neo = neo;
+        this.graphDb = graphDb;
         this.bashInterpreter = new BashVariableInterpreter();
         this.bashInterpreter.addReplacer( "W", new WorkingDirReplacer() );
-        this.setProperty( AbstractClient.PROMPT_KEY, getNeoShellPrompt() );
+        this.setProperty( AbstractClient.PROMPT_KEY, getShellPrompt() );
         this.setProperty( AbstractClient.TITLE_KEYS_KEY,
             ".*name.*,.*title.*" );
         this.setProperty( AbstractClient.TITLE_MAX_LENGTH, "40" );
     }
     
-    protected String getNeoShellPrompt()
+    protected String getShellPrompt()
     {
         String name = "neo-sh";
-        if ( this.neo instanceof EmbeddedReadOnlyGraphDatabase )
+        if ( this.graphDb instanceof EmbeddedReadOnlyGraphDatabase )
         {
             name += "[readonly]";
         }
@@ -133,7 +133,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
      */
     public GraphDatabaseService getDb()
     {
-        return this.neo;
+        return this.graphDb;
     }
 
     /**

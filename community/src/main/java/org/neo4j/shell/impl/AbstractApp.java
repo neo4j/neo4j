@@ -35,7 +35,7 @@ import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.shell.util.json.JSONObject;
 
 /**
- * Common implementation of an {@link App}.
+ * Common abstract implementation of an {@link App}.
  */
 public abstract class AbstractApp implements App
 {

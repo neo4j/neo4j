@@ -46,14 +46,14 @@ public class StartRemoteClient extends AbstractStarter
             int port = getPort( argMap );
             String name = getShellName( argMap );
             ShellClient client = ShellLobby.newClient( port, name );
-            System.out.println( "NOTE: Using remote neo at port=" + port +
+            System.out.println( "NOTE: Using remote shell at port=" + port +
                 " and RMI name=" + name );
             setSessionVariablesFromArgs( client, args );
             client.grabPrompt();
         }
         catch ( Exception e )
         {
-            System.err.println( "Can't start remote client shell: " + e );
+            System.err.println( "Can't start remote shell: " + e );
             e.printStackTrace( System.err );
             System.exit( 1 );
         }

@@ -86,8 +86,8 @@ public class StartClient extends AbstractStarter
                     " -" + nameArg + " " + name + "\n" +
                 "\t...or no arguments\n" +
             "Example arguments for local:\n" +
-                "\t-" + pathArg + " /path/to/neo" + "\n" +
-                "\t-" + pathArg + " /path/to/neo -readonly"
+                "\t-" + pathArg + " /path/to/db" + "\n" +
+                "\t-" + pathArg + " /path/to/db -readonly"
         );
     }
 }

@@ -24,6 +24,7 @@ import java.rmi.RemoteException;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -40,7 +41,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 /**
  * An implementation of {@link App} which has common methods and functionality
- * to use with neo.
+ * to use with neo4j.
  */
 public abstract class GraphDatabaseApp extends AbstractApp
 {
@@ -104,7 +105,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
 
     protected RelationshipType getRelationshipType( String name )
     {
-        return new NeoAppRelationshipType( name );
+        return DynamicRelationshipType.withName( name );
     }
     
     protected Direction getDirection( String direction ) throws ShellException
@@ -399,26 +400,5 @@ public abstract class GraphDatabaseApp extends AbstractApp
             result = frame( value.toString(), includeFraming );
         }
         return result;
-    }
-    
-    private static class NeoAppRelationshipType implements RelationshipType
-    {
-        private String name;
-
-        private NeoAppRelationshipType( String name )
-        {
-            this.name = name;
-        }
-
-        public String name()
-        {
-            return this.name;
-        }
-
-        @Override
-        public String toString()
-        {
-            return name();
-        }
     }
 }

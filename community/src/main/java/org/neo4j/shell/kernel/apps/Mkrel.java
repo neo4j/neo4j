@@ -32,7 +32,7 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
 /**
- * Mimics the POSIX application "mkdir", but neo has relationships instead of
+ * Mimics the POSIX application "mkdir", but neo4j has relationships instead of
  * directories (if you look at neo in a certain perspective).
  */
 public class Mkrel extends GraphDatabaseApp

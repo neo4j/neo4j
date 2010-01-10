@@ -40,18 +40,18 @@ public class StartLocalClient extends AbstractStarter
     /**
      * Starts a {@link GraphDatabaseShellServer} and connects a client to it in
      * the same JVM.
-     * @param args contains information about which neo store to use (the path
-     * on disk).
+     * @param args contains information about which neo4j store to use
+     * (the path on disk).
      */
     public static void main( String[] args )
     {
         Map<String, String> argMap = parseArgs( args );
-        String neoDbPath = argMap.get( ARG_PATH );
-        if ( neoDbPath == null )
+        String dbPath = argMap.get( ARG_PATH );
+        if ( dbPath == null )
         {
-            System.err.println( "ERROR: To start a local neo service and a " +
+            System.err.println( "ERROR: To start a local neo4j service and a " +
                 "shell client on top of that you need to supply a path to a " +
-                "neo store or just a new path where a new neo store will " +
+                "neo4j store or just a new path where a new store will " +
                 "be created if it doesn't exist. -" + ARG_PATH +
                 " /my/path/here" );
             return;
@@ -61,7 +61,7 @@ public class StartLocalClient extends AbstractStarter
         {
             boolean readOnly = argMap.containsKey( ARG_READONLY ) &&
                 stringAsBoolean( argMap.get( ARG_READONLY ), true );
-            tryStartLocalServerAndClient( neoDbPath, readOnly, args );
+            tryStartLocalServerAndClient( dbPath, readOnly, args );
         }
         catch ( Exception e )
         {
@@ -71,7 +71,7 @@ public class StartLocalClient extends AbstractStarter
                 {
                     try
                     {
-                        tryStartLocalServerAndClient( neoDbPath, true, args );
+                        tryStartLocalServerAndClient( dbPath, true, args );
                     }
                     catch ( Exception innerException )
                     {
@@ -126,7 +126,7 @@ public class StartLocalClient extends AbstractStarter
 
     private static void handleException( Exception e )
     {
-        System.err.println( "Can't start client with local neo service: " +
+        System.err.println( "Can't start client with local neo4j service: " +
             e );
         e.printStackTrace( System.err );
         System.exit( 1 );
@@ -151,7 +151,7 @@ public class StartLocalClient extends AbstractStarter
             }
         } );
         
-        System.out.println( "NOTE: Using local neo service at '" +
+        System.out.println( "NOTE: Using local neo4j service at '" +
             dbPath + "'" );
         ShellClient client = new SameJvmClient( server );
         setSessionVariablesFromArgs( client, args );

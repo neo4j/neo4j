@@ -35,7 +35,7 @@ import org.neo4j.shell.ShellException;
 
 /**
  * A common implementation of an {@link AppShellServer}. The server can be given
- * one or more java packages f.ex. "org.neo4j.util.shell.apps" where some
+ * one or more java packages f.ex. "org.neo4j.shell.apps" where some
  * common apps exist. All classes in those packages which implements the
  * {@link App} interface will be available to execute.
  */

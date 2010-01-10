@@ -37,7 +37,7 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
 /**
- * Mimics the POSIX application "rmdir", but neo has relationships instead of
+ * Mimics the POSIX application "rmdir", but neo4j has relationships instead of
  * directories (if you look at neo in a certain perspective).
  */
 public class Rmrel extends GraphDatabaseApp
