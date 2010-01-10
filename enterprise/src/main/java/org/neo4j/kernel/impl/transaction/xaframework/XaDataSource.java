@@ -64,7 +64,7 @@ public abstract class XaDataSource
     private String name = null;
     
     /**
-     * Constructor used by the Neo to create datasources.
+     * Constructor used by the Neo4j kernel to create datasources.
      * 
      * @param params
      *            A map containing configuration parameters

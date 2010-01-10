@@ -41,7 +41,7 @@ public class Event
     public static final Event NEO_THAW_REQUEST = new Event( 
         "NEO_THAW_REQUEST" );
 
-    // Neo related events
+    // Neo4j kernel related events
     public static final Event NODE_CREATE = new Event( "NODE_CREATE" );
     public static final Event NODE_DELETE = new Event( "NODE_DELETE" );
     public static final Event NODE_ADD_PROPERTY = new Event(

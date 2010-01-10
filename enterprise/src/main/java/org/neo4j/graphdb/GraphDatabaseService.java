@@ -30,7 +30,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * embed Neo4j in an application. Typically, you would create an
  * <code>EmbeddedGraphDatabase</code> instance as follows:
  * <code>
- * <pre>GraphDatabaseService neo = new EmbeddedGraphDatabase( "var/neo" );
+ * <pre>GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "var/graphDb" );
  * // ... use neo
  * neo.shutdown();</pre>
  * </code>

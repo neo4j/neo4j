@@ -329,7 +329,7 @@ public class XaLogicalLog
         {
             return false;
         }
-        // get the neo tx identifier
+        // get the tx identifier
         buffer.clear();
         buffer.limit( 4 );
         if ( fileChannel.read( buffer ) != buffer.limit() )
@@ -379,7 +379,7 @@ public class XaLogicalLog
 
     private boolean readTxPrepareEntry() throws IOException
     {
-        // get the neo tx identifier
+        // get the tx identifier
         buffer.clear();
         buffer.limit( 4 );
         if ( fileChannel.read( buffer ) != buffer.limit() )
@@ -422,7 +422,7 @@ public class XaLogicalLog
 
     private boolean readTxOnePhaseCommit() throws IOException
     {
-        // get the neo tx identifier
+        // get the tx identifier
         buffer.clear();
         buffer.limit( 4 );
         if ( fileChannel.read( buffer ) != buffer.limit() )
@@ -481,7 +481,7 @@ public class XaLogicalLog
 
     private boolean readDoneEntry() throws IOException
     {
-        // get the neo tx identifier
+        // get the tx identifier
         buffer.clear();
         buffer.limit( 4 );
         if ( fileChannel.read( buffer ) != buffer.limit() )
@@ -520,7 +520,7 @@ public class XaLogicalLog
     
     private boolean readTxTwoPhaseCommit() throws IOException
     {
-        // get the neo tx identifier
+        // get the tx identifier
         buffer.clear();
         buffer.limit( 4 );
         if ( fileChannel.read( buffer ) != buffer.limit() )
@@ -966,7 +966,7 @@ public class XaLogicalLog
             {
                 throw new IOException( "Unable to read tx start entry" );
             }
-            // get the neo tx identifier
+            // get the tx identifier
             buffer.clear();
             buffer.limit( 4 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
@@ -995,7 +995,7 @@ public class XaLogicalLog
     
         private void readTxPrepareEntry() throws IOException
         {
-            // get the neo tx identifier
+            // get the tx identifier
             buffer.clear();
             buffer.limit( 4 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
@@ -1020,7 +1020,7 @@ public class XaLogicalLog
 
         private void readAndApplyTxOnePhaseCommit() throws IOException
         {
-            // get the neo tx identifier
+            // get the tx identifier
             buffer.clear();
             buffer.limit( 4 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
@@ -1048,7 +1048,7 @@ public class XaLogicalLog
 
         private void readAndApplyTxTwoPhaseCommit() throws IOException
         {
-            // get the neo tx identifier
+            // get the tx identifier
             buffer.clear();
             buffer.limit( 4 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
@@ -1096,7 +1096,7 @@ public class XaLogicalLog
 
         private boolean readDoneEntry() throws IOException
         {
-            // get the neo tx identifier
+            // get the tx identifier
             buffer.clear();
             buffer.limit( 4 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
@@ -1428,7 +1428,7 @@ public class XaLogicalLog
     private void readAndWriteTxPrepareEntry( FileChannel newLog ) 
         throws IOException
     {
-        // get the neo tx identifier
+        // get the tx identifier
         buffer.clear();
         buffer.limit( 1 + 4 );
         buffer.put( TX_PREPARE );

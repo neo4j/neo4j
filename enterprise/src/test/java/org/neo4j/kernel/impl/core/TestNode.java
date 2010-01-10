@@ -26,9 +26,9 @@ import java.util.logging.Logger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-public class TestNode extends AbstractNeoTestCase
+public class TestNode extends AbstractNeo4jTestCase
 {
     public TestNode( String testName )
     {
@@ -38,17 +38,17 @@ public class TestNode extends AbstractNeoTestCase
     public void testNodeCreateAndDelete()
     {
         int nodeId = -1;
-        Node node = getNeo().createNode();
+        Node node = getGraphDb().createNode();
         nodeId = (int) node.getId();
-        getNeo().getNodeById( nodeId );
+        getGraphDb().getNodeById( nodeId );
         node.delete();
         Transaction tx = getTransaction();
         tx.success();
         tx.finish();
-        setTransaction( getNeo().beginTx() );
+        setTransaction( getGraphDb().beginTx() );
         try
         {
-            getNeo().getNodeById( nodeId );
+            getGraphDb().getNodeById( nodeId );
             fail( "Node[" + nodeId + "] should be deleted." );
         }
         catch ( NotFoundException e )
@@ -59,10 +59,10 @@ public class TestNode extends AbstractNeoTestCase
     public void testDeletedNode()
     {
         // do some evil stuff
-        Node node = getNeo().createNode();
+        Node node = getGraphDb().createNode();
         node.delete();
         Logger log = Logger
-            .getLogger( "org.neo4j.impl.core.NeoConstraintsListener" );
+            .getLogger( "org.neo4j.kernel.impl.core.NeoConstraintsListener" );
         Level level = log.getLevel();
         log.setLevel( Level.OFF );
         try
@@ -78,8 +78,8 @@ public class TestNode extends AbstractNeoTestCase
 
     public void testNodeAddProperty()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         try
         {
             node1.setProperty( null, null );
@@ -124,8 +124,8 @@ public class TestNode extends AbstractNeoTestCase
         String string1 = new String( "1" );
         String string2 = new String( "2" );
 
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
 
         try
         {
@@ -189,8 +189,8 @@ public class TestNode extends AbstractNeoTestCase
         Boolean bool1 = new Boolean( true );
         Boolean bool2 = new Boolean( false );
 
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         node1.setProperty( key1, int1 );
         node2.setProperty( key1, string1 );
         node1.setProperty( key2, string2 );
@@ -229,7 +229,7 @@ public class TestNode extends AbstractNeoTestCase
         String string2 = new String( "2" );
         Boolean bool1 = new Boolean( true );
         Boolean bool2 = new Boolean( false );
-        Node node1 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
         node1.setProperty( key1, int1 );
         node1.setProperty( key1, int2 );
         assertEquals( int2, node1.getProperty( key1 ) );
@@ -254,7 +254,7 @@ public class TestNode extends AbstractNeoTestCase
         Integer int2 = new Integer( 2 );
         String string = new String( "3" );
 
-        Node node1 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
         assertTrue( !node1.getPropertyValues().iterator().hasNext() );
         try
         {
@@ -303,22 +303,22 @@ public class TestNode extends AbstractNeoTestCase
 
     public void testAddPropertyThenDelete()
     {
-        Node node = getNeo().createNode();
+        Node node = getGraphDb().createNode();
         node.setProperty( "test", "test" );
         Transaction tx = getTransaction();
         tx.success();
         tx.finish();
-        tx = getNeo().beginTx();
+        tx = getGraphDb().beginTx();
         node.setProperty( "test2", "test2" );
         node.delete();
         tx.success();
         tx.finish();
-        setTransaction( getNeo().beginTx() );
+        setTransaction( getGraphDb().beginTx() );
     }
     
     public void testChangeProperty()
     {
-        Node node = getNeo().createNode();
+        Node node = getGraphDb().createNode();
         node.setProperty( "test", "test1" );
         newTransaction();
         node.setProperty( "test", "test2" );
@@ -333,7 +333,7 @@ public class TestNode extends AbstractNeoTestCase
     
     public void testChangeProperty2()
     {
-        Node node = getNeo().createNode();
+        Node node = getGraphDb().createNode();
         node.setProperty( "test", "test1" );
         newTransaction();
         node.removeProperty( "test" );

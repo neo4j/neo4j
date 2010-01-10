@@ -141,7 +141,7 @@ public class NeoStore extends AbstractStore
      * Creates the neo,node,relationship,property and relationship type stores.
      * 
      * @param fileName
-     *            The name of neo store
+     *            The name of store
      * @throws IOException
      *             If unable to create stores or name null
      */
@@ -242,7 +242,7 @@ public class NeoStore extends AbstractStore
     }
 
     /**
-     * Returns the node store for this neo store.
+     * Returns the node store.
      * 
      * @return The node store
      */
@@ -252,7 +252,7 @@ public class NeoStore extends AbstractStore
     }
 
     /**
-     * The relationship store for this neo store
+     * The relationship store.
      * 
      * @return The relationship store
      */
@@ -262,7 +262,7 @@ public class NeoStore extends AbstractStore
     }
 
     /**
-     * Returns the relationship type store for this neo store
+     * Returns the relationship type store.
      * 
      * @return The relationship type store
      */
@@ -272,7 +272,7 @@ public class NeoStore extends AbstractStore
     }
 
     /**
-     * Returns the property store for this neo store.
+     * Returns the property store.
      * 
      * @return The property store
      */

@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
  * {@link NeoStoreXaConnection NeoStoreXaConnections}.
  * <p>
  * The {@link NioNeoDbPersistenceSource} will create a <CODE>NeoStoreXaDataSoruce</CODE>
- * and then Neo will use it to create {@link XaConnection XaConnections} and
+ * and then Neo4j kernel will use it to create {@link XaConnection XaConnections} and
  * {@link XaResource XaResources} when running transactions and performing
  * operations on the node space.
  */
@@ -81,7 +81,7 @@ public class NeoStoreXaDataSource extends XaDataSource
      * <p>
      * If <CODE>config</CODE> parameter is set but file doesn't exist an
      * <CODE>IOException</CODE> is thrown. If any problem is found with that
-     * configuration file or Neo store can't be loaded an <CODE>IOException is
+     * configuration file or Neo4j store can't be loaded an <CODE>IOException is
      * thrown</CODE>.
      * 
      * @param params
@@ -176,7 +176,7 @@ public class NeoStoreXaDataSource extends XaDataSource
             if ( !directories.mkdirs() )
             {
                 throw new IOException( "Unable to create directory path["
-                    + dirs + "] for Neo store." );
+                    + dirs + "] for Neo4j store." );
             }
         }
     }
@@ -185,7 +185,7 @@ public class NeoStoreXaDataSource extends XaDataSource
      * Creates a data source with minimum (no memory mapped) configuration.
      * 
      * @param neoStoreFileName
-     *            The file name of the neo store
+     *            The file name of the store
      * @param logicalLogPath
      *            The file name of the logical log
      * @throws IOException

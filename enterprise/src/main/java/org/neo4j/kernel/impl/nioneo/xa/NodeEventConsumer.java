@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
- * Defines the operations in Neo that are node related.
+ * Defines the operations in Neo4j kernel that are node related.
  */
 public interface NodeEventConsumer
 {

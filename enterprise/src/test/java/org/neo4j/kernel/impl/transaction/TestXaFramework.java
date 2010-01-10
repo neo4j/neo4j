@@ -34,7 +34,7 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.XidImpl;
@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 
-public class TestXaFramework extends AbstractNeoTestCase
+public class TestXaFramework extends AbstractNeo4jTestCase
 {
     private TransactionManager tm;
     private XaDataSourceManager xaDsMgr;
@@ -70,7 +70,7 @@ public class TestXaFramework extends AbstractNeoTestCase
     {
         super.setUp();
         getTransaction().finish();
-        TxModule txModule = getEmbeddedNeo().getConfig().getTxModule();
+        TxModule txModule = getEmbeddedGraphDb().getConfig().getTxModule();
         tm = txModule.getTxManager();
         xaDsMgr = txModule.getXaDataSourceManager();
     }
@@ -389,14 +389,14 @@ public class TestXaFramework extends AbstractNeoTestCase
             tm.commit();
             // xaC2 = ( DummyXaConnection ) xaDs2.getXaConnection();
             tm.begin();
-            Node node = getNeo().createNode(); // get neo resource in tx
+            Node node = getGraphDb().createNode(); // get resource in tx
             xaC1.enlistWithTx();
             assertEquals( ++currentTxId, xaC1.getTransactionId() );
             xaC1.doStuff1();
             xaC1.delistFromTx();
             tm.commit();
             tm.begin();
-            node = getNeo().getNodeById( (int) node.getId() );
+            node = getGraphDb().getNodeById( (int) node.getId() );
             xaC1.enlistWithTx();
             assertEquals( ++currentTxId, xaC1.getTransactionId() );
             xaC1.doStuff2();

@@ -34,7 +34,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-public class TestNeoStore extends AbstractNeoTestCase
+public class TestNeoStore extends AbstractNeo4jTestCase
 {
     public TestNeoStore( String testName )
     {
@@ -127,9 +127,9 @@ public class TestNeoStore extends AbstractNeoTestCase
     {
         try
         {
-            LockManager lockManager = getEmbeddedNeo().getConfig()
+            LockManager lockManager = getEmbeddedGraphDb().getConfig()
                 .getLockManager();
-            LockReleaser lockReleaser = getEmbeddedNeo().getConfig()
+            LockReleaser lockReleaser = getEmbeddedGraphDb().getConfig()
                 .getLockReleaser();
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
                 lockManager, lockReleaser );

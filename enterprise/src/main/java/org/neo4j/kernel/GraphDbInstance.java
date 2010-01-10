@@ -85,13 +85,12 @@ class GraphDbInstance
     }
 
     /**
-     * Starts Neo with default configuration using NioNeo DB as persistence
-     * store.
+     * Starts Neo4j with default configuration
      * 
      * @param storeDir
-     *            path to directory where NionNeo DB store is located
+     *            path to directory where Neo4j store is located
      * @param create
-     *            if true a new NioNeo DB store will be created if no store
+     *            if true a new Neo4j store will be created if no store
      *            exist at <CODE>storeDir</CODE>
      * @param configuration
      *            parameters
@@ -102,7 +101,7 @@ class GraphDbInstance
     {
         if ( started )
         {
-            throw new IllegalStateException( "A Neo instance already started" );
+            throw new IllegalStateException( "Neo4j instance already started" );
         }
         Map<Object,Object> params = getDefaultParams();
         for ( Map.Entry<String,String> entry : stringParams.entrySet() )
@@ -110,7 +109,6 @@ class GraphDbInstance
             params.put( entry.getKey(), entry.getValue() );
         }
         config = new Config( storeDir, params );
-        // create NioNeo DB persistence source
         storeDir = FileUtils.fixSeparatorsInPath( storeDir );
         String separator = System.getProperty( "file.separator" );
         String store = storeDir + separator + "neostore";
@@ -201,9 +199,9 @@ class GraphDbInstance
     }
 
     /**
-     * Returns true if Neo is started.
+     * Returns true if Neo4j is started.
      * 
-     * @return True if Neo started
+     * @return True if Neo4j started
      */
     public boolean started()
     {
@@ -211,7 +209,7 @@ class GraphDbInstance
     }
 
     /**
-     * Shut down Neo.
+     * Shut down Neo4j.
      */
     public synchronized void shutdown()
     {

@@ -29,11 +29,11 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.NeoModule;
 
-public class TestRelationship extends AbstractNeoTestCase
+public class TestRelationship extends AbstractNeo4jTestCase
 {
     private String key1 = "key1";
     private String key2 = "key2";
@@ -46,8 +46,8 @@ public class TestRelationship extends AbstractNeoTestCase
     
     public void testSimple()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, 
             MyRelTypes.TEST );
         Relationship rel2 = node1.createRelationshipTo( node2, 
@@ -68,8 +68,8 @@ public class TestRelationship extends AbstractNeoTestCase
     
     public void testSimple2()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         for ( int i = 0; i < 3; i++ )
         {
             node1.createRelationshipTo( node2, MyRelTypes.TEST );
@@ -105,8 +105,8 @@ public class TestRelationship extends AbstractNeoTestCase
     
     public void testSimple3()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         for ( int i = 0; i < 1; i++ )
         {
             node1.createRelationshipTo( node2, MyRelTypes.TEST );
@@ -142,8 +142,8 @@ public class TestRelationship extends AbstractNeoTestCase
     
     public void testSimple4()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         for ( int i = 0; i < 2; i++ )
         {
             node1.createRelationshipTo( node2, MyRelTypes.TEST );
@@ -270,8 +270,8 @@ public class TestRelationship extends AbstractNeoTestCase
 
     public void testRelationshipCreateAndDelete()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship relationship = node1.createRelationshipTo( node2,
             MyRelTypes.TEST );
         Relationship relArray1[] = getRelationshipArray( node1
@@ -321,14 +321,14 @@ public class TestRelationship extends AbstractNeoTestCase
     public void testDeleteWithRelationship()
     {
         // do some evil stuff
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship relationship = node1.createRelationshipTo( node2,
             MyRelTypes.TEST );
         node1.delete();
         node2.delete();
         Logger log = Logger
-            .getLogger( "org.neo4j.impl.core.NeoConstraintsListener" );
+            .getLogger( "org.neo4j.kernel.impl.core.NeoConstraintsListener" );
         Level level = log.getLevel();
         log.setLevel( Level.OFF );
         try
@@ -342,18 +342,18 @@ public class TestRelationship extends AbstractNeoTestCase
             // good
         }
         log.setLevel( level );
-        setTransaction( getNeo().beginTx() );
+        setTransaction( getGraphDb().beginTx() );
     }
 
     public void testDeletedRelationship()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship relationship = node1.createRelationshipTo( node2,
             MyRelTypes.TEST );
         relationship.delete();
         Logger log = Logger
-            .getLogger( "org.neo4j.impl.core.NeoConstraintsListener" );
+            .getLogger( "org.neo4j.kernel.impl.core.NeoConstraintsListener" );
         Level level = log.getLevel();
         log.setLevel( Level.OFF );
         try
@@ -371,8 +371,8 @@ public class TestRelationship extends AbstractNeoTestCase
 
     public void testRelationshipAddProperty()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         Relationship rel2 = node2.createRelationshipTo( node1, MyRelTypes.TEST );
         try
@@ -414,8 +414,8 @@ public class TestRelationship extends AbstractNeoTestCase
         String string1 = new String( "1" );
         String string2 = new String( "2" );
 
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         Relationship rel2 = node2.createRelationshipTo( node1, MyRelTypes.TEST );
         // verify that we can rely on PL to reomve non existing properties
@@ -480,8 +480,8 @@ public class TestRelationship extends AbstractNeoTestCase
         String string1 = new String( "1" );
         String string2 = new String( "2" );
 
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         Relationship rel2 = node2.createRelationshipTo( node1, MyRelTypes.TEST );
         rel1.setProperty( key1, int1 );
@@ -521,8 +521,8 @@ public class TestRelationship extends AbstractNeoTestCase
         Boolean bool1 = new Boolean( true );
         Boolean bool2 = new Boolean( false );
 
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel1.setProperty( key1, int1 );
         rel1.setProperty( key1, int2 );
@@ -548,8 +548,8 @@ public class TestRelationship extends AbstractNeoTestCase
         Integer int2 = new Integer( 2 );
         String string = new String( "3" );
 
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         try
         {
@@ -592,8 +592,8 @@ public class TestRelationship extends AbstractNeoTestCase
 
     public void testDirectedRelationship()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel2 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         Relationship rel3 = node2.createRelationshipTo( node1, MyRelTypes.TEST );
         Node[] nodes = rel2.getNodes();
@@ -633,15 +633,15 @@ public class TestRelationship extends AbstractNeoTestCase
 
     public void testRollbackDeleteRelationship()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         newTransaction();
         node1.delete();
         rel1.delete();
         getTransaction().failure();
         getTransaction().finish();
-        setTransaction( getNeo().beginTx() );
+        setTransaction( getGraphDb().beginTx() );
         node1.delete();
         node2.delete();
         rel1.delete();
@@ -649,18 +649,18 @@ public class TestRelationship extends AbstractNeoTestCase
 
     private void clearCache()
     {
-        NeoModule neoModule = ((EmbeddedGraphDatabase) getNeo()).getConfig()
+        NeoModule neoModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
             .getNeoModule();
         neoModule.getNodeManager().clearCache();
     }
 
     public void testCreateRelationshipWithCommitts()// throws NotFoundException
     {
-        Node n1 = getNeo().createNode();
+        Node n1 = getGraphDb().createNode();
         newTransaction();
         clearCache();
-        n1 = getNeo().getNodeById( (int) n1.getId() );
-        Node n2 = getNeo().createNode();
+        n1 = getGraphDb().getNodeById( (int) n1.getId() );
+        Node n2 = getGraphDb().createNode();
         n1.createRelationshipTo( n2, MyRelTypes.TEST );
         newTransaction();
         Relationship[] relArray = getRelationshipArray( n1.getRelationships() );
@@ -673,8 +673,8 @@ public class TestRelationship extends AbstractNeoTestCase
 
     public void testAddPropertyThenDelete()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.setProperty( "test", "test" );
         newTransaction();
@@ -687,8 +687,8 @@ public class TestRelationship extends AbstractNeoTestCase
 
     public void testRelationshipIsType()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         assertTrue( rel.isType( MyRelTypes.TEST ) );
         assertTrue( rel.isType( new RelationshipType()
@@ -706,8 +706,8 @@ public class TestRelationship extends AbstractNeoTestCase
 
     public void testChangeProperty()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.setProperty( "test", "test1" );
         newTransaction();
@@ -723,8 +723,8 @@ public class TestRelationship extends AbstractNeoTestCase
     
     public void testChangeProperty2()
     {
-        Node node1 = getNeo().createNode();
-        Node node2 = getNeo().createNode();
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.setProperty( "test", "test1" );
         newTransaction();

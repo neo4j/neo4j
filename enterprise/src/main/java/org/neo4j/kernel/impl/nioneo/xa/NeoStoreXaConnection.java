@@ -40,12 +40,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
- * {@link XaConnection} implementation for the NioNeo data store. Contains
+ * {@link XaConnection} implementation for the Neo4j kernel native store. Contains
  * getter methods for the different stores (node,relationship,property and
  * relationship type).
  * <p>
  * A <CODE>NeoStoreXaConnection</CODE> is obtained from
- * {@link NeoStoreXaDataSource} and then Neo persistence layer can perform the
+ * {@link NeoStoreXaDataSource} and then Neo4j persistence layer can perform the
  * operations requested via the store implementations.
  */
 public class NeoStoreXaConnection extends XaConnectionHelpImpl
@@ -75,7 +75,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
     }
 
     /**
-     * Returns this neo store's {@link NodeStore}.
+     * Returns this the {@link NodeStore}.
      * 
      * @return The node store
      */
@@ -85,7 +85,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
     }
 
     /**
-     * Returns this neo store's {@link RelationshipStore}.
+     * Returns this the {@link RelationshipStore}.
      * 
      * @return The relationship store
      */
@@ -100,7 +100,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
     }
 
     /**
-     * Returns this neo store's {@link RelationshipTypeStore}.
+     * Returns this the {@link RelationshipTypeStore}.
      * 
      * @return The relationship type store
      */

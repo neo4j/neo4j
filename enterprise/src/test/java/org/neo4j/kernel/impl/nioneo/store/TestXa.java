@@ -41,7 +41,7 @@ import junit.framework.TestSuite;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.AbstractNeoTestCase;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 
-public class TestXa extends AbstractNeoTestCase
+public class TestXa extends AbstractNeo4jTestCase
 {
 
     public TestXa( String testName )
@@ -123,18 +123,18 @@ public class TestXa extends AbstractNeoTestCase
     {
         super.setUp();
         log = Logger
-            .getLogger( "org.neo4j.impl.transaction.xaframework.XaLogicalLog/"
+            .getLogger( "org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog/"
                 + "nioneo_logical.log" );
         level = log.getLevel();
         log.setLevel( Level.OFF );
         log = Logger
-            .getLogger( "org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource" );
+            .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
         try
         {
             NeoStore.createStore( "neo" );
-            lockManager = getEmbeddedNeo().getConfig().getLockManager();
-            lockReleaser = getEmbeddedNeo().getConfig().getLockReleaser();
+            lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
+            lockReleaser = getEmbeddedGraphDb().getConfig().getLockReleaser();
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
                 lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
@@ -151,11 +151,11 @@ public class TestXa extends AbstractNeoTestCase
         ds.close();
         log.setLevel( level );
         log = Logger
-            .getLogger( "org.neo4j.impl.transaction.xaframework.XaLogicalLog/"
+            .getLogger( "org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog/"
                 + "nioneo_logical.log" );
         log.setLevel( level );
         log = Logger
-            .getLogger( "org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource" );
+            .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( level );
         File file = new File( "neo" );
         if ( file.exists() )

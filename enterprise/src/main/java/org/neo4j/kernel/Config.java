@@ -80,13 +80,6 @@ public class Config
             .getTxManager(), idGeneratorModule.getIdGenerator(), readOnly );
     }
 
-    /**
-     * Sets the persistence source for neo to use. If this method is never
-     * called default persistence source is used (NioNeo DB).
-     * 
-     * @param name
-     *            fqn name of persistence source to use
-     */
     void setNeoPersistenceSource( String name, boolean create )
     {
         persistenceSourceName = name;

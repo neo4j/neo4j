@@ -606,7 +606,7 @@ public class TxManager implements TransactionManager
                 e.printStackTrace();
                 log.severe( "Unable to rollback transaction. "
                     + "Some resources may be commited others not. "
-                    + "Neo should be SHUTDOWN or FREEZED for "
+                    + "Neo4j kernel should be SHUTDOWN for "
                     + "resource maintance and transaction recovery ---->" );
                 tmOk = false;
                 throw new HeuristicMixedException(
@@ -676,7 +676,7 @@ public class TxManager implements TransactionManager
             e.printStackTrace();
             log.severe( "Unable to rollback marked transaction. "
                 + "Some resources may be commited others not. "
-                + "Neo should be SHUTDOWN or FREEZED for "
+                + "Neo4j kernel should be SHUTDOWN for "
                 + "resource maintance and transaction recovery ---->" );
             tmOk = false;
             throw new HeuristicMixedException( "Unable to rollback "
@@ -733,7 +733,7 @@ public class TxManager implements TransactionManager
                 e.printStackTrace();
                 log.severe( "Unable to rollback marked or active transaction. "
                     + "Some resources may be commited others not. "
-                    + "Neo should be SHUTDOWN or FREEZED for "
+                    + "Neo4j kernel should be SHUTDOWN for "
                     + "resource maintance and transaction recovery ---->" );
                 tmOk = false;
                 throw new SystemException( "Unable to rollback "
