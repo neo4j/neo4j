@@ -49,6 +49,11 @@ package org.neo4j.graphdb;
  * assert rel.getNodes()[0].equals( a ) &amp;&amp; rel.getNodes()[1].equals( b );
  * </pre></code>
  * 
+ * Even though all relationships have a direction they are equally well
+ * traversed in both directions so there's no need to create duplicate
+ * relationships in the opposite direction (in regards to traversal or
+ * performance).
+ * <p>
  * Furthermore, Neo4j guarantees that a relationship is never "hanging freely,"
  * i.e. {@link #getStartNode()}, {@link #getEndNode()},
  * {@link #getOtherNode(Node)} and {@link #getNodes()} are guaranteed to always

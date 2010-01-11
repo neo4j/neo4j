@@ -38,7 +38,10 @@ import java.util.Iterator;
  * {
  * 	// ...
  * }
+ * 
  * </pre></code>
+ * Relationships are equally well traversed irregardless of their direction,
+ * performance-wise.
  * @see Node#traverse
  */
 public interface Traverser extends Iterable<Node>
