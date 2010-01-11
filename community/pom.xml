@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>kernel</artifactId>
+  <artifactId>neo4j-kernel</artifactId>
   <version>1.0-rc-SNAPSHOT</version>
   <name>Neo4j - Graph Database Kernel</name>
   <description>

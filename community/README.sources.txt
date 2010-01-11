@@ -1,6 +1,6 @@
 Today (2007-11-19) AGPL was released so we can finally release the source code.
 
-To start hacking, import src/java into your favorite IDE and add the 
+To start hacking, import src/main/java into your favorite IDE and add the 
 jta-1_1.jar to your classpath.
 
 To get started here is a short description of some of the important packages:
