@@ -31,6 +31,8 @@ package org.neo4j.graphdb;
  * <code>
  * Relationship rel = node.createRelationshipTo( otherNode, MyRels.REL_TYPE );
  * </code>
+ * Neo4j doesn't support relationship where the start node and end node are the
+ * same.
  * <p>
  * The fact that the relationship API gives meaning to {@link #getStartNode()
  * start} and {@link #getEndNode() end} nodes implicitly means that all
