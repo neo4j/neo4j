@@ -1,9 +1,9 @@
 <project>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j.examples</groupId>
-	<artifactId>apoc-examples</artifactId>
+	<artifactId>neo4j-apoc-examples</artifactId>
 	<name>apoc-examples</name>
-	<version>0.5-SNAPSHOT</version>
+	<version>0.5</version>
 	<description>Basic Neo4j examples</description>
 	<parent>
 		<groupId>org.neo4j</groupId>
@@ -14,8 +14,8 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.neo4j</groupId>
-			<artifactId>apoc</artifactId>
-			<version>0.5-SNAPSHOT</version>
+			<artifactId>neo4j-apoc</artifactId>
+			<version>0.5</version>
 			<type>pom</type>
 		</dependency>
 	</dependencies>
@@ -78,7 +78,7 @@
 						<id>apoc-assembly</id>
 						<phase>package</phase>
 						<goals>
-							<goal>attached</goal>
+							<goal>single</goal>
 						</goals>
 					</execution>
 				</executions>
