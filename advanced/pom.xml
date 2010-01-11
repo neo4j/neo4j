@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>remote-graphdb</artifactId>
+  <artifactId>neo4j-remote-graphdb</artifactId>
   <version>0.5-SNAPSHOT</version>
   <name>Neo4j - Remote Graph Database</name>
   <description></description>
@@ -41,12 +41,12 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>kernel</artifactId>
+      <artifactId>neo4j-kernel</artifactId>
       <version>1.0-rc-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>index</artifactId>
+      <artifactId>neo4j-index</artifactId>
       <version>1.0-b1-SNAPSHOT</version>
     </dependency>
     <dependency>
