@@ -9,7 +9,7 @@
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j</groupId>
-	<artifactId>shell</artifactId>
+	<artifactId>neo4j-shell</artifactId>
 	<version>1.0-rc-SNAPSHOT</version>
 	<name>Neo4j - Generic shell</name>
 	<description>
@@ -113,7 +113,7 @@
 						</manifest>
 						<manifestEntries>
 							<url>http://neo4j.org</url>
-							<Class-Path>kernel-${neo.version}.jar jta-${jta.version}.jar</Class-Path>
+							<Class-Path>neo4j-kernel-${neo.version}.jar jta-${jta.version}.jar</Class-Path>
 						</manifestEntries>
 					</archive>
 				</configuration>
@@ -135,7 +135,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.neo4j</groupId>
-			<artifactId>kernel</artifactId>
+			<artifactId>neo4j-kernel</artifactId>
 			<version>${version}</version>
 			<scope>compile</scope>
 		</dependency>
