@@ -1,21 +1,21 @@
 package org.neo4j.examples.apoc;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Transaction;
-import org.neo4j.util.index.IndexService;
-import org.neo4j.util.index.LuceneIndexService;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.index.IndexService;
+import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class EmbeddedNeoWithIndexingExample
 {
-    private static final String NEO_DB_PATH = "neo-store";
+    private static final String DB_PATH = "neo4j-store";
     private static final String USERNAME_KEY = "username";
     
-    private static NeoService neo;
+    private static GraphDatabaseService graphDb;
     private static IndexService indexService;
     
     private static enum RelTypes implements RelationshipType
@@ -26,17 +26,17 @@ public class EmbeddedNeoWithIndexingExample
 
     public static void main( String[] args )
     {
-        neo = new EmbeddedNeo( NEO_DB_PATH );
-        indexService = new LuceneIndexService( neo );
-        registerShutdownHookForNeoAndIndexService();
+        graphDb = new EmbeddedGraphDatabase( DB_PATH );
+        indexService = new LuceneIndexService( graphDb );
+        registerShutdownHook();
         
-        Transaction tx = neo.beginTx();
+        Transaction tx = graphDb.beginTx();
         try
         {
             // Create users sub reference node (see design guidelines on
             // http://wiki.neo4j.org)
-            Node usersReferenceNode = neo.createNode();
-            neo.getReferenceNode().createRelationshipTo( usersReferenceNode,
+            Node usersReferenceNode = graphDb.createNode();
+            graphDb.getReferenceNode().createRelationshipTo( usersReferenceNode,
                 RelTypes.USERS_REFERENCE );
             
             // Create some users and index their names with the IndexService
@@ -83,7 +83,7 @@ public class EmbeddedNeoWithIndexingExample
     private static void shutdown()
     {
         indexService.shutdown();
-        neo.shutdown();
+        graphDb.shutdown();
     }
     
     private static String idToUserName( int id )
@@ -93,13 +93,13 @@ public class EmbeddedNeoWithIndexingExample
 
     private static Node createAndIndexUser( String username )
     {
-        Node node = neo.createNode();
+        Node node = graphDb.createNode();
         node.setProperty( USERNAME_KEY, username );
         indexService.index( node, USERNAME_KEY, username );
         return node;
     }
     
-    private static void registerShutdownHookForNeoAndIndexService()
+    private static void registerShutdownHook()
     {
         // Registers a shutdown hook for the Neo4j and index service instances
         // so that it shuts down nicely when the VM exits (even if you
