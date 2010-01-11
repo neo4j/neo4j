@@ -54,7 +54,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         this.sanityCheckTraverser( "Sanity check failed: null traversable "
             + "rels should throw an " + "IllegalArgumentException",
             BREADTH_FIRST, root, null, Direction.OUTGOING,
-            StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL );
+            StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL );
 
         // Null stop evaluator
         this.sanityCheckTraverser( "Sanity check failed: null stop eval "
@@ -66,7 +66,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         this.sanityCheckTraverser( "Sanity check failed: null returnable "
             + "evaluator should throw an " + "IllegalArgumentException",
             BREADTH_FIRST, root, traversableRels[0], Direction.OUTGOING,
-            StopEvaluator.END_OF_NETWORK, null );
+            StopEvaluator.END_OF_GRAPH, null );
         root.delete();
     }
 
@@ -82,13 +82,13 @@ public class TestTraversal extends AbstractNeo4jTestCase
         this.sanityCheckTraverser( "Sanity check failed: null traversable "
             + "rels should throw an " + "IllegalArgumentException",
             BREADTH_FIRST, root, null, traversableDirs[0],
-            StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL );
+            StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL );
 
         // Null traversable directions
         this.sanityCheckTraverser( "Sanity check failed: null traversable "
             + "rels should throw an " + "IllegalArgumentException",
             BREADTH_FIRST, root, traversableRels[0], null,
-            StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL );
+            StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL );
 
         // Null stop evaluator
         this.sanityCheckTraverser( "Sanity check failed: null stop eval "
@@ -100,17 +100,17 @@ public class TestTraversal extends AbstractNeo4jTestCase
         this.sanityCheckTraverser( "Sanity check failed: null returnable "
             + "evaluator should throw an " + "IllegalArgumentException",
             BREADTH_FIRST, root, traversableRels[0], traversableDirs[0],
-            StopEvaluator.END_OF_NETWORK, null );
+            StopEvaluator.END_OF_GRAPH, null );
         // traversable relationships length not equal to traversable directions
         // length
         this.sanityCheckTraverser( "Sanity check failed: null returnable "
             + "evaluator should throw an " + "IllegalArgumentException",
             BREADTH_FIRST, root, traversableRels[0], null,
-            StopEvaluator.END_OF_NETWORK, null );
+            StopEvaluator.END_OF_GRAPH, null );
         this.sanityCheckTraverser( "Sanity check failed: null returnable "
             + "evaluator should throw an " + "IllegalArgumentException",
             BREADTH_FIRST, root, null, traversableDirs[0],
-            StopEvaluator.END_OF_NETWORK, null );
+            StopEvaluator.END_OF_GRAPH, null );
         root.delete();
     }
 
@@ -157,7 +157,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         RelationshipType[] traversableRels = new RelationshipType[] {
             MyRelTypes.TEST, MyRelTypes.TEST_TRAVERSAL };
         Traverser traverser = root.traverse( BREADTH_FIRST,
-            StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL,
+            StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL,
             traversableRels[0], Direction.BOTH, traversableRels[1],
             Direction.BOTH );
 
@@ -199,7 +199,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         Node root = this.buildIseTreePopulation();
         RelationshipType[] traversableRels = new RelationshipType[] { MyRelTypes.TEST };
         Traverser traverser = root.traverse( BREADTH_FIRST,
-            StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL,
+            StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL,
             traversableRels[0], Direction.BOTH );
 
         try
@@ -261,7 +261,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
             // b) create a traverser
             Traverser toTheMiddleTraverser = root.traverse( BREADTH_FIRST,
-                StopEvaluator.END_OF_NETWORK, returnEvaluator, MyRelTypes.TEST,
+                StopEvaluator.END_OF_GRAPH, returnEvaluator, MyRelTypes.TEST,
                 Direction.BOTH );
 
             // c) get the first node it returns
@@ -276,7 +276,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
         // Construct the real traverser
         Traverser traverser = startNode.traverse( BREADTH_FIRST,
-            StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL,
+            StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL,
             MyRelTypes.TEST, Direction.OUTGOING );
         try
         {
@@ -309,7 +309,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         RelationshipType[] traversableRels = new RelationshipType[] {
             MyRelTypes.TEST, MyRelTypes.TEST_TRAVERSAL };
         Traverser traverser = root.traverse( DEPTH_FIRST,
-            StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL,
+            StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL,
             traversableRels[0], Direction.BOTH, traversableRels[1],
             Direction.BOTH );
 
@@ -366,7 +366,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         Node root = this.buildIseTreePopulation();
         RelationshipType[] traversableRels = new RelationshipType[] { MyRelTypes.TEST };
         Traverser traverser = root.traverse( DEPTH_FIRST,
-            StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL,
+            StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL,
             traversableRels[0], Direction.BOTH );
 
         try
