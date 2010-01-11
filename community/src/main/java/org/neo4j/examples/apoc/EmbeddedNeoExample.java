@@ -1,15 +1,15 @@
 package org.neo4j.examples.apoc;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Transaction;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class EmbeddedNeoExample
 {
-    private static final String NEO_DB_PATH = "neo-store";
+    private static final String DB_PATH = "neo4j-store";
     private static final String NAME_KEY = "name";
     
     private static enum ExampleRelationshipTypes implements RelationshipType
@@ -19,17 +19,17 @@ public class EmbeddedNeoExample
 
     public static void main( String[] args )
     {
-        final NeoService neo = new EmbeddedNeo( NEO_DB_PATH );
-        registerShutdownHookForNeo( neo );
+        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( DB_PATH );
+        registerShutdownHook( graphDb );
         
         // Encapsulate some operations in a transaction
-        Transaction tx = neo.beginTx();
+        Transaction tx = graphDb.beginTx();
         try
         {
-            Node firstNode = neo.createNode();
+            Node firstNode = graphDb.createNode();
             firstNode.setProperty( NAME_KEY, "Hello" );
             
-            Node secondNode = neo.createNode();
+            Node secondNode = graphDb.createNode();
             secondNode.setProperty( NAME_KEY, "World" );
             
             firstNode.createRelationshipTo( secondNode,
@@ -51,10 +51,11 @@ public class EmbeddedNeoExample
             tx.finish();
         }
         System.out.println( "Shutting down..." );
-        neo.shutdown();
+        graphDb.shutdown();
     }
     
-    private static void registerShutdownHookForNeo( final NeoService neo )
+    private static void registerShutdownHook(
+        final GraphDatabaseService graphDb )
     {
         // Registers a shutdown hook for the Neo4j instance so that it
         // shuts down nicely when the VM exits (even if you "Ctrl-C" the
@@ -64,7 +65,7 @@ public class EmbeddedNeoExample
             @Override
             public void run()
             {
-                neo.shutdown();
+                graphDb.shutdown();
             }
         } );
     }
