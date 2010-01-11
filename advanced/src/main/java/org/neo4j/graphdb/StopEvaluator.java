@@ -51,19 +51,6 @@ package org.neo4j.graphdb;
  */
 public interface StopEvaluator
 {
-	/**
-	 * Deprecated: replaced by {@link #END_OF_GRAPH}. Traverse until the end of
-	 * network, this evaluator returns <CODE>false</CODE> all the time.
-	 * @deprecated
-	 */
-	public static final StopEvaluator END_OF_NETWORK = new StopEvaluator()
-	{
-		public boolean isStopNode( TraversalPosition currentPosition )
-		{
-			return false;
-		}
-	};
-	
     /**
      * Traverse until the end of the graph. This evaluator returns 
      * <CODE>false</CODE> all the time.

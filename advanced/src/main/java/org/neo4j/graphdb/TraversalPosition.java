@@ -127,7 +127,7 @@ public interface TraversalPosition
     * </code>
     * </pre>
     * 
-    * But using <code>notStartNode()</code>:
+    * But using <code>isStartNode()</code>:
     * 
     * <pre>
     * <code>
