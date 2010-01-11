@@ -213,10 +213,15 @@ public interface Node extends PropertyContainer
 	 */
 	public Relationship getSingleRelationship( RelationshipType type,
 		Direction dir );
+	
 	/**
 	 * Creates a relationship between this node and another node. The
 	 * relationship is of type <code>type</code>. It starts at this node and
 	 * ends at <code>otherNode</code>.
+	 * <p>
+	 * Neo4j doesn't support self-relationships, i.e. relationships where the
+	 * start node and end node are the same. If <code>otherNode</code> is
+	 * the same as this node then an exception will be thrown.
 	 * <p> 
 	 * A relationship is equally well traversed in both directions so there's
 	 * no need to create another relationship in the opposite direction
