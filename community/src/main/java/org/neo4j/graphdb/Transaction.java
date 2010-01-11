@@ -51,18 +51,18 @@ package org.neo4j.graphdb;
  * kick in and {@link #finish() tx.finish} will commit the transaction if the
  * internal state indicates success or else mark it for rollback.
  * <p>
- * If an exception is raised in the try-block, <code>tx.success()</code> will
+ * If an exception is raised in the try-block, {@link #success()} will
  * never be invoked and the internal state of the transaction object will cause
- * <code>tx.finish()</code> to roll back the transaction. This is very
+ * {@link #finish()} to roll back the transaction. This is very
  * important: unless {@link #success()} is invoked, the transaction will fail
  * upon {@link #finish()}. A transaction can be explicitly marked for rollback
- * by invoking the {@link #failure() tx.failure()} method.
+ * by invoking the {@link #failure()} method.
  */
 public interface Transaction
 {
     /**
      * Marks this transaction as failed, which means that it will inexplicably
-     * be rolled back upon invocation of {@link #finish()}. Once this method
+     * be rolled back when {@link #finish()} is called. Once this method
      * has been invoked, it doesn't matter how many times {@link #success()} is
      * invoked -- the transaction will still be rolled back.
      */
