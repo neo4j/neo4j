@@ -19,6 +19,10 @@
  */
 package org.neo4j.shell;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
 import junit.framework.TestCase;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -62,9 +66,11 @@ public class ShellTest extends TestCase
     {
         GraphDatabaseService graphDb = new EmbeddedGraphDatabase(
             "target/shell-neo" );
-        graphDb.enableRemoteShell();
-        ShellLobby.newClient( AbstractServer.DEFAULT_PORT,
-            AbstractServer.DEFAULT_NAME );
+        Map<String, Serializable> map = new HashMap<String, Serializable>();
+        int port = 8085;
+        map.put( "port", port );
+        graphDb.enableRemoteShell( map );
+        ShellLobby.newClient( port, AbstractServer.DEFAULT_NAME );
         graphDb.shutdown();
     }
 
