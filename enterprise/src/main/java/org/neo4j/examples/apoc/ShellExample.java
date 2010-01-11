@@ -8,23 +8,23 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Transaction;
-import org.neo4j.shell.neo.LocalNeoShellServer;
-import org.neo4j.shell.SameJvmClient;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.ShellServer;
+import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class ShellExample
 {
-    private static final String NEO_DB_PATH = "neo-store";
+    private static final String DB_PATH = "neo4j-store";
     private static final String USERNAME_KEY = "username";
     
-    private static NeoService neo;
+    private static GraphDatabaseService graphDb;
     
     private static enum RelTypes implements RelationshipType
     {
@@ -37,10 +37,10 @@ public class ShellExample
     {
         registerShutdownHookForNeo();
         
-        startNeo();
+        startGraphDb();
         createExampleNodeSpace();
         boolean trueForLocal = waitForUserInput( "Would you like to start a " +
-            "local shell instance or enable neo to accept remote " +
+            "local shell instance or enable neo4j to accept remote " +
             "connections [l/r]? " ).equalsIgnoreCase( "l" );
         if ( trueForLocal )
         {
@@ -55,25 +55,21 @@ public class ShellExample
         shutdown();
     }
     
-    private static void startNeo()
+    private static void startGraphDb()
     {
-        neo = new EmbeddedNeo( NEO_DB_PATH );
+        graphDb = new EmbeddedGraphDatabase( DB_PATH );
     }
     
     private static void startLocalShell() throws Exception
     {
-        shutdownNeo();
-        
-        ShellServer shellServer = new LocalNeoShellServer( NEO_DB_PATH, false );
+        ShellServer shellServer = new GraphDatabaseShellServer( graphDb );
         new SameJvmClient( shellServer ).grabPrompt();
         shellServer.shutdown();
-        
-        startNeo();
     }
 
     private static void startRemoteShellAndWait() throws Exception
     {
-        neo.enableRemoteShell();
+        graphDb.enableRemoteShell();
         waitForUserInput( "Remote shell enabled, connect to it by running:\n" +
             "java -jar lib/shell-<version>.jar\n" +
             "\nWhen you're done playing around, just press any key " +
@@ -90,15 +86,15 @@ public class ShellExample
 
     private static void createExampleNodeSpace()
     {
-        Transaction tx = neo.beginTx();
+        Transaction tx = graphDb.beginTx();
         try
         {
             // Create users sub reference node (see design guide lines on
             // http://wiki.neo4j.org)
             System.out.println( "Creating example node space..." );
             Random random = new Random();
-            Node usersReferenceNode = neo.createNode();
-            neo.getReferenceNode().createRelationshipTo( usersReferenceNode,
+            Node usersReferenceNode = graphDb.createNode();
+            graphDb.getReferenceNode().createRelationshipTo( usersReferenceNode,
                 RelTypes.USERS_REFERENCE );
             
             // Create some users and index their names with the IndexService
@@ -135,13 +131,13 @@ public class ShellExample
     
     private static void deleteExampleNodeSpace()
     {
-        Transaction tx = neo.beginTx();
+        Transaction tx = graphDb.beginTx();
         try
         {
             // Delete the persons and remove them from the index
             System.out.println( "Deleting example node space..." );
             Node usersReferenceNode =
-                neo.getReferenceNode().getSingleRelationship(
+                graphDb.getReferenceNode().getSingleRelationship(
                     RelTypes.USERS_REFERENCE, Direction.OUTGOING ).getEndNode();
             for ( Relationship relationship :
                 usersReferenceNode.getRelationships( RelTypes.USER,
@@ -169,13 +165,13 @@ public class ShellExample
     
     private static void shutdownNeo()
     {
-        neo.shutdown();
-        neo = null;
+        graphDb.shutdown();
+        graphDb = null;
     }
     
     private static void shutdown()
     {
-        if ( neo != null )
+        if ( graphDb != null )
         {
             deleteExampleNodeSpace();
             shutdownNeo();
@@ -204,7 +200,7 @@ public class ShellExample
 
     private static Node createUser( String username )
     {
-        Node node = neo.createNode();
+        Node node = graphDb.createNode();
         node.setProperty( USERNAME_KEY, username );
         return node;
     }
