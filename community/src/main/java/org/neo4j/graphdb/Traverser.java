@@ -28,7 +28,8 @@ import java.util.Iterator;
  * and returns an iterator of nodes that match those parameters. It is created by
  * invoking {@link Node#traverse Node.traverse(...)}. Upon creation, the
  * traverser is positioned at the start node, but it doesn't actually start
- * traversing until its {@link #iterator() iterator().next()} method is invoked.
+ * traversing until its {@link #iterator() iterator().next()} method is invoked
+ * and will then traverse lazily one step each time {@code next} is called.
  * Typically it's used in a for-each loop as follows:
  * <code><pre>
  * Traverser friends = node.traverse( Order.BREADTH_FIRST,
@@ -66,7 +67,20 @@ public interface Traverser extends Iterable<Node>
 	}
 	
 	/**
-	 * Returns the current traversal postion.
+	 * Returns the current traversal postion, i.e. where the traversal is at
+	 * the moment. It contains information such as which node we're at,
+	 * which the last traversed relationship was (if any) and at which depth
+	 * the current position is (relative to the starting node). You can use
+	 * it in your traverser for-loop like this:
+	 * <pre>
+	 * Traverser traverser = node.traverse( ... );
+	 * for ( Node node : traverser )
+	 * {
+	 *     TraversalPosition currentPosition = traverser.currentPosition();
+	 *     // Get "current position" information right here.
+	 * }
+	 * </pre>
+	 * 
 	 * @return The current traversal position
 	 */
 	public TraversalPosition currentPosition();
@@ -85,7 +99,12 @@ public interface Traverser extends Iterable<Node>
 	
 	// Doc: especially remove() thing
 	/**
-	 * Returns an iterator for this traverser.
+	 * Returns an {@link Iterator} representing the traversal of the graph.
+	 * The iteration is completely lazy in that it will only traverse one step
+	 * (to the next "hit") for every call to {@code hasNext()}/{@code next()}.
+	 * 
+	 * Consecutive calls to this method will return the same instance.
+	 * 
 	 * @return An iterator for this traverser
 	 */
 	// Doc: does it create a new iterator or reuse the existing one? This is
