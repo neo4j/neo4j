@@ -75,7 +75,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     
     protected String getShellPrompt()
     {
-        String name = "neo-sh";
+        String name = "neo4j-sh";
         if ( this.graphDb instanceof EmbeddedReadOnlyGraphDatabase )
         {
             name += "[readonly]";
@@ -87,7 +87,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     @Override
     public String welcome()
     {
-        return "Welcome to NeoShell\n" + Help.getHelpString( this );
+        return "Welcome to the Neo4j Shell\n" + Help.getHelpString( this );
     }
     
     private void addNeoApps()
