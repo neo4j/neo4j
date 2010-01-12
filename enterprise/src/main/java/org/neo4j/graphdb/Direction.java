@@ -20,7 +20,7 @@
 package org.neo4j.graphdb;
 
 /**
- * Defines relationship directions used to when getting relationships from a 
+ * Defines relationship directions used when getting relationships from a 
  * node or when creating traversers.
  * <p>
  * A relationship has a direction from a node's point of view. If a node is 
