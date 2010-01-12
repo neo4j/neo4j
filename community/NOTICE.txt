@@ -1,6 +1,6 @@
 APOC examples - Basic Neo4j examples
 
-Copyright (c) 2009 "Neo Technology," Network Engine for Objects in Lund AB
+Copyright (c) 2009-2010 "Neo Technology," Network Engine for Objects in Lund AB
     
 This package includes software developed at
 "Neo Technology," Network Engine for Objects in Lund AB
