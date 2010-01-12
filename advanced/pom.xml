@@ -24,6 +24,7 @@
     <connection>
       scm:svn:https://svn.neo4j.org/components/remote-graphdb/trunk
     </connection>
+    <url>https://trac.neo4j.org/browser/components/remote-graphdb</url>
   </scm>
 
   <developers>
