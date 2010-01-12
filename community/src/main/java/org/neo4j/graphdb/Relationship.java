@@ -60,6 +60,9 @@ package org.neo4j.graphdb;
  * i.e. {@link #getStartNode()}, {@link #getEndNode()},
  * {@link #getOtherNode(Node)} and {@link #getNodes()} are guaranteed to always
  * return valid, non-null nodes.
+ * <p>
+ * A relationship's id is unique, but may not be unique over time since neo4j
+ * reuses deleted ids. See http://wiki.neo4j.org/content/Id_Reuse
  */
 public interface Relationship extends PropertyContainer
 {
