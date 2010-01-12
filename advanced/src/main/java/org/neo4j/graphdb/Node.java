@@ -50,6 +50,9 @@ package org.neo4j.graphdb;
  * <p>
  * The traversal factory methods instantiate a {@link Traverser traverser} that
  * starts traversing from this node.
+ * <p>
+ * A node's id is unique, but may not be unique over time since neo4j reuses
+ * deleted ids. See http://wiki.neo4j.org/content/Id_Reuse
  */
 public interface Node extends PropertyContainer
 {
@@ -245,7 +248,7 @@ public interface Node extends PropertyContainer
 	 * @param traversalOrder the traversal order
 	 * @param stopEvaluator an evaluator instructing the new traverser about
 	 * when to stop traversing, either a predefined evaluator such as
-	 * {@link StopEvaluator#END_OF_NETWORK} or a custom-written evaluator
+	 * {@link StopEvaluator#END_OF_GRAPH} or a custom-written evaluator
 	 * @param returnableEvaluator an evaluator instructing the new traverser
 	 * about whether a specific node should be returned from the traversal,
 	 * either a predefined evaluator such as {@link ReturnableEvaluator#ALL}
@@ -272,7 +275,7 @@ public interface Node extends PropertyContainer
 	 * @param traversalOrder the traversal order
 	 * @param stopEvaluator an evaluator instructing the new traverser about
 	 * when to stop traversing, either a predefined evaluator such as
-	 * {@link StopEvaluator#END_OF_NETWORK} or a custom-written evaluator
+	 * {@link StopEvaluator#END_OF_GRAPH} or a custom-written evaluator
 	 * @param returnableEvaluator an evaluator instructing the new traverser
 	 * about whether a specific node should be returned from the traversal,
 	 * either a predefined evaluator such as {@link ReturnableEvaluator#ALL}
@@ -315,7 +318,7 @@ public interface Node extends PropertyContainer
 	 * @param traversalOrder the traversal order
 	 * @param stopEvaluator an evaluator instructing the new traverser about
 	 * when to stop traversing, either a predefined evaluator such as
-	 * {@link StopEvaluator#END_OF_NETWORK} or a custom-written evaluator
+	 * {@link StopEvaluator#END_OF_GRAPH} or a custom-written evaluator
 	 * @param returnableEvaluator an evaluator instructing the new traverser
 	 * about whether a specific node should be returned from the traversal,
 	 * either a predefined evaluator such as {@link ReturnableEvaluator#ALL}
