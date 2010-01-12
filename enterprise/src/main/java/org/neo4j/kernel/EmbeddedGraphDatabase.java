@@ -60,6 +60,11 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
      * with a set of configuration parameters. Will most likely be removed in
      * future releases.
+     * <p>
+     * Creates an embedded {@link GraphDatabaseService} with a store located in
+     * <code>storeDir</code>, which will be created if it doesn't already
+     * exist.
+     * 
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
      */

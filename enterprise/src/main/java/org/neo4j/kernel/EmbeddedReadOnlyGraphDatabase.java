@@ -42,11 +42,30 @@ public final class EmbeddedReadOnlyGraphDatabase implements GraphDatabaseService
     
     private final EmbeddedGraphDbImpl neoImpl; 
 
+    /**
+     * Creates an embedded {@link GraphDatabaseService} with a store located in
+     * <code>storeDir</code>. If the directory shouldn't exist or isn't a neo4j
+     * store an exception will be thrown.
+     * 
+     * @param storeDir the store directory for the Neo4j store files
+     */
     public EmbeddedReadOnlyGraphDatabase( String storeDir )
     {
         this( storeDir, readOnlyParams );
     }
 
+    /**
+     * A non-standard way of creating an embedded {@link GraphDatabaseService}
+     * with a set of configuration parameters. Will most likely be removed in
+     * future releases.
+     * <p>
+     * Creates an embedded {@link GraphDatabaseService} with a store located in
+     * <code>storeDir</code>. If the directory shouldn't exist or isn't a neo4j
+     * store an exception will be thrown.
+     * 
+     * @param storeDir the store directory for the db files
+     * @param params configuration parameters
+     */
     public EmbeddedReadOnlyGraphDatabase( String storeDir, Map<String,String> params )
     {
         params.put( "read_only", "true" );
