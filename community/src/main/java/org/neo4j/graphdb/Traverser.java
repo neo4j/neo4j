@@ -72,8 +72,14 @@ public interface Traverser extends Iterable<Node>
 	public TraversalPosition currentPosition();
 	
 	/**
-	 * Returns a collection of all nodes returned by this traverser.
-	 * @return A collection of all node returned by this traverser
+	 * Returns a collection of all nodes for this traversal. It traverses
+	 * through the graph (according to given filters and evaluators) and
+	 * collects those encountered nodes along the way. When this method has
+	 * returned, this traverser will be at the end of its traversal, such that
+	 * a call to {@code hasNext()} for the {@link #iterator()} will return
+	 * {@code false}.
+	 * 
+	 * @return A collection of all nodes for this this traversal.
 	 */
 	public Collection<Node> getAllNodes();
 	
