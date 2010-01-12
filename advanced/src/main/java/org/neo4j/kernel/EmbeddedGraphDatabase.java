@@ -36,8 +36,8 @@ import org.neo4j.kernel.impl.transaction.TransactionFailureException;
  * a directory where Neo4j will store its data files, as such: <code>
  * <pre>
  * GraphDatabaseService graphDb = new EmbeddedGraphDatabase( &quot;var/graphdb&quot; );
- * // ... use neo
- * neo.shutdown();
+ * // ... use Neo4j
+ * graphDb.shutdown();
  * </pre>
  * </code> For more information, see {@link GraphDatabaseService}.
  */
