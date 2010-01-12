@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<project name="Neo4j ${project.artifactId}">
+<project name="${project.artifactId}">
     <version position="left" />
     <bannerLeft>
         <name>${project.name}</name>
@@ -15,13 +15,13 @@
             <item name="components" href=".." />
             <item name="apidocs" href="http://api.neo4j.org/" />
         </links>
-        <menu name="Neo4j ${project.artifactId}">
+        <menu name="Neo4j shell">
             <item name="Introduction" href="index.html" />
-            <item name="Wiki" href="http://wiki.neo4j.org/content/${project.artifactId}" />
+            <item name="Wiki" href="http://wiki.neo4j.org/content/Shell" />
             <item name="JavaDocs"
                 href="apidocs/index.html" />
             <item name="Source Repository"
-                href="https://svn.neo4j.org/components/${project.artifactId}/trunk/" />
+                href="https://svn.neo4j.org/components/shell/trunk/" />
         </menu>
         <menu ref="reports" />
     </body>
