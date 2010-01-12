@@ -26,7 +26,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * The main access point to a running Neo4j instance. The most common
- * implementation is the {@link EmbeddedGraphDatabase EmbeddedGraphDatabase} class, which is used to
+ * implementation is the {@link EmbeddedGraphDatabase} class, which is used to
  * embed Neo4j in an application. Typically, you would create an
  * <code>EmbeddedGraphDatabase</code> instance as follows:
  * <code>
@@ -39,7 +39,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * given an id}, get the {@link #getReferenceNode() reference node} and
  * ultimately {@link #shutdown() shutdown Neo4j}.
  * <p>
- * Please note that all operations that read or write to the node space must be
+ * Please note that all operations that read or write to the graph must be
  * invoked in a {@link Transaction transactional context}. Failure to do so 
  * will result in a {@link NotInTransactionException} being thrown.
  */
