@@ -46,7 +46,7 @@
 	<licenses>
 		<license>
 			<name>GNU Affero General Public License, Version 3</name>
-			<url>https://svn.neo4j.org/components/${project.artifactId}/trunk/LICENSE.txt
+			<url>https://svn.neo4j.org/components/shell/trunk/LICENSE.txt
 			</url>
 		</license>
 	</licenses>
