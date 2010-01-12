@@ -19,29 +19,26 @@ import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-public class ShellExample
+public class Shell
 {
     private static final String DB_PATH = "neo4j-store";
     private static final String USERNAME_KEY = "username";
-    
     private static GraphDatabaseService graphDb;
-    
+
     private static enum RelTypes implements RelationshipType
     {
-        USERS_REFERENCE,
-        USER,
-        KNOWS,
+        USERS_REFERENCE, USER, KNOWS,
     }
-    
-    public static void main( String[] args ) throws Exception
+
+    public static void main( final String[] args ) throws Exception
     {
         registerShutdownHookForNeo();
-        
         startGraphDb();
         createExampleNodeSpace();
-        boolean trueForLocal = waitForUserInput( "Would you like to start a " +
-            "local shell instance or enable neo4j to accept remote " +
-            "connections [l/r]? " ).equalsIgnoreCase( "l" );
+        boolean trueForLocal = waitForUserInput(
+            "Would you like to start a "
+                + "local shell instance or enable neo4j to accept remote "
+                + "connections [l/r]? " ).equalsIgnoreCase( "l" );
         if ( trueForLocal )
         {
             startLocalShell();
@@ -50,16 +47,14 @@ public class ShellExample
         {
             startRemoteShellAndWait();
         }
-        
-        System.out.println( "Shutting down..." );
         shutdown();
     }
-    
+
     private static void startGraphDb()
     {
         graphDb = new EmbeddedGraphDatabase( DB_PATH );
     }
-    
+
     private static void startLocalShell() throws Exception
     {
         ShellServer shellServer = new GraphDatabaseShellServer( graphDb );
@@ -70,18 +65,18 @@ public class ShellExample
     private static void startRemoteShellAndWait() throws Exception
     {
         graphDb.enableRemoteShell();
-        waitForUserInput( "Remote shell enabled, connect to it by running:\n" +
-            "java -jar lib/shell-<version>.jar\n" +
-            "\nWhen you're done playing around, just press any key " +
-            "in this terminal " );
+        waitForUserInput( "Remote shell enabled, connect to it by running:\n"
+            + "java -jar lib/shell-<version>.jar\n"
+            + "\nWhen you're done playing around, just press any key "
+            + "in this terminal " );
     }
-    
-    private static String waitForUserInput( String textToSystemOut )
+
+    private static String waitForUserInput( final String textToSystemOut )
         throws Exception
     {
         System.out.print( textToSystemOut );
-        return new BufferedReader(
-            new InputStreamReader( System.in ) ).readLine();
+        return new BufferedReader( new InputStreamReader( System.in ) )
+            .readLine();
     }
 
     private static void createExampleNodeSpace()
@@ -91,17 +86,16 @@ public class ShellExample
         {
             // Create users sub reference node (see design guide lines on
             // http://wiki.neo4j.org)
-            System.out.println( "Creating example node space..." );
+            System.out.println( "Creating example node space ..." );
             Random random = new Random();
             Node usersReferenceNode = graphDb.createNode();
-            graphDb.getReferenceNode().createRelationshipTo( usersReferenceNode,
-                RelTypes.USERS_REFERENCE );
-            
+            graphDb.getReferenceNode().createRelationshipTo(
+                usersReferenceNode, RelTypes.USERS_REFERENCE );
             // Create some users and index their names with the IndexService
             List<Node> users = new ArrayList<Node>();
             for ( int id = 0; id < 100; id++ )
             {
-                Node userNode = createUser( formUserName( id ) ); 
+                Node userNode = createUser( formUserName( id ) );
                 usersReferenceNode.createRelationshipTo( userNode,
                     RelTypes.USER );
                 if ( id > 10 )
@@ -110,8 +104,8 @@ public class ShellExample
                     Set<Node> knows = new HashSet<Node>();
                     for ( int i = 0; i < numberOfFriends; i++ )
                     {
-                        Node friend = users.get( random.nextInt(
-                            users.size() ) );
+                        Node friend = users
+                            .get( random.nextInt( users.size() ) );
                         if ( knows.add( friend ) )
                         {
                             userNode.createRelationshipTo( friend,
@@ -128,24 +122,23 @@ public class ShellExample
             tx.finish();
         }
     }
-    
+
     private static void deleteExampleNodeSpace()
     {
         Transaction tx = graphDb.beginTx();
         try
         {
             // Delete the persons and remove them from the index
-            System.out.println( "Deleting example node space..." );
-            Node usersReferenceNode =
-                graphDb.getReferenceNode().getSingleRelationship(
-                    RelTypes.USERS_REFERENCE, Direction.OUTGOING ).getEndNode();
-            for ( Relationship relationship :
-                usersReferenceNode.getRelationships( RelTypes.USER,
-                    Direction.OUTGOING ) )
+            System.out.println( "Deleting example node space ..." );
+            Node usersReferenceNode = graphDb.getReferenceNode()
+                .getSingleRelationship( RelTypes.USERS_REFERENCE,
+                    Direction.OUTGOING ).getEndNode();
+            for ( Relationship relationship : usersReferenceNode
+                .getRelationships( RelTypes.USER, Direction.OUTGOING ) )
             {
                 Node user = relationship.getEndNode();
-                for ( Relationship knowsRelationship : user.getRelationships(
-                    RelTypes.KNOWS ) )
+                for ( Relationship knowsRelationship : user
+                    .getRelationships( RelTypes.KNOWS ) )
                 {
                     knowsRelationship.delete();
                 }
@@ -162,22 +155,23 @@ public class ShellExample
             tx.finish();
         }
     }
-    
-    private static void shutdownNeo()
+
+    private static void shutdownGraphDb()
     {
+        System.out.println( "Shutting down database ..." );
         graphDb.shutdown();
         graphDb = null;
     }
-    
+
     private static void shutdown()
     {
         if ( graphDb != null )
         {
             deleteExampleNodeSpace();
-            shutdownNeo();
+            shutdownGraphDb();
         }
     }
-    
+
     private static void registerShutdownHookForNeo()
     {
         // Registers a shutdown hook for the Neo4j instance so that it
@@ -192,13 +186,13 @@ public class ShellExample
             }
         } );
     }
-    
-    private static String formUserName( int id )
+
+    private static String formUserName( final int id )
     {
         return "user" + id + "@neo4j.org";
     }
 
-    private static Node createUser( String username )
+    private static Node createUser( final String username )
     {
         Node node = graphDb.createNode();
         node.setProperty( USERNAME_KEY, username );
