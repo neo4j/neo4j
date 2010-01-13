@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>online-backup</artifactId>
-  <version>0.3-SNAPSHOT</version>
+  <version>0.4-SNAPSHOT</version>
   <name>Onlinebackup</name>
   <description>Backup of resources using the XA framework</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
@@ -59,13 +59,13 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo</artifactId>
-      <version>1.0-b11-SNAPSHOT</version>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.0-rc-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>index-util</artifactId>
-      <version>0.9-SNAPSHOT</version>
+      <artifactId>neo4j-index</artifactId>
+      <version>1.0-b1-SNAPSHOT</version>
     </dependency>
   </dependencies>
 </project>

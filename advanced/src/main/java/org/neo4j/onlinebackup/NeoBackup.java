@@ -22,17 +22,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
-import org.neo4j.api.core.EmbeddedNeo;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * Online backup implementation for neo4j.
  */
 public class NeoBackup implements Backup
 {
-    private final EmbeddedNeo onlineNeo;
+    private final EmbeddedGraphDatabase onlineNeo;
     private String destDir;
     private List<String> xaNames = null;
-    private EmbeddedNeo backupNeo = null;
+    private EmbeddedGraphDatabase backupNeo = null;
     private static Logger logger = Logger.getLogger( NeoBackup.class.getName() );
     private static ConsoleHandler consoleHandler = new ConsoleHandler();
     private static FileHandler fileHandler = null;
@@ -54,7 +54,8 @@ public class NeoBackup implements Backup
      * @param destDir
      *            location of backup destination
      */
-    public NeoBackup( final EmbeddedNeo sourceNeo, final String destDir )
+    public NeoBackup( final EmbeddedGraphDatabase sourceNeo,
+        final String destDir )
     {
         if ( sourceNeo == null )
         {
@@ -81,7 +82,8 @@ public class NeoBackup implements Backup
      * @param destNeo
      *            running database as backup destination
      */
-    public NeoBackup( final EmbeddedNeo sourceNeo, final EmbeddedNeo destNeo )
+    public NeoBackup( final EmbeddedGraphDatabase sourceNeo,
+        final EmbeddedGraphDatabase destNeo )
     {
         if ( sourceNeo == null )
         {
@@ -109,8 +111,8 @@ public class NeoBackup implements Backup
      * @param xaDataSourceNames
      *            names of data sources to backup
      */
-    public NeoBackup( final EmbeddedNeo sourceNeo, final String destDir,
-        final List<String> xaDataSourceNames )
+    public NeoBackup( final EmbeddedGraphDatabase sourceNeo,
+        final String destDir, final List<String> xaDataSourceNames )
     {
         this( sourceNeo, destDir );
         initXaNames( xaDataSourceNames );
@@ -127,7 +129,8 @@ public class NeoBackup implements Backup
      * @param xaDataSourceNames
      *            names of data sources to backup
      */
-    public NeoBackup( final EmbeddedNeo sourceNeo, final EmbeddedNeo destNeo,
+    public NeoBackup( final EmbeddedGraphDatabase sourceNeo,
+        final EmbeddedGraphDatabase destNeo,
         final List<String> xaDataSourceNames )
     {
         this( sourceNeo, destNeo );

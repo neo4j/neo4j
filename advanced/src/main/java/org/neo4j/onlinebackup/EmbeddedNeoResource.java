@@ -12,9 +12,9 @@
  */
 package org.neo4j.onlinebackup;
 
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.impl.transaction.XaDataSourceManager;
-import org.neo4j.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
  * Wraps an EmbeddedNeo to be used as data source and give access to other data
@@ -23,10 +23,10 @@ import org.neo4j.impl.transaction.xaframework.XaDataSource;
 public class EmbeddedNeoResource extends AbstractResource implements
     NeoResource
 {
-    protected final EmbeddedNeo neo;
+    protected final EmbeddedGraphDatabase neo;
     protected final XaDataSourceManager xaDsm;
 
-    EmbeddedNeoResource( final EmbeddedNeo neo )
+    EmbeddedNeoResource( final EmbeddedGraphDatabase neo )
     {
         super( neo.getConfig().getPersistenceModule().getPersistenceManager()
             .getPersistenceSource().getXaDataSource() );

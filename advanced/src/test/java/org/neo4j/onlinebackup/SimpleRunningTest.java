@@ -9,12 +9,12 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Transaction;
-import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
 /**
  * Try to backup Neo to another running Neo instance.
@@ -41,7 +41,7 @@ public class SimpleRunningTest
 
         System.out.println( "setting up simple database and backup-copy" );
 
-        EmbeddedNeo neo = Util.startNeoInstance( STORE_LOCATION_DIR );
+        EmbeddedGraphDatabase neo = Util.startNeoInstance( STORE_LOCATION_DIR );
         ((NeoStoreXaDataSource) neo.getConfig().getPersistenceModule()
             .getPersistenceManager().getPersistenceSource()
             .getXaDataSource()).keepLogicalLogs( true );
@@ -64,7 +64,7 @@ public class SimpleRunningTest
     @Test
     public void backup() throws IOException
     {
-        EmbeddedNeo neo = Util.startNeoInstance( STORE_LOCATION_DIR );
+        EmbeddedGraphDatabase neo = Util.startNeoInstance( STORE_LOCATION_DIR );
         ((NeoStoreXaDataSource) neo.getConfig().getPersistenceModule()
             .getPersistenceManager().getPersistenceSource().getXaDataSource())
             .keepLogicalLogs( true );
@@ -114,11 +114,11 @@ public class SimpleRunningTest
         Util.stopNeo( neo );
     }
 
-    protected void tryBackup( EmbeddedNeo neo, String location, int relCount )
+    protected void tryBackup( EmbeddedGraphDatabase neo, String location, int relCount )
         throws IOException
     {
-        System.out.println( "backing up to running EmbeddedNeo instance" );
-        EmbeddedNeo bNeo = Util.startNeoInstance( location );
+        System.out.println( "backing up to running EmbeddedGraphDatabase instance" );
+        EmbeddedGraphDatabase bNeo = Util.startNeoInstance( location );
         Backup backupComp = new NeoBackup( neo, bNeo );
         backupComp.enableFileLogger();
         backupComp.doBackup();
@@ -142,7 +142,7 @@ public class SimpleRunningTest
         Util.stopNeo( bNeo );
     }
 
-    private void addNode( EmbeddedNeo neo )
+    private void addNode( EmbeddedGraphDatabase neo )
     {
         Node referenceNode = neo.getReferenceNode();
         Node node = neo.createNode();

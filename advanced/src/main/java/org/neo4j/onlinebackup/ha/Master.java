@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.onlinebackup.net.AcceptJob;
 import org.neo4j.onlinebackup.net.Callback;
 import org.neo4j.onlinebackup.net.Connection;
@@ -22,7 +22,7 @@ import org.neo4j.onlinebackup.net.SocketException;
 
 public class Master implements Callback
 {
-    private final EmbeddedNeo neo;
+    private final EmbeddedGraphDatabase neo;
     private final NeoStoreXaDataSource xaDs;
 
     private final JobEater jobEater;
@@ -34,7 +34,7 @@ public class Master implements Callback
     
     public Master( String path, Map<String,String> params, int listenPort )
     {
-        this.neo = new EmbeddedNeo( path, params );
+        this.neo = new EmbeddedGraphDatabase( path, params );
         this.xaDs = (NeoStoreXaDataSource) neo.getConfig().getTxModule()
             .getXaDataSourceManager().getXaDataSource( "nioneodb" );
         xaDs.keepLogicalLogs( true );
@@ -56,7 +56,7 @@ public class Master implements Callback
         jobEater.start();
     }
     
-    public NeoService getNeoService()
+    public GraphDatabaseService getNeoService()
     {
         return neo;
     }

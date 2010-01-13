@@ -5,7 +5,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
 public class LogApplier extends Thread
 {

@@ -6,9 +6,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.Transaction;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * Test to backup only Neo to a backup location.
@@ -16,13 +16,13 @@ import org.neo4j.api.core.Transaction;
 public class SimpleLocalTest extends SimpleRunningTest
 {
     @Override
-    protected void tryBackup( EmbeddedNeo neo, String location, int relCount )
-        throws IOException
+    protected void tryBackup( EmbeddedGraphDatabase neo, String location,
+        int relCount ) throws IOException
     {
         System.out.println( "backing up to backup location" );
         Backup backupComp = new NeoBackup( neo, location );
         backupComp.doBackup();
-        EmbeddedNeo bNeo = Util.startNeoInstance( location );
+        EmbeddedGraphDatabase bNeo = Util.startNeoInstance( location );
         Transaction bTx = bNeo.beginTx();
         try
         {
