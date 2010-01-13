@@ -21,6 +21,13 @@ package org.neo4j.graphdb;
 
 /**
  * Encapsulates information about the current traversal position.
+ * 
+ * The TraversalPosition is mainly used in
+ * {@link StopEvaluator#isStopNode(TraversalPosition)} and
+ * {@link ReturnableEvaluator#isReturnableNode(TraversalPosition)} for
+ * evaluating whether a position in a traversal is a point where the traversal
+ * should stop or if the node at that position is to be part of the result
+ * respectively.
  */
 public interface TraversalPosition
 {
@@ -30,22 +37,27 @@ public interface TraversalPosition
 	 * @return The current node
 	 */
 	public Node currentNode();
-	
-	/**
-	 * Returns the previous node, may be null.
-	 * 
-	 * @return The previous node
-	 */
-	// null if start node
-	public Node previousNode();
-	/**
-	 * Return the last relationship traversed, may be null.
-	 * 
-	 * @return The last relationship traversed
-	 */
-	// null if start node
-	public Relationship lastRelationshipTraversed();
-	
+
+    /**
+     * Returns the previous node.
+     * 
+     * If this TraversalPosition represents the start node <code>null</code> is
+     * returned.
+     * 
+     * @return The previous node, or <code>null</code>
+     */
+    public Node previousNode();
+
+    /**
+     * Return the last relationship traversed.
+     * 
+     * If this TraversalPosition represents the start node <code>null</code> is
+     * returned.
+     * 
+     * @return The last relationship traversed, or <code>null</code>.
+     */
+    public Relationship lastRelationshipTraversed();
+
 	/**
 	 * Returns the current traversal depth.
 	 * 
@@ -59,89 +71,56 @@ public interface TraversalPosition
 	 * @return The number of returned nodes.
 	 */
 	public int returnedNodesCount();
-	
-	/**
-	 * Returns <code>true</code> if the current position is anywhere except on
-	 * the start node, <code>false</code> if it is on the start node. This is
-	 * useful because code in {@link StopEvaluator the}
-	 * {@link ReturnableEvaluator evaluators} usually have to treat the edge
-	 * case of the start node separately and using this method makes that code a
-	 * lot cleaner. For example, old code would be:
-	 * 
-	 * <pre>
-	 * <code>
-	 * public boolean isReturnableNode( TraversalPosition currentPos )
-	 * {
-	 * 	if ( currentPos.lastRelationshipTraversed() == null )
-	 * 	{
-	 * 		return false;
-	 * 	}
-	 * 	else
-	 * 	{
-	 * 		return currentPos.lastRelationshipTraversed().isType(
-	 * 		    MyRelationshipTypes.SOME_REL );
-	 * 	}
-	 * }
-	 * </code>
-	 * </pre>
-	 * 
-	 * But using <code>notStartNode()</code>:
-	 * 
-	 * <pre>
-	 * <code>
-	 * public boolean isReturnableNode( TraversalPosition currentPos )
-	 * {
-	 * 	return currentPos.notStartNode()
-	 * 	    &amp;&amp; currentPos.lastRelationshipTraversed().isType(
-	 * 	        MyRelationshipTypes.SOME_REL );
-	 * }
-	 * </code>
-	 * </pre>
-	 * 
-	 * @return <code>true</code> if the traversal is not currently positioned
-	 * on the start node, <code>false</code> if it is
-	 */
+
+    /**
+     * Returns <code>true</code> if the current position is anywhere except on
+     * the start node, <code>false</code> if it is on the start node. This is
+     * useful because code in {@link StopEvaluator the}
+     * {@link ReturnableEvaluator evaluators} usually have to treat the edge
+     * case of the start node separately and using this method makes that code a
+     * lot cleaner. This allows for much cleaner code
+     * where <code>null</code> checks can be avoided for return values from
+     * {@link #lastRelationshipTraversed()} and {@link #previousNode()}, such
+     * as in this example:
+     * 
+     * <code><pre>
+     * public boolean isStopNode( TraversalPosition currentPos )
+     * {
+     *     // Stop at nodes reached through a SOME_RELATIONSHIP.
+     *     return currentPos.notStartNode()
+     *         &amp;&amp; currentPos.lastRelationshipTraversed().isType(
+     *             MyRelationshipTypes.SOME_RELATIONSHIP );
+     * }
+     * </pre></code>
+     * 
+     * @return <code>true</code> if the this TraversalPosition is not at the
+     *         start node, <code>false</code> if it is.
+     */
 	public boolean notStartNode();
 
-   /**
-    * Returns <code>true</code> if the current position is the start node,
-    * <code>false</code> otherwise. This is useful because code in
-    * {@link StopEvaluator the} {@link ReturnableEvaluator evaluators} usually
-    * have to treat the edge case of the start node separately and using this
-    * method makes that code a lot cleaner. For example, old code would be:
-    * 
-    * <pre>
-    * <code>
-    * public boolean isReturnableNode( TraversalPosition currentPos )
-    * {
-    *      if ( currentPos.lastRelationshipTraversed() == null )
-    *      {
-    *              return false;
-    *      }
-    *      else
-    *      {
-    *              return currentPos.lastRelationshipTraversed().isType(
-    *                  MyRelationshipTypes.SOME_REL );
-    *      }
-    * }
-    * </code>
-    * </pre>
-    * 
-    * But using <code>isStartNode()</code>:
-    * 
-    * <pre>
-    * <code>
-    * public boolean isReturnableNode( TraversalPosition currentPos )
-    * {
-    *      return !currentPos.isStartNode()
-    *          &amp;&amp; currentPos.lastRelationshipTraversed().isType(
-    *              MyRelationshipTypes.SOME_REL );
-    * }
-    * </code>
-    * </pre>
-    * 
-    * @return <code>true</code> if the traversal is on the start node,
-    * <code>false</code> otherwise.
-    */
+    /**
+     * Returns <code>true</code> if the current position is the start node,
+     * <code>false</code> otherwise. This is useful because code in
+     * {@link StopEvaluator the} {@link ReturnableEvaluator evaluators} usually
+     * have to treat the edge case of the start node separately and using this
+     * method makes that code a lot cleaner. This allows for much cleaner code
+     * where <code>null</code> checks can be avoided for return values from
+     * {@link #lastRelationshipTraversed()} and {@link #previousNode()}, such
+     * as in this example:
+     * 
+     * <code><pre>
+     * public boolean isReturnableNode( TraversalPosition currentPos )
+     * {
+     *     // The start node, and nodes reached through SOME_RELATIONSHIP
+     *     // are returnable.
+     *     return currentPos.isStartNode()
+     *         || currentPos.lastRelationshipTraversed().isType(
+     *             MyRelationshipTypes.SOME_RELATIONSHIP );
+     * }
+     * </pre></code>
+     * 
+     * @return <code>true</code> if the this TraversalPosition is at the start
+     *         node, <code>false</code> if it is not.
+     */
     public boolean isStartNode();
 }

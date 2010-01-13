@@ -21,18 +21,19 @@ package org.neo4j.graphdb;
 
 /**
  * A client hook for evaluating whether a specific node should be returned from
- * a traverser. When a traverser is created the client parameterizes it with an 
- * instance of a ReturnableEvaluator. The traverser then invokes the
- * {@link #isReturnableNode isReturnableNode()} operation just before returning
- * a specific node, allowing the client to either approve or disapprove of
- * returning that node.
+ * a traverser.
+ * <P>
+ * When a traverser is created the client parameterizes it with an instance of a
+ * ReturnableEvaluator. The traverser then invokes the {@link #isReturnableNode
+ * isReturnableNode()} operation just before returning a specific node, allowing
+ * the client to either approve or disapprove of returning that node.
  * <P>
  * When implementing a ReturnableEvaluator, the client investigates the
- * information encapsulated in a {@link TraversalPosition} to decide whether
- * a node is returnable. For example, here's a snippet detailing a
- * ReturnableEvaluator that will only return 5 nodes:
- * <CODE>
- * <PRE>
+ * information encapsulated in a {@link TraversalPosition} to decide whether a
+ * node is returnable. For example, here's a snippet detailing a
+ * ReturnableEvaluator that will return at most 5 nodes:
+ * 
+ * <CODE><PRE>
  * ReturnableEvaluator returnEvaluator = new ReturnableEvaluator()
  * {
  *     public boolean isReturnableNode( TraversalPosition position )
@@ -41,8 +42,7 @@ package org.neo4j.graphdb;
  *         return position.returnedNodesCount() < 5;
  *     }
  * };
- * </PRE>
- * </CODE>
+ * </PRE></CODE>
  */
 public interface ReturnableEvaluator
 {
