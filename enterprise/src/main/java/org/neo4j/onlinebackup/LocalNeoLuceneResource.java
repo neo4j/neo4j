@@ -14,9 +14,9 @@ package org.neo4j.onlinebackup;
 
 import java.io.File;
 
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.util.index.IndexService;
-import org.neo4j.util.index.LuceneIndexService;
+import org.neo4j.index.IndexService;
+import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * Start an EmbeddedNeo from a directory location together with an
@@ -26,7 +26,7 @@ public class LocalNeoLuceneResource extends EmbeddedNeoResource
 {
     private final IndexService lucene;
 
-    private LocalNeoLuceneResource( final EmbeddedNeo neo )
+    private LocalNeoLuceneResource( final EmbeddedGraphDatabase neo )
     {
         super( neo );
         this.lucene = new LuceneIndexService( neo );
@@ -41,7 +41,8 @@ public class LocalNeoLuceneResource extends EmbeddedNeoResource
             throw new RuntimeException( "Unable to locate local neo store in["
                 + storeDir + "]" );
         }
-        return new LocalNeoLuceneResource( new EmbeddedNeo( storeDir ) );
+        return new LocalNeoLuceneResource(
+            new EmbeddedGraphDatabase( storeDir ) );
     }
 
     @Override

@@ -12,7 +12,7 @@
  */
 package org.neo4j.onlinebackup;
 
-import org.neo4j.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
  * Simple wrapper for XA data sources.

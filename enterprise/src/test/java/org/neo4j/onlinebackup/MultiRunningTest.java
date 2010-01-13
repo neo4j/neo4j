@@ -9,17 +9,17 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Transaction;
-import org.neo4j.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.impl.transaction.XaDataSourceManager;
-import org.neo4j.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.util.index.IndexService;
-import org.neo4j.util.index.LuceneDataSource;
-import org.neo4j.util.index.LuceneIndexService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.index.IndexService;
+import org.neo4j.index.lucene.LuceneDataSource;
+import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
  * Try to backup Neo and a Lucene data source to another running Neo+Lucene.
@@ -47,7 +47,7 @@ public class MultiRunningTest
         System.out
             .println( "setting up database and backup-copy including Lucene" );
 
-        EmbeddedNeo neo = Util.startNeoInstance( STORE_LOCATION_DIR );
+        EmbeddedGraphDatabase neo = Util.startNeoInstance( STORE_LOCATION_DIR );
         XaDataSource neoStoreXaDataSource = neo.getConfig()
             .getPersistenceModule().getPersistenceManager()
             .getPersistenceSource().getXaDataSource();
@@ -78,7 +78,7 @@ public class MultiRunningTest
     public void backup() throws IOException
     {
         System.out.println( "starting tests" );
-        EmbeddedNeo neo = Util.startNeoInstance( STORE_LOCATION_DIR );
+        EmbeddedGraphDatabase neo = Util.startNeoInstance( STORE_LOCATION_DIR );
         ((NeoStoreXaDataSource) neo.getConfig().getPersistenceModule()
             .getPersistenceManager().getPersistenceSource()
             .getXaDataSource()).keepLogicalLogs( true );
@@ -134,12 +134,12 @@ public class MultiRunningTest
         Util.stopNeo( neo, indexService );
     }
 
-    protected void tryBackup( EmbeddedNeo neo, String location, int relCount )
+    protected void tryBackup( EmbeddedGraphDatabase neo, String location, int relCount )
         throws IOException
     {
         setupBackup( neo, location );
 
-        EmbeddedNeo bNeo = Util.startNeoInstance( location );
+        EmbeddedGraphDatabase bNeo = Util.startNeoInstance( location );
         IndexService bIndexService = new LuceneIndexService( bNeo );
         Transaction bTx = bNeo.beginTx();
         try
@@ -164,10 +164,10 @@ public class MultiRunningTest
     }
 
     @SuppressWarnings( "serial" )
-    protected void setupBackup( EmbeddedNeo neo, String location )
+    protected void setupBackup( EmbeddedGraphDatabase neo, String location )
         throws IOException
     {
-        EmbeddedNeo bNeo = Util.startNeoInstance( location );
+        EmbeddedGraphDatabase bNeo = Util.startNeoInstance( location );
         IndexService bIndexService = new LuceneIndexService( bNeo );
         Backup backupComp = new NeoBackup( neo, bNeo, new ArrayList<String>()
         {
@@ -181,7 +181,7 @@ public class MultiRunningTest
         Util.stopNeo( bNeo, bIndexService );
     }
 
-    private Node addNode( EmbeddedNeo neo )
+    private Node addNode( EmbeddedGraphDatabase neo )
     {
         Node referenceNode = neo.getReferenceNode();
         Node node = neo.createNode();
