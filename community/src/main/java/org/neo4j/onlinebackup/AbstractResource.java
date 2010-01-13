@@ -15,7 +15,7 @@ package org.neo4j.onlinebackup;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
-import org.neo4j.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
  * Class that wraps a XA data source.

@@ -7,8 +7,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
 
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.util.index.IndexService;
+import org.neo4j.index.IndexService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class Util
 {
@@ -77,18 +77,18 @@ public class Util
         return directory.delete();
     }
 
-    static EmbeddedNeo startNeoInstance( String location )
+    static EmbeddedGraphDatabase startNeoInstance( String location )
     {
         File file = new File( location );
-        return new EmbeddedNeo( file.getAbsolutePath() );
+        return new EmbeddedGraphDatabase( file.getAbsolutePath() );
     }
 
-    static void stopNeo( EmbeddedNeo neo )
+    static void stopNeo( EmbeddedGraphDatabase neo )
     {
         neo.shutdown();
     }
 
-    static void stopNeo( EmbeddedNeo neo, IndexService indexService )
+    static void stopNeo( EmbeddedGraphDatabase neo, IndexService indexService )
     {
         indexService.shutdown();
         stopNeo( neo );
