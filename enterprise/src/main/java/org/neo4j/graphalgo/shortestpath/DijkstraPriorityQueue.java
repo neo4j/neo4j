@@ -16,7 +16,7 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import org.neo4j.api.core.Node;
+import org.neo4j.graphdb.Node;
 
 /**
  * Abstraction of the priority queue used by Dijkstra in order to make (testing

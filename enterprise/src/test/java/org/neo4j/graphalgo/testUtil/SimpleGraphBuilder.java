@@ -19,23 +19,25 @@ package org.neo4j.graphalgo.testUtil;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 
 public class SimpleGraphBuilder
 {
-    NeoService neo;
+    GraphDatabaseService neo;
     HashMap<String,Node> nodes;
     HashMap<Node,String> nodeNames;
     Set<Relationship> edges;
     RelationshipType currentRelType = null;
 
-    public SimpleGraphBuilder( NeoService neo, RelationshipType relationshipType )
+    public SimpleGraphBuilder( GraphDatabaseService graphDb,
+        RelationshipType relationshipType )
     {
         super();
-        this.neo = neo;
+        this.neo = graphDb;
         nodes = new HashMap<String,Node>();
         nodeNames = new HashMap<Node,String>();
         edges = new HashSet<Relationship>();

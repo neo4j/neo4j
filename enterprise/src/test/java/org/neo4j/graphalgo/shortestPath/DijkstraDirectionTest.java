@@ -17,11 +17,12 @@
 package org.neo4j.graphalgo.shortestPath;
 
 import java.util.HashMap;
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.Relationship;
+
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Relationship;
 
 /**
  * This set of tests is mainly made to test the "backwards" argument to the
