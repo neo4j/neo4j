@@ -1,4 +1,4 @@
-package org.neo4j.util.matching;
+package org.neo4j.graphmatching;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
@@ -11,7 +11,7 @@ import java.util.Set;
  * float[], String[] etc... And we'd like to deal with those as objects instead
  * so that an equals method may be used.
  */
-public class NeoArrayPropertyUtil
+public class ArrayPropertyUtil
 {
 	/**
 	 * @param valueFromNeo neo node.getProperty value.

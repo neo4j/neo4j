@@ -1,4 +1,4 @@
-package org.neo4j.util.matching;
+package org.neo4j.graphmatching;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -7,12 +7,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.api.core.Node;
 import org.neo4j.commons.iterator.FilteringIterable;
-import org.neo4j.util.matching.filter.AbstractFilterExpression;
-import org.neo4j.util.matching.filter.FilterBinaryNode;
-import org.neo4j.util.matching.filter.FilterExpression;
-import org.neo4j.util.matching.filter.FilterValueGetter;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphmatching.filter.AbstractFilterExpression;
+import org.neo4j.graphmatching.filter.FilterBinaryNode;
+import org.neo4j.graphmatching.filter.FilterExpression;
+import org.neo4j.graphmatching.filter.FilterValueGetter;
 
 public class PatternMatcher
 {
@@ -132,7 +132,7 @@ public class PatternMatcher
             }
             
             Collection<Object> values =
-                NeoArrayPropertyUtil.neoValueToCollection( neoValue );
+                ArrayPropertyUtil.neoValueToCollection( neoValue );
             String[] result = new String[ values.size() ];
             int counter = 0;
             for ( Object value : values )

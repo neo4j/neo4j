@@ -1,6 +1,6 @@
-package org.neo4j.util.matching.filter;
+package org.neo4j.graphmatching.filter;
 
-import org.neo4j.util.matching.PatternNode;
+import org.neo4j.graphmatching.PatternNode;
 
 /**
  * A hook for getting values from a node (real neo node) represented by

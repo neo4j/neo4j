@@ -1,10 +1,10 @@
-package org.neo4j.util.matching;
+package org.neo4j.graphmatching;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.api.core.Node;
+import org.neo4j.graphdb.Node;
 
 class OptionalPatternFinder
 {

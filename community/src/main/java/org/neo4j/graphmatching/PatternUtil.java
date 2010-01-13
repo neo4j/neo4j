@@ -1,4 +1,4 @@
-package org.neo4j.util.matching;
+package org.neo4j.graphmatching;
 
 import java.io.PrintStream;
 import java.util.HashSet;

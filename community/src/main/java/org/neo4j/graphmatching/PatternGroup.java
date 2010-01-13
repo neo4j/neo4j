@@ -1,9 +1,9 @@
-package org.neo4j.util.matching;
+package org.neo4j.graphmatching;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.util.matching.filter.FilterExpression;
+import org.neo4j.graphmatching.filter.FilterExpression;
 
 public class PatternGroup
 {

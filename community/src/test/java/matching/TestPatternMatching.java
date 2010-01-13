@@ -3,20 +3,23 @@ package matching;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+
 import junit.framework.TestCase;
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Transaction;
-import org.neo4j.util.matching.PatternMatch;
-import org.neo4j.util.matching.PatternMatcher;
-import org.neo4j.util.matching.PatternNode;
-import org.neo4j.util.matching.PatternRelationship;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphmatching.PatternMatch;
+import org.neo4j.graphmatching.PatternMatcher;
+import org.neo4j.graphmatching.PatternNode;
+import org.neo4j.graphmatching.PatternRelationship;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class TestPatternMatching extends TestCase
 {
-	private EmbeddedNeo neo;
+	private GraphDatabaseService graphDb;
 	private Transaction tx;
 	
 	private static enum MyRelTypes implements RelationshipType
@@ -28,7 +31,7 @@ public class TestPatternMatching extends TestCase
 	
 	private Node createInstance( String name )
 	{
-		Node node = neo.createNode();
+		Node node = graphDb.createNode();
 		node.setProperty( "name", name );
 		return node;
 	}
@@ -37,8 +40,8 @@ public class TestPatternMatching extends TestCase
 	protected void setUp() throws Exception
 	{
 		super.setUp();
-		neo = new EmbeddedNeo( "target/var/neo" );
-		tx = neo.beginTx();
+		graphDb = new EmbeddedGraphDatabase( "target/var/neo" );
+		tx = graphDb.beginTx();
 	}
 
 	@Override
@@ -46,7 +49,7 @@ public class TestPatternMatching extends TestCase
 	{
 		super.tearDown();
 		tx.finish();
-		neo.shutdown();
+		graphDb.shutdown();
 	}
 	
 	public TestPatternMatching( String name )

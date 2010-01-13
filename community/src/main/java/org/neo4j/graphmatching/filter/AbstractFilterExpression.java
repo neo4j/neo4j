@@ -1,4 +1,4 @@
-package org.neo4j.util.matching.filter;
+package org.neo4j.graphmatching.filter;
 
 public abstract class AbstractFilterExpression implements FilterExpression
 {

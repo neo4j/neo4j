@@ -1,10 +1,11 @@
-package org.neo4j.util.matching;
+package org.neo4j.graphmatching;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
+
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
 /**
  * Represents one match found by the {@link PatternMatcher}. The match is

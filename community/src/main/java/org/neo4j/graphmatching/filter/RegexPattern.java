@@ -1,7 +1,6 @@
-package org.neo4j.util.matching.filter;
+package org.neo4j.graphmatching.filter;
 
 import java.util.regex.Pattern;
-
 
 /**
  * A regex pattern with or without options, f.ex. "i" means case-insensitive.

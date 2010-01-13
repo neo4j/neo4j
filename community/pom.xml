@@ -9,10 +9,10 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>graph-matching</artifactId>
+  <artifactId>neo4j-graph-matching</artifactId>
   <version>0.7-SNAPSHOT</version>
-  <name>graph matching for neo.</name>
-  <description>A graph pattern matcher for Neo.</description>
+  <name>graph matching for Neo4j.</name>
+  <description>A graph pattern matcher for Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
   <scm>
@@ -70,13 +70,13 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo</artifactId>
-      <version>1.0-b11-SNAPSHOT</version>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.0-rc-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo-component-commons</artifactId>
-      <version>0.3-SNAPSHOT</version>
+      <artifactId>neo4j-commons</artifactId>
+      <version>0.4-SNAPSHOT</version>
     </dependency>
   </dependencies>
 

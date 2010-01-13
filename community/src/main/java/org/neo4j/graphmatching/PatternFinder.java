@@ -1,4 +1,4 @@
-package org.neo4j.util.matching;
+package org.neo4j.graphmatching;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -9,8 +9,8 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
 
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
 /**
  * Performs the actual finding of matches given the pattern of how a match
@@ -368,7 +368,7 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         }
         Object[] patternValues = patternNode.getPropertyValue( propertyName );
         Object neoValue = neoNode.getProperty( propertyName );
-        Collection<Object> neoValues = NeoArrayPropertyUtil
+        Collection<Object> neoValues = ArrayPropertyUtil
             .neoValueToCollection( neoValue );
         neoValues.retainAll( Arrays.asList( patternValues ) );
         return !neoValues.isEmpty();
@@ -383,7 +383,7 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         }
         Object[] patternValues = patternRel.getPropertyValue( propertyName );
         Object neoValue = neoRel.getProperty( propertyName );
-        Collection<Object> neoValues = NeoArrayPropertyUtil
+        Collection<Object> neoValues = ArrayPropertyUtil
             .neoValueToCollection( neoValue );
         neoValues.retainAll( Arrays.asList( patternValues ) );
         return !neoValues.isEmpty();

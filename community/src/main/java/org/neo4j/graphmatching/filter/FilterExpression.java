@@ -1,4 +1,4 @@
-package org.neo4j.util.matching.filter;
+package org.neo4j.graphmatching.filter;
 
 /**
  * Is either a regex leaf, i.e. a real regex pattern or an abstraction of

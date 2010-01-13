@@ -1,11 +1,12 @@
-package org.neo4j.util.matching;
+package org.neo4j.graphmatching;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-import org.neo4j.api.core.RelationshipType;
+
+import org.neo4j.graphdb.RelationshipType;
 
 public class PatternNode
 {

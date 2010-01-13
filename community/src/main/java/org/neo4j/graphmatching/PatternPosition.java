@@ -1,9 +1,10 @@
-package org.neo4j.util.matching;
+package org.neo4j.graphmatching;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
+
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
 /**
  * Represents a position were we are in the pattern itself. So the
