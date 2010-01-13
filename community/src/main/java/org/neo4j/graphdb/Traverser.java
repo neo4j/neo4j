@@ -25,22 +25,23 @@ import java.util.Iterator;
 /**
  * A traversal in the node space. A Traverser is an {@link Iterable} that
  * encapsulates a number of traversal parameters (defined at traverser creation)
- * and returns an iterator of nodes that match those parameters. It is created by
- * invoking {@link Node#traverse Node.traverse(...)}. Upon creation, the
+ * and returns an iterator of nodes that match those parameters. It is created
+ * by invoking {@link Node#traverse Node.traverse(...)}. Upon creation, the
  * traverser is positioned at the start node, but it doesn't actually start
  * traversing until its {@link #iterator() iterator().next()} method is invoked
  * and will then traverse lazily one step each time {@code next} is called.
  * Typically it's used in a for-each loop as follows:
+ * 
  * <code><pre>
  * Traverser friends = node.traverse( Order.BREADTH_FIRST,
  *     StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL_BUT_START_NODE,
  *     MyRelationshipTypes.KNOWS, Direction.OUTGOING );
  * for ( Node friend : friends )
  * {
- * 	// ...
+ *     // ...
  * }
- * 
  * </pre></code>
+ * 
  * Relationships are equally well traversed regardless of their direction,
  * performance-wise.
  * @see Node#traverse

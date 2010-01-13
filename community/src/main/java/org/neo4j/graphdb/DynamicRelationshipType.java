@@ -32,7 +32,7 @@ package org.neo4j.graphdb;
  * It's very important to note that a relationship type is uniquely identified
  * by its name, not by any particular instance that implements this interface.
  * This means that the proper way to check if two relationship types are equal
- * is by invoking <code>equals()</code> on their {@link #name names}, NOT by
+ * is by invoking <code>equals()</code> on their {@link #name() names}, NOT by
  * using Java's identity operator (<code>==</code>) or <code>equals()</code>
  * on the relationship type instances. A consequence of this is that you can NOT
  * use relationship types in hashed collections such as {@link java.util.HashMap

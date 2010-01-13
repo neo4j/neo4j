@@ -112,19 +112,20 @@ public interface PropertyContainer
 	 */
 	// TODO: figure out concurrency semantics
 	public Iterable<String> getPropertyKeys();
-	
-	/**
-	  * Returns all currently valid property values, or an empty iterable if this
-	  * node has no properties. All values are of a supported property type, i.e.
-	  * a Java primitive, a {@link String String} or an array of any of the
-	  * supported types.
-	  * <p>
-	  * <b>Note:</b> This method is deprecated and <i>will</i> be removed in
-	  * future releases. Use a combination of {@link #getPropertyKeys()} and
-	  * {@link #getProperty(String)} to achieve the same result.
-	  * @return all property values
-	  * @deprecated
-	  */
+
+    /**
+     * Returns all currently valid property values, or an empty iterable if this
+     * node has no properties. All values are of a supported property type, i.e.
+     * a Java primitive, a {@link String String} or an array of any of the
+     * supported types.
+     * <p>
+     * <b>Note:</b> This method is deprecated and <i>will</i> be removed in
+     * future releases. Use a combination of {@link #getPropertyKeys()} and
+     * {@link #getProperty(String)} to achieve the same result.
+     * @return all property values
+     * @deprecated in favor of using {@link #getPropertyKeys()} in combination
+     *             with {@link #getProperty(String)}.
+     */
 	// TODO: figure out concurrency semantics
-	public Iterable<Object> getPropertyValues();	
+	public Iterable<Object> getPropertyValues();
 }
