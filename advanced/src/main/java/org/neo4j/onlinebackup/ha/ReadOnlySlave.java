@@ -16,7 +16,7 @@ import org.neo4j.onlinebackup.net.SocketException;
 
 public class ReadOnlySlave implements Callback
 {
-    private final EmbeddedReadOnlyGraphDatabase neo;
+    private final EmbeddedReadOnlyGraphDatabase graphDb;
     private final NeoStoreXaDataSource xaDs;
 
     private final JobEater jobEater;
@@ -31,8 +31,8 @@ public class ReadOnlySlave implements Callback
     public ReadOnlySlave( String path, Map<String,String> params, 
         String masterIp, int masterPort )
     {
-        this.neo = new EmbeddedReadOnlyGraphDatabase( path, params );
-        this.xaDs = (NeoStoreXaDataSource) neo.getConfig().getTxModule()
+        this.graphDb = new EmbeddedReadOnlyGraphDatabase( path, params );
+        this.xaDs = (NeoStoreXaDataSource) graphDb.getConfig().getTxModule()
             .getXaDataSourceManager().getXaDataSource( "nioneodb" );
         this.xaDs.makeBackupSlave();
         recover();
@@ -79,9 +79,9 @@ public class ReadOnlySlave implements Callback
         return masterConnection.connected();
     }
     
-    public GraphDatabaseService getNeoService()
+    public GraphDatabaseService getGraphDbService()
     {
-        return neo;
+        return graphDb;
     }
     
     public String getMasterIp()
@@ -136,7 +136,7 @@ public class ReadOnlySlave implements Callback
     {
         jobEater.stopEating();
         logApplier.stopApplyLogs();
-        neo.shutdown();
+        graphDb.shutdown();
     }
 
     public void tryApplyNewLog()

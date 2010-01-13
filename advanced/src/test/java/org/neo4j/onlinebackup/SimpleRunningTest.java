@@ -119,7 +119,7 @@ public class SimpleRunningTest
     {
         System.out.println( "backing up to running EmbeddedGraphDatabase instance" );
         EmbeddedGraphDatabase bNeo = Util.startNeoInstance( location );
-        Backup backupComp = new NeoBackup( neo, bNeo );
+        Backup backupComp = new Neo4jBackup( neo, bNeo );
         backupComp.enableFileLogger();
         backupComp.doBackup();
         Util.stopNeo( bNeo );

@@ -15,7 +15,7 @@ public class MultiLocalTest extends MultiRunningTest
     protected void setupBackup( EmbeddedGraphDatabase neo, String location )
         throws IOException
     {
-        Backup backupComp = new NeoBackup( neo, location,
+        Backup backupComp = new Neo4jBackup( neo, location,
             new ArrayList<String>()
             {
                 {
