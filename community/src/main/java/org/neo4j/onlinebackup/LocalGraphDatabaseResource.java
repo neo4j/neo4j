@@ -14,41 +14,30 @@ package org.neo4j.onlinebackup;
 
 import java.io.File;
 
-import org.neo4j.index.IndexService;
-import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
- * Start an EmbeddedNeo from a directory location together with an
- * LuceneIndexService and wrap it as XA data source.
+ * Start an {@link EmbeddedGraphDatabase} from a directory location and wrap it
+ * as XA data source.
  */
-public class LocalNeoLuceneResource extends EmbeddedNeoResource
+public class LocalGraphDatabaseResource extends EmbeddedGraphDatabaseResource
 {
-    private final IndexService lucene;
-
-    private LocalNeoLuceneResource( final EmbeddedGraphDatabase neo )
+    private LocalGraphDatabaseResource( final EmbeddedGraphDatabase graphDb )
     {
-        super( neo );
-        this.lucene = new LuceneIndexService( neo );
+        super( graphDb );
     }
 
-    public static LocalNeoLuceneResource getInstance( final String storeDir )
+    public static LocalGraphDatabaseResource getInstance(
+        final String storeDir )
     {
         String separator = System.getProperty( "file.separator" );
         String store = storeDir + separator + "neostore";
         if ( !new File( store ).exists() )
         {
-            throw new RuntimeException( "Unable to locate local neo store in["
+            throw new RuntimeException( "Unable to locate local neo4j store in["
                 + storeDir + "]" );
         }
-        return new LocalNeoLuceneResource(
+        return new LocalGraphDatabaseResource(
             new EmbeddedGraphDatabase( storeDir ) );
-    }
-
-    @Override
-    public void close()
-    {
-        lucene.shutdown();
-        neo.shutdown();
     }
 }
