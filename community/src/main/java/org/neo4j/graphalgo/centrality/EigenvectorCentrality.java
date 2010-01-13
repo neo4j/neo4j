@@ -16,7 +16,7 @@
  */
 package org.neo4j.graphalgo.centrality;
 
-import org.neo4j.api.core.Node;
+import org.neo4j.graphdb.Node;
 
 /**
  * Interface representing the algorithms for computing eigenvector centrality.

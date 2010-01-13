@@ -16,8 +16,8 @@
  */
 package org.neo4j.graphalgo.shortestpath.std;
 
-import org.neo4j.api.core.Relationship;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphdb.Relationship;
 
 public class DoubleEvaluator implements CostEvaluator<Double>
 {

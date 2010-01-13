@@ -17,10 +17,10 @@
 package org.neo4j.graphalgo;
 
 import java.util.List;
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.Node;
-import org.neo4j.graphalgo.AllSimplePaths;
+
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
 
 public class AllSimplePathsTest extends NeoAlgoTestCase
 {

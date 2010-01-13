@@ -22,13 +22,13 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
 import org.neo4j.graphalgo.MatrixUtil;
 import org.neo4j.graphalgo.MatrixUtil.DoubleMatrix;
 import org.neo4j.graphalgo.MatrixUtil.DoubleVector;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
 /**
  * Computing eigenvector centrality with the "Arnoldi iteration". Convergence is

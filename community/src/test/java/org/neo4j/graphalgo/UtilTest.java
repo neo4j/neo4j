@@ -20,11 +20,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
+
 import org.neo4j.graphalgo.shortestpath.Util;
 import org.neo4j.graphalgo.shortestpath.Util.PathCounter;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
 public class UtilTest extends NeoAlgoTestCase
 {
@@ -36,12 +37,12 @@ public class UtilTest extends NeoAlgoTestCase
     public void testPathCounter()
     {
         // Nodes
-        Node a = neo.createNode();
-        Node b = neo.createNode();
-        Node c = neo.createNode();
-        Node d = neo.createNode();
-        Node e = neo.createNode();
-        Node f = neo.createNode();
+        Node a = graphDb.createNode();
+        Node b = graphDb.createNode();
+        Node c = graphDb.createNode();
+        Node d = graphDb.createNode();
+        Node e = graphDb.createNode();
+        Node f = graphDb.createNode();
         // Predecessor lists
         List<Relationship> ap = new LinkedList<Relationship>();
         List<Relationship> bp = new LinkedList<Relationship>();

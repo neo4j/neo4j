@@ -16,19 +16,13 @@
  */
 package org.neo4j.graphalgo.centrality;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.graphalgo.centrality.BetweennessCentrality;
-import org.neo4j.graphalgo.centrality.ClosenessCentrality;
-import org.neo4j.graphalgo.centrality.CostDivider;
-import org.neo4j.graphalgo.centrality.ParallellCentralityCalculation;
-import org.neo4j.graphalgo.centrality.ShortestPathBasedCentrality;
-import org.neo4j.graphalgo.centrality.StressCentrality;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
 import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Relationship;
 
 public class ParallellCentralityCalculationTest extends NeoAlgoTestCase
 {

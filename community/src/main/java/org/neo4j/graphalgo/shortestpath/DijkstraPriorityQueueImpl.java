@@ -18,7 +18,8 @@ package org.neo4j.graphalgo.shortestpath;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
-import org.neo4j.api.core.Node;
+
+import org.neo4j.graphdb.Node;
 
 /**
  * Implementation of {@link DijkstraPriorityQueue} with just a normal java

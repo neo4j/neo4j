@@ -9,8 +9,8 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>graph-algo</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <artifactId>neo4j-graph-algo</artifactId>
+  <version>0.3-SNAPSHOT</version>
   <name>graph-algo</name>
   <description>Graph algorithms for neo4j</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
@@ -74,8 +74,8 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo</artifactId>
-      <version>1.0-b10-SNAPSHOT</version>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.0-rc-SNAPSHOT</version>
     </dependency>
   </dependencies>
 

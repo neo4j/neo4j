@@ -20,14 +20,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.graphalgo.centrality.EigenvectorCentrality;
-import org.neo4j.graphalgo.centrality.EigenvectorCentralityPower;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
 public abstract class EigenvectorCentralityTest extends NeoAlgoTestCase
 {
