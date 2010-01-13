@@ -169,7 +169,7 @@ public class MultiRunningTest
     {
         EmbeddedGraphDatabase bNeo = Util.startNeoInstance( location );
         IndexService bIndexService = new LuceneIndexService( bNeo );
-        Backup backupComp = new NeoBackup( neo, bNeo, new ArrayList<String>()
+        Backup backupComp = new Neo4jBackup( neo, bNeo, new ArrayList<String>()
         {
             {
                 add( "nioneodb" );

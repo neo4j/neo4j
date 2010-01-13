@@ -22,7 +22,7 @@ import org.neo4j.onlinebackup.net.SocketException;
 
 public class Master implements Callback
 {
-    private final EmbeddedGraphDatabase neo;
+    private final EmbeddedGraphDatabase graphDb;
     private final NeoStoreXaDataSource xaDs;
 
     private final JobEater jobEater;
@@ -34,8 +34,8 @@ public class Master implements Callback
     
     public Master( String path, Map<String,String> params, int listenPort )
     {
-        this.neo = new EmbeddedGraphDatabase( path, params );
-        this.xaDs = (NeoStoreXaDataSource) neo.getConfig().getTxModule()
+        this.graphDb = new EmbeddedGraphDatabase( path, params );
+        this.xaDs = (NeoStoreXaDataSource) graphDb.getConfig().getTxModule()
             .getXaDataSourceManager().getXaDataSource( "nioneodb" );
         xaDs.keepLogicalLogs( true );
         this.port = listenPort;
@@ -56,9 +56,9 @@ public class Master implements Callback
         jobEater.start();
     }
     
-    public GraphDatabaseService getNeoService()
+    public GraphDatabaseService getGraphDbService()
     {
-        return neo;
+        return graphDb;
     }
     
     public int getPort()
@@ -106,7 +106,7 @@ public class Master implements Callback
         {
             e.printStackTrace();
         }
-        neo.shutdown();
+        graphDb.shutdown();
     }
     
     public long getIdentifier()

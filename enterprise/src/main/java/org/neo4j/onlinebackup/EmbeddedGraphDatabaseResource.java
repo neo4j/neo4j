@@ -17,21 +17,21 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
- * Wraps an EmbeddedNeo to be used as data source and give access to other data
- * sources as well.
+ * Wraps an {@link EmbeddedGraphDatabase} to be used as data source and give
+ * access to other data sources as well.
  */
-public class EmbeddedNeoResource extends AbstractResource implements
-    NeoResource
+public class EmbeddedGraphDatabaseResource extends AbstractResource
+    implements Neo4jResource
 {
-    protected final EmbeddedGraphDatabase neo;
+    protected final EmbeddedGraphDatabase graphDb;
     protected final XaDataSourceManager xaDsm;
 
-    EmbeddedNeoResource( final EmbeddedGraphDatabase neo )
+    EmbeddedGraphDatabaseResource( final EmbeddedGraphDatabase graphDb )
     {
-        super( neo.getConfig().getPersistenceModule().getPersistenceManager()
-            .getPersistenceSource().getXaDataSource() );
-        this.neo = neo;
-        this.xaDsm = neo.getConfig().getTxModule().getXaDataSourceManager();
+        super( graphDb.getConfig().getPersistenceModule()
+            .getPersistenceManager().getPersistenceSource().getXaDataSource() );
+        this.graphDb = graphDb;
+        this.xaDsm = graphDb.getConfig().getTxModule().getXaDataSourceManager();
     }
 
     public XaDataSourceResource getDataSource( final String name )
@@ -46,7 +46,7 @@ public class EmbeddedNeoResource extends AbstractResource implements
 
     public XaDataSourceResource getDataSource()
     {
-        XaDataSource ds = neo.getConfig().getPersistenceModule()
+        XaDataSource ds = graphDb.getConfig().getPersistenceModule()
             .getPersistenceManager().getPersistenceSource().getXaDataSource();
         if ( ds == null )
         {
@@ -58,6 +58,6 @@ public class EmbeddedNeoResource extends AbstractResource implements
     @Override
     public void close()
     {
-        neo.shutdown();
+        graphDb.shutdown();
     }
 }

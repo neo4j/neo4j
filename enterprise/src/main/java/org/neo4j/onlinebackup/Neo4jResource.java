@@ -12,29 +12,15 @@
  */
 package org.neo4j.onlinebackup;
 
-import java.io.File;
-
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-
 /**
- * Start an EmbeddedNeo from a directory location and wrap it as XA data source.
+ * Wrap a XA resource together with additional methods to get this and other
+ * data sources.
  */
-public class LocalNeoResource extends EmbeddedNeoResource
+public interface Neo4jResource extends Resource
 {
-    private LocalNeoResource( final EmbeddedGraphDatabase neo )
-    {
-        super( neo );
-    }
+    XaDataSourceResource getDataSource( String name );
 
-    public static LocalNeoResource getInstance( final String storeDir )
-    {
-        String separator = System.getProperty( "file.separator" );
-        String store = storeDir + separator + "neostore";
-        if ( !new File( store ).exists() )
-        {
-            throw new RuntimeException( "Unable to locate local neo store in["
-                + storeDir + "]" );
-        }
-        return new LocalNeoResource( new EmbeddedGraphDatabase( storeDir ) );
-    }
+    XaDataSourceResource getDataSource();
+
+    String getName();
 }
