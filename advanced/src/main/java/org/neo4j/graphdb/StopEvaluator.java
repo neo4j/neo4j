@@ -20,34 +20,39 @@
 package org.neo4j.graphdb;
 
 /**
- * A client hook for evaluating whether the traverser should traverse beyond
- * a specific node. When a traverser is created, the client parameterizes it 
- * with a StopEvaluator. The traverser then invokes the 
- * {@link #isStopNode isStopNode()} operation just before traversing
- * the relationships of a node, allowing the client to either approve or
- * disapprove of traversing beyond that node.
+ * A client hook for evaluating whether the traverser should traverse beyond a
+ * specific node. This is used for pruning the traversal.
  * <P>
- * When implementing a StopEvaluator, the client investigates the
- * information encapsulated in a {@link TraversalPosition} to decide whether
- * to block traversal beyond a node. For example, here's a snippet detailing
- * a StopEvaluator that blocks traversal beyond a node if it has a certain
+ * When a traverser is created, the client parameterizes it with a
+ * StopEvaluator. The traverser then invokes the {@link #isStopNode
+ * isStopNode()} operation just before traversing the relationships of a node,
+ * allowing the client to either approve or disapprove of traversing beyond that
+ * node.
+ * <P>
+ * When implementing a StopEvaluator, the client investigates the information
+ * encapsulated in a {@link TraversalPosition} to decide whether to block
+ * traversal beyond a node. For example, here's a snippet detailing a
+ * StopEvaluator that blocks traversal beyond a node if it has a certain
  * property value:
- * <CODE>
- * <PRE>
+ * 
+ * <CODE><PRE>
  * StopEvaluator stopEvaluator = new StopEvaluator()
  * {
  *     // Block traversal if the node has a property with key 'key' and value
  *     // 'someValue'
  *     public boolean isStopNode( TraversalPosition position )
  *     {
+ *         if ( position.isStartNode() )
+ *         {
+ *             return false;
+ *         }
  *         Node node = position.previousNode();
- *         Object someProp = node.getProperty( "key" );
+ *         Object someProp = node.getProperty( "key", null );
  *         return someProp instanceof String &&
  *             ((String) someProp).equals( "someValue" );
  *     }
  * };
- * </PRE>
- * </CODE>
+ * </PRE></CODE>
  */
 public interface StopEvaluator
 {
