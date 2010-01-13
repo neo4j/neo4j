@@ -16,11 +16,12 @@
  */
 package org.neo4j.graphalgo.testUtil;
 
-import org.neo4j.api.core.EmbeddedNeo;
-import org.neo4j.api.core.NeoService;
-import org.neo4j.api.core.RelationshipType;
-import org.neo4j.api.core.Transaction;
 import junit.framework.TestCase;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * Base class for test cases working on a NeoService. It sets up a NeoService
@@ -29,7 +30,7 @@ import junit.framework.TestCase;
  */
 public class NeoAlgoTestCase extends TestCase
 {
-    protected NeoService neo;
+    protected GraphDatabaseService graphDb;
     protected Transaction tx;
     protected SimpleGraphBuilder graph = null;
 
@@ -47,9 +48,9 @@ public class NeoAlgoTestCase extends TestCase
     protected void setUp() throws Exception
     {
         super.setUp();
-        neo = new EmbeddedNeo( "target/var/algotest" );
-        tx = neo.beginTx();
-        graph = new SimpleGraphBuilder( neo, MyRelTypes.R1 );
+        graphDb = new EmbeddedGraphDatabase( "target/var/algotest" );
+        tx = graphDb.beginTx();
+        graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
 
     @Override
@@ -61,7 +62,7 @@ public class NeoAlgoTestCase extends TestCase
             graph.clear();
         }
         tx.finish();
-        neo.shutdown();
+        graphDb.shutdown();
     }
 
     /**

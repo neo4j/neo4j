@@ -18,13 +18,13 @@ package org.neo4j.graphalgo.shortestpath;
 
 import java.util.List;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.PropertyContainer;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.api.core.RelationshipType;
 import org.neo4j.graphalgo.shortestpath.std.IntegerAdder;
 import org.neo4j.graphalgo.shortestpath.std.IntegerComparator;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 
 /**
  * FindPath class. This class can be used to perform shortest path computations

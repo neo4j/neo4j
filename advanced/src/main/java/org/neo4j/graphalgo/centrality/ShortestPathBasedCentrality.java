@@ -19,9 +19,10 @@ package org.neo4j.graphalgo.centrality;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import org.neo4j.api.core.Node;
+
 import org.neo4j.graphalgo.shortestpath.CostAccumulator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphdb.Node;
 
 /**
  * This serves as a base class for all centrality algorithms based on shortest

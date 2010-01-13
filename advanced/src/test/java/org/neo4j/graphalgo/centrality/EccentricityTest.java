@@ -16,14 +16,13 @@
  */
 package org.neo4j.graphalgo.centrality;
 
-import org.neo4j.api.core.Direction;
-import org.neo4j.api.core.Relationship;
-import org.neo4j.graphalgo.centrality.Eccentricity;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
 import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Relationship;
 
 public class EccentricityTest extends NeoAlgoTestCase
 {

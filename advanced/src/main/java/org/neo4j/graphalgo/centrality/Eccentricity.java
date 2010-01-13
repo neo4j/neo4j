@@ -18,8 +18,9 @@ package org.neo4j.graphalgo.centrality;
 
 import java.util.Comparator;
 import java.util.Set;
-import org.neo4j.api.core.Node;
+
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphdb.Node;
 
 /**
  * This can be used to calculate the eccentricity of nodes, which is defined as

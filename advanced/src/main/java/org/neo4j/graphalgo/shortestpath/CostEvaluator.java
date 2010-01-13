@@ -16,7 +16,7 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import org.neo4j.api.core.Relationship;
+import org.neo4j.graphdb.Relationship;
 
 /**
  * In order to make the solving of shortest path problems as general as

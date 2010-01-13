@@ -16,10 +16,10 @@
  */
 package org.neo4j.graphalgo.shortestPath;
 
-import org.neo4j.api.core.*;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
+import org.neo4j.graphdb.Direction;
 
 public class DijkstraTest extends NeoAlgoTestCase
 {

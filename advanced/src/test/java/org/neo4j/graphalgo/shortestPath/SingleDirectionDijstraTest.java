@@ -16,10 +16,10 @@
  */
 package org.neo4j.graphalgo.shortestPath;
 
-import org.neo4j.api.core.Direction;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.shortestpath.SingleDirectionDijkstra;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
+import org.neo4j.graphdb.Direction;
 
 /**
  * Test cases for the singly directed dijkstra. This inherits all test cases
