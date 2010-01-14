@@ -75,7 +75,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.0-rc-SNAPSHOT</version>
+      <version>1.0-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
