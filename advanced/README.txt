@@ -9,15 +9,16 @@ Included in this release of Apoc is:
 
    neo4j-kernel:         the neo4j graph database engine
    neo4j-index:          indexing and data structures
-   neo4j-shell:          text command shell for browsing the node space
    neo4j-remote-graphdb: thin layer to enable remote access to a neo4j instance
+   neo4j-shell:          text command shell for browsing the node space
    
 You can run the examples from the Unix and Windows start scripts in the bin/
 directory.
 
 You'll find the source code to the examples in the examples/ directory.
 
-The components are found in the lib/ directory.
+The components are found in the lib/ directory, and the javadocs for the
+Apoc components in the docs/ directory.
 
 For documentation, see:
 
