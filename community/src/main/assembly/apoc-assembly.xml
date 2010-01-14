@@ -19,6 +19,11 @@
             </includes>
             <useDefaultExcludes>true</useDefaultExcludes>
         </fileSet>
+        <!-- DOCS -->
+        <fileSet>
+            <directory>target/appassembler/apidocs</directory>
+            <outputDirectory>docs</outputDirectory>
+        </fileSet>
         <!-- SHELL -->        
         <fileSet>
             <directory>target/appassembler/bin</directory>

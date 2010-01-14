@@ -19,7 +19,7 @@ import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-public class Shell
+public class Neo4jShell
 {
     private static final String DB_PATH = "neo4j-store";
     private static final String USERNAME_KEY = "username";
