@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<url>http://components.neo4j.org/${project.artifactId}/</url>
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>5</version>
+    <version>6</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -26,6 +27,11 @@
     </connection>
     <url>https://trac.neo4j.org/browser/components/remote-graphdb</url>
   </scm>
+
+  <issueManagement>
+    <system>Trac</system>
+    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=remote-graphdb</url>
+  </issueManagement>
 
   <developers>
     <developer>
@@ -97,22 +103,8 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
           <!-- exclude broken inspect API from JavaDoc until fixed -->
-          <excludePackageNames>org.neo4j.remote.inspect:*.impl</excludePackageNames>
-          <!-- breaks exclude: <subpackages>org.neo4j.remote</subpackages> -->
-          <links>
-            <link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
-            <link>http://components.neo4j.org/kernel/apidocs/</link>
-            <link>http://components.neo4j.org/index/apidocs/</link>
-          </links>
-          <quiet>true</quiet>
+          <excludePackageNames>org.neo4j.remote.inspect:*.impl.*</excludePackageNames>
         </configuration>
-        <reportSets>
-          <reportSet>
-            <reports>
-              <report>javadoc</report>
-            </reports>
-          </reportSet>
-        </reportSets>
       </plugin>
     </plugins>
   </reporting>
