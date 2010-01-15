@@ -18,7 +18,7 @@ package org.neo4j.visualization.graphviz;
 
 import java.io.IOException;
 
-import org.neo4j.api.core.Relationship;
+import org.neo4j.graphdb.Relationship;
 
 interface RelationshipStyle extends PropertyContainerStyle
 {

@@ -1,28 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
+	<parent>
+		<groupId>org.neo4j</groupId>
+		<artifactId>parent-pom</artifactId>
+		<version>6</version>
+	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j</groupId>
-	<artifactId>neo-graphviz</artifactId>
+	<artifactId>neo4j-graphviz</artifactId>
 	<version>0.2-SNAPSHOT</version>
 	<description></description>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>1.5</source>
-					<target>1.5</target>
-					<encoding>UTF-8</encoding>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+
+	<properties>
+		<bundle.namespace>org.neo4j.remote</bundle.namespace>
+	</properties>
+
+	<packaging>bundle</packaging>
+
+	<scm>
+		<connection>
+			scm:svn:https://svn.neo4j.org/laboratory/components/neo-graphviz
+		</connection>
+		<url>https://trac.neo4j.org/browser/components/remote-graphdb</url>
+	</scm>
+
+
 	<dependencies>
 		<dependency>
 			<groupId>org.neo4j</groupId>
-			<artifactId>neo</artifactId>
-			<version>1.0-b7</version>
+			<artifactId>neo4j-kernel</artifactId>
+			<version>1.0-rc</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>

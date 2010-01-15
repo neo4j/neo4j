@@ -19,8 +19,8 @@ package org.neo4j.visualization.graphviz;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import org.neo4j.api.core.Node;
-import org.neo4j.api.core.Relationship;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.visualization.GraphRenderer;
 import org.neo4j.visualization.PropertyRenderer;
 

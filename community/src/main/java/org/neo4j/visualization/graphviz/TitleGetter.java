@@ -16,7 +16,7 @@
  */
 package org.neo4j.visualization.graphviz;
 
-import org.neo4j.api.core.PropertyContainer;
+import org.neo4j.graphdb.PropertyContainer;
 
 interface TitleGetter<E extends PropertyContainer>
 {
