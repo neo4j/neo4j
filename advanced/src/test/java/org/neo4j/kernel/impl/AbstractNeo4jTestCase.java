@@ -75,7 +75,10 @@ public abstract class AbstractNeo4jTestCase extends TestCase
 
     public void tearDown()
     {
-        tx.finish();
+        if ( tx != null )
+        {
+            tx.finish();
+        }
         graphDb.shutdown();
     }
 
@@ -100,6 +103,7 @@ public abstract class AbstractNeo4jTestCase extends TestCase
         {
             tx.success();
             tx.finish();
+            tx = null;
         }
     }
     
