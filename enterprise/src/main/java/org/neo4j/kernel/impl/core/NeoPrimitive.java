@@ -405,7 +405,7 @@ abstract class NeoPrimitive
             {
                 int propertyId = property.getId();
                 changeProperty( propertyId, value );
-                property.setNewValue( value );
+                property = new PropertyData( propertyId, value );
             }
             else
             {
