@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.RelationshipType;
@@ -36,9 +36,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 
 class RelationshipTypeHolder
 {
-    private static Logger log = Logger.getLogger( RelationshipTypeHolder.class
-        .getName() );
-
     private ArrayMap<String,Integer> relTypes = 
         new ArrayMap<String,Integer>( 5, true, true );
     private Map<Integer,String> relTranslation = 

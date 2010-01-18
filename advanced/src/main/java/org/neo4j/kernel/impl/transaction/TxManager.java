@@ -560,18 +560,15 @@ public class TxManager implements TransactionManager
         // mark as commit in log done TxImpl.doCommit()
         StoreFailureException sfe = null;
         int xaErrorCode = -1;
-        int result = Status.STATUS_UNKNOWN;
         if ( tx.getResourceCount() == 0 )
         {
             tx.setStatus( Status.STATUS_COMMITTED );
-            result = Status.STATUS_COMMITTED;
         }
         else
         {
             try
             {
                 tx.doCommit();
-                result = Status.STATUS_COMMITTED;
             }
             catch ( XAException e )
             {
@@ -599,7 +596,6 @@ public class TxManager implements TransactionManager
             try
             {
                 tx.doRollback();
-                result = Status.STATUS_ROLLEDBACK;
             }
             catch ( XAException e )
             {
