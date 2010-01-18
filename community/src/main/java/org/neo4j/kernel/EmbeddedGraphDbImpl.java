@@ -119,7 +119,7 @@ class EmbeddedGraphDbImpl
         }
         Set<Entry<Object,Object>> entries = props.entrySet();
         Map<String,String> stringProps = new HashMap<String,String>();
-        for ( Entry entry : entries )
+        for ( Entry<Object,Object> entry : entries )
         {
             String key = (String) entry.getKey();
             String value = (String) entry.getValue();
