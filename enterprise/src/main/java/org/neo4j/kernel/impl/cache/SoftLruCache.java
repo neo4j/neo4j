@@ -73,8 +73,8 @@ public class SoftLruCache<K,V> implements Cache<K,V>
     
     public void pollAll()
     {
-        SoftValue cv;
-        while ( ( cv = (SoftValue) refQueue.poll() ) != null )
+        SoftValue<?,?> cv;
+        while ( ( cv = (SoftValue<?,?>) refQueue.poll() ) != null )
         {
             cache.remove( cv.key );
         }

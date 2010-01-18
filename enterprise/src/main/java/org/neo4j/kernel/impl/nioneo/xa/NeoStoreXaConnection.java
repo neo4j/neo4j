@@ -178,15 +178,13 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 
     };
 
-    private class NodeEventConsumerImpl implements NodeEventConsumer
+    private static class NodeEventConsumerImpl implements NodeEventConsumer
     {
         private final NeoStoreXaConnection xaCon;
-        private final NodeStore nodeStore;
 
         public NodeEventConsumerImpl( NeoStoreXaConnection xaCon )
         {
             this.xaCon = xaCon;
-            nodeStore = getNodeStore();
         }
 
         public void createNode( int nodeId )
@@ -227,23 +225,16 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         {
             return xaCon.getNeoTransaction().nodeGetProperties( nodeId );
         }
-
-        /*public Iterable<RelationshipData> getRelationships( int nodeId )
-        {
-            return xaCon.getNeoTransaction().nodeGetRelationships( nodeId );
-        }*/
     };
 
-    private class RelationshipEventConsumerImpl implements
+    private static class RelationshipEventConsumerImpl implements
         RelationshipEventConsumer
     {
         private final NeoStoreXaConnection xaCon;
-        private final RelationshipStore relStore;
 
         public RelationshipEventConsumerImpl( NeoStoreXaConnection xaCon )
         {
             this.xaCon = xaCon;
-            this.relStore = getRelationshipStore();
         }
 
         public void createRelationship( int id, int firstNode, int secondNode,
@@ -301,7 +292,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         }
     };
 
-    private class RelationshipTypeEventConsumerImpl implements
+    private static class RelationshipTypeEventConsumerImpl implements
         RelationshipTypeEventConsumer
     {
         private final NeoStoreXaConnection xaCon;
@@ -310,7 +301,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         RelationshipTypeEventConsumerImpl( NeoStoreXaConnection xaCon )
         {
             this.xaCon = xaCon;
-            this.relTypeStore = getRelationshipTypeStore();
+            this.relTypeStore = xaCon.getRelationshipTypeStore();
         }
 
         public void addRelationshipType( int id, String name )
