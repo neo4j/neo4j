@@ -41,8 +41,8 @@ package org.neo4j.graphdb;
  * However, you usually want to check whether a specific relationship
  * <i>instance</i> is of a certain type. That is best achieved with the
  * {@link Relationship#isType Relationship.isType} method, such as: <code><pre>
- * DynamicRelationshipType type = DynamicRelationshipType.withName( "myname" );
- * if ( rel.isType( type ) )
+ * {@link RelationshipType} type = DynamicRelationshipType.{@link #withName(String) withName}( "myname" );
+ * if ( rel.{@link Relationship#isType(RelationshipType) isType}( type ) )
  * {
  *     ...
  * }
@@ -65,8 +65,9 @@ public final class DynamicRelationshipType implements RelationshipType
     /**
      * Instantiates a new DynamicRelationshipType with the given name, without
      * creating it in the underlying storage. The relationship type is persisted
-     * only when the first relationship of this type has been commited. 
+     * only when the first relationship of this type has been committed. 
      * @param name the name of the dynamic relationship type
+     * @return a DynamicRelationshipType with the given name
      * @throws IllegalArgumentException if name is <code>null</code>
      */
     public static DynamicRelationshipType withName( String name )

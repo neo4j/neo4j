@@ -40,14 +40,14 @@ package org.neo4j.graphdb;
  * {
  *     // Block traversal if the node has a property with key 'key' and value
  *     // 'someValue'
- *     public boolean isStopNode( TraversalPosition position )
+ *     public boolean {@link #isStopNode(TraversalPosition) isStopNode}( {@link TraversalPosition} position )
  *     {
- *         if ( position.isStartNode() )
+ *         if ( position.{@link TraversalPosition#isStartNode() isStartNode}() )
  *         {
  *             return false;
  *         }
- *         Node node = position.previousNode();
- *         Object someProp = node.getProperty( "key", null );
+ *         {@link Node} node = position.{@link TraversalPosition#currentNode() currentNode}();
+ *         Object someProp = node.{@link Node#getProperty(String, Object) getProperty}( "key", null );
  *         return someProp instanceof String &&
  *             ((String) someProp).equals( "someValue" );
  *     }

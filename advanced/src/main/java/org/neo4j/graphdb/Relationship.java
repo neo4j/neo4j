@@ -25,30 +25,29 @@ package org.neo4j.graphdb;
  * properties to relationships with the API specified in
  * {@link PropertyContainer}.
  * <p>
- * Relationships are created by invoking the {@link Node#createRelationshipTo
+ * Relationships are created by invoking the
+ * {@link Node#createRelationshipTo(Node, RelationshipType)
  * Node.createRelationshipTo()} method on a node as follows:
  * <p>
  * <code>
- * Relationship rel = node.createRelationshipTo( otherNode, MyRels.REL_TYPE );
- * </code>
- * Neo4j doesn't support relationship where the start node and end node are the
- * same.
+ * Relationship rel = node.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( otherNode, MyRels.REL_TYPE );
+ * </code> Neo4j doesn't support relationship where the start node and end node
+ * are the same.
  * <p>
  * The fact that the relationship API gives meaning to {@link #getStartNode()
  * start} and {@link #getEndNode() end} nodes implicitly means that all
- * relationships have a direction. In the example above, <code>rel</code>
- * would be directed <i>from</i> <code>node</code> <i>to</i>
- * <code>otherNode</code>. A relationship's start node and end node and their
- * relation to {@link Direction#OUTGOING} and {@link Direction#INCOMING} are
- * defined so that the assertions in the following code are <code>true</code>:
- * <code><pre>
- * Node a = graphDb.createNode(), b = graphDb.createNode();
- * Relationship rel = a.createRelationshipTo( b, MyRels.REL_TYPE );
+ * relationships have a direction. In the example above, <code>rel</code> would
+ * be directed <i>from</i> <code>node</code> <i>to</i> <code>otherNode</code>. A
+ * relationship's start node and end node and their relation to
+ * {@link Direction#OUTGOING} and {@link Direction#INCOMING} are defined so that
+ * the assertions in the following code are <code>true</code>: <code><pre>
+ * {@link Node} a = graphDb.{@link GraphDatabaseService#createNode() createNode}(), b = graphDb.{@link GraphDatabaseService#createNode() createNode}();
+ * {@link Relationship} rel = a.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( b, {@link RelationshipType MyRels.REL_TYPE} );
  * // Now we have: (a) --- REL_TYPE ---&gt; (b)
  * 
- * assert rel.getStartNode().equals( a );
- * assert rel.getEndNode().equals( b );
- * assert rel.getNodes()[0].equals( a ) &amp;&amp; rel.getNodes()[1].equals( b );
+ * assert rel.{@link Relationship#getStartNode() getStartNode}().equals( a );
+ * assert rel.{@link Relationship#getEndNode() getEndNode}().equals( b );
+ * assert rel.{@link Relationship#getNodes() getNodes}()[0].equals( a ) &amp;&amp; rel.{@link Relationship#getNodes() getNodes}()[1].equals( b );
  * </pre></code>
  * 
  * Even though all relationships have a direction they are equally well
