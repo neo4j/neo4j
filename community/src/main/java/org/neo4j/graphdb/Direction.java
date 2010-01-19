@@ -28,7 +28,7 @@ package org.neo4j.graphdb;
  * relationship from that node's point of view. If a node is the end node of 
  * a relationship it will be an {@link #INCOMING} relationship from that 
  * node's point of view. The {@link #BOTH} direction is used when direction
- * is of no imporance, such as "give me all" or "traverse all" relationships
+ * is of no importance, such as "give me all" or "traverse all" relationships
  * that are either {@link #OUTGOING} or {@link #INCOMING}. 
  */
 public enum Direction

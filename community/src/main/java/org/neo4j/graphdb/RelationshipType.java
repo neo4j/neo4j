@@ -28,7 +28,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * {@link Node#getRelationships() relationship operations} on Node.
  * <p>
  * Relationship types are declared by the client and can be handled either
- * dynamically or statically in a Neo-based application. Internally,
+ * dynamically or statically in a Neo4j-based application. Internally,
  * relationship types are dynamic. This means that every time a client invokes
  * {@link Node#createRelationshipTo(Node,RelationshipType)
  * node.createRelationshipTo(anotherNode, newRelType)} and passes in a new
@@ -42,13 +42,13 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * RelationshipType and then reuse that across the application. For example,
  * here's how you would define an enum to hold all your relationship types:
  * <code><pre>
- * enum MyRelationshipTypes implements RelationshipType
+ * enum MyRelationshipTypes implements {@link RelationshipType}
  * {
  *     CONTAINED_IN, KNOWS
  * }
  * </pre></code> Then later, it's as easy to use as: <code><pre>
- * node.createRelationshipTo( anotherNode, MyRelationshipTypes.KNOWS );
- * for ( Relationship rel : node.getRelationships( MyRelationshipTypes.KNOWS ) )
+ * node.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( anotherNode, {@link RelationshipType MyRelationshipTypes.KNOWS} );
+ * for ( {@link Relationship} rel : node.{@link Node#getRelationships(RelationshipType...) getRelationships}( MyRelationshipTypes.KNOWS ) )
  * {
  * 	// ...
  * }

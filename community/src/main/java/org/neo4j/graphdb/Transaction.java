@@ -28,15 +28,15 @@ package org.neo4j.graphdb;
  * the idiomatic use of programmatic transactions in Neo:
  * 
  * <pre><code>
- * Transaction tx = graphDb.beginTx();
+ * Transaction tx = graphDb.{@link GraphDatabaseService#beginTx() beginTx}();
  * try
  * {
  * 	... // any operation that works with the node space
- *     tx.success();
+ *     tx.{@link #success() success}();
  * }
  * finally
  * {
- *     tx.finish();
+ *     tx.{@link #finish() finish}();
  * }
  * </code></pre>
  * 
@@ -61,7 +61,7 @@ package org.neo4j.graphdb;
 public interface Transaction
 {
     /**
-     * Marks this transaction as failed, which means that it will inexplicably
+     * Marks this transaction as failed, which means that it will unconditionally
      * be rolled back when {@link #finish()} is called. Once this method
      * has been invoked, it doesn't matter how many times {@link #success()} is
      * invoked -- the transaction will still be rolled back.
@@ -70,7 +70,7 @@ public interface Transaction
 
     /**
      * Marks this transaction as successful, which means that it will be
-     * commited upon invocation of {@link #finish()} unless {@link #failure()}
+     * committed upon invocation of {@link #finish()} unless {@link #failure()}
      * has or will be invoked before then.
      */
     public void success();

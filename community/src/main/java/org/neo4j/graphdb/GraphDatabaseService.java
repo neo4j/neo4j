@@ -32,7 +32,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * <code>
  * <pre>GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "var/graphDb" );
  * // ... use Neo4j
- * graphDb.shutdown();</pre>
+ * graphDb.{@link #shutdown() shutdown}();</pre>
  * </code>
  * GraphDatabaseService provides operations to {@link #enableRemoteShell enable the shell},
  * {@link #createNode() create nodes}, {@link #getNodeById(long) get nodes
@@ -120,8 +120,8 @@ public interface GraphDatabaseService
      * <code>shell</code> component is available on the classpath. This will
      * publish a shell access interface on an RMI registry on localhost (with
      * configurable port and RMI binding name). It can be accessed by a
-     * client that implements <code>org.neo4j.util.shell.ShellClient</code>
-     * from the Neo4j <code>shell</code> project. Typically, the
+     * client that implements <code>org.neo4j.shell.ShellClient</code>
+     * from the Neo4j <code>shell</code> component. Typically, the
      * <code>shell</code> binary package is used (see
      * <a href="http://neo4j.org/download">neo4j.org/download</a>).
      * <p>

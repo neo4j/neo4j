@@ -33,10 +33,10 @@ import java.util.Iterator;
  * Typically it's used in a for-each loop as follows:
  * 
  * <code><pre>
- * Traverser friends = node.traverse( Order.BREADTH_FIRST,
- *     StopEvaluator.END_OF_NETWORK, ReturnableEvaluator.ALL_BUT_START_NODE,
- *     MyRelationshipTypes.KNOWS, Direction.OUTGOING );
- * for ( Node friend : friends )
+ * Traverser friends = node.{@link Node#traverse(Order, StopEvaluator, ReturnableEvaluator, RelationshipType, Direction) traverse}( {@link Order#BREADTH_FIRST Order.BREADTH_FIRST},
+ *     {@link StopEvaluator#END_OF_GRAPH StopEvaluator.END_OF_GRAPH}, {@link ReturnableEvaluator#ALL_BUT_START_NODE ReturnableEvaluator.ALL_BUT_START_NODE},
+ *     {@link RelationshipType MyRelationshipTypes.KNOWS}, {@link Direction#OUTGOING Direction.OUTGOING} );
+ * for ( {@link Node Node} friend : friends )
  * {
  *     // ...
  * }
@@ -86,10 +86,10 @@ public interface Traverser extends Iterable<Node>
 	 * the current position is (relative to the starting node). You can use
 	 * it in your traverser for-loop like this:
 	 * <pre>
-	 * Traverser traverser = node.traverse( ... );
-	 * for ( Node node : traverser )
+	 * Traverser traverser = node.{@link Node#traverse traverse}( ... );
+	 * for ( {@link Node Node} node : traverser )
 	 * {
-	 *     TraversalPosition currentPosition = traverser.currentPosition();
+	 *     {@link TraversalPosition TraversalPosition} currentPosition = traverser.currentPosition();
 	 *     // Get "current position" information right here.
 	 * }
 	 * </pre>
