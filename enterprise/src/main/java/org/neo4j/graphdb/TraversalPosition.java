@@ -93,12 +93,12 @@ public interface TraversalPosition
      * as in this example:
      * 
      * <code><pre>
-     * public boolean isStopNode( TraversalPosition currentPos )
+     * public boolean {@link StopEvaluator#isStopNode(TraversalPosition) isStopNode}( TraversalPosition currentPos )
      * {
      *     // Stop at nodes reached through a SOME_RELATIONSHIP.
      *     return currentPos.notStartNode()
-     *         &amp;&amp; currentPos.lastRelationshipTraversed().isType(
-     *             MyRelationshipTypes.SOME_RELATIONSHIP );
+     *         &amp;&amp; currentPos.{@link #lastRelationshipTraversed() lastRelationshipTraversed}().{@link Relationship#isType(RelationshipType) isType}(
+     *             {@link RelationshipType MyRelationshipTypes.SOME_RELATIONSHIP} );
      * }
      * </pre></code>
      * 
@@ -118,13 +118,13 @@ public interface TraversalPosition
      * as in this example:
      * 
      * <code><pre>
-     * public boolean isReturnableNode( TraversalPosition currentPos )
+     * public boolean {@link ReturnableEvaluator#isReturnableNode(TraversalPosition) isReturnableNode}( TraversalPosition currentPos )
      * {
      *     // The start node, and nodes reached through SOME_RELATIONSHIP
      *     // are returnable.
      *     return currentPos.isStartNode()
-     *         || currentPos.lastRelationshipTraversed().isType(
-     *             MyRelationshipTypes.SOME_RELATIONSHIP );
+     *         || currentPos.{@link #lastRelationshipTraversed() lastRelationshipTraversed}().{@link Relationship#isType(RelationshipType) isType}(
+     *             {@link RelationshipType MyRelationshipTypes.SOME_RELATIONSHIP} );
      * }
      * </pre></code>
      * 

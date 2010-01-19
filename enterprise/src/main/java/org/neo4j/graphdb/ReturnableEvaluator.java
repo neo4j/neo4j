@@ -36,12 +36,12 @@ package org.neo4j.graphdb;
  * <CODE><PRE>
  * ReturnableEvaluator returnEvaluator = new ReturnableEvaluator()
  * {
- *     public boolean isReturnableNode( TraversalPosition position )
+ *     public boolean {@link #isReturnableNode(TraversalPosition) isReturnableNode}( {@link TraversalPosition TraversalPosition} position )
  *     {
  *         // Return nodes that don't have any outgoing relationships,
  *         // only incoming relationships, i.e. leaf nodes.
- *         return !position.currentNode().hasRelationship(
- *             Direction.OUTGOING );
+ *         return !position.{@link TraversalPosition#currentNode() currentNode}().{@link Node#hasRelationship(Direction) hasRelationship}(
+ *             {@link Direction#OUTGOING Direction.OUTGOING} );
  *     }
  * };
  * </PRE></CODE>
