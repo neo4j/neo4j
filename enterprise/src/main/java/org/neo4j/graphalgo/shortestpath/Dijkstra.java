@@ -64,7 +64,13 @@ public class Dijkstra<CostType> implements
     protected long numberOfTraversedRelationShips = 0;
     protected long maxNodesToTraverse = -1;
     protected long numberOfNodesTraversed = 0;
-
+    protected MaxCostComparator<CostType> maxCostComparator = new MaxCostComparator<CostType>() {
+    	//this will not limit the path length
+    	public boolean maxCostExceeded(CostType currentCost) {
+			return false;
+		}
+	};
+    
     /**
      * @return True if the set limits for the calculation has been reached (but
      *         not exceeded)
@@ -109,13 +115,13 @@ public class Dijkstra<CostType> implements
     /**
      * @param startCost
      *            Starting cost for both the start node and the end node
-     * @param startNode
-     * @param endNode
-     * @param costRelationType
-     * @param relationDirection
-     * @param costEvaluator
-     * @param costAccumulator
-     * @param costComparator
+     * @param startNode the start node
+     * @param endNode the end node
+     * @param costRelationType the relationship that should be included in the path
+     * @param relationDirection relationship direction to follow
+     * @param costEvaluator the cost function per relationship
+     * @param costAccumulator adding up the path cost
+     * @param costComparator comparing to path costs
      */
     public Dijkstra( CostType startCost, Node startNode, Node endNode,
         CostEvaluator<CostType> costEvaluator,
@@ -271,6 +277,10 @@ public class Dijkstra<CostType> implements
             if ( myDistances.containsKey( currentNode ) )
             {
                 return null;
+            }
+            if(maxCostComparator.maxCostExceeded(currentCost))
+            {
+            	return null;
             }
             if ( limitReached() )
             {
@@ -473,7 +483,10 @@ public class Dijkstra<CostType> implements
             }
             if ( iter1.hasNext() )
             {
-                iter1.next();
+                if(iter1.next() == null)
+                {
+                	break;
+                }
             }
             if ( limitReached() )
             {
@@ -481,7 +494,10 @@ public class Dijkstra<CostType> implements
             }
             if ( !iter1.isDone() && iter2.hasNext() )
             {
-                iter2.next();
+                if(iter2.next() == null)
+                {
+                	break;
+                }
             }
             if ( iter1.isDone() || iter2.isDone() ) // A path was found
             {
@@ -516,7 +532,7 @@ public class Dijkstra<CostType> implements
         calculateMultiple();
         if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.size() == 0 )
         {
-            return null;
+            return new LinkedList<List<PropertyContainer>>(  );
         }
         // Currently we use a set to avoid duplicate paths
         // TODO: can this be done smarter?
@@ -706,7 +722,6 @@ public class Dijkstra<CostType> implements
     {
         this.maxRelationShipsToTraverse = maxRelationShipsToTraverse;
     }
-
     /**
      * This sets the maximum depth in the form of a maximum number of nodes to
      * scan.
@@ -754,4 +769,9 @@ public class Dijkstra<CostType> implements
     {
         return costRelationTypes;
     }
+
+	public void limitMaxCostToTraverse(MaxCostComparator maxCostComparator2) {
+		this.maxCostComparator = maxCostComparator2;
+		
+	}
 }

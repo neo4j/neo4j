@@ -71,6 +71,26 @@ public class FindPathTest extends NeoAlgoTestCase
         assertTrue( findPath.getPathsAsNodes().size() == 1 );
     }
 
+    /**
+     * Limiting the cost should not get any path
+     */
+    public void testMaxCost()
+    {
+        graph.makeEdge( "a", "b", "cost", (double) 1 );
+        graph.makeEdge( "a", "c", "cost", (double) 1 );
+        graph.makeEdge( "c", "d", "cost", (double) 1 );
+        graph.makeEdge( "b", "d", "cost", (double) 1 );
+        FindPath findPath = new FindPath( graph.getNode( "a" ), graph
+                .getNode( "d" ), 0, Direction.OUTGOING, MyRelTypes.R1 );
+        List<List<PropertyContainer>> paths = findPath.getPaths();
+		assertTrue( paths.isEmpty() );
+		assertNull( findPath.getCost() );
+        findPath = new FindPath( graph.getNode( "a" ), graph
+                .getNode( "d" ), 1, Direction.OUTGOING, MyRelTypes.R1 );
+        assertTrue( findPath.getCost() == 2 );
+        assertTrue( findPath.getPathAsNodes().size() == 3 );
+        assertTrue( findPath.getPathAsRelationships().size() == 2 );
+    }
     public void testFindPathChain()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
