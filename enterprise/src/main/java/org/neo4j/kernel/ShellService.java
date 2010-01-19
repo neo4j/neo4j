@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -33,8 +33,8 @@ class ShellService
 {
     private final GraphDatabaseService graphDb;
     private final Object shellServer;
-    
-    ShellService( GraphDatabaseService neo, Map<String, Serializable> config )
+
+    ShellService( GraphDatabaseService neo, Map<String,Serializable> config )
         throws ShellNotAvailableException, RemoteException
     {
         this.graphDb = neo;
@@ -44,7 +44,7 @@ class ShellService
         }
         this.shellServer = startShellServer( config );
     }
-    
+
     private boolean shellDependencyAvailable()
     {
         try
@@ -57,32 +57,32 @@ class ShellService
             return false;
         }
     }
-    
-    private Object startShellServer( Map<String, Serializable> config )
+
+    private Object startShellServer( Map<String,Serializable> config )
         throws RemoteException
     {
-        Integer port = ( Integer )
-            getConfig( config, "port", "DEFAULT_PORT" );
-        String name = ( String )
-            getConfig( config, "name", "DEFAULT_NAME" );
+        Integer port = (Integer) getConfig( config, "port", "DEFAULT_PORT" );
+        String name = (String) getConfig( config, "name", "DEFAULT_NAME" );
         try
         {
-            Class<?> shellServerClass = Class.forName(
-                "org.neo4j.shell.kernel.GraphDatabaseShellServer" );
-            Object shellServer = shellServerClass.getConstructor(
-                GraphDatabaseService.class ).newInstance( graphDb );
+            Class<?> shellServerClass =
+                Class
+                    .forName( "org.neo4j.shell.kernel.GraphDatabaseShellServer" );
+            Object shellServer =
+                shellServerClass.getConstructor( GraphDatabaseService.class )
+                    .newInstance( graphDb );
             shellServer.getClass().getMethod( "makeRemotelyAvailable",
                 Integer.TYPE, String.class ).invoke( shellServer, port, name );
             return shellServer;
         }
         catch ( Exception e )
         {
-            throw new RemoteException( "Couldn't start shell '" + name +
-                "' at port " + port, e );
+            throw new RemoteException( "Couldn't start shell '" + name
+                + "' at port " + port, e );
         }
     }
-    
-    private Serializable getConfig( Map<String, Serializable> config,
+
+    private Serializable getConfig( Map<String,Serializable> config,
         String key, String defaultVariableName ) throws RemoteException
     {
         Serializable result = config.get( key );
@@ -90,9 +90,10 @@ class ShellService
         {
             try
             {
-                result = ( Serializable ) Class.forName(
-                    "org.neo4j.shell.impl.AbstractServer" ).
-                        getDeclaredField( defaultVariableName ).get( null );
+                result =
+                    (Serializable) Class.forName(
+                        "org.neo4j.shell.impl.AbstractServer" )
+                        .getDeclaredField( defaultVariableName ).get( null );
             }
             catch ( Exception e )
             {
@@ -106,8 +107,7 @@ class ShellService
     {
         try
         {
-            shellServer.getClass().getMethod( "shutdown" ).invoke(
-                shellServer );
+            shellServer.getClass().getMethod( "shutdown" ).invoke( shellServer );
             return true;
         }
         catch ( Exception e )
@@ -116,7 +116,7 @@ class ShellService
             return false;
         }
     }
-    
+
     static class ShellNotAvailableException extends Exception
     {
         public ShellNotAvailableException()

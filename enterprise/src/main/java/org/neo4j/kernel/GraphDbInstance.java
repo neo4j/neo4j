@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,15 +36,17 @@ import org.neo4j.kernel.impl.util.FileUtils;
 
 class GraphDbInstance
 {
-    private static final String NIO_NEO_DB_CLASS = "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
+    private static final String NIO_NEO_DB_CLASS =
+        "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
     private static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
-    private static final String LUCENE_DS_CLASS = "org.neo4j.index.lucene.LuceneDataSource";
+    private static final String LUCENE_DS_CLASS =
+        "org.neo4j.index.lucene.LuceneDataSource";
 
     private boolean started = false;
     private boolean create;
     private String storeDir;
-    
+
     GraphDbInstance( String storeDir, boolean create )
     {
         this.storeDir = storeDir;
@@ -87,15 +89,11 @@ class GraphDbInstance
     /**
      * Starts Neo4j with default configuration
      * 
-     * @param storeDir
-     *            path to directory where Neo4j store is located
-     * @param create
-     *            if true a new Neo4j store will be created if no store
-     *            exist at <CODE>storeDir</CODE>
-     * @param configuration
-     *            parameters
-     * @throws StartupFailedException
-     *             if unable to start
+     * @param storeDir path to directory where Neo4j store is located
+     * @param create if true a new Neo4j store will be created if no store exist
+     *            at <CODE>storeDir</CODE>
+     * @param configuration parameters
+     * @throws StartupFailedException if unable to start
      */
     public synchronized void start( Map<String,String> stringParams )
     {
@@ -130,8 +128,10 @@ class GraphDbInstance
             {
                 Class clazz = Class.forName( LUCENE_DS_CLASS );
                 cleanWriteLocksInLuceneDirectory( storeDir + "/lucene" );
-                lucene = registerLuceneDataSource( clazz.getName(), config
-                    .getTxModule(), storeDir + "/lucene", config.getLockManager() );
+                lucene =
+                    registerLuceneDataSource( clazz.getName(), config
+                        .getTxModule(), storeDir + "/lucene", config
+                        .getLockManager() );
             }
             catch ( ClassNotFoundException e )
             { // ok index util not on class path
@@ -151,11 +151,11 @@ class GraphDbInstance
 
         config.getEventModule().start();
         config.getTxModule().start();
-        config.getPersistenceModule().start( config.getTxModule().getTxManager(), 
-            persistenceSource );
+        config.getPersistenceModule().start(
+            config.getTxModule().getTxManager(), persistenceSource );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
-        config.getNeoModule().start( config.getLockReleaser(),  
+        config.getNeoModule().start( config.getLockReleaser(),
             config.getPersistenceModule().getPersistenceManager(), params );
         if ( lucene != null )
         {
@@ -165,7 +165,7 @@ class GraphDbInstance
         }
         started = true;
     }
-    
+
     private void cleanWriteLocksInLuceneDirectory( String luceneDir )
     {
         File dir = new File( luceneDir );
@@ -244,7 +244,7 @@ class GraphDbInstance
         }
         catch ( Exception e )
         {
-            throw new TransactionFailureException( 
+            throw new TransactionFailureException(
                 "Unable to get transaction.", e );
         }
     }
