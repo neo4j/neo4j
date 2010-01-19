@@ -58,11 +58,20 @@ public interface TraversalPosition
      */
     public Relationship lastRelationshipTraversed();
 
-	/**
-	 * Returns the current traversal depth.
-	 * 
-	 * @return The current traversal depth
-	 */
+    /**
+     * Returns the current traversal depth.
+     * 
+     * The traversal depth is the length of the path taken to reach the current
+     * traversal position. This is not necessarily the length of shortest path
+     * from the start node to the node at the current position. When traversing
+     * {@link Traverser.Order#BREADTH_FIRST breadth first} the depth is the
+     * length of the shortest path from the start node to the node at the
+     * current position, but when traversing {@link Traverser.Order#DEPTH_FIRST
+     * depth first} there might exist shorter paths from the start node to the
+     * node at this position.
+     * 
+     * @return The current traversal depth
+     */
 	public int depth();
 	
 	/**

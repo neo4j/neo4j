@@ -31,15 +31,17 @@ package org.neo4j.graphdb;
  * When implementing a ReturnableEvaluator, the client investigates the
  * information encapsulated in a {@link TraversalPosition} to decide whether a
  * node is returnable. For example, here's a snippet detailing a
- * ReturnableEvaluator that will return at most 5 nodes:
+ * ReturnableEvaluator that will return all leaf nodes:
  * 
  * <CODE><PRE>
  * ReturnableEvaluator returnEvaluator = new ReturnableEvaluator()
  * {
  *     public boolean isReturnableNode( TraversalPosition position )
  *     {
- *         // Return nodes until we've reached 5 nodes or end of graph
- *         return position.returnedNodesCount() < 5;
+ *         // Return nodes that don't have any outgoing relationships,
+ *         // only incoming relationships, i.e. leaf nodes.
+ *         return !position.currentNode().hasRelationship(
+ *             Direction.OUTGOING );
  *     }
  * };
  * </PRE></CODE>
