@@ -28,7 +28,8 @@ import org.neo4j.graphdb.RelationshipType;
 
 /**
  * FindPath class. This class can be used to perform shortest path computations
- * between two nodes on an unweighted network. Currently just wraps a
+ * between two nodes on an unweighted network. Currently just wraps two Dijkstras
+ * from sart and end node, trying to intersect in the middle.
  * {@link Dijkstra}.
  * @author Patrik Larsson
  */
@@ -178,7 +179,14 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
     {
         dijkstra.setStartNode( startNode );
     }
-
+    /**
+     * This is an algo that will initiate a Dijkstra from start- and end node
+     * with relationship cost of 1 per path step along the costRelationshipTypes
+     * @param startNode the node to start at
+     * @param endNode the node to find a path to
+     * @param relationDirection 
+     * @param costRelationTypes the types of relationships that are going to be on the path
+     */
     public FindPath( Node startNode, Node endNode, Direction relationDirection,
         RelationshipType... costRelationTypes )
     {
@@ -192,5 +200,29 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
                 }
             }, new IntegerAdder(), new IntegerComparator(), relationDirection,
             costRelationTypes );
-    }
+    }  
+    /**
+     * A depth-limited variant of the double-starting Dijkstra. If one of the pathes is costing more (longer than)
+     * maxCost, the Dijkstra there will stop.
+     * Potentially, if the shortest path between 2 nodes is length 12, at maxCost 4 it would not be found since the two segments
+     * at max depth 4 woudl not meet.
+     * For this, at least maxCost = 6 has to be set in order to find paths with length 12.
+     * @param startNode the start node
+     * @param endNode the end node
+     * @param maxCost the maximum length of the path before giving up
+     * @param relationDirection
+     * @param costRelationTypes
+     */
+    public FindPath( Node startNode, Node endNode, final int maxCost, Direction relationDirection,
+            RelationshipType... costRelationTypes )
+        {
+        	this(startNode, endNode, relationDirection, costRelationTypes);
+            MaxCostComparator<Integer> maxCostComparator = new MaxCostComparator<Integer>() {
+
+    			public boolean maxCostExceeded(Integer currentCost) {
+    				return currentCost > maxCost;
+    			}
+    		};
+    		dijkstra.limitMaxCostToTraverse(maxCostComparator);
+        }
 }
