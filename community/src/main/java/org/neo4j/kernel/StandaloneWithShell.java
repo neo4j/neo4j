@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,100 +30,100 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 public class StandaloneWithShell
 {
-	private static Logger log = Logger.getLogger(
-		StandaloneWithShell.class.getName() );	
-	private GraphDatabaseService embeddedDb;
-	private AtomicBoolean shutdownInitiated = new AtomicBoolean( false );
-	
-	private GraphDatabaseService getNeo()
-	{
-		return this.embeddedDb;
-	}
-	
-	private void addShutdownHook()
-	{
-		Runtime.getRuntime().addShutdownHook(
-			new Thread()
-			{
-				public void run()
-				{
-					shutdown();
-				}
-			} );
-	}
-	
-	private void initialize( Map<String, String> arguments )
-	{
-	    String path = arguments.get( "path" );
-		this.embeddedDb = new EmbeddedGraphDatabase( path );
-		Map<String, Serializable> shellProperties = Collections.emptyMap();
-		getNeo().enableRemoteShell( shellProperties );
-		log.info( "Neo4j started at '" + path + "'" );
-	}
-	
-	private void blockUntilShutdown()
-	{
-		try
-		{
-			while ( shutdownInitiated.get() == false )
-			{
-				Thread.sleep( 100 );
-			}
-		}
-		catch ( InterruptedException e )
-		{
-            Thread.interrupted();
-			// Exit
-		}		
-	}
-	
-	private void shutdown()
-	{
-		if ( shutdownInitiated.compareAndSet( false, true ) )
-		{
-			log.info( "Shutting down..." );
-			try
-			{
-				if ( getNeo() != null )
-				{
-					getNeo().shutdown();			
-					this.embeddedDb = null;
-				}
-			}
-			catch ( Throwable t )
-			{
-				log.warning( "Error shutting down Neo: " +  t );
-			}
-		}		
-	}
+    private static Logger log =
+        Logger.getLogger( StandaloneWithShell.class.getName() );
+    private GraphDatabaseService embeddedDb;
+    private AtomicBoolean shutdownInitiated = new AtomicBoolean( false );
 
-	public void execute( Map<String, String> arguments )
-	{
-		addShutdownHook();
-		initialize( arguments );
-		blockUntilShutdown();
-	}
-	
-	public static void main( String[] args )
-	{
-	    Map<String, String> arguments = new HashMap<String, String>();
-	    for ( int i = 0; i < args.length; i++ )
-	    {
-	        String arg = args[ i ];
-	        if ( arg.startsWith( "-" ) )
-	        {
-	            String key = arg.substring( 1 );
-	            String value = ++i < args.length ? args[ i ] : null;
-	            arguments.put( key, value );
-	        }
-	    }
-	    if ( !arguments.containsKey( "path" ) )
-	    {
-	        System.out.println(
-	            "Use -path <path> to control the neo4j store path" );
-	        return;
-	    }
-	    
-		new StandaloneWithShell().execute( arguments );
-	}
+    private GraphDatabaseService getNeo()
+    {
+        return this.embeddedDb;
+    }
+
+    private void addShutdownHook()
+    {
+        Runtime.getRuntime().addShutdownHook( new Thread()
+        {
+            @Override
+            public void run()
+            {
+                shutdown();
+            }
+        } );
+    }
+
+    private void initialize( Map<String,String> arguments )
+    {
+        String path = arguments.get( "path" );
+        this.embeddedDb = new EmbeddedGraphDatabase( path );
+        Map<String,Serializable> shellProperties = Collections.emptyMap();
+        getNeo().enableRemoteShell( shellProperties );
+        log.info( "Neo4j started at '" + path + "'" );
+    }
+
+    private void blockUntilShutdown()
+    {
+        try
+        {
+            while ( shutdownInitiated.get() == false )
+            {
+                Thread.sleep( 100 );
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            // Exit
+        }
+    }
+
+    private void shutdown()
+    {
+        if ( shutdownInitiated.compareAndSet( false, true ) )
+        {
+            log.info( "Shutting down..." );
+            try
+            {
+                if ( getNeo() != null )
+                {
+                    getNeo().shutdown();
+                    this.embeddedDb = null;
+                }
+            }
+            catch ( Throwable t )
+            {
+                log.warning( "Error shutting down Neo: " + t );
+            }
+        }
+    }
+
+    public void execute( Map<String,String> arguments )
+    {
+        addShutdownHook();
+        initialize( arguments );
+        blockUntilShutdown();
+    }
+
+    public static void main( String[] args )
+    {
+        Map<String,String> arguments = new HashMap<String,String>();
+        for ( int i = 0; i < args.length; i++ )
+        {
+            String arg = args[i];
+            if ( arg.startsWith( "-" ) )
+            {
+                String key = arg.substring( 1 );
+                String value = ++i < args.length ? args[i] : null;
+                arguments.put( key, value );
+            }
+        }
+        if ( !arguments.containsKey( "path" ) )
+        {
+            System.out
+                .println( "Use -path <path> to control the neo4j store path" );
+            return;
+        }
+
+        new StandaloneWithShell().execute( arguments );
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,25 +30,29 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 
 /**
- * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j in an
- * application. You typically instantiate it by invoking the
- * {@link #EmbeddedGraphDatabase(String) single argument constructor} that takes a path to
- * a directory where Neo4j will store its data files, as such: <code>
+ * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
+ * in an application. You typically instantiate it by invoking the
+ * {@link #EmbeddedGraphDatabase(String) single argument constructor} that takes
+ * a path to a directory where Neo4j will store its data files, as such:
+ * 
  * <pre>
+ * <code>
  * GraphDatabaseService graphDb = new EmbeddedGraphDatabase( &quot;var/graphdb&quot; );
  * // ... use Neo4j
  * graphDb.shutdown();
+ * </code>
  * </pre>
- * </code> For more information, see {@link GraphDatabaseService}.
+ * 
+ * For more information, see {@link GraphDatabaseService}.
  */
 public final class EmbeddedGraphDatabase implements GraphDatabaseService
 {
     private final EmbeddedGraphDbImpl neoImpl;
-    
+
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
-     * <code>storeDir</code>, which will be created if it doesn't already
-     * exist.
+     * <code>storeDir</code>, which will be created if it doesn't already exist.
+     * 
      * @param storeDir the store directory for the Neo4j store files
      */
     public EmbeddedGraphDatabase( String storeDir )
@@ -62,8 +66,7 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
      * future releases.
      * <p>
      * Creates an embedded {@link GraphDatabaseService} with a store located in
-     * <code>storeDir</code>, which will be created if it doesn't already
-     * exist.
+     * <code>storeDir</code>, which will be created if it doesn't already exist.
      * 
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
@@ -74,9 +77,10 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
     }
 
     /**
-     * A non-standard Convenience method that loads a standard property file and
-     * converts it into a generic <Code>Map<String,String></CODE>. Will most 
+     * A non-standard convenience method that loads a standard property file and
+     * converts it into a generic <Code>Map<String,String></CODE>. Will most
      * likely be removed in future releases.
+     * 
      * @param file the property file to load
      * @return a map containing the properties from the file
      * @throws IllegalArgumentException if file does not exist
@@ -136,7 +140,7 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
     }
 
     /**
-     * Returns a non-standard configuration object. Will most likely be removed 
+     * Returns a non-standard configuration object. Will most likely be removed
      * in future releases.
      * 
      * @return a configuration object
@@ -146,16 +150,17 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
         return neoImpl.getConfig();
     }
 
+    @Override
     public String toString()
     {
         return super.toString() + " [" + neoImpl.getStoreDir() + "]";
     }
-    
+
     public String getStoreDir()
     {
         return neoImpl.getStoreDir();
     }
-    
+
     public Iterable<Node> getAllNodes()
     {
         return neoImpl.getAllNodes();

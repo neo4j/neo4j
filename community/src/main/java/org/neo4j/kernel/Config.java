@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -46,7 +46,7 @@ public class Config
     private final Map<Object,Object> params;
 
     private final boolean readOnly;
-    
+
     Config( String storeDir, Map<Object,Object> params )
     {
         this.storeDir = storeDir;
@@ -72,12 +72,12 @@ public class Config
             txModule = new TxModule( true );
         }
         lockManager = new LockManager( txModule.getTxManager() );
-        lockReleaser = new LockReleaser( lockManager, 
-            txModule.getTxManager() );
+        lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         persistenceModule = new PersistenceModule();
         idGeneratorModule = new IdGeneratorModule();
-        neoModule = new NeoModule( cacheManager, lockManager, txModule
-            .getTxManager(), idGeneratorModule.getIdGenerator(), readOnly );
+        neoModule =
+            new NeoModule( cacheManager, lockManager, txModule.getTxManager(),
+                idGeneratorModule.getIdGenerator(), readOnly );
     }
 
     void setNeoPersistenceSource( String name, boolean create )
@@ -135,7 +135,7 @@ public class Config
     {
         return this.params;
     }
-    
+
     boolean isReadOnly()
     {
         return readOnly;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,18 +22,19 @@ package org.neo4j.graphdb;
 /**
  * A client hook for evaluating whether a specific node should be returned from
  * a traverser.
- * <P>
+ * <p>
  * When a traverser is created the client parameterizes it with an instance of a
  * ReturnableEvaluator. The traverser then invokes the {@link #isReturnableNode
  * isReturnableNode()} operation just before returning a specific node, allowing
  * the client to either approve or disapprove of returning that node.
- * <P>
+ * <p>
  * When implementing a ReturnableEvaluator, the client investigates the
  * information encapsulated in a {@link TraversalPosition} to decide whether a
  * node is returnable. For example, here's a snippet detailing a
  * ReturnableEvaluator that will return all leaf nodes:
  * 
- * <CODE><PRE>
+ * <pre>
+ * <code>
  * ReturnableEvaluator returnEvaluator = new ReturnableEvaluator()
  * {
  *     public boolean {@link #isReturnableNode(TraversalPosition) isReturnableNode}( {@link TraversalPosition TraversalPosition} position )
@@ -44,39 +45,40 @@ package org.neo4j.graphdb;
  *             {@link Direction#OUTGOING Direction.OUTGOING} );
  *     }
  * };
- * </PRE></CODE>
+ * </code>
+ * </pre>
  */
 public interface ReturnableEvaluator
 {
-	/**
-	 * A returnable evaluator that returns all nodes encountered.
-	 */
-	public static final ReturnableEvaluator ALL = new ReturnableEvaluator()
-	{
-		public boolean isReturnableNode( TraversalPosition currentPosition )
-		{
-			return true;
-		}
-	};
-	
-	/**
-	 * A returnable evaluator that returns all nodes except start node.
-	 */
-	public static final ReturnableEvaluator ALL_BUT_START_NODE = 
-		new ReturnableEvaluator()
-	{
-		public boolean isReturnableNode( TraversalPosition currentPosition )
-		{
-			return currentPosition.notStartNode();
-		}
-	};
-	
-	/**
-	 * Method invoked by traverser to see if current position is a returnable 
-	 * node. 
-	 * 
-	 * @param currentPos The traversal position
-	 * @return True if current position is a returnable node
-	 */
-	public boolean isReturnableNode( TraversalPosition currentPos );
+    /**
+     * A returnable evaluator that returns all nodes encountered.
+     */
+    public static final ReturnableEvaluator ALL = new ReturnableEvaluator()
+    {
+        public boolean isReturnableNode( TraversalPosition currentPosition )
+        {
+            return true;
+        }
+    };
+
+    /**
+     * A returnable evaluator that returns all nodes except the start node.
+     */
+    public static final ReturnableEvaluator ALL_BUT_START_NODE =
+        new ReturnableEvaluator()
+        {
+            public boolean isReturnableNode( TraversalPosition currentPosition )
+            {
+                return currentPosition.notStartNode();
+            }
+        };
+
+    /**
+     * Method invoked by traverser to see if current position is a returnable
+     * node.
+     * 
+     * @param currentPos the traversal position
+     * @return True if current position is a returnable node
+     */
+    public boolean isReturnableNode( TraversalPosition currentPos );
 }

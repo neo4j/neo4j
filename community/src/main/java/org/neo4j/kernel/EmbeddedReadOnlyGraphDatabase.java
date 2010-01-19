@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,17 +30,18 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 
-public final class EmbeddedReadOnlyGraphDatabase implements GraphDatabaseService
+public final class EmbeddedReadOnlyGraphDatabase implements
+    GraphDatabaseService
 {
-    private static Map<String,String> readOnlyParams = 
+    private static Map<String,String> readOnlyParams =
         new HashMap<String,String>();
 
-    static 
+    static
     {
         readOnlyParams.put( "read_only", "true" );
     };
-    
-    private final EmbeddedGraphDbImpl neoImpl; 
+
+    private final EmbeddedGraphDbImpl neoImpl;
 
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
@@ -66,7 +67,8 @@ public final class EmbeddedReadOnlyGraphDatabase implements GraphDatabaseService
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
      */
-    public EmbeddedReadOnlyGraphDatabase( String storeDir, Map<String,String> params )
+    public EmbeddedReadOnlyGraphDatabase( String storeDir,
+        Map<String,String> params )
     {
         params.put( "read_only", "true" );
         this.neoImpl = new EmbeddedGraphDbImpl( storeDir, params, this );
@@ -74,8 +76,9 @@ public final class EmbeddedReadOnlyGraphDatabase implements GraphDatabaseService
 
     /**
      * A non-standard Convenience method that loads a standard property file and
-     * converts it into a generic <Code>Map<String,String></CODE>. Will most 
+     * converts it into a generic <Code>Map<String,String></CODE>. Will most
      * likely be removed in future releases.
+     * 
      * @param file the property file to load
      * @return a map containing the properties from the file
      */
@@ -134,7 +137,7 @@ public final class EmbeddedReadOnlyGraphDatabase implements GraphDatabaseService
     }
 
     /**
-     * Returns a non-standard configuration object. Will most likely be removed 
+     * Returns a non-standard configuration object. Will most likely be removed
      * in future releases.
      * 
      * @return a configuration object
@@ -144,16 +147,17 @@ public final class EmbeddedReadOnlyGraphDatabase implements GraphDatabaseService
         return neoImpl.getConfig();
     }
 
+    @Override
     public String toString()
     {
         return super.toString() + " [" + neoImpl.getStoreDir() + "]";
     }
-    
+
     public String getStoreDir()
     {
         return neoImpl.getStoreDir();
     }
-    
+
     public Iterable<Node> getAllNodes()
     {
         return neoImpl.getAllNodes();

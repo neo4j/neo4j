@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -47,8 +47,8 @@ import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 
 class EmbeddedGraphDbImpl
 {
-    private static Logger log = Logger.getLogger( 
-        EmbeddedGraphDbImpl.class.getName() );
+    private static Logger log =
+        Logger.getLogger( EmbeddedGraphDbImpl.class.getName() );
     private ShellService shellService;
     private Transaction placeboTransaction = null;
     private final GraphDbInstance graphDbInstance;
@@ -58,17 +58,18 @@ class EmbeddedGraphDbImpl
 
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
-     * <code>storeDir</code>, which will be created if it doesn't already
-     * exist.
+     * <code>storeDir</code>, which will be created if it doesn't already exist.
+     * 
      * @param storeDir the store directory for the Neo4j db files
      */
-    public EmbeddedGraphDbImpl( String storeDir, GraphDatabaseService graphDbService )
+    public EmbeddedGraphDbImpl( String storeDir,
+        GraphDatabaseService graphDbService )
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
         graphDbInstance.start();
-        nodeManager = graphDbInstance.getConfig().getNeoModule()
-            .getNodeManager();
+        nodeManager =
+            graphDbInstance.getConfig().getNeoModule().getNodeManager();
         this.graphDbService = graphDbService;
     }
 
@@ -76,24 +77,26 @@ class EmbeddedGraphDbImpl
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
      * with a set of configuration parameters. Will most likely be removed in
      * future releases.
+     * 
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
      */
-    public EmbeddedGraphDbImpl( String storeDir, Map<String,String> params, 
+    public EmbeddedGraphDbImpl( String storeDir, Map<String,String> params,
         GraphDatabaseService graphDbService )
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
         graphDbInstance.start( params );
-        nodeManager = graphDbInstance.getConfig().getNeoModule()
-            .getNodeManager();
+        nodeManager =
+            graphDbInstance.getConfig().getNeoModule().getNodeManager();
         this.graphDbService = graphDbService;
     }
 
     /**
      * A non-standard Convenience method that loads a standard property file and
-     * converts it into a generic <Code>Map<String,String></CODE>. Will most 
+     * converts it into a generic <Code>Map<String,String></CODE>. Will most
      * likely be removed in future releases.
+     * 
      * @param file the property file to load
      * @return a map containing the properties from the file
      * @throws IllegalArgumentException if file does not exist
@@ -176,7 +179,7 @@ class EmbeddedGraphDbImpl
         {
             throw new IllegalStateException( "Shell already enabled" );
         }
-        
+
         Map<String,Serializable> properties = initialProperties;
         if ( properties == null )
         {
@@ -194,8 +197,8 @@ class EmbeddedGraphDbImpl
         }
         catch ( ShellNotAvailableException e )
         {
-            log.info( "Shell library not available. Neo4j shell not " +
-                "started. Please add the Neo4j shell jar to the classpath." );
+            log.info( "Shell library not available. Neo4j shell not "
+                + "started. Please add the Neo4j shell jar to the classpath." );
             e.printStackTrace();
             return false;
         }
@@ -215,8 +218,9 @@ class EmbeddedGraphDbImpl
         {
             if ( placeboTransaction == null )
             {
-                placeboTransaction = new PlaceboTransaction( graphDbInstance
-                    .getTransactionManager() );
+                placeboTransaction =
+                    new PlaceboTransaction( graphDbInstance
+                        .getTransactionManager() );
             }
             return placeboTransaction;
         }
@@ -227,7 +231,8 @@ class EmbeddedGraphDbImpl
         }
         catch ( Exception e )
         {
-            throw new TransactionFailureException( "Unable to begin transaction", e );
+            throw new TransactionFailureException(
+                "Unable to begin transaction", e );
         }
         return new TransactionImpl( txManager );
     }
@@ -250,7 +255,7 @@ class EmbeddedGraphDbImpl
             }
             catch ( Exception e )
             {
-                throw new TransactionFailureException( 
+                throw new TransactionFailureException(
                     "Failed to mark transaction as rollback only.", e );
             }
         }
@@ -265,7 +270,7 @@ class EmbeddedGraphDbImpl
     }
 
     /**
-     * Returns a non-standard configuration object. Will most likely be removed 
+     * Returns a non-standard configuration object. Will most likely be removed
      * in future releases.
      * 
      * @return a configuration object
@@ -295,7 +300,7 @@ class EmbeddedGraphDbImpl
             }
             catch ( Exception e )
             {
-                throw new TransactionFailureException( 
+                throw new TransactionFailureException(
                     "Failed to mark transaction as rollback only.", e );
             }
         }
@@ -326,41 +331,44 @@ class EmbeddedGraphDbImpl
             }
             catch ( Exception e )
             {
-                if ( success ) 
+                if ( success )
                 {
-                    throw new TransactionFailureException( 
+                    throw new TransactionFailureException(
                         "Unable to commit transaction", e );
                 }
                 else
                 {
-                    throw new TransactionFailureException( 
+                    throw new TransactionFailureException(
                         "Unable to rollback transaction", e );
                 }
             }
         }
     }
-    
+
+    @Override
     public String toString()
     {
         return super.toString() + " [" + storeDir + "]";
     }
-    
+
     public String getStoreDir()
     {
         return storeDir;
     }
-    
+
     public Iterable<Node> getAllNodes()
     {
-        return new Iterable<Node>() {
-            public Iterator<Node> iterator() {
-                long highId = (nodeManager.getHighestPossibleIdInUse(Node.class)
-                        & 0xFFFFFFFFL);
-                return new AllNodesIterator(highId);
+        return new Iterable<Node>()
+        {
+            public Iterator<Node> iterator()
+            {
+                long highId =
+                    (nodeManager.getHighestPossibleIdInUse( Node.class ) & 0xFFFFFFFFL);
+                return new AllNodesIterator( highId );
             }
         };
     }
-    
+
     // TODO: temporary all nodes getter, fix this with better implementation
     // (no NotFoundException to control flow)
     private class AllNodesIterator implements Iterator<Node>
@@ -368,7 +376,7 @@ class EmbeddedGraphDbImpl
         private final long highId;
         private long currentNodeId = 0;
         private Node currentNode = null;
-        
+
         AllNodesIterator( long highId )
         {
             this.highId = highId;
@@ -389,19 +397,19 @@ class EmbeddedGraphDbImpl
             }
             return currentNode != null;
         }
-        
+
         public synchronized Node next()
         {
             if ( !hasNext() )
             {
                 throw new NoSuchElementException();
             }
-            
+
             Node nextNode = currentNode;
             currentNode = null;
             return nextNode;
         }
-        
+
         public void remove()
         {
             throw new UnsupportedOperationException();
