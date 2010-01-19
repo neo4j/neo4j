@@ -48,9 +48,21 @@ import java.util.Iterator;
  */
 public interface Traverser extends Iterable<Node>
 {
-	/**
-	 * Defines a traversal order as used by the traversal framework.
-	 */
+    /**
+     * Defines a traversal order as used by the traversal framework.
+     * 
+     * Nodes can be traversed either {@link #BREADTH_FIRST breadth first} or
+     * {@link #DEPTH_FIRST depth first}. A depth first traversal is often more
+     * likely to find one matching node before a breadth first traversal. A
+     * breadth first traversal will always find the closest matching nodes
+     * first, which means that {@link TraversalPosition#depth()} will return the
+     * length of the shortest path from the start node to the node at that
+     * position, this is not guaranteed for depth first traversals.
+     * 
+     * A breadth first traversal usually needs to store more state about where
+     * the traversal should go next than a depth first traversal does. Depth
+     * first traversals are thus more memory efficient.
+     */
 	public static enum Order
 	{ 
 		/**
@@ -68,7 +80,7 @@ public interface Traverser extends Iterable<Node>
 	}
 	
 	/**
-	 * Returns the current traversal postion, i.e. where the traversal is at
+	 * Returns the current traversal position, i.e. where the traversal is at
 	 * the moment. It contains information such as which node we're at,
 	 * which the last traversed relationship was (if any) and at which depth
 	 * the current position is (relative to the starting node). You can use
