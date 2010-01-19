@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,13 +22,13 @@ package org.neo4j.graphdb;
 /**
  * This exception will be thrown if a request is made to a node, relationship or
  * property that does not exist. As an example, using
- * {@link GraphDatabaseService#getNodeById} passing in an id that does not exist will
- * cause this exception to be thrown.
+ * {@link GraphDatabaseService#getNodeById} passing in an id that does not exist
+ * will cause this exception to be thrown.
  * {@link PropertyContainer#getProperty(String)} will also throw this exception
  * if the given key does not exist.
  * <p>
  * Another scenario when this exception will be thrown is if one or more
- * transaction keeps a reference to a node or relationship that gets deleted in
+ * transactions keep a reference to a node or relationship that gets deleted in
  * some other transaction. If the deleting transaction commits all other
  * transactions having a reference to the deleted node or relationship will
  * throw this exception when invoking any of the methods on the node or

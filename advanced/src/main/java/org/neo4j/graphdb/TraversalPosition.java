@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,12 +31,12 @@ package org.neo4j.graphdb;
  */
 public interface TraversalPosition
 {
-	/**
-	 * Return the current node.
-	 * 
-	 * @return The current node
-	 */
-	public Node currentNode();
+    /**
+     * Return the current node.
+     * 
+     * @return The current node
+     */
+    public Node currentNode();
 
     /**
      * Returns the previous node.
@@ -72,14 +72,14 @@ public interface TraversalPosition
      * 
      * @return The current traversal depth
      */
-	public int depth();
-	
-	/**
-	 * Returns the number of nodes returned by traverser so far.
-	 * 
-	 * @return The number of returned nodes.
-	 */
-	public int returnedNodesCount();
+    public int depth();
+
+    /**
+     * Returns the number of nodes returned by traverser so far.
+     * 
+     * @return The number of returned nodes.
+     */
+    public int returnedNodesCount();
 
     /**
      * Returns <code>true</code> if the current position is anywhere except on
@@ -87,12 +87,13 @@ public interface TraversalPosition
      * useful because code in {@link StopEvaluator the}
      * {@link ReturnableEvaluator evaluators} usually have to treat the edge
      * case of the start node separately and using this method makes that code a
-     * lot cleaner. This allows for much cleaner code
-     * where <code>null</code> checks can be avoided for return values from
-     * {@link #lastRelationshipTraversed()} and {@link #previousNode()}, such
-     * as in this example:
+     * lot cleaner. This allows for much cleaner code where <code>null</code>
+     * checks can be avoided for return values from
+     * {@link #lastRelationshipTraversed()} and {@link #previousNode()}, such as
+     * in this example:
      * 
-     * <code><pre>
+     * <pre>
+     * <code>
      * public boolean {@link StopEvaluator#isStopNode(TraversalPosition) isStopNode}( TraversalPosition currentPos )
      * {
      *     // Stop at nodes reached through a SOME_RELATIONSHIP.
@@ -100,12 +101,13 @@ public interface TraversalPosition
      *         &amp;&amp; currentPos.{@link #lastRelationshipTraversed() lastRelationshipTraversed}().{@link Relationship#isType(RelationshipType) isType}(
      *             {@link RelationshipType MyRelationshipTypes.SOME_RELATIONSHIP} );
      * }
-     * </pre></code>
+     * </code>
+     * </pre>
      * 
      * @return <code>true</code> if the this TraversalPosition is not at the
      *         start node, <code>false</code> if it is.
      */
-	public boolean notStartNode();
+    public boolean notStartNode();
 
     /**
      * Returns <code>true</code> if the current position is the start node,
@@ -114,10 +116,11 @@ public interface TraversalPosition
      * have to treat the edge case of the start node separately and using this
      * method makes that code a lot cleaner. This allows for much cleaner code
      * where <code>null</code> checks can be avoided for return values from
-     * {@link #lastRelationshipTraversed()} and {@link #previousNode()}, such
-     * as in this example:
+     * {@link #lastRelationshipTraversed()} and {@link #previousNode()}, such as
+     * in this example:
      * 
-     * <code><pre>
+     * <pre>
+     * <code>
      * public boolean {@link ReturnableEvaluator#isReturnableNode(TraversalPosition) isReturnableNode}( TraversalPosition currentPos )
      * {
      *     // The start node, and nodes reached through SOME_RELATIONSHIP
@@ -126,7 +129,8 @@ public interface TraversalPosition
      *         || currentPos.{@link #lastRelationshipTraversed() lastRelationshipTraversed}().{@link Relationship#isType(RelationshipType) isType}(
      *             {@link RelationshipType MyRelationshipTypes.SOME_RELATIONSHIP} );
      * }
-     * </pre></code>
+     * </code>
+     * </pre>
      * 
      * @return <code>true</code> if the this TraversalPosition is at the start
      *         node, <code>false</code> if it is not.
