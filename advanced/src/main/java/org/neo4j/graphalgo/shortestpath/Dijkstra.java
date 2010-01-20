@@ -16,6 +16,7 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,9 +65,11 @@ public class Dijkstra<CostType> implements
     protected long numberOfTraversedRelationShips = 0;
     protected long maxNodesToTraverse = -1;
     protected long numberOfNodesTraversed = 0;
-    protected MaxCostComparator<CostType> maxCostComparator = new MaxCostComparator<CostType>() {
+    protected MaxCostEvaluator<CostType> maxCostEvaluator = new MaxCostEvaluator<CostType>()
+    {
     	//this will not limit the path length
-    	public boolean maxCostExceeded(CostType currentCost) {
+    	public boolean maxCostExceeded( CostType currentCost )
+    	{
 			return false;
 		}
 	};
@@ -278,9 +281,9 @@ public class Dijkstra<CostType> implements
             {
                 return null;
             }
-            if(maxCostComparator.maxCostExceeded(currentCost))
+            if ( maxCostEvaluator.maxCostExceeded( currentCost ) )
             {
-            	return null;
+                return null;
             }
             if ( limitReached() )
             {
@@ -483,9 +486,9 @@ public class Dijkstra<CostType> implements
             }
             if ( iter1.hasNext() )
             {
-                if(iter1.next() == null)
+                if ( iter1.next() == null )
                 {
-                	break;
+                    break;
                 }
             }
             if ( limitReached() )
@@ -494,9 +497,9 @@ public class Dijkstra<CostType> implements
             }
             if ( !iter1.isDone() && iter2.hasNext() )
             {
-                if(iter2.next() == null)
+                if ( iter2.next() == null )
                 {
-                	break;
+                    break;
                 }
             }
             if ( iter1.isDone() || iter2.isDone() ) // A path was found
@@ -532,7 +535,7 @@ public class Dijkstra<CostType> implements
         calculateMultiple();
         if ( foundPathsMiddleNodes == null || foundPathsMiddleNodes.size() == 0 )
         {
-            return new LinkedList<List<PropertyContainer>>(  );
+            return Collections.emptyList();
         }
         // Currently we use a set to avoid duplicate paths
         // TODO: can this be done smarter?
@@ -770,8 +773,13 @@ public class Dijkstra<CostType> implements
         return costRelationTypes;
     }
 
-	public void limitMaxCostToTraverse(MaxCostComparator maxCostComparator2) {
-		this.maxCostComparator = maxCostComparator2;
-		
-	}
+    /**
+     * Set the evaluator for pruning the paths when the maximum cost is exceeded.
+     * 
+     * @param evaluator The evaluator for 
+     */
+    public void limitMaxCostToTraverse( MaxCostEvaluator<CostType> evaluator )
+    {
+        this.maxCostEvaluator = evaluator;
+    }
 }
