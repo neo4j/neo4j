@@ -179,6 +179,12 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
     {
         dijkstra.setStartNode( startNode );
     }
+    
+    public void limitMaxCostToTraverse( MaxCostEvaluator<Integer> evaluator )
+    {
+        dijkstra.limitMaxCostToTraverse( evaluator );
+    }
+    
     /**
      * This is an algo that will initiate a Dijkstra from start- and end node
      * with relationship cost of 1 per path step along the costRelationshipTypes
