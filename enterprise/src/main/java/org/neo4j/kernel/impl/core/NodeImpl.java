@@ -43,7 +43,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 {
     private ArrayMap<String,IntArray> relationshipMap = null;
     // private RelationshipGrabber relationshipGrabber = null;
-    private RelationshipChainPosition relChainPosition = null;
+    private volatile RelationshipChainPosition relChainPosition = null;
     
     
     NodeImpl( int id, NodeManager nodeManager )
@@ -312,15 +312,23 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
 
     private boolean ensureFullRelationships()
     {
-        if ( relationshipMap == null )
+        if ( relChainPosition == null )
         {
-            this.relChainPosition = 
-                nodeManager.getRelationshipChainPosition( this );
-            this.relationshipMap = new ArrayMap<String,IntArray>();
+            setupMapAndChainPosition();
             getMoreRelationships();
             return true;
         }
         return false;
+    }
+    
+    private synchronized void setupMapAndChainPosition()
+    {
+        if ( relChainPosition == null )
+        {
+            this.relChainPosition = 
+                nodeManager.getRelationshipChainPosition( this );
+            this.relationshipMap = new ArrayMap<String,IntArray>();
+        }
     }
     
     synchronized boolean getMoreRelationships()
