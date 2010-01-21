@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.shell.impl.AbstractStarter;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.StandardConsole;
@@ -136,7 +137,7 @@ public class StartLocalClient extends AbstractStarter
         boolean readOnly, String[] args ) throws Exception
     {
         final GraphDatabaseService graph = readOnly ?
-            new EmbeddedGraphDatabase( dbPath ) :
+            new EmbeddedReadOnlyGraphDatabase( dbPath ) :
             new EmbeddedGraphDatabase( dbPath );
         
         final GraphDatabaseShellServer server =
