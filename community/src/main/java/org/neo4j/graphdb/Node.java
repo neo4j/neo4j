@@ -175,7 +175,7 @@ public interface Node extends PropertyContainer
      *         and direction
      */
     public Iterable<Relationship> getRelationships( RelationshipType type,
-        Direction dir );
+            Direction dir );
 
     /**
      * Returns <code>true</code> if there are any relationships of the given
@@ -232,7 +232,7 @@ public interface Node extends PropertyContainer
      *             type and direction
      */
     public Relationship getSingleRelationship( RelationshipType type,
-        Direction dir );
+            Direction dir );
 
     /**
      * Creates a relationship between this node and another node. The
@@ -252,7 +252,7 @@ public interface Node extends PropertyContainer
      * @return the newly created relationship
      */
     public Relationship createRelationshipTo( Node otherNode,
-        RelationshipType type );
+            RelationshipType type );
 
     // Traversal
     /**
@@ -260,8 +260,11 @@ public interface Node extends PropertyContainer
      * according to the given order and evaluators along the specified
      * relationship type and direction. If the traverser should traverse more
      * than one <code>RelationshipType</code>/<code>Direction</code> pair, use
-     * one of the overloaded variants of this method. For more information about
-     * traversal, see the {@link Traverser} documentation.
+     * one of the overloaded variants of this method. The created traverser will
+     * iterate over each node that can be reached from this node by the spanning
+     * tree formed by the given relationship types (with direction) exactly
+     * once. For more information about traversal, see the {@link Traverser}
+     * documentation.
      * 
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
@@ -280,8 +283,9 @@ public interface Node extends PropertyContainer
      * @return a new traverser, configured as above
      */
     public Traverser traverse( Traverser.Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        RelationshipType relationshipType, Direction direction );
+            StopEvaluator stopEvaluator,
+            ReturnableEvaluator returnableEvaluator,
+            RelationshipType relationshipType, Direction direction );
 
     /**
      * Instantiates a traverser that will start at this node and traverse
@@ -290,8 +294,10 @@ public interface Node extends PropertyContainer
      * more than two <code>RelationshipType</code>/<code>Direction</code> pairs,
      * use the overloaded
      * {@link #traverse(Traverser.Order, StopEvaluator, ReturnableEvaluator, Object...)
-     * varargs variant} of this method. For more information about traversal,
-     * see the {@link Traverser} documentation.
+     * varargs variant} of this method. The created traverser will iterate over
+     * each node that can be reached from this node by the spanning tree formed
+     * by the given relationship types (with direction) exactly once. For more
+     * information about traversal, see the {@link Traverser} documentation.
      * 
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
@@ -315,9 +321,10 @@ public interface Node extends PropertyContainer
      */
     // TODO: document the importance of reltype/dir order
     public Traverser traverse( Traverser.Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        RelationshipType firstRelationshipType, Direction firstDirection,
-        RelationshipType secondRelationshipType, Direction secondDirection );
+            StopEvaluator stopEvaluator,
+            ReturnableEvaluator returnableEvaluator,
+            RelationshipType firstRelationshipType, Direction firstDirection,
+            RelationshipType secondRelationshipType, Direction secondDirection );
 
     /**
      * Instantiates a traverser that will start at this node and traverse
@@ -336,8 +343,10 @@ public interface Node extends PropertyContainer
      * Unfortunately, the compiler cannot enforce this so an unchecked exception
      * is raised if the variable-length argument has a different constitution.
      * <p>
-     * For more information about traversal, see the {@link Traverser}
-     * documentation.
+     * The created traverser will iterate over each node that can be reached
+     * from this node by the spanning tree formed by the given relationship
+     * types (with direction) exactly once. For more information about
+     * traversal, see the {@link Traverser} documentation.
      * 
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
@@ -359,6 +368,7 @@ public interface Node extends PropertyContainer
      *             direction list is not as described above
      */
     public Traverser traverse( Traverser.Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        Object... relationshipTypesAndDirections );
+            StopEvaluator stopEvaluator,
+            ReturnableEvaluator returnableEvaluator,
+            Object... relationshipTypesAndDirections );
 }
