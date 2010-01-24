@@ -104,4 +104,21 @@ public class FindSingleShortestPathTest extends NeoAlgoTestCase
         assertTrue( findPath.getPathAsNodes() != null );
         assertTrue( findPath.getPathAsNodes().size() == 3 );
     }
+    /**
+     * /--2--A--7--B--2--\ S E \----7---C---7----/
+     */
+    public void testPathConstruct()
+    {
+        graph.makeEdge( "s", "a", "cost", (double) 1 );
+        graph.makeEdge( "a", "b", "cost", (double) 1 );
+        graph.makeEdge( "a", "c", "cost", (double) 1 );
+        graph.makeEdge( "b", "d", "cost", (double) 1 );
+        graph.makeEdge( "b", "e", "cost", (double) 1 );
+        graph.makeEdge( "c", "e", "cost", (double) 1 );
+        graph.makeEdge( "d", "e", "cost", (double) 1 );
+        FindSingleShortestPath findPath = getFindPath( graph, "s", "e",
+            Integer.MAX_VALUE );
+        assertTrue( findPath.getPathAsNodes() != null );
+        assertTrue( findPath.getPathAsNodes().size() == 3 );
+    }
 }
