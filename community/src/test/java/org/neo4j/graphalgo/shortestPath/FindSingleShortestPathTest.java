@@ -119,6 +119,6 @@ public class FindSingleShortestPathTest extends NeoAlgoTestCase
         FindSingleShortestPath findPath = getFindPath( graph, "s", "e",
             Integer.MAX_VALUE );
         assertTrue( findPath.getPathAsNodes() != null );
-        assertTrue( findPath.getPathAsNodes().size() == 3 );
+        assertTrue( findPath.getPathAsNodes().size() == 4 );
     }
 }
