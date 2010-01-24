@@ -49,6 +49,8 @@ public class FindSingleShortestPath
         doneCalculation = false;
         matchNode = null;
     }
+    
+    private static final Relationship NULL_REL = new FakeRelImpl();
 
     private boolean calculate()
     {
@@ -74,8 +76,8 @@ public class FindSingleShortestPath
         Iterator<Node> secondItr = secondList.iterator();
         int currentFirstDepth = 0;
         int currentSecondDepth = 0;
-        firstSet.put( startNode, null );
-        secondSet.put( endNode, null );
+        firstSet.put( startNode, NULL_REL );
+        secondSet.put( endNode, NULL_REL );
         while ( firstItr.hasNext() || secondItr.hasNext() )
         {
             if ( firstItr.hasNext() )
@@ -222,7 +224,7 @@ public class FindSingleShortestPath
         LinkedList<PropertyContainer> path = new LinkedList<PropertyContainer>();
         Relationship rel = firstSet.get( matchNode );
         Node currentNode = matchNode;
-        while ( rel != null )
+        while ( rel != NULL_REL && rel != null )
         {
             if ( includeRels )
             {    
@@ -246,7 +248,7 @@ public class FindSingleShortestPath
         }
         rel = secondSet.get( matchNode );
         currentNode = matchNode;
-        while ( rel != null )
+        while ( rel != NULL_REL && rel != null )
         {
             if ( includeRels )
             {
