@@ -55,7 +55,7 @@ public abstract class AbstractAppServer extends AbstractServer
 		super();
 	}
 
-	protected void addApp( Class<? extends App> appClass )
+	public void addApp( Class<? extends App> appClass )
 	{
 		this.apps.put( appClass.getSimpleName().toLowerCase(), appClass );
 	}
