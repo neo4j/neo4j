@@ -259,7 +259,7 @@ public class FindSingleShortestPath
             {
                 path.addLast( currentNode );
             }
-            rel = firstSet.get( currentNode );
+            rel = secondSet.get( currentNode );
         }
         if ( includeNodes && !endNode.equals( matchNode ) )
         {
