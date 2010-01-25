@@ -72,7 +72,7 @@ public abstract class AbstractApp implements App
 		this.server = server;
 	}
 	
-	protected AppShellServer getServer()
+	public AppShellServer getServer()
 	{
 		return this.server;
 	}

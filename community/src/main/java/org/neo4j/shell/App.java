@@ -59,10 +59,10 @@ public interface App
 		throws ShellException;
 	
 	/**
-	 * Sets which server to run in.
-	 * @param server the server to run in.
+	 * Returns the server this app runs in.
+	 * @return the server this app runs in.
 	 */
-	void setServer( AppShellServer server );
+	AppShellServer getServer();
 	
 	/**
 	 * @return a general description of this application.

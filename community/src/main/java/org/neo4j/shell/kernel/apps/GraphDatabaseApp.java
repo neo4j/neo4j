@@ -98,7 +98,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     }
     
     @Override
-    protected GraphDatabaseShellServer getServer()
+    public GraphDatabaseShellServer getServer()
     {
         return ( GraphDatabaseShellServer ) super.getServer();
     }
