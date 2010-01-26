@@ -19,6 +19,7 @@ package org.neo4j.graphalgo.shortestPath;
 import org.neo4j.graphalgo.shortestpath.FindSingleShortestPath;
 import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
+import org.neo4j.graphdb.Node;
 
 public class FindSingleShortestPathTest extends NeoAlgoTestCase
 {
@@ -113,12 +114,54 @@ public class FindSingleShortestPathTest extends NeoAlgoTestCase
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "a", "c", "cost", (double) 1 );
         graph.makeEdge( "b", "d", "cost", (double) 1 );
-        graph.makeEdge( "b", "e", "cost", (double) 1 );
-        graph.makeEdge( "c", "e", "cost", (double) 1 );
         graph.makeEdge( "d", "e", "cost", (double) 1 );
-        FindSingleShortestPath findPath = getFindPath( graph, "s", "e",
+        graph.makeEdge( "c", "e", "cost", (double) 1 );
+        graph.makeEdge( "b", "f", "cost", (double) 1 );
+        graph.makeEdge( "d", "f", "cost", (double) 1 );
+        graph.makeEdge( "e", "f", "cost", (double) 1 );
+        FindSingleShortestPath findPath = getFindPath( graph, "s", "f",
             Integer.MAX_VALUE );
-        assertTrue( findPath.getPathAsNodes() != null );
-        assertTrue( findPath.getPathAsNodes().size() == 4 );
+        assertPath( findPath, graph, "s", "a", "b", "f" ); 
+    }
+    
+    public void testSwitchDepths()
+    {
+        graph.makeEdge( "big", "a" );
+        graph.makeEdge( "big", "b" );
+        graph.makeEdge( "big", "c" );
+        graph.makeEdge( "big", "d" );
+        graph.makeEdge( "big", "e" );
+        graph.makeEdge( "big", "f" );
+        graph.makeEdge( "a", "g" );
+        graph.makeEdge( "a", "h" );
+        graph.makeEdge( "b", "i" );
+        graph.makeEdge( "b", "j" );
+        graph.makeEdge( "c", "k" );
+        graph.makeEdge( "d", "l" );
+        graph.makeEdge( "g", "m" );
+        graph.makeEdge( "g", "n" );
+        graph.makeEdge( "n", "o" );
+        graph.makeEdge( "o", "small" );
+        graph.makeEdge( "small", "p" );
+ 
+        // This should make the finder switch depths so that the one with
+        // least relationships ("big" or "small"; "small" in this case)
+        // will go deepest. But how do we make sure?
+        FindSingleShortestPath finder = getFindPath( graph, "small", "big", 5 );
+        assertPath( finder, graph, "small", "o", "n", "g", "a", "big" );
+    }
+
+    private void assertPath( FindSingleShortestPath finder,
+            SimpleGraphBuilder graph, String... path )
+    {
+        assertEquals( path.length, finder.getPathAsNodes().size() );
+        int counter = 0;
+        for ( Node pathNode : finder.getPathAsNodes() )
+        {
+            Node graphNode = graph.getNode( path[ counter++ ] );
+            assertEquals( graphNode.getProperty( SimpleGraphBuilder.KEY_ID ) +
+                    ", " + pathNode.getProperty( SimpleGraphBuilder.KEY_ID ),
+                    graphNode, pathNode );
+        }
     }
 }
