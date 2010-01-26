@@ -68,6 +68,8 @@ public class FindSingleShortestPath
         firstList.add( startNode );
         List<Node> secondList = new ArrayList<Node>();
         secondList.add( endNode );
+        // Recalculate at depth one... the one with the most relationships
+        // will get the greater depth (for odd numbers).
         int firstDepth = maxDepth / 2;
         int secondDepth = firstDepth + (maxDepth % 2);
         List<Node> nextFirstList = new ArrayList<Node>();
@@ -76,6 +78,7 @@ public class FindSingleShortestPath
         Iterator<Node> secondItr = secondList.iterator();
         int currentFirstDepth = 0;
         int currentSecondDepth = 0;
+        boolean hasRecalculatedDepth = false;
         firstSet.put( startNode, NULL_REL );
         secondSet.put( endNode, NULL_REL );
         while ( firstItr.hasNext() || secondItr.hasNext() )
@@ -159,6 +162,21 @@ public class FindSingleShortestPath
                 secondList = nextSecondList;
                 nextSecondList = new ArrayList<Node>();
                 secondItr = secondList.iterator();
+            }
+            
+            if ( !hasRecalculatedDepth && currentFirstDepth == 1 &&
+                    this.maxDepth % 2 == 1 )
+            {
+                // The one with the least relationships gets the greater depth
+                boolean firstHasMore = firstList.size() > secondList.size();
+                if ( firstHasMore == firstDepth > secondDepth )
+                {
+                    // Switch 'em
+                    int tempDepth = firstDepth;
+                    firstDepth = secondDepth;
+                    secondDepth = tempDepth;
+                }
+                hasRecalculatedDepth = true;
             }
         }
         doneCalculation = true;

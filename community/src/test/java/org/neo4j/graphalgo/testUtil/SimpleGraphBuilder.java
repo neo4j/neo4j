@@ -27,6 +27,8 @@ import org.neo4j.graphdb.RelationshipType;
 
 public class SimpleGraphBuilder
 {
+    public static final String KEY_ID = "__simpleGraphBuilderId__";
+    
     GraphDatabaseService neo;
     HashMap<String,Node> nodes;
     HashMap<Node,String> nodeNames;
@@ -79,7 +81,7 @@ public class SimpleGraphBuilder
         Node node = neo.createNode();
         nodes.put( id, node );
         nodeNames.put( node, id );
-        node.setProperty( "__simpleGraphBuilderId__", id );
+        node.setProperty( KEY_ID, id );
         return node;
     }
 
