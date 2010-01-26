@@ -31,10 +31,12 @@ import org.neo4j.graphdb.RelationshipType;
 
 public class FindSingleShortestPath
 {
-    private final Map<Node,Relationship> firstSet = 
-        new HashMap<Node,Relationship>();
-    private final Map<Node,Relationship> secondSet = 
-        new HashMap<Node,Relationship>();
+//    private final Map<Node,Relationship> firstSet = 
+//        new HashMap<Node,Relationship>();
+//    private final Map<Node,Relationship> secondSet = 
+//        new HashMap<Node,Relationship>();
+    private OneDirection firstDirection;
+    private OneDirection secondDirection;
     private final int maxDepth;
     private final Node startNode;
     private final Node endNode;
@@ -44,13 +46,54 @@ public class FindSingleShortestPath
 
     public void reset()
     {
-        firstSet.clear();
-        secondSet.clear();
+        initializeDirectionData();
         doneCalculation = false;
         matchNode = null;
     }
     
+    private void initializeDirectionData()
+    {
+        firstDirection = new OneDirection( startNode, maxDepth / 2 );
+        secondDirection = new OneDirection( endNode,
+                firstDirection.depth + ( maxDepth % 2 ) );
+    }
+
     private static final Relationship NULL_REL = new FakeRelImpl();
+    
+    private class OneDirection
+    {
+        private List<Node> nodeList = new ArrayList<Node>();
+        private int depth;
+        private List<Node> nextNodeList = new ArrayList<Node>();
+        private Iterator<Node> iterator;
+        private int currentDepth;
+        private Map<Node, Relationship> path =
+            new HashMap<Node, Relationship>();
+        
+        OneDirection( Node node, int depth )
+        {
+            this.depth = depth;
+            this.nextNodeList.add( node );
+            this.path.put( node, NULL_REL );
+            switchToNext();
+        }
+
+        void switchToNext()
+        {
+            this.nodeList = this.nextNodeList;
+            this.iterator = this.nodeList.iterator();
+            this.nextNodeList = new ArrayList<Node>();
+        }
+        
+        void checkNextDepth()
+        {
+            if ( !iterator.hasNext() && currentDepth + 1 <= depth )
+            {
+                currentDepth++;
+                switchToNext();
+            }
+        }
+    }
 
     private boolean calculate()
     {
@@ -64,117 +107,37 @@ public class FindSingleShortestPath
             doneCalculation = true;
             return true;
         }
-        List<Node> firstList = new ArrayList<Node>();
-        firstList.add( startNode );
-        List<Node> secondList = new ArrayList<Node>();
-        secondList.add( endNode );
-        // Recalculate at depth one... the one with the most relationships
-        // will get the greater depth (for odd numbers).
-        int firstDepth = maxDepth / 2;
-        int secondDepth = firstDepth + (maxDepth % 2);
-        List<Node> nextFirstList = new ArrayList<Node>();
-        List<Node> nextSecondList = new ArrayList<Node>();
-        Iterator<Node> firstItr = firstList.iterator();
-        Iterator<Node> secondItr = secondList.iterator();
-        int currentFirstDepth = 0;
-        int currentSecondDepth = 0;
+        
         boolean hasRecalculatedDepth = false;
-        firstSet.put( startNode, NULL_REL );
-        secondSet.put( endNode, NULL_REL );
-        while ( firstItr.hasNext() || secondItr.hasNext() )
+        initializeDirectionData();
+        while ( firstDirection.iterator.hasNext() ||
+                secondDirection.iterator.hasNext() )
         {
-            if ( firstItr.hasNext() )
+            if ( tryMatch( firstDirection, secondDirection ) )
             {
-                Node node = firstItr.next();
-                if ( secondSet.containsKey( node ) )
-                {
-                    matchNode = node;
-                    doneCalculation = true;
-                    return true;
-                }
-                if ( currentFirstDepth + 1 <= firstDepth )  
-                {
-                    for ( int i = 0; i < relTypesAndDirections.length / 2; i++ )
-                    {
-                        RelationshipType type = 
-                            (RelationshipType) relTypesAndDirections[i*2];
-                        Direction dir = (Direction) relTypesAndDirections[i*2+1];
-                        for ( Relationship rel : node.getRelationships( 
-                            type,dir ) )
-                        {
-                            Node otherNode = rel.getOtherNode( node );
-                            Relationship oldRel = firstSet.put( otherNode, rel );
-                            if ( oldRel == null )
-                            {
-                                nextFirstList.add( otherNode );
-                            }
-                            else
-                            {
-                                firstSet.put( otherNode, oldRel );
-                            }
-                        }
-                    }
-                }
+                return true;
             }
-            if ( secondItr.hasNext() )
+            if ( tryMatch( secondDirection, firstDirection ) )
             {
-                Node node = secondItr.next();
-                if ( firstSet.containsKey( node ) )
-                {
-                    matchNode = node;
-                    doneCalculation = true;
-                    return true;
-                }
-                if ( currentSecondDepth + 1 <= secondDepth )  
-                {
-                    for ( int i = 0; i < relTypesAndDirections.length / 2; i++ )
-                    {
-                        RelationshipType type = 
-                            (RelationshipType) relTypesAndDirections[i*2];
-                        Direction dir = (Direction) relTypesAndDirections[i*2+1];
-                        for ( Relationship rel : node.getRelationships( 
-                            type,dir ) )
-                        {
-                            Node otherNode = rel.getOtherNode( node );
-                            Relationship oldRel = secondSet.put( otherNode, rel );
-                            if ( oldRel == null )
-                            {
-                                nextSecondList.add( otherNode );
-                            }
-                            else
-                            {
-                                secondSet.put( otherNode, oldRel );
-                            }
-                        }
-                    }
-                }
-            }
-            if ( !firstItr.hasNext() && currentFirstDepth + 1 <= firstDepth )
-            {
-                currentFirstDepth++;
-                firstList = nextFirstList;
-                nextFirstList = new ArrayList<Node>();
-                firstItr = firstList.iterator();
-            }
-            if ( !secondItr.hasNext() && currentSecondDepth + 1 <= secondDepth )
-            {
-                currentSecondDepth++;
-                secondList = nextSecondList;
-                nextSecondList = new ArrayList<Node>();
-                secondItr = secondList.iterator();
+                return true;
             }
             
-            if ( !hasRecalculatedDepth && currentFirstDepth == 1 &&
+            firstDirection.checkNextDepth();
+            secondDirection.checkNextDepth();
+            
+            if ( !hasRecalculatedDepth && firstDirection.currentDepth == 1 &&
                     this.maxDepth % 2 == 1 )
             {
                 // The one with the least relationships gets the greater depth
-                boolean firstHasMore = firstList.size() > secondList.size();
-                if ( firstHasMore == firstDepth > secondDepth )
+                boolean firstHasMore = firstDirection.nodeList.size() >
+                        secondDirection.nodeList.size();
+                if ( firstHasMore ==
+                    firstDirection.depth > secondDirection.depth )
                 {
                     // Switch 'em
-                    int tempDepth = firstDepth;
-                    firstDepth = secondDepth;
-                    secondDepth = tempDepth;
+                    int tempDepth = firstDirection.depth;
+                    firstDirection.depth = secondDirection.depth;
+                    secondDirection.depth = tempDepth;
                 }
                 hasRecalculatedDepth = true;
             }
@@ -182,7 +145,47 @@ public class FindSingleShortestPath
         doneCalculation = true;
         return false;
     }
-
+    
+    private boolean tryMatch( OneDirection direction,
+            OneDirection otherDirection )
+    {
+        if ( !direction.iterator.hasNext() )
+        {
+            return false;
+        }
+        
+        Node node = direction.iterator.next();
+        if ( otherDirection.path.containsKey( node ) )
+        {
+            matchNode = node;
+            doneCalculation = true;
+            return true;
+        }
+        if ( direction.currentDepth + 1 <= direction.depth )  
+        {
+            for ( int i = 0; i < relTypesAndDirections.length / 2; i++ )
+            {
+                RelationshipType type = 
+                    (RelationshipType) relTypesAndDirections[i*2];
+                Direction dir = (Direction) relTypesAndDirections[i*2+1];
+                for ( Relationship rel : node.getRelationships( 
+                    type,dir ) )
+                {
+                    Node otherNode = rel.getOtherNode( node );
+                    Relationship oldRel = direction.path.put( otherNode, rel );
+                    if ( oldRel == null )
+                    {
+                        direction.nextNodeList.add( otherNode );
+                    }
+                    else
+                    {
+                        direction.path.put( otherNode, oldRel );
+                    }
+                }
+            }
+        }
+        return false;
+    }
 
     /**
      * @param startNode
@@ -240,7 +243,7 @@ public class FindSingleShortestPath
             boolean includeNodes, boolean includeRels )
     {
         LinkedList<PropertyContainer> path = new LinkedList<PropertyContainer>();
-        Relationship rel = firstSet.get( matchNode );
+        Relationship rel = firstDirection.path.get( matchNode );
         Node currentNode = matchNode;
         while ( rel != NULL_REL && rel != null )
         {
@@ -254,7 +257,7 @@ public class FindSingleShortestPath
             {
                 path.addFirst( currentNode );
             }
-            rel = firstSet.get( currentNode );
+            rel = firstDirection.path.get( currentNode );
         }
         if ( includeNodes )
         {
@@ -264,7 +267,7 @@ public class FindSingleShortestPath
                 path.addLast( matchNode );
             }
         }
-        rel = secondSet.get( matchNode );
+        rel = secondDirection.path.get( matchNode );
         currentNode = matchNode;
         while ( rel != NULL_REL && rel != null )
         {
@@ -277,7 +280,7 @@ public class FindSingleShortestPath
             {
                 path.addLast( currentNode );
             }
-            rel = secondSet.get( currentNode );
+            rel = secondDirection.path.get( currentNode );
         }
         if ( includeNodes && !endNode.equals( matchNode ) )
         {
