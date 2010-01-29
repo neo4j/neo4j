@@ -17,7 +17,7 @@
 		<dependencySet>
 			<outputDirectory>bin</outputDirectory>
 			<includes>
-				<include>org.neo4j:neo:jar</include>
+				<include>org.neo4j:neo4j-kernel:jar</include>
 				<include>org.apache.geronimo.specs:geronimo-jta_1.1_spec:jar</include>
 				<include>jline:jline:jar</include>
 			</includes>
