@@ -90,6 +90,22 @@ abstract class NodeOrRelationship
 
     public abstract Iterable<Relationship> getRelationships(
         Direction direction );
+    
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( !( o instanceof NodeOrRelationship ) )
+        {
+            return false;
+        }
+        return getTypedId().equals( ( (NodeOrRelationship) o ).getTypedId() );
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return getTypedId().hashCode();
+    }
 
     static class WrapNode extends NodeOrRelationship
     {

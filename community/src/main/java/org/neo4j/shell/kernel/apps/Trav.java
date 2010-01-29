@@ -174,7 +174,7 @@ public class Trav extends GraphDatabaseApp
             if ( hit )
             {
         		out.println( getDisplayName( getServer(), session,
-        		    traversedNode ) );
+        		    traversedNode, true ) );
                 Map<String, Object> data = new HashMap<String, Object>();
                 data.put( "n", traversedNode.getId() );
         	    for ( String command : commandsToRun )

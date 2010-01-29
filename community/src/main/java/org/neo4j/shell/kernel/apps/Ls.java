@@ -272,14 +272,15 @@ public class Ls extends GraphDatabaseApp
                 continue;
             }
             
-            StringBuffer buf = new StringBuffer(
-                getDisplayNameForCurrent( session ) );
+            
+            StringBuffer buf = new StringBuffer( getDisplayName(
+                getServer(), session, thing, true ) );
             buf.append( " " + prefixString ).append( getDisplayName(
-                getServer(), session, rel, verbose ) );
+                getServer(), session, rel, verbose, true ) );
             buf.append( postfixString + " " );
             buf.append( getDisplayName( getServer(), session,
                 direction == Direction.OUTGOING ? rel.getEndNode() :
-                    rel.getStartNode() ) );
+                    rel.getStartNode(), true ) );
             out.println( buf );
         }
     }

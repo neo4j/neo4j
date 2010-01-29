@@ -80,6 +80,13 @@ public abstract class GraphDatabaseApp extends AbstractApp
         return getCurrent( getServer(), session );
     }
     
+    public static boolean isCurrent( Session session, NodeOrRelationship thing )
+    {
+        String currentThing = ( String ) safeGet( session, CURRENT_KEY );
+        return currentThing != null && currentThing.equals(
+                thing.getTypedId().toString() );
+    }
+    
     protected static void setCurrent( Session session,
         NodeOrRelationship current )
     {
@@ -192,10 +199,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
     protected abstract String exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException, RemoteException;
 
-    protected String getDisplayNameForCurrent( Session session )
-        throws ShellException
+    private static String getDisplayNameForCurrent(
+            GraphDatabaseShellServer server, Session session )
+            throws ShellException
     {
-        NodeOrRelationship current = getCurrent( session );
+        NodeOrRelationship current = getCurrent( server, session );
         return current.isNode() ? "(me)" : "<me>";
     }
 
@@ -206,16 +214,18 @@ public abstract class GraphDatabaseApp extends AbstractApp
      * @return the display name for a {@link Node}.
      */
     public static String getDisplayName( GraphDatabaseShellServer server,
-        Session session, NodeOrRelationship thing )
+        Session session, NodeOrRelationship thing, boolean checkForMe )
+        throws ShellException
     {
         if ( thing.isNode() )
         {
-            return getDisplayName( server, session, thing.asNode() );
+            return getDisplayName( server, session, thing.asNode(),
+                    checkForMe );
         }
         else
         {
             return getDisplayName( server, session, thing.asRelationship(),
-                true );
+                true, checkForMe );
         }
     }
     
@@ -227,10 +237,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
      * @throws ShellException if an error occurs.
      */
     public static String getDisplayName( GraphDatabaseShellServer server,
-        Session session, TypedId typedId ) throws ShellException
+        Session session, TypedId typedId, boolean checkForMe )
+        throws ShellException
     {
         return getDisplayName( server, session,
-            getThingById( server, typedId ) );
+            getThingById( server, typedId ), checkForMe );
     }
 
     /**
@@ -240,15 +251,19 @@ public abstract class GraphDatabaseApp extends AbstractApp
      * @return a display string for {@code node}.
      */
     public static String getDisplayName( GraphDatabaseShellServer server,
-        Session session, Node node )
+        Session session, Node node, boolean checkForMe ) throws ShellException
     {
+        if ( checkForMe &&
+                isCurrent( session, NodeOrRelationship.wrap( node ) ) )
+        {
+            return getDisplayNameForCurrent( server, session );
+        }
+        
         StringBuffer result = new StringBuffer(
-//            "(" + node.getId() + ")" );
             "(" + node.getId() );
         String title = findTitle( server, session, node );
         if ( title != null )
         {
-//            result.append( " " + title );
             result.append( ", " + title );
         }
         result.append( ")" );
@@ -306,8 +321,15 @@ public abstract class GraphDatabaseApp extends AbstractApp
      * @return a display string for the {@code relationship}.
      */
     public static String getDisplayName( GraphDatabaseShellServer server,
-        Session session, Relationship relationship, boolean verbose )
+        Session session, Relationship relationship, boolean verbose,
+        boolean checkForMe ) throws ShellException
     {
+        if ( checkForMe &&
+                isCurrent( session, NodeOrRelationship.wrap( relationship ) ) )
+        {
+            return getDisplayNameForCurrent( server, session );
+        }
+        
         StringBuffer result = new StringBuffer( "<" );
         if ( verbose )
         {

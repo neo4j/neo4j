@@ -45,7 +45,7 @@ public class Pwd extends GraphDatabaseApp
     {
         NodeOrRelationship current = this.getCurrent( session );
         out.println( "Current is " +
-            getDisplayName( getServer(), session, current ) );
+            getDisplayName( getServer(), session, current, false ) );
 
         String path = stringifyPath( Cd.readPaths( session ), session );
         if ( path.length() > 0 )
@@ -65,9 +65,10 @@ public class Pwd extends GraphDatabaseApp
         StringBuilder path = new StringBuilder();
         for ( TypedId id : pathIds )
         {
-            path.append(
-                getDisplayName( getServer(), session, id ) ).append( "-->" );
+            path.append( getDisplayName( getServer(), session,
+                    id, false ) ).append( "-->" );
         }
-        return path.append( getDisplayNameForCurrent( session ) ).toString();
+        return path.append( getDisplayName( getServer(), session,
+                getCurrent( session ), true ) ).toString();
     }
 }

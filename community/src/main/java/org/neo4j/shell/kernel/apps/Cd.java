@@ -116,7 +116,7 @@ public class Cd extends GraphDatabaseApp
                 if ( !absolute && !this.isConnected( current, newId ) )
                 {
                     throw new ShellException(
-                        getDisplayName( getServer(), session, newId ) +
+                        getDisplayName( getServer(), session, newId, false ) +
                         " isn't connected to the current primitive," +
                         " use -a to force it to go there anyway" );
                 }

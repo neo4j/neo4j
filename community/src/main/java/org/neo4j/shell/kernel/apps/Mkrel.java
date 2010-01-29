@@ -100,12 +100,13 @@ public class Mkrel extends GraphDatabaseApp
         if ( createNode && verbose )
         {
             out.println( "Node " + getDisplayName(
-                getServer(), session, node ) + " created" );
+                getServer(), session, node, false ) + " created" );
         }
         if ( verbose )
         {
             out.println( "Relationship " + getDisplayName(
-                getServer(), session, relationship, true ) + " created" );
+                getServer(), session, relationship, true, false ) +
+                " created" );
         }
         return null;
     }

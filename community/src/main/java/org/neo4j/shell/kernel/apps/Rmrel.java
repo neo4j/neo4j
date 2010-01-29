@@ -89,7 +89,7 @@ public class Rmrel extends GraphDatabaseApp
             if ( !deleteOtherNodeWhenEmpty )
             {
                 throw new ShellException( "Since the node " +
-                    getDisplayName( getServer(), session, otherNode ) +
+                    getDisplayName( getServer(), session, otherNode, false ) +
                     " would be decoupled after this, you must supply the" +
                     " -d (for delete-when-decoupled) so that the other node " +
                     "(" + otherNode + ") may be deleted" );

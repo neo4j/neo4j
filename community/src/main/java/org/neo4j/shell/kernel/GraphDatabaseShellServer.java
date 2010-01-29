@@ -148,7 +148,8 @@ public class GraphDatabaseShellServer extends SimpleAppServer
             return GraphDatabaseApp.getDisplayName(
                 ( GraphDatabaseShellServer ) server, session,
                 GraphDatabaseApp.getCurrent(
-                    ( GraphDatabaseShellServer ) server, session ) ).toString();
+                    ( GraphDatabaseShellServer ) server, session ),
+                    false ).toString();
         }
     }
 }
