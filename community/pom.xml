@@ -20,7 +20,7 @@
   <properties>
     <jline.version>0.9.94</jline.version>
     <jta.version>1.1</jta.version>
-    <neo.version>${version}</neo.version>
+    <neo4j.version>${project.version}</neo4j.version>
     <bundle.namespace>org.neo4j.shell</bundle.namespace>
   </properties>
 
@@ -61,12 +61,12 @@
   </developers>
 
   <build>
-    <resources>
+    <!-- resources>
       <resource>
         <directory>src/bin</directory>
         <filtering>true</filtering>
       </resource>
-    </resources>
+    </resources-->
     <sourceDirectory>src/main/java</sourceDirectory>
     <testSourceDirectory>src/test/java</testSourceDirectory>
     <plugins>
@@ -133,7 +133,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>${version}</version>
+      <version>${neo4j.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
