@@ -21,6 +21,7 @@ package org.neo4j.shell.impl;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -32,6 +33,7 @@ import org.neo4j.shell.AppShellServer;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.apps.Alias;
 
 /**
  * A common implementation of an {@link AppShellServer}. The server can be given
@@ -97,11 +99,33 @@ public abstract class AbstractAppServer extends AbstractServer
 			return "";
 		}
 		
+        line = replaceAlias( line, session );
 		AppCommandParser parser = new AppCommandParser( this, line );
 		return parser.app().execute( parser, session, out );
 	}
 	
-	@Override
+	protected String replaceAlias( String line, Session session )
+	        throws ShellException
+    {
+	    boolean changed = true;
+	    Set<String> appNames = new HashSet<String>();
+	    while ( changed )
+	    {
+	        changed = false;
+    	    String appName = AppCommandParser.parseOutAppName( line );
+    	    String prefixedKey = Alias.ALIAS_PREFIX + appName;
+    	    String alias = ( String ) AbstractApp.safeGet(
+    	            session, prefixedKey );
+    	    if ( alias != null && appNames.add( alias ) )
+    	    {
+    	        changed = true;
+    	        line = alias + line.substring( appName.length() );
+    	    }
+	    }
+	    return line;
+    }
+
+    @Override
 	public Iterable<String> getAllAvailableCommands()
 	{
 		return new ArrayList<String>( apps.keySet() );

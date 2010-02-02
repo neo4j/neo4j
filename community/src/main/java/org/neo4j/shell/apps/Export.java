@@ -37,25 +37,35 @@ public class Export extends AbstractApp
 		return "Sets an environment variable. Usage: export <key>=<value>\n" +
 			"F.ex: export NAME=\"Mattias Persson\"";
 	}
+	
+	public static String[] splitInKeyEqualsValue( String string )
+	        throws ShellException
+	{
+        int index = string.indexOf( '=' );
+        if ( index == -1 )
+        {
+            throw new ShellException( "Invalid format <key>=<value>" );
+        }
+        
+        String key = string.substring( 0, index );
+        String value = string.substring( index + 1 );
+        if ( value.startsWith( "'" ) || value.startsWith( "\"" ) )
+        {
+            value = value.substring( 1 );
+        }
+        if ( value.endsWith( "'" ) || value.endsWith( "\"" ) )
+        {
+            value = value.substring( 0, value.length() - 1 );
+        }
+        return new String[] { key, value };
+	}
 
 	public String execute( AppCommandParser parser, Session session,
 		Output out ) throws ShellException
 	{
-		StringBuffer buffer = new StringBuffer();
-		for ( String string : parser.arguments() )
-		{
-			buffer.append( string );
-		}
-		
-		String string = buffer.toString();
-		int index = string.indexOf( '=' );
-		if ( index == -1 )
-		{
-			throw new ShellException( "Invalid format <key>=<value>" );
-		}
-		
-		String key = string.substring( 0, index );
-		String value = string.substring( index + 1 );
+	    String[] keyValue = splitInKeyEqualsValue( parser.getLineWithoutApp() );
+	    String key = keyValue[ 0 ];
+	    String value = keyValue[ 1 ];
 		if ( value == null || value.trim().length() == 0 )
 		{
 			safeRemove( session, key );

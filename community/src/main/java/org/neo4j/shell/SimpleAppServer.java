@@ -21,10 +21,12 @@ package org.neo4j.shell;
 
 import java.rmi.RemoteException;
 
+import org.neo4j.shell.apps.Alias;
 import org.neo4j.shell.apps.Env;
 import org.neo4j.shell.apps.Export;
 import org.neo4j.shell.apps.Help;
 import org.neo4j.shell.apps.Man;
+import org.neo4j.shell.apps.Script;
 import org.neo4j.shell.apps.extra.Gsh;
 import org.neo4j.shell.apps.extra.Jsh;
 import org.neo4j.shell.impl.AbstractAppServer;
@@ -51,6 +53,8 @@ public class SimpleAppServer extends AbstractAppServer
 	    addApp( Export.class );
 	    addApp( Help.class );
 	    addApp( Man.class );
+        addApp( Script.class );
+        addApp( Alias.class );
 	}
 	
 	protected void addExtraApps()

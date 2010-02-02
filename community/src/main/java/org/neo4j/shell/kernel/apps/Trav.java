@@ -38,6 +38,7 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 /**
  * Traverses the graph using {@link Traverser}.
@@ -188,8 +189,23 @@ public class Trav extends GraphDatabaseApp
         return null;
     }
     
-	private String templateString( String templateString, String variablePrefix,
-		Map<String, Object> data )
+    public static void printAndInterpretTemplateLines( String[] templateLines,
+            Node node, GraphDatabaseShellServer server, Session session,
+            Output out ) throws ShellException, RemoteException
+    {
+        out.println( getDisplayName( server, session, node, true ) );
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put( "n", node.getId() );
+        for ( String command : templateLines )
+        {
+            String line = templateString( command, "\\$", data );
+            server.interpretLine( line, session, out );
+        }
+        out.println();
+    }
+    
+	private static String templateString( String templateString,
+	        String variablePrefix, Map<String, Object> data )
 	{
 		// Sort data strings on length.
 		Map<Integer, List<String>> lengthMap =

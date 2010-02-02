@@ -29,11 +29,12 @@ import java.util.StringTokenizer;
  * Parses a line from the client with the intention of interpreting it as
  * an "app" command, f.ex. like:
  * 
- * "ls -pf title.* 12"
+ * "ls -pf --long-option title.* 12"
  * 
  * o ls is the app.
  * o p and f are options, p w/o value and f has the value "title.*"
  *   (defined in {@link App#getOptionValueType(String)}.
+ * o long-option is also an option
  * o 12 is an argument.
  */
 public class AppCommandParser
@@ -71,6 +72,12 @@ public class AppCommandParser
 		
 		this.parseApp();
 		this.parseParameters();
+	}
+	
+	public static String parseOutAppName( String line )
+	{
+        int index = findNextWhiteSpace( line, 0 );
+        return index == -1 ? line : line.substring( 0, index );
 	}
 	
 	private void parseApp() throws ShellException
@@ -124,7 +131,20 @@ public class AppCommandParser
 	
 	private boolean isOption( String string )
 	{
-		return string.startsWith( "-" );
+		return string.startsWith( "-" ) && !isANegativeNumber( string );
+	}
+	
+	private boolean isANegativeNumber( String string )
+	{
+	    try
+	    {
+	        Integer.parseInt( string );
+	        return true;
+	    }
+	    catch ( NumberFormatException e )
+	    {
+	        return false;
+	    }
 	}
 	
 	private int fetchArguments( String[] parsed, int whereAreWe,
@@ -219,7 +239,7 @@ public class AppCommandParser
 	/**
 	 * @return the line w/o the app (just the options and arguments).
 	 */
-	public String getLineWithoutCommand()
+	public String getLineWithoutApp()
 	{
 		return this.line.substring( this.appName.length() ).trim();
 	}

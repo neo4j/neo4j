@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.impl;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Arrays;
@@ -216,6 +218,21 @@ public abstract class AbstractApp implements App
         catch ( JSONException e )
         {
             throw new IllegalArgumentException( e.getMessage(), e );
+        }
+    }
+    
+    public static void safeClose( Closeable object )
+    {
+        if ( object != null )
+        {
+            try
+            {
+                object.close();
+            }
+            catch ( IOException e )
+            {
+                // I'd guess it's OK
+            }
         }
     }
     

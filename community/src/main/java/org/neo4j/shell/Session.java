@@ -38,7 +38,7 @@ public interface Session extends Remote
 	
 	/**
 	 * @param key the key to get the session value for.
-	 * @return the value for the {@code key}.
+	 * @return the value for the {@code key} or {@code null} if not found.
 	 * @throws RemoteException RMI error.
 	 */
 	Serializable get( String key ) throws RemoteException;
@@ -46,7 +46,7 @@ public interface Session extends Remote
 	/**
 	 * Removes a value from the session.
 	 * @param key the session key to remove.
-	 * @return the removed value, or null if none.
+	 * @return the removed value, or {@code null} if none.
 	 * @throws RemoteException RMI error.
 	 */
 	Serializable remove( String key ) throws RemoteException;

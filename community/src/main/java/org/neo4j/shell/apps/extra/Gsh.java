@@ -44,7 +44,7 @@ public class Gsh extends AbstractApp
 	public String execute( AppCommandParser parser, Session session,
 		Output out ) throws ShellException
 	{
-		String line = parser.getLineWithoutCommand();
+		String line = parser.getLineWithoutApp();
 		new GshExecutor().execute( line, session, out );
 		return null;
 	}

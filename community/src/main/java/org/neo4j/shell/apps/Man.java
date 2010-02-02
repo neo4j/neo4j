@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.AppShellServer;
-import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
@@ -66,13 +65,14 @@ public class Man extends AbstractApp
                     app.getDescription( option ) );
                 String[] descriptionLines = description.split(
                     Pattern.quote( "\n" ) );
-                OptionValueType type = app.getOptionValueType( option );
+//                OptionValueType type = app.getOptionValueType( option );
                 for ( int i = 0; i < descriptionLines.length; i++ )
                 {
                     String line = "";
                     if ( i == 0 )
                     {
-                        line = "-" + option;
+                        String optionPrefix = option.length() > 1 ? "--" : "-";
+                        line = optionPrefix + option;
                     }
                     line += "\t ";
                     line += descriptionLines[ i ];

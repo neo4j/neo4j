@@ -33,7 +33,7 @@ public class Jsh extends AbstractApp
 	public String execute( AppCommandParser parser, Session session,
 		Output out ) throws ShellException
 	{
-		String line = parser.getLineWithoutCommand();
+		String line = parser.getLineWithoutApp();
 		new JshExecutor().execute( line, session, out );
 		return null;
 	}
