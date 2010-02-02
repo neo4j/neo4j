@@ -33,10 +33,10 @@ public class FindPathTest extends NeoAlgoTestCase
     }
 
     protected FindPath getFindPath( SimpleGraphBuilder graph, String startNode,
-        String endNode )
+            String endNode )
     {
-        return new FindPath( graph.getNode( startNode ), graph
-            .getNode( endNode ), Direction.BOTH, MyRelTypes.R1 );
+        return new FindPath( graph.getNode( startNode ),
+                graph.getNode( endNode ), Direction.BOTH, MyRelTypes.R1 );
     }
 
     /**
@@ -80,17 +80,31 @@ public class FindPathTest extends NeoAlgoTestCase
         graph.makeEdge( "a", "c", "cost", (double) 1 );
         graph.makeEdge( "c", "d", "cost", (double) 1 );
         graph.makeEdge( "b", "d", "cost", (double) 1 );
-        FindPath findPath = new FindPath( graph.getNode( "a" ), graph
-                .getNode( "d" ), 0, Direction.OUTGOING, MyRelTypes.R1 );
+        graph.makeEdge( "d", "e", "cost", (double) 1 );
+        graph.makeEdge( "e", "f", "cost", (double) 1 );
+        FindPath findPath = new FindPath( graph.getNode( "a" ),
+                graph.getNode( "d" ), 0, Direction.OUTGOING, MyRelTypes.R1 );
         List<List<PropertyContainer>> paths = findPath.getPaths();
-		assertTrue( paths.isEmpty() );
-		assertNull( findPath.getCost() );
-        findPath = new FindPath( graph.getNode( "a" ), graph
-                .getNode( "d" ), 1, Direction.OUTGOING, MyRelTypes.R1 );
+        assertTrue( paths.isEmpty() );
+        assertNull( findPath.getCost() );
+        findPath = new FindPath( graph.getNode( "a" ), graph.getNode( "d" ), 2,
+                Direction.OUTGOING, MyRelTypes.R1 );
         assertTrue( findPath.getCost() == 2 );
         assertTrue( findPath.getPathAsNodes().size() == 3 );
         assertTrue( findPath.getPathAsRelationships().size() == 2 );
+
+        findPath = new FindPath( graph.getNode( "a" ), graph.getNode( "e" ), 2,
+                Direction.OUTGOING, MyRelTypes.R1 );
+        assertNull( findPath.getCost() );
+        assertTrue( findPath.getPaths().isEmpty() );
+
+        findPath = new FindPath( graph.getNode( "a" ), graph.getNode( "e" ), 3,
+                Direction.OUTGOING, MyRelTypes.R1 );
+        assertTrue( findPath.getCost() == 3 );
+        assertTrue( findPath.getPathAsNodes().size() == 4 );
+        assertTrue( findPath.getPathAsRelationships().size() == 3 );
     }
+
     public void testFindPathChain()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
@@ -146,7 +160,7 @@ public class FindPathTest extends NeoAlgoTestCase
                 if ( !node1.equals( node2 ) )
                 {
                     assertTrue( "Number of paths (" + node1 + "->" + node2
-                        + "): " + nrPaths, nrPaths == 1 );
+                                + "): " + nrPaths, nrPaths == 1 );
                 }
             }
         }

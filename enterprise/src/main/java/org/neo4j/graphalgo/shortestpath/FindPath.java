@@ -28,9 +28,10 @@ import org.neo4j.graphdb.RelationshipType;
 
 /**
  * FindPath class. This class can be used to perform shortest path computations
- * between two nodes on an unweighted network. Currently just wraps two Dijkstras
- * from sart and end node, trying to intersect in the middle.
+ * between two nodes on an unweighted network. Currently just wraps two
+ * Dijkstras from sart and end node, trying to intersect in the middle.
  * {@link Dijkstra}.
+ * 
  * @author Patrik Larsson
  */
 public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
@@ -179,56 +180,58 @@ public class FindPath implements SingleSourceSingleSinkShortestPath<Integer>
     {
         dijkstra.setStartNode( startNode );
     }
-    
-    public void limitMaxCostToTraverse( MaxCostEvaluator<Integer> evaluator )
+
+    public void limitMaxCostToTraverse( Integer cost )
     {
-        dijkstra.limitMaxCostToTraverse( evaluator );
+        dijkstra.limitMaxCostToTraverse( cost );
     }
-    
+
     /**
      * This is an algo that will initiate a Dijkstra from start- and end node
      * with relationship cost of 1 per path step along the costRelationshipTypes
+     * 
      * @param startNode the node to start at
      * @param endNode the node to find a path to
-     * @param relationDirection the direction to traverse all cost relationships in
-     * @param costRelationTypes the types of relationships that are going to be on the path
+     * @param relationDirection the direction to traverse all cost relationships
+     *            in
+     * @param costRelationTypes the types of relationships that are going to be
+     *            on the path
      */
     public FindPath( Node startNode, Node endNode, Direction relationDirection,
-        RelationshipType... costRelationTypes )
+            RelationshipType... costRelationTypes )
     {
         dijkstra = new Dijkstra<Integer>( 0, startNode, endNode,
-            new CostEvaluator<Integer>()
-            {
-                public Integer getCost( Relationship relationship,
-                    boolean backwards )
+                new CostEvaluator<Integer>()
                 {
-                    return 1;
-                }
-            }, new IntegerAdder(), new IntegerComparator(), relationDirection,
-            costRelationTypes );
-    }  
+                    public Integer getCost( Relationship relationship,
+                            boolean backwards )
+                    {
+                        return 1;
+                    }
+                }, new IntegerAdder(), new IntegerComparator(),
+                relationDirection, costRelationTypes );
+    }
+
     /**
-     * A depth-limited variant of the double-starting Dijkstra. If one of the paths is costing more (longer than)
-     * maxCost, the Dijkstra there will stop.
-     * Potentially, if the shortest path between 2 nodes is length 12, at maxCost 4 it would not be found since the two segments
-     * at max depth 4 would not meet.
-     * For this, at least maxCost = 6 has to be set in order to find paths with length 12.
+     * A depth-limited variant of the double-starting Dijkstra. If one of the
+     * paths is costing more (longer than) maxCost, the Dijkstra there will
+     * stop. Potentially, if the shortest path between 2 nodes is length 12, at
+     * maxCost 4 it would not be found since the two segments at max depth 4
+     * would not meet. For this, at least maxCost = 6 has to be set in order to
+     * find paths with length 12.
+     * 
      * @param startNode the start node
      * @param endNode the end node
      * @param maxCost the maximum length of the path before giving up
-     * @param relationDirection the direction to traverse all cost relationships in
-     * @param costRelationTypes the types of relationships that are going to be on the path
+     * @param relationDirection the direction to traverse all cost relationships
+     *            in
+     * @param costRelationTypes the types of relationships that are going to be
+     *            on the path
      */
-    public FindPath( Node startNode, Node endNode, final int maxCost, Direction relationDirection,
-            RelationshipType... costRelationTypes )
-        {
-        	this(startNode, endNode, relationDirection, costRelationTypes);
-            MaxCostEvaluator<Integer> maxCostComparator = new MaxCostEvaluator<Integer>() {
-
-    			public boolean maxCostExceeded(Integer currentCost) {
-    				return currentCost > maxCost;
-    			}
-    		};
-    		dijkstra.limitMaxCostToTraverse(maxCostComparator);
-        }
+    public FindPath( Node startNode, Node endNode, final int maxCost,
+            Direction relationDirection, RelationshipType... costRelationTypes )
+    {
+        this( startNode, endNode, relationDirection, costRelationTypes );
+        dijkstra.limitMaxCostToTraverse( maxCost );
+    }
 }
