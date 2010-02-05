@@ -356,18 +356,18 @@ public class NodeManager
 
     private ReentrantLock lockId( int id )
     {
-        ReentrantLock lock = loadLocks[id % LOCK_STRIPE_COUNT ];
+        int stripe = id % LOCK_STRIPE_COUNT;
+        if ( stripe < 0 )
+        {
+            stripe *= -1;
+        }
+        ReentrantLock lock = loadLocks[stripe];
         lock.lock();
         return lock;
     }
     
     public Node getNodeById( int nodeId ) throws NotFoundException
     {
-        if ( nodeId < 0 )
-        {
-            throw new IllegalArgumentException( "Negative node id " + nodeId );
-        }
-        
         NodeImpl node = nodeCache.get( nodeId );
         if ( node != null )
         {
@@ -469,11 +469,6 @@ public class NodeManager
     public Relationship getRelationshipById( int relId )
         throws NotFoundException
     {
-        if ( relId < 0 )
-        {
-            throw new IllegalArgumentException( "Negative id " + relId );
-        }
-        
         RelationshipImpl relationship = relCache.get( relId );
         if ( relationship != null )
         {
@@ -492,8 +487,7 @@ public class NodeManager
                 relId );
             if ( data == null )
             {
-                throw new NotFoundException( "Relationship[" + relId
-                    + "] not found" );
+                throw new NotFoundException( "Relationship[" + relId + "]" );
             }
             int typeId = data.relationshipType(); 
             RelationshipType type = getRelationshipTypeById( typeId ); 

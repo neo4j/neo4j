@@ -138,11 +138,19 @@ class EmbeddedGraphDbImpl
 
     public Node getNodeById( long id )
     {
+        if ( id < 0 || id > Integer.MAX_VALUE * 2l )
+        {
+            throw new NotFoundException( "Node[" + id + "]" );
+        }
         return nodeManager.getNodeById( (int) id );
     }
 
     public Relationship getRelationshipById( long id )
     {
+        if ( id < 0 || id > Integer.MAX_VALUE * 2l )
+        {
+            throw new NotFoundException( "Relationship[" + id + "]" );
+        }
         return nodeManager.getRelationshipById( (int) id );
     }
 
