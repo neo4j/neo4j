@@ -83,19 +83,47 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin
+				</artifactId>
+        <configuration>
+          <repositoryLayout>flat</repositoryLayout>
+          <repositoryName>lib</repositoryName>
+          <includeConfigurationDirectoryInClasspath>false
+          </includeConfigurationDirectoryInClasspath>
+          <programs>
+            <program>
+              <mainClass>org.neo4j.shell.StartClient
+              </mainClass>
+              <name>neo4j-shell</name>
+            </program>
+          </programs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>examples</id>
+            <phase>package</phase>
+            <goals>
+              <goal>assemble</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
-          <appendAssemblyId>true</appendAssemblyId>
+          <finalName>neo4j-shell-${project.version}-standalone</finalName>
           <descriptors>
-            <descriptor>src/assembly/default.xml</descriptor>
+            <descriptor>src/main/assembly/shell-assembly.xml
+						</descriptor>
           </descriptors>
         </configuration>
         <executions>
           <execution>
-            <id>make-assembly-default</id>
+            <id>shell-assembly</id>
             <phase>package</phase>
             <goals>
-              <goal>attached</goal>
+              <goal>single</goal>
             </goals>
           </execution>
         </executions>
@@ -110,7 +138,7 @@
             </manifest>
             <manifestEntries>
               <url>http://neo4j.org</url>
-              <Class-Path>neo4j-kernel-${neo.version}.jar jta-${jta.version}.jar geronimo-jta_${jta.version}_spec-1.1.1.jar</Class-Path>
+              <Class-Path>neo4j-kernel-${neo4j.version}.jar jta-${jta.version}.jar geronimo-jta_${jta.version}_spec-1.1.1.jar</Class-Path>
             </manifestEntries>
           </archive>
         </configuration>
