@@ -89,6 +89,11 @@ public abstract class AbstractApp implements App
 		OptionContext context = this.typeExceptions.get( option );
 		return context == null ? null : context.getDescription();
 	}
+	
+	public void shutdown()
+	{
+	    // Default behaviour is to do nothing
+	}
 
 	protected void printMany( Output out, String string, int count )
 		throws RemoteException

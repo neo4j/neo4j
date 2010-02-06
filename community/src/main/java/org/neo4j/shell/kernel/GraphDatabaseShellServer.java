@@ -36,6 +36,7 @@ import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
 import org.neo4j.shell.kernel.apps.Cd;
 import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
 import org.neo4j.shell.kernel.apps.Gsh;
+import org.neo4j.shell.kernel.apps.Index;
 import org.neo4j.shell.kernel.apps.Jsh;
 import org.neo4j.shell.kernel.apps.Ls;
 import org.neo4j.shell.kernel.apps.Mkrel;
@@ -103,6 +104,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         addApp( Rmrel.class );
         addApp( Set.class );
         addApp( Trav.class );
+        addApp( Index.class );
     }
 
     @Override

@@ -74,4 +74,9 @@ public interface App
 	 * @return a description of a certain option.
 	 */
 	String getDescription( String option );
+	
+	/**
+	 * Put code here which will need to run before the shell server is shut down
+	 */
+	void shutdown();
 }

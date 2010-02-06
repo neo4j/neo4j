@@ -21,6 +21,7 @@ package org.neo4j.shell.impl;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +47,8 @@ public abstract class AbstractAppServer extends AbstractServer
 {
 	private Map<String, Class<? extends App>> apps =
 	    new TreeMap<String, Class<? extends App>>();
+	private Map<Class<? extends App>, App> appInstances =
+	    new HashMap<Class<? extends App>, App>();
 
 	/**
 	 * Constructs a new server.
@@ -78,17 +81,32 @@ public abstract class AbstractAppServer extends AbstractServer
 	        return null;
 	    }
 	    
-	    App result = null;
-	    try
-        {
-            result = app.newInstance();
-            ( ( AbstractApp ) result ).setServer( this );
-        }
-        catch ( Exception e )
-        {
-            // TODO It's OK, or is it?
-        }
+	    App result = this.appInstances.get( app );
+	    if ( result == null )
+	    {
+    	    try
+            {
+                result = app.newInstance();
+                ( ( AbstractApp ) result ).setServer( this );
+                this.appInstances.put( app, result );
+            }
+            catch ( Exception e )
+            {
+                // TODO It's OK, or is it?
+            }
+	    }
         return result;
+	}
+	
+	@Override
+	public void shutdown()
+	{
+	    for ( App app : this.appInstances.values() )
+	    {
+	        app.shutdown();
+	    }
+	    
+	    super.shutdown();
 	}
 
 	public String interpretLine( String line, Session session, Output out )
