@@ -21,8 +21,6 @@ package org.neo4j.shell;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.AbstractStarter;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
@@ -33,7 +31,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 public class StartClient extends AbstractStarter
 {
     /**
-     * Starts a client, remote or local depending on the arguments.
+     * Starts a shell client. Remote or local depending on the arguments.
      * @param args the arguments from the command line. Can contain
      * information about whether to start a local
      * {@link GraphDatabaseShellServer} or connect to an already running
@@ -41,9 +39,14 @@ public class StartClient extends AbstractStarter
      */
     public static void main( String[] args )
     {
-        printUsage();
-        
         Map<String, String> argMap = parseArgs( args );
+        if ( argMap.containsKey( "?" ) || argMap.containsKey( "h" ) ||
+                argMap.containsKey( "help" ) || argMap.containsKey( "usage" ) )
+        {
+            printUsage();
+            return;
+        }
+        
         String path = argMap.get( StartLocalClient.ARG_PATH );
         String port = argMap.get( StartRemoteClient.ARG_PORT );
         String name = argMap.get( StartRemoteClient.ARG_NAME );
@@ -63,6 +66,14 @@ public class StartClient extends AbstractStarter
         // Local
         else if ( path != null )
         {
+            try
+            {
+                checkNeo4jDependency();
+            }
+            catch ( ShellException e )
+            {
+                handleException( e, argMap );
+            }
             StartLocalClient.main( args );
         }
         // Remote
@@ -72,22 +83,15 @@ public class StartClient extends AbstractStarter
         }
     }
 
-    private static void printUsage()
+    private static void checkNeo4jDependency() throws ShellException
     {
-        int port = AbstractServer.DEFAULT_PORT;
-        String name = AbstractServer.DEFAULT_NAME;
-        String pathArg = StartLocalClient.ARG_PATH;
-        String portArg = StartRemoteClient.ARG_PORT;
-        String nameArg = StartRemoteClient.ARG_NAME;
-        System.out.println(
-            "Example arguments for remote:\n" +
-                "\t-" + portArg + " " + port + "\n" +
-                "\t-" + portArg + " " + port +
-                    " -" + nameArg + " " + name + "\n" +
-                "\t...or no arguments\n" +
-            "Example arguments for local:\n" +
-                "\t-" + pathArg + " /path/to/db" + "\n" +
-                "\t-" + pathArg + " /path/to/db -readonly"
-        );
+        try
+        {
+            Class.forName( "org.neo4j.graphdb.GraphDatabaseService" );
+        }
+        catch ( Exception e )
+        {
+            throw new ShellException( "Neo4j not found on the classpath", e );
+        }
     }
 }

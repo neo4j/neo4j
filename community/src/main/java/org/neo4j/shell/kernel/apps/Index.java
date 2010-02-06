@@ -2,6 +2,9 @@ package org.neo4j.shell.kernel.apps;
 
 import java.lang.reflect.Method;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -43,8 +46,12 @@ public class Index extends GraphDatabaseApp
                 "If no value is given the property value for the key is " +
                 "used" ) );
         addValueType( "r", new OptionContext( OptionValueType.NONE,
-            "Removes a key-value pair for the current node from the index.\n" +
-            "If no value is given the property value for the key is used" ) );
+                "Removes a key-value pair for the current node from the index.\n" +
+                "If no value is given the property value for the key is used" ) );
+        addValueType( "c", OPTION_CONTEXT_FOR_C );
+        addValueType( "cd", new OptionContext( OptionValueType.NONE,
+                "Does a 'cd' command to the returned node.\n" +
+                "Could also be done using the -c option" ) );
     }
     
     public void shutdown()
@@ -94,7 +101,9 @@ public class Index extends GraphDatabaseApp
                         KEY_INDEX_CLASS_NAME + " environment variable" );
             }
             
-            boolean get = parser.options().containsKey( "g" );
+            boolean get = parser.options().containsKey( "g" ) ||
+                    parser.options().containsKey( "cd" ) ||
+                    parser.options().containsKey( "ls" );
             boolean index = parser.options().containsKey( "i" );
             boolean remove = parser.options().containsKey( "r" );
             int count = boolCount( get, index, remove );
@@ -142,12 +151,32 @@ public class Index extends GraphDatabaseApp
                 indexService.getClass().getMethod( "getNodes",
                 String.class, Object.class ).invoke(
                         indexService, key, ( Object ) value );
+        boolean doCd = parser.options().containsKey( "cd" );
+        boolean doLs = parser.options().containsKey( "ls" );
         String commandToRun = parser.options().get( "c" );
-        String[] commandsToRun = commandToRun != null ?
-            commandToRun.split( Pattern.quote( "&&" ) ) : new String[ 0 ];
+        Collection<String> commandsToRun = new ArrayList<String>();
+        boolean specialCommand = false;
+        if ( doCd || doLs )
+        {
+            specialCommand = true;
+            if ( doCd )
+            {
+                commandsToRun.add( "cd -a $n" );
+            }
+            else if ( doLs )
+            {
+                commandsToRun.add( "ls $n" );
+            }
+        }
+        else if ( commandToRun != null )
+        {
+            commandsToRun.addAll( Arrays.asList(
+                    commandToRun.split( Pattern.quote( "&&" ) ) ) );
+        }
+        
         for ( Node node : result )
         {
-            Trav.printAndInterpretTemplateLines( commandsToRun, node,
+            printAndInterpretTemplateLines( commandsToRun, false, !specialCommand, node,
                     getServer(), session, out );
         }
     }

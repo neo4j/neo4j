@@ -35,8 +35,8 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
  */
 public class StartLocalClient extends AbstractStarter
 {
-    static final String ARG_PATH = "path";
-    static final String ARG_READONLY = "readonly";
+    public static final String ARG_PATH = "path";
+    public static final String ARG_READONLY = "readonly";
     
     /**
      * Starts a {@link GraphDatabaseShellServer} and connects a client to it in
@@ -76,17 +76,17 @@ public class StartLocalClient extends AbstractStarter
                     }
                     catch ( Exception innerException )
                     {
-                        handleException( innerException );
+                        handleException( innerException, argMap );
                     }
                 }
                 else
                 {
-                    handleException( e );
+                    handleException( e, argMap );
                 }
             }
             else
             {
-                handleException( e );
+                handleException( e, argMap );
             }
         }
         System.exit( 0 );
@@ -125,14 +125,6 @@ public class StartLocalClient extends AbstractStarter
         return false;
     }
 
-    private static void handleException( Exception e )
-    {
-        System.err.println( "Can't start client with local neo4j service: " +
-            e );
-        e.printStackTrace( System.err );
-        System.exit( 1 );
-    }
-    
     private static void tryStartLocalServerAndClient( String dbPath,
         boolean readOnly, String[] args ) throws Exception
     {
@@ -152,7 +144,7 @@ public class StartLocalClient extends AbstractStarter
             }
         } );
         
-        System.out.println( "NOTE: Using local neo4j service at '" +
+        System.out.println( "NOTE: Connected to local neo4j service at '" +
             dbPath + "'" );
         ShellClient client = new SameJvmClient( server );
         setSessionVariablesFromArgs( client, args );

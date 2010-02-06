@@ -23,12 +23,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 import org.neo4j.shell.ShellClient;
+import org.neo4j.shell.StartLocalClient;
+import org.neo4j.shell.StartRemoteClient;
 
 /**
  * Abstract class with common functionality for classes which starts up clients
@@ -99,7 +102,11 @@ public class AbstractStarter
     
     private static String stripOption( String arg )
     {
-        return arg.substring( 1 );
+        while ( arg.length() > 0 && arg.charAt( 0 ) == '-' )
+        {
+            arg = arg.substring( 1 );
+        }
+        return arg;
     }
 
     protected static Map<String, String> parseArgs( String[] args )
@@ -137,5 +144,38 @@ public class AbstractStarter
     {
         return stringOrNull != null ? new Boolean( stringOrNull ) :
             defaultValue;
+    }
+    
+    protected static void handleException( Exception e, Map<String, String> argMap )
+    {
+        String message = e.getCause() instanceof ConnectException ?
+                "Connection refused" : e.getMessage();
+        System.err.println( "ERROR (-v for expanded information):\n\t" + message );
+        if ( argMap.containsKey( "v" ) )
+        {
+            e.printStackTrace( System.err );
+        }
+        System.err.println();
+        printUsage();
+        System.exit( 1 );
+    }
+
+    protected static void printUsage()
+    {
+        int port = AbstractServer.DEFAULT_PORT;
+        String name = AbstractServer.DEFAULT_NAME;
+        String pathArg = StartLocalClient.ARG_PATH;
+        String portArg = StartRemoteClient.ARG_PORT;
+        String nameArg = StartRemoteClient.ARG_NAME;
+        System.out.println(
+            "Example arguments for remote:\n" +
+                "\t-" + portArg + " " + port + "\n" +
+                "\t-" + portArg + " " + port +
+                    " -" + nameArg + " " + name + "\n" +
+                "\t...or no arguments\n" +
+            "Example arguments for local:\n" +
+                "\t-" + pathArg + " /path/to/db" + "\n" +
+                "\t-" + pathArg + " /path/to/db -readonly"
+        );
     }
 }

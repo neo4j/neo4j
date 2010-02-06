@@ -29,7 +29,6 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.SimpleAppServer;
-import org.neo4j.shell.apps.Help;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.BashVariableInterpreter;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
@@ -88,7 +87,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     @Override
     public String welcome()
     {
-        return "Welcome to the Neo4j Shell\n" + Help.getHelpString( this );
+        return "Welcome to the Neo4j Shell! Enter 'help' for a list of commands";
     }
     
     private void addNeoApps()

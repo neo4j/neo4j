@@ -30,8 +30,8 @@ import org.neo4j.shell.impl.AbstractStarter;
  */
 public class StartRemoteClient extends AbstractStarter
 {
-    static final String ARG_PORT = "port";
-    static final String ARG_NAME = "name";
+    public static final String ARG_PORT = "port";
+    public static final String ARG_NAME = "name";
     
     /**
      * Starts a client and connects to a remote server.
@@ -40,22 +40,20 @@ public class StartRemoteClient extends AbstractStarter
      */
     public static void main( String[] args )
     {
+        Map<String, String> argMap = parseArgs( args );
         try
         {
-            Map<String, String> argMap = parseArgs( args );
             int port = getPort( argMap );
             String name = getShellName( argMap );
             ShellClient client = ShellLobby.newClient( port, name );
-            System.out.println( "NOTE: Using remote shell at port=" + port +
-                " and RMI name=" + name );
+            System.out.println( "NOTE: Connected to remote neo4j service '" + name +
+                    "' at port " + port );
             setSessionVariablesFromArgs( client, args );
             client.grabPrompt();
         }
         catch ( Exception e )
         {
-            System.err.println( "Can't start remote shell: " + e );
-            e.printStackTrace( System.err );
-            System.exit( 1 );
+            handleException( e, argMap );
         }
     }
 

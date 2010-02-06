@@ -164,6 +164,7 @@ public abstract class AbstractClient implements ShellClient
                 "jLine on the classpath" );
                 this.console = new StandardConsole();
             }
+            this.getOutput().println();
         }
         catch ( RemoteException e )
         {

@@ -21,6 +21,8 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +40,6 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 /**
  * Traverses the graph using {@link Traverser}.
@@ -79,12 +80,7 @@ public class Trav extends GraphDatabaseApp
             "just\n" +
             "a part of a value matches the pattern, not necessarily " +
             "the whole value" ) );
-        this.addValueType( "c", new OptionContext( OptionValueType.MUST,
-        	"Command to run for each returned node. Use $n as a node-id " +
-        	"replacement.\n" +
-        	"Example: -c \"ls -f name $n\". Multiple commands " +
-        	"can be supplied with\n" +
-        	"&& in between" ) );
+        this.addValueType( "c", OPTION_CONTEXT_FOR_C );
     }
     
     @Override
@@ -123,9 +119,11 @@ public class Trav extends GraphDatabaseApp
         Map<String, Object> filterMap = filterString != null ?
             parseFilter( filterString, out ) : null;
         String commandToRun = parser.options().get( "c" );
-        String[] commandsToRun = commandToRun != null ?
-            commandToRun.split( Pattern.quote( "&&" ) ) : new String[ 0 ];
-        
+        Collection<String> commandsToRun = new ArrayList<String>();
+        if ( commandToRun != null )
+        {
+            commandsToRun.addAll( Arrays.asList( commandToRun.split( Pattern.quote( "&&" ) ) ) );
+        }
         for ( Node traversedNode : node.traverse( order, stopEvaluator,
             returnableEvaluator, relationshipTypes ) )
         {
@@ -174,86 +172,12 @@ public class Trav extends GraphDatabaseApp
             }
             if ( hit )
             {
-        		out.println( getDisplayName( getServer(), session,
-        		    traversedNode, true ) );
-                Map<String, Object> data = new HashMap<String, Object>();
-                data.put( "n", traversedNode.getId() );
-        	    for ( String command : commandsToRun )
-        	    {
-            		String line = templateString( command, "\\$", data );
-            		getServer().interpretLine( line, session, out );
-            	}
-                out.println();
+                printAndInterpretTemplateLines( commandsToRun, false, true, traversedNode,
+                        getServer(), session, out );
             }
         }
         return null;
     }
-    
-    public static void printAndInterpretTemplateLines( String[] templateLines,
-            Node node, GraphDatabaseShellServer server, Session session,
-            Output out ) throws ShellException, RemoteException
-    {
-        out.println( getDisplayName( server, session, node, true ) );
-        Map<String, Object> data = new HashMap<String, Object>();
-        data.put( "n", node.getId() );
-        for ( String command : templateLines )
-        {
-            String line = templateString( command, "\\$", data );
-            server.interpretLine( line, session, out );
-        }
-        out.println();
-    }
-    
-	private static String templateString( String templateString,
-	        String variablePrefix, Map<String, Object> data )
-	{
-		// Sort data strings on length.
-		Map<Integer, List<String>> lengthMap =
-			new HashMap<Integer, List<String>>();
-		int longest = 0;
-		for ( String key : data.keySet() )
-		{
-			int length = key.length();
-			if ( length > longest )
-			{
-				longest = length;
-			}
-			
-			List<String> innerList = null;
-			Integer innerKey = Integer.valueOf( length );
-			if ( lengthMap.containsKey( innerKey ) )
-			{
-				innerList = lengthMap.get( innerKey );
-			}
-			else
-			{
-				innerList = new ArrayList<String>();
-				lengthMap.put( innerKey, innerList );
-			}
-			innerList.add( key );
-		}
-		
-		// Replace it.
-		String result = templateString;
-		for ( int i = longest; i >= 0; i-- )
-		{
-			Integer lengthKey = Integer.valueOf( i );
-			if ( !lengthMap.containsKey( lengthKey ) )
-			{
-				continue;
-			}
-			
-			List<String> list = lengthMap.get( lengthKey );
-			for ( String key : list )
-			{
-				String replacement = data.get( key ).toString();
-				String regExpMatchString = variablePrefix + key;
-				result = result.replaceAll( regExpMatchString, replacement );
-			}
-		}
-		
-		return result;
-	}
 	
     private Order parseOrder( AppCommandParser parser )
     {
