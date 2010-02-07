@@ -138,7 +138,7 @@
             </manifest>
             <manifestEntries>
               <url>http://neo4j.org</url>
-              <Class-Path>neo4j-kernel-${neo4j.version}.jar jta-${jta.version}.jar geronimo-jta_${jta.version}_spec-1.1.1.jar</Class-Path>
+              <Class-Path>neo4j-kernel-${neo4j.version}.jar jta-${jta.version}.jar geronimo-jta_${jta.version}_spec-1.1.1.jar jline-${jline.version}.jar</Class-Path>
             </manifestEntries>
           </archive>
         </configuration>
