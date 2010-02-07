@@ -51,9 +51,23 @@ public class Index extends GraphDatabaseApp
         addValueType( "c", OPTION_CONTEXT_FOR_C );
         addValueType( "cd", new OptionContext( OptionValueType.NONE,
                 "Does a 'cd' command to the returned node.\n" +
-                "Could also be done using the -c option" ) );
+                "Could also be done using the -c option. (Implies -g)" ) );
+        addValueType( "ls", new OptionContext( OptionValueType.NONE,
+                "Does a 'ls' command on the returned nodes.\n" +
+                "Could also be done using the -c option. (Implies -g)" ) );
     }
     
+    @Override
+    public String getDescription()
+    {
+        return "Access the IndexService capabilities for your Neo4j graph database.\n" +
+        		"Use -g for getting nodes, -i and -r to manipulate. Examples:\n" +
+        		"index -i name  (will index property 'name' with its value for current node)\n" +
+        		"index -g name \"Thomas A. Anderson\"  (will get nodes matching that name)\n" +
+        		"index --cd name \"Agent Smith\"  (will 'cd' to the 'Agent Smith' node).";
+    }
+    
+    @Override
     public void shutdown()
     {
         for ( IndexServiceContext context : this.contexts.values() )
@@ -229,17 +243,14 @@ public class Index extends GraphDatabaseApp
     private Object instantiateOrGetIndexServiceObject( Session session,
             Output out ) throws Exception
     {
-        if ( firstRun )
+        try
         {
-            try
-            {
-                Class.forName( "org.neo4j.index.IndexService" );
-            }
-            catch ( Exception e )
-            {
-                throw new ShellException(
-                        "No indexing capabilities on the classpath" );
-            }
+            Class.forName( "org.neo4j.index.IndexService" );
+        }
+        catch ( Exception e )
+        {
+            throw new ShellException(
+                    "No indexing capabilities on the classpath" );
         }
         
         String className = ( String ) safeGet( session, KEY_INDEX_CLASS_NAME );
