@@ -291,8 +291,7 @@ public class Index extends GraphDatabaseApp
                     
                     // TODO We only support LuceneIndexService (or derivatives), not good
                     XaDataSource dataSource = xaManager.getXaDataSource( xaName );
-                    Method getterMethod = dataSource.getClass().getDeclaredMethod(
-                            "getIndexService" );
+                    Method getterMethod = dataSource.getClass().getMethod( "getIndexService" );
                     getterMethod.setAccessible( true );
                     context = new IndexServiceContext(
                             getterMethod.invoke( dataSource ), false );
