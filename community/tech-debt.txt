@@ -1,0 +1,17 @@
+[2010-02-09] Refactor for coherency
+    The main part of this component is made out of the graphmatching package
+    then there is the graphmathing.filter package that is bolted on ontop of
+    the graphmatching package. This should be refactored so that the entire
+    module feels like a coherent thing.
+
+[2010-02-09] Testing missig for the filter package
+    The filter package was created in a rush without tests.
+    This needs to be rectified.
+
+[2010-02-09] Developer documentation missing
+    This component need documentation on how the matching works, so that
+    another developer can pick things up and take this component further.
+
+[2010-02-09] User documentation missing
+    There needs to be good examples of how to use the graph matching component
+    as well as documentation on how to set up a pattern and execute the matcher.
