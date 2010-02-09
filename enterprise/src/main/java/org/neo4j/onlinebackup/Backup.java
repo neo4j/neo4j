@@ -15,7 +15,7 @@ package org.neo4j.onlinebackup;
 import java.io.IOException;
 
 /**
- * Online backup for neo4j.
+ * Online backup for Neo4j.
  */
 public interface Backup
 {
