@@ -25,16 +25,18 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 
+/**
+ * A read-only version of {@link EmbeddedGraphDatabase}.
+ */
 public final class EmbeddedReadOnlyGraphDatabase implements
-    GraphDatabaseService
+        GraphDatabaseService
 {
-    private static Map<String,String> readOnlyParams =
-        new HashMap<String,String>();
+    private static Map<String, String> readOnlyParams = new HashMap<String, String>();
 
     static
     {
@@ -68,21 +70,21 @@ public final class EmbeddedReadOnlyGraphDatabase implements
      * @param params configuration parameters
      */
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
-        Map<String,String> params )
+            Map<String, String> params )
     {
         params.put( "read_only", "true" );
         this.neoImpl = new EmbeddedGraphDbImpl( storeDir, params, this );
     }
 
     /**
-     * A non-standard Convenience method that loads a standard property file and
+     * A non-standard convenience method that loads a standard property file and
      * converts it into a generic <Code>Map<String,String></CODE>. Will most
      * likely be removed in future releases.
      * 
      * @param file the property file to load
      * @return a map containing the properties from the file
      */
-    public static Map<String,String> loadConfigurations( String file )
+    public static Map<String, String> loadConfigurations( String file )
     {
         return EmbeddedGraphDbImpl.loadConfigurations( file );
     }
@@ -118,7 +120,7 @@ public final class EmbeddedReadOnlyGraphDatabase implements
     }
 
     public boolean enableRemoteShell(
-        final Map<String,Serializable> initialProperties )
+            final Map<String, Serializable> initialProperties )
     {
         return neoImpl.enableRemoteShell( initialProperties );
     }
@@ -129,7 +131,7 @@ public final class EmbeddedReadOnlyGraphDatabase implements
     }
 
     /**
-     * @throws NotInTransactionException if unable to start transaction
+     * @throws TransactionFailureException if unable to start transaction
      */
     public Transaction beginTx()
     {

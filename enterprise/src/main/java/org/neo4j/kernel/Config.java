@@ -30,6 +30,9 @@ import org.neo4j.kernel.impl.persistence.PersistenceModule;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
 
+/**
+ * A non-standard configuration object.
+ */
 public class Config
 {
     private EventModule eventModule;
@@ -43,11 +46,11 @@ public class Config
     private IdGeneratorModule idGeneratorModule;
     private NeoModule neoModule;
     private String storeDir;
-    private final Map<Object,Object> params;
+    private final Map<Object, Object> params;
 
     private final boolean readOnly;
 
-    Config( String storeDir, Map<Object,Object> params )
+    Config( String storeDir, Map<Object, Object> params )
     {
         this.storeDir = storeDir;
         this.params = params;
@@ -75,9 +78,9 @@ public class Config
         lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         persistenceModule = new PersistenceModule();
         idGeneratorModule = new IdGeneratorModule();
-        neoModule =
-            new NeoModule( cacheManager, lockManager, txModule.getTxManager(),
-                idGeneratorModule.getIdGenerator(), readOnly );
+        neoModule = new NeoModule( cacheManager, lockManager,
+                txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
+                readOnly );
     }
 
     void setNeoPersistenceSource( String name, boolean create )
@@ -131,7 +134,7 @@ public class Config
         return lockReleaser;
     }
 
-    public Map<Object,Object> getParams()
+    public Map<Object, Object> getParams()
     {
         return this.params;
     }

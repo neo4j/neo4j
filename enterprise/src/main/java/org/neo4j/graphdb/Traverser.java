@@ -47,7 +47,7 @@ import java.util.Iterator;
  * 
  * <pre>
  * <code>
- * Traverser friends = node.{@link Node#traverse(Order, StopEvaluator, ReturnableEvaluator, RelationshipType, Direction) traverse}( {@link Order#BREADTH_FIRST Order.BREADTH_FIRST},
+ * Traverser friends = node.{@link Node#traverse(Traverser.Order, StopEvaluator, ReturnableEvaluator, RelationshipType, Direction) traverse}( {@link Order#BREADTH_FIRST Order.BREADTH_FIRST},
  *     {@link StopEvaluator#END_OF_GRAPH StopEvaluator.END_OF_GRAPH}, {@link ReturnableEvaluator#ALL_BUT_START_NODE ReturnableEvaluator.ALL_BUT_START_NODE},
  *     {@link RelationshipType MyRelationshipTypes.KNOWS}, {@link Direction#OUTGOING Direction.OUTGOING} );
  * for ( {@link Node Node} friend : friends )

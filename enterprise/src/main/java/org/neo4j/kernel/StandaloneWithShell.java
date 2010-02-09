@@ -28,10 +28,12 @@ import java.util.logging.Logger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
+/**
+ * Standalone EmbeddedGraphDatabase with Shell enabled.
+ */
 public class StandaloneWithShell
 {
-    private static Logger log =
-        Logger.getLogger( StandaloneWithShell.class.getName() );
+    private static Logger log = Logger.getLogger( StandaloneWithShell.class.getName() );
     private GraphDatabaseService embeddedDb;
     private AtomicBoolean shutdownInitiated = new AtomicBoolean( false );
 
@@ -52,11 +54,11 @@ public class StandaloneWithShell
         } );
     }
 
-    private void initialize( Map<String,String> arguments )
+    private void initialize( Map<String, String> arguments )
     {
         String path = arguments.get( "path" );
         this.embeddedDb = new EmbeddedGraphDatabase( path );
-        Map<String,Serializable> shellProperties = Collections.emptyMap();
+        Map<String, Serializable> shellProperties = Collections.emptyMap();
         getNeo().enableRemoteShell( shellProperties );
         log.info( "Neo4j started at '" + path + "'" );
     }
@@ -97,7 +99,7 @@ public class StandaloneWithShell
         }
     }
 
-    public void execute( Map<String,String> arguments )
+    public void execute( Map<String, String> arguments )
     {
         addShutdownHook();
         initialize( arguments );
@@ -106,7 +108,7 @@ public class StandaloneWithShell
 
     public static void main( String[] args )
     {
-        Map<String,String> arguments = new HashMap<String,String>();
+        Map<String, String> arguments = new HashMap<String, String>();
         for ( int i = 0; i < args.length; i++ )
         {
             String arg = args[i];
@@ -119,8 +121,7 @@ public class StandaloneWithShell
         }
         if ( !arguments.containsKey( "path" ) )
         {
-            System.out
-                .println( "Use -path <path> to control the neo4j store path" );
+            System.out.println( "Use -path <path> to control the neo4j store path" );
             return;
         }
 
