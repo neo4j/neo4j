@@ -22,10 +22,11 @@ package org.neo4j.graphdb;
 /**
  * A programmatically handled transaction. All operations that work with the
  * node space (even read operations) must be wrapped in a transaction.
- * Transactions can either be handled programmatically, through this interface,
- * or by a container through the Java Transaction API (JTA). The Transaction
- * interface makes handling programmatic transactions easier than in JTA. Here's
- * the idiomatic use of programmatic transactions in Neo:
+ * Transactions are thread confined. Transactions can either be handled
+ * programmatically, through this interface, or by a container through the Java
+ * Transaction API (JTA). The Transaction interface makes handling programmatic
+ * transactions easier than in JTA. Here's the idiomatic use of programmatic
+ * transactions in Neo:
  * 
  * <pre>
  * <code>
