@@ -20,12 +20,12 @@ import java.util.List;
 
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.FloydWarshall;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-public class FloydWarshallTest extends NeoAlgoTestCase
+public class FloydWarshallTest extends Neo4jAlgoTestCase
 {
     public FloydWarshallTest( String arg0 )
     {

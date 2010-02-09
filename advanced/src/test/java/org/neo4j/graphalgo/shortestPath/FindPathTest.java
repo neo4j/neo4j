@@ -19,13 +19,13 @@ package org.neo4j.graphalgo.shortestPath;
 import java.util.List;
 
 import org.neo4j.graphalgo.shortestpath.FindPath;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
-public class FindPathTest extends NeoAlgoTestCase
+public class FindPathTest extends Neo4jAlgoTestCase
 {
     public FindPathTest( String arg0 )
     {

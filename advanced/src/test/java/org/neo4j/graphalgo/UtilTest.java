@@ -23,11 +23,11 @@ import java.util.Map;
 
 import org.neo4j.graphalgo.shortestpath.Util;
 import org.neo4j.graphalgo.shortestpath.Util.PathCounter;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-public class UtilTest extends NeoAlgoTestCase
+public class UtilTest extends Neo4jAlgoTestCase
 {
     public UtilTest( String name )
     {

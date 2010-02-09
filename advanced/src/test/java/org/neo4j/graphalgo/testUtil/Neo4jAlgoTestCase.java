@@ -28,7 +28,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * and a transaction.
  * @author Patrik Larsson
  */
-public class NeoAlgoTestCase extends TestCase
+public class Neo4jAlgoTestCase extends TestCase
 {
     protected GraphDatabaseService graphDb;
     protected Transaction tx;
@@ -39,7 +39,7 @@ public class NeoAlgoTestCase extends TestCase
         R1, R2, R3
     }
 
-    public NeoAlgoTestCase( String arg0 )
+    public Neo4jAlgoTestCase( String arg0 )
     {
         super( arg0 );
     }

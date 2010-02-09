@@ -18,11 +18,11 @@ package org.neo4j.graphalgo;
 
 import java.util.List;
 
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 
-public class AllSimplePathsTest extends NeoAlgoTestCase
+public class AllSimplePathsTest extends Neo4jAlgoTestCase
 {
     public AllSimplePathsTest( String name )
     {
