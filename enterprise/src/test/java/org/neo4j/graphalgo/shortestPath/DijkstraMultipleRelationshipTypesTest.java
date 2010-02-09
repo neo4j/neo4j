@@ -20,12 +20,12 @@ import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
 import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-public class DijkstraMultipleRelationshipTypesTest extends NeoAlgoTestCase
+public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
 {
     public DijkstraMultipleRelationshipTypesTest( String arg0 )
     {
