@@ -125,14 +125,14 @@ public class PatternMatcher
                     label + "'" );
             }
             
-            Object neoValue = node.getProperty( propertyKey, null );
-            if ( neoValue == null )
+            Object rawValue = node.getProperty( propertyKey, null );
+            if ( rawValue == null )
             {
                 return new String[ 0 ];
             }
             
             Collection<Object> values =
-                ArrayPropertyUtil.neoValueToCollection( neoValue );
+                ArrayPropertyUtil.propertyValueToCollection( rawValue );
             String[] result = new String[ values.size() ];
             int counter = 0;
             for ( Object value : values )

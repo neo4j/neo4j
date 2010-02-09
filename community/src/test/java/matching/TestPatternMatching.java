@@ -40,7 +40,7 @@ public class TestPatternMatching extends TestCase
 	protected void setUp() throws Exception
 	{
 		super.setUp();
-		graphDb = new EmbeddedGraphDatabase( "target/var/neo" );
+		graphDb = new EmbeddedGraphDatabase( "target/var/db" );
 		tx = graphDb.beginTx();
 	}
 

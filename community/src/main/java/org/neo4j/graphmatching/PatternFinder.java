@@ -316,11 +316,11 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         return relItr;
     }
 
-    private boolean checkProperties( PatternNode patternNode, Node neoNode )
+    private boolean checkProperties( PatternNode patternNode, Node node )
     {
         for ( String propertyName : patternNode.getPropertiesExist() )
         {
-            if ( !neoNode.hasProperty( propertyName ) )
+            if ( !node.hasProperty( propertyName ) )
             {
                 return false;
             }
@@ -328,7 +328,7 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
 
         for ( String propertyName : patternNode.getPropertiesEqual() )
         {
-            if ( !neoPropertyHasValue( neoNode, patternNode, propertyName ) )
+            if ( !hasPropertyValue( node, patternNode, propertyName ) )
             {
                 return false;
             }
@@ -338,11 +338,11 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
     }
 
     private boolean checkProperties( PatternRelationship patternRel,
-        Relationship neoRel )
+        Relationship rel )
     {
         for ( String propertyName : patternRel.getPropertiesExist() )
         {
-            if ( !neoRel.hasProperty( propertyName ) )
+            if ( !rel.hasProperty( propertyName ) )
             {
                 return false;
             }
@@ -350,7 +350,7 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
 
         for ( String propertyName : patternRel.getPropertiesEqual() )
         {
-            if ( !neoPropertyHasValue( neoRel, patternRel, propertyName ) )
+            if ( !hasPropertyValue( rel, patternRel, propertyName ) )
             {
                 return false;
             }
@@ -359,34 +359,34 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         return true;
     }
 
-    private boolean neoPropertyHasValue( Node neoNode, PatternNode patternNode,
+    private boolean hasPropertyValue( Node node, PatternNode patternNode,
         String propertyName )
     {
-        if ( !neoNode.hasProperty( propertyName ) )
+        if ( !node.hasProperty( propertyName ) )
         {
             return false;
         }
         Object[] patternValues = patternNode.getPropertyValue( propertyName );
-        Object neoValue = neoNode.getProperty( propertyName );
-        Collection<Object> neoValues = ArrayPropertyUtil
-            .neoValueToCollection( neoValue );
-        neoValues.retainAll( Arrays.asList( patternValues ) );
-        return !neoValues.isEmpty();
+        Object rawValue = node.getProperty( propertyName );
+        Collection<Object> rawValues = ArrayPropertyUtil
+            .propertyValueToCollection( rawValue );
+        rawValues.retainAll( Arrays.asList( patternValues ) );
+        return !rawValues.isEmpty();
     }
 
-    private boolean neoPropertyHasValue( Relationship neoRel,
+    private boolean hasPropertyValue( Relationship rel,
         PatternRelationship patternRel, String propertyName )
     {
-        if ( !neoRel.hasProperty( propertyName ) )
+        if ( !rel.hasProperty( propertyName ) )
         {
             return false;
         }
         Object[] patternValues = patternRel.getPropertyValue( propertyName );
-        Object neoValue = neoRel.getProperty( propertyName );
-        Collection<Object> neoValues = ArrayPropertyUtil
-            .neoValueToCollection( neoValue );
-        neoValues.retainAll( Arrays.asList( patternValues ) );
-        return !neoValues.isEmpty();
+        Object rawValue = rel.getProperty( propertyName );
+        Collection<Object> rawValues = ArrayPropertyUtil
+            .propertyValueToCollection( rawValue );
+        rawValues.retainAll( Arrays.asList( patternValues ) );
+        return !rawValues.isEmpty();
     }
 
     public Iterator<PatternMatch> iterator()
