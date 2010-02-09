@@ -20,11 +20,11 @@ import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
 import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 
-public class ClosenessCentralityTest extends NeoAlgoTestCase
+public class ClosenessCentralityTest extends Neo4jAlgoTestCase
 {
     public ClosenessCentralityTest( String name )
     {

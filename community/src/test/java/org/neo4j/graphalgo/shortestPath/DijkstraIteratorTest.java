@@ -23,12 +23,12 @@ import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
 import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
 import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-public class DijkstraIteratorTest extends NeoAlgoTestCase
+public class DijkstraIteratorTest extends Neo4jAlgoTestCase
 {
     public DijkstraIteratorTest( String arg0 )
     {

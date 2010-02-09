@@ -29,7 +29,7 @@ public class SimpleGraphBuilder
 {
     public static final String KEY_ID = "__simpleGraphBuilderId__";
     
-    GraphDatabaseService neo;
+    GraphDatabaseService graphDb;
     HashMap<String,Node> nodes;
     HashMap<Node,String> nodeNames;
     Set<Relationship> edges;
@@ -39,7 +39,7 @@ public class SimpleGraphBuilder
         RelationshipType relationshipType )
     {
         super();
-        this.neo = graphDb;
+        this.graphDb = graphDb;
         nodes = new HashMap<String,Node>();
         nodeNames = new HashMap<Node,String>();
         edges = new HashSet<Relationship>();
@@ -78,7 +78,7 @@ public class SimpleGraphBuilder
 
     public Node makeNode( String id )
     {
-        Node node = neo.createNode();
+        Node node = graphDb.createNode();
         nodes.put( id, node );
         nodeNames.put( node, id );
         node.setProperty( KEY_ID, id );

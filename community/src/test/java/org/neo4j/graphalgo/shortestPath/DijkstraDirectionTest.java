@@ -20,7 +20,7 @@ import java.util.HashMap;
 
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 
@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Relationship;
  * @author Patrik Larsson
  * @see CostEvaluator
  */
-public class DijkstraDirectionTest extends NeoAlgoTestCase
+public class DijkstraDirectionTest extends Neo4jAlgoTestCase
 {
     public DijkstraDirectionTest( String arg0 )
     {

@@ -17,10 +17,10 @@
 package org.neo4j.graphalgo.shortestPath;
 
 import org.neo4j.graphalgo.shortestpath.FindSinglePath;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
 
-public class FindSinglePathTest extends NeoAlgoTestCase
+public class FindSinglePathTest extends Neo4jAlgoTestCase
 {
     public FindSinglePathTest( String arg0 )
     {

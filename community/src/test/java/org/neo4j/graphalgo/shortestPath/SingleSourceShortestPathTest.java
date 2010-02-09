@@ -19,14 +19,14 @@ package org.neo4j.graphalgo.shortestPath;
 import java.util.List;
 
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-public abstract class SingleSourceShortestPathTest extends NeoAlgoTestCase
+public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
 {
     public SingleSourceShortestPathTest( String name )
     {

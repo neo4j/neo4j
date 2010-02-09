@@ -22,12 +22,12 @@ import java.util.Set;
 
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-public abstract class EigenvectorCentralityTest extends NeoAlgoTestCase
+public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
 {
     public EigenvectorCentralityTest( String arg0 )
     {

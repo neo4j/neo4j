@@ -17,11 +17,11 @@
 package org.neo4j.graphalgo.shortestPath;
 
 import org.neo4j.graphalgo.shortestpath.FindSingleShortestPath;
-import org.neo4j.graphalgo.testUtil.NeoAlgoTestCase;
+import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
 import org.neo4j.graphdb.Node;
 
-public class FindSingleShortestPathTest extends NeoAlgoTestCase
+public class FindSingleShortestPathTest extends Neo4jAlgoTestCase
 {
     public FindSingleShortestPathTest( String arg0 )
     {
