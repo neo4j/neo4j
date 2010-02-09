@@ -120,6 +120,26 @@ public class TestBatchInsert extends TestCase
         graphDb.shutdown();
     }
     
+    public void testBadStuff()
+    {
+        BatchInserter graphDb = newBatchInserter();
+        long startNode = graphDb.createNode( properties );
+        try
+        {
+            graphDb.createRelationship( startNode, startNode, relTypeArray[0], 
+                    properties );
+            fail( "Could create relationship with same start and end node" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // good
+        }
+        finally
+        {
+            graphDb.shutdown();
+        }
+    }
+    
     private void setProperties( Node node )
     {
         for ( String key : properties.keySet() )
@@ -171,6 +191,15 @@ public class TestBatchInsert extends TestCase
         {
             Node endNode = graphDb.createNode();
             startNode.createRelationshipTo( endNode, relTypeArray[i] ); 
+        }
+        try
+        {
+            startNode.createRelationshipTo( startNode, relTypeArray[0] );
+            fail( "Could create relationship with same start and end node" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // ok good
         }
         for ( int i = 0; i < 5; i++ )
         {

@@ -130,6 +130,11 @@ public class BatchInserterImpl implements BatchInserter
     public long createRelationship( long node1, long node2, RelationshipType
         type, Map<String,Object> properties )
     {
+        if ( node1 == node2 )
+        {
+            throw new IllegalArgumentException( "Start node[" + node1 + 
+                    "] equals end node[" + node2 + "]" );
+        }
         int firstNodeId = (int) (node1 & 0xFFFFFFFF );
         int secondNodeId = (int) (node2 & 0xFFFFFFFF );
         NodeRecord firstNode = getNodeRecord( node1 );
