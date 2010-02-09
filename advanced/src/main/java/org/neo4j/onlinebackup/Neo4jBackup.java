@@ -25,7 +25,7 @@ import java.util.logging.SimpleFormatter;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
- * Online backup implementation for neo4j.
+ * Online backup implementation for Neo4j.
  */
 public class Neo4jBackup implements Backup
 {
@@ -209,7 +209,7 @@ public class Neo4jBackup implements Backup
     private void runSimpleBackup( final Neo4jResource srcResource,
         final Neo4jResource dstResource ) throws IOException
     {
-        NeoBackupTask task = new NeoBackupTask( srcResource.getDataSource(),
+        Neo4jBackupTask task = new Neo4jBackupTask( srcResource.getDataSource(),
             dstResource.getDataSource() );
         task.prepare();
         task.run();
@@ -228,7 +228,7 @@ public class Neo4jBackup implements Backup
     private void runMultiBackup( final Neo4jResource srcResource,
         final Neo4jResource dstResource ) throws IOException
     {
-        List<NeoBackupTask> tasks = new ArrayList<NeoBackupTask>();
+        List<Neo4jBackupTask> tasks = new ArrayList<Neo4jBackupTask>();
         logger.info( "Checking and preparing " + xaNames.toString()
             + " data sources." );
         for ( String xaName : xaNames )
@@ -257,7 +257,7 @@ public class Neo4jBackup implements Backup
                 }
                 else
                 {
-                    NeoBackupTask task = new NeoBackupTask( srcDataSource,
+                    Neo4jBackupTask task = new Neo4jBackupTask( srcDataSource,
                         dstDataSource );
                     task.prepare();
                     tasks.add( task );
@@ -272,7 +272,7 @@ public class Neo4jBackup implements Backup
         }
         else
         {
-            for ( NeoBackupTask task : tasks )
+            for ( Neo4jBackupTask task : tasks )
             {
                 task.run();
             }
@@ -284,7 +284,7 @@ public class Neo4jBackup implements Backup
      * Class to handle backup tasks. It separates preparing and running the
      * backup.
      */
-    private class NeoBackupTask
+    private class Neo4jBackupTask
     {
         private final XaDataSourceResource src;
         private final XaDataSourceResource dst;
@@ -301,7 +301,7 @@ public class Neo4jBackup implements Backup
          * @param resourceName
          *            name of data source
          */
-        private NeoBackupTask( final XaDataSourceResource src,
+        private Neo4jBackupTask( final XaDataSourceResource src,
             final XaDataSourceResource dst )
         {
             this.src = src;
