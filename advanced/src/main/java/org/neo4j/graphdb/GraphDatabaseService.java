@@ -33,7 +33,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * <pre>
  * <code>GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "var/graphDb" );
  * // ... use Neo4j
- * graphDb.{@link·#shutdown()·shutdown};</code>
+ * graphDb.{@link #shutdown() shutdown()};</code>
  * </pre>
  * 
  * GraphDatabaseService provides operations to {@link #enableRemoteShell enable
@@ -159,7 +159,8 @@ public interface GraphDatabaseService
      * @throws IllegalStateException if the shell library is available, but the
      *             remote shell can't be enabled anyway
      */
-    public boolean enableRemoteShell( Map<String,Serializable> initialProperties );
+    public boolean enableRemoteShell(
+            Map<String, Serializable> initialProperties );
 
     /**
      * Starts a new transaction and associates it with the current thread.
