@@ -1,0 +1,11 @@
+[2010-02-09] Coding style does not adhere to Neo4j standards
+    The Graph Algorithms component was created by an intern in 2008 as
+    part of a masters thesis project. It has not been properly refactored
+    to fit into the Neo4j ecosystem since then, only had minor bug-fixes.
+
+[2010-02-09] The algorithms are not tuned for large graphs
+    Almost all algorithms in this package are written for, tested for,
+    and optimized for relatively small graphs (tens-hundreds of thousands of
+    nodes with thousands of relationships each[?]).
+    As many algorithms as possible should be made to work on much larger graphs
+    and where that is not possible, the limitations should be documented.
