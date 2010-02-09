@@ -1,0 +1,10 @@
+[2010-02-09] Support declarative stylings
+    To work with the graphviz generator you have to write code to define
+    the styling of the generated visual graph. If we had a declarative
+    way of defining these, or a simple API for scripting languages,
+    this tool would be more useful as a command line utility.
+
+[2010-02-09] Support traversers in the command line tool
+    At the moment the command line tool iterates over the entire graph
+    and visializes it. It would be more useful to iterate over subgraphs
+    defined by some traversal.
