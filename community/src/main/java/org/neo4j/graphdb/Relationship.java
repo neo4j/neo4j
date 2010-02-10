@@ -33,8 +33,8 @@ package org.neo4j.graphdb;
  * Relationship rel = node.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( otherNode, MyRels.REL_TYPE );
  * </code>
  * <p>
- * Neo4j doesn't support relationship where the start node and end node are the
- * same.
+ * <em>Neo4j doesn't support relationships where the start node and end node are the
+ * same.</em>
  * <p>
  * The fact that the relationship API gives meaning to {@link #getStartNode()
  * start} and {@link #getEndNode() end} nodes implicitly means that all
@@ -58,7 +58,7 @@ package org.neo4j.graphdb;
  * 
  * Even though all relationships have a direction they are equally well
  * traversed in both directions so there's no need to create duplicate
- * relationships in the opposite direction (in regards to traversal or
+ * relationships in the opposite direction (with regard to traversal or
  * performance).
  * <p>
  * Furthermore, Neo4j guarantees that a relationship is never "hanging freely,"
@@ -66,16 +66,16 @@ package org.neo4j.graphdb;
  * {@link #getOtherNode(Node)} and {@link #getNodes()} are guaranteed to always
  * return valid, non-null nodes.
  * <p>
- * A relationship's id is unique, but may not be unique over time since neo4j
- * reuses deleted ids. See http://wiki.neo4j.org/content/Id_Reuse
+ * The id of a relationship is unique, but may not be unique over time since
+ * neo4j reuses deleted ids. See http://wiki.neo4j.org/content/Id_Reuse
  */
 public interface Relationship extends PropertyContainer
 {
     /**
      * Returns the unique id of this relationship. Ids are garbage collected
-     * over time so are only guaranteed to be unique at a specific set of time:
-     * if the relationship is deleted, it's likely that a new relationship at
-     * some point will get the old id. This make relationship ids brittle as
+     * over time so they are only guaranteed to be unique during a specific time
+     * span: if the relationship is deleted, it's likely that a new relationship
+     * at some point will get the old id. This makes relationship ids brittle as
      * public APIs.
      * 
      * @return the id of this node
@@ -116,8 +116,8 @@ public interface Relationship extends PropertyContainer
      * a start node, the end node will be returned, and vice versa. This is a
      * very convenient operation when you're manually traversing the node space
      * by invoking one of the {@link Node#getRelationships() getRelationships()}
-     * operations on node. For example, to get the node "at the other end" of a
-     * relationship, use the following:
+     * operations on a node. For example, to get the node "at the other end" of
+     * a relationship, use the following:
      * <p>
      * <code>
 	 * Node endNode = node.getSingleRelationship( MyRels.REL_TYPE ).getOtherNode ( node );
@@ -134,7 +134,7 @@ public interface Relationship extends PropertyContainer
     public Node getOtherNode( Node node );
 
     /**
-     * Returns the two nodes that are attached to this relationship. First
+     * Returns the two nodes that are attached to this relationship. The first
      * element in the array will be the start node, the second element the end
      * node.
      * 
@@ -144,7 +144,7 @@ public interface Relationship extends PropertyContainer
 
     /**
      * Returns the type of this relationship. A relationship's type is an
-     * immutable property that is specified at Relationship
+     * immutable attribute that is specified at Relationship
      * {@link Node#createRelationshipTo creation}. Remember that relationship
      * types are semantically equivalent if their
      * {@link RelationshipType#name() names} are {@link Object#equals(Object)
