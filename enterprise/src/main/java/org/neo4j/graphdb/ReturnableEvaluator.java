@@ -55,7 +55,7 @@ public interface ReturnableEvaluator
      */
     public static final ReturnableEvaluator ALL = new ReturnableEvaluator()
     {
-        public boolean isReturnableNode( TraversalPosition currentPosition )
+        public boolean isReturnableNode( final TraversalPosition currentPosition )
         {
             return true;
         }
@@ -64,18 +64,17 @@ public interface ReturnableEvaluator
     /**
      * A returnable evaluator that returns all nodes except the start node.
      */
-    public static final ReturnableEvaluator ALL_BUT_START_NODE =
-        new ReturnableEvaluator()
+    public static final ReturnableEvaluator ALL_BUT_START_NODE = new ReturnableEvaluator()
+    {
+        public boolean isReturnableNode( final TraversalPosition currentPosition )
         {
-            public boolean isReturnableNode( TraversalPosition currentPosition )
-            {
-                return currentPosition.notStartNode();
-            }
-        };
+            return currentPosition.notStartNode();
+        }
+    };
 
     /**
-     * Method invoked by traverser to see if current position is a returnable
-     * node.
+     * Method invoked by traverser to see if the current position is a
+     * returnable node.
      * 
      * @param currentPos the traversal position
      * @return True if current position is a returnable node

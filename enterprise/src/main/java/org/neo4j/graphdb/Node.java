@@ -60,9 +60,9 @@ public interface Node extends PropertyContainer
 {
     /**
      * Returns the unique id of this node. Ids are garbage collected over time
-     * so are only guaranteed to be unique at a specific set of time: if the
-     * node is deleted, it's likely that a new node at some point will get the
-     * old id. <b>Note</b>: this makes node ids brittle as public APIs.
+     * so they are only guaranteed to be unique during a specific time span: if
+     * the node is deleted, it's likely that a new node at some point will get
+     * the old id. <b>Note</b>: this makes node ids brittle as public APIs.
      * 
      * @return the id of this node
      */
@@ -71,9 +71,9 @@ public interface Node extends PropertyContainer
     /**
      * Deletes this node if it has no relationships attached to it. If
      * <code>delete()</code> is invoked on a node with relationships, an
-     * unchecked exception will be raised. Invoking any methods on this node
-     * after <code>delete()</code> has returned is invalid and will lead to
-     * unspecified behavior.
+     * unchecked exception will be raised when the transaction is committed.
+     * Invoking any methods on this node after <code>delete()</code> has
+     * returned is invalid and will lead to unspecified behavior.
      * 
      * @throws RuntimeException if this node has relationships attached to it
      */

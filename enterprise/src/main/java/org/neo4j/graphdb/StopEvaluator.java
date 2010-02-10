@@ -31,7 +31,7 @@ package org.neo4j.graphdb;
  * <p>
  * When implementing a StopEvaluator, the client investigates the information
  * encapsulated in a {@link TraversalPosition} to decide whether to block
- * traversal beyond a node. For example, here's a snippet detailing a
+ * traversal beyond a node or not. For example, here's a snippet detailing a
  * StopEvaluator that blocks traversal beyond a node if it has a certain
  * property value:
  * 
@@ -64,7 +64,7 @@ public interface StopEvaluator
      */
     public static final StopEvaluator END_OF_GRAPH = new StopEvaluator()
     {
-        public boolean isStopNode( TraversalPosition currentPosition )
+        public boolean isStopNode( final TraversalPosition currentPosition )
         {
             return false;
         }
@@ -75,7 +75,7 @@ public interface StopEvaluator
      */
     public static final StopEvaluator DEPTH_ONE = new StopEvaluator()
     {
-        public boolean isStopNode( TraversalPosition currentPosition )
+        public boolean isStopNode( final TraversalPosition currentPosition )
         {
             return currentPosition.depth() >= 1;
         }

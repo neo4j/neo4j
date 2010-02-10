@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * A relationship type is mandatory on all relationships and is used to navigate
@@ -63,9 +62,6 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * </code>
  * </pre>
  * 
- * Please note that in early 1.0 betas, you were required to supply an enum of
- * RelationshipTypes to the {@link EmbeddedGraphDatabase} constructor, or
- * register valid relationship types. This is no longer needed.
  * <p>
  * It's very important to note that a relationship type is uniquely identified
  * by its name, not by any particular instance that implements this interface.

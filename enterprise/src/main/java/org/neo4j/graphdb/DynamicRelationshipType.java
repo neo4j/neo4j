@@ -55,12 +55,12 @@ public final class DynamicRelationshipType implements RelationshipType
 {
     private final String name;
 
-    private DynamicRelationshipType( String name )
+    private DynamicRelationshipType( final String name )
     {
         if ( name == null )
         {
             throw new IllegalArgumentException( "A relationship type cannot "
-                + "have a null name" );
+                                                + "have a null name" );
         }
         this.name = name;
     }
@@ -68,13 +68,13 @@ public final class DynamicRelationshipType implements RelationshipType
     /**
      * Instantiates a new DynamicRelationshipType with the given name, without
      * creating it in the underlying storage. The relationship type is persisted
-     * only when the first relationship of this type has been committed.
+     * only when the first relationship of this type is created.
      * 
      * @param name the name of the dynamic relationship type
      * @return a DynamicRelationshipType with the given name
      * @throws IllegalArgumentException if name is <code>null</code>
      */
-    public static DynamicRelationshipType withName( String name )
+    public static DynamicRelationshipType withName( final String name )
     {
         return new DynamicRelationshipType( name );
     }
@@ -119,7 +119,7 @@ public final class DynamicRelationshipType implements RelationshipType
      * @see java.lang.Object#equals(java.lang.Object)
      */
     @Override
-    public boolean equals( Object other )
+    public boolean equals( final Object other )
     {
         return super.equals( other );
     }
@@ -128,9 +128,9 @@ public final class DynamicRelationshipType implements RelationshipType
      * Implements the default hash function as defined by {@link Object
      * java.lang.Object}. This means that if you put a dynamic relationship
      * instance into a hash-based collection, it most likely will NOT behave as
-     * you expect. Please see documentation of {@link #equals(Object) equals}
-     * and the {@link DynamicRelationshipType class documentation} for more
-     * details.
+     * you expect. Please see the documentation of {@link #equals(Object)
+     * equals} and the {@link DynamicRelationshipType class documentation} for
+     * more details.
      * 
      * @return a hash code value for this dynamic relationship type instance
      * @see java.lang.Object#hashCode()
