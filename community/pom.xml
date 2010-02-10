@@ -84,7 +84,7 @@
                 <!-- the java api link won't be found automatically -->
                 <link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
               </links>
-              <excludePackageNames>*.impl.*</excludePackageNames>
+              <excludePackageNames>*.impl.*:org.neo4j.shell</excludePackageNames>
               <groups>
                 <group>
                   <title>Kernel</title>
@@ -93,11 +93,11 @@
                 </group>
                 <group>
                   <title>Index</title>
-                  <packages>org.neo4j.index*</packages>
+                  <packages>org.neo4j.index:org.neo4j.index.*</packages>
                 </group>
                 <group>
                   <title>Remote</title>
-                  <packages>org.neo4j.remote*</packages>
+                  <packages>org.neo4j.remote:org.neo4j.remote.*</packages>
                 </group>
               </groups>
             </configuration>
