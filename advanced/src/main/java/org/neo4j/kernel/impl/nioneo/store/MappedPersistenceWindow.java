@@ -56,7 +56,8 @@ class MappedPersistenceWindow extends LockableWindow
         catch ( IOException e )
         {
             this.position = -1;
-            throw new MappedMemException( e );
+            throw new MappedMemException( "Unable to map pos=" + position + 
+                    " recordSize=" + recordSize + " totalSize=" + totalSize, e );
         }
     }
 
