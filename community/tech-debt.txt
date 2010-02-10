@@ -1,0 +1,9 @@
+[2010-02-10] Write more tests
+    There's basically no tests for all the functionality in the shell
+    please fix it
+    
+[2010-02-10] Break out generic shell framework from kernel-specific code
+    The shell is generic by default and can be used for anything,
+    f.ex kernel (GraphDatabaseService) stuff. Now these two "packages"
+    are in the same component... It'd be nice to break out the generic
+    package so that it can be used for other stuff/tools as well.
