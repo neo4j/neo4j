@@ -25,4 +25,9 @@ class MappedMemException extends RuntimeException
     {
         super( cause );
     }
+
+    MappedMemException( String msg, Throwable cause )
+    {
+        super( msg, cause );
+    }
 }
