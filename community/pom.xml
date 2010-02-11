@@ -1,6 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
->
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-apoc-examples</artifactId>
@@ -84,7 +83,7 @@
                 <!-- the java api link won't be found automatically -->
                 <link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
               </links>
-              <excludePackageNames>*.impl.*:org.neo4j.shell</excludePackageNames>
+              <excludePackageNames>*.impl.*:org.neo4j.shell:org.neo4j.remote.inspect</excludePackageNames>
               <groups>
                 <group>
                   <title>Kernel</title>
