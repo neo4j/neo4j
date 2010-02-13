@@ -161,7 +161,7 @@ public abstract class AbstractClient implements ShellClient
             if ( this.console == null )
             {
                 System.out.println( "Want bash-like features? throw in " +
-                "jLine on the classpath" );
+                        "jLine (http://jline.sourceforge.net) on the classpath" );
                 this.console = new StandardConsole();
             }
             this.getOutput().println();
