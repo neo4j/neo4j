@@ -55,7 +55,6 @@ public class Index extends GraphDatabaseApp
     @Override
     public void shutdown()
     {
-        System.out.println( "app shutdown" );
         for ( Object indexService : this.indexServices.values() )
         {
             try
