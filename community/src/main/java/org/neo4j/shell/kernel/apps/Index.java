@@ -1,6 +1,5 @@
 package org.neo4j.shell.kernel.apps;
 
-import java.lang.reflect.Method;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,31 +10,17 @@ import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.impl.SameJvmSession;
 
 public class Index extends GraphDatabaseApp
 {
     public static final String KEY_INDEX_CLASS_NAME = "INDEX_CLASS_NAME";
     
-    // TODO Can't we fetch these from somewhere?
-    private static final Map<String, String> DATA_SOURCE_NAMES = new HashMap<String, String>();
-    static
-    {
-        DATA_SOURCE_NAMES.put( "org.neo4j.index.lucene.LuceneIndexService", "lucene" );
-        DATA_SOURCE_NAMES.put( "org.neo4j.index.lucene.LuceneFulltextIndexService",
-                "lucene-fulltext" );
-    }
-    
-    private Map<String, IndexServiceContext> contexts =
-            new HashMap<String, IndexServiceContext>();
+    private Map<String, Object> indexServices = new HashMap<String, Object>();
     private boolean firstRun = true;
     
     {
@@ -70,26 +55,22 @@ public class Index extends GraphDatabaseApp
     @Override
     public void shutdown()
     {
-        for ( IndexServiceContext context : this.contexts.values() )
+        System.out.println( "app shutdown" );
+        for ( Object indexService : this.indexServices.values() )
         {
-            if ( !context.instantiatedHere )
-            {
-                continue;
-            }
-            
             try
             {
-                context.indexService.getClass().getMethod( "shutdown" ).invoke(
-                        context.indexService );
+                indexService.getClass().getMethod( "shutdown" ).invoke(
+                        indexService );
             }
             catch ( Exception e )
             {
                 // TODO OK?
                 System.out.println( "Couldn't shut down index service " +
-                        context + ", " + context.getClass() );
+                        indexService + ", " + indexService.getClass() );
             }
         }
-        this.contexts.clear();
+        this.indexServices.clear();
     }
 
     @Override
@@ -260,58 +241,18 @@ public class Index extends GraphDatabaseApp
         }
         
         // TODO OK to synchronize on this?
-        IndexServiceContext context = null;
-        synchronized ( this.contexts )
+        Object indexService = null;
+        synchronized ( this.indexServices )
         {
-            context = this.contexts.get( className );
-            if ( context == null )
+            indexService = this.indexServices.get( className );
+            if ( indexService == null )
             {
-                // Instantiate/get the new IndexService
-                if ( session instanceof SameJvmSession )
-                {
-                    // Instantiate a new one since this is in the same JVM
-                    context = new IndexServiceContext( Class.forName( className ).getConstructor(
-                            GraphDatabaseService.class ).newInstance(
-                                    this.getServer().getDb() ), true );
-                }
-                else
-                {
-                    // Look up the IndexService via the XA data source manager
-                    XaDataSourceManager xaManager = ( (EmbeddedGraphDatabase) getServer().getDb() )
-                            .getConfig().getTxModule().getXaDataSourceManager();
-                    String xaName = DATA_SOURCE_NAMES.get( className );
-                    if ( xaName == null )
-                    {
-                        throw new ShellException( "Unrecognized index service " + className );
-                    }
-                    if ( !xaManager.hasDataSource( xaName ) )
-                    {
-                        throw new ShellException( "Data source " + className + " not registered" );
-                    }
-                    
-                    // TODO We only support LuceneIndexService (or derivatives), not good
-                    XaDataSource dataSource = xaManager.getXaDataSource( xaName );
-                    Method getterMethod = dataSource.getClass().getMethod( "getIndexService" );
-                    getterMethod.setAccessible( true );
-                    context = new IndexServiceContext(
-                            getterMethod.invoke( dataSource ), false );
-                }
-                // TODO Check so that it's an IndexService
-                this.contexts.put( className, context );
+                indexService = Class.forName( className ).getConstructor(
+                        GraphDatabaseService.class ).newInstance(
+                                this.getServer().getDb() );
+                this.indexServices.put( className, indexService );
             }
         }
-        return context.indexService;
-    }
-    
-    class IndexServiceContext
-    {
-        private final Object indexService;
-        private final boolean instantiatedHere;
-        
-        IndexServiceContext( Object indexService, boolean instantiatedHere )
-        {
-            this.indexService = indexService;
-            this.instantiatedHere = instantiatedHere;
-        }
+        return indexService;
     }
 }
