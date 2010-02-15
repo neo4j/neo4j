@@ -141,8 +141,8 @@ public class XaLogicalLog
             }
             else
             {
-                setActiveLog( LOG1 );
                 open( fileName + ".1" );
+                setActiveLog( LOG1 );
             }
         }
         else
@@ -177,8 +177,8 @@ public class XaLogicalLog
                     throw new IllegalStateException( 
                         "Active marked as clean but log " + newLog + " exist" );
                 }
-                setActiveLog( LOG1 );
                 open( newLog );
+                setActiveLog( LOG1 );
             }
             else if ( c == LOG1 )
             {
