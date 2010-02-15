@@ -588,10 +588,6 @@ public class TxManager implements TransactionManager
             catch ( StoreFailureException e )
             {
                 sfe = e;
-                e.printStackTrace();
-                log.severe( "Commit failed, status="
-                        + getTxStatusAsString( tx.getStatus() ) + 
-                        " caused by " + e );
             }
         }
         if ( tx.getStatus() != Status.STATUS_COMMITTED )
@@ -608,6 +604,10 @@ public class TxManager implements TransactionManager
                     + "Neo4j kernel should be SHUTDOWN for "
                     + "resource maintance and transaction recovery ---->" );
                 tmOk = false;
+                if ( sfe != null )
+                {
+                    sfe.printStackTrace();
+                }
                 throw new HeuristicMixedException(
                     "Unable to rollback ---> error code in commit: "
                         + xaErrorCode + " ---> error code for rollback: "
