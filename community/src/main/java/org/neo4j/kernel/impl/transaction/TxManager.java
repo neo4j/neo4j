@@ -588,7 +588,10 @@ public class TxManager implements TransactionManager
             catch ( StoreFailureException e )
             {
                 sfe = e;
-                // ok we should have status not committed and
+                e.printStackTrace();
+                log.severe( "Commit failed, status="
+                        + getTxStatusAsString( tx.getStatus() ) + 
+                        " caused by " + e );
             }
         }
         if ( tx.getStatus() != Status.STATUS_COMMITTED )
