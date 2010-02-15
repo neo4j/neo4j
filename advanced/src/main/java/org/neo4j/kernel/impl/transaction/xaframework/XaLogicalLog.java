@@ -728,10 +728,14 @@ public class XaLogicalLog
         logVersion = buffer.getLong();
         log.fine( "Logical log version: " + logVersion );
         long logEntriesFound = 0;
+        long lastEntryPos = fileChannel.position();
         while ( readEntry() )
         {
             logEntriesFound++;
+            lastEntryPos = fileChannel.position();
         }
+        // make sure we overwrite any broken records
+        fileChannel.position( lastEntryPos );
         scanIsComplete = true;
         log.fine( "Internal recovery completed, scanned " + logEntriesFound
             + " log entries." );
