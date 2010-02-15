@@ -589,6 +589,10 @@ abstract class Command extends XaCommand
                 }
                 buffer.flip();
                 PropertyType type = getType( buffer.getInt() );
+                if ( type == null )
+                {
+                    return null;
+                }
                 record.setType( type );
                 record.setInUse( inUse );
                 record.setKeyIndexId( buffer.getInt() );
@@ -640,6 +644,8 @@ abstract class Command extends XaCommand
                     return PropertyType.ARRAY;
                 case 10:
                     return PropertyType.SHORT;
+                case 0:
+                    return null;
             }
             throw new InvalidRecordException( "Unknown property type:" + type );
         }
