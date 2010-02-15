@@ -106,7 +106,9 @@ public class EigenvectorCentralityArnoldi implements EigenvectorCentrality
 
     /**
      * Internal calculate method that will do the calculation. This can however
-     * be called externally to manually trigger the calculation.
+     * be called externally to manually trigger the calculation.The calculation is
+     * done the first time this method is run. Upon successive requests, the old
+     * result is returned, unless the calculation is reset via {@link #reset()}
      */
     public void calculate()
     {
@@ -422,7 +424,9 @@ public class EigenvectorCentralityArnoldi implements EigenvectorCentrality
     }
 
     /**
-     * Limit the maximum number of iterations to run.
+     * Limit the maximum number of iterations to run. Per default,
+     * the maximum iterations are set to Integer.MAX_VALUE, which should 
+     * be limited to 50-100 normally.
      * @param maxIterations
      *            the maxIterations to set
      */
