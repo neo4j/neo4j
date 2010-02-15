@@ -79,7 +79,9 @@ public class EigenvectorCentralityPower implements EigenvectorCentrality
     /**
      * This can be used to retrieve the result for every node. Will return null
      * if the node is not contained in the node set initially given, or doesn't
-     * receive a result because no relationship points to it.
+     * receive a result because no relationship points to it. The calculation is
+     * done the first time this method is run. Upon successive requests, the old
+     * result is returned, unless the calculation is reset via {@link #reset()}
      * @param node
      * @return
      */
@@ -279,7 +281,9 @@ public class EigenvectorCentralityPower implements EigenvectorCentrality
     }
 
     /**
-     * Limit the maximum number of iterations to run.
+     * Limit the maximum number of iterations to run. Per default,
+     * the maximum iterations are set to Integer.MAX_VALUE, which should 
+     * be limited to 50-100 normally.
      * @param maxIterations
      *            the maxIterations to set
      */
