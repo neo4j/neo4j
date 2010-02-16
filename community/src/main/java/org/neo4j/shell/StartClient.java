@@ -21,6 +21,7 @@ package org.neo4j.shell;
 
 import java.util.Map;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.shell.impl.AbstractStarter;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
