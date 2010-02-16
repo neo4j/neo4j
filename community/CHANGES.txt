@@ -1,3 +1,21 @@
+1.0 (2010-02-16)
+----------------
+
+-API 
+o Updated javadoc.
+
+-Bug fixes
+o Fixed leak of non committed property changes to other transactions.
+o Fixed cache duplication bug of relationships.
+o Fixed problem that could cause other exception to be thrown than 
+  NotFoundException on getNodeById/RelationshipById.
+o Fixed problem with recovery when LuceneFulltextIndex entries existed 
+  in global transaction log.
+o BatchInserter now throws exception when trying to create a relationship
+  with same start and end node.
+o Fixed problem with broken entries in logical log that could cause recovery 
+  to throw an exception.
+
 1.0-rc (2010-01-10)
 ------------------
 
