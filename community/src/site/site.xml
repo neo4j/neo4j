@@ -21,7 +21,7 @@
 			<item name="JavaDocs"
 				href="apidocs/index.html" />
 			<item name="Source Repository"
-				href="https://svn.neo4j.org/components/${project.artifactId}/trunk/" />
+				href="https://svn.neo4j.org/components/graph-matching/trunk/" />
 		</menu>
         <menu ref="reports" />
 	</body>
