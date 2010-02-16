@@ -1,4 +1,4 @@
-Neo4j Apoc 0.6 - Basic Neo4j examples
+Neo4j Apoc 1.0 - Basic Neo4j examples
 
 This is Apoc -- A Package Of Components for Neo4j. The purpose of this package
 is to provide an easy-to-get-going distribution of Neo4j graph database and a
@@ -10,7 +10,7 @@ Included in this release of Apoc is:
    neo4j-kernel:         the neo4j graph database engine
    neo4j-index:          indexing and data structures
    neo4j-remote-graphdb: thin layer to enable remote access to a neo4j instance
-   neo4j-shell:          text command shell for browsing the node space
+   neo4j-shell:          text command shell for browsing the graph
    
 You can run the examples from the Unix and Windows start scripts in the bin/
 directory.
