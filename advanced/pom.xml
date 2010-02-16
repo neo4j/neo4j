@@ -4,7 +4,7 @@
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-apoc-examples</artifactId>
   <name>Neo4j Apoc</name>
-  <version>0.6-SNAPSHOT</version>
+  <version>1.1-SNAPSHOT</version>
   <description>Basic Neo4j examples</description>
   <parent>
     <groupId>org.neo4j</groupId>
@@ -16,7 +16,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-apoc</artifactId>
-      <version>0.6-SNAPSHOT</version>
+      <version>${project.version}</version>
       <type>pom</type>
     </dependency>
   </dependencies>
