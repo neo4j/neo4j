@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-shell</artifactId>
+  <artifactId>neo4j-${short-name}</artifactId>
   <version>1.0-SNAPSHOT</version>
   <name>Neo4j - Generic shell</name>
   <description>
@@ -22,21 +22,22 @@
     <jta.version>1.1</jta.version>
     <neo4j.version>${project.version}</neo4j.version>
     <bundle.namespace>org.neo4j.shell</bundle.namespace>
+    <short-name>shell</short-name>
   </properties>
 
   <packaging>bundle</packaging>
 
   <scm>
     <connection>
-			scm:svn:https://svn.neo4j.org/components/shell/trunk/
+			scm:svn:https://svn.neo4j.org/components/${short-name}/trunk/
 		</connection>
-    <url>https://trac.neo4j.org/browser/components/shell
+    <url>https://trac.neo4j.org/browser/components/${short-name}
 		</url>
   </scm>
 
   <issueManagement>
     <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=shell</url>
+    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
   </issueManagement>
 
   <contributors>
@@ -95,7 +96,7 @@
             <program>
               <mainClass>org.neo4j.shell.StartClient
               </mainClass>
-              <name>neo4j-shell</name>
+              <name>${project.artifactId}</name>
             </program>
           </programs>
         </configuration>
@@ -112,7 +113,7 @@
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
-          <finalName>neo4j-shell-${project.version}-standalone</finalName>
+          <finalName>${project.artifactId}-${project.version}-standalone</finalName>
           <descriptors>
             <descriptor>src/main/assembly/shell-assembly.xml
 						</descriptor>
