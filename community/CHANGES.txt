@@ -1,5 +1,13 @@
+1.0 (2010-02-16)
+----------------
+o Built-in support for --long-options
+o New "alias" app which works like the one in Bash.
+o New "script" app which allows you to execute a file with
+  shell commands in it.
+o New "index" app which can use Neo4j IndexService.
+
 1.0-rc (2010-01-11)
-------------------
+-------------------
 
 o Updated for new naming scheme
 o Depends on kernel component
