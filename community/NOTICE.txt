@@ -6,3 +6,5 @@ This product includes software developed by "Neo Technology,"
 Network Engine for Objects in Lund AB (http://neotechnology.com).
 
 For licensing information, see COPYRIGHT.txt and LICENSE.txt.
+The bundled jLine library is copyright mwp1@cornell.edu
+under the BSD License (http://www.opensource.org/licenses/bsd-license.php)
