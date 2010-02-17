@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-${short-name}</artifactId>
+  <artifactId>neo4j-shell</artifactId>
   <version>1.1-SNAPSHOT</version>
   <name>Neo4j - Generic shell</name>
   <description>
