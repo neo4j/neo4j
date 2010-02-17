@@ -69,13 +69,13 @@ public final class LocalTransport extends Transport
         {
             path = file.getAbsolutePath();
         }
-        GraphDbContainer neo = instances.get( path );
-        if ( neo == null )
+        GraphDbContainer graphDb = instances.get( path );
+        if ( graphDb == null )
         {
-            neo = new GraphDbContainer( new EmbeddedGraphDatabase( path ) );
-            Runtime.getRuntime().addShutdownHook( new Thread( neo ) );
-            instances.put( path, neo );
+            graphDb = new GraphDbContainer( new EmbeddedGraphDatabase( path ) );
+            Runtime.getRuntime().addShutdownHook( new Thread( graphDb ) );
+            instances.put( path, graphDb );
         }
-        return neo;
+        return graphDb;
     }
 }

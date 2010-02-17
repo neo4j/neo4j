@@ -31,14 +31,14 @@ final class BasicConnection implements RemoteConnection
 {
     private final AtomicInteger txIdPool = new AtomicInteger();
     private final BasicGraphDatabaseServer server;
-    final GraphDatabaseService neo;
+    final GraphDatabaseService graphDb;
     private final Map<Integer, BasicServerTransaction> transactions = new ConcurrentHashMap<Integer, BasicServerTransaction>();
     private transient boolean open = true;
 
-    BasicConnection( BasicGraphDatabaseServer server, GraphDatabaseService neo )
+    BasicConnection( BasicGraphDatabaseServer server, GraphDatabaseService graphDb )
     {
         this.server = server;
-        this.neo = neo;
+        this.graphDb = graphDb;
     }
 
     int allocateTransactionId()
@@ -73,7 +73,7 @@ final class BasicConnection implements RemoteConnection
     ResponseBuilder response()
     {
         ResponseBuilder builder = new ResponseBuilder();
-        server.buildResponse( neo, builder );
+        server.buildResponse( graphDb, builder );
         return builder;
     }
 

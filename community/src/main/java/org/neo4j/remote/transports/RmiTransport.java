@@ -206,7 +206,7 @@ public final class RmiTransport extends Transport
             if ( indexService == null )
             {
                 System.err.println( "Could not instantiate index \"" + args[ i ]
-                    + "\"\n    The neo-index component is not loaded." );
+                    + "\"\n    The index component is not loaded." );
                 continue;
             }
             // Separate the index class name from the index service identifier
@@ -219,7 +219,7 @@ public final class RmiTransport extends Transport
             {
                 Class<?> cls = Class.forName( className );
                 Constructor<?> ctor = cls.getConstructor( GraphDatabaseService.class );
-                Object index = ctor.newInstance( server.neo.service );
+                Object index = ctor.newInstance( server.container.service );
                 registerIndexMethod.invoke( server, indexName, index );
                 System.out.println( "Registered index service: " + indexName );
             }

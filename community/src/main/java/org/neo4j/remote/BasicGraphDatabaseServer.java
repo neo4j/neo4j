@@ -242,13 +242,13 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         }
     }
 
-    void buildResponse( GraphDatabaseService neo, ResponseBuilder builder )
+    void buildResponse( GraphDatabaseService graphDb, ResponseBuilder builder )
     {
         // TODO: implement this. Might need redefined interface.
         // This is where extra information for the caches is sent to the client.
     }
 
-    void buildResponse( GraphDatabaseService neo, Object transactionId,
+    void buildResponse( GraphDatabaseService graphDb, Object transactionId,
         ResponseVisitor responseState )
     {
         // TODO: implement this. Might need redefined interface.
@@ -331,12 +331,12 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
 
     // Graph database actions
 
-    SimpleIterator<String> getRelationshipTypes( GraphDatabaseService neo )
+    SimpleIterator<String> getRelationshipTypes( GraphDatabaseService graphDb )
     {
         final Iterator<RelationshipType> types;
-        if ( neo instanceof EmbeddedGraphDatabase )
+        if ( graphDb instanceof EmbeddedGraphDatabase )
         {
-            types = ( ( EmbeddedGraphDatabase ) neo ).getRelationshipTypes().iterator();
+            types = ( ( EmbeddedGraphDatabase ) graphDb ).getRelationshipTypes().iterator();
         }
         else
         {
@@ -359,19 +359,19 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         };
     }
 
-    long createNode( GraphDatabaseService neo )
+    long createNode( GraphDatabaseService graphDb )
     {
-        return neo.createNode().getId();
+        return graphDb.createNode().getId();
     }
 
-    long getReferenceNode( GraphDatabaseService neo )
+    long getReferenceNode( GraphDatabaseService graphDb )
     {
-        return neo.getReferenceNode().getId();
+        return graphDb.getReferenceNode().getId();
     }
 
-    SimpleIterator<NodeSpecification> getAllNodes( GraphDatabaseService neo )
+    SimpleIterator<NodeSpecification> getAllNodes( GraphDatabaseService graphDb )
     {
-        final Iterator<Node> nodes = neo.getAllNodes().iterator();
+        final Iterator<Node> nodes = graphDb.getAllNodes().iterator();
         return new SimpleIterator<NodeSpecification>()
         {
             @Override
@@ -388,12 +388,12 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         };
     }
 
-    boolean hasNodeWithId( GraphDatabaseService neo, long nodeId )
+    boolean hasNodeWithId( GraphDatabaseService graphDb, long nodeId )
     {
         Node node = null;
         try
         {
-            node = neo.getNodeById( nodeId );
+            node = graphDb.getNodeById( nodeId );
         }
         catch ( Exception ex )
         {
@@ -401,30 +401,30 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         return node != null;
     }
 
-    void deleteNode( GraphDatabaseService neo, long nodeId )
+    void deleteNode( GraphDatabaseService graphDb, long nodeId )
     {
-        neo.getNodeById( nodeId ).delete();
+        graphDb.getNodeById( nodeId ).delete();
     }
 
-    long createRelationship( GraphDatabaseService neo, String relationshipTypeName,
+    long createRelationship( GraphDatabaseService graphDb, String relationshipTypeName,
         long startNodeId, long endNodeId )
     {
-        return neo.getNodeById( startNodeId ).createRelationshipTo(
-            neo.getNodeById( endNodeId ), new RelType( relationshipTypeName ) )
+        return graphDb.getNodeById( startNodeId ).createRelationshipTo(
+            graphDb.getNodeById( endNodeId ), new RelType( relationshipTypeName ) )
             .getId();
     }
 
-    RelationshipSpecification getRelationshipById( GraphDatabaseService neo,
+    RelationshipSpecification getRelationshipById( GraphDatabaseService graphDb,
         long relationshipId )
     {
-        return new RelationshipSpecification( neo
+        return new RelationshipSpecification( graphDb
             .getRelationshipById( relationshipId ) );
     }
 
     SimpleIterator<RelationshipSpecification> getAllRelationships(
-        GraphDatabaseService neo, long nodeId, Direction direction )
+        GraphDatabaseService graphDb, long nodeId, Direction direction )
     {
-        final Iterator<Relationship> relationships = neo.getNodeById( nodeId )
+        final Iterator<Relationship> relationships = graphDb.getNodeById( nodeId )
             .getRelationships( direction ).iterator();
         return new SimpleIterator<RelationshipSpecification>()
         {
@@ -442,7 +442,7 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         };
     }
 
-    SimpleIterator<RelationshipSpecification> getRelationships( GraphDatabaseService neo,
+    SimpleIterator<RelationshipSpecification> getRelationships( GraphDatabaseService graphDb,
         final long nodeId, final Direction direction,
         String[] relationshipTypeNames )
     {
@@ -451,7 +451,7 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         {
             types[ i ] = new RelType( relationshipTypeNames[ i ] );
         }
-        final Iterator<Relationship> relationships = neo.getNodeById( nodeId )
+        final Iterator<Relationship> relationships = graphDb.getNodeById( nodeId )
             .getRelationships( types ).iterator();
         return new SimpleIterator<RelationshipSpecification>()
         {
@@ -504,40 +504,40 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         };
     }
 
-    void deleteRelationship( GraphDatabaseService neo, long relationshipId )
+    void deleteRelationship( GraphDatabaseService graphDb, long relationshipId )
     {
-        neo.getRelationshipById( relationshipId ).delete();
+        graphDb.getRelationshipById( relationshipId ).delete();
     }
 
-    Object getNodeProperty( GraphDatabaseService neo, long nodeId, String key )
+    Object getNodeProperty( GraphDatabaseService graphDb, long nodeId, String key )
     {
-        return neo.getNodeById( nodeId ).getProperty( key, null );
+        return graphDb.getNodeById( nodeId ).getProperty( key, null );
     }
 
-    Object getRelationshipProperty( GraphDatabaseService neo, long relationshipId,
+    Object getRelationshipProperty( GraphDatabaseService graphDb, long relationshipId,
         String key )
     {
-        return neo.getRelationshipById( relationshipId )
+        return graphDb.getRelationshipById( relationshipId )
             .getProperty( key, null );
     }
 
-    Object setNodeProperty( GraphDatabaseService neo, long nodeId, String key,
+    Object setNodeProperty( GraphDatabaseService graphDb, long nodeId, String key,
         Object value )
     {
-        neo.getNodeById( nodeId ).setProperty( key, value );
+        graphDb.getNodeById( nodeId ).setProperty( key, value );
         return null;
     }
 
-    Object setRelationshipProperty( GraphDatabaseService neo, long relationshipId,
+    Object setRelationshipProperty( GraphDatabaseService graphDb, long relationshipId,
         String key, Object value )
     {
-        neo.getRelationshipById( relationshipId ).setProperty( key, value );
+        graphDb.getRelationshipById( relationshipId ).setProperty( key, value );
         return null;
     }
 
-    SimpleIterator<String> getNodePropertyKeys( GraphDatabaseService neo, long nodeId )
+    SimpleIterator<String> getNodePropertyKeys( GraphDatabaseService graphDb, long nodeId )
     {
-        final Iterator<String> keys = neo.getNodeById( nodeId )
+        final Iterator<String> keys = graphDb.getNodeById( nodeId )
             .getPropertyKeys().iterator();
         return new SimpleIterator<String>()
         {
@@ -555,10 +555,10 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         };
     }
 
-    SimpleIterator<String> getRelationshipPropertyKeys( GraphDatabaseService neo,
+    SimpleIterator<String> getRelationshipPropertyKeys( GraphDatabaseService graphDb,
         long relationshipId )
     {
-        final Iterator<String> keys = neo.getRelationshipById( relationshipId )
+        final Iterator<String> keys = graphDb.getRelationshipById( relationshipId )
             .getPropertyKeys().iterator();
         return new SimpleIterator<String>()
         {
@@ -576,26 +576,26 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         };
     }
 
-    boolean hasNodeProperty( GraphDatabaseService neo, long nodeId, String key )
+    boolean hasNodeProperty( GraphDatabaseService graphDb, long nodeId, String key )
     {
-        return neo.getNodeById( nodeId ).hasProperty( key );
+        return graphDb.getNodeById( nodeId ).hasProperty( key );
     }
 
-    boolean hasRelationshipProperty( GraphDatabaseService neo, long relationshiId,
+    boolean hasRelationshipProperty( GraphDatabaseService graphDb, long relationshiId,
         String key )
     {
-        return neo.getRelationshipById( relationshiId ).hasProperty( key );
+        return graphDb.getRelationshipById( relationshiId ).hasProperty( key );
     }
 
-    Object removeNodeProperty( GraphDatabaseService neo, long nodeId, String key )
+    Object removeNodeProperty( GraphDatabaseService graphDb, long nodeId, String key )
     {
-        return neo.getNodeById( nodeId ).removeProperty( key );
+        return graphDb.getNodeById( nodeId ).removeProperty( key );
     }
 
-    Object removeRelationshipProperty( GraphDatabaseService neo, long relationshipId,
+    Object removeRelationshipProperty( GraphDatabaseService graphDb, long relationshipId,
         String key )
     {
-        return neo.getRelationshipById( relationshipId ).removeProperty( key );
+        return graphDb.getRelationshipById( relationshipId ).removeProperty( key );
     }
 
     int getIndexId( String indexName )
@@ -612,7 +612,7 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
             + indexName + "\" registered." );
     }
 
-    SimpleIterator<NodeSpecification> getIndexNodes( GraphDatabaseService neo,
+    SimpleIterator<NodeSpecification> getIndexNodes( GraphDatabaseService graphDb,
         int indexId, String key, Object value )
     {
         final IndexHits<Node> nodes = indexes[ indexId ].index.getNodes( key,
@@ -635,24 +635,24 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         };
     }
 
-    void indexNode( GraphDatabaseService neo, int indexId, long nodeId, String key,
+    void indexNode( GraphDatabaseService graphDb, int indexId, long nodeId, String key,
         Object value )
     {
-        indexes[ indexId ].index.index( neo.getNodeById( nodeId ), key, value );
+        indexes[ indexId ].index.index( graphDb.getNodeById( nodeId ), key, value );
     }
 
-    void removeIndexNode( GraphDatabaseService neo, int indexId, long nodeId, String key,
+    void removeIndexNode( GraphDatabaseService graphDb, int indexId, long nodeId, String key,
         Object value )
     {
-        indexes[ indexId ].index.removeIndex( neo.getNodeById( nodeId ), key,
+        indexes[ indexId ].index.removeIndex( graphDb.getNodeById( nodeId ), key,
             value );
     }
 
-    public long getTotalNumberOfNodes( GraphDatabaseService neo )
+    public long getTotalNumberOfNodes( GraphDatabaseService graphDb )
     {
-        if ( neo instanceof EmbeddedGraphDatabase )
+        if ( graphDb instanceof EmbeddedGraphDatabase )
         {
-            EmbeddedGraphDatabase embedded = ( EmbeddedGraphDatabase ) neo;
+            EmbeddedGraphDatabase embedded = ( EmbeddedGraphDatabase ) graphDb;
             return embedded.getConfig().getNeoModule().getNodeManager()
                 .getNumberOfIdsInUse( Node.class );
         }
