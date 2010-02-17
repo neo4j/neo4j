@@ -34,10 +34,10 @@ class ShellService
     private final GraphDatabaseService graphDb;
     private final Object shellServer;
 
-    ShellService( GraphDatabaseService neo, Map<String,Serializable> config )
+    ShellService( GraphDatabaseService graphDb, Map<String,Serializable> config )
         throws ShellNotAvailableException, RemoteException
     {
-        this.graphDb = neo;
+        this.graphDb = graphDb;
         if ( !shellDependencyAvailable() )
         {
             throw new ShellNotAvailableException();

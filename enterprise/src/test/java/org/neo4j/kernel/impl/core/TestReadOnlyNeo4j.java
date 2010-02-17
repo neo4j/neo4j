@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.core.ReadOnlyNeoException;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 public class TestReadOnlyNeo4j extends AbstractNeo4jTestCase
 {
@@ -69,7 +69,7 @@ public class TestReadOnlyNeo4j extends AbstractNeo4jTestCase
         {
             readGraphDb.createNode();
         }
-        catch ( ReadOnlyNeoException e )
+        catch ( ReadOnlyDbException e )
         {
             // good
         }

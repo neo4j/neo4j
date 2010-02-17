@@ -37,7 +37,7 @@ public class StandaloneWithShell
     private GraphDatabaseService embeddedDb;
     private AtomicBoolean shutdownInitiated = new AtomicBoolean( false );
 
-    private GraphDatabaseService getNeo()
+    private GraphDatabaseService getGraphDb()
     {
         return this.embeddedDb;
     }
@@ -59,7 +59,7 @@ public class StandaloneWithShell
         String path = arguments.get( "path" );
         this.embeddedDb = new EmbeddedGraphDatabase( path );
         Map<String, Serializable> shellProperties = Collections.emptyMap();
-        getNeo().enableRemoteShell( shellProperties );
+        getGraphDb().enableRemoteShell( shellProperties );
         log.info( "Neo4j started at '" + path + "'" );
     }
 
@@ -86,9 +86,9 @@ public class StandaloneWithShell
             log.info( "Shutting down..." );
             try
             {
-                if ( getNeo() != null )
+                if ( getGraphDb() != null )
                 {
-                    getNeo().shutdown();
+                    getGraphDb().shutdown();
                     this.embeddedDb = null;
                 }
             }

@@ -50,17 +50,17 @@ public class LockReleaser
 
     private final ArrayMap<Transaction,List<LockElement>> lockMap = 
         new ArrayMap<Transaction,List<LockElement>>( 5, true, true );
-    private final ArrayMap<Transaction,NeoPrimitiveElement> cowMap = 
-        new ArrayMap<Transaction,NeoPrimitiveElement>( 5, true, true );
+    private final ArrayMap<Transaction,PrimitiveElement> cowMap = 
+        new ArrayMap<Transaction,PrimitiveElement>( 5, true, true );
 
     private NodeManager nodeManager;
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
     private PropertyIndexManager propertyIndexManager; 
     
-    private static class NeoPrimitiveElement
+    private static class PrimitiveElement
     {
-        NeoPrimitiveElement()
+        PrimitiveElement()
         {
         }
 
@@ -192,7 +192,7 @@ public class LockReleaser
 
     public IntArray getCowRelationshipRemoveMap( NodeImpl node, String type )
     {
-        NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
+        PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
         {
             ArrayMap<Integer,CowNodeElement> cowElements = 
@@ -213,7 +213,7 @@ public class LockReleaser
         {
             return getCowRelationshipRemoveMap( node, type );
         }
-        NeoPrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
+        PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         ArrayMap<Integer,CowNodeElement> cowElements = 
             primitiveElement.nodes;
         CowNodeElement element = cowElements.get( node.id );
@@ -237,7 +237,7 @@ public class LockReleaser
 
     public ArrayMap<String,IntArray> getCowRelationshipAddMap( NodeImpl node )
     {
-        NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
+        PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
         {
             ArrayMap<Integer,CowNodeElement> cowElements = 
@@ -253,7 +253,7 @@ public class LockReleaser
 
     public IntArray getCowRelationshipAddMap( NodeImpl node, String type )
     {
-        NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
+        PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
         {
             ArrayMap<Integer,CowNodeElement> cowElements = 
@@ -274,7 +274,7 @@ public class LockReleaser
         {
             return getCowRelationshipRemoveMap( node, type );
         }
-        NeoPrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
+        PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         ArrayMap<Integer,CowNodeElement> cowElements = 
             primitiveElement.nodes;
         CowNodeElement element = cowElements.get( node.id );
@@ -345,7 +345,7 @@ public class LockReleaser
 
     void releaseCows( Transaction cowTxId, int param )
     {
-        NeoPrimitiveElement element = cowMap.remove( cowTxId );
+        PrimitiveElement element = cowMap.remove( cowTxId );
         if ( element == null )
         {
             return;
@@ -418,9 +418,9 @@ public class LockReleaser
     }
 
     public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
-        NeoPrimitive primitive )
+        Primitive primitive )
     {
-        NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
+        PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null && primitive instanceof NodeImpl )
         {
             ArrayMap<Integer,CowNodeElement> cowElements = 
@@ -446,9 +446,9 @@ public class LockReleaser
     }
 
     public ArrayMap<Integer,PropertyData> getCowPropertyAddMap(
-        NeoPrimitive primitive )
+        Primitive primitive )
     {
-        NeoPrimitiveElement primitiveElement = cowMap.get( getTransaction() );
+        PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null && primitive instanceof NodeImpl )
         {
             ArrayMap<Integer,CowNodeElement> cowElements = 
@@ -473,30 +473,30 @@ public class LockReleaser
         return null;
     }
 
-    private NeoPrimitiveElement getAndSetupPrimitiveElement()
+    private PrimitiveElement getAndSetupPrimitiveElement()
     {
         Transaction tx = getTransaction();
         if ( tx == null )
         {
             throw new NotInTransactionException();
         }
-        NeoPrimitiveElement primitiveElement = cowMap.get( tx );
+        PrimitiveElement primitiveElement = cowMap.get( tx );
         if ( primitiveElement == null )
         {
-            primitiveElement = new NeoPrimitiveElement();
+            primitiveElement = new PrimitiveElement();
             cowMap.put( tx, primitiveElement );
         }
         return primitiveElement;
     }
     
     public ArrayMap<Integer,PropertyData> getCowPropertyAddMap(
-        NeoPrimitive primitive, boolean create )
+        Primitive primitive, boolean create )
     {
         if ( !create )
         {
             return getCowPropertyAddMap( primitive );
         }
-        NeoPrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
+        PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         if ( primitive instanceof NodeImpl )
         {
             ArrayMap<Integer,CowNodeElement> cowElements = 
@@ -533,13 +533,13 @@ public class LockReleaser
     }
 
     public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
-        NeoPrimitive primitive, boolean create )
+        Primitive primitive, boolean create )
     {
         if ( !create )
         {
             return getCowPropertyRemoveMap( primitive );
         }
-        NeoPrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
+        PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
         if ( primitive instanceof NodeImpl )
         {
             ArrayMap<Integer,CowNodeElement> cowElements = 
