@@ -653,7 +653,7 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         if ( graphDb instanceof EmbeddedGraphDatabase )
         {
             EmbeddedGraphDatabase embedded = ( EmbeddedGraphDatabase ) graphDb;
-            return embedded.getConfig().getNeoModule().getNodeManager()
+            return embedded.getConfig().getGraphDbModule().getNodeManager()
                 .getNumberOfIdsInUse( Node.class );
         }
         else
