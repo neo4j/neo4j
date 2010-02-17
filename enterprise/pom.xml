@@ -12,7 +12,7 @@
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-${short-name}</artifactId>
+  <artifactId>neo4j-graph-algo</artifactId>
   <groupId>org.neo4j</groupId>
   <version>0.4-SNAPSHOT</version>
   <name>${short-name}</name>
