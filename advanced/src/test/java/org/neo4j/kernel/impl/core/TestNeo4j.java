@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.core.NeoModule;
+import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.NodeManager;
 
 public class TestNeo4j extends AbstractNeo4jTestCase
@@ -55,16 +55,16 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         }
         try
         {
-            NeoModule neoModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
-                .getNeoModule();
+            GraphDbModule graphDbModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
+                .getGraphDbModule();
 
             Node newReferenceNode = getGraphDb().createNode();
-            neoModule.setReferenceNodeId( (int) newReferenceNode.getId() );
+            graphDbModule.setReferenceNodeId( (int) newReferenceNode.getId() );
             assertEquals( newReferenceNode, getGraphDb().getReferenceNode() );
             newReferenceNode.delete();
             if ( oldReferenceNode != null )
             {
-                neoModule.setReferenceNodeId( (int) oldReferenceNode.getId() );
+                graphDbModule.setReferenceNodeId( (int) oldReferenceNode.getId() );
                 assertEquals( oldReferenceNode, getGraphDb().getReferenceNode() );
             }
         }
@@ -159,9 +159,9 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     // TODO: fix this testcase
     public void testIdUsageInfo()
     {
-        NeoModule neoModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
-            .getNeoModule();
-        NodeManager nm = neoModule.getNodeManager();
+        GraphDbModule graphDbModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
+            .getGraphDbModule();
+        NodeManager nm = graphDbModule.getNodeManager();
         long nodeCount = nm.getNumberOfIdsInUse( Node.class );
         long relCount = nm.getNumberOfIdsInUse( Relationship.class );
         if ( nodeCount > nm.getHighestPossibleIdInUse( Node.class ) )
@@ -263,13 +263,13 @@ public class TestNeo4j extends AbstractNeo4jTestCase
 
     public void testMultipleNeos()
     {
-        GraphDatabaseService neo2 = new EmbeddedGraphDatabase( getStorePath( "test-neo2" ) );
-        Transaction tx2 = neo2.beginTx();
+        GraphDatabaseService graphDb2 = new EmbeddedGraphDatabase( getStorePath( "test-neo2" ) );
+        Transaction tx2 = graphDb2.beginTx();
         getGraphDb().createNode();
-        neo2.createNode();
+        graphDb2.createNode();
         tx2.success();
         tx2.finish();
-        neo2.shutdown();
+        graphDb2.shutdown();
     }
     
     public void testGetAllNode()

@@ -43,7 +43,7 @@ public final class EmbeddedReadOnlyGraphDatabase implements
         readOnlyParams.put( "read_only", "true" );
     };
 
-    private final EmbeddedGraphDbImpl neoImpl;
+    private final EmbeddedGraphDbImpl graphDbImpl;
 
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
@@ -73,7 +73,7 @@ public final class EmbeddedReadOnlyGraphDatabase implements
             Map<String, String> params )
     {
         params.put( "read_only", "true" );
-        this.neoImpl = new EmbeddedGraphDbImpl( storeDir, params, this );
+        this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this );
     }
 
     /**
@@ -91,43 +91,43 @@ public final class EmbeddedReadOnlyGraphDatabase implements
 
     public Node createNode()
     {
-        return neoImpl.createNode();
+        return graphDbImpl.createNode();
     }
 
     public Node getNodeById( long id )
     {
-        return neoImpl.getNodeById( id );
+        return graphDbImpl.getNodeById( id );
     }
 
     public Relationship getRelationshipById( long id )
     {
-        return neoImpl.getRelationshipById( id );
+        return graphDbImpl.getRelationshipById( id );
     }
 
     public Node getReferenceNode()
     {
-        return neoImpl.getReferenceNode();
+        return graphDbImpl.getReferenceNode();
     }
 
     public void shutdown()
     {
-        neoImpl.shutdown();
+        graphDbImpl.shutdown();
     }
 
     public boolean enableRemoteShell()
     {
-        return neoImpl.enableRemoteShell();
+        return graphDbImpl.enableRemoteShell();
     }
 
     public boolean enableRemoteShell(
             final Map<String, Serializable> initialProperties )
     {
-        return neoImpl.enableRemoteShell( initialProperties );
+        return graphDbImpl.enableRemoteShell( initialProperties );
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return neoImpl.getRelationshipTypes();
+        return graphDbImpl.getRelationshipTypes();
     }
 
     /**
@@ -135,7 +135,7 @@ public final class EmbeddedReadOnlyGraphDatabase implements
      */
     public Transaction beginTx()
     {
-        return neoImpl.beginTx();
+        return graphDbImpl.beginTx();
     }
 
     /**
@@ -146,22 +146,22 @@ public final class EmbeddedReadOnlyGraphDatabase implements
      */
     public Config getConfig()
     {
-        return neoImpl.getConfig();
+        return graphDbImpl.getConfig();
     }
 
     @Override
     public String toString()
     {
-        return super.toString() + " [" + neoImpl.getStoreDir() + "]";
+        return super.toString() + " [" + graphDbImpl.getStoreDir() + "]";
     }
 
     public String getStoreDir()
     {
-        return neoImpl.getStoreDir();
+        return graphDbImpl.getStoreDir();
     }
 
     public Iterable<Node> getAllNodes()
     {
-        return neoImpl.getAllNodes();
+        return graphDbImpl.getAllNodes();
     }
 }

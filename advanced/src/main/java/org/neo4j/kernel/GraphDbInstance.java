@@ -149,7 +149,7 @@ class GraphDbInstance
         }
         // System.setProperty( "neo.tx_log_directory", storeDir );
         persistenceSource = new NioNeoDbPersistenceSource();
-        config.setNeoPersistenceSource( DEFAULT_DATA_SOURCE_NAME, create );
+        config.setPersistenceSource( DEFAULT_DATA_SOURCE_NAME, create );
         config.getIdGeneratorModule().setPersistenceSourceInstance(
                 persistenceSource );
         config.getEventModule().init();
@@ -157,7 +157,7 @@ class GraphDbInstance
         config.getPersistenceModule().init();
         persistenceSource.init();
         config.getIdGeneratorModule().init();
-        config.getNeoModule().init();
+        config.getGraphDbModule().init();
 
         config.getEventModule().start();
         config.getTxModule().start();
@@ -165,7 +165,7 @@ class GraphDbInstance
                 config.getTxModule().getTxManager(), persistenceSource );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
-        config.getNeoModule().start( config.getLockReleaser(),
+        config.getGraphDbModule().start( config.getLockReleaser(),
                 config.getPersistenceModule().getPersistenceManager(), params );
         if ( lucene != null )
         {
@@ -231,13 +231,13 @@ class GraphDbInstance
     {
         if ( started )
         {
-            config.getNeoModule().stop();
+            config.getGraphDbModule().stop();
             config.getIdGeneratorModule().stop();
             persistenceSource.stop();
             config.getPersistenceModule().stop();
             config.getTxModule().stop();
             config.getEventModule().stop();
-            config.getNeoModule().destroy();
+            config.getGraphDbModule().destroy();
             config.getIdGeneratorModule().destroy();
             persistenceSource.destroy();
             config.getPersistenceModule().destroy();
@@ -249,7 +249,7 @@ class GraphDbInstance
 
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return config.getNeoModule().getRelationshipTypes();
+        return config.getGraphDbModule().getRelationshipTypes();
     }
 
     public boolean transactionRunning()

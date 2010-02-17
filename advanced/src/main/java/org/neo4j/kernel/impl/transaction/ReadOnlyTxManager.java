@@ -32,7 +32,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
-import org.neo4j.kernel.impl.core.ReadOnlyNeoException;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
@@ -117,7 +117,7 @@ class ReadOnlyTxManager implements TransactionManager
         }
         else
         {
-            throw new ReadOnlyNeoException();
+            throw new ReadOnlyDbException();
         }
         tx.doAfterCompletion();
         txThreadMap.remove( thread );

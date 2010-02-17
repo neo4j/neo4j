@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.kernel.impl.core.ReadOnlyNeoException;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 public class ReadOnlyIdGenerator implements IdGenerator
 {
@@ -34,12 +34,12 @@ public class ReadOnlyIdGenerator implements IdGenerator
 
     public long nextId()
     {
-        throw new ReadOnlyNeoException();
+        throw new ReadOnlyDbException();
     }
 
     public void setHighId( long id )
     {
-        throw new ReadOnlyNeoException();
+        throw new ReadOnlyDbException();
     }
 
     public long getHighId()
@@ -49,7 +49,7 @@ public class ReadOnlyIdGenerator implements IdGenerator
 
     public void freeId( long id )
     {
-        throw new ReadOnlyNeoException();
+        throw new ReadOnlyDbException();
     }
 
     public void close()

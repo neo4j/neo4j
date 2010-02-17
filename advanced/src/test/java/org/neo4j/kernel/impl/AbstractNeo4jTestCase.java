@@ -109,6 +109,6 @@ public abstract class AbstractNeo4jTestCase extends TestCase
     
     public NodeManager getNodeManager()
     {
-        return ((EmbeddedGraphDatabase) graphDb).getConfig().getNeoModule().getNodeManager();
+        return ((EmbeddedGraphDatabase) graphDb).getConfig().getGraphDbModule().getNodeManager();
     }
 }

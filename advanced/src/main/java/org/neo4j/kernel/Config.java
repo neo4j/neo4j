@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.LockReleaser;
-import org.neo4j.kernel.impl.core.NeoModule;
+import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.event.EventModule;
 import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
 import org.neo4j.kernel.impl.persistence.PersistenceModule;
@@ -44,7 +44,7 @@ public class Config
     private boolean create = false;
     private String persistenceSourceName;
     private IdGeneratorModule idGeneratorModule;
-    private NeoModule neoModule;
+    private GraphDbModule graphDbModule;
     private String storeDir;
     private final Map<Object, Object> params;
 
@@ -78,12 +78,12 @@ public class Config
         lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         persistenceModule = new PersistenceModule();
         idGeneratorModule = new IdGeneratorModule();
-        neoModule = new NeoModule( cacheManager, lockManager,
+        graphDbModule = new GraphDbModule( cacheManager, lockManager,
                 txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
                 readOnly );
     }
 
-    void setNeoPersistenceSource( String name, boolean create )
+    void setPersistenceSource( String name, boolean create )
     {
         persistenceSourceName = name;
         this.create = create;
@@ -109,9 +109,9 @@ public class Config
         return txModule;
     }
 
-    public NeoModule getNeoModule()
+    public GraphDbModule getGraphDbModule()
     {
-        return neoModule;
+        return graphDbModule;
     }
 
     public PersistenceModule getPersistenceModule()
