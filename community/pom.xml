@@ -13,7 +13,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-${short-name}</artifactId>
+  <artifactId>neo4j-graph-matching</artifactId>
   <version>0.8-SNAPSHOT</version>
   <name>graph matching for Neo4j.</name>
   <description>A graph pattern matcher for Neo4j.</description>
