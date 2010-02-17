@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-${short-name}</artifactId>
+  <artifactId>neo4j-remote-graphdb</artifactId>
   <version>0.7-SNAPSHOT</version>
   <name>Neo4j - Remote Graph Database</name>
   <description></description>
