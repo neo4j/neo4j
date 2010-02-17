@@ -34,12 +34,12 @@ abstract class Base {
     private static final String STORE_DIR = "target/neo";
     private StringBuffer buffer;
 
-    private GraphDatabaseService neo;
+    private GraphDatabaseService graphDb;
     private PrintStream stream;
-    private GraphDatabaseService embeddedNeo;
+    private GraphDatabaseService embeddedGraphDb;
 
-    protected GraphDatabaseService neo() {
-        return neo;
+    protected GraphDatabaseService graphDb() {
+        return graphDb;
     }
 
     protected void print(Object object) {
@@ -59,13 +59,13 @@ abstract class Base {
                 buffer.append((char) b);
             }
         });
-        embeddedNeo = new EmbeddedGraphDatabase(STORE_DIR);
-        neo = new RemoteGraphDatabase(new LocalGraphDatabase(embeddedNeo));
+        embeddedGraphDb = new EmbeddedGraphDatabase(STORE_DIR);
+        graphDb = new RemoteGraphDatabase(new LocalGraphDatabase(embeddedGraphDb));
     }
 
     public void tearDown() {
-        neo.shutdown();
-        embeddedNeo.shutdown();
+        graphDb.shutdown();
+        embeddedGraphDb.shutdown();
         markForRemoval(STORE_DIR);
         System.out.print(buffer);
     }

@@ -46,9 +46,9 @@ public class BasicTest extends Base {
     @Test
     public void testGetReferenceNode() throws Exception {
         System.out.println("\ntestGetReferenceNode");
-        Transaction tx = neo().beginTx();
+        Transaction tx = graphDb().beginTx();
         try {
-            println("reference node: " + neo().getReferenceNode());
+            println("reference node: " + graphDb().getReferenceNode());
         } finally {
             tx.finish();
         }
@@ -57,10 +57,10 @@ public class BasicTest extends Base {
     @Test
     public void testCreateRelationship() throws Exception {
         System.out.println("\ntestCreateRelationship");
-        Transaction tx = neo().beginTx();
+        Transaction tx = graphDb().beginTx();
         try {
-            Node start = neo().getReferenceNode();
-            Node end = neo().createNode();
+            Node start = graphDb().getReferenceNode();
+            Node end = graphDb().createNode();
             Relationship rel = start.createRelationshipTo(end,
                     TestRelations.TEST);
             println("Created relationship: " + rel + " from "

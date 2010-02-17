@@ -75,21 +75,21 @@ public class MatrixTest
         backend.shutdown();
     }
 
-    private GraphDatabaseService neo;
+    private GraphDatabaseService graphDb;
 
     private IndexService index;
 
     @Before
     public void connect()
     {
-        neo = new RemoteGraphDatabase( server );
-        index = new RemoteIndexService( neo, "node index" );
+        graphDb = new RemoteGraphDatabase( server );
+        index = new RemoteIndexService( graphDb, "node index" );
     }
 
     @After
     public void disconnect()
     {
-        neo.shutdown();
+        graphDb.shutdown();
     }
 
     @Test
@@ -103,17 +103,17 @@ public class MatrixTest
         KNOWS, CODED_BY, LOVES
     }
 
-    private static void defineMatrix( GraphDatabaseService neo, IndexService index )
+    private static void defineMatrix( GraphDatabaseService graphDb, IndexService index )
         throws Exception
     {
         // Define nodes
         Node mrAndersson, morpheus, trinity, cypher, agentSmith, theArchitect;
-        mrAndersson = neo.createNode();
-        morpheus = neo.createNode();
-        trinity = neo.createNode();
-        cypher = neo.createNode();
-        agentSmith = neo.createNode();
-        theArchitect = neo.createNode();
+        mrAndersson = graphDb.createNode();
+        morpheus = graphDb.createNode();
+        trinity = graphDb.createNode();
+        cypher = graphDb.createNode();
+        agentSmith = graphDb.createNode();
+        theArchitect = graphDb.createNode();
         // Define relationships
         @SuppressWarnings( "unused" )
         Relationship aKm, aKt, mKt, mKc, cKs, sCa, tLa;
@@ -237,18 +237,18 @@ public class MatrixTest
     @Test
     public void testTheMatrix() throws Exception
     {
-        Transaction tx = neo.beginTx();
+        Transaction tx = graphDb.beginTx();
         verifyTransaction( "nr 1", tx, PlaceboVerifiction.REQUIRE_PROPER );
         try
         {
-            defineMatrix( neo, index );
+            defineMatrix( graphDb, index );
             tx.success();
         }
         finally
         {
             tx.finish();
         }
-        tx = neo.beginTx();
+        tx = graphDb.beginTx();
         verifyTransaction( "nr 2", tx, PlaceboVerifiction.REQUIRE_PROPER );
         try
         {

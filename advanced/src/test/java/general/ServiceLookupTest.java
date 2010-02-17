@@ -58,17 +58,17 @@ public class ServiceLookupTest
 	@Test
 	public void testLocalSite() throws Exception
 	{
-		GraphDatabaseService neo = new RemoteGraphDatabase(
+		GraphDatabaseService graphDb = new RemoteGraphDatabase(
 				"file://" + new File(PATH).getAbsolutePath() );
-		neo.shutdown();
+		graphDb.shutdown();
 	}
 
 	@Test
 	public void testRmiSite() throws Exception
 	{
 		Assume.assumeTrue( setupRmi() );
-		GraphDatabaseService neo = new RemoteGraphDatabase( RMI_RESOURCE );
-		neo.shutdown();
+		GraphDatabaseService graphDb = new RemoteGraphDatabase( RMI_RESOURCE );
+		graphDb.shutdown();
 	}
 	
 	private static boolean setupRmi() throws Exception
@@ -95,8 +95,8 @@ public class ServiceLookupTest
 	public void testTcpSite() throws Exception
 	{
 		// TODO: set up server
-		GraphDatabaseService neo = new RemoteGraphDatabase( "tcp://localhost" );
-		neo.shutdown();
+		GraphDatabaseService graphDb = new RemoteGraphDatabase( "tcp://localhost" );
+		graphDb.shutdown();
 		// TODO: shut down server
 	}
 }

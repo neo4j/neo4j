@@ -34,13 +34,13 @@ import org.neo4j.graphdb.GraphDatabaseService;
  */
 public final class CustomGraphDatabaseServer
 {
-    private final GraphDatabaseService neo;
+    private final GraphDatabaseService graphDb;
     private final ServerSocketChannel channel;
     private final ExecutorService exec;
 
     /**
      * Create a new Custom protocol remote graph database server.
-     * @param neo
+     * @param graphDb
      *            the {@link GraphDatabaseService} used to back the server.
      * @param endpoint
      *            The address to listen for incoming connections on.
@@ -50,10 +50,10 @@ public final class CustomGraphDatabaseServer
      * @throws IOException
      *             If opening or binding the server socket fails.
      */
-    public CustomGraphDatabaseServer( GraphDatabaseService neo, SocketAddress endpoint,
+    public CustomGraphDatabaseServer( GraphDatabaseService graphDb, SocketAddress endpoint,
         boolean useSSL ) throws IOException
     {
-        if ( neo == null )
+        if ( graphDb == null )
         {
             throw new NullPointerException(
                 "The graph database implementation may not be null." );
@@ -63,7 +63,7 @@ public final class CustomGraphDatabaseServer
             throw new UnsupportedOperationException(
                 "SSL support has not been implemented for the server." );
         }
-        this.neo = neo;
+        this.graphDb = graphDb;
         channel = ServerSocketChannel.open();
         channel.socket().bind( endpoint );
         exec = Executors.newCachedThreadPool();

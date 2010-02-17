@@ -109,7 +109,7 @@ final class BasicServerTransaction
     private ResponseBuilder response()
     {
         ResponseBuilder builder = connection.response();
-        server.buildResponse( connection.neo, id, builder );
+        server.buildResponse( connection.graphDb, id, builder );
         return builder;
     }
 
@@ -216,7 +216,7 @@ final class BasicServerTransaction
         long id;
         try
         {
-            id = server.createNode( connection.neo );
+            id = server.createNode( connection.graphDb );
         }
         catch ( RuntimeException ex )
         {
@@ -231,7 +231,7 @@ final class BasicServerTransaction
         boolean value;
         try
         {
-            value = server.hasNodeWithId( connection.neo, nodeId );
+            value = server.hasNodeWithId( connection.graphDb, nodeId );
         }
         catch ( RuntimeException ex )
         {
@@ -248,7 +248,7 @@ final class BasicServerTransaction
         long id;
         try
         {
-            id = server.createRelationship( connection.neo,
+            id = server.createRelationship( connection.graphDb,
                 relationshipTypeName, startNodeId, endNodeId );
         }
         catch ( RuntimeException ex )
@@ -266,7 +266,7 @@ final class BasicServerTransaction
         RelationshipSpecification spec;
         try
         {
-            spec = server.getRelationshipById( connection.neo, relationshipId );
+            spec = server.getRelationshipById( connection.graphDb, relationshipId );
         }
         catch ( RuntimeException ex )
         {
@@ -281,7 +281,7 @@ final class BasicServerTransaction
         resume();
         try
         {
-            server.deleteNode( connection.neo, nodeId );
+            server.deleteNode( connection.graphDb, nodeId );
         }
         catch ( RuntimeException ex )
         {
@@ -297,8 +297,8 @@ final class BasicServerTransaction
         long size;
         try
         {
-            size = server.getTotalNumberOfNodes( connection.neo );
-            iterator = server.getAllNodes( connection.neo );
+            size = server.getTotalNumberOfNodes( connection.graphDb );
+            iterator = server.getAllNodes( connection.graphDb );
         }
         catch ( RuntimeException ex )
         {
@@ -312,7 +312,7 @@ final class BasicServerTransaction
         resume();
         try
         {
-            server.deleteRelationship( connection.neo, relationshipId );
+            server.deleteRelationship( connection.graphDb, relationshipId );
         }
         catch ( RuntimeException ex )
         {
@@ -328,7 +328,7 @@ final class BasicServerTransaction
         SimpleIterator<RelationshipSpecification> iterator;
         try
         {
-            iterator = server.getAllRelationships( connection.neo, nodeId,
+            iterator = server.getAllRelationships( connection.graphDb, nodeId,
                 direction );
         }
         catch ( RuntimeException ex )
@@ -460,7 +460,7 @@ final class BasicServerTransaction
         Object value;
         try
         {
-            value = server.getNodeProperty( connection.neo, nodeId, key );
+            value = server.getNodeProperty( connection.graphDb, nodeId, key );
         }
         catch ( RuntimeException ex )
         {
@@ -476,7 +476,7 @@ final class BasicServerTransaction
         SimpleIterator<String> strings;
         try
         {
-            strings = server.getNodePropertyKeys( connection.neo, nodeId );
+            strings = server.getNodePropertyKeys( connection.graphDb, nodeId );
         }
         catch ( RuntimeException ex )
         {
@@ -492,7 +492,7 @@ final class BasicServerTransaction
         long id;
         try
         {
-            id = server.getReferenceNode( connection.neo );
+            id = server.getReferenceNode( connection.graphDb );
         }
         catch ( RuntimeException ex )
         {
@@ -508,7 +508,7 @@ final class BasicServerTransaction
         Object value;
         try
         {
-            value = server.getRelationshipProperty( connection.neo,
+            value = server.getRelationshipProperty( connection.graphDb,
                 relationshipId, key );
         }
         catch ( RuntimeException ex )
@@ -525,7 +525,7 @@ final class BasicServerTransaction
         SimpleIterator<String> strings;
         try
         {
-            strings = server.getRelationshipPropertyKeys( connection.neo,
+            strings = server.getRelationshipPropertyKeys( connection.graphDb,
                 relationshipId );
         }
         catch ( RuntimeException ex )
@@ -541,7 +541,7 @@ final class BasicServerTransaction
         SimpleIterator<String> strings;
         try
         {
-            strings = server.getRelationshipTypes( connection.neo );
+            strings = server.getRelationshipTypes( connection.graphDb );
         }
         catch ( RuntimeException ex )
         {
@@ -557,7 +557,7 @@ final class BasicServerTransaction
         SimpleIterator<RelationshipSpecification> relationships;
         try
         {
-            relationships = server.getRelationships( connection.neo, nodeId,
+            relationships = server.getRelationships( connection.graphDb, nodeId,
                 direction, relationshipTypeNames );
         }
         catch ( RuntimeException ex )
@@ -573,7 +573,7 @@ final class BasicServerTransaction
         boolean value;
         try
         {
-            value = server.hasNodeProperty( connection.neo, nodeId, key );
+            value = server.hasNodeProperty( connection.graphDb, nodeId, key );
         }
         catch ( RuntimeException ex )
         {
@@ -589,7 +589,7 @@ final class BasicServerTransaction
         boolean value;
         try
         {
-            value = server.hasRelationshipProperty( connection.neo,
+            value = server.hasRelationshipProperty( connection.graphDb,
                 relationshiId, key );
         }
         catch ( RuntimeException ex )
@@ -605,7 +605,7 @@ final class BasicServerTransaction
         Object value;
         try
         {
-            value = server.removeNodeProperty( connection.neo, nodeId, key );
+            value = server.removeNodeProperty( connection.graphDb, nodeId, key );
         }
         catch ( RuntimeException ex )
         {
@@ -621,7 +621,7 @@ final class BasicServerTransaction
         Object value;
         try
         {
-            value = server.removeRelationshipProperty( connection.neo,
+            value = server.removeRelationshipProperty( connection.graphDb,
                 relationshipId, key );
         }
         catch ( RuntimeException ex )
@@ -638,7 +638,7 @@ final class BasicServerTransaction
         Object old;
         try
         {
-            old = server.setNodeProperty( connection.neo, nodeId, key, value );
+            old = server.setNodeProperty( connection.graphDb, nodeId, key, value );
         }
         catch ( RuntimeException ex )
         {
@@ -654,7 +654,7 @@ final class BasicServerTransaction
         Object old;
         try
         {
-            old = server.setRelationshipProperty( connection.neo,
+            old = server.setRelationshipProperty( connection.graphDb,
                 relationshipId, key, value );
         }
         catch ( RuntimeException ex )
@@ -673,7 +673,7 @@ final class BasicServerTransaction
         SimpleIterator<NodeSpecification> nodes;
         try
         {
-            nodes = server.getIndexNodes( connection.neo, indexId, key, value );
+            nodes = server.getIndexNodes( connection.graphDb, indexId, key, value );
         }
         catch ( Exception ex )
         {
@@ -688,7 +688,7 @@ final class BasicServerTransaction
         resume();
         try
         {
-            server.indexNode( connection.neo, indexId, nodeId, key, value );
+            server.indexNode( connection.graphDb, indexId, nodeId, key, value );
         }
         catch ( Exception ex )
         {
@@ -704,7 +704,7 @@ final class BasicServerTransaction
         try
         {
             server
-                .removeIndexNode( connection.neo, indexId, nodeId, key, value );
+                .removeIndexNode( connection.graphDb, indexId, nodeId, key, value );
         }
         catch ( Exception ex )
         {

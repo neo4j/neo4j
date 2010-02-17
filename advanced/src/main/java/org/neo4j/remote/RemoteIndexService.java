@@ -43,7 +43,7 @@ public final class RemoteIndexService implements IndexService
     /**
      * Create a new client for an {@link IndexService}.
      * 
-     * @param neo
+     * @param graphDb
      *            The {@link RemoteGraphDatabase} that owns the index.
      * @param name
      *            the token that the {@link IndexService} was registered under
@@ -51,9 +51,9 @@ public final class RemoteIndexService implements IndexService
      *            {@link BasicGraphDatabaseServer#registerIndexService(String, IndexService)}
      *            ).
      */
-    public RemoteIndexService( GraphDatabaseService neo, String name )
+    public RemoteIndexService( GraphDatabaseService graphDb, String name )
     {
-        this.engine = ( ( RemoteGraphDatabase ) neo ).getEngine();
+        this.engine = ( ( RemoteGraphDatabase ) graphDb ).getEngine();
         this.id = this.engine().getIndexId( name );
     }
 
