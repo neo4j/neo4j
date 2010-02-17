@@ -17,7 +17,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
 /**
- * Try to backup Neo to another running Neo instance.
+ * Try to backup Neo4j to another running Neo4j instance.
  */
 public class SimpleRunningTest
 {
@@ -41,22 +41,22 @@ public class SimpleRunningTest
 
         System.out.println( "setting up simple database and backup-copy" );
 
-        EmbeddedGraphDatabase neo = Util.startNeoInstance( STORE_LOCATION_DIR );
-        ((NeoStoreXaDataSource) neo.getConfig().getPersistenceModule()
+        EmbeddedGraphDatabase graphDb = Util.startGraphDbInstance( STORE_LOCATION_DIR );
+        ((NeoStoreXaDataSource) graphDb.getConfig().getPersistenceModule()
             .getPersistenceManager().getPersistenceSource()
             .getXaDataSource()).keepLogicalLogs( true );
 
-        Transaction tx = neo.beginTx();
+        Transaction tx = graphDb.beginTx();
         try
         {
-            addNode( neo );
+            addNode( graphDb );
             tx.success();
         }
         finally
         {
             tx.finish();
         }
-        Util.stopNeo( neo );
+        Util.stopGraphDb( graphDb );
 
         Util.copyDir( STORE_LOCATION_DIR, BACKUP_LOCATION_DIR );
     }
@@ -64,17 +64,17 @@ public class SimpleRunningTest
     @Test
     public void backup() throws IOException
     {
-        EmbeddedGraphDatabase neo = Util.startNeoInstance( STORE_LOCATION_DIR );
-        ((NeoStoreXaDataSource) neo.getConfig().getPersistenceModule()
+        EmbeddedGraphDatabase graphDb = Util.startGraphDbInstance( STORE_LOCATION_DIR );
+        ((NeoStoreXaDataSource) graphDb.getConfig().getPersistenceModule()
             .getPersistenceManager().getPersistenceSource().getXaDataSource())
             .keepLogicalLogs( true );
         System.out.println( "backing up original db without any changes" );
-        tryBackup( neo, BACKUP_LOCATION_DIR, 1 );
+        tryBackup( graphDb, BACKUP_LOCATION_DIR, 1 );
 
-        Transaction tx = neo.beginTx();
+        Transaction tx = graphDb.beginTx();
         try
         {
-            addNode( neo );
+            addNode( graphDb );
             tx.success();
         }
         finally
@@ -82,12 +82,12 @@ public class SimpleRunningTest
             tx.finish();
         }
         System.out.println( "one node added" );
-        tryBackup( neo, BACKUP_LOCATION_DIR, 2 );
+        tryBackup( graphDb, BACKUP_LOCATION_DIR, 2 );
 
-        tx = neo.beginTx();
+        tx = graphDb.beginTx();
         try
         {
-            addNode( neo );
+            addNode( graphDb );
             tx.success();
         }
         finally
@@ -96,12 +96,12 @@ public class SimpleRunningTest
         }
         System.out.println( "one node added" );
 
-        tx = neo.beginTx();
+        tx = graphDb.beginTx();
         try
         {
-            addNode( neo );
+            addNode( graphDb );
             System.out.println( "one node added, not commited" );
-            tryBackup( neo, BACKUP_LOCATION_DIR, 3 );
+            tryBackup( graphDb, BACKUP_LOCATION_DIR, 3 );
             tx.success();
         }
         finally
@@ -109,26 +109,26 @@ public class SimpleRunningTest
             tx.finish();
         }
         System.out.println( "previous add commited" );
-        tryBackup( neo, BACKUP_LOCATION_DIR, 4 );
+        tryBackup( graphDb, BACKUP_LOCATION_DIR, 4 );
 
-        Util.stopNeo( neo );
+        Util.stopGraphDb( graphDb );
     }
 
-    protected void tryBackup( EmbeddedGraphDatabase neo, String location, int relCount )
+    protected void tryBackup( EmbeddedGraphDatabase graphDb, String location, int relCount )
         throws IOException
     {
         System.out.println( "backing up to running EmbeddedGraphDatabase instance" );
-        EmbeddedGraphDatabase bNeo = Util.startNeoInstance( location );
-        Backup backupComp = new Neo4jBackup( neo, bNeo );
+        EmbeddedGraphDatabase bDb = Util.startGraphDbInstance( location );
+        Backup backupComp = new Neo4jBackup( graphDb, bDb );
         backupComp.enableFileLogger();
         backupComp.doBackup();
-        Util.stopNeo( bNeo );
-        bNeo = Util.startNeoInstance( location );
-        Transaction bTx = bNeo.beginTx();
+        Util.stopGraphDb( bDb );
+        bDb = Util.startGraphDbInstance( location );
+        Transaction bTx = bDb.beginTx();
         try
         {
             List<Relationship> rels = new ArrayList<Relationship>();
-            for ( Relationship rel : bNeo.getReferenceNode().getRelationships() )
+            for ( Relationship rel : bDb.getReferenceNode().getRelationships() )
             {
                 rels.add( rel );
             }
@@ -139,13 +139,13 @@ public class SimpleRunningTest
         {
             bTx.finish();
         }
-        Util.stopNeo( bNeo );
+        Util.stopGraphDb( bDb );
     }
 
-    private void addNode( EmbeddedGraphDatabase neo )
+    private void addNode( EmbeddedGraphDatabase graphDb )
     {
-        Node referenceNode = neo.getReferenceNode();
-        Node node = neo.createNode();
+        Node referenceNode = graphDb.getReferenceNode();
+        Node node = graphDb.createNode();
         referenceNode.createRelationshipTo( node, MyRels.TEST );
     }
 }
