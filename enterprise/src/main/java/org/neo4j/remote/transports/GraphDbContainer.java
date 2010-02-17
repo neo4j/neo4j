@@ -30,9 +30,9 @@ class GraphDbContainer implements Runnable
     final GraphDatabaseService service;
     private final Collection<IndexService> indexServices = new LinkedList<IndexService>();
 
-    GraphDbContainer( GraphDatabaseService neo )
+    GraphDbContainer( GraphDatabaseService graphDb )
     {
-        this.service = neo;
+        this.service = graphDb;
     }
 
     void addIndexService( IndexService index )
@@ -41,7 +41,7 @@ class GraphDbContainer implements Runnable
     }
 
     /*
-     * This container is usable as a shutdown hook for the NeoService it contains
+     * This container is usable as a shutdown hook
      */
     public void run()
     {

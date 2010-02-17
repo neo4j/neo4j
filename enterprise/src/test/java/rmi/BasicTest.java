@@ -43,7 +43,7 @@ public class BasicTest
 {
 	private static final String RMI_RESOURCE = "rmi://localhost/"
 		+ BasicTest.class.getSimpleName();
-	private static GraphDatabaseService neo;
+	private static GraphDatabaseService graphDb;
 	
 	@BeforeClass
 	public static void setUp() throws Exception
@@ -69,7 +69,7 @@ public class BasicTest
 		}
 		try
 		{
-			neo = new RemoteGraphDatabase( RMI_RESOURCE );
+			graphDb = new RemoteGraphDatabase( RMI_RESOURCE );
 		}
 		catch (Exception ex)
 		{
@@ -86,15 +86,15 @@ public class BasicTest
 			}
 			else
 			{
-				neo = null;
+				graphDb = null;
 			}
 		}
 	}
 	
 	private void transactional(Runnable body)
 	{
-		Assume.assumeNotNull(neo);
-		Transaction tx = neo.beginTx();
+		Assume.assumeNotNull(graphDb);
+		Transaction tx = graphDb.beginTx();
 		try
 		{
 			body.run();
@@ -113,7 +113,7 @@ public class BasicTest
 		{
 			public void run()
 			{
-				Assert.assertNotNull(neo.getReferenceNode());
+				Assert.assertNotNull(graphDb.getReferenceNode());
 			}
 		});
 	}
@@ -124,7 +124,7 @@ public class BasicTest
 		{
 			public void run()
 			{
-				Assert.assertNotNull(neo.createNode());
+				Assert.assertNotNull(graphDb.createNode());
 			}
 		});
 	}
@@ -140,8 +140,8 @@ public class BasicTest
 		{
 			public void run()
 			{
-				Node start = neo.createNode();
-				Node end = neo.createNode();
+				Node start = graphDb.createNode();
+				Node end = graphDb.createNode();
 				Relationship relationship = start.createRelationshipTo(
 						end, TestType.TEST);
 				Assert.assertNotNull(relationship);
@@ -162,7 +162,7 @@ public class BasicTest
 		{
 			public void run()
 			{
-				properties(neo.createNode());
+				properties(graphDb.createNode());
 			}
 		});
 	}
@@ -173,8 +173,8 @@ public class BasicTest
 		{
 			public void run()
 			{
-				properties(neo.createNode().createRelationshipTo(
-						neo.createNode(), TestType.TEST));
+				properties(graphDb.createNode().createRelationshipTo(
+						graphDb.createNode(), TestType.TEST));
 			}
 		});
 	}

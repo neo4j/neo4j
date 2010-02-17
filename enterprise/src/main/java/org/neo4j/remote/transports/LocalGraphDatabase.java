@@ -39,63 +39,63 @@ public final class LocalGraphDatabase extends BasicGraphDatabaseServer
 {
     /**
      * Create a new local {@link ConnectionTarget}.
-     * @param neo
+     * @param graphDb
      *            The {@link GraphDatabaseService} to connect to with this site.
      */
-    public LocalGraphDatabase( GraphDatabaseService neo )
+    public LocalGraphDatabase( GraphDatabaseService graphDb )
     {
-        this( new GraphDbContainer( neo ) );
+        this( new GraphDbContainer( graphDb ) );
     }
 
     /**
      * Create a new local {@link ConnectionTarget}.
      * @param path
-     *            The path to the Neo graph database store.
+     *            The path to the Neo4j graph database store.
      */
     public LocalGraphDatabase( String path )
     {
         this( LocalTransport.getGraphDbService( new File( path ) ) );
     }
 
-    final GraphDbContainer neo;
+    final GraphDbContainer container;
 
-    LocalGraphDatabase( GraphDbContainer neo )
+    LocalGraphDatabase( GraphDbContainer graphDb )
     {
-        super( getTransactionManagerFor( neo.service ) );
-        this.neo = neo;
+        super( getTransactionManagerFor( graphDb.service ) );
+        this.container = graphDb;
     }
 
     @Override
     protected GraphDatabaseService connectGraphDatabase()
     {
-        return neo.service;
+        return container.service;
     }
 
     @Override
     protected GraphDatabaseService connectGraphDatabase( String username, String password )
     {
-        return neo.service;
+        return container.service;
     }
 
     @Override
     public void registerIndexService( String name, IndexService index )
     {
         super.registerIndexService( name, index );
-        neo.addIndexService( index );
+        container.addIndexService( index );
     }
 
-    private static TransactionManager getTransactionManagerFor( GraphDatabaseService neo )
+    private static TransactionManager getTransactionManagerFor( GraphDatabaseService graphDb )
     {
-        if ( neo instanceof EmbeddedGraphDatabase )
+        if ( graphDb instanceof EmbeddedGraphDatabase )
         {
-            return ( ( EmbeddedGraphDatabase ) neo ).getConfig().getTxModule()
+            return ( ( EmbeddedGraphDatabase ) graphDb ).getConfig().getTxModule()
                 .getTxManager();
         }
         else
         {
             throw new IllegalArgumentException(
-                "Cannot get transaction manager from neo instance of class="
-                    + neo.getClass() );
+                "Cannot get transaction manager from graph database instance of class="
+                    + graphDb.getClass() );
         }
     }
 }
