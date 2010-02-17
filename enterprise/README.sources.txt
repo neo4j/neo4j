@@ -1,7 +1,7 @@
 Today (2007-11-19) AGPL was released so we can finally release the source code.
 
 To start hacking, import src/main/java into your favorite IDE and add the 
-geronimo-jta_1.1_spec-1.1.1.jar to your classpath.
+geronimo-jta jar file to your classpath.
 
 To get started here is a short description of some of the important packages:
 
