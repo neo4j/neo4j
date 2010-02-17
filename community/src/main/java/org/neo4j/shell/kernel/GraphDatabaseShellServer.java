@@ -47,7 +47,8 @@ import org.neo4j.shell.kernel.apps.Set;
 import org.neo4j.shell.kernel.apps.Trav;
 
 /**
- * A {@link ShellServer} which contains common methods to use with neo.
+ * A {@link ShellServer} which contains common methods to use with a
+ * graph database service.
  */
 public class GraphDatabaseShellServer extends SimpleAppServer
 {
@@ -63,7 +64,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         throws RemoteException
     {
         super();
-        addNeoApps();
+        addGraphDbApps();
         this.graphDb = graphDb;
         this.bashInterpreter = new BashVariableInterpreter();
         this.bashInterpreter.addReplacer( "W", new WorkingDirReplacer() );
@@ -90,7 +91,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         return "Welcome to the Neo4j Shell! Enter 'help' for a list of commands";
     }
     
-    private void addNeoApps()
+    private void addGraphDbApps()
     {
         addApp( Cd.class );
         addApp( Gsh.class );
