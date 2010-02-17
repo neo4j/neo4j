@@ -1,16 +1,16 @@
 To get started and for more information about Neo4j and Shell go to http://neo4j.org.
 
+Use this component to connect to a
+* local Neo4j graph database
+* remote already running Neo4j instance (NOTE: 
+  GraphDatabaseService.enableRemoteShell() must have been invoked)
+
 Quick start: 
 
-o Connecting to a local already running Neo4j instance (NOTE: 
-  GraphDatabaseService.enableRemoteShell() must have been invoked):
+Issue the following command:
 
-	java -jar neo4j-shell-1.0-rc.jar 
+    java -jar neo4j-shell-{version}.jar 
 
-o Connecting to an offline Neo4j store you will need neo4j-kernel-1.0-rc.jar, 
-  jta-1_1.jar and neo4j-shell-1.0-rc in your classpath. Type:
-
-	java -cp neo4j-kernel-1.0-rc.jar:jta-1_1.jar:neo4j-shell-1.0-rc.jar \
-		org.neo4j.shell.StartLocalClient <path to Neo4j store>
-
-
+Make sure to replace {version} with the actual version.
+The neo4j-kernel and geronimo jta jar files need to be in the
+same directory or on the classpath.

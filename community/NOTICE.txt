@@ -7,5 +7,9 @@ Network Engine for Objects in Lund AB (http://neotechnology.com).
 
 The bundled jLine library is copyright mwp1@cornell.edu
 under the BSD License (http://www.opensource.org/licenses/bsd-license.php)
+
+The bundled Apache Geronimo JTA library is copyright
+The Apache Software Foundation  (http://www.apache.org/)
+under the Apache License version 2.0.
 For licensing information, see COPYRIGHT.txt and LICENSE.txt.
 
