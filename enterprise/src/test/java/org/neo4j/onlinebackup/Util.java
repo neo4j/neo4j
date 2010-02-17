@@ -77,20 +77,20 @@ public class Util
         return directory.delete();
     }
 
-    static EmbeddedGraphDatabase startNeoInstance( String location )
+    static EmbeddedGraphDatabase startGraphDbInstance( String location )
     {
         File file = new File( location );
         return new EmbeddedGraphDatabase( file.getAbsolutePath() );
     }
 
-    static void stopNeo( EmbeddedGraphDatabase neo )
+    static void stopGraphDb( EmbeddedGraphDatabase graphDb )
     {
-        neo.shutdown();
+        graphDb.shutdown();
     }
 
-    static void stopNeo( EmbeddedGraphDatabase neo, IndexService indexService )
+    static void stopGraphDb( EmbeddedGraphDatabase graphDb, IndexService indexService )
     {
         indexService.shutdown();
-        stopNeo( neo );
+        stopGraphDb( graphDb );
     }
 }
