@@ -874,25 +874,25 @@ public class NodeManager
     }
 
     public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
-        NeoPrimitive primitive )
+        Primitive primitive )
     {
         return lockReleaser.getCowPropertyRemoveMap( primitive );
     }
 
     public ArrayMap<Integer,PropertyData> getCowPropertyAddMap(
-        NeoPrimitive primitive )
+        Primitive primitive )
     {
         return lockReleaser.getCowPropertyAddMap( primitive );
     }
 
     public ArrayMap<Integer,PropertyData> getCowPropertyAddMap(
-        NeoPrimitive primitive, boolean create )
+        Primitive primitive, boolean create )
     {
         return lockReleaser.getCowPropertyAddMap( primitive, create );
     }
 
     public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
-        NeoPrimitive primitive, boolean create )
+        Primitive primitive, boolean create )
     {
         return lockReleaser.getCowPropertyRemoveMap( primitive, create );
     }

@@ -35,7 +35,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.kernel.impl.core.ReadOnlyNeoException;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 class ReadOnlyTransactionImpl implements Transaction
 {
@@ -432,7 +432,7 @@ class ReadOnlyTransactionImpl implements Transaction
                     int vote = re.getResource().prepare( re.getXid() );
                     if ( vote == XAResource.XA_OK )
                     {
-                        throw new ReadOnlyNeoException();
+                        throw new ReadOnlyDbException();
                     }
                     else if ( vote == XAResource.XA_RDONLY )
                     {
@@ -466,7 +466,7 @@ class ReadOnlyTransactionImpl implements Transaction
             ResourceElement re = itr.next();
             if ( re.getStatus() != RS_READONLY )
             {
-                throw new ReadOnlyNeoException();
+                throw new ReadOnlyDbException();
             }
         }
         status = Status.STATUS_COMMITTED;
