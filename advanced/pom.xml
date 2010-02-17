@@ -8,7 +8,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-${short-name}</artifactId>
+  <artifactId>neo4j-online-backup</artifactId>
   <version>0.5-SNAPSHOT</version>
   <name>Onlinebackup</name>
   <description>Backup of resources using the XA framework</description>
