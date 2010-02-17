@@ -1,4 +1,6 @@
-<assembly>
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
 	<id>source</id>
 	<formats>
 		<format>tar.gz</format>
@@ -18,34 +20,21 @@
 				<include>NOTICE.txt</include>
 			</includes>
 		</fileSet>
-		<!-- source:src/java -> assembly:/src/java -->
+		
+		<!-- source:src/main/java -> assembly:/src/main/java -->
 		<fileSet>
-			<directory>src/java</directory>
-			<outputDirectory>/src/java</outputDirectory>
+			<directory>src/main/java</directory>
+			<outputDirectory>/src/main/java</outputDirectory>
 		</fileSet>		
+		
 		<!-- source:src/test -> assembly:/src/test -->
 		<fileSet>
-			<directory>src/test</directory>
-			<outputDirectory>/src/test</outputDirectory>
+			<directory>src/test/java</directory>
+			<outputDirectory>/src/test/java</outputDirectory>
 		</fileSet>		
-		<!-- source:lib/*.jar -> assembly:/ -->
-		<fileSet>
-			<directory>lib</directory>
-			<outputDirectory>/</outputDirectory>
-			<includes>
-				<include>*.jar</include>
-			</includes>
-			<excludes>
-				<exclude>junit*.jar</exclude>
-			</excludes>
-		</fileSet>
-		<!-- source:src/main/assembly/*.txt -> assembly:/ -->
-		<fileSet>
-		    <directory>src/main/assembly/</directory>
-		    <outputDirectory>/</outputDirectory>
-            <includes>
-                <include>*.txt</include>
-            </includes>		    
-		</fileSet>
 	</fileSets>
+	
+	<dependencySets>
+		<dependencySet></dependencySet>
+	</dependencySets>
 </assembly>
