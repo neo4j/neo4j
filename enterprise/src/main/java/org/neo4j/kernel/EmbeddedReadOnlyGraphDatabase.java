@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,22 +25,25 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 
-public final class EmbeddedReadOnlyGraphDatabase implements GraphDatabaseService
+/**
+ * A read-only version of {@link EmbeddedGraphDatabase}.
+ */
+public final class EmbeddedReadOnlyGraphDatabase implements
+        GraphDatabaseService
 {
-    private static Map<String,String> readOnlyParams = 
-        new HashMap<String,String>();
+    private static Map<String, String> readOnlyParams = new HashMap<String, String>();
 
-    static 
+    static
     {
         readOnlyParams.put( "read_only", "true" );
     };
-    
-    private final EmbeddedGraphDbImpl neoImpl; 
+
+    private final EmbeddedGraphDbImpl graphDbImpl;
 
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
@@ -66,96 +69,99 @@ public final class EmbeddedReadOnlyGraphDatabase implements GraphDatabaseService
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
      */
-    public EmbeddedReadOnlyGraphDatabase( String storeDir, Map<String,String> params )
+    public EmbeddedReadOnlyGraphDatabase( String storeDir,
+            Map<String, String> params )
     {
         params.put( "read_only", "true" );
-        this.neoImpl = new EmbeddedGraphDbImpl( storeDir, params, this );
+        this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this );
     }
 
     /**
-     * A non-standard Convenience method that loads a standard property file and
-     * converts it into a generic <Code>Map<String,String></CODE>. Will most 
+     * A non-standard convenience method that loads a standard property file and
+     * converts it into a generic <Code>Map<String,String></CODE>. Will most
      * likely be removed in future releases.
+     * 
      * @param file the property file to load
      * @return a map containing the properties from the file
      */
-    public static Map<String,String> loadConfigurations( String file )
+    public static Map<String, String> loadConfigurations( String file )
     {
         return EmbeddedGraphDbImpl.loadConfigurations( file );
     }
 
     public Node createNode()
     {
-        return neoImpl.createNode();
+        return graphDbImpl.createNode();
     }
 
     public Node getNodeById( long id )
     {
-        return neoImpl.getNodeById( id );
+        return graphDbImpl.getNodeById( id );
     }
 
     public Relationship getRelationshipById( long id )
     {
-        return neoImpl.getRelationshipById( id );
+        return graphDbImpl.getRelationshipById( id );
     }
 
     public Node getReferenceNode()
     {
-        return neoImpl.getReferenceNode();
+        return graphDbImpl.getReferenceNode();
     }
 
     public void shutdown()
     {
-        neoImpl.shutdown();
+        graphDbImpl.shutdown();
     }
 
     public boolean enableRemoteShell()
     {
-        return neoImpl.enableRemoteShell();
+        return graphDbImpl.enableRemoteShell();
     }
 
     public boolean enableRemoteShell(
-        final Map<String,Serializable> initialProperties )
+            final Map<String, Serializable> initialProperties )
     {
-        return neoImpl.enableRemoteShell( initialProperties );
+        return graphDbImpl.enableRemoteShell( initialProperties );
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return neoImpl.getRelationshipTypes();
+        return graphDbImpl.getRelationshipTypes();
     }
 
     /**
-     * @throws NotInTransactionException if unable to start transaction
+     * @throws TransactionFailureException if unable to start transaction
      */
     public Transaction beginTx()
     {
-        return neoImpl.beginTx();
+        return graphDbImpl.beginTx();
     }
 
     /**
-     * Returns a non-standard configuration object. Will most likely be removed 
+     * Returns a non-standard configuration object. Will most likely be removed
      * in future releases.
      * 
      * @return a configuration object
      */
     public Config getConfig()
     {
-        return neoImpl.getConfig();
+        return graphDbImpl.getConfig();
     }
 
+    @Override
     public String toString()
     {
-        return super.toString() + " [" + neoImpl.getStoreDir() + "]";
+        return super.toString() + " [" + graphDbImpl.getStoreDir() + "]";
     }
-    
+
     public String getStoreDir()
     {
-        return neoImpl.getStoreDir();
+        return graphDbImpl.getStoreDir();
     }
-    
+
     public Iterable<Node> getAllNodes()
     {
-        return neoImpl.getAllNodes();
+        return graphDbImpl.getAllNodes();
     }
 }

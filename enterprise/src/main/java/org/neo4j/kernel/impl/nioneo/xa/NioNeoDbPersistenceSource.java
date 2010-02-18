@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.kernel.impl.core.PropertyIndex;
-import org.neo4j.kernel.impl.core.ReadOnlyNeoException;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
@@ -92,7 +92,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
     {
         if ( xaDs.isReadOnly() )
         {
-            throw new ReadOnlyNeoException();
+            throw new ReadOnlyDbException();
         }
         return new NioNeoDbResourceConnection( this.xaDs );
     }
@@ -105,12 +105,12 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
     private static class ReadOnlyResourceConnection implements 
         ResourceConnection
     {
-        private final NeoReadTransaction neoTransaction;
+        private final ReadTransaction readTransaction;
         private final RelationshipTypeStore relTypeStore;
 
         ReadOnlyResourceConnection( NeoStoreXaDataSource xaDs )
         {
-            this.neoTransaction = xaDs.getReadOnlyTransaction();
+            this.readTransaction = xaDs.getReadOnlyTransaction();
             this.relTypeStore = xaDs.getNeoStore().getRelationshipTypeStore();
         }
 
@@ -202,17 +202,17 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 
         public String loadIndex( int id )
         {
-            return neoTransaction.getPropertyIndex( id );
+            return readTransaction.getPropertyIndex( id );
         }
 
         public PropertyIndexData[] loadPropertyIndexes( int maxCount )
         {
-            return neoTransaction.getPropertyIndexes( maxCount );
+            return readTransaction.getPropertyIndexes( maxCount );
         }
 
         public Object loadPropertyValue( int id )
         {
-            return neoTransaction.propertyGetValue( id );
+            return readTransaction.propertyGetValue( id );
         }
 
         public RelationshipTypeData[] loadRelationshipTypes()
@@ -231,22 +231,22 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 
         public boolean nodeLoadLight( int id )
         {
-            return neoTransaction.nodeLoadLight( id );
+            return readTransaction.nodeLoadLight( id );
         }
 
         public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId )
         {
-            return neoTransaction.nodeGetProperties( nodeId );
+            return readTransaction.nodeGetProperties( nodeId );
         }
 
         public RelationshipData relLoadLight( int id )
         {
-            return neoTransaction.relationshipLoad( id );
+            return readTransaction.relationshipLoad( id );
         }
 
         public ArrayMap<Integer,PropertyData> relLoadProperties( int relId )
         {
-            return neoTransaction.relGetProperties( relId );
+            return readTransaction.relGetProperties( relId );
         }
 
         public void createPropertyIndex( String key, int id )
@@ -266,13 +266,13 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
         public RelationshipChainPosition getRelationshipChainPosition( 
             int nodeId )
         {
-            return neoTransaction.getRelationshipChainPosition( nodeId );
+            return readTransaction.getRelationshipChainPosition( nodeId );
         }
 
         public Iterable<RelationshipData> getMoreRelationships( int nodeId,  
             RelationshipChainPosition position )
         {
-            return neoTransaction.getMoreRelationships( nodeId, position );
+            return readTransaction.getMoreRelationships( nodeId, position );
         }
     }
 
@@ -379,7 +379,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 
         public Object loadPropertyValue( int id )
         {
-            return xaCon.getNeoTransaction().propertyGetValue( id );
+            return xaCon.getWriteTransaction().propertyGetValue( id );
         }
 
         public RelationshipTypeData[] loadRelationshipTypes()

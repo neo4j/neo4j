@@ -157,6 +157,10 @@ abstract class Command extends XaCommand
         return record;
     }
 
+    // means the first byte of the command record was only written but second 
+    // (saying what type) did not get written but the file still got expanded
+    private static final byte NONE = (byte) 0;
+    
     private static final byte NODE_COMMAND = (byte) 1;
     private static final byte PROP_COMMAND = (byte) 2;
     private static final byte REL_COMMAND = (byte) 3;
@@ -585,6 +589,10 @@ abstract class Command extends XaCommand
                 }
                 buffer.flip();
                 PropertyType type = getType( buffer.getInt() );
+                if ( type == null )
+                {
+                    return null;
+                }
                 record.setType( type );
                 record.setInUse( inUse );
                 record.setKeyIndexId( buffer.getInt() );
@@ -636,6 +644,8 @@ abstract class Command extends XaCommand
                     return PropertyType.ARRAY;
                 case 10:
                     return PropertyType.SHORT;
+                case 0:
+                    return null;
             }
             throw new InvalidRecordException( "Unknown property type:" + type );
         }
@@ -781,6 +791,7 @@ abstract class Command extends XaCommand
             case REL_TYPE_COMMAND:
                 return RelationshipTypeCommand.readCommand( neoStore,
                     byteChannel, buffer );
+            case NONE: return null;
             default:
                 throw new IOException( "Unknown command type[" + commandType
                     + "]" );

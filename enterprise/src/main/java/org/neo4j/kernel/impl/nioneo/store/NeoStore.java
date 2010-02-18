@@ -34,7 +34,7 @@ public class NeoStore extends AbstractStore
 {
     // neo store version, store should end with this string
     // (byte encoded)
-    private static final String VERSION = "NeoStore v0.9.5";
+    private static final String VERSION = "NeoStore v0.9.6";
 
     // 3 longs in header (long + in use), time | random | version
     private static final int RECORD_SIZE = 9;
@@ -160,6 +160,7 @@ public class NeoStore extends AbstractStore
         neoStore.setCreationTime( time );
         neoStore.setRandomNumber( r.nextLong() );
         neoStore.setVersion( 0 );
+        neoStore.setLastCommittedTx( 1 );
         neoStore.close();
     }
     
@@ -203,6 +204,27 @@ public class NeoStore extends AbstractStore
     public void setVersion( long version )
     {
         setRecord( 2, version );
+    }
+    
+    public synchronized void setLastCommittedTx( long txId )
+    {
+        long current = getRecord( 3 );
+        if ( (current + 1) != txId && !isInRecoveryMode() )
+        {
+            throw new InvalidRecordException( "Could not set tx commit id[" +  
+                txId + "] since the current one is[" + current + "]" );
+        }
+        setRecord( 3, txId );
+    }
+    
+    public long getNextCommitId()
+    {
+        return getRecord( 3 ) + 1;
+    }
+    
+    public long getLastCommittedTx()
+    {
+        return getRecord( 3 );
     }
     
     public long incrementVersion()
@@ -318,13 +340,14 @@ public class NeoStore extends AbstractStore
             // non clean shutdown, need to do recover with right neo
             return false;
         }
-        if ( version.equals( "NeoStore v0.9.3" ) )
+        if ( version.equals( "NeoStore v0.9.5" ) )
         {
             ByteBuffer buffer = ByteBuffer.wrap( new byte[ 3 * RECORD_SIZE ] );
             long time = System.currentTimeMillis();
             long random = r.nextLong();
             buffer.put( Record.IN_USE.byteValue() ).putLong( time );
             buffer.put( Record.IN_USE.byteValue() ).putLong( random );
+            buffer.put( Record.IN_USE.byteValue() ).putLong( 0 );
             buffer.put( Record.IN_USE.byteValue() ).putLong( 0 );
             buffer.flip();
             try
@@ -335,12 +358,6 @@ public class NeoStore extends AbstractStore
             {
                 throw new UnderlyingStorageException( e );
             }
-            rebuildIdGenerator();
-            closeIdGenerator();
-            return true;
-        }
-        else if ( version.equals( "NeoStore v0.9.4" ) )
-        {
             rebuildIdGenerator();
             closeIdGenerator();
             return true;

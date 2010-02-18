@@ -141,8 +141,8 @@ public class XaLogicalLog
             }
             else
             {
-                setActiveLog( LOG1 );
                 open( fileName + ".1" );
+                setActiveLog( LOG1 );
             }
         }
         else
@@ -177,8 +177,8 @@ public class XaLogicalLog
                     throw new IllegalStateException( 
                         "Active marked as clean but log " + newLog + " exist" );
                 }
-                setActiveLog( LOG1 );
                 open( newLog );
+                setActiveLog( LOG1 );
             }
             else if ( c == LOG1 )
             {
@@ -245,6 +245,7 @@ public class XaLogicalLog
             logVersion = xaTf.getCurrentVersion();
             buffer.clear();
             buffer.putLong( logVersion );
+            buffer.putLong( xaTf.getLastCommittedTx() );
             buffer.flip();
             fileChannel.write( buffer );
             scanIsComplete = true;
@@ -404,13 +405,15 @@ public class XaLogicalLog
     }
 
     // [TX_1P_COMMIT][identifier]
-    public synchronized void commitOnePhase( int identifier )
+    public synchronized void commitOnePhase( int identifier, long txId )
         throws XAException
     {
         assert xidIdentMap.get( identifier ) != null;
+        assert txId != -1;
         try
         {
-            writeBuffer.put( TX_1P_COMMIT ).putInt( identifier );
+            writeBuffer.put( TX_1P_COMMIT ).putInt( 
+                identifier ).putLong( txId );
             writeBuffer.force();
         }
         catch ( IOException e )
@@ -424,13 +427,14 @@ public class XaLogicalLog
     {
         // get the tx identifier
         buffer.clear();
-        buffer.limit( 4 );
+        buffer.limit( 12 );
         if ( fileChannel.read( buffer ) != buffer.limit() )
         {
             return false;
         }
         buffer.flip();
         int identifier = buffer.getInt();
+        long txId = buffer.getLong();
         StartEntry entry = xidIdentMap.get( identifier );
         if ( entry == null )
         {
@@ -439,6 +443,8 @@ public class XaLogicalLog
         Xid xid = entry.getXid();
         try
         {
+            XaTransaction xaTx = xaRm.getXaTransaction( xid );
+            xaTx.setCommitTxId( txId );
             xaRm.injectOnePhaseCommit( xid );
         }
         catch ( XAException e )
@@ -503,12 +509,15 @@ public class XaLogicalLog
     }
 
     // [TX_2P_COMMIT][identifier]
-    public synchronized void commitTwoPhase( int identifier ) throws XAException
+    public synchronized void commitTwoPhase( int identifier, long txId ) 
+        throws XAException
     {
         assert xidIdentMap.get( identifier ) != null;
+        assert txId != -1;
         try
         {
-            writeBuffer.put( TX_2P_COMMIT ).putInt( identifier );
+            writeBuffer.put( TX_2P_COMMIT ).putInt( 
+                identifier ).putLong( txId );
             writeBuffer.force();
         }
         catch ( IOException e )
@@ -522,13 +531,14 @@ public class XaLogicalLog
     {
         // get the tx identifier
         buffer.clear();
-        buffer.limit( 4 );
+        buffer.limit( 12 );
         if ( fileChannel.read( buffer ) != buffer.limit() )
         {
             return false;
         }
         buffer.flip();
         int identifier = buffer.getInt();
+        long txId = buffer.getLong();
         StartEntry entry = xidIdentMap.get( identifier );
         if ( entry == null )
         {
@@ -541,6 +551,8 @@ public class XaLogicalLog
         }
         try
         {
+            XaTransaction xaTx = xaRm.getXaTransaction( xid );
+            xaTx.setCommitTxId( txId );
             xaRm.injectTwoPhaseCommit( xid );
         }
         catch ( XAException e )
@@ -710,8 +722,8 @@ public class XaLogicalLog
             "]. Recovery started ..." );
         // get log creation time
         buffer.clear();
-        buffer.limit( 8 );
-        if ( fileChannel.read( buffer ) != 8 )
+        buffer.limit( 16 );
+        if ( fileChannel.read( buffer ) != 16 )
         {
             log.info( "Unable to read timestamp information, "
                 + "no records in logical log." );
@@ -726,12 +738,18 @@ public class XaLogicalLog
         }
         buffer.flip();
         logVersion = buffer.getLong();
-        log.fine( "Logical log version: " + logVersion );
+        long lastCommittedTx = buffer.getLong();
+        log.fine( "Logical log version: " + logVersion + " with committed tx[" +
+            lastCommittedTx + "]" );
         long logEntriesFound = 0;
+        long lastEntryPos = fileChannel.position();
         while ( readEntry() )
         {
             logEntriesFound++;
+            lastEntryPos = fileChannel.position();
         }
+        // make sure we overwrite any broken records
+        fileChannel.position( lastEntryPos );
         scanIsComplete = true;
         log.fine( "Internal recovery completed, scanned " + logEntriesFound
             + " log entries." );
@@ -1022,13 +1040,14 @@ public class XaLogicalLog
         {
             // get the tx identifier
             buffer.clear();
-            buffer.limit( 4 );
+            buffer.limit( 12 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 throw new IOException( "Unable to read tx 1PC entry" );
             }
             buffer.flip();
             int identifier = buffer.getInt();
+            long txId = buffer.getLong();
             StartEntry entry = xidIdentMap.get( identifier );
             if ( entry == null )
             {
@@ -1037,6 +1056,8 @@ public class XaLogicalLog
             Xid xid = entry.getXid();
             try
             {
+                XaTransaction xaTx = xaRm.getXaTransaction( xid );
+                xaTx.setCommitTxId( txId );
                 xaRm.commit( xid, true );
             }
             catch ( XAException e )
@@ -1050,13 +1071,14 @@ public class XaLogicalLog
         {
             // get the tx identifier
             buffer.clear();
-            buffer.limit( 4 );
+            buffer.limit( 12 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 throw new IOException( "Unable to read tx 2PC entry" );
             }
             buffer.flip();
             int identifier = buffer.getInt();
+            long txId = buffer.getLong();
             StartEntry entry = xidIdentMap.get( identifier );
             if ( entry == null )
             {
@@ -1065,6 +1087,8 @@ public class XaLogicalLog
             Xid xid = entry.getXid();
             try
             {
+                XaTransaction xaTx = xaRm.getXaTransaction( xid );
+                xaTx.setCommitTxId( txId );
                 xaRm.commit( xid, true );
             }
             catch ( XAException e )
@@ -1130,20 +1154,22 @@ public class XaLogicalLog
             throw new IllegalStateException( "There are active transactions" );
         }
         buffer.clear();
-        buffer.limit( 8 );
-        if ( byteChannel.read( buffer ) != 8 )
+        buffer.limit( 16 );
+        if ( byteChannel.read( buffer ) != 16 )
         {
             throw new IOException( "Unable to read log version" );
         }
         buffer.flip();
         logVersion = buffer.getLong();
+        long previousCommittedTx = buffer.getLong();
         if ( logVersion != xaTf.getCurrentVersion() )
         {
             throw new IllegalStateException( "Tried to apply version " + 
                 logVersion + " but expected version " + 
                 xaTf.getCurrentVersion() );
         }
-        log.fine( "Logical log version: " + logVersion );
+        log.fine( "Logical log version: " + logVersion + 
+            "(previous committed tx=" + previousCommittedTx + ")" );
         long logEntriesFound = 0;
         LogApplier logApplier = new LogApplier( byteChannel, buffer, xaTf, xaRm,
             cf, xidIdentMap, recoveredTxMap );
@@ -1190,15 +1216,16 @@ public class XaLogicalLog
         FileChannel newLog = new RandomAccessFile( 
             newLogFile, "rw" ).getChannel();
         buffer.clear();
-        buffer.putLong( currentVersion + 1 ).flip();
-        if ( newLog.write( buffer ) != 8 )
+        buffer.putLong( currentVersion + 1 );
+        buffer.putLong( xaTf.getLastCommittedTx() ).flip();
+        if ( newLog.write( buffer ) != 16 )
         {
             throw new IOException( "Unable to write log version to new" );
         }
         fileChannel.position( 0 );
         buffer.clear();
-        buffer.limit( 8 );
-        if( fileChannel.read( buffer ) != 8 )
+        buffer.limit( 16 );
+        if( fileChannel.read( buffer ) != 16 )
         {
             throw new IOException( "Verification of log version failed" );
         }
@@ -1213,7 +1240,7 @@ public class XaLogicalLog
         {
             fileChannel.position( getFirstStartEntry( endPosition ) );
         }
-        buffer.clear();
+        buffer.clear(); // ignore other 8 bytes
         buffer.limit( 1 );
         boolean emptyHit = false;
         while ( fileChannel.read( buffer ) == 1 && !emptyHit )
@@ -1375,22 +1402,23 @@ public class XaLogicalLog
         throws IOException
     {
         buffer.clear();
-        buffer.limit( 1 + 4 );
+        buffer.limit( 1 + 12 );
         buffer.put( TX_1P_COMMIT );
-        if ( fileChannel.read( buffer ) != 4 )
+        if ( fileChannel.read( buffer ) != 12 )
         {
             throw new IllegalStateException( "Unable to read 1P commit entry" );
         }
         buffer.flip();
         buffer.position( 1 );
         int identifier = buffer.getInt();
+        // limit already set so no txId = buffer.getLong();
         FileChannel writeToLog = null;
         if ( xidIdentMap.get( identifier ) != null )
         {
             writeToLog = newLog;
         }
         buffer.position( 0 );
-        if ( writeToLog != null && writeToLog.write( buffer ) != 5 )
+        if ( writeToLog != null && writeToLog.write( buffer ) != 13 )
         {
             throw new TransactionFailureException( 
                 "Unable to write 1P commit entry" );
@@ -1401,15 +1429,16 @@ public class XaLogicalLog
         throws IOException
     {
         buffer.clear();
-        buffer.limit( 1 + 4 );
+        buffer.limit( 1 + 12 );
         buffer.put( TX_2P_COMMIT );
-        if ( fileChannel.read( buffer ) != 4 )
+        if ( fileChannel.read( buffer ) != 12 )
         {
             throw new IllegalStateException( "Unable to read 2P commit entry" );
         }
         buffer.flip();
         buffer.position( 1 );
         int identifier = buffer.getInt();
+        // no txId = buffer.getLong();, limit already set
         FileChannel writeToLog = null;
         if ( xidIdentMap.get( identifier ) != null )
         {
@@ -1418,7 +1447,7 @@ public class XaLogicalLog
             writeToLog = newLog;
         }
         buffer.position( 0 );
-        if ( writeToLog != null && writeToLog.write( buffer ) != 5 )
+        if ( writeToLog != null && writeToLog.write( buffer ) != 13 )
         {
             throw new TransactionFailureException( 
                 "Unable to write 2P commit entry" );

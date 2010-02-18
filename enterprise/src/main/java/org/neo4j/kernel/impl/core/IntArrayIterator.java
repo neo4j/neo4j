@@ -45,7 +45,6 @@ class IntArrayIterator implements Iterable<Relationship>,
     private Direction direction = null;
     private Relationship nextElement = null;
     private final NodeManager nodeManager;
-    private int position = 0;
     private final RelationshipType types[];
 
     private Set<String> visitedTypes = new HashSet<String>();

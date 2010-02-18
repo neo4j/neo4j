@@ -66,7 +66,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
  * Transaction containing {@link Command commands} reflecting the operations
  * performed in the transaction.
  */
-class NeoTransaction extends XaTransaction
+class WriteTransaction extends XaTransaction
 {
     private final Map<Integer,NodeRecord> nodeRecords = 
         new HashMap<Integer,NodeRecord>();
@@ -97,7 +97,7 @@ class NeoTransaction extends XaTransaction
     private final LockReleaser lockReleaser;
     private final LockManager lockManager;
 
-    NeoTransaction( int identifier, XaLogicalLog log, NeoStore neoStore,
+    WriteTransaction( int identifier, XaLogicalLog log, NeoStore neoStore,
         LockReleaser lockReleaser, LockManager lockManager )
     {
         super( identifier, log );
@@ -199,6 +199,7 @@ class NeoTransaction extends XaTransaction
             propCommands.add( command );
             addCommand( command );
         }
+        setCommitTxId( neoStore.getNextCommitId() );
     }
 
     @Override
@@ -446,6 +447,7 @@ class NeoTransaction extends XaTransaction
             {
                 lockReleaser.commit();
             }
+            neoStore.setLastCommittedTx( getCommitTxId() );
         }
         finally
         {

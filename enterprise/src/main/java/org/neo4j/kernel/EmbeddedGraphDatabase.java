@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,30 +30,34 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 
 /**
- * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j in an
- * application. You typically instantiate it by invoking the
- * {@link #EmbeddedGraphDatabase(String) single argument constructor} that takes a path to
- * a directory where Neo4j will store its data files, as such: <code>
+ * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
+ * in an application. You typically instantiate it by invoking the
+ * {@link #EmbeddedGraphDatabase(String) single argument constructor} that takes
+ * a path to a directory where Neo4j will store its data files, as such:
+ * 
  * <pre>
+ * <code>
  * GraphDatabaseService graphDb = new EmbeddedGraphDatabase( &quot;var/graphdb&quot; );
  * // ... use Neo4j
  * graphDb.shutdown();
+ * </code>
  * </pre>
- * </code> For more information, see {@link GraphDatabaseService}.
+ * 
+ * For more information, see {@link GraphDatabaseService}.
  */
 public final class EmbeddedGraphDatabase implements GraphDatabaseService
 {
-    private final EmbeddedGraphDbImpl neoImpl;
-    
+    private final EmbeddedGraphDbImpl graphDbImpl;
+
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
-     * <code>storeDir</code>, which will be created if it doesn't already
-     * exist.
+     * <code>storeDir</code>, which will be created if it doesn't already exist.
+     * 
      * @param storeDir the store directory for the Neo4j store files
      */
     public EmbeddedGraphDatabase( String storeDir )
     {
-        this.neoImpl = new EmbeddedGraphDbImpl( storeDir, this );
+        this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, this );
     }
 
     /**
@@ -62,21 +66,21 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
      * future releases.
      * <p>
      * Creates an embedded {@link GraphDatabaseService} with a store located in
-     * <code>storeDir</code>, which will be created if it doesn't already
-     * exist.
+     * <code>storeDir</code>, which will be created if it doesn't already exist.
      * 
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
      */
     public EmbeddedGraphDatabase( String storeDir, Map<String,String> params )
     {
-        this.neoImpl = new EmbeddedGraphDbImpl( storeDir, params, this );
+        this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this );
     }
 
     /**
-     * A non-standard Convenience method that loads a standard property file and
-     * converts it into a generic <Code>Map<String,String></CODE>. Will most 
+     * A non-standard convenience method that loads a standard property file and
+     * converts it into a generic <Code>Map<String,String></CODE>. Will most
      * likely be removed in future releases.
+     * 
      * @param file the property file to load
      * @return a map containing the properties from the file
      * @throws IllegalArgumentException if file does not exist
@@ -88,43 +92,43 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
 
     public Node createNode()
     {
-        return neoImpl.createNode();
+        return graphDbImpl.createNode();
     }
 
     public Node getNodeById( long id )
     {
-        return neoImpl.getNodeById( id );
+        return graphDbImpl.getNodeById( id );
     }
 
     public Relationship getRelationshipById( long id )
     {
-        return neoImpl.getRelationshipById( id );
+        return graphDbImpl.getRelationshipById( id );
     }
 
     public Node getReferenceNode()
     {
-        return neoImpl.getReferenceNode();
+        return graphDbImpl.getReferenceNode();
     }
 
     public void shutdown()
     {
-        neoImpl.shutdown();
+        graphDbImpl.shutdown();
     }
 
     public boolean enableRemoteShell()
     {
-        return neoImpl.enableRemoteShell();
+        return graphDbImpl.enableRemoteShell();
     }
 
     public boolean enableRemoteShell(
         final Map<String,Serializable> initialProperties )
     {
-        return neoImpl.enableRemoteShell( initialProperties );
+        return graphDbImpl.enableRemoteShell( initialProperties );
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return neoImpl.getRelationshipTypes();
+        return graphDbImpl.getRelationshipTypes();
     }
 
     /**
@@ -132,32 +136,33 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
      */
     public Transaction beginTx()
     {
-        return neoImpl.beginTx();
+        return graphDbImpl.beginTx();
     }
 
     /**
-     * Returns a non-standard configuration object. Will most likely be removed 
+     * Returns a non-standard configuration object. Will most likely be removed
      * in future releases.
      * 
      * @return a configuration object
      */
     public Config getConfig()
     {
-        return neoImpl.getConfig();
+        return graphDbImpl.getConfig();
     }
 
+    @Override
     public String toString()
     {
-        return super.toString() + " [" + neoImpl.getStoreDir() + "]";
+        return super.toString() + " [" + graphDbImpl.getStoreDir() + "]";
     }
-    
+
     public String getStoreDir()
     {
-        return neoImpl.getStoreDir();
+        return graphDbImpl.getStoreDir();
     }
-    
+
     public Iterable<Node> getAllNodes()
     {
-        return neoImpl.getAllNodes();
+        return graphDbImpl.getAllNodes();
     }
 }

@@ -40,9 +40,9 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 
-public class NeoModule
+public class GraphDbModule
 {
-    private static Logger log = Logger.getLogger( NeoModule.class.getName() );
+    private static Logger log = Logger.getLogger( GraphDbModule.class.getName() );
 
     private boolean startIsOk = true;
 
@@ -57,7 +57,7 @@ public class NeoModule
     
     private boolean readOnly = false;
 
-    public NeoModule( AdaptiveCacheManager cacheManager,
+    public GraphDbModule( AdaptiveCacheManager cacheManager,
         LockManager lockManager, TransactionManager transactionManager,
         IdGenerator idGenerator )
     {
@@ -67,7 +67,7 @@ public class NeoModule
         this.idGenerator = idGenerator;
     }
 
-    public NeoModule( AdaptiveCacheManager cacheManager,
+    public GraphDbModule( AdaptiveCacheManager cacheManager,
         LockManager lockManager, TransactionManager transactionManager,
         IdGenerator idGenerator, boolean readOnly )
     {

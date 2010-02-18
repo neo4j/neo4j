@@ -359,6 +359,18 @@ public class XaResourceManager
         xaTransaction.commit();
     }
     
+    synchronized XaTransaction getXaTransaction( Xid xid ) throws XAException
+    {
+        XidStatus status = xidMap.get( xid );
+        if ( status == null )
+        {
+            throw new XAException( "Unknown xid[" + xid + "]" );
+        }
+        TransactionStatus txStatus = status.getTransactionStatus();
+        XaTransaction xaTransaction = txStatus.getTransaction();
+        return xaTransaction;
+    }
+    
     synchronized XaTransaction commit( Xid xid, boolean onePhase )
         throws XAException
     {
@@ -376,7 +388,8 @@ public class XaResourceManager
                 if ( !xaTransaction.isRecovered() )
                 {
                     xaTransaction.prepare();
-                    log.commitOnePhase( xaTransaction.getIdentifier() );
+                    log.commitOnePhase( xaTransaction.getIdentifier(), 
+                        xaTransaction.getCommitTxId() );
                 }
             }
             txStatus.markAsPrepared();
@@ -392,7 +405,8 @@ public class XaResourceManager
             {
                 if ( !onePhase )
                 {
-                    log.commitTwoPhase( xaTransaction.getIdentifier() );
+                    log.commitTwoPhase( xaTransaction.getIdentifier(), 
+                        xaTransaction.getCommitTxId() );
                 }
             }
             txStatus.markCommitStarted();

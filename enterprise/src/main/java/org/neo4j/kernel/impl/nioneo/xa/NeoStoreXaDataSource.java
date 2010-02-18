@@ -280,7 +280,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 
         public XaTransaction create( int identifier )
         {
-            return new NeoTransaction( identifier, getLogicalLog(), neoStore,
+            return new WriteTransaction( identifier, getLogicalLog(), neoStore,
                 lockReleaser, lockManager );
         }
 
@@ -323,6 +323,12 @@ public class NeoStoreXaDataSource extends XaDataSource
         public void flushAll()
         {
             neoStore.flushAll();
+        }
+
+        @Override
+        public long getLastCommittedTx()
+        {
+            return neoStore.getLastCommittedTx();
         }
     }
 
@@ -454,9 +460,9 @@ public class NeoStoreXaDataSource extends XaDataSource
         xaContainer.getLogicalLog().makeBackupSlave();
     }
     
-    NeoReadTransaction getReadOnlyTransaction()
+    ReadTransaction getReadOnlyTransaction()
     {
-        return new NeoReadTransaction( neoStore );
+        return new ReadTransaction( neoStore );
     }
 
     public boolean isReadOnly()

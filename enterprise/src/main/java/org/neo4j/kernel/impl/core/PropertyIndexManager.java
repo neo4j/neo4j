@@ -187,7 +187,7 @@ public class PropertyIndexManager
         TxCommitHook hook = txCommitHooks.get( tx );
         if ( hook == null )
         {
-            hook = new TxCommitHook( tx );
+            hook = new TxCommitHook();
             txCommitHooks.put( tx, hook );
         }
         PropertyIndex index = hook.getIndex( key );
@@ -234,18 +234,16 @@ public class PropertyIndexManager
         txCommitHooks.remove( tx );
     }
 
-    private class TxCommitHook
+    private static class TxCommitHook
     {
         private Map<String,PropertyIndex> createdIndexes = 
             new HashMap<String,PropertyIndex>();
         private Map<Integer,PropertyIndex> idToIndex = 
             new HashMap<Integer,PropertyIndex>();
 
-        private final Transaction tx;
 
-        TxCommitHook( Transaction tx )
+        TxCommitHook()
         {
-            this.tx = tx;
         }
 
         void addIndex( PropertyIndex index )

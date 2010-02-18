@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,15 +36,19 @@ import org.neo4j.kernel.impl.util.FileUtils;
 
 class GraphDbInstance
 {
-    private static final String NIO_NEO_DB_CLASS = "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
+    private static final String NIO_NEO_DB_CLASS = 
+        "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
     private static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
-    private static final String LUCENE_DS_CLASS = "org.neo4j.index.lucene.LuceneDataSource";
+    private static final String LUCENE_DS_CLASS = 
+        "org.neo4j.index.lucene.LuceneDataSource";
+    private static final String LUCENE_FULLTEXT_DS_CLASS = 
+        "org.neo4j.index.lucene.LuceneFulltextDataSource";
 
     private boolean started = false;
     private boolean create;
     private String storeDir;
-    
+
     GraphDbInstance( String storeDir, boolean create )
     {
         this.storeDir = storeDir;
@@ -62,12 +66,12 @@ class GraphDbInstance
 
     public void start()
     {
-        start( new HashMap<String,String>() );
+        start( new HashMap<String, String>() );
     }
 
-    private Map<Object,Object> getDefaultParams()
+    private Map<Object, Object> getDefaultParams()
     {
-        Map<Object,Object> params = new HashMap<Object,Object>();
+        Map<Object, Object> params = new HashMap<Object, Object>();
         params.put( "neostore.nodestore.db.mapped_memory", "20M" );
         params.put( "neostore.propertystore.db.mapped_memory", "90M" );
         params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
@@ -87,24 +91,20 @@ class GraphDbInstance
     /**
      * Starts Neo4j with default configuration
      * 
-     * @param storeDir
-     *            path to directory where Neo4j store is located
-     * @param create
-     *            if true a new Neo4j store will be created if no store
-     *            exist at <CODE>storeDir</CODE>
-     * @param configuration
-     *            parameters
-     * @throws StartupFailedException
-     *             if unable to start
+     * @param storeDir path to directory where Neo4j store is located
+     * @param create if true a new Neo4j store will be created if no store exist
+     *            at <CODE>storeDir</CODE>
+     * @param configuration parameters
+     * @throws StartupFailedException if unable to start
      */
-    public synchronized void start( Map<String,String> stringParams )
+    public synchronized void start( Map<String, String> stringParams )
     {
         if ( started )
         {
             throw new IllegalStateException( "Neo4j instance already started" );
         }
-        Map<Object,Object> params = getDefaultParams();
-        for ( Map.Entry<String,String> entry : stringParams.entrySet() )
+        Map<Object, Object> params = getDefaultParams();
+        for ( Map.Entry<String, String> entry : stringParams.entrySet() )
         {
             params.put( entry.getKey(), entry.getValue() );
         }
@@ -121,17 +121,27 @@ class GraphDbInstance
         params.put( LockManager.class, config.getLockManager() );
         params.put( LockReleaser.class, config.getLockReleaser() );
         config.getTxModule().registerDataSource( DEFAULT_DATA_SOURCE_NAME,
-            NIO_NEO_DB_CLASS, resourceId, params );
+                NIO_NEO_DB_CLASS, resourceId, params );
         // hack for lucene index recovery if in path
         XaDataSource lucene = null;
+        XaDataSource luceneFulltext = null;
         if ( !config.isReadOnly() )
         {
             try
             {
                 Class clazz = Class.forName( LUCENE_DS_CLASS );
                 cleanWriteLocksInLuceneDirectory( storeDir + "/lucene" );
-                lucene = registerLuceneDataSource( clazz.getName(), config
-                    .getTxModule(), storeDir + "/lucene", config.getLockManager() );
+                byte luceneId[] = "162373".getBytes();
+                lucene = registerLuceneDataSource( "lucene", clazz.getName(),
+                        config.getTxModule(), storeDir + "/lucene",
+                        config.getLockManager(), luceneId );
+                clazz = Class.forName( LUCENE_FULLTEXT_DS_CLASS );
+                cleanWriteLocksInLuceneDirectory( storeDir + "/lucene-fulltext" );
+                luceneId = "262374".getBytes();
+                luceneFulltext = registerLuceneDataSource( "lucene-fulltext",
+                        clazz.getName(), config.getTxModule(),
+                        storeDir + "/lucene-fulltext", config.getLockManager(),
+                        luceneId );
             }
             catch ( ClassNotFoundException e )
             { // ok index util not on class path
@@ -139,33 +149,39 @@ class GraphDbInstance
         }
         // System.setProperty( "neo.tx_log_directory", storeDir );
         persistenceSource = new NioNeoDbPersistenceSource();
-        config.setNeoPersistenceSource( DEFAULT_DATA_SOURCE_NAME, create );
+        config.setPersistenceSource( DEFAULT_DATA_SOURCE_NAME, create );
         config.getIdGeneratorModule().setPersistenceSourceInstance(
-            persistenceSource );
+                persistenceSource );
         config.getEventModule().init();
         config.getTxModule().init();
         config.getPersistenceModule().init();
         persistenceSource.init();
         config.getIdGeneratorModule().init();
-        config.getNeoModule().init();
+        config.getGraphDbModule().init();
 
         config.getEventModule().start();
         config.getTxModule().start();
-        config.getPersistenceModule().start( config.getTxModule().getTxManager(), 
-            persistenceSource );
+        config.getPersistenceModule().start(
+                config.getTxModule().getTxManager(), persistenceSource );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
-        config.getNeoModule().start( config.getLockReleaser(),  
-            config.getPersistenceModule().getPersistenceManager(), params );
+        config.getGraphDbModule().start( config.getLockReleaser(),
+                config.getPersistenceModule().getPersistenceManager(), params );
         if ( lucene != null )
         {
             config.getTxModule().getXaDataSourceManager().unregisterDataSource(
-                "lucene" );
+                    "lucene" );
             lucene = null;
+        }
+        if ( luceneFulltext != null )
+        {
+            config.getTxModule().getXaDataSourceManager().unregisterDataSource(
+                    "lucene-fulltext" );
+            luceneFulltext = null;
         }
         started = true;
     }
-    
+
     private void cleanWriteLocksInLuceneDirectory( String luceneDir )
     {
         File dir = new File( luceneDir );
@@ -187,15 +203,15 @@ class GraphDbInstance
         }
     }
 
-    private XaDataSource registerLuceneDataSource( String className,
-        TxModule txModule, String luceneDirectory, LockManager lockManager )
+    private XaDataSource registerLuceneDataSource( String name,
+            String className, TxModule txModule, String luceneDirectory,
+            LockManager lockManager, byte[] resourceId )
     {
-        byte resourceId[] = "162373".getBytes();
-        Map<Object,Object> params = new HashMap<Object,Object>();
+        Map<Object, Object> params = new HashMap<Object, Object>();
         params.put( "dir", luceneDirectory );
         params.put( LockManager.class, lockManager );
-        return txModule.registerDataSource( "lucene", className, resourceId,
-            params, true );
+        return txModule.registerDataSource( name, className, resourceId,
+                params, true );
     }
 
     /**
@@ -215,13 +231,13 @@ class GraphDbInstance
     {
         if ( started )
         {
-            config.getNeoModule().stop();
+            config.getGraphDbModule().stop();
             config.getIdGeneratorModule().stop();
             persistenceSource.stop();
             config.getPersistenceModule().stop();
             config.getTxModule().stop();
             config.getEventModule().stop();
-            config.getNeoModule().destroy();
+            config.getGraphDbModule().destroy();
             config.getIdGeneratorModule().destroy();
             persistenceSource.destroy();
             config.getPersistenceModule().destroy();
@@ -233,7 +249,7 @@ class GraphDbInstance
 
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return config.getNeoModule().getRelationshipTypes();
+        return config.getGraphDbModule().getRelationshipTypes();
     }
 
     public boolean transactionRunning()
@@ -244,8 +260,8 @@ class GraphDbInstance
         }
         catch ( Exception e )
         {
-            throw new TransactionFailureException( 
-                "Unable to get transaction.", e );
+            throw new TransactionFailureException(
+                    "Unable to get transaction.", e );
         }
     }
 

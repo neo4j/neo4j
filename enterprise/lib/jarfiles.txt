@@ -1,2 +1,0 @@
-jta-1_1.jar         - Version 1.1 of Sun's JTA specification.
-

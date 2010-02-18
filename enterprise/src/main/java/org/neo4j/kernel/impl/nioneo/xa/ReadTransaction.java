@@ -40,11 +40,11 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-class NeoReadTransaction
+class ReadTransaction
 {
     private final NeoStore neoStore;
     
-    public NeoReadTransaction( NeoStore neoStore )
+    public ReadTransaction( NeoStore neoStore )
     {
         this.neoStore = neoStore;
     }
