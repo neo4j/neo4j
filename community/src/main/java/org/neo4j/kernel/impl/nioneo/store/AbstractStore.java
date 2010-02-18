@@ -27,7 +27,7 @@ import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.core.ReadOnlyNeoException;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 /**
  * An abstract representation of a store. A store is a file that contains
@@ -235,7 +235,7 @@ public abstract class AbstractStore extends CommonAbstractStore
     {
         if ( isReadOnly() )
         {
-            throw new ReadOnlyNeoException();
+            throw new ReadOnlyDbException();
         }
         // TODO: fix this hardcoding
         final byte RECORD_NOT_IN_USE = 0;

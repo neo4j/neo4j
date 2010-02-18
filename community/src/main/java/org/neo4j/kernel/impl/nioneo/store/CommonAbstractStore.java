@@ -28,7 +28,7 @@ import java.nio.channels.FileLock;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.neo4j.kernel.impl.core.ReadOnlyNeoException;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -405,7 +405,7 @@ public abstract class CommonAbstractStore
         {
             if ( readOnly )
             {
-                throw new ReadOnlyNeoException();
+                throw new ReadOnlyDbException();
             }
             rebuildIdGenerator();
             storeOk = true;
@@ -416,7 +416,7 @@ public abstract class CommonAbstractStore
     {
         if ( readOnly )
         {
-            throw new ReadOnlyNeoException();
+            throw new ReadOnlyDbException();
         }
         rebuildIdGenerator();
     }

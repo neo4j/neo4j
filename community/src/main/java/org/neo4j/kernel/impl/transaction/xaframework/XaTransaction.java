@@ -168,6 +168,8 @@ public abstract class XaTransaction
     private boolean committed = false;
     private boolean rolledback = false;
     private boolean prepared = false;
+    
+    private long commitTxId = -1;
 
     public XaTransaction( int identifier, XaLogicalLog log )
     {
@@ -319,5 +321,15 @@ public abstract class XaTransaction
         {
             log.unregisterTxIdentifier();
         }
+    }
+    
+    public synchronized long getCommitTxId()
+    {
+        return commitTxId;
+    }
+    
+    public synchronized void setCommitTxId( long commitTxId )
+    {
+        this.commitTxId = commitTxId;
     }
 }

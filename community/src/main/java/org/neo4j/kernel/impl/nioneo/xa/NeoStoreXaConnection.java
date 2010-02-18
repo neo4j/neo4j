@@ -58,7 +58,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
     private final RelationshipTypeEventConsumer relTypeConsumer;
     private final PropertyIndexEventConsumer propIndexConsumer;
 
-    private NeoTransaction neoTransaction = null;
+    private WriteTransaction neoTransaction = null;
 
     NeoStoreXaConnection( NeoStore neoStore, XaResourceManager xaRm,
         byte branchId[] )
@@ -137,7 +137,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         return this.xaResource;
     }
 
-    NeoTransaction getNeoTransaction()
+    WriteTransaction getWriteTransaction()
     {
         if ( neoTransaction != null )
         {
@@ -145,7 +145,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         }
         try
         {
-            neoTransaction = (NeoTransaction) getTransaction();
+            neoTransaction = (WriteTransaction) getTransaction();
             return neoTransaction;
         }
         catch ( XAException e )
@@ -178,130 +178,121 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 
     };
 
-    private class NodeEventConsumerImpl implements NodeEventConsumer
+    private static class NodeEventConsumerImpl implements NodeEventConsumer
     {
         private final NeoStoreXaConnection xaCon;
-        private final NodeStore nodeStore;
 
         public NodeEventConsumerImpl( NeoStoreXaConnection xaCon )
         {
             this.xaCon = xaCon;
-            nodeStore = getNodeStore();
         }
 
         public void createNode( int nodeId )
         {
-            xaCon.getNeoTransaction().nodeCreate( nodeId );
+            xaCon.getWriteTransaction().nodeCreate( nodeId );
         }
 
         public void deleteNode( int nodeId )
         {
-            xaCon.getNeoTransaction().nodeDelete( nodeId );
+            xaCon.getWriteTransaction().nodeDelete( nodeId );
         }
 
         // checks for created in tx else get from store
         public boolean loadLightNode( int nodeId )
         {
-            return xaCon.getNeoTransaction().nodeLoadLight( nodeId );
+            return xaCon.getWriteTransaction().nodeLoadLight( nodeId );
         }
 
         public void addProperty( int nodeId, int propertyId,
             PropertyIndex index, Object value )
         {
-            xaCon.getNeoTransaction().nodeAddProperty( nodeId, propertyId,
+            xaCon.getWriteTransaction().nodeAddProperty( nodeId, propertyId,
                 index, value );
         }
 
         public void changeProperty( int nodeId, int propertyId, Object value )
         {
-            xaCon.getNeoTransaction().nodeChangeProperty( nodeId, propertyId,
+            xaCon.getWriteTransaction().nodeChangeProperty( nodeId, propertyId,
                 value );
         }
 
         public void removeProperty( int nodeId, int propertyId )
         {
-            xaCon.getNeoTransaction().nodeRemoveProperty( nodeId, propertyId );
+            xaCon.getWriteTransaction().nodeRemoveProperty( nodeId, propertyId );
         }
 
         public ArrayMap<Integer,PropertyData> getProperties( int nodeId )
         {
-            return xaCon.getNeoTransaction().nodeGetProperties( nodeId );
+            return xaCon.getWriteTransaction().nodeGetProperties( nodeId );
         }
-
-        /*public Iterable<RelationshipData> getRelationships( int nodeId )
-        {
-            return xaCon.getNeoTransaction().nodeGetRelationships( nodeId );
-        }*/
     };
 
-    private class RelationshipEventConsumerImpl implements
+    private static class RelationshipEventConsumerImpl implements
         RelationshipEventConsumer
     {
         private final NeoStoreXaConnection xaCon;
-        private final RelationshipStore relStore;
 
         public RelationshipEventConsumerImpl( NeoStoreXaConnection xaCon )
         {
             this.xaCon = xaCon;
-            this.relStore = getRelationshipStore();
         }
 
         public void createRelationship( int id, int firstNode, int secondNode,
             int type )
         {
-            xaCon.getNeoTransaction().relationshipCreate( id, firstNode,
+            xaCon.getWriteTransaction().relationshipCreate( id, firstNode,
                 secondNode, type );
         }
 
         public void deleteRelationship( int id )
         {
-            xaCon.getNeoTransaction().relDelete( id );
+            xaCon.getWriteTransaction().relDelete( id );
         }
 
         public void addProperty( int relId, int propertyId,
             PropertyIndex index, Object value )
         {
-            xaCon.getNeoTransaction().relAddProperty( relId, propertyId, index,
+            xaCon.getWriteTransaction().relAddProperty( relId, propertyId, index,
                 value );
         }
 
         public void changeProperty( int relId, int propertyId, Object value )
         {
-            xaCon.getNeoTransaction().relChangeProperty( relId, propertyId,
+            xaCon.getWriteTransaction().relChangeProperty( relId, propertyId,
                 value );
         }
 
         public void removeProperty( int relId, int propertyId )
         {
-            xaCon.getNeoTransaction().relRemoveProperty( relId, propertyId );
+            xaCon.getWriteTransaction().relRemoveProperty( relId, propertyId );
         }
 
         public ArrayMap<Integer,PropertyData> getProperties( int relId )
         {
-            return xaCon.getNeoTransaction().relGetProperties( relId );
+            return xaCon.getWriteTransaction().relGetProperties( relId );
         }
 
         public RelationshipData getRelationship( int id )
         {
-            return xaCon.getNeoTransaction().relationshipLoad( id );
+            return xaCon.getWriteTransaction().relationshipLoad( id );
         }
 
         public RelationshipChainPosition getRelationshipChainPosition( 
             int nodeId )
         {
-            return xaCon.getNeoTransaction().getRelationshipChainPosition( 
+            return xaCon.getWriteTransaction().getRelationshipChainPosition( 
                 nodeId );
         }
 
         public Iterable<RelationshipData> getMoreRelationships( int nodeId, 
             RelationshipChainPosition position )
         {
-            return xaCon.getNeoTransaction().getMoreRelationships( nodeId, 
+            return xaCon.getWriteTransaction().getMoreRelationships( nodeId, 
                 position );
         }
     };
 
-    private class RelationshipTypeEventConsumerImpl implements
+    private static class RelationshipTypeEventConsumerImpl implements
         RelationshipTypeEventConsumer
     {
         private final NeoStoreXaConnection xaCon;
@@ -310,12 +301,12 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         RelationshipTypeEventConsumerImpl( NeoStoreXaConnection xaCon )
         {
             this.xaCon = xaCon;
-            this.relTypeStore = getRelationshipTypeStore();
+            this.relTypeStore = xaCon.getRelationshipTypeStore();
         }
 
         public void addRelationshipType( int id, String name )
         {
-            xaCon.getNeoTransaction().relationshipTypeAdd( id, name );
+            xaCon.getWriteTransaction().relationshipTypeAdd( id, name );
         }
 
         public RelationshipTypeData getRelationshipType( int id )
@@ -341,17 +332,17 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
 
         public void createPropertyIndex( int id, String key )
         {
-            xaCon.getNeoTransaction().createPropertyIndex( id, key );
+            xaCon.getWriteTransaction().createPropertyIndex( id, key );
         }
 
         public String getKeyFor( int id )
         {
-            return xaCon.getNeoTransaction().getPropertyIndex( id );
+            return xaCon.getWriteTransaction().getPropertyIndex( id );
         }
 
         public PropertyIndexData[] getPropertyIndexes( int count )
         {
-            return xaCon.getNeoTransaction().getPropertyIndexes( count );
+            return xaCon.getWriteTransaction().getPropertyIndexes( count );
         }
     };
 }

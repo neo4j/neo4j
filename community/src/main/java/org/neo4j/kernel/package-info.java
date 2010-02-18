@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
 
-public class ReadOnlyNeoException extends RuntimeException
-{
-    public ReadOnlyNeoException()
-    {
-        super( "This is a read only embedded Neo4j instance" );
-    }
-}
+/**
+ * Implementation for embedding a Neo4j graph database in an application.
+ * Classes are provided for both read/write mode and read only mode.
+ */
+package org.neo4j.kernel;
+

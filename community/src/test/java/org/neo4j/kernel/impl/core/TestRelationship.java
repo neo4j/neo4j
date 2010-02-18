@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -31,7 +29,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.core.NeoModule;
 
 public class TestRelationship extends AbstractNeo4jTestCase
 {
@@ -327,10 +324,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
             MyRelTypes.TEST );
         node1.delete();
         node2.delete();
-        Logger log = Logger
-            .getLogger( "org.neo4j.kernel.impl.core.NeoConstraintsListener" );
-        Level level = log.getLevel();
-        log.setLevel( Level.OFF );
         try
         {
             getTransaction().success();
@@ -341,7 +334,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
         {
             // good
         }
-        log.setLevel( level );
         setTransaction( getGraphDb().beginTx() );
     }
 
@@ -352,10 +344,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Relationship relationship = node1.createRelationshipTo( node2,
             MyRelTypes.TEST );
         relationship.delete();
-        Logger log = Logger
-            .getLogger( "org.neo4j.kernel.impl.core.NeoConstraintsListener" );
-        Level level = log.getLevel();
-        log.setLevel( Level.OFF );
         try
         {
             relationship.setProperty( "key1", new Integer( 1 ) );
@@ -366,7 +354,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
         }
         node1.delete();
         node2.delete();
-        log.setLevel( level );
     }
 
     public void testRelationshipAddProperty()
@@ -649,9 +636,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
 
     private void clearCache()
     {
-        NeoModule neoModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
-            .getNeoModule();
-        neoModule.getNodeManager().clearCache();
+        GraphDbModule graphDbModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
+            .getGraphDbModule();
+        graphDbModule.getNodeManager().clearCache();
     }
 
     public void testCreateRelationshipWithCommitts()// throws NotFoundException

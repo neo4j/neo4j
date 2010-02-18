@@ -560,18 +560,15 @@ public class TxManager implements TransactionManager
         // mark as commit in log done TxImpl.doCommit()
         StoreFailureException sfe = null;
         int xaErrorCode = -1;
-        int result = Status.STATUS_UNKNOWN;
         if ( tx.getResourceCount() == 0 )
         {
             tx.setStatus( Status.STATUS_COMMITTED );
-            result = Status.STATUS_COMMITTED;
         }
         else
         {
             try
             {
                 tx.doCommit();
-                result = Status.STATUS_COMMITTED;
             }
             catch ( XAException e )
             {
@@ -591,7 +588,6 @@ public class TxManager implements TransactionManager
             catch ( StoreFailureException e )
             {
                 sfe = e;
-                // ok we should have status not committed and
             }
         }
         if ( tx.getStatus() != Status.STATUS_COMMITTED )
@@ -599,7 +595,6 @@ public class TxManager implements TransactionManager
             try
             {
                 tx.doRollback();
-                result = Status.STATUS_ROLLEDBACK;
             }
             catch ( XAException e )
             {
@@ -609,6 +604,10 @@ public class TxManager implements TransactionManager
                     + "Neo4j kernel should be SHUTDOWN for "
                     + "resource maintance and transaction recovery ---->" );
                 tmOk = false;
+                if ( sfe != null )
+                {
+                    sfe.printStackTrace();
+                }
                 throw new HeuristicMixedException(
                     "Unable to rollback ---> error code in commit: "
                         + xaErrorCode + " ---> error code for rollback: "

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,14 +20,16 @@
 package org.neo4j.graphdb;
 
 /**
- * A programmatically handled transaction. All operations that work with the
- * node space (even read operations) must be wrapped in a transaction.
- * Transactions can either be handled programmatically, through this interface,
- * or by a container through the Java Transaction API (JTA). The Transaction
- * interface makes handling programmatic transactions easier than in JTA. Here's
- * the idiomatic use of programmatic transactions in Neo:
+ * A programmatically handled transaction. <em>All operations that work with the
+ * node space - even read operations - must be wrapped in a transaction.</em>
+ * Transactions are thread confined. Transactions can either be handled
+ * programmatically, through this interface, or by a container through the Java
+ * Transaction API (JTA). The Transaction interface makes handling programmatic
+ * transactions easier than using JTA programmatically. Here's the idiomatic use
+ * of programmatic transactions in Neo4j:
  * 
- * <pre><code>
+ * <pre>
+ * <code>
  * Transaction tx = graphDb.beginTx();
  * try
  * {
@@ -38,33 +40,34 @@ package org.neo4j.graphdb;
  * {
  *     tx.finish();
  * }
- * </code></pre>
- * 
+ * </code>
+ * </pre>
  * <p>
  * Let's walk through this example line by line. First we retrieve a Transaction
- * object by invoking the {@link GraphDatabaseService#beginTx()} factory method. This
- * creates a new Transaction instance which has internal state to keep track of
- * whether the current transaction is successful. Then we wrap all operations
- * that work with the node space in a try-finally block. At the end of the
- * block, we invoke the {@link #finish() tx.success()} method to indicate that
- * the transaction is successful. As we exit the block, the finally clause will
- * kick in and {@link #finish() tx.finish} will commit the transaction if the
- * internal state indicates success or else mark it for rollback.
+ * object by invoking the {@link GraphDatabaseService#beginTx()} factory method.
+ * This creates a new Transaction instance which has internal state to keep
+ * track of whether the current transaction is successful. Then we wrap all
+ * operations that work with the node space in a try-finally block. At the end
+ * of the block, we invoke the {@link #finish() tx.success()} method to indicate
+ * that the transaction is successful. As we exit the block, the finally clause
+ * will kick in and {@link #finish() tx.finish} will commit the transaction if
+ * the internal state indicates success or else mark it for rollback.
  * <p>
- * If an exception is raised in the try-block, {@link #success()} will
- * never be invoked and the internal state of the transaction object will cause
- * {@link #finish()} to roll back the transaction. This is very
- * important: unless {@link #success()} is invoked, the transaction will fail
- * upon {@link #finish()}. A transaction can be explicitly marked for rollback
- * by invoking the {@link #failure()} method.
+ * If an exception is raised in the try-block, {@link #success()} will never be
+ * invoked and the internal state of the transaction object will cause
+ * {@link #finish()} to roll back the transaction. This is very important:
+ * unless {@link #success()} is invoked, the transaction will fail upon
+ * {@link #finish()}. A transaction can be explicitly marked for rollback by
+ * invoking the {@link #failure()} method.
  */
 public interface Transaction
 {
     /**
-     * Marks this transaction as failed, which means that it will inexplicably
-     * be rolled back when {@link #finish()} is called. Once this method
-     * has been invoked, it doesn't matter how many times {@link #success()} is
-     * invoked -- the transaction will still be rolled back.
+     * Marks this transaction as failed, which means that it will
+     * unconditionally be rolled back when {@link #finish()} is called. Once
+     * this method has been invoked, it doesn't matter how many times
+     * {@link #success()} is invoked -- the transaction will still be rolled
+     * back.
      */
     public void failure();
 
