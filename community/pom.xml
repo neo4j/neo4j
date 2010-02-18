@@ -5,6 +5,7 @@
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
     <version>6</version>
+    <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
