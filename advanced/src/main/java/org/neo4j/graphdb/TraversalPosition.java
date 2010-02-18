@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo Technology,"
+ * Copyright (c) 2002-2010 "Neo Technology,"
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,12 +31,12 @@ package org.neo4j.graphdb;
  */
 public interface TraversalPosition
 {
-	/**
-	 * Return the current node.
-	 * 
-	 * @return The current node
-	 */
-	public Node currentNode();
+    /**
+     * Return the current node.
+     * 
+     * @return The current node
+     */
+    public Node currentNode();
 
     /**
      * Returns the previous node.
@@ -58,19 +58,28 @@ public interface TraversalPosition
      */
     public Relationship lastRelationshipTraversed();
 
-	/**
-	 * Returns the current traversal depth.
-	 * 
-	 * @return The current traversal depth
-	 */
-	public int depth();
-	
-	/**
-	 * Returns the number of nodes returned by traverser so far.
-	 * 
-	 * @return The number of returned nodes.
-	 */
-	public int returnedNodesCount();
+    /**
+     * Returns the current traversal depth.
+     * 
+     * The traversal depth is the length of the path taken to reach the current
+     * traversal position. This is not necessarily the length of shortest path
+     * from the start node to the node at the current position. When traversing
+     * {@link Traverser.Order#BREADTH_FIRST breadth first} the depth is the
+     * length of the shortest path from the start node to the node at the
+     * current position, but when traversing {@link Traverser.Order#DEPTH_FIRST
+     * depth first} there might exist shorter paths from the start node to the
+     * node at this position.
+     * 
+     * @return The current traversal depth
+     */
+    public int depth();
+
+    /**
+     * Returns the number of nodes returned by traverser so far.
+     * 
+     * @return The number of returned nodes.
+     */
+    public int returnedNodesCount();
 
     /**
      * Returns <code>true</code> if the current position is anywhere except on
@@ -78,25 +87,27 @@ public interface TraversalPosition
      * useful because code in {@link StopEvaluator the}
      * {@link ReturnableEvaluator evaluators} usually have to treat the edge
      * case of the start node separately and using this method makes that code a
-     * lot cleaner. This allows for much cleaner code
-     * where <code>null</code> checks can be avoided for return values from
-     * {@link #lastRelationshipTraversed()} and {@link #previousNode()}, such
-     * as in this example:
+     * lot cleaner. This allows for much cleaner code where <code>null</code>
+     * checks can be avoided for return values from
+     * {@link #lastRelationshipTraversed()} and {@link #previousNode()}, such as
+     * in this example:
      * 
-     * <code><pre>
-     * public boolean isStopNode( TraversalPosition currentPos )
+     * <pre>
+     * <code>
+     * public boolean {@link StopEvaluator#isStopNode(TraversalPosition) isStopNode}( TraversalPosition currentPos )
      * {
      *     // Stop at nodes reached through a SOME_RELATIONSHIP.
      *     return currentPos.notStartNode()
-     *         &amp;&amp; currentPos.lastRelationshipTraversed().isType(
-     *             MyRelationshipTypes.SOME_RELATIONSHIP );
+     *         &amp;&amp; currentPos.{@link #lastRelationshipTraversed() lastRelationshipTraversed}().{@link Relationship#isType(RelationshipType) isType}(
+     *             {@link RelationshipType MyRelationshipTypes.SOME_RELATIONSHIP} );
      * }
-     * </pre></code>
+     * </code>
+     * </pre>
      * 
      * @return <code>true</code> if the this TraversalPosition is not at the
      *         start node, <code>false</code> if it is.
      */
-	public boolean notStartNode();
+    public boolean notStartNode();
 
     /**
      * Returns <code>true</code> if the current position is the start node,
@@ -105,19 +116,21 @@ public interface TraversalPosition
      * have to treat the edge case of the start node separately and using this
      * method makes that code a lot cleaner. This allows for much cleaner code
      * where <code>null</code> checks can be avoided for return values from
-     * {@link #lastRelationshipTraversed()} and {@link #previousNode()}, such
-     * as in this example:
+     * {@link #lastRelationshipTraversed()} and {@link #previousNode()}, such as
+     * in this example:
      * 
-     * <code><pre>
-     * public boolean isReturnableNode( TraversalPosition currentPos )
+     * <pre>
+     * <code>
+     * public boolean {@link ReturnableEvaluator#isReturnableNode(TraversalPosition) isReturnableNode}( TraversalPosition currentPos )
      * {
      *     // The start node, and nodes reached through SOME_RELATIONSHIP
      *     // are returnable.
      *     return currentPos.isStartNode()
-     *         || currentPos.lastRelationshipTraversed().isType(
-     *             MyRelationshipTypes.SOME_RELATIONSHIP );
+     *         || currentPos.{@link #lastRelationshipTraversed() lastRelationshipTraversed}().{@link Relationship#isType(RelationshipType) isType}(
+     *             {@link RelationshipType MyRelationshipTypes.SOME_RELATIONSHIP} );
      * }
-     * </pre></code>
+     * </code>
+     * </pre>
      * 
      * @return <code>true</code> if the this TraversalPosition is at the start
      *         node, <code>false</code> if it is not.

@@ -52,7 +52,7 @@ public class AdaptiveCacheManager
                 + ratio + " minSize=" + minSize );
         }
         
-        if ( cache instanceof SoftLruCache )
+        if ( cache instanceof SoftLruCache<?,?> )
         {
             softCaches.add( (SoftLruCache<?,?>) cache );
             return;
@@ -82,7 +82,7 @@ public class AdaptiveCacheManager
         {
             throw new IllegalArgumentException( "Null cache" );
         }
-        if ( cache instanceof SoftLruCache )
+        if ( cache instanceof SoftLruCache<?,?> )
         {
             softCaches.remove( cache );
             return;

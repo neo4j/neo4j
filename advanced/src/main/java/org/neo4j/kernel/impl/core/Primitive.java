@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-abstract class NeoPrimitive
+abstract class Primitive
 {
     protected final int id;
     protected final NodeManager nodeManager;
@@ -42,13 +42,13 @@ abstract class NeoPrimitive
 
     protected abstract ArrayMap<Integer,PropertyData> loadProperties();
 
-    NeoPrimitive( int id, NodeManager nodeManager )
+    Primitive( int id, NodeManager nodeManager )
     {
         this.id = id;
         this.nodeManager = nodeManager;
     }
 
-    NeoPrimitive( int id, boolean newPrimitive, NodeManager nodeManager )
+    Primitive( int id, boolean newPrimitive, NodeManager nodeManager )
     {
         this.id = id;
         this.nodeManager = nodeManager;
@@ -405,7 +405,7 @@ abstract class NeoPrimitive
             {
                 int propertyId = property.getId();
                 changeProperty( propertyId, value );
-                property.setNewValue( value );
+                property = new PropertyData( propertyId, value );
             }
             else
             {

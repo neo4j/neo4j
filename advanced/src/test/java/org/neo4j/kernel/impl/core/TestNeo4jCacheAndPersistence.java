@@ -77,7 +77,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         tx.success();
         tx.finish();
         NodeManager nodeManager = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
-            .getNeoModule().getNodeManager();
+            .getGraphDbModule().getNodeManager();
         nodeManager.clearCache();
         tx = getGraphDb().beginTx();
         setTransaction( tx );
@@ -245,7 +245,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         nodeA.setProperty( arrayKey, array );
         relA.setProperty( arrayKey, array );
         NodeManager nodeManager = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
-            .getNeoModule().getNodeManager();
+            .getGraphDbModule().getNodeManager();
         nodeManager.clearCache();
         assertTrue( nodeA.getProperty( arrayKey ) != null );
         assertTrue( relA.getProperty( arrayKey ) != null );
@@ -266,7 +266,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         getTransaction().finish();
         newTransaction();
         NodeManager nodeManager = ((EmbeddedGraphDatabase) 
-            getGraphDb()).getConfig().getNeoModule().getNodeManager();
+            getGraphDb()).getConfig().getGraphDbModule().getNodeManager();
         nodeManager.clearCache();
         nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
         int count = 0;
@@ -310,7 +310,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         TransactionManager txManager = 
             graphDb.getConfig().getTxModule().getTxManager();
         NodeManager nodeManager = 
-            graphDb.getConfig().getNeoModule().getNodeManager();
+            graphDb.getConfig().getGraphDbModule().getNodeManager();
         try
         {
             txManager.begin();
@@ -450,7 +450,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Set<Relationship> rels = new HashSet<Relationship>();
         RelationshipType types[] = new RelationshipType[] { 
             MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL };
-        graphDb.getConfig().getNeoModule().getNodeManager().clearCache();
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
         
         for ( Relationship rel : node1.getRelationships( types ) )
         {
@@ -458,7 +458,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         }
         assertEquals( 3, rels.size() );
         rels.clear();
-        graphDb.getConfig().getNeoModule().getNodeManager().clearCache();
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
         for ( Relationship rel : node1.getRelationships() )
         {
             assertTrue( rels.add( rel ) );
@@ -466,14 +466,14 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( 3, rels.size() );
 
         rels.clear();
-        graphDb.getConfig().getNeoModule().getNodeManager().clearCache();
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
         for ( Relationship rel : node2.getRelationships( types ) )
         {
             assertTrue( rels.add( rel ) );
         }
         assertEquals( 3, rels.size() );
         rels.clear();
-        graphDb.getConfig().getNeoModule().getNodeManager().clearCache();
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
         for ( Relationship rel : node2.getRelationships() )
         {
             assertTrue( rels.add( rel ) );
@@ -481,14 +481,14 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( 3, rels.size() );
 
         rels.clear();
-        graphDb.getConfig().getNeoModule().getNodeManager().clearCache();
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
         for ( Relationship rel : node1.getRelationships( Direction.OUTGOING ) )
         {
             assertTrue( rels.add( rel ) );
         }
         assertEquals( 2, rels.size() );
         rels.clear();
-        graphDb.getConfig().getNeoModule().getNodeManager().clearCache();
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
         for ( Relationship rel : node1.getRelationships( Direction.INCOMING ) )
         {
             assertTrue( rels.add( rel ) );
@@ -497,14 +497,14 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         
 
         rels.clear();
-        graphDb.getConfig().getNeoModule().getNodeManager().clearCache();
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
         for ( Relationship rel : node2.getRelationships( Direction.OUTGOING ) )
         {
             assertTrue( rels.add( rel ) );
         }
         assertEquals( 1, rels.size() );
         rels.clear();
-        graphDb.getConfig().getNeoModule().getNodeManager().clearCache();
+        graphDb.getConfig().getGraphDbModule().getNodeManager().clearCache();
         for ( Relationship rel : node2.getRelationships( Direction.INCOMING ) )
         {
             assertTrue( rels.add( rel ) );

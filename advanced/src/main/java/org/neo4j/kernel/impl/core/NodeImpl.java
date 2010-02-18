@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.IntArray;
 
-class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
+class NodeImpl extends Primitive implements Node, Comparable<Node>
 {
     private ArrayMap<String,IntArray> relationshipMap = null;
     // private RelationshipGrabber relationshipGrabber = null;
@@ -310,7 +310,7 @@ class NodeImpl extends NeoPrimitive implements Node, Comparable<Node>
         relationshipSet.add( relId );
     }
 
-    private boolean ensureFullRelationships()
+    private synchronized boolean ensureFullRelationships()
     {
         if ( relationshipMap == null )
         {

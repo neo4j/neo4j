@@ -312,13 +312,16 @@ public class TestXa extends AbstractNeo4jTestCase
         buffer.clear();
         FileChannel fileChannel = new RandomAccessFile( "nioneo_logical.log." + 
             active, "rw" ).getChannel();
-        if ( size < 0 )
+        if ( fileChannel.size() > size )
         {
-            fileChannel.truncate( fileChannel.size() - 3 );
+            fileChannel.truncate( size );
         }
         else
         {
-            fileChannel.truncate( size );
+            fileChannel.position( size );
+            ByteBuffer buf = ByteBuffer.allocate( 1 );
+            buf.put( (byte) 0 ).flip();
+            fileChannel.write( buf );
         }
         fileChannel.force( false );
         fileChannel.close();
@@ -516,6 +519,39 @@ public class TestXa extends AbstractNeo4jTestCase
         }
     }
 
+    public void testBrokenNodeCommand()
+    {
+        try
+        {
+            Xid xid = new XidImpl( new byte[4], new byte[4] );
+            XAResource xaRes = xaCon.getXaResource();
+            xaRes.start( xid, XAResource.TMNOFLAGS );
+            int node1 = ds.nextId( Node.class );
+            xaCon.getNodeConsumer().createNode( node1 );
+            xaRes.end( xid, XAResource.TMSUCCESS );
+            xaRes.prepare( xid );
+            xaCon.clearAllTransactions();
+            copyLogicalLog();
+            xaCon.clearAllTransactions();
+            ds.close();
+            deleteLogicalLogIfExist();
+            renameCopiedLogicalLog();
+            truncateLogicalLog( 39 );
+            truncateLogicalLog( 40 );
+            ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+                lockManager, lockReleaser );
+            xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+            xaRes = xaCon.getXaResource();
+            assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
+            xaCon.clearAllTransactions();
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            fail( "" + e );
+        }
+    } 
+
     public void testBrokenCommand()
     {
         try
@@ -525,17 +561,16 @@ public class TestXa extends AbstractNeo4jTestCase
             xaRes.start( xid, XAResource.TMNOFLAGS );
             int node1 = ds.nextId( Node.class );
             xaCon.getNodeConsumer().createNode( node1 );
-            int node2 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node2 );
-            int n1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getNodeConsumer().addProperty( node1, n1prop1,
-                index( "prop1" ), "string1" );
+            xaRes.end( xid, XAResource.TMSUCCESS );
+            xaRes.prepare( xid );
+            xaCon.clearAllTransactions();
             copyLogicalLog();
             xaCon.clearAllTransactions();
             ds.close();
             deleteLogicalLogIfExist();
             renameCopiedLogicalLog();
-            truncateLogicalLog( -3 );
+            truncateLogicalLog( 32 );
+            truncateLogicalLog( 40 );
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
                 lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
@@ -549,7 +584,7 @@ public class TestXa extends AbstractNeo4jTestCase
             fail( "" + e );
         }
     }
-
+    
     public void testBrokenPrepare()
     {
         try
@@ -607,7 +642,7 @@ public class TestXa extends AbstractNeo4jTestCase
             ds.close();
             deleteLogicalLogIfExist();
             renameCopiedLogicalLog();
-            truncateLogicalLog( 145 );
+            truncateLogicalLog( 153 );
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
                 lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();

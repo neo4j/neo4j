@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-class RelationshipImpl extends NeoPrimitive implements Relationship,
+class RelationshipImpl extends Primitive implements Relationship,
     Comparable<Relationship>
 {
     private final int startNodeId;

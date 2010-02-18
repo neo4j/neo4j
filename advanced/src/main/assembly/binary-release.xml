@@ -1,4 +1,6 @@
-<assembly>
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
 	<id>binary</id>
 	<formats>
 		<format>tar.gz</format>
@@ -19,7 +21,7 @@
 		</fileSet>
 		
 		<!-- source:target/*.jar -> assembly:/ -->
-		<fileSet>
+        <fileSet>
 			<directory>target</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
@@ -29,30 +31,17 @@
 				<exclude>*-javadoc.jar</exclude>
 				<exclude>*-sources.jar</exclude>
 			</excludes>
-		</fileSet>
-		<!-- source:lib/*.jar -> assembly:/ -->
-		<fileSet>
-			<directory>lib</directory>
-			<outputDirectory>/</outputDirectory>
-			<includes>
-				<include>*.jar</include>
-			</includes>
-			<excludes>
-				<exclude>junit*.jar</exclude>
-			</excludes>
-		</fileSet>
-		<!-- source:*.txt -> assembly:/ -->
-		<fileSet>
-		    <directory>src/main/assembly/</directory>
-		    <outputDirectory>/</outputDirectory>
-            <includes>
-                <include>*.txt</include>
-            </includes>		    
-		</fileSet>
+        </fileSet>
+        
 		<!-- source:target/site/apidocs -> assembly:/doc/apidocs -->
 		<fileSet>
-			<directory>target/site/apidocs</directory>
+			<directory>target/apidocs</directory>
 			<outputDirectory>javadoc</outputDirectory>
 		</fileSet>
 	</fileSets>
+  
+	<dependencySets>
+		<dependencySet>
+		</dependencySet>
+	</dependencySets>
 </assembly>

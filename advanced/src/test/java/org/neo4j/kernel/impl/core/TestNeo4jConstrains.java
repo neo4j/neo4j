@@ -28,13 +28,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.core.NodeManager;
 
 public class TestNeo4jConstrains extends AbstractNeo4jTestCase
 {
-    private Level level1 = null;
-    private Level level2 = null;
-
     private String key = "testproperty";
 
     public TestNeo4jConstrains( String testName )
@@ -45,23 +41,10 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
     public void setUp()
     {
         super.setUp();
-        // turn off logging since the code may print nasty stacktrace
-        Logger log = Logger
-            .getLogger( "org.neo4j.kernel.impl.persistence.PersistenceLayerMonitor" );
-        level1 = log.getLevel();
-        log.setLevel( Level.OFF );
-        log = Logger.getLogger( "org.neo4j.kernel.impl.core.NeoConstraintsListener" );
-        level2 = log.getLevel();
-        log.setLevel( Level.OFF );
     }
 
     public void tearDown()
     {
-        Logger log = Logger
-            .getLogger( "org.neo4j.kernel.impl.persistence.BusinessLayerMonitor" );
-        log.setLevel( level1 );
-        log = Logger.getLogger( "org.neo4j.kernel.impl.core.NeoConstraints" );
-        log.setLevel( level2 );
         super.tearDown();
     }
 

@@ -122,6 +122,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         public DummyTransaction( int identifier, XaLogicalLog log )
         {
             super( identifier, log );
+            setCommitTxId( 0 );
         }
 
         public void doAddCommand( XaCommand command )
@@ -175,6 +176,12 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         public long getCurrentVersion()
         {
             return -1;
+        }
+
+        @Override
+        public long getLastCommittedTx()
+        {
+            return 0;
         }
     }
 
