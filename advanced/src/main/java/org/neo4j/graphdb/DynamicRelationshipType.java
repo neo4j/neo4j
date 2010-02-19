@@ -66,9 +66,9 @@ public final class DynamicRelationshipType implements RelationshipType
     }
 
     /**
-     * Instantiates a new DynamicRelationshipType with the given name, without
-     * creating it in the underlying storage. The relationship type is persisted
-     * only when the first relationship of this type is created.
+     * Instantiates a new DynamicRelationshipType with the given name.
+     * There's more information regarding relationship types over at
+     * {@link RelationshipType}.
      * 
      * @param name the name of the dynamic relationship type
      * @return a DynamicRelationshipType with the given name
