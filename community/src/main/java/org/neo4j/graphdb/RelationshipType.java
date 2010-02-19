@@ -31,7 +31,10 @@ package org.neo4j.graphdb;
  * relationship types are dynamic. This means that every time a client invokes
  * {@link Node#createRelationshipTo(Node,RelationshipType)
  * node.createRelationshipTo(anotherNode, newRelType)} and passes in a new
- * relationship type then the new type will be transparently created.
+ * relationship type then the new type will be transparently created. So
+ * instantiating a RelationshipType instance will not create it in the
+ * underlying storage, it is persisted only when the first relationship of that
+ * type is created.
  * <p>
  * However, in case the application does not need to dynamically create
  * relationship types (most don't), then it's nice to have the compile-time
