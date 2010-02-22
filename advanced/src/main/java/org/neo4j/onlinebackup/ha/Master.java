@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.ServerSocketChannel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -141,14 +142,25 @@ public class Master implements Callback
 
     public void rotateLogAndPushToSlaves() throws IOException
     {
+        if ( slaveList.size() == 0 )
+        {
+            return;
+        }
         long version = getVersion();
         xaDs.rotateLogicalLog();
+        ArrayList<HandleSlaveConnection> newList = 
+            new ArrayList<HandleSlaveConnection>();
         for ( HandleSlaveConnection slave : slaveList )
         {
             if ( !slave.offerLogToSlave( version ) )
             {
                 System.out.println( "Failed to offer log to slave: " + slave );
             }
+            else
+            {
+                newList.add( slave );
+            }
         }
+        slaveList = newList;
     }
 }

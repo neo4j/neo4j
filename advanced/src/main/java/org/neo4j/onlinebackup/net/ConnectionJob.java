@@ -72,9 +72,4 @@ public abstract class ConnectionJob extends Job
     }
     
     abstract void connectionClosed();
-    
-    public boolean isPeer()
-    {
-        return false;
-    }
 }
