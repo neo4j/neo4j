@@ -712,4 +712,32 @@ final class BasicServerTransaction
         }
         return response().buildVoidResponse();
     }
+
+    RemoteResponse<Void> removeIndexNode( int indexId, long nodeId, String key )
+    {
+        resume();
+        try
+        {
+            server.removeIndexNode( connection.graphDb, indexId, nodeId, key );
+        }
+        catch ( Exception ex )
+        {
+            return response().buildErrorResponse( ex );
+        }
+        return response().buildVoidResponse();
+    }
+
+    RemoteResponse<Void> removeIndexNode( int indexId, String key )
+    {
+        resume();
+        try
+        {
+            server.removeIndexNode( connection.graphDb, indexId, key );
+        }
+        catch ( Exception ex )
+        {
+            return response().buildErrorResponse( ex );
+        }
+        return response().buildVoidResponse();
+    }
 }

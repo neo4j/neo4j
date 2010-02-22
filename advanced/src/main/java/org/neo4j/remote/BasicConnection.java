@@ -338,4 +338,17 @@ final class BasicConnection implements RemoteConnection
         return transaction( transactionId ).removeIndexNode( indexId, nodeId,
             key, value );
     }
+
+    public RemoteResponse<Void> removeIndexNode( int transactionId,
+        int indexId, long nodeId, String key )
+    {
+        return transaction( transactionId ).removeIndexNode( indexId, nodeId,
+            key );
+    }
+
+    public RemoteResponse<Void> removeIndexNode( int transactionId,
+        int indexId, String key )
+    {
+        return transaction( transactionId ).removeIndexNode( indexId, key );
+    }
 }

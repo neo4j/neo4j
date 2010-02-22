@@ -413,6 +413,16 @@ final class RemoteGraphDbEngine
         receive( connection.removeIndexNode( txId, indexId, nodeId, key, value ) );
     }
 
+    void removeIndexNode( int txId, int indexId, long nodeId, String key )
+    {
+        receive( connection.removeIndexNode( txId, indexId, nodeId, key ) );
+    }
+    
+    void removeIndexNode( int txId, int indexId, String key )
+    {
+        receive( connection.removeIndexNode( txId, indexId, key ) );
+    }
+    
     interface CloseableIteratorWithSize<T> extends CloseableIterator<T>
     {
         long size();

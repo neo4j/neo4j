@@ -144,4 +144,10 @@ interface RmiConnection extends Remote
 
     RemoteResponse<Void> removeIndexNode( int transactionId, int indexId,
         long nodeId, String key, Object value ) throws RemoteException;
+
+    RemoteResponse<Void> removeIndexNode( int transactionId, int indexId,
+            long nodeId, String key ) throws RemoteException;
+
+    RemoteResponse<Void> removeIndexNode( int transactionId, int indexId,
+            String key ) throws RemoteException;
 }

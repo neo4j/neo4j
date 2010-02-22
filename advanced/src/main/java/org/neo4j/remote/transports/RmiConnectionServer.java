@@ -368,4 +368,17 @@ class RmiConnectionServer extends UnicastRemoteObject implements RmiConnection
         return connection.removeIndexNode( transactionId, indexId, nodeId, key,
             value );
     }
+
+    public RemoteResponse<Void> removeIndexNode( int transactionId,
+        int indexId, long nodeId, String key )
+        throws RemoteException
+    {
+        return connection.removeIndexNode( transactionId, indexId, nodeId, key );
+    }
+
+    public RemoteResponse<Void> removeIndexNode( int transactionId,
+        int indexId, String key ) throws RemoteException
+    {
+        return connection.removeIndexNode( transactionId, indexId, key );
+    }
 }
