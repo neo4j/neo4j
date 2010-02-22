@@ -66,6 +66,10 @@ public class JobEater extends Thread
                     {
                         tt.printStackTrace();
                     }
+                    if ( job instanceof ConnectionJob )
+                    {
+                        ((ConnectionJob) job).close();
+                    }
                 }
             }
             else
@@ -126,6 +130,10 @@ public class JobEater extends Thread
                         catch ( Throwable tt )
                         {
                             tt.printStackTrace();
+                        }
+                        if ( job instanceof ConnectionJob )
+                        {
+                            ((ConnectionJob) job).close();
                         }
                     }
                 }
