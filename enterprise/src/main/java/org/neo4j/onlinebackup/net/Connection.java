@@ -87,7 +87,7 @@ public class Connection
         {
             try
             {
-                channel.finishConnect();
+                return channel.finishConnect();
             }
             catch ( IOException e )
             {

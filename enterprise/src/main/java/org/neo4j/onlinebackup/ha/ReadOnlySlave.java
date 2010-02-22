@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.onlinebackup.net.Callback;
@@ -16,7 +16,7 @@ import org.neo4j.onlinebackup.net.SocketException;
 
 public class ReadOnlySlave implements Callback
 {
-    private final EmbeddedReadOnlyGraphDatabase graphDb;
+    private final EmbeddedGraphDatabase graphDb;
     private final NeoStoreXaDataSource xaDs;
 
     private final JobEater jobEater;
@@ -31,7 +31,7 @@ public class ReadOnlySlave implements Callback
     public ReadOnlySlave( String path, Map<String,String> params, 
         String masterIp, int masterPort )
     {
-        this.graphDb = new EmbeddedReadOnlyGraphDatabase( path, params );
+        this.graphDb = new EmbeddedGraphDatabase( path, params );
         this.xaDs = (NeoStoreXaDataSource) graphDb.getConfig().getTxModule()
             .getXaDataSourceManager().getXaDataSource( "nioneodb" );
         this.xaDs.makeBackupSlave();
@@ -45,7 +45,7 @@ public class ReadOnlySlave implements Callback
         this.masterIp = masterIp;
         this.masterPort = masterPort;
         masterConnection = new Connection( masterIp, masterPort );
-        if ( !masterConnection.connected() )
+        while ( !masterConnection.connected() )
         {
             if ( masterConnection.connectionRefused() )
             {
@@ -139,14 +139,14 @@ public class ReadOnlySlave implements Callback
         graphDb.shutdown();
     }
 
-    public void tryApplyNewLog()
-    {
-        long nextVersion = xaDs.getCurrentLogVersion();
-        while ( xaDs.hasLogicalLog( nextVersion ) )
-        {
-           logApplier.applyLog( nextVersion );
-           nextVersion++;
-        }
-        // 
-    }
+//    public void tryApplyNewLog()
+//    {
+//        long nextVersion = xaDs.getCurrentLogVersion();
+//        while ( xaDs.hasLogicalLog( nextVersion ) )
+//        {
+//           logApplier.applyLog( nextVersion );
+//           nextVersion++;
+//        }
+//        // 
+//    }
 }
