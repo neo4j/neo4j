@@ -2,14 +2,12 @@ package org.neo4j.onlinebackup.ha;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
 public class LogApplier extends Thread
 {
-    private final Queue<Long> queue = new ConcurrentLinkedQueue<Long>();
+//    private final Queue<Long> queue = new ConcurrentLinkedQueue<Long>();
     
     private volatile boolean run = true;
     
@@ -20,14 +18,14 @@ public class LogApplier extends Thread
         this.xaDs = xaDs;
     }
     
-    public boolean applyLog( long version )
-    {
-        if ( !run )
-        {
-            throw new IllegalStateException( "Log applier not running" );
-        }
-        return queue.offer( version );
-    }
+//    public boolean applyLog( long version )
+//    {
+//        if ( !run )
+//        {
+//            throw new IllegalStateException( "Log applier not running" );
+//        }
+//        return queue.offer( version );
+//    }
     
     public void run()
     {
@@ -35,15 +33,15 @@ public class LogApplier extends Thread
         {
             while ( run )
             {
-                Long logVersion = queue.poll();
-                if ( logVersion != null )
+//                Long logVersion = queue.poll();
+//                if ( logVersion != null )
+//                {
+                long logVersion = xaDs.getCurrentLogVersion();
+                if ( xaDs.hasLogicalLog( logVersion ) )
                 {
-                    if ( logVersion == xaDs.getCurrentLogVersion() )
-                    {
-                        ReadableByteChannel logChannel = 
-                            xaDs.getLogicalLog( logVersion );
-                        xaDs.applyLog( logChannel );
-                    }
+                    ReadableByteChannel logChannel = 
+                        xaDs.getLogicalLog( logVersion );
+                    xaDs.applyLog( logChannel );
                 }
                 else
                 {

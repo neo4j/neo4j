@@ -29,7 +29,7 @@ public class HandleSlaveConnection extends ConnectionJob
     {
         super( connection, master );
         this.master = master;
-        if ( master.hasLog( slaveVersion ) )
+/*        if ( master.hasLog( slaveVersion ) )
         {
             logVersionToSend = slaveVersion;
             logLength = master.getLogLength( slaveVersion );
@@ -42,17 +42,17 @@ public class HandleSlaveConnection extends ConnectionJob
             {
                 throw new SocketException( "Error getting next log", e );
             }
-        }
+        }*/
         setStatus( Status.GET_MESSAGE );
     }
     
     private synchronized boolean getMessage()
     {
-        if ( logVersionToSend > -1 && logLength > -1 && logToSend != null )
-        {
-            setStatus( Status.SETUP_OFFER_LOG );
-            return true;
-        }
+//        if ( logVersionToSend > -1 && logLength > -1 && logToSend != null )
+//        {
+//            setStatus( Status.SETUP_OFFER_LOG );
+//            return true;
+//        }
         if ( !acquireReadBuffer() )
         {
             return false;
@@ -247,18 +247,18 @@ public class HandleSlaveConnection extends ConnectionJob
                 {
                     releaseWriteBuffer();
                     setStatus( Status.GET_MESSAGE );
-                    if ( master.hasLog( logVersionToSend + 1 ) )
-                    {
-                        logVersionToSend = logVersionToSend++;
-                        logLength = master.getLogLength( logVersionToSend );
-                        logToSend = master.getLog( logVersionToSend );
-                    }
-                    else
-                    {
+//                    if ( master.hasLog( logVersionToSend + 1 ) )
+//                    {
+//                        logVersionToSend = logVersionToSend++;
+//                        logLength = master.getLogLength( logVersionToSend );
+//                        logToSend = master.getLog( logVersionToSend );
+//                    }
+//                    else
+//                    {
                         logLength = -1;
                         logVersionToSend = -1;
                         logToSend = null;
-                    }
+//                    }
                     return true;
                 }
                 buffer.flip();
@@ -293,15 +293,25 @@ public class HandleSlaveConnection extends ConnectionJob
     
     public synchronized boolean offerLogToSlave( long version )
     {
+        if ( !getConnection().connected() )
+        {
+            System.out.println( "Not connected" );
+            return false;
+        }
         if ( logLength != -1 || logVersionToSend != -1 || logToSend != null )
         {
-            return false;
+            // we already sending a version
+            return true;
         }
         try
         {
-            logToSend = master.getLog( version );
-            logLength = master.getLogLength( version );
-            logVersionToSend = version;
+            if ( getStatus() == Status.GET_MESSAGE )
+            {
+                logToSend = master.getLog( version );
+                logLength = master.getLogLength( version );
+                logVersionToSend = version;
+                setStatus( Status.SETUP_OFFER_LOG );
+            }
             return true;
         }
         catch ( IOException e )

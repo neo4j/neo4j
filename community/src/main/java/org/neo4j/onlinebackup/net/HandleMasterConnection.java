@@ -81,10 +81,11 @@ public class HandleMasterConnection extends ConnectionJob
                     try
                     {
                         logVersionWriting = version;
-                        tempFile = File.createTempFile( "logical-log", 
-                            Long.toString( version ) );
+                        tempFile = new File( "logical-transfer.v" + 
+                                Long.toString( version ) );
                         logToWrite = new RandomAccessFile( tempFile, 
                             "rw").getChannel();
+                        logToWrite.truncate( 0 );
                     }
                     catch ( IOException e )
                     {
@@ -120,7 +121,7 @@ public class HandleMasterConnection extends ConnectionJob
     
     private boolean setupRequest()
     {
-        long version = slave.getVersion() + 1;
+        long version = slave.getVersion();
         while ( version < masterVersion )
         {
             if ( slave.hasLog( version ) )
@@ -290,12 +291,23 @@ public class HandleMasterConnection extends ConnectionJob
                         setStatus( Status.GET_MESSAGE );
                     }
                     logToWrite.close();
-                    tempFile.renameTo( 
-                        new File( slave.getLogName( logVersionWriting ) ) );
+                    String newName = slave.getLogName( logVersionWriting );
+                    File newLog = new File( newName );
+                    if ( newLog.exists() )
+                    {
+                        log( "Error new log file[" + newName + 
+                                "] already exist" );
+                        close();
+                    }
+                    if ( !tempFile.renameTo( new File( newName ) ) )
+                    {
+                        log( "Unable to move log to " + newName );
+                        close();
+                    }
                     logVersionWriting = -1;
                     tempFile = null;
                     logToWrite = null;
-                    slave.tryApplyNewLog();
+                    // slave.tryApplyNewLog();
                 }
                 return true;
             }
