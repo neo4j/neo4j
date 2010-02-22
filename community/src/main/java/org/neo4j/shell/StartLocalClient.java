@@ -50,9 +50,9 @@ public class StartLocalClient extends AbstractStarter
         String dbPath = argMap.get( ARG_PATH );
         if ( dbPath == null )
         {
-            System.err.println( "ERROR: To start a local neo4j service and a " +
+            System.err.println( "ERROR: To start a local Neo4j service and a " +
                 "shell client on top of that you need to supply a path to a " +
-                "neo4j store or just a new path where a new store will " +
+                "Neo4j store or just a new path where a new store will " +
                 "be created if it doesn't exist. -" + ARG_PATH +
                 " /my/path/here" );
             return;
@@ -144,7 +144,7 @@ public class StartLocalClient extends AbstractStarter
             }
         } );
         
-        System.out.println( "NOTE: Connected to local neo4j service at '" +
+        System.out.println( "NOTE: Local Neo4j graph database service at '" +
             dbPath + "'" );
         ShellClient client = new SameJvmClient( server );
         setSessionVariablesFromArgs( client, args );

@@ -21,10 +21,8 @@ package org.neo4j.shell.kernel.apps;
 
 import java.lang.reflect.Array;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -41,6 +39,7 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.TextUtil;
 import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -452,7 +451,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
             data.put( "n", node.getId() );
             for ( String command : templateLines )
             {
-                String line = templateString( command, "\\$", data );
+                String line = TextUtil.templateString( command, data );
                 server.interpretLine( line, session, out );
             }
         }
@@ -460,56 +459,5 @@ public abstract class GraphDatabaseApp extends AbstractApp
         {
             out.println();
         }
-    }
-    
-    private static String templateString( String templateString,
-            String variablePrefix, Map<String, Object> data )
-    {
-        // Sort data strings on length.
-        Map<Integer, List<String>> lengthMap =
-            new HashMap<Integer, List<String>>();
-        int longest = 0;
-        for ( String key : data.keySet() )
-        {
-            int length = key.length();
-            if ( length > longest )
-            {
-                longest = length;
-            }
-            
-            List<String> innerList = null;
-            Integer innerKey = Integer.valueOf( length );
-            if ( lengthMap.containsKey( innerKey ) )
-            {
-                innerList = lengthMap.get( innerKey );
-            }
-            else
-            {
-                innerList = new ArrayList<String>();
-                lengthMap.put( innerKey, innerList );
-            }
-            innerList.add( key );
-        }
-        
-        // Replace it.
-        String result = templateString;
-        for ( int i = longest; i >= 0; i-- )
-        {
-            Integer lengthKey = Integer.valueOf( i );
-            if ( !lengthMap.containsKey( lengthKey ) )
-            {
-                continue;
-            }
-            
-            List<String> list = lengthMap.get( lengthKey );
-            for ( String key : list )
-            {
-                String replacement = data.get( key ).toString();
-                String regExpMatchString = variablePrefix + key;
-                result = result.replaceAll( regExpMatchString, replacement );
-            }
-        }
-        
-        return result;
     }
 }

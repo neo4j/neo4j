@@ -53,4 +53,9 @@ public class SameJvmSession implements Session
 		return this.properties.keySet().toArray(
 			new String[ this.properties.size() ] );
 	}
+	
+	public Map<String, Serializable> asMap()
+	{
+	    return new HashMap<String, Serializable>( this.properties );
+	}
 }

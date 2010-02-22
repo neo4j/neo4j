@@ -22,6 +22,7 @@ package org.neo4j.shell;
 import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.Map;
 
 /**
  * A session (or environment) for a shell client.
@@ -56,4 +57,12 @@ public interface Session extends Remote
 	 * @throws RemoteException RMI error.
 	 */
 	String[] keys() throws RemoteException;
+	
+	/**
+	 * Returns the session as a {@link Map} representation. Changes in the
+	 * returned instance won't be reflected in the session.
+	 * @return the session as a {@link Map}.
+	 * @throws RemoteException RMI error.
+	 */
+	Map<String, Serializable> asMap() throws RemoteException;
 }

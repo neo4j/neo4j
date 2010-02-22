@@ -37,6 +37,9 @@ import org.neo4j.shell.ShellException;
  */
 public class Mkrel extends GraphDatabaseApp
 {
+    public static final String KEY_LAST_CREATED_NODE = "LAST_CREATED_NODE";
+    public static final String KEY_LAST_CREATED_RELATIONSHIP = "LAST_CREATED_RELATIONSHIP";
+    
     /**
      * Constructs a new application which can create relationships in Neo4j.
      */
@@ -72,6 +75,7 @@ public class Mkrel extends GraphDatabaseApp
         if ( createNode )
         {
             node = getServer().getDb().createNode();
+            session.set( KEY_LAST_CREATED_NODE, "" + node.getId() );
         }
         else if ( suppliedNode )
         {
@@ -96,6 +100,7 @@ public class Mkrel extends GraphDatabaseApp
         Node endNode = direction == Direction.OUTGOING ? node : currentNode;
         Relationship relationship =
             startNode.createRelationshipTo( endNode, type );
+        session.set( KEY_LAST_CREATED_RELATIONSHIP, relationship.getId() );
         boolean verbose = parser.options().containsKey( "v" );
         if ( createNode && verbose )
         {

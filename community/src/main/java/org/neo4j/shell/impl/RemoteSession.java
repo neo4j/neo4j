@@ -78,4 +78,9 @@ public class RemoteSession extends UnicastRemoteObject implements Session
 	{
 		this.properties.put( key, value );
 	}
+	
+	public Map<String, Serializable> asMap()
+	{
+	    return new HashMap<String, Serializable>( this.properties );
+	}
 }

@@ -46,7 +46,7 @@ public class StartRemoteClient extends AbstractStarter
             int port = getPort( argMap );
             String name = getShellName( argMap );
             ShellClient client = ShellLobby.newClient( port, name );
-            System.out.println( "NOTE: Connected to remote neo4j service '" + name +
+            System.out.println( "NOTE: Remote Neo4j graph database service '" + name +
                     "' at port " + port );
             setSessionVariablesFromArgs( client, args );
             client.grabPrompt();

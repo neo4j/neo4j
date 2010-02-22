@@ -28,6 +28,7 @@ import java.util.Set;
 import org.neo4j.shell.Console;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.TextUtil;
 
 /**
  * A common implementation of a {@link ShellClient}.
@@ -75,6 +76,8 @@ public abstract class AbstractClient implements ShellClient
                 {
                     break;
                 }
+                
+                line = expandLine( line );
 
                 String result = this.getServer().interpretLine(
                     line, this.session(), this.getOutput() );
@@ -97,6 +100,12 @@ public abstract class AbstractClient implements ShellClient
             }
         }
         this.shutdown();
+    }
+
+    private String expandLine( String line ) throws RemoteException
+    {
+        // Look for environment variables and expand to the real values
+        return TextUtil.templateString( line, this.session().asMap() );
     }
 
     protected String getShortExceptionMessage( Exception e )
