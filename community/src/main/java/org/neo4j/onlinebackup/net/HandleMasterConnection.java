@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
-import org.neo4j.onlinebackup.ha.ReadOnlySlave;
+import org.neo4j.onlinebackup.ha.AbstractSlave;
 
 public class HandleMasterConnection extends ConnectionJob
 {
@@ -21,7 +21,7 @@ public class HandleMasterConnection extends ConnectionJob
         SEND_REQUEST,
     }
     
-    private final ReadOnlySlave slave;
+    private final AbstractSlave slave;
     
     private int retries = 0;
     private File tempFile;
@@ -30,7 +30,7 @@ public class HandleMasterConnection extends ConnectionJob
     private long logVersionWriting = -1;
     private long masterVersion = -1;
     
-    public HandleMasterConnection( Connection connection, ReadOnlySlave slave, 
+    public HandleMasterConnection( Connection connection, AbstractSlave slave, 
         long masterVersion )
     {
         super( connection, slave );

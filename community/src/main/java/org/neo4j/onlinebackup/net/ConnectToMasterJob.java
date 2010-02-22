@@ -1,6 +1,6 @@
 package org.neo4j.onlinebackup.net;
 
-import org.neo4j.onlinebackup.ha.ReadOnlySlave;
+import org.neo4j.onlinebackup.ha.AbstractSlave;
 
 public class ConnectToMasterJob extends ConnectionJob
 {
@@ -11,12 +11,12 @@ public class ConnectToMasterJob extends ConnectionJob
         GET_RESPONSE,
     }
     
-    private final ReadOnlySlave slave;
+    private final AbstractSlave slave;
     
     private long masterVersion;
     private int retries = 0;
     
-    public ConnectToMasterJob( Connection connection, ReadOnlySlave slave )
+    public ConnectToMasterJob( Connection connection, AbstractSlave slave )
     {
         super( connection, slave );
         this.slave = slave;
