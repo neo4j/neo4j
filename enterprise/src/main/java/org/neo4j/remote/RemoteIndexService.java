@@ -122,6 +122,25 @@ public final class RemoteIndexService implements IndexService
         throw new IllegalArgumentException( "Node not in same node space." );
     }
 
+    public void removeIndex( Node node, String key )
+    {
+        if ( node instanceof RemoteNode )
+        {
+            RemoteNode remote = ( RemoteNode ) node;
+            if ( remote.engine.equals( engine() ) )
+            {
+                engine().current().removeIndexNode( id, remote, key );
+                return;
+            }
+        }
+        throw new IllegalArgumentException( "Node not in same node space." );
+    }
+    
+    public void removeIndex( String key )
+    {
+        engine().current().removeIndexNode( id, key );
+    }
+    
     /**
      * This operation is not supported by the {@link RemoteIndexService}.
      * 

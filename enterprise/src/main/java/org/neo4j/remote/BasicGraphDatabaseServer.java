@@ -648,6 +648,16 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
             value );
     }
 
+    void removeIndexNode( GraphDatabaseService graphDb, int indexId, long nodeId, String key )
+    {
+        indexes[ indexId ].index.removeIndex( graphDb.getNodeById( nodeId ), key );
+    }
+    
+    void removeIndexNode( GraphDatabaseService graphDb, int indexId, String key )
+    {
+        indexes[ indexId ].index.removeIndex( key );
+    }
+    
     public long getTotalNumberOfNodes( GraphDatabaseService graphDb )
     {
         if ( graphDb instanceof EmbeddedGraphDatabase )
