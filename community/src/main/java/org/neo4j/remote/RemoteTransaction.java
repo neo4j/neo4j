@@ -453,6 +453,16 @@ class RemoteTransaction implements Transaction
         engine.removeIndexNode( id, indexId, node.id, key, value );
     }
 
+    void removeIndexNode( int indexId, RemoteNode node, String key )
+    {
+        engine.removeIndexNode( id, indexId, node.id, key );
+    }
+    
+    void removeIndexNode( int indexId, String key )
+    {
+        engine.removeIndexNode( id, indexId, key );
+    }
+    
     private static abstract class ConversionIterable<F, T> implements
         Iterable<T>
     {

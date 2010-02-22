@@ -510,4 +510,34 @@ public interface RemoteConnection
      */
     RemoteResponse<Void> removeIndexNode( int transactionId, int indexId,
         long nodeId, String key, Object value );
+
+    /**
+     * Remove a node from an index.
+     * 
+     * @param transactionId
+     *            the id of the transaction modify the index in.
+     * @param indexId
+     *            the id of the index service to modify.
+     * @param nodeId
+     *            the id of the node to remove from the index.
+     * @param key
+     *            the key for the index the node is stored in.
+     * @return nothing.
+     */
+    RemoteResponse<Void> removeIndexNode( int transactionId, int indexId,
+            long nodeId, String key );
+
+    /**
+     * Clear an index.
+     * 
+     * @param transactionId
+     *            the id of the transaction modify the index in.
+     * @param indexId
+     *            the id of the index service to modify.
+     * @param key
+     *            the key for the index the node is stored in.
+     * @return nothing.
+     */
+    RemoteResponse<Void> removeIndexNode( int transactionId, int indexId,
+            String key );
 }

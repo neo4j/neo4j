@@ -556,4 +556,30 @@ class RmiConnectionAdapter implements RemoteConnection
             throw remoteException( ex );
         }
     }
+
+    public RemoteResponse<Void> removeIndexNode( int transactionId,
+        int indexId, long nodeId, String key )
+    {
+        try
+        {
+            return rmi().removeIndexNode( transactionId, indexId, nodeId, key );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
+
+    public RemoteResponse<Void> removeIndexNode( int transactionId,
+        int indexId, String key )
+    {
+        try
+        {
+            return rmi().removeIndexNode( transactionId, indexId, key );
+        }
+        catch ( RemoteException ex )
+        {
+            throw remoteException( ex );
+        }
+    }
 }
