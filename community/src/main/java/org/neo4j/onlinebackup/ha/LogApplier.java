@@ -1,6 +1,5 @@
 package org.neo4j.onlinebackup.ha;
 
-import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -48,7 +47,7 @@ public class LogApplier extends Thread
                 }
             }
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             System.err.println( "Failed to apply log: " + e );
             e.printStackTrace();
