@@ -1156,6 +1156,7 @@ public class XaLogicalLog
             logEntriesFound++;
         }
         byteChannel.close();
+        xaTf.flushAll();
         xaTf.getAndSetNewVersion();
         xaRm.reset();
         log.info( "Log version " + logVersion + " applied successfully." );

@@ -178,7 +178,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         try
         {
-            if ( !isReadOnly() )
+            if ( !isReadOnly() || isBackupSlave() )
             {
                 openIdGenerator();
             }
@@ -191,9 +191,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         {
             setStoreNotOk();
         }
+        
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
             getBlockSize(), getFileChannel(), getMappedMem(), 
-            getIfMemoryMapped(), isReadOnly() ) );
+            getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
     }
 
     /**
