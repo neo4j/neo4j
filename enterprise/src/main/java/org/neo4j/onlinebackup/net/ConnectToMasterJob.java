@@ -1,5 +1,6 @@
 package org.neo4j.onlinebackup.net;
 
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.onlinebackup.ha.AbstractSlave;
 
 public class ConnectToMasterJob extends ConnectionJob
@@ -12,14 +13,19 @@ public class ConnectToMasterJob extends ConnectionJob
     }
     
     private final AbstractSlave slave;
+    private final String xaDsName;
+    private final XaDataSource xaDs;
     
     private long masterVersion;
     private int retries = 0;
     
-    public ConnectToMasterJob( Connection connection, AbstractSlave slave )
+    public ConnectToMasterJob( Connection connection, AbstractSlave slave, 
+            String xaDsName, XaDataSource xaDs )
     {
         super( connection, slave );
         this.slave = slave;
+        this.xaDsName = xaDsName;
+        this.xaDs = xaDs;
         setStatus( Status.SETUP_GREETING );
     }
     
@@ -35,9 +41,12 @@ public class ConnectToMasterJob extends ConnectionJob
             return false;
         }
         buffer.put( HeaderConstants.SLAVE_GREETING );
-        buffer.putLong( slave.getIdentifier() );
-        buffer.putLong( slave.getCreationTime() );
-        buffer.putLong( slave.getVersion() );
+        buffer.putLong( xaDs.getRandomIdentifier() );
+        buffer.putLong( xaDs.getCreationTime() );
+        buffer.putLong( xaDs.getCurrentLogVersion() );
+        byte[] bytes = xaDsName.getBytes();
+        buffer.putInt( bytes.length );
+        buffer.put( bytes );
         buffer.flip();
         log( "Setup greeting" );
         setStatus( Status.SEND_GREETING );
@@ -105,7 +114,7 @@ public class ConnectToMasterJob extends ConnectionJob
                 }
                 masterVersion = buffer.getLong();
                 log( "Got master version: " + masterVersion );
-                if ( masterVersion < slave.getVersion() )
+                if ( masterVersion < xaDs.getCurrentLogVersion() )
                 {
                     log( "Got wrong version [" + masterVersion + "]" );
                     close();
@@ -113,7 +122,7 @@ public class ConnectToMasterJob extends ConnectionJob
                 }
                 setNoRequeue();
                 setChainJob( new HandleMasterConnection( connection, slave, 
-                    masterVersion ) );
+                    masterVersion, xaDs ) );
                 return true;
             }
             else

@@ -11,7 +11,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.onlinebackup.net.AcceptJob;
 import org.neo4j.onlinebackup.net.Callback;
 import org.neo4j.onlinebackup.net.Connection;
@@ -24,7 +25,7 @@ import org.neo4j.onlinebackup.net.SocketException;
 public class Master implements Callback
 {
     private final EmbeddedGraphDatabase graphDb;
-    private final NeoStoreXaDataSource xaDs;
+    private final XaDataSourceManager xaDsMgr;
 
     private final JobEater jobEater;
     private final ServerSocketChannel serverChannel;
@@ -36,9 +37,12 @@ public class Master implements Callback
     public Master( String path, Map<String,String> params, int listenPort )
     {
         this.graphDb = new EmbeddedGraphDatabase( path, params );
-        this.xaDs = (NeoStoreXaDataSource) graphDb.getConfig().getTxModule()
-            .getXaDataSourceManager().getXaDataSource( "nioneodb" );
-        xaDs.keepLogicalLogs( true );
+        this.xaDsMgr = graphDb.getConfig().getTxModule()
+            .getXaDataSourceManager();
+        for ( XaDataSource xaDs : xaDsMgr.getAllRegisteredDataSources() )
+        {
+            xaDs.keepLogicalLogs( true );
+        }
         this.port = listenPort;
         try
         {
@@ -110,34 +114,65 @@ public class Master implements Callback
         graphDb.shutdown();
     }
     
-    public long getIdentifier()
+    public long getIdentifier( String xaDsName  )
     {
-        return xaDs.getRandomIdentifier();
+        XaDataSource xaDs = xaDsMgr.getXaDataSource( xaDsName );
+        if ( xaDs != null )
+        {
+            return xaDs.getRandomIdentifier();
+        }
+        return -1;
     }
     
-    public long getCreationTime()
+    public long getCreationTime( String xaDsName )
     {
-        return xaDs.getCreationTime();
+        XaDataSource xaDs = xaDsMgr.getXaDataSource( xaDsName );
+        if ( xaDs != null )
+        {
+            return xaDs.getCreationTime();
+        }
+        return -1;
     }
     
-    public long getVersion()
+    public long getVersion( String xaDsName )
     {
-        return xaDs.getCurrentLogVersion();
+        XaDataSource xaDs = xaDsMgr.getXaDataSource( xaDsName );
+        if ( xaDs != null )
+        {
+            return xaDs.getCurrentLogVersion();
+        }
+        return -1;
     }
     
-    public ReadableByteChannel getLog( long version ) throws IOException
+    public ReadableByteChannel getLog( String xaDsName, long version ) 
+        throws IOException
     {
-        return xaDs.getLogicalLog( version );
+        XaDataSource xaDs = xaDsMgr.getXaDataSource( xaDsName );
+        if ( xaDs != null )
+        {
+            return xaDs.getLogicalLog( version );
+        }
+        return null;
     }
     
-    public long getLogLength( long version )
+    public long getLogLength( String xaDsName, long version )
     {
-        return xaDs.getLogicalLogLength( version );
+        XaDataSource xaDs = xaDsMgr.getXaDataSource( xaDsName );
+        if ( xaDs != null )
+        {
+            return xaDs.getLogicalLogLength( version );
+        }
+        return -1l;
     }
     
-    public boolean hasLog( long version )
+    public boolean hasLog( String xaDsName, long version )
     {
-        return xaDs.hasLogicalLog( version );
+        XaDataSource xaDs = xaDsMgr.getXaDataSource( xaDsName );
+        if ( xaDs != null )
+        {
+            return xaDs.hasLogicalLog( version );
+        }
+        return false;
     }
 
     public void rotateLogAndPushToSlaves() throws IOException
@@ -146,19 +181,23 @@ public class Master implements Callback
         {
             return;
         }
-        long version = getVersion();
-        xaDs.rotateLogicalLog();
         ArrayList<HandleSlaveConnection> newList = 
             new ArrayList<HandleSlaveConnection>();
         for ( HandleSlaveConnection slave : slaveList )
         {
-            if ( !slave.offerLogToSlave( version ) )
+            XaDataSource xaDs = xaDsMgr.getXaDataSource( slave.getXaDsName() );
+            if ( xaDs != null )
             {
-                System.out.println( "Failed to offer log to slave: " + slave );
-            }
-            else
-            {
-                newList.add( slave );
+                long version = xaDs.getCurrentLogVersion();
+                xaDs.rotateLogicalLog();
+                if ( !slave.offerLogToSlave( version ) )
+                {
+                    System.out.println( "Failed to offer log to slave: " + slave );
+                }
+                else
+                {
+                    newList.add( slave );
+                }
             }
         }
         slaveList = newList;

@@ -3,29 +3,18 @@ package org.neo4j.onlinebackup.ha;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class LogApplier extends Thread
 {
-//    private final Queue<Long> queue = new ConcurrentLinkedQueue<Long>();
-    
     private volatile boolean run = true;
     
-    private final NeoStoreXaDataSource xaDs;
+    private final XaDataSource[] xaDataSources;
     
-    LogApplier( NeoStoreXaDataSource xaDs )
+    LogApplier( XaDataSource[] xaDataSources )
     {
-        this.xaDs = xaDs;
+        this.xaDataSources = xaDataSources;
     }
-    
-//    public boolean applyLog( long version )
-//    {
-//        if ( !run )
-//        {
-//            throw new IllegalStateException( "Log applier not running" );
-//        }
-//        return queue.offer( version );
-//    }
     
     public void run()
     {
@@ -33,27 +22,27 @@ public class LogApplier extends Thread
         {
             while ( run )
             {
-//                Long logVersion = queue.poll();
-//                if ( logVersion != null )
-//                {
-                long logVersion = xaDs.getCurrentLogVersion();
-                if ( xaDs.hasLogicalLog( logVersion ) )
+                for ( XaDataSource xaDs : xaDataSources )
                 {
-                    ReadableByteChannel logChannel = 
-                        xaDs.getLogicalLog( logVersion );
-                    xaDs.applyLog( logChannel );
-                }
-                else
-                {
-                    synchronized ( this )
+                    long logVersion = xaDs.getCurrentLogVersion();
+                    if ( xaDs.hasLogicalLog( logVersion ) )
                     {
-                        try
+                        ReadableByteChannel logChannel = 
+                            xaDs.getLogicalLog( logVersion );
+                        xaDs.applyLog( logChannel );
+                    }
+                    else
+                    {
+                        synchronized ( this )
                         {
-                            this.wait( 250 );
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            interrupted();
+                            try
+                            {
+                                this.wait( 250 );
+                            }
+                            catch ( InterruptedException e )
+                            {
+                                interrupted();
+                            }
                         }
                     }
                 }
