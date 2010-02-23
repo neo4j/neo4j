@@ -123,22 +123,20 @@ class GraphDbInstance
         config.getTxModule().registerDataSource( DEFAULT_DATA_SOURCE_NAME,
                 NIO_NEO_DB_CLASS, resourceId, params );
         // hack for lucene index recovery if in path
-        XaDataSource lucene = null;
-        XaDataSource luceneFulltext = null;
-        if ( !config.isReadOnly() )
+        if ( !config.isReadOnly() || config.isBackupSlave() )
         {
             try
             {
                 Class clazz = Class.forName( LUCENE_DS_CLASS );
                 cleanWriteLocksInLuceneDirectory( storeDir + "/lucene" );
                 byte luceneId[] = "162373".getBytes();
-                lucene = registerLuceneDataSource( "lucene", clazz.getName(),
+                registerLuceneDataSource( "lucene", clazz.getName(),
                         config.getTxModule(), storeDir + "/lucene",
                         config.getLockManager(), luceneId );
                 clazz = Class.forName( LUCENE_FULLTEXT_DS_CLASS );
                 cleanWriteLocksInLuceneDirectory( storeDir + "/lucene-fulltext" );
                 luceneId = "262374".getBytes();
-                luceneFulltext = registerLuceneDataSource( "lucene-fulltext",
+                registerLuceneDataSource( "lucene-fulltext",
                         clazz.getName(), config.getTxModule(),
                         storeDir + "/lucene-fulltext", config.getLockManager(),
                         luceneId );
@@ -167,18 +165,18 @@ class GraphDbInstance
         config.getIdGeneratorModule().start();
         config.getGraphDbModule().start( config.getLockReleaser(),
                 config.getPersistenceModule().getPersistenceManager(), params );
-        if ( lucene != null )
-        {
-            config.getTxModule().getXaDataSourceManager().unregisterDataSource(
-                    "lucene" );
-            lucene = null;
-        }
-        if ( luceneFulltext != null )
-        {
-            config.getTxModule().getXaDataSourceManager().unregisterDataSource(
-                    "lucene-fulltext" );
-            luceneFulltext = null;
-        }
+//        if ( lucene != null )
+//        {
+//            config.getTxModule().getXaDataSourceManager().unregisterDataSource(
+//                    "lucene" );
+//            lucene = null;
+//        }
+//        if ( luceneFulltext != null )
+//        {
+//            config.getTxModule().getXaDataSourceManager().unregisterDataSource(
+//                    "lucene-fulltext" );
+//            luceneFulltext = null;
+//        }
         started = true;
     }
 
