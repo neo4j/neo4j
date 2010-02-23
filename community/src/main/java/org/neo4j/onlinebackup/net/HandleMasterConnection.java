@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.onlinebackup.ha.AbstractSlave;
 
 public class HandleMasterConnection extends ConnectionJob
@@ -21,7 +22,7 @@ public class HandleMasterConnection extends ConnectionJob
         SEND_REQUEST,
     }
     
-    private final AbstractSlave slave;
+    private final XaDataSource xaDs;
     
     private int retries = 0;
     private File tempFile;
@@ -31,12 +32,12 @@ public class HandleMasterConnection extends ConnectionJob
     private long masterVersion = -1;
     
     public HandleMasterConnection( Connection connection, AbstractSlave slave, 
-        long masterVersion )
+        long masterVersion, XaDataSource xaDs )
     {
         super( connection, slave );
-        this.slave = slave;
+        this.xaDs = xaDs;
         this.masterVersion = masterVersion;
-        if ( slave.getVersion() < (masterVersion - 1) )
+        if ( xaDs.getCurrentLogVersion() < (masterVersion - 1) )
         {
             setStatus( Status.SETUP_REQUEST );
         }
@@ -68,7 +69,7 @@ public class HandleMasterConnection extends ConnectionJob
                     return true;
                 }
                 long version = buffer.getLong();
-                if ( version < slave.getVersion() )
+                if ( version < xaDs.getCurrentLogVersion() )
                 {
                     log( "Got wrong version [" + version + "]" );
                     setStatus( Status.SETUP_NOT_OK );
@@ -76,7 +77,7 @@ public class HandleMasterConnection extends ConnectionJob
                 }
                 logLength = buffer.getLong();
                 log( "Got offer: " + version + "," + logLength );
-                if ( !slave.hasLog( version ) )
+                if ( !xaDs.hasLogicalLog( version ) )
                 {
                     try
                     {
@@ -121,10 +122,10 @@ public class HandleMasterConnection extends ConnectionJob
     
     private boolean setupRequest()
     {
-        long version = slave.getVersion();
+        long version = xaDs.getCurrentLogVersion();
         while ( version < masterVersion )
         {
-            if ( slave.hasLog( version ) )
+            if ( xaDs.hasLogicalLog( version ) )
             {
                 version++;
             }
@@ -282,7 +283,7 @@ public class HandleMasterConnection extends ConnectionJob
                 if ( logToWrite.position() >= logLength )
                 {
                     log( "Log transfer complete" );
-                    if ( slave.getVersion() < (masterVersion - 1) )
+                    if ( xaDs.getCurrentLogVersion() < (masterVersion - 1) )
                     {
                         setStatus( Status.SETUP_REQUEST );
                     }
@@ -291,7 +292,7 @@ public class HandleMasterConnection extends ConnectionJob
                         setStatus( Status.GET_MESSAGE );
                     }
                     logToWrite.close();
-                    String newName = slave.getLogName( logVersionWriting );
+                    String newName = xaDs.getFileName( logVersionWriting );
                     File newLog = new File( newName );
                     if ( newLog.exists() )
                     {

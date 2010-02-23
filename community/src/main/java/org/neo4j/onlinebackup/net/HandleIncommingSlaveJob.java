@@ -15,6 +15,7 @@ public class HandleIncommingSlaveJob extends ConnectionJob
     private final Master master;
     
     private long slaveVersion;
+    private String xaDsName;
     private int retries = 0;
     
     public HandleIncommingSlaveJob( Connection connection, Master master )
@@ -36,10 +37,11 @@ public class HandleIncommingSlaveJob extends ConnectionJob
         }
         try
         {
-            // HEADER(1) + DB_ID(8) + DB_TIMESTAMP(8) + DB_VERISON(8)
-            buffer.limit( 25 );
+            // HEADER(1) + DB_ID(8) + DB_TIMESTAMP(8) + DB_VERISON(8) + 
+            // NAME_length(4) + NAME
+            // buffer.limit( 25 );
             int read = connection.read();
-            if ( read == 25 )
+            if ( read > 29 )
             {
                 buffer.flip();
                 byte slaveGreeting = buffer.get();
@@ -51,21 +53,25 @@ public class HandleIncommingSlaveJob extends ConnectionJob
                 long id = buffer.getLong();
                 long timestamp = buffer.getLong();
                 long version = buffer.getLong();
-                long masterId = master.getIdentifier();
-                long masterTimestamp = master.getCreationTime();
-                long masterVersion = master.getVersion();
-                if ( id != master.getIdentifier() || 
-                    timestamp != master.getCreationTime() || 
-                    version > master.getVersion() )
+                int strLen = buffer.getInt();
+                byte[] bytes = new byte[strLen];
+                buffer.get( bytes );
+                xaDsName = new String( bytes );
+                long masterId = master.getIdentifier( xaDsName );
+                long masterTimestamp = master.getCreationTime( xaDsName );
+                long masterVersion = master.getVersion( xaDsName );
+                if ( id != masterId || timestamp != masterTimestamp || 
+                    version > masterVersion )
                 {
                     log( "Got wrong id/time/version [" + id + "/" + timestamp + 
                         "/" + version + "]" + "[" + masterId + "/" + 
-                        masterTimestamp + "/" + masterVersion + "]" );
+                        masterTimestamp + "/" + masterVersion + 
+                        "] for data source " + xaDsName );
                     setStatus( Status.SEND_BYE );
                     return true;
                 }
                 log( "Got slave version[" + version + "]. I am version[" + 
-                    master.getVersion() + "]" );
+                    master.getVersion( xaDsName ) + "] for data source " + xaDsName );
                 slaveVersion = version;
                 setStatus( Status.SETUP_GREETING );
                 retries = 0;
@@ -99,7 +105,7 @@ public class HandleIncommingSlaveJob extends ConnectionJob
             return false;
         }
         buffer.put( HeaderConstants.MASTER_GREETING );
-        buffer.putLong( master.getVersion() );
+        buffer.putLong( master.getVersion( xaDsName ) );
         buffer.flip();
         log( "Setup greeting" );
         setStatus( Status.SEND_GREETING );
@@ -119,7 +125,7 @@ public class HandleIncommingSlaveJob extends ConnectionJob
         {
             releaseWriteBuffer();
             setNoRequeue();
-            setChainJob( new HandleSlaveConnection( connection, master, slaveVersion ) );
+            setChainJob( new HandleSlaveConnection( connection, master, slaveVersion, xaDsName ) );
             return true;
         }
         retries++;
