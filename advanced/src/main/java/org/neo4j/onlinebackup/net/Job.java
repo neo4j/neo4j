@@ -72,7 +72,7 @@ public abstract class Job
     
     protected void log( String message )
     {
-        System.out.println( getStatus() + " " + this + ": " + message );
+        // System.out.println( getStatus() + " " + this + ": " + message );
     }
 
     protected void log( String message, Throwable cause )
