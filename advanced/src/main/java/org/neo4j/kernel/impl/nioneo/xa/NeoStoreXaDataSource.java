@@ -67,6 +67,7 @@ public class NeoStoreXaDataSource extends XaDataSource
     private final LockReleaser lockReleaser;
     private final String storeDir;
     private boolean readOnly = false;
+    private boolean backupSlave = false;
     
     private boolean logApplied = false;
 
@@ -98,34 +99,13 @@ public class NeoStoreXaDataSource extends XaDataSource
         {
             readOnly = (Boolean) config.get( "read_only" );
         }
+        if ( "true".equals( config.get( "backup_slave" ) ) )
+        {
+            backupSlave = true;
+        }
         this.lockManager = (LockManager) config.get( LockManager.class );
         this.lockReleaser = (LockReleaser) config.get( LockReleaser.class );
-        // String configFileName = (String) params.get( "config" );
         storeDir = (String) config.get( "store_dir" );
-/*        Properties config = new Properties();
-        if ( configFileName != null )
-        {
-            FileInputStream inputStream = new FileInputStream( configFileName );
-            try
-            {
-                config.load( inputStream );
-            }
-            finally
-            {
-                inputStream.close();
-            }
-        }*/
-/*        Iterator itr = params.entrySet().iterator();
-        while ( itr.hasNext() )
-        {
-            Map.Entry entry = (Map.Entry) itr.next();
-            if ( entry.getKey() instanceof String
-                && entry.getValue() instanceof String )
-            {
-                config.setProperty( (String) entry.getKey(), (String) entry
-                    .getValue() );
-            }
-        }*/
         String store = (String) config.get( "neo_store" );
         config.put( "rebuild_idgenerators_fast", "true" );
         File file = new File( store );

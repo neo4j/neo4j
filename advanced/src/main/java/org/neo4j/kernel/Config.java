@@ -49,7 +49,8 @@ public class Config
     private final Map<Object, Object> params;
 
     private final boolean readOnly;
-
+    private final boolean backupSlave;
+    
     Config( String storeDir, Map<Object, Object> params )
     {
         this.storeDir = storeDir;
@@ -62,6 +63,16 @@ public class Config
         else
         {
             readOnly = false;
+        }
+        String backupSlaveStr = (String) params.get( "backup_slave" );
+        if ( backupSlaveStr != null && 
+                backupSlaveStr.toLowerCase().equals( "true" ) )
+        {
+            backupSlave = true;
+        }
+        else
+        {
+            backupSlave = false;
         }
         params.put( "read_only", readOnly );
         eventModule = new EventModule();
@@ -142,5 +153,10 @@ public class Config
     boolean isReadOnly()
     {
         return readOnly;
+    }
+
+    boolean isBackupSlave()
+    {
+        return backupSlave;
     }
 }
