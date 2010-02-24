@@ -428,7 +428,7 @@ public abstract class CommonAbstractStore
 
     public void rebuildIdGenerators()
     {
-        if ( readOnly )
+        if ( readOnly && !backupSlave )
         {
             throw new ReadOnlyDbException();
         }
