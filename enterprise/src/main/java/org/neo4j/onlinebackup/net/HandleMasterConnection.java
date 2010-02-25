@@ -82,8 +82,13 @@ public class HandleMasterConnection extends ConnectionJob
                     try
                     {
                         logVersionWriting = version;
-                        tempFile = new File( "logical-transfer.v" + 
-                                Long.toString( version ) );
+                        tempFile = new File( xaDs.getName() + 
+                                "-logical-transfer.v" + Long.toString( version ) );
+                        if ( tempFile.exists() )
+                        {
+                            log( tempFile.getName() + " already exist" );
+                            tempFile.delete();
+                        }
                         logToWrite = new RandomAccessFile( tempFile, 
                             "rw").getChannel();
                         logToWrite.truncate( 0 );
@@ -123,6 +128,7 @@ public class HandleMasterConnection extends ConnectionJob
     private boolean setupRequest()
     {
         long version = xaDs.getCurrentLogVersion();
+        // System.out.println( xaDs.getName() + " requesting " + version );
         while ( version < masterVersion )
         {
             if ( xaDs.hasLogicalLog( version ) )

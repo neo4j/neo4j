@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.ServerSocketChannel;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -181,8 +180,8 @@ public class Master implements Callback
         {
             return;
         }
-        ArrayList<HandleSlaveConnection> newList = 
-            new ArrayList<HandleSlaveConnection>();
+        List<HandleSlaveConnection> newList = 
+            new CopyOnWriteArrayList<HandleSlaveConnection>();
         for ( HandleSlaveConnection slave : slaveList )
         {
             XaDataSource xaDs = xaDsMgr.getXaDataSource( slave.getXaDsName() );
