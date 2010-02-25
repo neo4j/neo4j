@@ -25,12 +25,15 @@ public class HandleSlaveConnection extends ConnectionJob
     private ReadableByteChannel logToSend = null;
     private long logLength = -1;
     
+    private long slaveVersion;
+    
     public HandleSlaveConnection( Connection connection, Master master, 
         long slaveVersion, String xaDsName )
     {
         super( connection, master );
         this.master = master;
         this.xaDsName = xaDsName;
+        this.slaveVersion = slaveVersion;
         setStatus( Status.GET_MESSAGE );
     }
     
@@ -247,6 +250,10 @@ public class HandleSlaveConnection extends ConnectionJob
                         logVersionToSend = -1;
                         logToSend = null;
 //                    }
+                    if ( logVersionToSend >= slaveVersion )
+                    {
+                        slaveVersion = logVersionToSend + 1;
+                    }
                     return true;
                 }
                 buffer.flip();
