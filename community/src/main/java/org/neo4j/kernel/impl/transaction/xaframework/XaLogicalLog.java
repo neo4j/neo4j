@@ -601,7 +601,6 @@ public class XaLogicalLog
     private void renameCurrentLogFileAndIncrementVersion( String logFileName, 
         long endPosition ) throws IOException
     {
-        releaseCurrentLogFile();
         File file = new File( logFileName );
         if ( !file.exists() )
         {
@@ -634,7 +633,6 @@ public class XaLogicalLog
     
     private void deleteCurrentLogFile( String logFileName ) throws IOException
     {
-        releaseCurrentLogFile();
         File file = new File( logFileName );
         if ( !file.exists() )
         {
@@ -680,9 +678,15 @@ public class XaLogicalLog
                 "time it is opened." );
             return;
         }
+        releaseCurrentLogFile();
+        char logWas = currentLog;
+        if ( currentLog != CLEAN ) // again special case, see above
+        {
+            setActiveLog( CLEAN );
+        }
         if ( !keepLogs || backupSlave )
         {
-            if ( currentLog == CLEAN )
+            if ( logWas == CLEAN )
             {
                 // special case going from old xa version with no log rotation
                 // and we started with a recovery
@@ -690,17 +694,13 @@ public class XaLogicalLog
             }
             else
             {
-                deleteCurrentLogFile( fileName + "." + currentLog );
+                deleteCurrentLogFile( fileName + "." + logWas );
             }
         }
         else
         {
             renameCurrentLogFileAndIncrementVersion( fileName + "." + 
-                currentLog, endPosition );
-        }
-        if ( currentLog != CLEAN ) // again special case, see above
-        {
-            setActiveLog( CLEAN );
+                logWas, endPosition );
         }
     }
 
@@ -1159,7 +1159,8 @@ public class XaLogicalLog
         xaTf.flushAll();
         xaTf.getAndSetNewVersion();
         xaRm.reset();
-        log.info( "Log version " + logVersion + " applied successfully." );
+        log.info( "Log[" + fileName + "] version " + logVersion + 
+                " applied successfully." );
     }
     
     public synchronized void rotate() throws IOException
@@ -1256,6 +1257,7 @@ public class XaLogicalLog
             buffer.limit( 1 );
         }
         newLog.force( false );
+        releaseCurrentLogFile();
         setActiveLog( newActiveLog );
         if ( keepLogs )
         {
