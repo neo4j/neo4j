@@ -583,7 +583,7 @@ public abstract class CommonAbstractStore
             windowPool.close();
             windowPool = null;
         }
-        if ( isReadOnly() )
+        if ( isReadOnly() && !isBackupSlave() )
         {
             try
             {
@@ -609,7 +609,7 @@ public abstract class CommonAbstractStore
         boolean success = false;
         IOException storedIoe = null;
         // hack for WINBLOWS
-        if ( !readOnly )
+        if ( !readOnly || backupSlave )
         {
             for ( int i = 0; i < 10; i++ )
             {
