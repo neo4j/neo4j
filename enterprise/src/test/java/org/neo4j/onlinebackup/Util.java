@@ -61,6 +61,51 @@ public class Util
         }
     }
 
+    static void copyLogs( String source, String dest )
+    {
+        try
+        {
+            File directory = new File( source );
+            if ( !directory.exists() || !directory.isDirectory() )
+            {
+                return;
+            }
+            String[] contents = directory.list();
+            for ( int i = 0; i < contents.length; i++ )
+            {
+                File file = new File( source + FILE_SEP + contents[i] );
+                if ( file.isDirectory() )
+                {
+                    copyLogs( file.getAbsolutePath(), dest + FILE_SEP
+                        + contents[i] );
+                }
+                int index = contents[i].lastIndexOf( "." );
+                if ( index == -1 )
+                {
+                    continue;
+                }
+                String end = contents[i].substring( index + 1 );
+                if ( !file.isFile() || !file.canRead() || 
+                        !end.startsWith( "v" ) )
+                {
+                    continue;
+                }
+                
+                FileChannel in = new FileInputStream( file ).getChannel();
+                FileChannel out = new FileOutputStream( dest + FILE_SEP
+                    + contents[i] ).getChannel();
+                in.transferTo( 0, in.size(), out );
+                in.close();
+                out.close();
+            }
+        }
+        catch ( Exception e )
+        {
+            fail( "couldn't copy files as required" );
+            e.printStackTrace();
+        }
+    }
+
     static boolean deleteDir( File directory )
     {
         if ( directory.isDirectory() )
