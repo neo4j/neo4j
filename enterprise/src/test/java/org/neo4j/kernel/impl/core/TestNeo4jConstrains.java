@@ -48,6 +48,30 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         super.tearDown();
     }
 
+    public void testDeleteReferenceNodeOrLastNodeIsOk()
+    {
+        Transaction tx = getTransaction();
+        Node ref = getGraphDb().getReferenceNode();
+        ref.delete();
+        tx.success();
+        tx.finish();
+        tx = getGraphDb().beginTx();
+        try
+        {
+            getGraphDb().getReferenceNode();
+            assertEquals(
+                    0,
+                    getEmbeddedGraphDb().getConfig().getGraphDbModule().getNodeManager().getNumberOfIdsInUse(
+                            Node.class ) );
+            fail();
+        }
+        catch ( NotFoundException nfe )
+        {
+            // should be thrown
+        }
+        tx.success();
+        tx.finish();
+    }
     public void testDeleteNodeWithRel1()
     {
         Node node1 = getGraphDb().createNode();
