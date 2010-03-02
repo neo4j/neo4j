@@ -48,11 +48,16 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         super.tearDown();
     }
 
-    public void testDeleteReferenceNodeOrAsLastNodeIsOk()
+    public void testDeleteReferenceNodeOrLastNodeIsOk()
     {
-        //long numNodesPre = getNodeManager().getNumberOfIdsInUse( Node.class );
         Transaction tx = getTransaction();
-        //empty the DB instance
+        for ( int i = 0; i < 10; i++ )
+        {
+            getGraphDb().createNode();
+        }
+        // long numNodesPre = getNodeManager().getNumberOfIdsInUse( Node.class
+        // );
+        // empty the DB instance
         for ( Node node : getGraphDb().getAllNodes() )
         {
             for ( Relationship rel : node.getRelationships() )
@@ -64,12 +69,14 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         tx.success();
         tx.finish();
         tx = getGraphDb().beginTx();
-        //the DB should be empty
-        //long numNodesPost = getNodeManager().getNumberOfIdsInUse( Node.class );
-        //System.out.println(String.format( "pre: %d, post: %d", numNodesPre, numNodesPost ));
+        // the DB should be empty
+        // long numNodesPost = getNodeManager().getNumberOfIdsInUse( Node.class
+        // );
+        // System.out.println(String.format( "pre: %d, post: %d", numNodesPre,
+        // numNodesPost ));
         assertFalse( getGraphDb().getAllNodes().iterator().hasNext() );
-        //TODO: this should be valid, fails right now!
-        //assertEquals( 0, numNodesPost );
+        // TODO: this should be valid, fails right now!
+        // assertEquals( 0, numNodesPost );
         try
         {
             getGraphDb().getReferenceNode();
