@@ -21,6 +21,7 @@ import java.util.List;
 import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 
 public class AllSimplePathsTest extends Neo4jAlgoTestCase
 {
@@ -36,18 +37,17 @@ public class AllSimplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,b2,c,d2,e" );
         // First we try insufficient depth
         AllSimplePaths allSimplePaths = new AllSimplePaths(
-            graph.getNode( "a" ), graph.getNode( "e" ), 3, Direction.OUTGOING,
-            MyRelTypes.R1 );
-        assertTrue( allSimplePaths.getPaths().size() == 0 );
+            graph.getNode( "a" ), graph.getNode( "e" ), MyRelTypes.R1, Direction.OUTGOING );
+        assertTrue( allSimplePaths.getPaths( 3 ).size() == 0 );
         // Then exactly enough
         allSimplePaths = new AllSimplePaths( graph.getNode( "a" ), graph
-            .getNode( "e" ), 4, Direction.OUTGOING, MyRelTypes.R1 );
-        assertTrue( allSimplePaths.getPaths().size() == 4 );
+            .getNode( "e" ), MyRelTypes.R1, Direction.OUTGOING );
+        assertTrue( allSimplePaths.getPaths( 4 ).size() == 4 );
         // Then a lot
         allSimplePaths = new AllSimplePaths( graph.getNode( "a" ), graph
-            .getNode( "e" ), 100, Direction.OUTGOING, MyRelTypes.R1 );
-        List<List<?>> paths = allSimplePaths.getPaths();
-        List<List<Node>> pathsAsNodes = allSimplePaths.getPathsAsNodes();
+            .getNode( "e" ), MyRelTypes.R1, Direction.OUTGOING );
+        List<List<PropertyContainer>> paths = allSimplePaths.getPaths( 100 );
+        List<List<Node>> pathsAsNodes = allSimplePaths.getPathsAsNodes( 100 );
         assertTrue( paths.size() == 4 );
         assertTrue( pathsAsNodes.size() == 4 );
         // Then we test the resulting paths
@@ -87,14 +87,13 @@ public class AllSimplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,b,c,d,e" );
         // First we try insufficient depth
         AllSimplePaths allSimplePaths = new AllSimplePaths(
-            graph.getNode( "a" ), graph.getNode( "e" ), 3, Direction.OUTGOING,
-            MyRelTypes.R1 );
-        assertTrue( allSimplePaths.getPaths().size() == 0 );
+            graph.getNode( "a" ), graph.getNode( "e" ), MyRelTypes.R1, Direction.OUTGOING );
+        assertTrue( allSimplePaths.getPaths( 3 ).size() == 0 );
         // Then exactly enough
         allSimplePaths = new AllSimplePaths( graph.getNode( "a" ), graph
-            .getNode( "e" ), 4, Direction.OUTGOING, MyRelTypes.R1 );
-        assertTrue( allSimplePaths.getPaths().size() == 1 );
-        for ( List<Node> nodePath : allSimplePaths.getPathsAsNodes() )
+            .getNode( "e" ), MyRelTypes.R1, Direction.OUTGOING );
+        assertTrue( allSimplePaths.getPaths( 4 ).size() == 1 );
+        for ( List<Node> nodePath : allSimplePaths.getPathsAsNodes( 4 ) )
         {
             assertTrue( nodePath.size() == 5 );
             assertTrue( nodePath.get( 0 ).equals( graph.getNode( "a" ) ) );
@@ -105,9 +104,9 @@ public class AllSimplePathsTest extends Neo4jAlgoTestCase
         }
         // Then exactly enough for the traversals to reach the other sides
         allSimplePaths = new AllSimplePaths( graph.getNode( "a" ), graph
-            .getNode( "e" ), 8, Direction.OUTGOING, MyRelTypes.R1 );
-        assertTrue( allSimplePaths.getPaths().size() == 1 );
-        for ( List<Node> nodePath : allSimplePaths.getPathsAsNodes() )
+            .getNode( "e" ), MyRelTypes.R1, Direction.OUTGOING );
+        assertTrue( allSimplePaths.getPaths( 8 ).size() == 1 );
+        for ( List<Node> nodePath : allSimplePaths.getPathsAsNodes( 8 ) )
         {
             assertTrue( nodePath.size() == 5 );
             assertTrue( nodePath.get( 0 ).equals( graph.getNode( "a" ) ) );
@@ -118,12 +117,12 @@ public class AllSimplePathsTest extends Neo4jAlgoTestCase
         }
         // Then a lot
         allSimplePaths = new AllSimplePaths( graph.getNode( "a" ), graph
-            .getNode( "e" ), 100, Direction.OUTGOING, MyRelTypes.R1 );
-        List<List<?>> paths = allSimplePaths.getPaths();
-        List<List<Node>> pathsAsNodes = allSimplePaths.getPathsAsNodes();
+            .getNode( "e" ), MyRelTypes.R1, Direction.OUTGOING );
+        List<List<PropertyContainer>> paths = allSimplePaths.getPaths( 100 );
+        List<List<Node>> pathsAsNodes = allSimplePaths.getPathsAsNodes( 100 );
         assertTrue( paths.size() == 1 );
         assertTrue( pathsAsNodes.size() == 1 );
-        for ( List<Node> nodePath : allSimplePaths.getPathsAsNodes() )
+        for ( List<Node> nodePath : allSimplePaths.getPathsAsNodes( 100 ) )
         {
             assertTrue( nodePath.size() == 5 );
             assertTrue( nodePath.get( 0 ).equals( graph.getNode( "a" ) ) );
