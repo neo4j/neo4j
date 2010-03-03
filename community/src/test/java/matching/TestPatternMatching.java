@@ -6,6 +6,7 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -434,19 +435,19 @@ public class TestPatternMatching extends TestCase
 		// First optional branch
 		PatternNode oA1 = new PatternNode( "pA" );
 		PatternNode oB1 = new PatternNode( "pB" );
-		oA1.createRelationshipTo( oB1, R1, true );
+		oA1.createOptionalRelationshipTo( oB1, R1 );
 
 //		// Second optional branch
 		PatternNode oA2 = new PatternNode( "pA" );
 		PatternNode oF2 = new PatternNode( "pF" );
-		oA2.createRelationshipTo( oF2, R3, true );
+		oA2.createOptionalRelationshipTo( oF2, R3 );
 
 		// Third optional branch
 		PatternNode oC3 = new PatternNode( "pC" );
 		PatternNode oD3 = new PatternNode( "pD" );
 		PatternNode oE3 = new PatternNode( "pE" );
-		oC3.createRelationshipTo( oD3, R1, true );
-		oD3.createRelationshipTo( oE3, R2, true );
+		oC3.createOptionalRelationshipTo( oD3, R1 );
+		oD3.createOptionalRelationshipTo( oE3, R2 );
 
 		// Test that all permutations are there and that multiple optional
 		// branches work.
@@ -480,9 +481,9 @@ public class TestPatternMatching extends TestCase
 		PatternNode pK = new PatternNode( "pK" );
 		PatternNode pL = new PatternNode( "pL" );
 		
-		pI.createRelationshipTo( pJ, R1, true );
+		pI.createOptionalRelationshipTo( pJ, R1 );
 		pI.createRelationshipTo( pK, R2 );
-		pK.createRelationshipTo( pL, R2, true );
+		pK.createOptionalRelationshipTo( pL, R2 );
 		
 		count = 0;
 		for ( PatternMatch match :
@@ -526,7 +527,7 @@ public class TestPatternMatching extends TestCase
 		// Optional part of the graph
 		PatternNode oB = new PatternNode( "pB" );
 		PatternNode oC = new PatternNode( "oC" );
-		oB.createRelationshipTo( oC, R2, true );
+		oB.createOptionalRelationshipTo( oC, R2 );
 		
 		int count = 0;
 		for ( PatternMatch match :
@@ -617,4 +618,43 @@ public class TestPatternMatching extends TestCase
 		}
 		assertEquals( 1, count );
 	}
+	
+    public void testDiamond()
+    {
+        //    C
+        //   / \
+        //  B---D
+        //   \ /
+        //    A
+        Node a = createInstance( "A" );
+        Node b = createInstance( "B" );
+        Node c = createInstance( "C" );
+        Node d = createInstance( "D" );
+        
+        final RelationshipType R1 = MyRelTypes.R1;
+        final RelationshipType R2 = MyRelTypes.R2;
+        
+        a.createRelationshipTo( b, R1 );
+        a.createRelationshipTo( d, R1 );
+        b.createRelationshipTo( d, R2 );
+        c.createRelationshipTo( b, R1 );
+        c.createRelationshipTo( d, R1 );
+        
+        PatternNode pA = new PatternNode();
+        PatternNode pB = new PatternNode();
+        PatternNode pC = new PatternNode();
+        PatternNode pD = new PatternNode();
+        
+        pA.createRelationshipTo( pB, R1, Direction.BOTH );
+        pB.createRelationshipTo( pC, R2, Direction.BOTH );
+        pC.createRelationshipTo( pD, R1, Direction.BOTH );
+        
+        int count = 0;
+        for ( PatternMatch match : 
+            doMatch( pA, a ) )
+        {
+            count++;
+        }
+        assertEquals( 4, count );
+    }
 }

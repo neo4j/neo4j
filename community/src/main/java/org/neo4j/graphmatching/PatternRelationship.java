@@ -10,40 +10,34 @@ import org.neo4j.graphdb.RelationshipType;
 
 public class PatternRelationship
 {
-	private RelationshipType type;
-	private PatternNode firstNode;
-	private PatternNode secondNode;
-	private boolean optional;
+	private final RelationshipType type;
+    private final boolean directed;
+    private final boolean optional;
+    private final boolean anyType;
+	private final PatternNode firstNode;
+	private final PatternNode secondNode;
+	
 	private boolean isMarked = false;
-    private boolean anyType = false;
     private Set<String> propertiesExist = new HashSet<String>();
     private Map<String,Object[]> propertiesEqual = 
         new HashMap<String,Object[]>();
     
-    PatternRelationship( PatternNode firstNode,
-        PatternNode secondNode )
-    {
-        this( firstNode, secondNode, false );
-    }
-
-    PatternRelationship( RelationshipType type, PatternNode firstNode,
-		PatternNode secondNode )
-	{
-		this( type, firstNode, secondNode, false );
-	}
-	
     PatternRelationship( PatternNode firstNode, 
-        PatternNode secondNode, boolean optional )
+        PatternNode secondNode, boolean optional, boolean directed )
     {
+        this.directed = directed;
         this.anyType = true;
         this.firstNode = firstNode;
         this.secondNode = secondNode;
         this.optional = optional;
+        this.type = null;
     }
     
 	PatternRelationship( RelationshipType type, PatternNode firstNode, 
-		PatternNode secondNode, boolean optional )
+		PatternNode secondNode, boolean optional, boolean directed )
 	{
+	    this.directed = directed;
+	    this.anyType = false;
 		this.type = type;
 		this.firstNode = firstNode;
 		this.secondNode = secondNode;
@@ -53,6 +47,11 @@ public class PatternRelationship
     boolean anyRelType()
     {
         return anyType;
+    }
+    
+    boolean isDirected()
+    {
+        return directed;
     }
     
 	public PatternNode getOtherNode( PatternNode node )
@@ -102,14 +101,6 @@ public class PatternRelationship
 	public RelationshipType getType()
 	{
 		return type;
-	}
-	
-	public void disconnect()
-	{
-		getFirstNode().removeRelationship( this, optional );
-		getSecondNode().removeRelationship( this, optional );
-		firstNode = null;
-		secondNode = null;
 	}
 	
 	public Direction getDirectionFrom( PatternNode fromNode )

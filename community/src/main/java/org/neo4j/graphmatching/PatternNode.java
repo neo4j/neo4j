@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.RelationshipType;
 
 public class PatternNode
@@ -92,35 +93,75 @@ public class PatternNode
     public PatternRelationship createRelationshipTo(
         PatternNode otherNode )
     {
-        return this.createRelationshipTo( otherNode, false );
+        return this.createRelationshipTo( otherNode, false, true );
+    }
+    
+    public PatternRelationship createRelationshipTo(
+            PatternNode otherNode, Direction dir )
+    {
+        return this.createRelationshipTo( otherNode, false, 
+                dir == Direction.BOTH ? false : true );
     }
     
 	public PatternRelationship createRelationshipTo(
 		PatternNode otherNode, RelationshipType type )
 	{
-		return this.createRelationshipTo( otherNode, type, false );
+		return this.createRelationshipTo( otherNode, type, false, true );
 	}
 	
-    public PatternRelationship createRelationshipTo( 
-        PatternNode otherNode, boolean optional )
+    public PatternRelationship createRelationshipTo(
+        PatternNode otherNode, RelationshipType type, Direction dir )
+    {
+        return this.createRelationshipTo( otherNode, type, false, 
+                dir == Direction.BOTH ? false : true );
+    }
+    
+    public PatternRelationship createOptionalRelationshipTo(
+        PatternNode otherNode )
+    {
+        return this.createRelationshipTo( otherNode, true, true );
+    }
+    
+    public PatternRelationship createOptionalRelationshipTo(
+            PatternNode otherNode, Direction dir )
+    {
+        return this.createRelationshipTo( otherNode, true, 
+                dir == Direction.BOTH ? false : true );
+    }
+    
+    public PatternRelationship createOptionalRelationshipTo(
+        PatternNode otherNode, RelationshipType type )
+    {
+        return this.createRelationshipTo( otherNode, type, true, true );
+    }
+    
+    public PatternRelationship createOptionalRelationshipTo(
+        PatternNode otherNode, RelationshipType type, Direction dir )
+    {
+        return this.createRelationshipTo( otherNode, type, true, 
+                dir == Direction.BOTH ? false : true );
+    }
+    PatternRelationship createRelationshipTo( PatternNode otherNode, 
+            boolean optional, boolean directed )
     {
         PatternRelationship relationship = 
-            new PatternRelationship( this, otherNode, optional );
+            new PatternRelationship( this, otherNode, optional, directed );
         addRelationship( relationship, optional );
         otherNode.addRelationship( relationship, optional );
         return relationship;
     }
     
-	public PatternRelationship createRelationshipTo( 
-		PatternNode otherNode, RelationshipType type, boolean optional )
-	{
-		PatternRelationship relationship = 
-			new PatternRelationship( type, this, otherNode, optional );
-		addRelationship( relationship, optional );
-		otherNode.addRelationship( relationship, optional );
-		return relationship;
-	}
-	
+    PatternRelationship createRelationshipTo( 
+            PatternNode otherNode, RelationshipType type, boolean optional, 
+            boolean directed )
+    {
+        PatternRelationship relationship = 
+            new PatternRelationship( type, this, otherNode, optional, directed );
+        addRelationship( relationship, optional );
+        otherNode.addRelationship( relationship, optional );
+        return relationship;
+    }
+    
 	public void addPropertyExistConstraint( String propertyName )
 	{
 		this.propertiesExist.add( propertyName );

@@ -9,6 +9,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
@@ -305,13 +306,29 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         Iterator<Relationship> relItr = null;
         if ( pRel.anyRelType() )
         {
-            relItr = currentNode.getRelationships(
-                pRel.getDirectionFrom( fromNode ) ).iterator();
+            if ( pRel.isDirected() )
+            {
+                relItr = currentNode.getRelationships(
+                    pRel.getDirectionFrom( fromNode ) ).iterator();
+            }
+            else
+            {
+                relItr = currentNode.getRelationships( 
+                        Direction.BOTH ).iterator();
+            }
         }
         else
         {
-            relItr = currentNode.getRelationships( pRel.getType(),
-                pRel.getDirectionFrom( fromNode ) ).iterator();
+            if ( pRel.isDirected() )
+            {
+                relItr = currentNode.getRelationships( pRel.getType(),
+                    pRel.getDirectionFrom( fromNode ) ).iterator();
+            }
+            else
+            {
+                relItr = currentNode.getRelationships( pRel.getType(),
+                        Direction.BOTH ).iterator();
+            }
         }
         return relItr;
     }
