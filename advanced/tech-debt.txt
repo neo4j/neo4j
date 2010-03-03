@@ -9,3 +9,7 @@
     nodes with thousands of relationships each[?]).
     As many algorithms as possible should be made to work on much larger graphs
     and where that is not possible, the limitations should be documented.
+
+[2010-03-03] Write tests for org.neo4j.graphalgo.shortestpath.future algos
+    We must create tests for these algos since they are under development
+    and it'd been good to know when they are ready and working :)
