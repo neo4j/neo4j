@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.util.Random;
 
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.onlinebackup.ha.AbstractSlave;
 
 public class HandleMasterConnection extends ConnectionJob
 {
+    private static final Random r = new Random( System.currentTimeMillis() );
+    
     private static enum Status implements JobStatus
     {
         GET_LOG,
@@ -82,13 +85,13 @@ public class HandleMasterConnection extends ConnectionJob
                     try
                     {
                         logVersionWriting = version;
-                        tempFile = new File( xaDs.getName() + 
-                                "-logical-transfer.v" + Long.toString( version ) );
-                        if ( tempFile.exists() )
+                        do 
                         {
-                            log( tempFile.getName() + " already exist" );
-                            tempFile.delete();
-                        }
+                            tempFile = new File( xaDs.getName() + 
+                                    "-logical-transfer.v" + 
+                                    Long.toString( version ) + "_" +
+                                    r.nextLong() );
+                        } while ( tempFile.exists() );
                         logToWrite = new RandomAccessFile( tempFile, 
                             "rw").getChannel();
                         logToWrite.truncate( 0 );
