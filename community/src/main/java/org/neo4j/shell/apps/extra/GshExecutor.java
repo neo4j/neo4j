@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.apps.extra;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -38,6 +39,13 @@ public class GshExecutor extends ScriptExecutor
 	private static final String ENGINE_CLASS = "groovy.util.GroovyScriptEngine";
 	
 	@Override
+    protected String getDefaultPaths()
+    {
+	    return super.getDefaultPaths() + ":" +
+	            "src" + File.separator + "main" + File.separator + "groovy";
+    }
+
+    @Override
 	protected String getPathKey()
 	{
 		return "GSH_PATH";
