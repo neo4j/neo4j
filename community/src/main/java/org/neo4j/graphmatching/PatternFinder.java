@@ -335,6 +335,11 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
 
     private boolean checkProperties( PatternNode patternNode, Node node )
     {
+        Node associatedNode = patternNode.getAssociation();
+        if ( associatedNode != null && !node.equals( associatedNode ) )
+        {
+            return false;
+        }
         for ( String propertyName : patternNode.getPropertiesExist() )
         {
             if ( !node.hasProperty( propertyName ) )
@@ -357,6 +362,11 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
     private boolean checkProperties( PatternRelationship patternRel,
         Relationship rel )
     {
+        Relationship associatedRel = patternRel.getAssociation();
+        if ( associatedRel != null && !rel.equals( associatedRel ) )
+        {
+            return false;
+        }
         for ( String propertyName : patternRel.getPropertiesExist() )
         {
             if ( !rel.hasProperty( propertyName ) )

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 
 public class PatternNode
@@ -23,6 +24,8 @@ public class PatternNode
 		new HashMap<String, Object[]>();
 	private final String label;
 	private final PatternGroup group;
+	
+	private Node associatedNode = null; 
 	
 	public PatternNode()
 	{
@@ -199,5 +202,15 @@ public class PatternNode
 	public Object[] getPropertyValue( String propertyName )
 	{
 		return this.propertiesEqual.get( propertyName );
+	}
+	
+	public void setAssociation( Node node )
+	{
+	    associatedNode = node;
+	}
+
+	public Node getAssociation()
+	{
+	    return associatedNode;
 	}
 }

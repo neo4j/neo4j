@@ -58,6 +58,12 @@ public class TestPatternMatching extends TestCase
 		super( name );
 	}
 	
+    private Iterable<PatternMatch> doMatch( PatternNode pNode )
+    {
+        return PatternMatcher.getMatcher().match( pNode, 
+            new HashMap<String, PatternNode>() );
+    }
+    
 	private Iterable<PatternMatch> doMatch( PatternNode pNode, Node node )
 	{
 	    return PatternMatcher.getMatcher().match( pNode, node,
@@ -656,5 +662,68 @@ public class TestPatternMatching extends TestCase
             count++;
         }
         assertEquals( 4, count );
+    }
+
+    public void testDiamondWithAssociation()
+    {
+        //    C
+        //   / \
+        //  B---D
+        //   \ /
+        //    A
+        Node a = createInstance( "A" );
+        Node b = createInstance( "B" );
+        Node c = createInstance( "C" );
+        Node d = createInstance( "D" );
+        
+        final RelationshipType R1 = MyRelTypes.R1;
+        final RelationshipType R2 = MyRelTypes.R2;
+        
+        a.createRelationshipTo( b, R1 );
+        Relationship relAD = a.createRelationshipTo( d, R1 );
+        b.createRelationshipTo( d, R2 );
+        c.createRelationshipTo( b, R1 );
+        c.createRelationshipTo( d, R1 );
+        
+        PatternNode pA = new PatternNode();
+        PatternNode pB = new PatternNode();
+        PatternNode pC = new PatternNode();
+        PatternNode pD = new PatternNode();
+        
+        pA.createRelationshipTo( pB, R1, Direction.BOTH );
+        pB.createRelationshipTo( pC, R2, Direction.BOTH );
+        PatternRelationship lastRel = 
+            pC.createRelationshipTo( pD, R1, Direction.BOTH );
+        
+        pA.setAssociation( a );
+        pB.setAssociation( b );
+        pC.setAssociation( d );
+        pD.setAssociation( a );
+        
+        int count = 0;
+        for ( PatternMatch match : 
+            doMatch( pA ) )
+        {
+            count++;
+        }
+        assertEquals( 1, count );
+        
+        pD.setAssociation( null );
+        count = 0;
+        for ( PatternMatch match : 
+            doMatch( pA ) )
+        {
+            count++;
+        }
+        assertEquals( 2, count );
+        
+        lastRel.setAssociation( relAD );
+        count = 0;
+        for ( PatternMatch match : 
+            doMatch( pA ) )
+        {
+            count++;
+        }
+        assertEquals( 1, count );
     }
 }

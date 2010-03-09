@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
 public class PatternRelationship
@@ -21,6 +22,8 @@ public class PatternRelationship
     private Set<String> propertiesExist = new HashSet<String>();
     private Map<String,Object[]> propertiesEqual = 
         new HashMap<String,Object[]>();
+        
+    private Relationship associatedRel = null;
     
     PatternRelationship( PatternNode firstNode, 
         PatternNode secondNode, boolean optional, boolean directed )
@@ -148,5 +151,15 @@ public class PatternRelationship
     Object[] getPropertyValue( String propertyName )
     {
         return this.propertiesEqual.get( propertyName );
+    }
+
+    public void setAssociation( Relationship rel )
+    {
+        associatedRel = rel;
+    }
+
+    public Relationship getAssociation()
+    {
+        return associatedRel;
     }
 }

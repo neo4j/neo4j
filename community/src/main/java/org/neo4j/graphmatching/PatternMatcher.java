@@ -40,10 +40,38 @@ public class PatternMatcher
 		    ( Collection<PatternNode> ) null );
 	}
 	
+    public Iterable<PatternMatch> match( PatternNode start,
+            Map<String, PatternNode> objectVariables,
+            PatternNode... optional )
+    {
+        return match( start, objectVariables,
+            Arrays.asList( optional ) );
+    }
+    
+	public Iterable<PatternMatch> match( PatternNode start,
+	        Map<String, PatternNode> objectVariables,
+	        Collection<PatternNode> optional ) 
+    {
+	    Node startNode = start.getAssociation();
+        if ( startNode == null )
+        {
+            throw new IllegalStateException( 
+                    "Associating node for start pattern node is null" );
+        }
+	    return match( start, startNode, objectVariables, optional );
+    }
+	
 	public Iterable<PatternMatch> match( PatternNode start,
 		Node startNode, Map<String, PatternNode> objectVariables,
 		Collection<PatternNode> optional )
 	{
+        Node currentStartNode = start.getAssociation();
+        if ( currentStartNode != null && !currentStartNode.equals( startNode ) )
+        {
+            throw new IllegalStateException( 
+                    "Start patter node already has associated " + 
+                    currentStartNode + ", can not start with " + startNode );
+        }
 	    Iterable<PatternMatch> result = null;
 		if ( optional == null || optional.size() < 1 )
 		{
@@ -60,7 +88,6 @@ public class PatternMatcher
     		// Uses the FILTER expressions
     		result = new FilteredPatternFinder( result, objectVariables );
 		}
-		
 		return result;
 	}
 	
@@ -178,6 +205,5 @@ public class PatternMatcher
             }
             return true;
         }
-	}
-	
+	}	
 }
