@@ -19,8 +19,13 @@
  */
 package org.neo4j.shell.impl;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+
+import jline.ConsoleReader;
+import jline.History;
 
 import org.neo4j.shell.Console;
 import org.neo4j.shell.ShellClient;
@@ -43,6 +48,17 @@ public class JLineConsole implements Console
 				Class.forName( "jline.ConsoleReader" ).newInstance();
 			consoleReader.getClass().getMethod( "setBellEnabled",
 				Boolean.TYPE ).invoke( consoleReader, false );
+			ConsoleReader reader = (ConsoleReader) consoleReader;
+			reader.setBellEnabled(false);
+	        reader.setUseHistory(true);
+
+	        try {
+	            History history = new History();
+	            history.setHistoryFile(new File(".shell_history"));
+	            reader.setHistory(history);
+	        } catch (IOException e) {
+	        }
+
 			return new JLineConsole( consoleReader, client );
 		}
 		catch ( Exception e )
