@@ -22,6 +22,7 @@
     <jline.version>0.9.94</jline.version>
     <jta.version>1.1</jta.version>
     <neo4j.version>${project.version}</neo4j.version>
+    <lucene.version>2.9.1</lucene.version>
     <bundle.namespace>org.neo4j.shell</bundle.namespace>
     <short-name>shell</short-name>
   </properties>
@@ -140,7 +141,7 @@
             </manifest>
             <manifestEntries>
               <url>http://neo4j.org</url>
-              <Class-Path>neo4j-kernel-${neo4j.version}.jar neo4j-index-{neo4j.version}.jar jta-${jta.version}.jar geronimo-jta_${jta.version}_spec-1.1.1.jar jline-${jline.version}.jar</Class-Path>
+              <Class-Path>neo4j-kernel-${neo4j.version}.jar neo4j-index-${neo4j.version}.jar neo4j-commons-${neo4j.version}.jar lucene-core-${lucene.version}.jar jta-${jta.version}.jar geronimo-jta_${jta.version}_spec-1.1.1.jar jline-${jline.version}.jar</Class-Path>
             </manifestEntries>
           </archive>
         </configuration>
