@@ -125,7 +125,8 @@ public class HandleIncommingSlaveJob extends ConnectionJob
         {
             releaseWriteBuffer();
             setNoRequeue();
-            setChainJob( new HandleSlaveConnection( connection, master, slaveVersion, xaDsName ) );
+            setChainJob( new HandleSlaveConnection( 
+                    connection, master, xaDsName ) );
             return true;
         }
         retries++;
