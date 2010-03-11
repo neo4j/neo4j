@@ -148,7 +148,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
         try
         {
-            if ( !isReadOnly() )
+            if ( !isReadOnly() || isBackupSlave() )
             {
                 openIdGenerator();
             }
@@ -163,7 +163,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
             getRecordSize(), getFileChannel(), getMappedMem(), 
-            getIfMemoryMapped(), isReadOnly() ) );
+            getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
     }
 
     /**
@@ -233,7 +233,7 @@ public abstract class AbstractStore extends CommonAbstractStore
      */
     protected void rebuildIdGenerator()
     {
-        if ( isReadOnly() )
+        if ( isReadOnly() && !isBackupSlave() )
         {
             throw new ReadOnlyDbException();
         }

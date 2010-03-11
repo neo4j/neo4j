@@ -48,6 +48,48 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         super.tearDown();
     }
 
+    public void testDeleteReferenceNodeOrLastNodeIsOk()
+    {
+        Transaction tx = getTransaction();
+        for ( int i = 0; i < 10; i++ )
+        {
+            getGraphDb().createNode();
+        }
+        // long numNodesPre = getNodeManager().getNumberOfIdsInUse( Node.class
+        // );
+        // empty the DB instance
+        for ( Node node : getGraphDb().getAllNodes() )
+        {
+            for ( Relationship rel : node.getRelationships() )
+            {
+                rel.delete();
+            }
+            node.delete();
+        }
+        tx.success();
+        tx.finish();
+        tx = getGraphDb().beginTx();
+        // the DB should be empty
+        // long numNodesPost = getNodeManager().getNumberOfIdsInUse( Node.class
+        // );
+        // System.out.println(String.format( "pre: %d, post: %d", numNodesPre,
+        // numNodesPost ));
+        assertFalse( getGraphDb().getAllNodes().iterator().hasNext() );
+        // TODO: this should be valid, fails right now!
+        // assertEquals( 0, numNodesPost );
+        try
+        {
+            getGraphDb().getReferenceNode();
+            fail();
+        }
+        catch ( NotFoundException nfe )
+        {
+            // should be thrown
+        }
+        tx.success();
+        tx.finish();
+    }
+
     public void testDeleteNodeWithRel1()
     {
         Node node1 = getGraphDb().createNode();
@@ -338,7 +380,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             node1 = getGraphDb().createNode();
             Node node2 = getGraphDb().createNode();
             Relationship rel = node1.createRelationshipTo( node2,
-                MyRelTypes.TEST );
+                    MyRelTypes.TEST );
             try
             {
                 rel.setProperty( key, new Object() );

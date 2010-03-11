@@ -112,7 +112,8 @@ public abstract class CommonAbstractStore
     private Map<?,?> config = null;
     
     private boolean readOnly = false;
-
+    private boolean backupSlave = false;
+    
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
      * loading any configuration defined in <CODE>config</CODE>. After
@@ -154,6 +155,11 @@ public abstract class CommonAbstractStore
     {
         return readOnly;
     }
+    
+    boolean isBackupSlave()
+    {
+        return backupSlave;
+    }
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>.
@@ -190,6 +196,14 @@ public abstract class CommonAbstractStore
                 readOnly = isReadOnly;
             }
         }
+        if ( config != null )
+        {
+            String str = (String) config.get( "backup_slave" );
+            if ( "true".equals( str ) )
+            {
+                backupSlave = true;
+            }
+        }
         if ( !new File( storageFileName ).exists() )
         {
             throw new IllegalStateException( "No such store[" + storageFileName
@@ -197,7 +211,7 @@ public abstract class CommonAbstractStore
         }
         try
         {
-            if ( !readOnly )
+            if ( !readOnly || backupSlave )
             {
                 this.fileChannel = new RandomAccessFile( storageFileName, "rw" )
                     .getChannel();
@@ -215,7 +229,7 @@ public abstract class CommonAbstractStore
         }
         try
         {
-            if ( !readOnly && grabFileLock )
+            if ( (!readOnly || backupSlave) && grabFileLock )
             {
                 this.fileLock = this.fileChannel.tryLock();
                 if ( fileLock == null )
@@ -240,7 +254,7 @@ public abstract class CommonAbstractStore
      */
     protected void setStoreNotOk()
     {
-        if ( readOnly )
+        if ( readOnly && !isBackupSlave() )
         {
             throw new UnderlyingStorageException( 
                 "Cannot start up on non clean store as read only" );
@@ -403,7 +417,7 @@ public abstract class CommonAbstractStore
     {
         if ( !storeOk )
         {
-            if ( readOnly )
+            if ( readOnly && !backupSlave )
             {
                 throw new ReadOnlyDbException();
             }
@@ -414,7 +428,7 @@ public abstract class CommonAbstractStore
 
     public void rebuildIdGenerators()
     {
-        if ( readOnly )
+        if ( readOnly && !backupSlave )
         {
             throw new ReadOnlyDbException();
         }
@@ -569,7 +583,7 @@ public abstract class CommonAbstractStore
             windowPool.close();
             windowPool = null;
         }
-        if ( isReadOnly() )
+        if ( isReadOnly() && !isBackupSlave() )
         {
             try
             {
@@ -595,7 +609,7 @@ public abstract class CommonAbstractStore
         boolean success = false;
         IOException storedIoe = null;
         // hack for WINBLOWS
-        if ( !readOnly )
+        if ( !readOnly || backupSlave )
         {
             for ( int i = 0; i < 10; i++ )
             {
