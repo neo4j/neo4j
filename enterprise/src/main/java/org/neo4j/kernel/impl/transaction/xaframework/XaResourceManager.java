@@ -550,7 +550,7 @@ public class XaResourceManager
                 return id1 - id2;
             }
         } );
-        txOrderMap = null;
+        txOrderMap.clear(); // = null;
         Logger logger = Logger.getLogger( tf.getClass().getName() );
         while ( !xids.isEmpty() )
         {

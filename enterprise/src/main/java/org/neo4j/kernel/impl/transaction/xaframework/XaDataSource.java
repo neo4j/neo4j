@@ -125,6 +125,11 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException();
     }
     
+    public String getFileName( long version )
+    {
+        throw new UnsupportedOperationException();
+    }
+    
     /**
      * Returns a random identifier that gets generated when the data source is 
      * created. Note with "created" we mean first time data source is created 
@@ -204,6 +209,11 @@ public abstract class XaDataSource
     }
 
 
+    public long getLogicalLogLength( long version )
+    {
+        throw new UnsupportedOperationException();
+    }
+    
     /**
      * Deletes a log specific logical log.
      * 
