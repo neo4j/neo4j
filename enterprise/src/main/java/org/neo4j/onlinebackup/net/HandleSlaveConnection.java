@@ -24,16 +24,14 @@ public class HandleSlaveConnection extends ConnectionJob
     private long logVersionToSend = -1;
     private ReadableByteChannel logToSend = null;
     private long logLength = -1;
-    
-    private long slaveVersion;
+    private long nextLogVersion = -1;
     
     public HandleSlaveConnection( Connection connection, Master master, 
-        long slaveVersion, String xaDsName )
+        String xaDsName )
     {
         super( connection, master );
         this.master = master;
         this.xaDsName = xaDsName;
-        this.slaveVersion = slaveVersion;
         setStatus( Status.GET_MESSAGE );
     }
     
@@ -237,23 +235,21 @@ public class HandleSlaveConnection extends ConnectionJob
                 if ( logToSend.read( buffer ) <= 0 )
                 {
                     releaseWriteBuffer();
-                    setStatus( Status.GET_MESSAGE );
-//                    if ( master.hasLog( logVersionToSend + 1 ) )
-//                    {
-//                        logVersionToSend = logVersionToSend++;
-//                        logLength = master.getLogLength( logVersionToSend );
-//                        logToSend = master.getLog( logVersionToSend );
-//                    }
-//                    else
-//                    {
-                        logLength = -1;
-                        logVersionToSend = -1;
-                        logToSend = null;
-//                    }
-                    if ( logVersionToSend >= slaveVersion )
+                    if ( nextLogVersion != -1 )
                     {
-                        slaveVersion = logVersionToSend + 1;
+                        logToSend = master.getLog( xaDsName, nextLogVersion );
+                        logLength = master.getLogLength( xaDsName, nextLogVersion );
+                        logVersionToSend = nextLogVersion;
+                        nextLogVersion = -1;
+                        setStatus( Status.SETUP_OFFER_LOG );
                     }
+                    else
+                    {
+                        setStatus( Status.GET_MESSAGE );
+                    }
+                    logLength = -1;
+                    logVersionToSend = -1;
+                    logToSend = null;
                     return true;
                 }
                 buffer.flip();

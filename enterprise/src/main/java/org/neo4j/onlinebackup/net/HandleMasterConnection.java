@@ -78,6 +78,10 @@ public class HandleMasterConnection extends ConnectionJob
                     setStatus( Status.SETUP_NOT_OK );
                     return true;
                 }
+                if ( version > masterVersion )
+                {
+                    masterVersion = version;
+                }
                 logLength = buffer.getLong();
                 log( "Got offer: " + version + "," + logLength );
                 if ( !xaDs.hasLogicalLog( version ) )
@@ -131,7 +135,6 @@ public class HandleMasterConnection extends ConnectionJob
     private boolean setupRequest()
     {
         long version = xaDs.getCurrentLogVersion();
-        // System.out.println( xaDs.getName() + " requesting " + version );
         while ( version < masterVersion )
         {
             if ( xaDs.hasLogicalLog( version ) )
