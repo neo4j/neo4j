@@ -84,6 +84,7 @@ as graphs rather than tables. For more information, see http://neo4j.org.
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skip>false</skip>
+          <argLine>-Xmx300m</argLine>
         </configuration>
       </plugin>
       <plugin>
