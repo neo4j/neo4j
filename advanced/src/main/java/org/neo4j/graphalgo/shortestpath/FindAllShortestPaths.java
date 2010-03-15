@@ -36,9 +36,7 @@ import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 
 /**
- * This class can be used to find all shortest paths in an unweighted network.
- * Only supports one relationship type and direction is always BOTH. Based on
- * code from an early IMDB example application.
+ * This is a modiciation of {@link FindSinglePath} which finds all paths, not just one
  * 
  * @see FindPath
  * @author Patrik Larsson
