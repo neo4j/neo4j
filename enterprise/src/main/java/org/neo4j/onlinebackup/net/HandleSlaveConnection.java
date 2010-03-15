@@ -235,6 +235,7 @@ public class HandleSlaveConnection extends ConnectionJob
                 if ( logToSend.read( buffer ) <= 0 )
                 {
                     releaseWriteBuffer();
+                    logToSend.close();
                     if ( nextLogVersion != -1 )
                     {
                         logToSend = master.getLog( xaDsName, nextLogVersion );
