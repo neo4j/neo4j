@@ -24,7 +24,10 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+
 import javax.transaction.xa.Xid;
+
+import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 
 class MemoryMappedLogBuffer implements LogBuffer
 {
@@ -143,46 +146,89 @@ class MemoryMappedLogBuffer implements LogBuffer
 
     public LogBuffer put( byte[] bytes ) throws IOException
     {
+        put( bytes, 0 );
+        return this;
+    }
+    
+    private void put( byte[] bytes, int offset ) throws IOException
+    {
+        int bytesToWrite = bytes.length - offset;
+        if ( bytesToWrite > MAPPED_SIZE )
+        {
+            bytesToWrite = MAPPED_SIZE;
+        }
         if ( mappedBuffer == null || 
-            (MAPPED_SIZE - mappedBuffer.position()) < bytes.length )
+                (MAPPED_SIZE - mappedBuffer.position()) < bytesToWrite )
         {
             getNewMappedBuffer();
             if ( mappedBuffer == null )
             {
-                fallbackBuffer.clear();
-                fallbackBuffer.put( bytes );
-                fallbackBuffer.flip();
-                fileChannel.write( fallbackBuffer, mappedStartPosition );
-                mappedStartPosition += bytes.length;
-                return this;
+                bytesToWrite = bytes.length - offset; // reset
+                ByteBuffer buf = ByteBuffer.wrap( bytes );
+                buf.position( offset );
+                int count = fileChannel.write( buf, mappedStartPosition );
+                if ( count != bytesToWrite )
+                {
+                    throw new UnderlyingStorageException( "Failed to write from " + 
+                        offset + " expected " + bytesToWrite + " but wrote " + 
+                        count );
+                }
+                mappedStartPosition += bytesToWrite;
+                return;
             }
         }
-        mappedBuffer.put( bytes );
+        mappedBuffer.put( bytes, offset, bytesToWrite );
+        offset += bytesToWrite;
+        if ( offset < bytes.length )
+        {
+            put( bytes, offset );
+        }
+    }
+    
+    public LogBuffer put( char[] chars ) throws IOException
+    {
+        put( chars, 0 );
         return this;
     }
 
-    public LogBuffer put( char[] chars ) throws IOException
+    private void put( char[] chars, int offset ) throws IOException
     {
+        int charsToWrite = chars.length - offset;
+        if ( charsToWrite * 2 > MAPPED_SIZE )
+        {
+            charsToWrite = MAPPED_SIZE / 2;
+        }
         if ( mappedBuffer == null || 
-            (MAPPED_SIZE - mappedBuffer.position()) < (chars.length * 2) )
+                (MAPPED_SIZE - mappedBuffer.position()) < (charsToWrite * 2 ) )
         {
             getNewMappedBuffer();
             if ( mappedBuffer == null )
             {
-                fallbackBuffer.clear();
-                fallbackBuffer.asCharBuffer().put( chars );
-                fallbackBuffer.limit( chars.length * 2 );
-                fileChannel.write( fallbackBuffer, mappedStartPosition );
-                mappedStartPosition += (chars.length * 2);
-                return this;
+                int bytesToWrite = ( chars.length - offset ) * 2;
+                ByteBuffer buf = ByteBuffer.allocate( bytesToWrite );
+                buf.asCharBuffer().put( chars, offset, chars.length - offset );
+                buf.limit( chars.length * 2 );
+                int count = fileChannel.write( buf, mappedStartPosition );
+                if ( count != bytesToWrite )
+                {
+                    throw new UnderlyingStorageException( "Failed to write from " + 
+                        offset + " expected " + bytesToWrite + " but wrote " + 
+                        count );
+                }
+                mappedStartPosition += bytesToWrite;
+                return;
             }
         }
         int oldPos = mappedBuffer.position();
-        mappedBuffer.asCharBuffer().put( chars );
-        mappedBuffer.position( oldPos + chars.length * 2 );
-        return this;
+        mappedBuffer.asCharBuffer().put( chars, offset, charsToWrite );
+        mappedBuffer.position( oldPos + (charsToWrite * 2) );
+        offset += charsToWrite;
+        if ( offset < chars.length )
+        {
+            put( chars, offset );
+        }
     }
-
+    
     void releaseMemoryMapped()
     {
         if ( mappedBuffer != null )
