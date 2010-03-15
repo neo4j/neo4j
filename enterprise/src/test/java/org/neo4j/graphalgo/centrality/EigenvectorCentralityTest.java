@@ -29,11 +29,6 @@ import org.neo4j.graphdb.Relationship;
 
 public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
 {
-    public EigenvectorCentralityTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     protected void assertCentrality(
         EigenvectorCentralityPower eigenvectorCentralityPower, String nodeId,
         Double value )

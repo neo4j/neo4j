@@ -28,11 +28,6 @@ import org.neo4j.graphdb.RelationshipType;
 
 public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
 {
-    public SingleSourceShortestPathTest( String name )
-    {
-        super( name );
-    }
-
     protected abstract SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode );
 

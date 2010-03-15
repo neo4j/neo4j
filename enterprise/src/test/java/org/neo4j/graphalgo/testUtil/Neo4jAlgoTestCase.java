@@ -39,11 +39,6 @@ public class Neo4jAlgoTestCase extends TestCase
         R1, R2, R3
     }
 
-    public Neo4jAlgoTestCase( String arg0 )
-    {
-        super( arg0 );
-    }
-
     @Override
     protected void setUp() throws Exception
     {

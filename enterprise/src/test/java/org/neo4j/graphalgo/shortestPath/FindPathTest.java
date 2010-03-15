@@ -27,11 +27,6 @@ import org.neo4j.graphdb.Relationship;
 
 public class FindPathTest extends Neo4jAlgoTestCase
 {
-    public FindPathTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     protected FindPath getFindPath( SimpleGraphBuilder graph, String startNode,
             String endNode )
     {

@@ -16,6 +16,8 @@
  */
 package org.neo4j.graphalgo.testUtil;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -166,6 +168,23 @@ public class SimpleGraphBuilder
         for ( int i = 0; i < nodeNames.length / 2; ++i )
         {
             makeEdge( nodeNames[i * 2], nodeNames[i * 2 + 1] );
+        }
+    }
+    
+    public void importEdges( File file )
+    {
+        try
+        {
+            CsvFileReader reader = new CsvFileReader( file );
+            while ( reader.hasNext() )
+            {
+                String[] line = reader.next();
+                makeEdge( line[0], line[1] );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 

@@ -23,11 +23,6 @@ import org.neo4j.graphdb.Direction;
 
 public class DijkstraTest extends Neo4jAlgoTestCase
 {
-    public DijkstraTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     protected Dijkstra<Double> getDijkstra( SimpleGraphBuilder graph,
         Double startCost, String startNode, String endNode )
     {

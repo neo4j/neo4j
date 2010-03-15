@@ -33,11 +33,6 @@ import org.neo4j.graphdb.Relationship;
 
 public class BetweennessCentralityTest extends Neo4jAlgoTestCase
 {
-    public BetweennessCentralityTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
         return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,

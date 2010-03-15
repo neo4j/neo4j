@@ -25,11 +25,6 @@ import org.neo4j.graphdb.Relationship;
 
 public class EigenvectorCentralityArnoldiTest extends EigenvectorCentralityTest
 {
-    public EigenvectorCentralityArnoldiTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     @Override
     public EigenvectorCentrality getEigenvectorCentrality(
         Direction relationDirection, CostEvaluator<Double> costEvaluator,

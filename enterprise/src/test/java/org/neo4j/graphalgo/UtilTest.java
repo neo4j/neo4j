@@ -29,11 +29,6 @@ import org.neo4j.graphdb.Relationship;
 
 public class UtilTest extends Neo4jAlgoTestCase
 {
-    public UtilTest( String name )
-    {
-        super( name );
-    }
-
     public void testPathCounter()
     {
         // Nodes

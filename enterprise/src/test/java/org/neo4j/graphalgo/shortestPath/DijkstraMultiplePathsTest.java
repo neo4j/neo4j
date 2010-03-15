@@ -31,11 +31,6 @@ import org.neo4j.graphdb.Relationship;
 
 public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
 {
-    public DijkstraMultiplePathsTest( String name )
-    {
-        super( name );
-    }
-
     protected Dijkstra<Double> getDijkstra( SimpleGraphBuilder graph,
         Double startCost, String startNode, String endNode )
     {
