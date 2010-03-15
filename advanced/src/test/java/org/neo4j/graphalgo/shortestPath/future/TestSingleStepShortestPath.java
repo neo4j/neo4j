@@ -5,10 +5,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.graphalgo.shortestpath.future.LevelShortestPathsFinder;
-import org.neo4j.graphalgo.shortestpath.future.Path;
-import org.neo4j.graphalgo.shortestpath.future.RelationshipExpander;
-import org.neo4j.graphalgo.shortestpath.future.SingleStepShortestPathsFinder;
+import org.neo4j.graphalgo.Path;
+import org.neo4j.graphalgo.RelationshipExpander;
+import org.neo4j.graphalgo.shortestpath.LevelShortestPathsFinder;
+import org.neo4j.graphalgo.shortestpath.SingleStepShortestPathsFinder;
 import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
 import org.neo4j.graphdb.Direction;
