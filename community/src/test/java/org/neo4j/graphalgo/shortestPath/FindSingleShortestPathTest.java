@@ -23,11 +23,6 @@ import org.neo4j.graphdb.Node;
 
 public class FindSingleShortestPathTest extends Neo4jAlgoTestCase
 {
-    public FindSingleShortestPathTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     protected FindSingleShortestPath getFindPath( SimpleGraphBuilder graph,
         String startNode, String endNode, int maxDepth )
     {

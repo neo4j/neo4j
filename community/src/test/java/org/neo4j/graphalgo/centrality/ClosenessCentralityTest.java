@@ -26,11 +26,6 @@ import org.neo4j.graphdb.Relationship;
 
 public class ClosenessCentralityTest extends Neo4jAlgoTestCase
 {
-    public ClosenessCentralityTest( String name )
-    {
-        super( name );
-    }
-
     protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
         return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,

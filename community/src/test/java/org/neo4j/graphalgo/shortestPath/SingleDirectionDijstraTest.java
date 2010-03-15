@@ -27,11 +27,6 @@ import org.neo4j.graphdb.Direction;
  */
 public class SingleDirectionDijstraTest extends DijkstraTest
 {
-    public SingleDirectionDijstraTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     // All we need to do is override this method
     protected Dijkstra<Double> getDijkstra( SimpleGraphBuilder graph,
         Double startCost, String startNode, String endNode )

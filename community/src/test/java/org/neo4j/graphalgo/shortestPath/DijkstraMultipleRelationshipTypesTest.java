@@ -27,11 +27,6 @@ import org.neo4j.graphdb.RelationshipType;
 
 public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
 {
-    public DijkstraMultipleRelationshipTypesTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     protected Dijkstra<Double> getDijkstra( String startNode, String endNode,
         RelationshipType... relTypes )
     {

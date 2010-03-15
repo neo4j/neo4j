@@ -28,11 +28,6 @@ import org.neo4j.graphdb.Relationship;
 
 public class StressCentralityTest extends Neo4jAlgoTestCase
 {
-    public StressCentralityTest( String name )
-    {
-        super( name );
-    }
-
     protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
         return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,

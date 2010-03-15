@@ -27,11 +27,6 @@ import org.neo4j.graphdb.Relationship;
 
 public class FloydWarshallTest extends Neo4jAlgoTestCase
 {
-    public FloydWarshallTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     /**
      * Test case for paths of length 0 and 1, and an impossible path
      */

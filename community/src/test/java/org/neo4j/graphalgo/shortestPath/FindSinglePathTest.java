@@ -22,11 +22,6 @@ import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
 
 public class FindSinglePathTest extends Neo4jAlgoTestCase
 {
-    public FindSinglePathTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     protected FindSinglePath getFindPath( SimpleGraphBuilder graph,
         String startNode, String endNode, int maxDepth )
     {

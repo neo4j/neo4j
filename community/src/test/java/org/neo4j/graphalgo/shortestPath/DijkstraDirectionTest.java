@@ -32,11 +32,6 @@ import org.neo4j.graphdb.Relationship;
  */
 public class DijkstraDirectionTest extends Neo4jAlgoTestCase
 {
-    public DijkstraDirectionTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     public void testDijkstraDirection1()
     {
         graph.makeEdge( "s", "e" );

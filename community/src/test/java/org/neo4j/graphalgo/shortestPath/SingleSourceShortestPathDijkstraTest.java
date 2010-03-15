@@ -27,11 +27,6 @@ import org.neo4j.graphdb.RelationshipType;
 public class SingleSourceShortestPathDijkstraTest extends
     SingleSourceShortestPathTest
 {
-    public SingleSourceShortestPathDijkstraTest( String name )
-    {
-        super( name );
-    }
-
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode )
     {

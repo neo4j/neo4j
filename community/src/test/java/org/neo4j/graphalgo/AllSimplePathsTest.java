@@ -25,11 +25,6 @@ import org.neo4j.graphdb.PropertyContainer;
 
 public class AllSimplePathsTest extends Neo4jAlgoTestCase
 {
-    public AllSimplePathsTest( String name )
-    {
-        super( name );
-    }
-
     public void testRun()
     {
         // Make a graph of four different paths
