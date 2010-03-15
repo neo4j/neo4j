@@ -65,4 +65,6 @@ public abstract class XaTransactionFactory
     public abstract long getAndSetNewVersion();
 
     public abstract long getLastCommittedTx();
+
+    public abstract void setLastCommittedTx( long txId );
 } 

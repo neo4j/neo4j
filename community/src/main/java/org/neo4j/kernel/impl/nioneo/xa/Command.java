@@ -513,6 +513,16 @@ abstract class Command extends XaCommand
                 store.updateRecord( record );
             }
         }
+        
+        public int getNodeId()
+        {
+            return record.getNodeId();
+        }
+        
+        public int getRelId()
+        {
+            return record.getRelId();
+        }
 
         @Override
         public String toString()
@@ -527,9 +537,29 @@ abstract class Command extends XaCommand
             // prev_prop_id(int)+next_prop_id(int)+nr_value_records(int)
             byte inUse = record.inUse() ? Record.IN_USE.byteValue()
                 : Record.NOT_IN_USE.byteValue();
+            if ( record.getRelId() != -1 )
+            {
+                inUse += Record.REL_PROPERTY.byteValue();
+            }
             buffer.put( PROP_COMMAND );
             buffer.putInt( record.getId() );
             buffer.put( inUse );
+            int nodeId = record.getNodeId();
+            int relId = record.getRelId();
+            if ( nodeId != -1 )
+            {
+                buffer.putInt( nodeId );
+            }
+            else if ( relId != -1 )
+            {
+                buffer.putInt( relId );
+            }
+            else
+            {
+                // means this records value has not change, only place in 
+                // prop chain
+                buffer.putInt( -1 );
+            }
             if ( record.inUse() )
             {
                 buffer.putInt( record.getType().intValue() ).putInt(
@@ -560,7 +590,7 @@ abstract class Command extends XaCommand
             // id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
             // prev_prop_id(int)+next_prop_id(int)+nr_value_records(int)
             buffer.clear();
-            buffer.limit( 5 );
+            buffer.limit( 9 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
@@ -574,11 +604,22 @@ abstract class Command extends XaCommand
             {
                 inUse = true;
             }
-            else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
+            boolean nodeProperty = true;
+            if ( (inUseFlag & Record.REL_PROPERTY.byteValue() ) == 
+                Record.REL_PROPERTY.byteValue() )
             {
-                throw new IOException( "Illegal in use flag: " + inUseFlag );
+                nodeProperty = false;
             }
+            int primitiveId = buffer.getInt();
             PropertyRecord record = new PropertyRecord( id );
+            if ( primitiveId != -1 && nodeProperty )
+            {
+                record.setNodeId( primitiveId );
+            }
+            else if ( primitiveId != -1 )
+            {
+                record.setRelId( primitiveId );
+            }
             if ( inUse )
             {
                 buffer.clear();

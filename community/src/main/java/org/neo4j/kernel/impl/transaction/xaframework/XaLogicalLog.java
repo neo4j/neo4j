@@ -100,6 +100,7 @@ public class XaLogicalLog
     private boolean autoRotate = true;
     private long rotateAtSize = 10*1024*1024; // 10MB
     private boolean backupSlave = false;
+    private boolean slave = false;
     private boolean useMemoryMapped = true;
 
     XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
@@ -1183,6 +1184,44 @@ public class XaLogicalLog
         xaRm.reset();
         log.info( "Log[" + fileName + "] version " + logVersion + 
                 " applied successfully." );
+    }
+    
+    public synchronized void applyTransaction( ReadableByteChannel byteChannel )
+        throws IOException
+    {
+        if ( !slave )
+        {
+            throw new IllegalStateException( "This is not a slave" );
+        }
+        buffer.clear();
+        buffer.limit( 8 );
+        if ( byteChannel.read( buffer ) != 16 )
+        {
+            throw new IOException( "Unable to read log version" );
+        }
+        buffer.flip();
+        long txId = buffer.getLong();
+        if ( txId != (xaTf.getLastCommittedTx() + 1) )
+        {
+            throw new IllegalStateException( "Tried to apply tx " + 
+                txId + " but expected transaction " + 
+                (xaTf.getCurrentVersion() + 1) );
+        }
+        log.fine( "Logical log version: " + logVersion + 
+            ", committing tx=" + txId + ")" );
+        long logEntriesFound = 0;
+        LogApplier logApplier = new LogApplier( byteChannel, buffer, xaTf, xaRm,
+            cf, xidIdentMap, recoveredTxMap );
+        while ( logApplier.readAndApplyEntry() )
+        {
+            logEntriesFound++;
+        }
+        byteChannel.close();
+        // xaTf.flushAll();
+        // xaTf.getAndSetNewVersion();
+        xaTf.setLastCommittedTx( txId );
+        xaRm.reset();
+        log.info( "Tx[" + txId + "] " + " applied successfully." );
     }
     
     public synchronized void rotate() throws IOException
