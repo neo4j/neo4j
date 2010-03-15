@@ -174,11 +174,15 @@ public class Master implements Callback
         return false;
     }
 
-    public void rotateLogAndPushToSlaves() throws IOException
+    public synchronized void rotateLogAndPushToSlaves() throws IOException
     {
         if ( slaveList.size() == 0 )
         {
             return;
+        }
+        for ( XaDataSource xaDs : xaDsMgr.getAllRegisteredDataSources() )
+        {
+            xaDs.rotateLogicalLog();
         }
         List<HandleSlaveConnection> newList = 
             new CopyOnWriteArrayList<HandleSlaveConnection>();
@@ -187,8 +191,7 @@ public class Master implements Callback
             XaDataSource xaDs = xaDsMgr.getXaDataSource( slave.getXaDsName() );
             if ( xaDs != null )
             {
-                long version = xaDs.getCurrentLogVersion();
-                xaDs.rotateLogicalLog();
+                long version = xaDs.getCurrentLogVersion() - 1;
                 if ( !slave.offerLogToSlave( version ) )
                 {
                     System.out.println( "Failed to offer log to slave: " + slave );
