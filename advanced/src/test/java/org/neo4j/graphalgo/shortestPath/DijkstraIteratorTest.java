@@ -30,11 +30,6 @@ import org.neo4j.graphdb.Relationship;
 
 public class DijkstraIteratorTest extends Neo4jAlgoTestCase
 {
-    public DijkstraIteratorTest( String arg0 )
-    {
-        super( arg0 );
-    }
-
     public void testRun()
     {
         new TestDijkstra().runTest();

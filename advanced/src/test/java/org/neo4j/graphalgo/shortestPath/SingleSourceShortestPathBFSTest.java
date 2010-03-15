@@ -25,11 +25,6 @@ import org.neo4j.graphdb.RelationshipType;
 public class SingleSourceShortestPathBFSTest extends
     SingleSourceShortestPathTest
 {
-    public SingleSourceShortestPathBFSTest( String name )
-    {
-        super( name );
-    }
-
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode )
     {
