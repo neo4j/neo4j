@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.commons.iterator.NestingIterator;
@@ -23,9 +22,6 @@ import org.neo4j.graphdb.RelationshipType;
  * between each traversal. It does so to minimize the traversal overhead
  * if one side has a very large amount of relationships, but the other one
  * very few. It performs well however the graph is proportioned.
- * 
- * TODO At the moment it doesn't return ALL paths, only ALMOST ALL :)
- * but the single shortest path returns correct answers.
  */
 public class SingleStepShortestPathsFinder
 {
@@ -63,12 +59,12 @@ public class SingleStepShortestPathsFinder
             return Arrays.asList( Path.singular( start ) );
         }
 
-        Map<Integer, List<Path>> hits =
-                new HashMap<Integer, List<Path>>();
+        Map<Integer, Collection<Hit>> hits =
+                new HashMap<Integer, Collection<Hit>>();
         Collection<Long> sharedVisitedRels = new HashSet<Long>();
-        FrozenDepth sharedFrozenDepth = new FrozenDepth();
-        MutableBoolean sharedStop = new MutableBoolean();
-        MutableInteger sharedCurrentDepth = new MutableInteger();
+        ValueHolder<Integer> sharedFrozenDepth = new ValueHolder<Integer>( null );
+        ValueHolder<Boolean> sharedStop = new ValueHolder<Boolean>( false );
+        ValueHolder<Integer> sharedCurrentDepth = new ValueHolder<Integer>( 0 );
         final DirectionData startData = new DirectionData( "start", start,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
                 sharedCurrentDepth );
@@ -84,26 +80,72 @@ public class SingleStepShortestPathsFinder
         return least( hits );
     }
     
-    private Collection<Path> least( Map<Integer, List<Path>> hits )
+    private Collection<Path> least( Map<Integer, Collection<Hit>> hits )
     {
         if ( hits.size() == 0 )
         {
             return Collections.emptyList();
         }
         
-        // TODO Fix this somehow, this is like... well, it's like something...
+        // FIXME eehhh... loop through from zero, are you kiddin' me?
         for ( int i = 0; true; i++ )
         {
-            List<Path> paths = hits.get( i );
-            if ( paths != null )
+            Collection<Hit> depthHits = hits.get( i );
+            if ( depthHits != null )
             {
-                return paths;
+                return hitsToPaths( depthHits );
             }
+        }
+    }
+    
+    private Collection<Path> hitsToPaths( Collection<Hit> depthHits )
+    {
+        // TODO Do this lazy?
+        Collection<Path> paths = new ArrayList<Path>();
+        for ( Hit hit : depthHits )
+        {
+            for ( Path.Builder start : hit.start.paths )
+            {
+                for ( Path.Builder end : hit.end.paths )
+                {
+                    paths.add( start.build( end ) );
+                }
+            }
+        }
+        return paths;
+    }
+
+    private static class Hit
+    {
+        private final LevelData start;
+        private final LevelData end;
+        
+        Hit( LevelData start, LevelData end )
+        {
+            this.start = start;
+            this.end = end;
+        }
+        
+        @Override
+        public int hashCode()
+        {
+            int result = 17;
+            result += start.node.hashCode() * 37;
+            result += end.node.hashCode() * 37;
+            return result;
+        }
+        
+        @Override
+        public boolean equals( Object obj )
+        {
+            Hit o = (Hit) obj;
+            return o.start.node.equals( start.node ) &&
+                    o.end.node.equals( end.node );
         }
     }
 
     private void goOneStep( DirectionData directionData,
-            DirectionData otherSide, Map<Integer, List<Path>> hits,
+            DirectionData otherSide, Map<Integer, Collection<Hit>> hits,
             boolean stopAsEarlyAsPossible, DirectionData startSide )
     {
         if ( !directionData.hasNext() )
@@ -117,99 +159,89 @@ public class SingleStepShortestPathsFinder
         {
             // This is a hit
             int depth = directionData.currentDepth + otherSideHit.depth;
-            if ( !directionData.sharedFrozenDepth.isFrozen() )
+            if ( directionData.sharedFrozenDepth.value == null )
             {
-                directionData.sharedFrozenDepth.depth = depth;
+                directionData.sharedFrozenDepth.value = depth;
             }
-            if ( depth <= directionData.sharedFrozenDepth.depth )
+            if ( depth <= directionData.sharedFrozenDepth.value )
             {
                 directionData.haveFoundSomething = true;
-                if ( depth < directionData.sharedFrozenDepth.depth )
+                if ( depth < directionData.sharedFrozenDepth.value )
                 {
-                    directionData.sharedFrozenDepth.depth = depth;
+                    directionData.sharedFrozenDepth.value = depth;
                     // TODO Is it really ok to just stop the other side here?
                     // I'm basing that decision on that it was the other side
                     // which found the deeper paths (correct assumption?)
                     otherSide.stop = true;
                     if ( stopAsEarlyAsPossible )
                     {
-                        // we can stop here because we won't get a more shallow
-                        // path than this.
+                        // we can stop here because we won't get a less deep path than this.
                         directionData.sharedStop.value = true;
                     }
                 }
                 
-                List<Path> paths = hits.get( depth );
-                if ( paths == null )
+                // Add it to the list of hits
+                Collection<Hit> depthHits = hits.get( depth );
+                if ( depthHits == null )
                 {
-                    paths = new ArrayList<Path>();
-                    hits.put( depth, paths );
+                    depthHits = new HashSet<Hit>();
+                    hits.put( depth, depthHits );
                 }
-                
-                Path.Builder startPath = directionData == startSide ?
-                        levelData.path : otherSideHit.path;
-                Path.Builder endPath = directionData == startSide ?
-                        otherSideHit.path : levelData.path;
-                paths.add( startPath.build( endPath ) );
-                
-                // TODO Even if stopAsap=true we can't pull the emergency stop
-                // here since it could just be that the other side will find
-                // paths more shallow than this... 
-            }
-            if ( depth == 1 )
-            {
-                directionData.sharedStop.value = true;
+                LevelData startSideData = directionData == startSide ? levelData : otherSideHit;
+                LevelData endSideData = directionData == startSide ? otherSideHit : levelData;
+                depthHits.add( new Hit( startSideData, endSideData ) );
             }
         }
     }
     
     private class DirectionData extends PrefetchingIterator<LevelData>
     {
-        private final String name;
+//        private final String name;
         private int currentDepth;
         private Iterator<Relationship> nextRelationships;
         private final Collection<Node> nextNodes = new ArrayList<Node>();
-        private Map<Node, LevelData> visitedNodes =
-                new HashMap<Node, LevelData>();
+        private Map<Node, LevelData> visitedNodes = new HashMap<Node, LevelData>();
         private Node lastParentTraverserNode;
-        private final Collection<Long> sharedVisitedRels;
-        private final FrozenDepth sharedFrozenDepth;
-        private final MutableBoolean sharedStop;
-        private final MutableInteger sharedCurrentDepth;
+        private LevelData lastParentLevelData;
+//        private final Collection<Long> sharedVisitedRels;
+        private final ValueHolder<Integer> sharedFrozenDepth;
+        private final ValueHolder<Boolean> sharedStop;
+        private final ValueHolder<Integer> sharedCurrentDepth;
         private boolean haveFoundSomething;
         private boolean stop;
-//        private final Map<Node, List<Path.Builder>> paths =
-//                new HashMap<Node, List<Path.Builder>>();
         
-        DirectionData( String name, Node startNode,
-                Collection<Long> sharedVisitedRels,
-                FrozenDepth sharedFrozenDepth, MutableBoolean sharedStop,
-                MutableInteger sharedCurrentDepth )
+        DirectionData( String name, Node startNode, Collection<Long> sharedVisitedRels,
+                ValueHolder<Integer> sharedFrozenDepth, ValueHolder<Boolean> sharedStop,
+                ValueHolder<Integer> sharedCurrentDepth )
         {
-            this.name = name;
+//            this.name = name;
             this.visitedNodes.put( startNode, new LevelData( startNode,
                     currentDepth, new Path.Builder( startNode ) ) );
             this.nextNodes.add( startNode );
-            this.sharedVisitedRels = sharedVisitedRels;
+//            this.sharedVisitedRels = sharedVisitedRels;
             this.sharedFrozenDepth = sharedFrozenDepth;
             this.sharedStop = sharedStop;
             this.sharedCurrentDepth = sharedCurrentDepth;
             prepareNextLevel();
         }
         
+//        private void debug( String text )
+//        {
+//            System.out.println( this.name + ":" + text );
+//        }
+        
         private void prepareNextLevel()
         {
-            Collection<Node> nodesToIterate =
-                    new ArrayList<Node>( this.nextNodes );
+            Collection<Node> nodesToIterate = new ArrayList<Node>( this.nextNodes );
             this.nextNodes.clear();
             this.nextRelationships = new NestingIterator<Relationship, Node>(
                     nodesToIterate.iterator() )
             {
                 @Override
-                protected Iterator<Relationship> createNestedIterator(
-                        Node node )
+                protected Iterator<Relationship> createNestedIterator( Node node )
                 {
                     lastParentTraverserNode = node;
+                    lastParentLevelData = visitedNodes.get( node );
                     return relExpander.expand( node ).iterator();
                 }
             };
@@ -220,31 +252,50 @@ public class SingleStepShortestPathsFinder
         @Override
         protected LevelData fetchNextOrNull()
         {
-            while ( true ) // TODO limit the loop?
+            while ( true )
             {
                 Relationship nextRel = fetchNextRelOrNull();
                 if ( nextRel == null )
                 {
                     return null;
                 }
-                if ( !sharedVisitedRels.add( nextRel.getId() ) )
+                
+                // If we've already traversed this relationship then don't bother
+                // traversing it again
+//                if ( !sharedVisitedRels.add( nextRel.getId() ) )
+//                {
+//                    continue;
+//                }
+                
+                Node result = nextRel.getOtherNode( this.lastParentTraverserNode );
+                LevelData levelData = this.visitedNodes.get( result );
+                boolean createdLevelData = false;
+                if ( levelData == null )
+                {
+                    levelData = new LevelData( result, this.currentDepth );
+                    this.visitedNodes.put( result, levelData );
+                    createdLevelData = true;
+                }
+                
+                if ( this.currentDepth < levelData.depth )
+                {
+                    throw new RuntimeException( "This shouldn't happen... I think" );
+                }
+                else if ( this.currentDepth == levelData.depth )
+                {
+                    for ( Path.Builder parentPath : this.lastParentLevelData.paths )
+                    {
+                        levelData.paths.add( parentPath.push( nextRel ) );
+                    }
+                }
+                
+                // Have we visited this node before? In that case don't add it
+                // as next node to traverse
+                if ( !createdLevelData )
                 {
                     continue;
                 }
                 
-                Node result =
-                    nextRel.getOtherNode( this.lastParentTraverserNode );
-                if ( this.visitedNodes.containsKey( result ) )
-                {
-                    // TODO Do something if we've already been here?
-                    continue;
-                }
-                
-                Path.Builder parentPath = this.visitedNodes.get(
-                        lastParentTraverserNode ).path;
-                LevelData levelData = new LevelData( result,
-                        currentDepth, parentPath.push( nextRel ) );
-                this.visitedNodes.put( result, levelData );
                 this.nextNodes.add( result );
                 return levelData;
             }
@@ -252,15 +303,14 @@ public class SingleStepShortestPathsFinder
         
         private boolean canGoDeeper()
         {
-            return !this.sharedFrozenDepth.isFrozen()
-                    && this.sharedCurrentDepth.value < maxDepth;
+            return this.sharedFrozenDepth.value == null && this.sharedCurrentDepth.value < maxDepth;
         }
         
         private Relationship fetchNextRelOrNull()
         {
             boolean stopped = this.stop || this.sharedStop.value;
-            boolean hasComeTooFarEmptyHanded = this.sharedFrozenDepth.isFrozen()
-                    && sharedCurrentDepth.value > sharedFrozenDepth.depth
+            boolean hasComeTooFarEmptyHanded = this.sharedFrozenDepth.value != null
+                    && this.sharedCurrentDepth.value > this.sharedFrozenDepth.value
                     && !this.haveFoundSomething;
             if ( stopped || hasComeTooFarEmptyHanded )
             {
@@ -274,47 +324,31 @@ public class SingleStepShortestPathsFinder
                     prepareNextLevel();
                 }
             }
-            return this.nextRelationships.hasNext() ?
-                    this.nextRelationships.next() : null;
+            return this.nextRelationships.hasNext() ? this.nextRelationships.next() : null;
         }
-
-        @Override public String toString()
+    }
+    
+    private class ValueHolder<T>
+    {
+        private T value;
+        
+        ValueHolder( T initialValue )
         {
-            return this.name;
+            this.value = initialValue;
         }
-    }
-    
-    private class MutableBoolean
-    {
-        private boolean value;
-    }
-    
-    private class MutableInteger
-    {
-        private int value;
     }
     
     private class LevelData
     {
         private final Node node;
-        private final int depth;
-        private final Path.Builder path;
+        private int depth;
+        private final Collection<Path.Builder> paths = new ArrayList<Path.Builder>();
         
-        LevelData( Node node, int depth, Path.Builder pathToHere )
+        LevelData( Node node, int depth, Path.Builder... pathsToHere )
         {
             this.node = node;
             this.depth = depth;
-            this.path = pathToHere;
-        }
-    }
-    
-    private class FrozenDepth
-    {
-        private Integer depth;
-        
-        boolean isFrozen()
-        {
-            return this.depth != null;
+            this.paths.addAll( Arrays.asList( pathsToHere ) );
         }
     }
 }
