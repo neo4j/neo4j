@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.shortestpath.future;
+package org.neo4j.graphalgo.shortestpath;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -8,6 +8,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphalgo.Path;
+import org.neo4j.graphalgo.RelationshipExpander;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -43,7 +45,7 @@ public class LevelShortestPathsFinder
         this.maxlength = maxlength;
         this.expander = expander;
     }
-
+    
     public Collection<Path> paths( Node start, Node end )
     {
         if ( start.equals( end ) )
@@ -52,33 +54,30 @@ public class LevelShortestPathsFinder
         }
         else
         {
-            Map<Node, List<Path.Builder>> source, target, next;
-            source = pathBuilderMap( start );
-            next = pathBuilderMap( end );
+            Map<Node, List<Path.Builder>> startMap, endMap;
+            startMap = pathBuilderMap( start );
+            endMap = pathBuilderMap( end );
             Collection<Path> result = new LinkedList<Path>();
             for ( int depth = 0; depth < maxlength && result.isEmpty(); depth++ )
             {
-                // Search one level from source to target then rotate directions
-                // This means that the deepest paths will be from the start
-                // node if maxLength is odd. To optimize make sure that the
-                // node (start/end) with the least relationships goes deepest
-                // instead, it'll most likely be faster that way.
-                target = next;
-                if ( depth == 2 )
+                Map<Node, List<Path.Builder>> source, target;
+                
+                // source will be the smallest, target the biggest
+                boolean startMapIsSmallest = startMap.size() < endMap.size();
+                source = startMapIsSmallest ? startMap : endMap;
+                target = startMapIsSmallest ? endMap : startMap;
+                
+                // Do one level from the smallest side
+                Map<Node, List<Path.Builder>> resultMap =
+                    search( start, source, target, result );
+                if ( startMapIsSmallest )
                 {
-                    // Here we've traversed one level from each node (start/end)
-                    // Let's figure out which of those has the least
-                    // relationships and see if we can optimize the depth for it
-                    if ( source.size() > target.size() )
-                    {
-                        // Switch 'em
-                        Map<Node, List<Path.Builder>> holder = source;
-                        source = target;
-                        target = holder;
-                    }
+                    startMap = resultMap;
                 }
-                next = search( start, source, target, result );
-                source = target;
+                else
+                {
+                    endMap = resultMap;
+                }
             }
             return Collections.unmodifiableCollection( result );
         }

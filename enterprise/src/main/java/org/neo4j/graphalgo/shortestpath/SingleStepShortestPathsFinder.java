@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.shortestpath.future;
+package org.neo4j.graphalgo.shortestpath;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,6 +11,8 @@ import java.util.Map;
 
 import org.neo4j.commons.iterator.NestingIterator;
 import org.neo4j.commons.iterator.PrefetchingIterator;
+import org.neo4j.graphalgo.Path;
+import org.neo4j.graphalgo.RelationshipExpander;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
