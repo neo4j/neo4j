@@ -642,7 +642,7 @@ public class TestXa extends AbstractNeo4jTestCase
             ds.close();
             deleteLogicalLogIfExist();
             renameCopiedLogicalLog();
-            truncateLogicalLog( 153 );
+            truncateLogicalLog( 157 );
             ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
                 lockManager, lockReleaser );
             xaCon = (NeoStoreXaConnection) ds.getXaConnection();
