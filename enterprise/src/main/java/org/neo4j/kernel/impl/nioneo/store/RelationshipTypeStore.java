@@ -122,9 +122,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         DynamicStringStore.createStore( fileName + ".names",
             TYPE_STORE_BLOCK_SIZE );
         RelationshipTypeStore store = new RelationshipTypeStore( fileName );
-        store.markAsReserved( store.nextId() );
-        store.markAsReserved( store.nextId() );
-        store.markAsReserved( store.nextId() );
         store.close();
     }
 
