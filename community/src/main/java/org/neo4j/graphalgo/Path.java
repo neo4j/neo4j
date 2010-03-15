@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.shortestpath.future;
+package org.neo4j.graphalgo;
 
 import java.util.Arrays;
 import java.util.Collections;

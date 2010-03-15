@@ -15,7 +15,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-graph-algo</artifactId>
   <groupId>org.neo4j</groupId>
-  <version>0.4-SNAPSHOT</version>
+  <version>0.5-SNAPSHOT</version>
   <name>${short-name}</name>
   <description>Graph algorithms for neo4j</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
@@ -60,6 +60,24 @@
         <role>Developer</role>
       </roles>
     </developer>
+    <developer>
+      <id>mattias</id>
+      <name>Mattias Persson</name>
+      <email>mattias [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>tobias</id>
+      <name>Tobias Ivarsson</name>
+      <email>tobias [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
   </developers>
 
   <licenses>
@@ -74,7 +92,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>3.8.1</version>
+      <version>4.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
