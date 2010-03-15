@@ -530,7 +530,17 @@ class WriteTransaction extends XaTransaction
 
     private void removePropertyFromCache( PropertyCommand command )
     {
-        lockReleaser.clearCache();
+        int nodeId = command.getNodeId();
+        int relId = command.getRelId();
+        if ( nodeId != -1 )
+        {
+            removeNodeFromCache( nodeId );
+        }
+        else if ( relId != -1 )
+        {
+            removeRelationshipFromCache( relId );
+        }
+        // else means record value did not change
     }
 
     private RelationshipTypeStore getRelationshipTypeStore()
@@ -1320,6 +1330,7 @@ class WriteTransaction extends XaTransaction
         PropertyRecord propertyRecord = new PropertyRecord( propertyId );
         propertyRecord.setInUse( true );
         propertyRecord.setCreated();
+        propertyRecord.setRelId( relId );
         if ( relRecord.getNextProp() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             PropertyRecord prevProp = getPropertyRecord( 
@@ -1360,6 +1371,7 @@ class WriteTransaction extends XaTransaction
         PropertyRecord propertyRecord = new PropertyRecord( propertyId );
         propertyRecord.setInUse( true );
         propertyRecord.setCreated();
+        propertyRecord.setNodeId( nodeId );
         // encoding has to be set here before anything is change
         // (exception is thrown in encodeValue now and tx not marked
         // rollback only

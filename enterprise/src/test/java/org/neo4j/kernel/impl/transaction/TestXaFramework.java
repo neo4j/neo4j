@@ -183,6 +183,11 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             return 0;
         }
+
+        @Override
+        public void setLastCommittedTx( long txId )
+        {
+        }
     }
 
     public class DummyXaDataSource extends XaDataSource

@@ -37,10 +37,9 @@ class DirectMappedLogBuffer implements LogBuffer
         this.fileChannel = fileChannel;
         bufferStartPosition = fileChannel.position();
         byteBuffer = ByteBuffer.allocateDirect( BUFFER_SIZE );
-        getNewMappedBuffer();
     }
 
-    private void getNewMappedBuffer() throws IOException
+    private void getNewDirectBuffer() throws IOException
     {
         byteBuffer.flip();
         bufferStartPosition += fileChannel.write( byteBuffer, 
@@ -53,7 +52,7 @@ class DirectMappedLogBuffer implements LogBuffer
         if ( byteBuffer == null || 
             (BUFFER_SIZE - byteBuffer.position()) < 1 )
         {
-            getNewMappedBuffer();
+            getNewDirectBuffer();
         }
         byteBuffer.put( b );
         return this;
@@ -64,7 +63,7 @@ class DirectMappedLogBuffer implements LogBuffer
         if ( byteBuffer == null || 
             (BUFFER_SIZE - byteBuffer.position()) < 4 )
         {
-            getNewMappedBuffer();
+            getNewDirectBuffer();
         }
         byteBuffer.putInt( i );
         return this;
@@ -75,7 +74,7 @@ class DirectMappedLogBuffer implements LogBuffer
         if ( byteBuffer == null || 
             (BUFFER_SIZE - byteBuffer.position()) < 8 )
         {
-            getNewMappedBuffer();
+            getNewDirectBuffer();
         }
         byteBuffer.putLong( l );
         return this;
@@ -83,31 +82,61 @@ class DirectMappedLogBuffer implements LogBuffer
 
     public LogBuffer put( byte[] bytes ) throws IOException
     {
-        if ( byteBuffer == null || 
-            (BUFFER_SIZE - byteBuffer.position()) < bytes.length )
-        {
-            getNewMappedBuffer();
-        }
-        byteBuffer.put( bytes );
+        put( bytes, 0 );
         return this;
     }
 
+    private void put( byte[] bytes, int offset ) throws IOException
+    {
+        int bytesToWrite = bytes.length - offset;
+        if ( bytesToWrite > BUFFER_SIZE )
+        {
+            bytesToWrite = BUFFER_SIZE;
+        }
+        if ( byteBuffer == null || 
+                (BUFFER_SIZE - byteBuffer.position()) < bytesToWrite )
+        {
+            getNewDirectBuffer();
+        }
+        byteBuffer.put( bytes, offset, bytesToWrite );
+        offset += bytesToWrite;
+        if ( offset < bytes.length )
+        {
+            put( bytes, offset );
+        }
+    }
+    
     public LogBuffer put( char[] chars ) throws IOException
     {
-        if ( byteBuffer == null || 
-            (BUFFER_SIZE - byteBuffer.position()) < (chars.length * 2) )
-        {
-            getNewMappedBuffer();
-        }
-        int oldPos = byteBuffer.position();
-        byteBuffer.asCharBuffer().put( chars );
-        byteBuffer.position( oldPos + chars.length * 2 );
+        put( chars, 0 );
         return this;
     }
 
+    private void put( char[] chars, int offset ) throws IOException
+    {
+        int charsToWrite = chars.length - offset;
+        if ( charsToWrite * 2 > BUFFER_SIZE )
+        {
+            charsToWrite = BUFFER_SIZE / 2;
+        }
+        if ( byteBuffer == null || 
+                (BUFFER_SIZE - byteBuffer.position()) < (charsToWrite * 2 ) )
+        {
+            getNewDirectBuffer();
+        }
+        int oldPos = byteBuffer.position();
+        byteBuffer.asCharBuffer().put( chars, offset, charsToWrite );
+        byteBuffer.position( oldPos + (charsToWrite * 2) );
+        offset += charsToWrite;
+        if ( offset < chars.length )
+        {
+            put( chars, offset );
+        }
+    }
+    
     public void force() throws IOException
     {
-        getNewMappedBuffer();
+        getNewDirectBuffer();
         fileChannel.force( false );
     }
 

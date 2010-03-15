@@ -34,8 +34,11 @@ public enum Record
     NOT_DIRECTED( (byte) 0, 0 ),
     DIRECTED( (byte) 2, 2 ), 
     NO_NEXT_BLOCK( (byte) -1, -1 ), 
-    NO_PREV_BLOCK( (byte) -1, -1 );
+    NO_PREV_BLOCK( (byte) -1, -1 ),
 
+    NODE_PROPERTY( (byte) 0, 0 ),
+    REL_PROPERTY( (byte) 2, 2 );
+    
     private byte byteValue;
     private int intValue;
 
