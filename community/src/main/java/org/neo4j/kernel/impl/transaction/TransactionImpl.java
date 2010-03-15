@@ -80,17 +80,18 @@ class TransactionImpl implements Transaction
 
     public synchronized String toString()
     {
-        StringBuffer txString = new StringBuffer( "Transaction[Status="
-            + txManager.getTxStatusAsString( status ) + ",ResourceList=" );
-        Iterator<ResourceElement> itr = resourceList.iterator();
-        while ( itr.hasNext() )
-        {
-            txString.append( itr.next().toString() );
-            if ( itr.hasNext() )
-            {
-                txString.append( "," );
-            }
-        }
+        StringBuffer txString = new StringBuffer( "Transaction(" + 
+            eventIdentifier + ")[" + txManager.getTxStatusAsString( status ) + 
+            ",Resources=" + resourceList.size() + "]" );
+//        Iterator<ResourceElement> itr = resourceList.iterator();
+//        while ( itr.hasNext() )
+//        {
+//            txString.append( itr.next().toString() );
+//            if ( itr.hasNext() )
+//            {
+//                txString.append( "," );
+//            }
+//        }
         return txString.toString();
     }
 
