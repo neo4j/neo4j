@@ -529,4 +529,12 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         clearCache();
         assertTrue( !node1.hasProperty( key ) );
     }
+    
+    public void testLargeProperties()
+    {
+        byte[] bytes = new byte[10*1024*1024];
+        node1.setProperty( "large_array", bytes );
+        node1.setProperty( "large_string", new String( bytes ) );
+        newTransaction();
+    }
 }
