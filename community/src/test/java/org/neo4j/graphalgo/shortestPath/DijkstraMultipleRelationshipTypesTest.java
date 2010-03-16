@@ -28,19 +28,21 @@ import org.neo4j.graphdb.RelationshipType;
 public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
 {
     protected Dijkstra<Double> getDijkstra( String startNode, String endNode,
-        RelationshipType... relTypes )
+            RelationshipType... relTypes )
     {
-        return new Dijkstra<Double>( 0.0, graph.getNode( startNode ), graph
-            .getNode( endNode ), new CostEvaluator<Double>()
-        {
-            public Double getCost( Relationship relationship, boolean backwards )
-            {
-                return 1.0;
-            }
-        }, new DoubleAdder(), new DoubleComparator(), Direction.BOTH, relTypes );
+        return new Dijkstra<Double>( 0.0, graph.getNode( startNode ),
+                graph.getNode( endNode ), new CostEvaluator<Double>()
+                {
+                    public Double getCost( Relationship relationship,
+                            boolean backwards )
+                    {
+                        return 1.0;
+                    }
+                }, new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
+                relTypes );
     }
 
-    public void runTest()
+    public void testRun()
     {
         graph.setCurrentRelType( MyRelTypes.R1 );
         graph.makeEdgeChain( "a,b,c,d,e" );
@@ -56,7 +58,7 @@ public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
         dijkstra = getDijkstra( "a", "e", MyRelTypes.R1, MyRelTypes.R3 );
         assertTrue( dijkstra.getCost() == 3.0 );
         dijkstra = getDijkstra( "a", "e", MyRelTypes.R1, MyRelTypes.R2,
-            MyRelTypes.R3 );
+                MyRelTypes.R3 );
         assertTrue( dijkstra.getCost() == 2.0 );
     }
 }
