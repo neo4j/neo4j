@@ -28,7 +28,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * and a transaction.
  * @author Patrik Larsson
  */
-public class Neo4jAlgoTestCase extends TestCase
+public abstract class Neo4jAlgoTestCase extends TestCase
 {
     protected GraphDatabaseService graphDb;
     protected Transaction tx;
@@ -59,11 +59,11 @@ public class Neo4jAlgoTestCase extends TestCase
         tx.finish();
         graphDb.shutdown();
     }
-
-    /**
-     * Dummy testcase since an assertion fails if no test methods exists.
-     */
-    public void testRun()
+    
+    protected void restartTx()
     {
+        tx.success();
+        tx.finish();
+        tx = graphDb.beginTx();
     }
 }

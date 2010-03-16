@@ -26,7 +26,7 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "s", "t" );
         graph.makeEdge( "s", "t" );
 
-        SingleStepShortestPathsFinder finder = new SingleStepShortestPathsFinder( 1,
+        SingleStepShortestPathsFinder finder = new SingleStepShortestPathsFinder( graphDb, 1,
                 RelationshipExpander.forTypes( MyRelTypes.R1, Direction.BOTH ) );
         Collection<Path> paths = finder.paths( graph.getNode( "s" ), graph.getNode( "t" ) );
         assertEquals( 2, paths.size() );
@@ -50,7 +50,7 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "n", "o" );
         graph.makeEdge( "o", "t" );
 
-        SingleStepShortestPathsFinder finder = new SingleStepShortestPathsFinder( 6,
+        SingleStepShortestPathsFinder finder = new SingleStepShortestPathsFinder( graphDb, 6,
                 RelationshipExpander.forTypes( MyRelTypes.R1, Direction.BOTH ) );
         Collection<Path> paths = finder.paths( graph.getNode( "s" ), graph.getNode( "t" ) );
         assertPaths( paths, "s,m,o,t", "s,n,o,t" );
@@ -76,7 +76,7 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "2", "t" );
         graph.makeEdge( "4", "t" );
         
-        SingleStepShortestPathsFinder singleStepFinder = new SingleStepShortestPathsFinder( 3,
+        SingleStepShortestPathsFinder singleStepFinder = new SingleStepShortestPathsFinder( graphDb, 3,
                 RelationshipExpander.forTypes( MyRelTypes.R1, Direction.BOTH ) );
         Collection<Path> paths = singleStepFinder.paths( graph.getNode( "s" ), graph.getNode( "t" ) );
         assertPaths( paths, "s,1,2,t", "s,1,4,t", "s,3,2,t", "s,3,4,t" );
