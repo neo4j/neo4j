@@ -7,16 +7,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
+import org.neo4j.commons.iterator.IteratorUtil;
 import org.neo4j.commons.iterator.NestingIterator;
 import org.neo4j.commons.iterator.PrefetchingIterator;
 import org.neo4j.graphalgo.Path;
 import org.neo4j.graphalgo.RelationshipExpander;
-import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 
 /**
  * Find (all or one) simple shortest path(s) between two nodes. It starts
@@ -27,19 +29,16 @@ import org.neo4j.graphdb.RelationshipType;
  */
 public class SingleStepShortestPathsFinder
 {
+    private final GraphDatabaseService graphDb;
     private final int maxDepth;
     private final RelationshipExpander relExpander;
     
-    public SingleStepShortestPathsFinder( int maxDepth, RelationshipExpander relExpander )
+    public SingleStepShortestPathsFinder( GraphDatabaseService graphDb,
+            int maxDepth, RelationshipExpander relExpander )
     {
+        this.graphDb = graphDb;
         this.maxDepth = maxDepth;
         this.relExpander = relExpander;
-    }
-    
-    public SingleStepShortestPathsFinder( int maxDepth, RelationshipType relType,
-            Direction direction )
-    {
-        this( maxDepth, RelationshipExpander.forTypes( relType, direction ) );
     }
     
     public Collection<Path> paths( Node start, Node end )
@@ -50,9 +49,139 @@ public class SingleStepShortestPathsFinder
     public Path path( Node start, Node end )
     {
         Collection<Path> paths = internalPaths( start, end, true );
-        return !paths.isEmpty() ? paths.iterator().next() : null;
+        return IteratorUtil.singleValueOrNull( paths.iterator() );
     }
     
+    public Collection<Path> pathsFromScetch( Node... someNodesAlongTheWay )
+    {
+        return internalPathsFromScetch( false, someNodesAlongTheWay );
+    }
+    
+    public Path pathFromScetch( Node... someNodesAlongTheWay )
+    {
+        Collection<Path> paths = internalPathsFromScetch( true, someNodesAlongTheWay );
+        return IteratorUtil.singleValueOrNull( paths.iterator() );
+    }
+    
+    private Collection<Path> internalPathsFromScetch( boolean stopAsap,
+            Node... someNodesAlongTheWay )
+    {
+        List<PathThread> threads = new ArrayList<PathThread>();
+        for ( Node[] startAndEnd : splitNodesIntoPairs( someNodesAlongTheWay ) )
+        {
+            PathThread thread = new PathThread( startAndEnd[0], startAndEnd[1], stopAsap );
+            threads.add( thread );
+            thread.start();
+        }
+        
+        boolean allFound = true;
+        for ( PathThread thread : threads )
+        {
+            try
+            {
+                thread.join();
+                if ( thread.result == null || thread.result.isEmpty() )
+                {
+                    allFound = false;
+                }
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+                // TODO
+            }
+        }
+        
+        if ( !allFound )
+        {
+            return Collections.emptyList();
+        }
+        
+        Collection<Path> paths = null;
+        for ( PathThread thread : threads )
+        {
+            paths = appendPaths( paths, thread.result );
+        }
+        return paths;
+    }
+    
+    private Collection<Path> appendPaths( Collection<Path> paths, Collection<Path> step )
+    {
+        if ( paths == null )
+        {
+            return step;
+        }
+        Collection<Path> result = new ArrayList<Path>();
+        for ( Path startPath : paths )
+        {
+            for ( Path pathStep : step )
+            {
+                result.add( merge( startPath, pathStep ) );
+            }
+        }
+        return result;
+    }
+
+    private Path merge( Path start, Path end )
+    {
+        Path.Builder builder = new Path.Builder( start.getStartNode() );
+        for ( Relationship rel : start.getRelationships() )
+        {
+            builder = builder.push( rel );
+        }
+        for ( Relationship rel : end.getRelationships() )
+        {
+            builder = builder.push( rel );
+        }
+        return builder.build();
+    }
+
+    private class PathThread extends Thread
+    {
+        private final Node start;
+        private final Node end;
+        private final boolean stopAsap;
+        private Collection<Path> result;
+        
+        PathThread( Node start, Node end, boolean stopAsap )
+        {
+            this.start = start;
+            this.end = end;
+            this.stopAsap = stopAsap;
+        }
+        
+        @Override
+        public void run()
+        {
+            System.out.println( this + " running " + start + " -> " + end );
+            Transaction tx = graphDb.beginTx();
+            try
+            {
+                result = internalPaths( start, end, stopAsap );
+                System.out.println( this + " found " + result );
+                tx.success();
+            }
+            finally
+            {
+                tx.finish();
+            }
+        }
+    }
+    
+    private Collection<Node[]> splitNodesIntoPairs( Node[] someNodesAlongTheWay )
+    {
+        Node start = someNodesAlongTheWay[0];
+        Node end = someNodesAlongTheWay[1];
+        Collection<Node[]> result = new ArrayList<Node[]>();
+        for ( int i = 2; end != null; i++ )
+        {
+            result.add( new Node[] { start, end } );
+            start = end;
+            end = i < someNodesAlongTheWay.length ? someNodesAlongTheWay[i] : null;
+        }
+        return result;
+    }
+
     private Collection<Path> internalPaths( Node start, Node end,
             boolean stopAsap )
     {
@@ -69,10 +198,10 @@ public class SingleStepShortestPathsFinder
         ValueHolder<Integer> sharedCurrentDepth = new ValueHolder<Integer>( 0 );
         final DirectionData startData = new DirectionData( "start", start,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
-                sharedCurrentDepth );
+                sharedCurrentDepth, stopAsap );
         final DirectionData endData = new DirectionData( "end", end,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
-                sharedCurrentDepth );
+                sharedCurrentDepth, stopAsap );
         
         while ( startData.hasNext() || endData.hasNext() )
         {
@@ -196,7 +325,7 @@ public class SingleStepShortestPathsFinder
         }
     }
     
-    private class DirectionData extends PrefetchingIterator<LevelData>
+    protected class DirectionData extends PrefetchingIterator<LevelData>
     {
 //        private final String name;
         private int currentDepth;
@@ -211,10 +340,11 @@ public class SingleStepShortestPathsFinder
         private final ValueHolder<Integer> sharedCurrentDepth;
         private boolean haveFoundSomething;
         private boolean stop;
+        private final boolean stopAsap;
         
         DirectionData( String name, Node startNode, Collection<Long> sharedVisitedRels,
                 ValueHolder<Integer> sharedFrozenDepth, ValueHolder<Boolean> sharedStop,
-                ValueHolder<Integer> sharedCurrentDepth )
+                ValueHolder<Integer> sharedCurrentDepth, boolean stopAsap )
         {
 //            this.name = name;
             this.visitedNodes.put( startNode, new LevelData( startNode,
@@ -224,6 +354,7 @@ public class SingleStepShortestPathsFinder
             this.sharedFrozenDepth = sharedFrozenDepth;
             this.sharedStop = sharedStop;
             this.sharedCurrentDepth = sharedCurrentDepth;
+            this.stopAsap = stopAsap;
             prepareNextLevel();
         }
         
@@ -283,7 +414,7 @@ public class SingleStepShortestPathsFinder
                 {
                     throw new RuntimeException( "This shouldn't happen... I think" );
                 }
-                else if ( this.currentDepth == levelData.depth )
+                else if ( !this.stopAsap && this.currentDepth == levelData.depth )
                 {
                     for ( Path.Builder parentPath : this.lastParentLevelData.paths )
                     {
