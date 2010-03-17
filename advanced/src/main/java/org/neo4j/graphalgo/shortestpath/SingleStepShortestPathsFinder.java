@@ -7,14 +7,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.commons.iterator.CollectionWrapper;
 import org.neo4j.commons.iterator.IteratorUtil;
 import org.neo4j.commons.iterator.NestingIterator;
 import org.neo4j.commons.iterator.PrefetchingIterator;
 import org.neo4j.graphalgo.Path;
 import org.neo4j.graphalgo.RelationshipExpander;
+import org.neo4j.graphalgo.Path.Builder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -136,38 +139,6 @@ public class SingleStepShortestPathsFinder
         return builder.build();
     }
 
-    private class PathThread extends Thread
-    {
-        private final Node start;
-        private final Node end;
-        private final boolean stopAsap;
-        private Collection<Path> result;
-        
-        PathThread( Node start, Node end, boolean stopAsap )
-        {
-            this.start = start;
-            this.end = end;
-            this.stopAsap = stopAsap;
-        }
-        
-        @Override
-        public void run()
-        {
-            System.out.println( this + " running " + start + " -> " + end );
-            Transaction tx = graphDb.beginTx();
-            try
-            {
-                result = internalPaths( start, end, stopAsap );
-                System.out.println( this + " found " + result );
-                tx.success();
-            }
-            finally
-            {
-                tx.finish();
-            }
-        }
-    }
-    
     private Collection<Node[]> splitNodesIntoPairs( Node[] someNodesAlongTheWay )
     {
         Node start = someNodesAlongTheWay[0];
@@ -196,10 +167,10 @@ public class SingleStepShortestPathsFinder
         ValueHolder<Integer> sharedFrozenDepth = new ValueHolder<Integer>( null );
         ValueHolder<Boolean> sharedStop = new ValueHolder<Boolean>( false );
         ValueHolder<Integer> sharedCurrentDepth = new ValueHolder<Integer>( 0 );
-        final DirectionData startData = new DirectionData( "start", start,
+        final DirectionData startData = new DirectionData( start,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
                 sharedCurrentDepth, stopAsap );
-        final DirectionData endData = new DirectionData( "end", end,
+        final DirectionData endData = new DirectionData( end,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
                 sharedCurrentDepth, stopAsap );
         
@@ -208,10 +179,10 @@ public class SingleStepShortestPathsFinder
             goOneStep( startData, endData, hits, stopAsap, startData );
             goOneStep( endData, startData, hits, stopAsap, startData );
         }
-        return least( hits );
+        return least( hits, start, end );
     }
     
-    private Collection<Path> least( Map<Integer, Collection<Hit>> hits )
+    private Collection<Path> least( Map<Integer, Collection<Hit>> hits, Node start, Node end )
     {
         if ( hits.size() == 0 )
         {
@@ -224,54 +195,139 @@ public class SingleStepShortestPathsFinder
             Collection<Hit> depthHits = hits.get( i );
             if ( depthHits != null )
             {
-                return hitsToPaths( depthHits );
+                return hitsToPaths( depthHits, start, end );
             }
         }
     }
     
-    private Collection<Path> hitsToPaths( Collection<Hit> depthHits )
+    private Collection<Path> hitsToPaths( Collection<Hit> depthHits, Node start, Node end )
     {
-        // TODO Do this lazy?
         Collection<Path> paths = new ArrayList<Path>();
         for ( Hit hit : depthHits )
         {
-            for ( Path.Builder start : hit.start.paths )
+            Collection<LinkedList<Relationship>> startPaths = getPaths( hit, hit.start );
+            Collection<LinkedList<Relationship>> endPaths = getPaths( hit, hit.end );
+            for ( LinkedList<Relationship> startPath : startPaths )
             {
-                for ( Path.Builder end : hit.end.paths )
+                Path.Builder startBuilder = toBuilder( start, startPath );
+                for ( LinkedList<Relationship> endPath : endPaths )
                 {
-                    paths.add( start.build( end ) );
+                    Path.Builder endBuilder = toBuilder( end, endPath );
+                    Path path = startBuilder.build( endBuilder );
+                    paths.add( path );
                 }
             }
         }
         return paths;
     }
+    
+    private static class PathData
+    {
+        private final LinkedList<Relationship> rels;
+        private final Node node;
+        
+        PathData( Node node, LinkedList<Relationship> rels )
+        {
+            this.rels = rels;
+            this.node = node;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return node + ":" + rels;
+        }
+    }
 
+    private Collection<LinkedList<Relationship>> getPaths( Hit hit, DirectionData data )
+    {
+        LevelData levelData = data.visitedNodes.get( hit.connectingNode );
+        if ( levelData.depth == 0 )
+        {
+            Collection<LinkedList<Relationship>> result = new ArrayList<LinkedList<Relationship>>();
+            result.add( new LinkedList<Relationship>() );
+            return result;
+        }
+        
+        Collection<PathData> set = new ArrayList<PathData>();
+        for ( Long rel : levelData.relsToHere )
+        {
+            set.add( new PathData( hit.connectingNode, new LinkedList<Relationship>(
+                    Arrays.asList( graphDb.getRelationshipById( rel ) ) ) ) );
+        }
+        for ( int i = 0; i < levelData.depth - 1; i++ )
+        {
+            // One level
+            Collection<PathData> nextSet = new ArrayList<PathData>();
+            for ( PathData entry : set )
+            {
+                // One path...
+                int counter = 0;
+                Node otherNode = entry.rels.getFirst().getOtherNode( entry.node );
+                LevelData otherLevelData = data.visitedNodes.get( otherNode );
+                for ( Long rel : otherLevelData.relsToHere )
+                {
+                    // ...may split into several paths
+                    LinkedList<Relationship> rels = counter++ == 0 ? entry.rels : 
+                        new LinkedList<Relationship>( entry.rels );
+                    rels.addFirst( graphDb.getRelationshipById( rel ) );
+                    nextSet.add( new PathData( otherNode, rels ) );
+                }
+            }
+            set = nextSet;
+        }
+        
+        return new CollectionWrapper<LinkedList<Relationship>, PathData>( set )
+        {
+            @Override
+            protected PathData objectToUnderlyingObject( LinkedList<Relationship> list )
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            protected LinkedList<Relationship> underlyingObjectToObject( PathData object )
+            {
+                return object.rels;
+            }
+        };
+    }
+
+    private Builder toBuilder( Node startNode, LinkedList<Relationship> rels )
+    {
+        Path.Builder builder = new Path.Builder( startNode );
+        for ( Relationship rel : rels )
+        {
+            builder = builder.push( rel );
+        }
+        return builder;
+    }
+
+    // Few long-lived instances
     private static class Hit
     {
-        private final LevelData start;
-        private final LevelData end;
+        private final DirectionData start;
+        private final DirectionData end;
+        private final Node connectingNode;
         
-        Hit( LevelData start, LevelData end )
+        Hit( DirectionData start, DirectionData end, Node connectingNode )
         {
             this.start = start;
             this.end = end;
+            this.connectingNode = connectingNode;
         }
         
         @Override
         public int hashCode()
         {
-            int result = 17;
-            result += start.node.hashCode() * 37;
-            result += end.node.hashCode() * 37;
-            return result;
+            return connectingNode.hashCode();
         }
         
         @Override
         public boolean equals( Object obj )
         {
             Hit o = (Hit) obj;
-            return o.start.node.equals( start.node ) &&
-                    o.end.node.equals( end.node );
+            return connectingNode.equals( o.connectingNode );
         }
     }
 
@@ -284,8 +340,8 @@ public class SingleStepShortestPathsFinder
             return;
         }
         
-        LevelData levelData = directionData.next();
-        LevelData otherSideHit = otherSide.visitedNodes.get( levelData.node );
+        Node nextNode = directionData.next();
+        LevelData otherSideHit = otherSide.visitedNodes.get( nextNode );
         if ( otherSideHit != null )
         {
             // This is a hit
@@ -318,23 +374,24 @@ public class SingleStepShortestPathsFinder
                     depthHits = new HashSet<Hit>();
                     hits.put( depth, depthHits );
                 }
-                LevelData startSideData = directionData == startSide ? levelData : otherSideHit;
-                LevelData endSideData = directionData == startSide ? otherSideHit : levelData;
-                depthHits.add( new Hit( startSideData, endSideData ) );
+                
+                DirectionData startSideData =
+                        directionData == startSide ? directionData : otherSide;
+                DirectionData endSideData =
+                        directionData == startSide ? otherSide : directionData;
+                depthHits.add( new Hit( startSideData, endSideData, nextNode ) );
             }
         }
     }
     
-    protected class DirectionData extends PrefetchingIterator<LevelData>
+    // Two long-lived instances
+    protected class DirectionData extends PrefetchingIterator<Node>
     {
-//        private final String name;
         private int currentDepth;
         private Iterator<Relationship> nextRelationships;
         private final Collection<Node> nextNodes = new ArrayList<Node>();
         private Map<Node, LevelData> visitedNodes = new HashMap<Node, LevelData>();
         private Node lastParentTraverserNode;
-        private LevelData lastParentLevelData;
-//        private final Collection<Long> sharedVisitedRels;
         private final ValueHolder<Integer> sharedFrozenDepth;
         private final ValueHolder<Boolean> sharedStop;
         private final ValueHolder<Integer> sharedCurrentDepth;
@@ -342,15 +399,12 @@ public class SingleStepShortestPathsFinder
         private boolean stop;
         private final boolean stopAsap;
         
-        DirectionData( String name, Node startNode, Collection<Long> sharedVisitedRels,
+        DirectionData( Node startNode, Collection<Long> sharedVisitedRels,
                 ValueHolder<Integer> sharedFrozenDepth, ValueHolder<Boolean> sharedStop,
                 ValueHolder<Integer> sharedCurrentDepth, boolean stopAsap )
         {
-//            this.name = name;
-            this.visitedNodes.put( startNode, new LevelData( startNode,
-                    currentDepth, new Path.Builder( startNode ) ) );
+            this.visitedNodes.put( startNode, new LevelData( null, 0 ) );
             this.nextNodes.add( startNode );
-//            this.sharedVisitedRels = sharedVisitedRels;
             this.sharedFrozenDepth = sharedFrozenDepth;
             this.sharedStop = sharedStop;
             this.sharedCurrentDepth = sharedCurrentDepth;
@@ -358,14 +412,10 @@ public class SingleStepShortestPathsFinder
             prepareNextLevel();
         }
         
-//        private void debug( String text )
-//        {
-//            System.out.println( this.name + ":" + text );
-//        }
-        
         private void prepareNextLevel()
         {
-            Collection<Node> nodesToIterate = new ArrayList<Node>( this.nextNodes );
+            Collection<Node> nodesToIterate = new ArrayList<Node>(
+                    filterNextLevelNodes( this.nextNodes ) );
             this.nextNodes.clear();
             this.nextRelationships = new NestingIterator<Relationship, Node>(
                     nodesToIterate.iterator() )
@@ -374,7 +424,6 @@ public class SingleStepShortestPathsFinder
                 protected Iterator<Relationship> createNestedIterator( Node node )
                 {
                     lastParentTraverserNode = node;
-                    lastParentLevelData = visitedNodes.get( node );
                     return relExpander.expand( node ).iterator();
                 }
             };
@@ -383,7 +432,7 @@ public class SingleStepShortestPathsFinder
         }
         
         @Override
-        protected LevelData fetchNextOrNull()
+        protected Node fetchNextOrNull()
         {
             while ( true )
             {
@@ -393,19 +442,12 @@ public class SingleStepShortestPathsFinder
                     return null;
                 }
                 
-                // If we've already traversed this relationship then don't bother
-                // traversing it again
-//                if ( !sharedVisitedRels.add( nextRel.getId() ) )
-//                {
-//                    continue;
-//                }
-                
                 Node result = nextRel.getOtherNode( this.lastParentTraverserNode );
                 LevelData levelData = this.visitedNodes.get( result );
                 boolean createdLevelData = false;
                 if ( levelData == null )
                 {
-                    levelData = new LevelData( result, this.currentDepth );
+                    levelData = new LevelData( nextRel, this.currentDepth );
                     this.visitedNodes.put( result, levelData );
                     createdLevelData = true;
                 }
@@ -414,12 +456,10 @@ public class SingleStepShortestPathsFinder
                 {
                     throw new RuntimeException( "This shouldn't happen... I think" );
                 }
-                else if ( !this.stopAsap && this.currentDepth == levelData.depth )
+                else if ( !this.stopAsap && this.currentDepth == levelData.depth &&
+                        !createdLevelData )
                 {
-                    for ( Path.Builder parentPath : this.lastParentLevelData.paths )
-                    {
-                        levelData.paths.add( parentPath.push( nextRel ) );
-                    }
+                    levelData.addRel( nextRel );
                 }
                 
                 // Have we visited this node before? In that case don't add it
@@ -430,7 +470,7 @@ public class SingleStepShortestPathsFinder
                 }
                 
                 this.nextNodes.add( result );
-                return levelData;
+                return result;
             }
         }
         
@@ -461,6 +501,12 @@ public class SingleStepShortestPathsFinder
         }
     }
     
+    protected Collection<Node> filterNextLevelNodes( Collection<Node> nextNodes )
+    {
+        return nextNodes;
+    }
+    
+    // Few long-lived instances
     private class ValueHolder<T>
     {
         private T value;
@@ -471,17 +517,66 @@ public class SingleStepShortestPathsFinder
         }
     }
     
+    // Many long-lived instances
     private class LevelData
     {
-        private final Node node;
+        private Long[] relsToHere;
         private int depth;
-        private final Collection<Path.Builder> paths = new ArrayList<Path.Builder>();
         
-        LevelData( Node node, int depth, Path.Builder... pathsToHere )
+        LevelData( Relationship relToHere, int depth )
         {
-            this.node = node;
+            if ( relToHere != null )
+            {
+                addRel( relToHere );
+            }
             this.depth = depth;
-            this.paths.addAll( Arrays.asList( pathsToHere ) );
+        }
+        
+        void addRel( Relationship rel )
+        {
+            Long[] newRels = null;
+            if ( relsToHere == null )
+            {
+                newRels = new Long[1];
+            }
+            else
+            {
+                newRels = new Long[relsToHere.length+1];
+                System.arraycopy( relsToHere, 0, newRels, 0, relsToHere.length );
+            }
+            newRels[newRels.length-1] = rel.getId();
+            relsToHere = newRels;
+        }
+    }
+
+    // Few long-lived instances
+    private class PathThread extends Thread
+    {
+        private final Node start;
+        private final Node end;
+        private final boolean stopAsap;
+        private Collection<Path> result;
+        
+        PathThread( Node start, Node end, boolean stopAsap )
+        {
+            this.start = start;
+            this.end = end;
+            this.stopAsap = stopAsap;
+        }
+        
+        @Override
+        public void run()
+        {
+            Transaction tx = graphDb.beginTx();
+            try
+            {
+                result = internalPaths( start, end, stopAsap );
+                tx.success();
+            }
+            finally
+            {
+                tx.finish();
+            }
         }
     }
 }
