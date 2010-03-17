@@ -173,7 +173,7 @@ public class AStar
                 
                 Data lastNodeData = this.score.get( this.lastNode.getId() );
                 double tentativeGScore = lastNodeData.wayLength +
-                        lengthEvaluator.getCost( rel, false, null );
+                        lengthEvaluator.getCost( rel, false );
                 boolean isBetter = false;
                 double estimate = estimateEvaluator.getCost( node, this.end );
                 if ( !this.nextNodesSet.contains( node ) )
