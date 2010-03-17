@@ -18,8 +18,10 @@ package org.neo4j.graphalgo.testUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -80,10 +82,39 @@ public class SimpleGraphBuilder
 
     public Node makeNode( String id )
     {
+        return makeNode( id, Collections.<String, Object>emptyMap() );
+    }
+    
+    public Node makeNode( String id, Object... keyValuePairs )
+    {
+        return makeNode( id, toMap( keyValuePairs ) );
+    }
+    
+    private Map<String, Object> toMap( Object[] keyValuePairs )
+    {
+        Map<String, Object> map = new HashMap<String, Object>();
+        for ( int i = 0; i < keyValuePairs.length; i++ )
+        {
+            map.put( keyValuePairs[i++].toString(), keyValuePairs[i] );
+        }
+        return map;
+    }
+
+    public Node makeNode( String id, Map<String, Object> properties )
+    {
         Node node = graphDb.createNode();
         nodes.put( id, node );
         nodeNames.put( node, id );
         node.setProperty( KEY_ID, id );
+        for ( Map.Entry<String, Object> property : properties.entrySet() )
+        {
+            if ( property.getKey().equals( KEY_ID ) )
+            {
+                throw new RuntimeException( "Can't use '" + property.getKey() + "'" );
+            }
+            node.setProperty( property.getKey(), property.getValue() );
+        }
+        System.out.println( "makeNode:" + id + " " + node );
         return node;
     }
 
@@ -109,19 +140,26 @@ public class SimpleGraphBuilder
 
     public Relationship makeEdge( String node1, String node2 )
     {
+        return makeEdge( node1, node2, Collections.<String, Object>emptyMap() );
+    }
+    
+    public Relationship makeEdge( String node1, String node2, Map<String, Object> edgeProperties )
+    {
         Node n1 = getNode( node1, true ), n2 = getNode( node2, true );
         Relationship relationship = n1
             .createRelationshipTo( n2, currentRelType );
+        for ( Map.Entry<String, Object> property : edgeProperties.entrySet() )
+        {
+            relationship.setProperty( property.getKey(), property.getValue() );
+        }
         edges.add( relationship );
+        System.out.println( "makeEdge:" + node1 + "->" + node2 + " " + relationship );
         return relationship;
     }
 
-    public Relationship makeEdge( String node1, String node2,
-        String propertyName, Object propertyValue )
+    public Relationship makeEdge( String node1, String node2, Object... keyValuePairs )
     {
-        Relationship relationship = makeEdge( node1, node2 );
-        relationship.setProperty( propertyName, propertyValue );
-        return relationship;
+        return makeEdge( node1, node2, toMap( keyValuePairs ) );
     }
 
     /**
