@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +31,9 @@ import java.util.Set;
 
 import javax.transaction.TransactionManager;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -36,15 +42,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.core.NodeManager;
 
 public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
-    public TestNeo4jCacheAndPersistence( String testName )
-    {
-        super( testName );
-    }
-
     private int node1Id = -1;
     private int node2Id = -1;
     private String key1 = "key1";
@@ -56,9 +56,9 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     private String string2 = new String( "2" );
     private int[] array = new int[] { 1, 2, 3, 4, 5, 6, 7 };
 
-    public void setUp()
+    @Before
+    public void createTestingGraph()
     {
-        super.setUp();
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
@@ -83,16 +83,17 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         setTransaction( tx );
     }
 
-    public void tearDown()
+    @After
+    public void deleteTestingGraph()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
         Node node2 = getGraphDb().getNodeById( node2Id );
         node1.getSingleRelationship( MyRelTypes.TEST, Direction.BOTH ).delete();
         node1.delete();
         node2.delete();
-        super.tearDown();
     }
 
+    @Test
     public void testAddProperty()
     {
         String key3 = "key3";
@@ -122,6 +123,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( int2, rel.getProperty( key3 ) );
     }
 
+    @Test
     public void testNodeRemoveProperty()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
@@ -141,6 +143,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertTrue( rel.removeProperty( arrayKey ) != null );
     }
 
+    @Test
     public void testNodeChangeProperty()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
@@ -158,6 +161,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         rel.setProperty( arrayKey, newIntArray );
     }
 
+    @Test
     public void testNodeGetProperties()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
@@ -184,6 +188,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         return relList.toArray( new Relationship[relList.size()] );
     }
 
+    @Test
     public void testDirectedRelationship1()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
@@ -207,6 +212,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( rel, relArray[0] );
     }
 
+    @Test
     public void testRelCountInSameTx()
     {
         Node node1 = getGraphDb().createNode();
@@ -225,6 +231,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node2.delete();
     }
 
+    @Test
     public void testGetDirectedRelationship()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
@@ -233,6 +240,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( int1, rel.getProperty( key1 ) );
     }
 
+    @Test
     public void testSameTxWithArray()
     {
         getTransaction().success();
@@ -255,6 +263,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
     }
     
+    @Test
     public void testAddCacheCleared()
     {
         Node nodeA = getGraphDb().createNode();
@@ -299,7 +308,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( 2, rel.getProperty( "2" ) );
     }
     
-    public void testTxCacheLoadIsolation()
+    @Test
+    public void testTxCacheLoadIsolation() throws Exception
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "someproptest", "testing" );
@@ -311,48 +321,43 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             graphDb.getConfig().getTxModule().getTxManager();
         NodeManager nodeManager = 
             graphDb.getConfig().getGraphDbModule().getNodeManager();
-        try
-        {
-            txManager.begin();
-            node.setProperty( "someotherproptest", "testing2" );
-            Relationship rel = node.createRelationshipTo( node1, 
-                MyRelTypes.TEST );
-            javax.transaction.Transaction txA = txManager.suspend();
-            txManager.begin();
-            assertEquals( "testing", node.getProperty( "someproptest" ) );
-            assertTrue( !node.hasProperty( "someotherproptest" ) );
-            assertTrue( !node.hasRelationship() );
-            nodeManager.clearCache();
-            assertEquals( "testing", node.getProperty( "someproptest" ) );
-            assertTrue( !node.hasProperty( "someotherproptest" ) );
-            javax.transaction.Transaction txB = txManager.suspend();
-            txManager.resume( txA );
-            assertEquals( "testing", node.getProperty( "someproptest" ) );
-            assertTrue( node.hasProperty( "someotherproptest" ) );
-            assertTrue( node.hasRelationship() );
-            nodeManager.clearCache();
-            assertEquals( "testing", node.getProperty( "someproptest" ) );
-            assertTrue( node.hasProperty( "someotherproptest" ) );
-            assertTrue( node.hasRelationship() );
-            txManager.suspend();
-            txManager.resume( txB );
-            assertEquals( "testing", node.getProperty( "someproptest" ) );
-            assertTrue( !node.hasProperty( "someotherproptest" ) );
-            assertTrue( !node.hasRelationship() );
-            txManager.rollback();
-            txManager.resume( txA );
-            node.delete();
-            node1.delete();
-            rel.delete();
-            txManager.commit();
-            newTransaction();
-        }
-        catch ( Exception e )
-        {
-            fail( "" + e );
-        }
+        
+        txManager.begin();
+        node.setProperty( "someotherproptest", "testing2" );
+        Relationship rel = node.createRelationshipTo( node1, 
+            MyRelTypes.TEST );
+        javax.transaction.Transaction txA = txManager.suspend();
+        txManager.begin();
+        assertEquals( "testing", node.getProperty( "someproptest" ) );
+        assertTrue( !node.hasProperty( "someotherproptest" ) );
+        assertTrue( !node.hasRelationship() );
+        nodeManager.clearCache();
+        assertEquals( "testing", node.getProperty( "someproptest" ) );
+        assertTrue( !node.hasProperty( "someotherproptest" ) );
+        javax.transaction.Transaction txB = txManager.suspend();
+        txManager.resume( txA );
+        assertEquals( "testing", node.getProperty( "someproptest" ) );
+        assertTrue( node.hasProperty( "someotherproptest" ) );
+        assertTrue( node.hasRelationship() );
+        nodeManager.clearCache();
+        assertEquals( "testing", node.getProperty( "someproptest" ) );
+        assertTrue( node.hasProperty( "someotherproptest" ) );
+        assertTrue( node.hasRelationship() );
+        txManager.suspend();
+        txManager.resume( txB );
+        assertEquals( "testing", node.getProperty( "someproptest" ) );
+        assertTrue( !node.hasProperty( "someotherproptest" ) );
+        assertTrue( !node.hasRelationship() );
+        txManager.rollback();
+        txManager.resume( txA );
+        node.delete();
+        node1.delete();
+        rel.delete();
+        txManager.commit();
+        newTransaction();
     }
     
+    @Test
     public void testNodeMultiRemoveProperty()
     {
         Node node = getGraphDb().createNode();
@@ -375,6 +380,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node.delete();
     }
 
+    @Test
     public void testRelMultiRemoveProperty()
     {
         Node node1 = getGraphDb().createNode();
@@ -401,6 +407,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node2.delete();
     }
     
+    @Test
     public void testRelationshipCahinIterator()
     {
         Node node1 = getGraphDb().createNode();
@@ -433,6 +440,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node2.delete();
     }
     
+    @Test
     public void testLowGrabSize()
     {
         Map<String,String> config = new HashMap<String,String>();

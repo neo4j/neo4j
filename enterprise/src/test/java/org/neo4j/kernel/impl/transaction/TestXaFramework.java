@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -30,9 +33,8 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
+import org.junit.Before;
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.TxModule;
@@ -56,19 +58,9 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     private TransactionManager tm;
     private XaDataSourceManager xaDsMgr;
 
-    public TestXaFramework( String name )
+    @Before
+    public void setUpFramework()
     {
-        super( name );
-    }
-
-    public static Test suite()
-    {
-        return new TestSuite( TestXaFramework.class );
-    }
-
-    public void setUp()
-    {
-        super.setUp();
         getTransaction().finish();
         TxModule txModule = getEmbeddedGraphDb().getConfig().getTxModule();
         tm = txModule.getTxManager();
@@ -129,10 +121,10 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             commandList.add( command );
         }
 
-        public XaCommand[] getCommands()
-        {
-            return commandList.toArray( new XaCommand[commandList.size()] );
-        }
+//        public XaCommand[] getCommands()
+//        {
+//            return commandList.toArray( new XaCommand[commandList.size()] );
+//        }
 
         public void doPrepare()
         {
@@ -162,7 +154,6 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         
         public void flushAll()
         {
-            
         }
 
         @Override
@@ -298,19 +289,11 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         }
     }
 
-    public void testCreateXaResource()
+    @Test
+    public void testCreateXaResource() throws Exception
     {
-        try
-        {
-            xaDsMgr
-                .registerDataSource( "dummy_datasource", new DummyXaDataSource(
-                    new java.util.HashMap<Object,Object>() ), "DDDDDD"
-                    .getBytes() );
-        }
-        catch ( Exception e )
-        {
-            fail( "" + e );
-        }
+        xaDsMgr.registerDataSource( "dummy_datasource", new DummyXaDataSource(
+                new java.util.HashMap<Object, Object>() ), "DDDDDD".getBytes() );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -339,11 +322,6 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             xaC.getXaResource().prepare( xid );
             xaC.getXaResource().commit( xid, false );
         }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
         finally
         {
             xaDsMgr.unregisterDataSource( "dummy_datasource" );
@@ -367,17 +345,17 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         }
     }
 
-    public void testTxIdGeneration()
+    @Test
+    public void testTxIdGeneration() throws Exception
     {
         DummyXaDataSource xaDs1 = null;
         DummyXaConnection xaC1 = null;
         try
         {
-            xaDsMgr
-                .registerDataSource( "dummy_datasource1",
+            xaDsMgr.registerDataSource( "dummy_datasource1",
                     new DummyXaDataSource(
-                        new java.util.HashMap<Object,Object>() ), "DDDDDD"
-                        .getBytes() );
+                            new java.util.HashMap<Object, Object>() ),
+                    "DDDDDD".getBytes() );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                 .getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();
@@ -403,11 +381,6 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             xaC1.delistFromTx();
             node.delete();
             tm.commit();
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
         }
         finally
         {

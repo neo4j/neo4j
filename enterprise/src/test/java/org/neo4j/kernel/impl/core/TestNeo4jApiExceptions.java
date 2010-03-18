@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -29,11 +33,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 
 public class TestNeo4jApiExceptions extends AbstractNeo4jTestCase
 {
-    public TestNeo4jApiExceptions( String testName )
-    {
-        super( testName );
-    }
-
+    @Test
     public void testNotInTransactionException()
     {
         Node node1 = getGraphDb().createNode();
@@ -105,6 +105,7 @@ public class TestNeo4jApiExceptions extends AbstractNeo4jTestCase
         node3.delete();
     }
     
+    @Test
     public void testNotFoundException()
     {
         Node node1 = getGraphDb().createNode();

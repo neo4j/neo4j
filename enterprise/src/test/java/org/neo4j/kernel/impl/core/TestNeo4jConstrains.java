@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -33,21 +37,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
 {
     private String key = "testproperty";
 
-    public TestNeo4jConstrains( String testName )
-    {
-        super( testName );
-    }
-
-    public void setUp()
-    {
-        super.setUp();
-    }
-
-    public void tearDown()
-    {
-        super.tearDown();
-    }
-
+    @Test
     public void testDeleteReferenceNodeOrLastNodeIsOk()
     {
         Transaction tx = getTransaction();
@@ -90,6 +80,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         tx.finish();
     }
 
+    @Test
     public void testDeleteNodeWithRel1()
     {
         Node node1 = getGraphDb().createNode();
@@ -110,6 +101,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         setTransaction( getGraphDb().beginTx() );
     }
 
+    @Test
     public void testDeleteNodeWithRel2()
     {
         Node node1 = getGraphDb().createNode();
@@ -131,6 +123,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         setTransaction( getGraphDb().beginTx() );
     }
 
+    @Test
     public void testDeleteNodeWithRel3()
     {
         // make sure we can delete in wrong order
@@ -150,6 +143,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         node0.delete();
     }
 
+    @Test
     public void testCreateRelOnDeletedNode()
     {
         Node node1 = getGraphDb().createNode();
@@ -181,6 +175,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         node1.delete();
     }
 
+    @Test
     public void testAddPropertyDeletedNode()
     {
         Node node = getGraphDb().createNode();
@@ -196,6 +191,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         }
     }
 
+    @Test
     public void testRemovePropertyDeletedNode()
     {
         Node node = getGraphDb().createNode();
@@ -215,6 +211,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         }
     }
 
+    @Test
     public void testChangePropertyDeletedNode()
     {
         Node node = getGraphDb().createNode();
@@ -234,6 +231,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         }
     }
 
+    @Test
     public void testAddPropertyDeletedRelationship()
     {
         Node node1 = getGraphDb().createNode();
@@ -255,6 +253,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         node2.delete();
     }
 
+    @Test
     public void testRemovePropertyDeletedRelationship()
     {
         Node node1 = getGraphDb().createNode();
@@ -278,6 +277,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         node2.delete();
     }
 
+    @Test
     public void testChangePropertyDeletedRelationship()
     {
         Node node1 = getGraphDb().createNode();
@@ -301,6 +301,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         node2.delete();
     }
 
+    @Test
     public void testMultipleDeleteNode()
     {
         Node node1 = getGraphDb().createNode();
@@ -319,6 +320,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         }
     }
 
+    @Test
     public void testMultipleDeleteRelationship()
     {
         Node node1 = getGraphDb().createNode();
@@ -341,6 +343,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         }
     }
 
+    @Test
     public void testIllegalPropertyType()
     {
         Logger log = Logger.getLogger( NodeManager.class.getName() );
