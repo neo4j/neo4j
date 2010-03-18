@@ -16,8 +16,11 @@
  */
 package org.neo4j.graphalgo.shortestPath;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.List;
 
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
@@ -46,6 +49,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
      * A triangle with 0 cost should generate two paths between every pair of
      * nodes.
      */
+    @Test
     public void testTriangle()
     {
         graph.makeEdge( "a", "b", "cost", (double) 0 );
@@ -72,6 +76,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     /**
      * From each direction 2 ways are possible so 4 ways should be the total.
      */
+    @Test
     public void test1()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
@@ -94,6 +99,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
      * Two different ways. This is supposed to test when the traversers meet in
      * several places.
      */
+    @Test
     public void test2()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
@@ -115,6 +121,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
      * One side finding several paths to one node previously visited by the
      * other side. The other side is kept busy with a chain of cost zero.
      */
+    @Test
     public void test3()
     {
         // "zero" side
@@ -145,6 +152,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     /**
      * another variant of the test above, but the discovering is a bit mixed.
      */
+    @Test
     public void test4()
     {
         // "zero" side
@@ -174,6 +182,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     /**
      * "Diamond" shape, with some weights to resemble the test case above.
      */
+    @Test
     public void test5()
     {
         graph.makeEdge( "a", "b", "cost", (double) 0 );
@@ -187,6 +196,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         assertTrue( dijkstra.getCost() == 1.0 );
     }
 
+    @Test
     public void test6()
     {
         graph.makeEdgeChain( "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,z", "cost",
@@ -203,6 +213,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         assertTrue( paths.size() == 2 );
     }
 
+    @Test
     public void test7()
     {
         Relationship edgeAB = graph.makeEdge( "a", "b" );
@@ -293,6 +304,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         assertTrue( pathB2D2 );
     }
 
+    @Test
     public void test8()
     {
         Relationship edgeAB = graph.makeEdge( "a", "b" );

@@ -16,8 +16,12 @@
  */
 package org.neo4j.graphalgo.shortestPath;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashMap;
 
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
@@ -32,6 +36,7 @@ import org.neo4j.graphdb.Relationship;
  */
 public class DijkstraDirectionTest extends Neo4jAlgoTestCase
 {
+    @Test
     public void testDijkstraDirection1()
     {
         graph.makeEdge( "s", "e" );
@@ -66,6 +71,7 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
         dijkstra.getCost();
     }
 
+    @Test
     public void testDijkstraDirection2()
     {
         graph.makeEdge( "a", "b" );
@@ -128,6 +134,7 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
         }
     }
 
+    @Test
     public void testDijkstraDirection3()
     {
         Relationship r1 = graph.makeEdge( "start", "b" );

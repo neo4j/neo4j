@@ -16,6 +16,9 @@
  */
 package org.neo4j.graphalgo.shortestPath;
 
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
@@ -37,6 +40,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     /**
      * Test case for just a single node (path length zero)
      */
+    @Test
     public void testDijkstraMinimal()
     {
         graph.makeNode( "lonely" );
@@ -52,6 +56,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     /**
      * Test case for a path of length zero, with some surrounding nodes
      */
+    @Test
     public void testDijkstraMinimal2()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
@@ -73,6 +78,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         assertTrue( dijkstra.getPathsAsNodes().size() == 1 );
     }
 
+    @Test
     public void testDijkstraChain()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
@@ -96,6 +102,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     /**
      * /--2--A--7--B--2--\ S E \----7---C---7----/
      */
+    @Test
     public void testDijstraTraverserMeeting()
     {
         graph.makeEdge( "s", "c", "cost", (double) 7 );

@@ -114,7 +114,6 @@ public class SimpleGraphBuilder
             }
             node.setProperty( property.getKey(), property.getValue() );
         }
-        System.out.println( "makeNode:" + id + " " + node );
         return node;
     }
 
@@ -153,7 +152,6 @@ public class SimpleGraphBuilder
             relationship.setProperty( property.getKey(), property.getValue() );
         }
         edges.add( relationship );
-        System.out.println( "makeEdge:" + node1 + "->" + node2 + " " + relationship );
         return relationship;
     }
 

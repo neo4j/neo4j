@@ -16,11 +16,14 @@
  */
 package org.neo4j.graphalgo.centrality;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
@@ -56,6 +59,7 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
             .getCentrality( graph.getNode( nodeId ) ).equals( value ) );
     }
 
+    @Test
     public void testBox()
     {
         graph.makeEdgeChain( "a,b,c,d,a" );
@@ -68,6 +72,7 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
         assertCentrality( betweennessCentrality, "d", 0.5 );
     }
 
+    @Test
     public void testPlusShape()
     {
         graph.makeEdgeChain( "a,b,c" );
@@ -83,6 +88,7 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
         assertCentrality( betweennessCentrality, "e", 0.0 );
     }
 
+    @Test
     public void testChain()
     {
         graph.makeEdgeChain( "a,b,c,d,e" );
@@ -96,6 +102,7 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
         assertCentrality( betweennessCentrality, "e", 0.0 );
     }
 
+    @Test
     public void testDependencyUpdating()
     {
         graph.makeEdgeChain( "a,b,d,e,f,h" );
