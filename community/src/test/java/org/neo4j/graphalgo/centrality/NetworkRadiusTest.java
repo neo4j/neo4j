@@ -16,6 +16,9 @@
  */
 package org.neo4j.graphalgo.centrality;
 
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
@@ -41,6 +44,7 @@ public class NetworkRadiusTest extends Neo4jAlgoTestCase
             Direction.BOTH, MyRelTypes.R1 );
     }
 
+    @Test
     public void testBox()
     {
         graph.makeEdgeChain( "a,b,c,d,a" );
@@ -50,6 +54,7 @@ public class NetworkRadiusTest extends Neo4jAlgoTestCase
         assertTrue( radius.getCentrality( null ) == 2.0 );
     }
 
+    @Test
     public void testPlusShape()
     {
         graph.makeEdgeChain( "a,b,c" );
@@ -60,6 +65,7 @@ public class NetworkRadiusTest extends Neo4jAlgoTestCase
         assertTrue( radius.getCentrality( null ) == 1.0 );
     }
 
+    @Test
     public void testChain()
     {
         graph.makeEdgeChain( "a,b,c,d,e" );

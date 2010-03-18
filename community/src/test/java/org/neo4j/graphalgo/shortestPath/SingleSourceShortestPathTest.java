@@ -16,8 +16,11 @@
  */
 package org.neo4j.graphalgo.shortestPath;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.List;
 
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
@@ -34,6 +37,7 @@ public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
     protected abstract SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode, Direction direction, RelationshipType... relTypes );
 
+    @Test
     public void testRun()
     {
         // make the graph
@@ -95,6 +99,7 @@ public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
         graph.clear();
     }
 
+    @Test
     public void testMultipleRelTypes()
     {
         graph.setCurrentRelType( MyRelTypes.R1 );

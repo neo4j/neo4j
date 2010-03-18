@@ -16,6 +16,9 @@
  */
 package org.neo4j.graphalgo.centrality;
 
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
@@ -72,6 +75,7 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
             .equals( value ) );
     }
 
+    @Test
     public void testBox()
     {
         graph.makeEdgeChain( "a,b,c,d,a" );
@@ -82,6 +86,7 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
         assertCentrality( closenessCentrality, "d", 1.0 / 4 );
     }
 
+    @Test
     public void testPlusShape()
     {
         graph.makeEdgeChain( "a,b,c" );
@@ -94,6 +99,7 @@ public class ClosenessCentralityTest extends Neo4jAlgoTestCase
         assertCentrality( closenessCentrality, "e", 1.0 / 7 );
     }
 
+    @Test
     public void testChain()
     {
         graph.makeEdgeChain( "a,b,c,d,e" );

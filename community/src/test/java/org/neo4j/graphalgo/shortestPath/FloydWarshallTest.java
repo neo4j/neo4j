@@ -16,8 +16,12 @@
  */
 package org.neo4j.graphalgo.shortestPath;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.util.List;
 
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.FloydWarshall;
 import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
@@ -30,6 +34,7 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
     /**
      * Test case for paths of length 0 and 1, and an impossible path
      */
+    @Test
     public void testMinimal()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
@@ -57,6 +62,7 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
     /**
      * Test case for extracting paths
      */
+    @Test
     public void testPath()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
@@ -81,6 +87,7 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         assertTrue( path.get( 5 ).equals( graph.getNode( "f" ) ) );
     }
 
+    @Test
     public void testDirection()
     {
         graph.makeEdge( "a", "b" );

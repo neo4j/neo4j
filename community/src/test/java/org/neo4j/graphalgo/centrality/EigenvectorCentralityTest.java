@@ -16,10 +16,13 @@
  */
 package org.neo4j.graphalgo.centrality;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
 import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
@@ -60,6 +63,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
         Direction relationDirection, CostEvaluator<Double> costEvaluator,
         Set<Node> nodeSet, Set<Relationship> relationshipSet, double precision );
 
+    @Test
     public void testRun()
     {
         graph.makeEdgeChain( "a,b,c,d" );
@@ -83,6 +87,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
     /**
      * Same as above, but inverted direction.
      */
+    @Test
     public void testDirection()
     {
         graph.makeEdgeChain( "d,c,b,a" );
@@ -106,6 +111,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
     /**
      * Some weighted relationships.
      */
+    @Test
     public void testWeight()
     {
         graph.makeEdgeChain( "a,b", "cost", 1.0 );
@@ -127,6 +133,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
      * Same network as above, but with direction BOTH and weights in different
      * directions are given by a map.
      */
+    @Test
     public void testWeightAndDirection()
     {
         graph.makeEdgeChain( "a,b" );

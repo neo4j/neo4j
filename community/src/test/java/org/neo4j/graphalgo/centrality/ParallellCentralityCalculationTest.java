@@ -16,6 +16,9 @@
  */
 package org.neo4j.graphalgo.centrality;
 
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
@@ -49,6 +52,7 @@ public class ParallellCentralityCalculationTest extends Neo4jAlgoTestCase
             value ) );
     }
 
+    @Test
     public void testPlusShape()
     {
         // Make graph

@@ -16,6 +16,9 @@
  */
 package org.neo4j.graphalgo.shortestPath;
 
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
@@ -42,6 +45,7 @@ public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
                 relTypes );
     }
 
+    @Test
     public void testRun()
     {
         graph.setCurrentRelType( MyRelTypes.R1 );
