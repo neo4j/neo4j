@@ -1,10 +1,15 @@
-package org.neo4j.graphalgo.shortestPath.future;
+package org.neo4j.graphalgo.shortestPath;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.Test;
 import org.neo4j.graphalgo.Path;
 import org.neo4j.graphalgo.RelationshipExpander;
 import org.neo4j.graphalgo.shortestpath.LevelShortestPathsFinder;
@@ -16,6 +21,7 @@ import org.neo4j.graphdb.Node;
 
 public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
 {
+    @Test
     public void testSimplestGraph()
     {
         // Layout:
@@ -33,6 +39,7 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         assertPaths( paths, "s,t", "s,t" );
     }
     
+    @Test
     public void testAnotherSimpleGraph()
     {
         // Layout:
@@ -56,6 +63,7 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         assertPaths( paths, "s,m,o,t", "s,n,o,t" );
     }
     
+    @Test
     public void testCrossedCircle()
     {
         // Layout:

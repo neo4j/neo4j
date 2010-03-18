@@ -16,9 +16,13 @@
  */
 package org.neo4j.graphalgo.shortestPath;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashMap;
 import java.util.List;
 
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
 import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
@@ -30,6 +34,7 @@ import org.neo4j.graphdb.Relationship;
 
 public class DijkstraIteratorTest extends Neo4jAlgoTestCase
 {
+    @Test
     public void testRun()
     {
         new TestDijkstra().runTest();
@@ -57,6 +62,7 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
             }
         }
 
+        @Test
         public void runTest()
         {
             graph.makeEdge( "start", "a", "cost", (double) 1 );

@@ -29,13 +29,12 @@ public class TestAStar extends Neo4jAlgoTestCase
                 double dx = (Double) node.getProperty( "x" ) - (Double) goal.getProperty( "x" );
                 double dy = (Double) node.getProperty( "y" ) - (Double) goal.getProperty( "y" );
                 double result = Math.sqrt( Math.pow( dx, 2 ) + Math.pow( dy, 2 ) );
-                System.out.println( node + " d " + goal + ": " + dx + ", " + dy + "=" + result );
                 return result;
             }
         };
         AStar astar = new AStar( graphDb, RelationshipExpander.ALL, new DoubleEvaluator( "length" ),
                 estimateEvaluator );
         Path path = astar.findPath( nodeA, nodeC );
-        System.out.println( path );
+        assertPath( path, nodeA, nodeB, nodeC );
     }
 }

@@ -16,9 +16,15 @@
  */
 package org.neo4j.graphalgo.testUtil;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.neo4j.graphalgo.Path;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -28,36 +34,41 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * and a transaction.
  * @author Patrik Larsson
  */
-public abstract class Neo4jAlgoTestCase extends TestCase
+public abstract class Neo4jAlgoTestCase
 {
-    protected GraphDatabaseService graphDb;
+    protected static GraphDatabaseService graphDb;
+    protected static SimpleGraphBuilder graph = null;
     protected Transaction tx;
-    protected SimpleGraphBuilder graph = null;
 
     protected static enum MyRelTypes implements RelationshipType
     {
         R1, R2, R3
     }
 
-    @Override
-    protected void setUp() throws Exception
+    @BeforeClass
+    public static void setUpGraphDb() throws Exception
     {
-        super.setUp();
         graphDb = new EmbeddedGraphDatabase( "target/var/algotest" );
-        tx = graphDb.beginTx();
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
-
-    @Override
-    protected void tearDown() throws Exception
+    
+    @Before
+    public void setUpTransaction()
     {
-        super.tearDown();
-        if ( graph != null )
-        {
-            graph.clear();
-        }
-        tx.finish();
+        tx = graphDb.beginTx();
+    }
+
+    @AfterClass
+    public static void tearDownGraphDb() throws Exception
+    {
         graphDb.shutdown();
+    }
+    
+    @After
+    public void tearDownTransactionAndGraph()
+    {
+        graph.clear();
+        tx.finish();
     }
     
     protected void restartTx()
@@ -65,5 +76,15 @@ public abstract class Neo4jAlgoTestCase extends TestCase
         tx.success();
         tx.finish();
         tx = graphDb.beginTx();
+    }
+
+    protected void assertPath( Path path, Node... nodes )
+    {
+        int i = 0;
+        for ( Node node : path.getNodes() )
+        {
+            assertEquals( nodes[i++], node );
+        }
+        assertEquals( nodes.length, i );
     }
 }

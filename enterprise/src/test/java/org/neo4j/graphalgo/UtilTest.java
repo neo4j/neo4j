@@ -16,11 +16,14 @@
  */
 package org.neo4j.graphalgo;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.Util;
 import org.neo4j.graphalgo.shortestpath.Util.PathCounter;
 import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
@@ -29,6 +32,7 @@ import org.neo4j.graphdb.Relationship;
 
 public class UtilTest extends Neo4jAlgoTestCase
 {
+    @Test
     public void testPathCounter()
     {
         // Nodes
