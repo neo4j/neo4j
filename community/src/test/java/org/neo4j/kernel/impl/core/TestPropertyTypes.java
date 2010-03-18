@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -28,22 +34,16 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 {
     private Node node1 = null;
 
-    public TestPropertyTypes( String testName )
+    @Before
+    public void createInitialNode()
     {
-        super( testName );
-    }
-
-    public void setUp()
-    {
-        super.setUp();
         node1 = getGraphDb().createNode();
     }
 
-    public void tearDown()
+    @After
+    public void deleteInitialNode()
     {
         node1.delete();
-        getTransaction().success();
-        super.tearDown();
     }
 
     private void clearCache()
@@ -53,6 +53,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         graphDbModule.getNodeManager().clearCache();
     }
 
+    @Test
     public void testDoubleType()
     {
         Double dValue = new Double( 45.678d );
@@ -76,6 +77,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testFloatType()
     {
         Float fValue = new Float( 45.678f );
@@ -103,6 +105,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testLongType()
     {
         long time = System.currentTimeMillis();
@@ -131,6 +134,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testByteType()
     {
         byte b = (byte) 177;
@@ -159,6 +163,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testShortType()
     {
         short value = 453;
@@ -187,6 +192,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testCharType()
     {
         char c = 'c';
@@ -215,6 +221,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testIntArray()
     {
         int[] array1 = new int[] { 1, 2, 3, 4, 5 };
@@ -250,6 +257,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testShortArray()
     {
         short[] array1 = new short[] { 1, 2, 3, 4, 5 };
@@ -285,6 +293,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testStringArray()
     {
         String[] array1 = new String[] { "a", "b", "c", "d", "e" };
@@ -320,6 +329,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testBooleanArray()
     {
         boolean[] array1 = new boolean[] { true, false, true, false, true };
@@ -355,6 +365,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testDoubleArray()
     {
         double[] array1 = new double[] { 1.0, 2.0, 3.0, 4.0, 5.0 };
@@ -390,6 +401,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testFloatArray()
     {
         float[] array1 = new float[] { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
@@ -425,6 +437,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testLongArray()
     {
         long[] array1 = new long[] { 1, 2, 3, 4, 5 };
@@ -460,6 +473,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testByteArray()
     {
         byte[] array1 = new byte[] { 1, 2, 3, 4, 5 };
@@ -495,6 +509,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
     public void testCharArray()
     {
         char[] array1 = new char[] { '1', '2', '3', '4', '5' };
@@ -530,6 +545,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
     
+    @Test
     public void testLargeProperties()
     {
         byte[] bytes = new byte[10*1024*1024];

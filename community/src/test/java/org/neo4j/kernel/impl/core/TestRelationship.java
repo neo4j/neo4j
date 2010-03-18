@@ -19,8 +19,14 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
+
 import java.util.ArrayList;
 
+import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -36,11 +42,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     private String key2 = "key2";
     private String key3 = "key3";
 
-    public TestRelationship( String testName )
-    {
-        super( testName );
-    }
-    
+    @Test
     public void testSimple()
     {
         Node node1 = getGraphDb().createNode();
@@ -63,6 +65,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             MyRelTypes.TEST, Direction.INCOMING ).iterator().hasNext() );
     }
     
+    @Test
     public void testSimple2()
     {
         Node node1 = getGraphDb().createNode();
@@ -100,6 +103,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node2.delete();
     }
     
+    @Test
     public void testSimple3()
     {
         Node node1 = getGraphDb().createNode();
@@ -137,6 +141,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node2.delete();
     }
     
+    @Test
     public void testSimple4()
     {
         Node node1 = getGraphDb().createNode();
@@ -265,6 +270,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( expectedCount, count );
     }
 
+    @Test
     public void testRelationshipCreateAndDelete()
     {
         Node node1 = getGraphDb().createNode();
@@ -315,6 +321,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         return relList.toArray( new Relationship[relList.size()] );
     }
 
+    @Test
     public void testDeleteWithRelationship()
     {
         // do some evil stuff
@@ -337,6 +344,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         setTransaction( getGraphDb().beginTx() );
     }
 
+    @Test
     public void testDeletedRelationship()
     {
         Node node1 = getGraphDb().createNode();
@@ -356,6 +364,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node2.delete();
     }
 
+    @Test
     public void testRelationshipAddProperty()
     {
         Node node1 = getGraphDb().createNode();
@@ -394,6 +403,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         getTransaction().failure();
     }
 
+    @Test
     public void testRelationshipRemoveProperty()
     {
         Integer int1 = new Integer( 1 );
@@ -460,6 +470,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node2.delete();
     }
 
+    @Test
     public void testRelationshipChangeProperty()
     {
         Integer int1 = new Integer( 1 );
@@ -499,6 +510,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node1.delete();
     }
 
+    @Test
     public void testRelationshipChangeProperty2()
     {
         Integer int1 = new Integer( 1 );
@@ -529,6 +541,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node1.delete();
     }
 
+    @Test
     public void testRelGetProperties()
     {
         Integer int1 = new Integer( 1 );
@@ -577,6 +590,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node1.delete();
     }
 
+    @Test
     public void testDirectedRelationship()
     {
         Node node1 = getGraphDb().createNode();
@@ -618,6 +632,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node2.delete();
     }
 
+    @Test
     public void testRollbackDeleteRelationship()
     {
         Node node1 = getGraphDb().createNode();
@@ -641,6 +656,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         graphDbModule.getNodeManager().clearCache();
     }
 
+    @Test
     public void testCreateRelationshipWithCommitts()// throws NotFoundException
     {
         Node n1 = getGraphDb().createNode();
@@ -658,6 +674,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         n2.delete();
     }
 
+    @Test
     public void testAddPropertyThenDelete()
     {
         Node node1 = getGraphDb().createNode();
@@ -672,6 +689,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         newTransaction();
     }
 
+    @Test
     public void testRelationshipIsType()
     {
         Node node1 = getGraphDb().createNode();
@@ -691,6 +709,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node2.delete();
     }
 
+    @Test
     public void testChangeProperty()
     {
         Node node1 = getGraphDb().createNode();
@@ -708,6 +727,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( "test4", rel.getProperty( "test" ) );
     }
     
+    @Test
     public void testChangeProperty2()
     {
         Node node1 = getGraphDb().createNode();

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -35,17 +38,15 @@ import java.util.logging.Logger;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -53,23 +54,6 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 
 public class TestXa extends AbstractNeo4jTestCase
 {
-
-    public TestXa( String testName )
-    {
-        super( testName );
-    }
-
-    public static void main( java.lang.String[] args )
-    {
-        junit.textui.TestRunner.run( suite() );
-    }
-
-    public static Test suite()
-    {
-        TestSuite suite = new TestSuite( TestXa.class );
-        return suite;
-    }
-
     private NeoStoreXaDataSource ds;
     private NeoStoreXaConnection xaCon;
     private Logger log;
@@ -93,13 +77,13 @@ public class TestXa extends AbstractNeo4jTestCase
                 return Arrays.asList( new PropertyIndex[] { stringToIndex
                     .get( key ) } );
             }
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
-        public static PropertyIndex getIndexFor( int index )
-        {
-            return intToIndex.get( index );
-        }
+//        public static PropertyIndex getIndexFor( int index )
+//        {
+//            return intToIndex.get( index );
+//        }
 
         public static void add( MyPropertyIndex index )
         {
@@ -107,6 +91,12 @@ public class TestXa extends AbstractNeo4jTestCase
             stringToIndex.put( index.getKey(), index );
             intToIndex.put( index.getKeyId(), index );
         }
+    }
+    
+    @Override
+    protected boolean restartGraphDbBetweenTests()
+    {
+        return true;
     }
 
     private PropertyIndex createDummyIndex( int id, String key )
@@ -119,9 +109,9 @@ public class TestXa extends AbstractNeo4jTestCase
     private LockManager lockManager;
     private LockReleaser lockReleaser;
 
-    public void setUp()
+    @Before
+    public void setUpNeoStore() throws Exception
     {
-        super.setUp();
         log = Logger
             .getLogger( "org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog/"
                 + "nioneo_logical.log" );
@@ -130,24 +120,17 @@ public class TestXa extends AbstractNeo4jTestCase
         log = Logger
             .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
-        try
-        {
-            NeoStore.createStore( "neo" );
-            lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
-            lockReleaser = getEmbeddedGraphDb().getConfig().getLockReleaser();
-            ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser );
-            xaCon = (NeoStoreXaConnection) ds.getXaConnection();
-        }
-        catch ( Exception e )
-        {
-            fail( "" + e );
-        }
+        NeoStore.createStore( "neo" );
+        lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
+        lockReleaser = getEmbeddedGraphDb().getConfig().getLockReleaser();
+        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+            lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
     }
 
-    public void tearDown()
+    @After
+    public void tearDownNeoStore()
     {
-        super.tearDown();
         ds.close();
         log.setLevel( level );
         log = Logger
@@ -373,290 +356,242 @@ public class TestXa extends AbstractNeo4jTestCase
         return itr.next();
     }
 
-    public void testLogicalLog()
+    @Test
+    public void testLogicalLog() throws Exception
     {
-        try
-        {
-            Xid xid = new XidImpl( new byte[1], new byte[1] );
-            XAResource xaRes = xaCon.getXaResource();
-            xaRes.start( xid, XAResource.TMNOFLAGS );
-            int node1 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node1 );
-            int node2 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node2 );
-            int n1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getNodeConsumer().addProperty( node1, n1prop1,
-                index( "prop1" ), "string1" );
-            xaCon.getNodeConsumer().getProperties( node1 );
-            int relType1 = ds.nextId( RelationshipType.class );
-            xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
-                "relationshiptype1" );
-            int rel1 = ds.nextId( Relationship.class );
-            xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
-                node2, relType1 );
-            int r1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
-                index( "prop1" ), "string1" );
-            xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
-            xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
-                "string2" );
-            xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
-            xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
-            xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
-            xaCon.getNodeConsumer().deleteNode( node1 );
-            xaCon.getNodeConsumer().deleteNode( node2 );
-            xaRes.end( xid, XAResource.TMSUCCESS );
-            xaRes.commit( xid, true );
-            copyLogicalLog();
-            xaCon.clearAllTransactions();
-            ds.close();
-            deleteLogicalLogIfExist();
-            renameCopiedLogicalLog();
-            ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser );
-            xaCon = (NeoStoreXaConnection) ds.getXaConnection();
-            xaRes = xaCon.getXaResource();
-            assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
-            xaCon.clearAllTransactions();
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
+        Xid xid = new XidImpl( new byte[1], new byte[1] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        int node1 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node1 );
+        int node2 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node2 );
+        int n1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+            index( "prop1" ), "string1" );
+        xaCon.getNodeConsumer().getProperties( node1 );
+        int relType1 = ds.nextId( RelationshipType.class );
+        xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+            "relationshiptype1" );
+        int rel1 = ds.nextId( Relationship.class );
+        xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
+            node2, relType1 );
+        int r1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+            index( "prop1" ), "string1" );
+        xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
+        xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+            "string2" );
+        xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
+        xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
+        xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
+        xaCon.getNodeConsumer().deleteNode( node1 );
+        xaCon.getNodeConsumer().deleteNode( node2 );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.commit( xid, true );
+        copyLogicalLog();
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog();
+        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+            lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
+        xaCon.clearAllTransactions();
     }
 
-    public void testLogicalLogPrepared()
+    @Test
+    public void testLogicalLogPrepared() throws Exception
     {
-        try
-        {
-            Xid xid = new XidImpl( new byte[2], new byte[2] );
-            XAResource xaRes = xaCon.getXaResource();
-            xaRes.start( xid, XAResource.TMNOFLAGS );
-            int node1 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node1 );
-            int node2 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node2 );
-            int n1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getNodeConsumer().addProperty( node1, n1prop1,
-                index( "prop1" ), "string1" );
-            int relType1 = ds.nextId( RelationshipType.class );
-            xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
-                "relationshiptype1" );
-            int rel1 = ds.nextId( Relationship.class );
-            xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
-                node2, relType1 );
-            int r1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
-                index( "prop1" ), "string1" );
-            xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
-            xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
-                "string2" );
-            xaRes.end( xid, XAResource.TMSUCCESS );
-            xaRes.prepare( xid );
-            copyLogicalLog();
-            xaCon.clearAllTransactions();
-            ds.close();
-            deleteLogicalLogIfExist();
-            renameCopiedLogicalLog();
-            ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser );
-            xaCon = (NeoStoreXaConnection) ds.getXaConnection();
-            xaRes = xaCon.getXaResource();
-            assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
-            xaRes.commit( xid, true );
-            xaCon.clearAllTransactions();
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
+        Xid xid = new XidImpl( new byte[2], new byte[2] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        int node1 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node1 );
+        int node2 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node2 );
+        int n1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+            index( "prop1" ), "string1" );
+        int relType1 = ds.nextId( RelationshipType.class );
+        xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+            "relationshiptype1" );
+        int rel1 = ds.nextId( Relationship.class );
+        xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
+            node2, relType1 );
+        int r1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+            index( "prop1" ), "string1" );
+        xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
+        xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+            "string2" );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.prepare( xid );
+        copyLogicalLog();
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog();
+        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+            lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
+        xaRes.commit( xid, true );
+        xaCon.clearAllTransactions();
     }
 
-    public void testLogicalLogPrePrepared()
+    @Test
+    public void testLogicalLogPrePrepared() throws Exception
     {
-        try
-        {
-            Xid xid = new XidImpl( new byte[3], new byte[3] );
-            XAResource xaRes = xaCon.getXaResource();
-            xaRes.start( xid, XAResource.TMNOFLAGS );
-            int node1 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node1 );
-            int node2 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node2 );
-            int n1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getNodeConsumer().addProperty( node1, n1prop1,
-                index( "prop1" ), "string1" );
-            int relType1 = ds.nextId( RelationshipType.class );
-            xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
-                "relationshiptype1" );
-            int rel1 = ds.nextId( Relationship.class );
-            xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
-                node2, relType1 );
-            int r1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
-                index( "prop1" ), "string1" );
-            xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
-            xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
-                "string2" );
-            xaRes.end( xid, XAResource.TMSUCCESS );
-            xaCon.clearAllTransactions();
-            copyLogicalLog();
-            ds.close();
-            deleteLogicalLogIfExist();
-            renameCopiedLogicalLog();
-            ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser );
-            xaCon = (NeoStoreXaConnection) ds.getXaConnection();
-            xaRes = xaCon.getXaResource();
-            assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
+        Xid xid = new XidImpl( new byte[3], new byte[3] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        int node1 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node1 );
+        int node2 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node2 );
+        int n1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+            index( "prop1" ), "string1" );
+        int relType1 = ds.nextId( RelationshipType.class );
+        xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+            "relationshiptype1" );
+        int rel1 = ds.nextId( Relationship.class );
+        xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
+            node2, relType1 );
+        int r1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+            index( "prop1" ), "string1" );
+        xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
+        xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+            "string2" );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaCon.clearAllTransactions();
+        copyLogicalLog();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog();
+        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+            lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
     }
 
-    public void testBrokenNodeCommand()
+    @Test
+    public void testBrokenNodeCommand() throws Exception
     {
-        try
-        {
-            Xid xid = new XidImpl( new byte[4], new byte[4] );
-            XAResource xaRes = xaCon.getXaResource();
-            xaRes.start( xid, XAResource.TMNOFLAGS );
-            int node1 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node1 );
-            xaRes.end( xid, XAResource.TMSUCCESS );
-            xaRes.prepare( xid );
-            xaCon.clearAllTransactions();
-            copyLogicalLog();
-            xaCon.clearAllTransactions();
-            ds.close();
-            deleteLogicalLogIfExist();
-            renameCopiedLogicalLog();
-            truncateLogicalLog( 39 );
-            truncateLogicalLog( 40 );
-            ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser );
-            xaCon = (NeoStoreXaConnection) ds.getXaConnection();
-            xaRes = xaCon.getXaResource();
-            assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
-            xaCon.clearAllTransactions();
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
+        Xid xid = new XidImpl( new byte[4], new byte[4] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        int node1 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node1 );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.prepare( xid );
+        xaCon.clearAllTransactions();
+        copyLogicalLog();
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog();
+        truncateLogicalLog( 39 );
+        truncateLogicalLog( 40 );
+        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+            lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
+        xaCon.clearAllTransactions();
     } 
 
-    public void testBrokenCommand()
+    @Test
+    public void testBrokenCommand() throws Exception
     {
-        try
-        {
-            Xid xid = new XidImpl( new byte[4], new byte[4] );
-            XAResource xaRes = xaCon.getXaResource();
-            xaRes.start( xid, XAResource.TMNOFLAGS );
-            int node1 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node1 );
-            xaRes.end( xid, XAResource.TMSUCCESS );
-            xaRes.prepare( xid );
-            xaCon.clearAllTransactions();
-            copyLogicalLog();
-            xaCon.clearAllTransactions();
-            ds.close();
-            deleteLogicalLogIfExist();
-            renameCopiedLogicalLog();
-            truncateLogicalLog( 32 );
-            truncateLogicalLog( 40 );
-            ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser );
-            xaCon = (NeoStoreXaConnection) ds.getXaConnection();
-            xaRes = xaCon.getXaResource();
-            assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
-            xaCon.clearAllTransactions();
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
+        Xid xid = new XidImpl( new byte[4], new byte[4] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        int node1 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node1 );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.prepare( xid );
+        xaCon.clearAllTransactions();
+        copyLogicalLog();
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog();
+        truncateLogicalLog( 32 );
+        truncateLogicalLog( 40 );
+        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+            lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
+        xaCon.clearAllTransactions();
     }
     
-    public void testBrokenPrepare()
+    @Test
+    public void testBrokenPrepare() throws Exception
     {
-        try
-        {
-            Xid xid = new XidImpl( new byte[4], new byte[4] );
-            XAResource xaRes = xaCon.getXaResource();
-            xaRes.start( xid, XAResource.TMNOFLAGS );
-            int node1 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node1 );
-            int node2 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node2 );
-            int n1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getNodeConsumer().addProperty( node1, n1prop1,
-                index( "prop1" ), "string1" );
-            xaRes.end( xid, XAResource.TMSUCCESS );
-            xaRes.prepare( xid );
-            copyLogicalLog();
-            xaCon.clearAllTransactions();
-            ds.close();
-            deleteLogicalLogIfExist();
-            renameCopiedLogicalLog();
-            truncateLogicalLog( 141 );
-            ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser );
-            xaCon = (NeoStoreXaConnection) ds.getXaConnection();
-            xaRes = xaCon.getXaResource();
-            assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
-            xaCon.clearAllTransactions();
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
+        Xid xid = new XidImpl( new byte[4], new byte[4] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        int node1 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node1 );
+        int node2 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node2 );
+        int n1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+            index( "prop1" ), "string1" );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.prepare( xid );
+        copyLogicalLog();
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog();
+        truncateLogicalLog( 141 );
+        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+            lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
+        xaCon.clearAllTransactions();
     }
 
-    public void testBrokenDone()
+    @Test
+    public void testBrokenDone() throws Exception
     {
-        try
-        {
-            Xid xid = new XidImpl( new byte[4], new byte[4] );
-            XAResource xaRes = xaCon.getXaResource();
-            xaRes.start( xid, XAResource.TMNOFLAGS );
-            int node1 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node1 );
-            int node2 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node2 );
-            int n1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getNodeConsumer().addProperty( node1, n1prop1,
-                index( "prop1" ), "string1" );
-            xaRes.end( xid, XAResource.TMSUCCESS );
-            xaRes.prepare( xid );
-            xaRes.commit( xid, false );
-            copyLogicalLog();
-            ds.close();
-            deleteLogicalLogIfExist();
-            renameCopiedLogicalLog();
-            truncateLogicalLog( 145 );
-            ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
-                lockManager, lockReleaser );
-            xaCon = (NeoStoreXaConnection) ds.getXaConnection();
-            xaRes = xaCon.getXaResource();
-            assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
-            xaCon.clearAllTransactions();
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
+        Xid xid = new XidImpl( new byte[4], new byte[4] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        int node1 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node1 );
+        int node2 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node2 );
+        int n1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+            index( "prop1" ), "string1" );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.prepare( xid );
+        xaRes.commit( xid, false );
+        copyLogicalLog();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog();
+        truncateLogicalLog( 145 );
+        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+            lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
+        xaCon.clearAllTransactions();
     }
     
+    @Test
     public void testLogVersion()
     {
         long creationTime = ds.getCreationTime();
@@ -668,107 +603,93 @@ public class TestXa extends AbstractNeo4jTestCase
         assertEquals( randomIdentifier, ds.getRandomIdentifier() );
     }
 
-    public void testLogicalLogRotation()
+    @Test
+    public void testLogicalLogRotation() throws Exception
     {
-        try
-        {
-            ds.keepLogicalLogs( true );
-            Xid xid = new XidImpl( new byte[1], new byte[1] );
-            XAResource xaRes = xaCon.getXaResource();
-            xaRes.start( xid, XAResource.TMNOFLAGS );
-            int node1 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node1 );
-            int node2 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node2 );
-            int n1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getNodeConsumer().addProperty( node1, n1prop1,
-                index( "prop1" ), "string1" );
-            xaCon.getNodeConsumer().getProperties( node1 );
-            int relType1 = ds.nextId( RelationshipType.class );
-            xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
-                "relationshiptype1" );
-            int rel1 = ds.nextId( Relationship.class );
-            xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
-                node2, relType1 );
-            int r1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
-                index( "prop1" ), "string1" );
-            xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
-            xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
-                "string2" );
-            xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
-            xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
-            xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
-            xaCon.getNodeConsumer().deleteNode( node1 );
-            xaCon.getNodeConsumer().deleteNode( node2 );
-            xaRes.end( xid, XAResource.TMSUCCESS );
-            xaRes.commit( xid, true );
-            long currentVersion = ds.getCurrentLogVersion();
-            ds.rotateLogicalLog();
-            assertTrue( ds.getLogicalLog( currentVersion ) != null );
-            ds.rotateLogicalLog();
-            assertTrue( ds.getLogicalLog( currentVersion ) != null );
-            assertTrue( ds.getLogicalLog( currentVersion + 1 ) != null );
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
+        ds.keepLogicalLogs( true );
+        Xid xid = new XidImpl( new byte[1], new byte[1] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        int node1 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node1 );
+        int node2 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node2 );
+        int n1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+            index( "prop1" ), "string1" );
+        xaCon.getNodeConsumer().getProperties( node1 );
+        int relType1 = ds.nextId( RelationshipType.class );
+        xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+            "relationshiptype1" );
+        int rel1 = ds.nextId( Relationship.class );
+        xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
+            node2, relType1 );
+        int r1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+            index( "prop1" ), "string1" );
+        xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
+        xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+            "string2" );
+        xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
+        xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
+        xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
+        xaCon.getNodeConsumer().deleteNode( node1 );
+        xaCon.getNodeConsumer().deleteNode( node2 );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.commit( xid, true );
+        long currentVersion = ds.getCurrentLogVersion();
+        ds.rotateLogicalLog();
+        assertTrue( ds.getLogicalLog( currentVersion ) != null );
+        ds.rotateLogicalLog();
+        assertTrue( ds.getLogicalLog( currentVersion ) != null );
+        assertTrue( ds.getLogicalLog( currentVersion + 1 ) != null );
     }
 
 
-    public void testApplyLogicalLog()
+    @Test
+    public void testApplyLogicalLog() throws Exception
     {
-        try
-        {
-            ds.keepLogicalLogs( true );
-            Xid xid = new XidImpl( new byte[1], new byte[1] );
-            XAResource xaRes = xaCon.getXaResource();
-            xaRes.start( xid, XAResource.TMNOFLAGS );
-            int node1 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node1 );
-            int node2 = ds.nextId( Node.class );
-            xaCon.getNodeConsumer().createNode( node2 );
-            int n1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getNodeConsumer().addProperty( node1, n1prop1,
-                index( "prop1" ), "string1" );
-            xaCon.getNodeConsumer().getProperties( node1 );
-            int relType1 = ds.nextId( RelationshipType.class );
-            xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
-                "relationshiptype1" );
-            int rel1 = ds.nextId( Relationship.class );
-            xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
-                node2, relType1 );
-            int r1prop1 = ds.nextId( PropertyStore.class );
-            xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
-                index( "prop1" ), "string1" );
-            xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
-            xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
-                "string2" );
-            xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
-            xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
-            xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
-            xaCon.getNodeConsumer().deleteNode( node1 );
-            xaCon.getNodeConsumer().deleteNode( node2 );
-            xaRes.end( xid, XAResource.TMSUCCESS );
-            xaRes.commit( xid, true );
-            long currentVersion = ds.getCurrentLogVersion();
-            ds.keepLogicalLogs( true );
-            ds.rotateLogicalLog();
-            ds.rotateLogicalLog();
-            ds.rotateLogicalLog();
-            ds.setCurrentLogVersion( currentVersion );
-            ds.makeBackupSlave();
-            ds.applyLog( ds.getLogicalLog( currentVersion ) );
-            ds.applyLog( ds.getLogicalLog( currentVersion + 1 ) );
-            ds.applyLog( ds.getLogicalLog( currentVersion + 2 ) );
-            ds.keepLogicalLogs( false );
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
+        ds.keepLogicalLogs( true );
+        Xid xid = new XidImpl( new byte[1], new byte[1] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        int node1 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node1 );
+        int node2 = ds.nextId( Node.class );
+        xaCon.getNodeConsumer().createNode( node2 );
+        int n1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getNodeConsumer().addProperty( node1, n1prop1,
+            index( "prop1" ), "string1" );
+        xaCon.getNodeConsumer().getProperties( node1 );
+        int relType1 = ds.nextId( RelationshipType.class );
+        xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
+            "relationshiptype1" );
+        int rel1 = ds.nextId( Relationship.class );
+        xaCon.getRelationshipConsumer().createRelationship( rel1, node1,
+            node2, relType1 );
+        int r1prop1 = ds.nextId( PropertyStore.class );
+        xaCon.getRelationshipConsumer().addProperty( rel1, r1prop1,
+            index( "prop1" ), "string1" );
+        xaCon.getNodeConsumer().changeProperty( node1, n1prop1, "string2" );
+        xaCon.getRelationshipConsumer().changeProperty( rel1, r1prop1,
+            "string2" );
+        xaCon.getNodeConsumer().removeProperty( node1, n1prop1 );
+        xaCon.getRelationshipConsumer().removeProperty( rel1, r1prop1 );
+        xaCon.getRelationshipConsumer().deleteRelationship( rel1 );
+        xaCon.getNodeConsumer().deleteNode( node1 );
+        xaCon.getNodeConsumer().deleteNode( node2 );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.commit( xid, true );
+        long currentVersion = ds.getCurrentLogVersion();
+        ds.keepLogicalLogs( true );
+        ds.rotateLogicalLog();
+        ds.rotateLogicalLog();
+        ds.rotateLogicalLog();
+        ds.setCurrentLogVersion( currentVersion );
+        ds.makeBackupSlave();
+        ds.applyLog( ds.getLogicalLog( currentVersion ) );
+        ds.applyLog( ds.getLogicalLog( currentVersion + 1 ) );
+        ds.applyLog( ds.getLogicalLog( currentVersion + 2 ) );
+        ds.keepLogicalLogs( false );
     }
 }

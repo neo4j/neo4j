@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.impl.batchinsert;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
+import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -37,7 +41,7 @@ import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.batchinsert.SimpleRelationship;
 
-public class TestBatchInsert extends TestCase
+public class TestBatchInsert
 {
     private static Map<String,Object> properties = new HashMap<String,Object>();
 
@@ -81,10 +85,12 @@ public class TestBatchInsert extends TestCase
     
     private BatchInserter newBatchInserter()
     {
-        return new BatchInserterImpl(
-            AbstractNeo4jTestCase.getStorePath( "neo-batch" ) );
+        String storePath = AbstractNeo4jTestCase.getStorePath( "neo-batch" );
+        AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storePath ) );
+        return new BatchInserterImpl( storePath );
     }
     
+    @Test
     public void testSimple()
     {
         BatchInserter graphDb = newBatchInserter();
@@ -99,6 +105,7 @@ public class TestBatchInsert extends TestCase
         graphDb.shutdown();
     }
     
+    @Test
     public void testMore()
     {
         BatchInserter graphDb = newBatchInserter();
@@ -120,6 +127,7 @@ public class TestBatchInsert extends TestCase
         graphDb.shutdown();
     }
     
+    @Test
     public void testBadStuff()
     {
         BatchInserter graphDb = newBatchInserter();
@@ -156,6 +164,7 @@ public class TestBatchInsert extends TestCase
         }
     }
     
+    @Test
     public void testWithGraphDbService()
     {
         BatchInserter batchInserter = newBatchInserter();
@@ -182,6 +191,7 @@ public class TestBatchInsert extends TestCase
         graphDb.shutdown();
     }
     
+    @Test
     public void testGraphDbServiceGetRelationships()
     {
         BatchInserter batchInserter = newBatchInserter();

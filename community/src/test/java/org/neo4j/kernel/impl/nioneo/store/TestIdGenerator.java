@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -29,42 +33,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
-import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
-import org.neo4j.kernel.impl.nioneo.store.StoreFailureException;
+import org.junit.Test;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-public class TestIdGenerator extends TestCase
+public class TestIdGenerator
 {
-
-    public TestIdGenerator( String testName )
-    {
-        super( testName );
-    }
-
-    public static void main( java.lang.String[] args )
-    {
-        junit.textui.TestRunner.run( suite() );
-    }
-
-    public static Test suite()
-    {
-        TestSuite suite = new TestSuite( TestIdGenerator.class );
-        return suite;
-    }
-
-    public void setUp()
-    {
-    }
-
-    public void tearDown()
-    {
-    }
-
-    public void testCreateIdGenerator()
+    @Test
+    public void testCreateIdGenerator() throws IOException
     {
         try
         {
@@ -113,7 +87,7 @@ public class TestIdGenerator extends TestCase
             assertEquals( 9, fileChannel.read( buffer ) );
             buffer.flip();
             assertEquals( (byte) 0, buffer.get() );
-            assertEquals( 0, buffer.getLong() );
+            assertEquals( 0l, buffer.getLong() );
             buffer.flip();
             int readCount = fileChannel.read( buffer );
             if ( readCount != -1 && readCount != 0 )
@@ -122,11 +96,6 @@ public class TestIdGenerator extends TestCase
                     + " bytes from file" );
             }
             fileChannel.close();
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
         }
         finally
         {
@@ -138,6 +107,7 @@ public class TestIdGenerator extends TestCase
         }
     }
 
+    @Test
     public void testStickyGenerator()
     {
         try
@@ -164,49 +134,50 @@ public class TestIdGenerator extends TestCase
         }
     }
 
+    @Test
     public void testNextId()
     {
         try
         {
             IdGeneratorImpl.createGenerator( "testIdGenerator.id" );
             IdGenerator idGenerator = new IdGeneratorImpl( "testIdGenerator.id", 3 );
-            for ( int i = 0; i < 7; i++ )
+            for ( long i = 0; i < 7; i++ )
             {
                 assertEquals( i, idGenerator.nextId() );
             }
             idGenerator.freeId( 1 );
             idGenerator.freeId( 3 );
             idGenerator.freeId( 5 );
-            assertEquals( 7, idGenerator.nextId() );
+            assertEquals( 7l, idGenerator.nextId() );
             idGenerator.freeId( 6 );
             idGenerator.close();
             idGenerator = new IdGeneratorImpl( "testIdGenerator.id", 5 );
             idGenerator.freeId( 2 );
             idGenerator.freeId( 4 );
-            assertEquals( 1, idGenerator.nextId() );
+            assertEquals( 1l, idGenerator.nextId() );
             idGenerator.freeId( 1 );
-            assertEquals( 3, idGenerator.nextId() );
+            assertEquals( 3l, idGenerator.nextId() );
             idGenerator.freeId( 3 );
-            assertEquals( 5, idGenerator.nextId() );
+            assertEquals( 5l, idGenerator.nextId() );
             idGenerator.freeId( 5 );
-            assertEquals( 6, idGenerator.nextId() );
+            assertEquals( 6l, idGenerator.nextId() );
             idGenerator.freeId( 6 );
-            assertEquals( 8, idGenerator.nextId() );
+            assertEquals( 8l, idGenerator.nextId() );
             idGenerator.freeId( 8 );
-            assertEquals( 9, idGenerator.nextId() );
+            assertEquals( 9l, idGenerator.nextId() );
             idGenerator.freeId( 9 );
             idGenerator.close();
             idGenerator = new IdGeneratorImpl( "testIdGenerator.id", 3 );
-            assertEquals( 2, idGenerator.nextId() );
-            assertEquals( 4, idGenerator.nextId() );
-            assertEquals( 1, idGenerator.nextId() );
-            assertEquals( 3, idGenerator.nextId() );
-            assertEquals( 5, idGenerator.nextId() );
-            assertEquals( 6, idGenerator.nextId() );
-            assertEquals( 8, idGenerator.nextId() );
-            assertEquals( 9, idGenerator.nextId() );
-            assertEquals( 10, idGenerator.nextId() );
-            assertEquals( 11, idGenerator.nextId() );
+            assertEquals( 2l, idGenerator.nextId() );
+            assertEquals( 4l, idGenerator.nextId() );
+            assertEquals( 1l, idGenerator.nextId() );
+            assertEquals( 3l, idGenerator.nextId() );
+            assertEquals( 5l, idGenerator.nextId() );
+            assertEquals( 6l, idGenerator.nextId() );
+            assertEquals( 8l, idGenerator.nextId() );
+            assertEquals( 9l, idGenerator.nextId() );
+            assertEquals( 10l, idGenerator.nextId() );
+            assertEquals( 11l, idGenerator.nextId() );
             idGenerator.close();
         }
         finally
@@ -219,13 +190,14 @@ public class TestIdGenerator extends TestCase
         }
     }
 
+    @Test
     public void testFreeId()
     {
         try
         {
             IdGeneratorImpl.createGenerator( "testIdGenerator.id" );
             IdGenerator idGenerator = new IdGeneratorImpl( "testIdGenerator.id", 3 );
-            for ( int i = 0; i < 7; i++ )
+            for ( long i = 0; i < 7; i++ )
             {
                 assertEquals( i, idGenerator.nextId() );
             }
@@ -251,15 +223,15 @@ public class TestIdGenerator extends TestCase
             }
             idGenerator.close();
             idGenerator = new IdGeneratorImpl( "testIdGenerator.id", 2 );
-            assertEquals( 0, idGenerator.nextId() );
-            assertEquals( 1, idGenerator.nextId() );
-            assertEquals( 2, idGenerator.nextId() );
+            assertEquals( 0l, idGenerator.nextId() );
+            assertEquals( 1l, idGenerator.nextId() );
+            assertEquals( 2l, idGenerator.nextId() );
             idGenerator.close();
             idGenerator = new IdGeneratorImpl( "testIdGenerator.id", 2 );
-            assertEquals( 4, idGenerator.nextId() );
-            assertEquals( 5, idGenerator.nextId() );
-            assertEquals( 6, idGenerator.nextId() );
-            assertEquals( 3, idGenerator.nextId() );
+            assertEquals( 4l, idGenerator.nextId() );
+            assertEquals( 5l, idGenerator.nextId() );
+            assertEquals( 6l, idGenerator.nextId() );
+            assertEquals( 3l, idGenerator.nextId() );
             idGenerator.close();
         }
         finally
@@ -272,6 +244,7 @@ public class TestIdGenerator extends TestCase
         }
     }
 
+    @Test
     public void testClose()
     {
         try
@@ -296,9 +269,9 @@ public class TestIdGenerator extends TestCase
             { // good
             }
             idGenerator = new IdGeneratorImpl( "testIdGenerator.id", 2 );
-            assertEquals( 0, idGenerator.nextId() );
-            assertEquals( 1, idGenerator.nextId() );
-            assertEquals( 2, idGenerator.nextId() );
+            assertEquals( 0l, idGenerator.nextId() );
+            assertEquals( 1l, idGenerator.nextId() );
+            assertEquals( 2l, idGenerator.nextId() );
             idGenerator.close();
             try
             {
@@ -327,6 +300,7 @@ public class TestIdGenerator extends TestCase
         }
     }
 
+    @Test
     public void testOddAndEvenWorstCase()
     {
         int capacity = 1024 * 8 + 1;
@@ -403,6 +377,7 @@ public class TestIdGenerator extends TestCase
         }
     }
 
+    @Test
     public void testRandomTest()
     {
         int numberOfCloses = 0;
@@ -455,6 +430,7 @@ public class TestIdGenerator extends TestCase
 
     }
 
+    @Test
     public void testUnsignedId()
     {
         try
