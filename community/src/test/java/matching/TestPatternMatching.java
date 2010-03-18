@@ -1,11 +1,18 @@
 package matching;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -18,9 +25,9 @@ import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
-public class TestPatternMatching extends TestCase
+public class TestPatternMatching
 {
-	private GraphDatabaseService graphDb;
+	private static GraphDatabaseService graphDb;
 	private Transaction tx;
 	
 	private static enum MyRelTypes implements RelationshipType
@@ -37,25 +44,28 @@ public class TestPatternMatching extends TestCase
 		return node;
 	}
 	
-	@Override
-	protected void setUp() throws Exception
+	@BeforeClass
+	public static void setUpDb()
 	{
-		super.setUp();
 		graphDb = new EmbeddedGraphDatabase( "target/var/db" );
-		tx = graphDb.beginTx();
-	}
-
-	@Override
-	protected void tearDown() throws Exception
-	{
-		super.tearDown();
-		tx.finish();
-		graphDb.shutdown();
 	}
 	
-	public TestPatternMatching( String name )
+	@Before
+	public void setUpTx()
 	{
-		super( name );
+        tx = graphDb.beginTx();
+	}
+
+	@After
+	public void tearDownTx()
+	{
+        tx.finish();
+	}
+	
+	@AfterClass
+	public static void tearDownDb()
+	{
+        graphDb.shutdown();
 	}
 	
     private Iterable<PatternMatch> doMatch( PatternNode pNode )
@@ -77,6 +87,7 @@ public class TestPatternMatching extends TestCase
             new HashMap<String, PatternNode>(), optionalNodes );
     }
     
+    @Test
     public void testAllRelTypes()
     {
         final RelationshipType R1 = MyRelTypes.R1;
@@ -105,6 +116,7 @@ public class TestPatternMatching extends TestCase
         assertEquals( 2, count );
     }
 	
+    @Test
     public void testAllRelTypesWithRelProperty()
     {
         final RelationshipType R1 = MyRelTypes.R1;
@@ -133,7 +145,8 @@ public class TestPatternMatching extends TestCase
         assertEquals( 1, count );
     }
     
-	public void testTeethStructure()
+    @Test
+    public void testTeethStructure()
 	{
 		final RelationshipType R1 = MyRelTypes.R1;
 		final RelationshipType R2 = MyRelTypes.R2;
@@ -233,7 +246,8 @@ public class TestPatternMatching extends TestCase
 		assertEquals( 1, count );		
 	}
 	
-	public void testNonCyclicABC()
+    @Test
+    public void testNonCyclicABC()
 	{
 		Node a = createInstance( "A" );
 		Node b1 = createInstance( "B1" );
@@ -293,7 +307,8 @@ public class TestPatternMatching extends TestCase
 		assertEquals( 1, count );
 	}
 	
-	public void testCyclicABC()
+    @Test
+    public void testCyclicABC()
 	{
 		Node a = createInstance( "A" );
 		Node b1 = createInstance( "B1" );
@@ -349,7 +364,8 @@ public class TestPatternMatching extends TestCase
 		assertEquals( 3, count );
 	}
 
-	public void testPropertyABC()
+    @Test
+    public void testPropertyABC()
 	{
 		Node a = createInstance( "A" );
 		a.setProperty( "hasProperty", true );
@@ -405,7 +421,8 @@ public class TestPatternMatching extends TestCase
 		assertEquals( 1, count );
 	}
 	
-	public void testOptional()
+    @Test
+    public void testOptional()
 	{
 		Node a = createInstance( "A" );
 		Node b1 = createInstance( "B1" );
@@ -508,7 +525,8 @@ public class TestPatternMatching extends TestCase
 		assertEquals( count, 2 );
 	}
 
-	public void testOptional2()
+    @Test
+    public void testOptional2()
 	{
 		Node a = createInstance( "A" );
 		Node b1 = createInstance( "B1" );
@@ -569,7 +587,8 @@ public class TestPatternMatching extends TestCase
 		assertEquals( count, 3 );
 	}
 
-	public void testArrayPropertyValues()
+    @Test
+    public void testArrayPropertyValues()
 	{
 		Node a = createInstance( "A" );
 		a.setProperty( "hasProperty", true );
@@ -625,6 +644,7 @@ public class TestPatternMatching extends TestCase
 		assertEquals( 1, count );
 	}
 	
+    @Test
     public void testDiamond()
     {
         //    C
@@ -664,6 +684,7 @@ public class TestPatternMatching extends TestCase
         assertEquals( 4, count );
     }
 
+    @Test
     public void testDiamondWithAssociation()
     {
         //    C
