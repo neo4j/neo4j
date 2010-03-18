@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -26,41 +30,11 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Test;
 
-import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-
-public class TestDynamicStore extends TestCase
+public class TestDynamicStore
 {
-
-    public TestDynamicStore( String testName )
-    {
-        super( testName );
-    }
-
-    public static void main( java.lang.String[] args )
-    {
-        junit.textui.TestRunner.run( suite() );
-    }
-
-    public static Test suite()
-    {
-        TestSuite suite = new TestSuite( TestDynamicStore.class );
-        return suite;
-    }
-
-    public void setUp()
-    {
-    }
-
-    public void tearDown()
-    {
-    }
-
+    @Test
     public void testCreateStore()
     {
         try
@@ -107,7 +81,8 @@ public class TestDynamicStore extends TestCase
         }
     }
 
-    public void testStickyStore()
+    @Test
+    public void testStickyStore() throws IOException
     {
         Logger log = Logger.getLogger( CommonAbstractStore.class.getName() );
         Level level = log.getLevel();
@@ -122,10 +97,6 @@ public class TestDynamicStore extends TestCase
             ByteStore store = new ByteStore( "testDynamicStore.db" );
             store.makeStoreOk();
             store.close();
-        }
-        catch ( IOException e )
-        {
-            fail( "" + e );
         }
         finally
         {
@@ -143,6 +114,7 @@ public class TestDynamicStore extends TestCase
         }
     }
 
+    @Test
     public void testClose()
     {
         try
@@ -193,6 +165,7 @@ public class TestDynamicStore extends TestCase
         }
     }
 
+    @Test
     public void testStoreGetCharsFromString()
     {
         try
@@ -226,6 +199,7 @@ public class TestDynamicStore extends TestCase
         }
     }
 
+    @Test
     public void testRandomTest()
     {
         Random random = new Random( System.currentTimeMillis() );
@@ -282,11 +256,6 @@ public class TestDynamicStore extends TestCase
                 }
             }
         }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
         finally
         {
             store.close();
@@ -334,9 +303,9 @@ public class TestDynamicStore extends TestCase
         // return getAsChar( blockId );
         // }
 
-        public void flush()
-        {
-        }
+//        public void flush()
+//        {
+//        }
     }
 
     private byte[] createRandomBytes( Random r )

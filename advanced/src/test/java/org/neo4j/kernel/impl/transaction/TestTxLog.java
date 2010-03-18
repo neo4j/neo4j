@@ -19,31 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
+import org.junit.Test;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.TxLog.Record;
 
-public class TestTxLog extends TestCase
+public class TestTxLog
 {
-    public TestTxLog( String name )
-    {
-        super( name );
-    }
-
-    public static Test suite()
-    {
-        return new TestSuite( TestTxLog.class );
-    }
-
     private void assertEqualByteArray( byte a[], byte b[] )
     {
         assertTrue( a.length == b.length );
@@ -53,6 +43,7 @@ public class TestTxLog extends TestCase
         }
     }
 
+    @Test
     public void testTxLog() throws IOException
     {
         File file = new File( "tx_test_log.tx" );
@@ -133,6 +124,7 @@ public class TestTxLog extends TestCase
         return list.toArray( new List[list.size()] );
     }
 
+    @Test
     public void testTruncateTxLog() throws IOException
     {
         File file = new File( "tx_test_log.tx" );
@@ -174,8 +166,9 @@ public class TestTxLog extends TestCase
         }
     }
 
+    @Test
     public void testTxRecovery()
     {
-
+        // TODO
     }
 }

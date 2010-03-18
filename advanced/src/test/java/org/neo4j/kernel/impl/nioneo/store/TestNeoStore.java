@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -31,20 +34,15 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NodeEventConsumer;
@@ -56,11 +54,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class TestNeoStore extends AbstractNeo4jTestCase
 {
-    public TestNeoStore( String testName )
-    {
-        super( testName );
-    }
-
     private NodeEventConsumer nStore;
     private PropertyStore pStore;
     private RelationshipTypeEventConsumer relTypeStore;
@@ -68,18 +61,17 @@ public class TestNeoStore extends AbstractNeo4jTestCase
 
     private NeoStoreXaDataSource ds;
     private NeoStoreXaConnection xaCon;
-
-    public void setUp()
+    
+    @Override
+    protected boolean restartGraphDbBetweenTests()
     {
-        super.setUp();
-        try
-        {
-            NeoStore.createStore( "neo" );
-        }
-        catch ( Exception e )
-        {
-            fail( "" + e );
-        }
+        return true;
+    }
+
+    @Before
+    public void setUpNeoStore() throws Exception
+    {
+        NeoStore.createStore( "neo" );
     }
 
     private static class MyPropertyIndex extends
@@ -100,7 +92,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                 return Arrays.asList( new PropertyIndex[] { stringToIndex
                     .get( key ) } );
             }
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
         public static PropertyIndex getIndexFor( int index )
@@ -149,38 +141,24 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     private byte txCount = (byte) 0;
     XAResource xaResource;
 
-    private void startTx()
+    private void startTx() throws XAException
     {
         dummyXid = new XidImpl( new byte[txCount], new byte[txCount] );
         txCount++;
         xaResource = xaCon.getXaResource();
-        try
-        {
-            xaResource.start( dummyXid, XAResource.TMNOFLAGS );
-        }
-        catch ( XAException e )
-        {
-            throw new RuntimeException( e );
-        }
+        xaResource.start( dummyXid, XAResource.TMNOFLAGS );
     }
 
-    private void commitTx()
+    private void commitTx() throws XAException
     {
-        try
-        {
-            xaResource.end( dummyXid, XAResource.TMSUCCESS );
-            xaResource.commit( dummyXid, true );
-        }
-        catch ( XAException e )
-        {
-            throw new RuntimeException( e );
-        }
+        xaResource.end( dummyXid, XAResource.TMSUCCESS );
+        xaResource.commit( dummyXid, true );
         // xaCon.clearAllTransactions();
     }
 
-    public void tearDown()
+    @After
+    public void tearDownNeoStore()
     {
-        super.tearDown();
         File file = new File( "neo" );
         file.delete();
         file = new File( "neo.id" );
@@ -244,134 +222,127 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         return itr.next();
     }
 
-    public void testCreateNeoStore()
+    @Test
+    public void testCreateNeoStore() throws Exception
     {
-        try
+        initializeStores();
+        startTx();
+        // setup test population
+        int node1 = ds.nextId( Node.class );
+        nStore.createNode( node1 );
+        int node2 = ds.nextId( Node.class );
+        nStore.createNode( node2 );
+        int n1prop1 = pStore.nextId();
+        int n1prop2 = pStore.nextId();
+        int n1prop3 = pStore.nextId();
+        nStore.addProperty( node1, n1prop1, index( "prop1" ), "string1" );
+        nStore.addProperty( node1, n1prop2, index( "prop2" ), new Integer(
+            1 ) );
+        nStore.addProperty( node1, n1prop3, index( "prop3" ), new Boolean(
+            true ) );
+
+        int n2prop1 = pStore.nextId();
+        int n2prop2 = pStore.nextId();
+        int n2prop3 = pStore.nextId();
+        nStore.addProperty( node2, n2prop1, index( "prop1" ), "string2" );
+        nStore.addProperty( node2, n2prop2, index( "prop2" ), new Integer(
+            2 ) );
+        nStore.addProperty( node2, n2prop3, index( "prop3" ), new Boolean(
+            false ) );
+
+        int relType1 = ds.nextId( RelationshipType.class );
+        relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
+        int relType2 = ds.nextId( RelationshipType.class );
+        relTypeStore.addRelationshipType( relType2, "relationshiptype2" );
+        int rel1 = ds.nextId( Relationship.class );
+        rStore.createRelationship( rel1, node1, node2, relType1 );
+        int rel2 = ds.nextId( Relationship.class );
+        rStore.createRelationship( rel2, node2, node1, relType2 );
+        int r1prop1 = pStore.nextId();
+        int r1prop2 = pStore.nextId();
+        int r1prop3 = pStore.nextId();
+        rStore.addProperty( rel1, r1prop1, index( "prop1" ), "string1" );
+        rStore.addProperty( rel1, r1prop2, index( "prop2" ),
+            new Integer( 1 ) );
+        rStore.addProperty( rel1, r1prop3, index( "prop3" ), new Boolean(
+            true ) );
+        int r2prop1 = pStore.nextId();
+        int r2prop2 = pStore.nextId();
+        int r2prop3 = pStore.nextId();
+        rStore.addProperty( rel2, r2prop1, index( "prop1" ), "string2" );
+        rStore.addProperty( rel2, r2prop2, index( "prop2" ),
+            new Integer( 2 ) );
+        rStore.addProperty( rel2, r2prop3, index( "prop3" ), new Boolean(
+            false ) );
+        commitTx();
+        ds.close();
+
+        initializeStores();
+        startTx();
+        // validate node
+        validateNodeRel1( node1, n1prop1, n1prop2, n1prop3, rel1, rel2,
+            relType1, relType2 );
+        validateNodeRel2( node2, n2prop1, n2prop2, n2prop3, rel1, rel2,
+            relType1, relType2 );
+        // validate rels
+        validateRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2,
+            relType1 );
+        validateRel2( rel2, r2prop1, r2prop2, r2prop3, node2, node1,
+            relType2 );
+        validateRelTypes( relType1, relType2 );
+        // validate reltypes
+        validateRelTypes( relType1, relType2 );
+        commitTx();
+        ds.close();
+
+        initializeStores();
+        startTx();
+        // validate and delete rels
+        deleteRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2, relType1 );
+        deleteRel2( rel2, r2prop1, r2prop2, r2prop3, node2, node1, relType2 );
+        // validate and delete nodes
+        deleteNode1( node1, n1prop1, n1prop2, n1prop3 );
+        deleteNode2( node2, n2prop1, n2prop2, n2prop3 );
+        commitTx();
+        ds.close();
+
+        initializeStores();
+        startTx();
+        assertEquals( false, nStore.loadLightNode( node1 ) );
+        assertEquals( false, nStore.loadLightNode( node2 ) );
+        testGetRels( new int[] { rel1, rel2 } );
+        // testGetProps( neoStore, new int[] {
+        // n1prop1, n1prop2, n1prop3, n2prop1, n2prop2, n2prop3,
+        // r1prop1, r1prop2, r1prop3, r2prop1, r2prop2, r2prop3
+        // } );
+        int nodeIds[] = new int[10];
+        for ( int i = 0; i < 3; i++ )
         {
-            initializeStores();
-            startTx();
-            // setup test population
-            int node1 = ds.nextId( Node.class );
-            nStore.createNode( node1 );
-            int node2 = ds.nextId( Node.class );
-            nStore.createNode( node2 );
-            int n1prop1 = pStore.nextId();
-            int n1prop2 = pStore.nextId();
-            int n1prop3 = pStore.nextId();
-            nStore.addProperty( node1, n1prop1, index( "prop1" ), "string1" );
-            nStore.addProperty( node1, n1prop2, index( "prop2" ), new Integer(
-                1 ) );
-            nStore.addProperty( node1, n1prop3, index( "prop3" ), new Boolean(
-                true ) );
-
-            int n2prop1 = pStore.nextId();
-            int n2prop2 = pStore.nextId();
-            int n2prop3 = pStore.nextId();
-            nStore.addProperty( node2, n2prop1, index( "prop1" ), "string2" );
-            nStore.addProperty( node2, n2prop2, index( "prop2" ), new Integer(
-                2 ) );
-            nStore.addProperty( node2, n2prop3, index( "prop3" ), new Boolean(
-                false ) );
-
-            int relType1 = ds.nextId( RelationshipType.class );
-            relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
-            int relType2 = ds.nextId( RelationshipType.class );
-            relTypeStore.addRelationshipType( relType2, "relationshiptype2" );
-            int rel1 = ds.nextId( Relationship.class );
-            rStore.createRelationship( rel1, node1, node2, relType1 );
-            int rel2 = ds.nextId( Relationship.class );
-            rStore.createRelationship( rel2, node2, node1, relType2 );
-            int r1prop1 = pStore.nextId();
-            int r1prop2 = pStore.nextId();
-            int r1prop3 = pStore.nextId();
-            rStore.addProperty( rel1, r1prop1, index( "prop1" ), "string1" );
-            rStore.addProperty( rel1, r1prop2, index( "prop2" ),
-                new Integer( 1 ) );
-            rStore.addProperty( rel1, r1prop3, index( "prop3" ), new Boolean(
-                true ) );
-            int r2prop1 = pStore.nextId();
-            int r2prop2 = pStore.nextId();
-            int r2prop3 = pStore.nextId();
-            rStore.addProperty( rel2, r2prop1, index( "prop1" ), "string2" );
-            rStore.addProperty( rel2, r2prop2, index( "prop2" ),
-                new Integer( 2 ) );
-            rStore.addProperty( rel2, r2prop3, index( "prop3" ), new Boolean(
-                false ) );
-            commitTx();
-            ds.close();
-
-            initializeStores();
-            startTx();
-            // validate node
-            validateNodeRel1( node1, n1prop1, n1prop2, n1prop3, rel1, rel2,
-                relType1, relType2 );
-            validateNodeRel2( node2, n2prop1, n2prop2, n2prop3, rel1, rel2,
-                relType1, relType2 );
-            // validate rels
-            validateRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2,
-                relType1 );
-            validateRel2( rel2, r2prop1, r2prop2, r2prop3, node2, node1,
-                relType2 );
-            validateRelTypes( relType1, relType2 );
-            // validate reltypes
-            validateRelTypes( relType1, relType2 );
-            commitTx();
-            ds.close();
-
-            initializeStores();
-            startTx();
-            // validate and delete rels
-            deleteRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2, relType1 );
-            deleteRel2( rel2, r2prop1, r2prop2, r2prop3, node2, node1, relType2 );
-            // validate and delete nodes
-            deleteNode1( node1, n1prop1, n1prop2, n1prop3 );
-            deleteNode2( node2, n2prop1, n2prop2, n2prop3 );
-            commitTx();
-            ds.close();
-
-            initializeStores();
-            startTx();
-            assertEquals( false, nStore.loadLightNode( node1 ) );
-            assertEquals( false, nStore.loadLightNode( node2 ) );
-            testGetRels( new int[] { rel1, rel2 } );
-            // testGetProps( neoStore, new int[] {
-            // n1prop1, n1prop2, n1prop3, n2prop1, n2prop2, n2prop3,
-            // r1prop1, r1prop2, r1prop3, r2prop1, r2prop2, r2prop3
-            // } );
-            int nodeIds[] = new int[10];
-            for ( int i = 0; i < 3; i++ )
-            {
-                nodeIds[i] = ds.nextId( Node.class );
-                nStore.createNode( nodeIds[i] );
-                nStore.addProperty( nodeIds[i], pStore.nextId(),
-                    index( "nisse" ), new Integer( 10 - i ) );
-            }
-            for ( int i = 0; i < 2; i++ )
-            {
-                int id =  ds.nextId( Relationship.class );
-                rStore.createRelationship( id,
-                    nodeIds[i], nodeIds[i + 1], relType1 );
-                rStore.deleteRelationship( id );
-            }
-            for ( int i = 0; i < 3; i++ )
-            {
-                RelationshipChainPosition pos = 
-                    rStore.getRelationshipChainPosition( nodeIds[i] );
-                for ( RelationshipData rel : 
-                    rStore.getMoreRelationships( nodeIds[i], pos ) )
-                {
-                    rStore.deleteRelationship( rel.getId() );
-                }
-                nStore.deleteNode( nodeIds[i] );
-            }
-            commitTx();
-            ds.close();
+            nodeIds[i] = ds.nextId( Node.class );
+            nStore.createNode( nodeIds[i] );
+            nStore.addProperty( nodeIds[i], pStore.nextId(),
+                index( "nisse" ), new Integer( 10 - i ) );
         }
-        catch ( Exception e )
+        for ( int i = 0; i < 2; i++ )
         {
-            e.printStackTrace();
-            fail( "" + e );
+            int id =  ds.nextId( Relationship.class );
+            rStore.createRelationship( id,
+                nodeIds[i], nodeIds[i + 1], relType1 );
+            rStore.deleteRelationship( id );
         }
+        for ( int i = 0; i < 3; i++ )
+        {
+            RelationshipChainPosition pos = 
+                rStore.getRelationshipChainPosition( nodeIds[i] );
+            for ( RelationshipData rel : 
+                rStore.getMoreRelationships( nodeIds[i], pos ) )
+            {
+                rStore.deleteRelationship( rel.getId() );
+            }
+            nStore.deleteNode( nodeIds[i] );
+        }
+        commitTx();
+        ds.close();
     }
 
     private Object getValue( PropertyRecord propertyRecord ) throws IOException
@@ -881,179 +852,148 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         }
     }
 
-    public void testRels1()
+    @Test
+    public void testRels1() throws Exception
     {
-        try
+        initializeStores();
+        startTx();
+        int relType1 = ds.nextId( RelationshipType.class );
+        relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
+        int nodeIds[] = new int[3];
+        for ( int i = 0; i < 3; i++ )
         {
-            initializeStores();
-            startTx();
-            int relType1 = ds.nextId( RelationshipType.class );
-            relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
-            int nodeIds[] = new int[3];
-            for ( int i = 0; i < 3; i++ )
-            {
-                nodeIds[i] = ds.nextId( Node.class );
-                nStore.createNode( nodeIds[i] );
-                nStore.addProperty( nodeIds[i], pStore.nextId(),
-                    index( "nisse" ), new Integer( 10 - i ) );
-            }
-            for ( int i = 0; i < 2; i++ )
-            {
-                rStore.createRelationship( ds.nextId( Relationship.class ),
-                    nodeIds[i], nodeIds[i + 1], relType1 );
-            }
-            commitTx();
-            startTx();
-            for ( int i = 0; i < 3; i++ )
-            {
-                RelationshipChainPosition pos = 
-                    rStore.getRelationshipChainPosition( nodeIds[i] );
-                for ( RelationshipData rel : 
-                    rStore.getMoreRelationships( nodeIds[i], pos ) )
-                {
-                    rStore.deleteRelationship( rel.getId() );
-                }
-                nStore.deleteNode( nodeIds[i] );
-            }
-            commitTx();
-            ds.close();
+            nodeIds[i] = ds.nextId( Node.class );
+            nStore.createNode( nodeIds[i] );
+            nStore.addProperty( nodeIds[i], pStore.nextId(),
+                index( "nisse" ), new Integer( 10 - i ) );
         }
-        catch ( Exception e )
+        for ( int i = 0; i < 2; i++ )
         {
-            e.printStackTrace();
-            fail( "" + e );
-        }
-    }
-
-    public void testRels2()
-    {
-        try
-        {
-            initializeStores();
-            startTx();
-            int relType1 = ds.nextId( RelationshipType.class );
-            relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
-            int nodeIds[] = new int[3];
-            for ( int i = 0; i < 3; i++ )
-            {
-                nodeIds[i] = ds.nextId( Node.class );
-                nStore.createNode( nodeIds[i] );
-                nStore.addProperty( nodeIds[i], pStore.nextId(),
-                    index( "nisse" ), new Integer( 10 - i ) );
-            }
-            for ( int i = 0; i < 2; i++ )
-            {
-                rStore.createRelationship( ds.nextId( Relationship.class ),
-                    nodeIds[i], nodeIds[i + 1], relType1 );
-            }
             rStore.createRelationship( ds.nextId( Relationship.class ),
-                nodeIds[0], nodeIds[2], relType1 );
-            commitTx();
-            startTx();
-            for ( int i = 0; i < 3; i++ )
-            {
-                RelationshipChainPosition pos = 
-                    rStore.getRelationshipChainPosition( nodeIds[i] );
-                for ( RelationshipData rel : 
-                    rStore.getMoreRelationships( nodeIds[i], pos ) )
-                {
-                    rStore.deleteRelationship( rel.getId() );
-                }
-                nStore.deleteNode( nodeIds[i] );
-            }
-            commitTx();
-            ds.close();
+                nodeIds[i], nodeIds[i + 1], relType1 );
         }
-        catch ( Exception e )
+        commitTx();
+        startTx();
+        for ( int i = 0; i < 3; i++ )
         {
-            e.printStackTrace();
-            fail( "" + e );
+            RelationshipChainPosition pos = 
+                rStore.getRelationshipChainPosition( nodeIds[i] );
+            for ( RelationshipData rel : 
+                rStore.getMoreRelationships( nodeIds[i], pos ) )
+            {
+                rStore.deleteRelationship( rel.getId() );
+            }
+            nStore.deleteNode( nodeIds[i] );
         }
+        commitTx();
+        ds.close();
     }
 
-    public void testRels3()
+    public void testRels2() throws Exception
+    {
+        initializeStores();
+        startTx();
+        int relType1 = ds.nextId( RelationshipType.class );
+        relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
+        int nodeIds[] = new int[3];
+        for ( int i = 0; i < 3; i++ )
+        {
+            nodeIds[i] = ds.nextId( Node.class );
+            nStore.createNode( nodeIds[i] );
+            nStore.addProperty( nodeIds[i], pStore.nextId(),
+                index( "nisse" ), new Integer( 10 - i ) );
+        }
+        for ( int i = 0; i < 2; i++ )
+        {
+            rStore.createRelationship( ds.nextId( Relationship.class ),
+                nodeIds[i], nodeIds[i + 1], relType1 );
+        }
+        rStore.createRelationship( ds.nextId( Relationship.class ),
+            nodeIds[0], nodeIds[2], relType1 );
+        commitTx();
+        startTx();
+        for ( int i = 0; i < 3; i++ )
+        {
+            RelationshipChainPosition pos = 
+                rStore.getRelationshipChainPosition( nodeIds[i] );
+            for ( RelationshipData rel : 
+                rStore.getMoreRelationships( nodeIds[i], pos ) )
+            {
+                rStore.deleteRelationship( rel.getId() );
+            }
+            nStore.deleteNode( nodeIds[i] );
+        }
+        commitTx();
+        ds.close();
+    }
+
+    public void testRels3() throws Exception
     {
         // test linked list stuff during relationship delete
-        try
+        initializeStores();
+        startTx();
+        int relType1 = ds.nextId( RelationshipType.class );
+        relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
+        int nodeIds[] = new int[8];
+        for ( int i = 0; i < nodeIds.length; i++ )
         {
-            initializeStores();
-            startTx();
-            int relType1 = ds.nextId( RelationshipType.class );
-            relTypeStore.addRelationshipType( relType1, "relationshiptype1" );
-            int nodeIds[] = new int[8];
-            for ( int i = 0; i < nodeIds.length; i++ )
-            {
-                nodeIds[i] = ds.nextId( Node.class );
-                nStore.createNode( nodeIds[i] );
-            }
-            for ( int i = 0; i < nodeIds.length / 2; i++ )
-            {
-                rStore.createRelationship( ds.nextId( Relationship.class ),
-                    nodeIds[i], nodeIds[i * 2], relType1 );
-            }
-            int rel5 = ds.nextId( Relationship.class );
-            rStore.createRelationship( rel5, nodeIds[0], nodeIds[5], relType1 );
-            int rel2 = ds.nextId( Relationship.class );
-            rStore.createRelationship( rel2, nodeIds[1], nodeIds[2], relType1 );
-            int rel3 = ds.nextId( Relationship.class );
-            rStore.createRelationship( rel3, nodeIds[1], nodeIds[3], relType1 );
-            int rel6 = ds.nextId( Relationship.class );
-            rStore.createRelationship( rel6, nodeIds[1], nodeIds[6], relType1 );
-            int rel1 = ds.nextId( Relationship.class );
-            rStore.createRelationship( rel1, nodeIds[0], nodeIds[1], relType1 );
-            int rel4 = ds.nextId( Relationship.class );
-            rStore.createRelationship( rel4, nodeIds[0], nodeIds[4], relType1 );
-            int rel7 = ds.nextId( Relationship.class );
-            rStore.createRelationship( rel7, nodeIds[0], nodeIds[7], relType1 );
-            commitTx();
-            startTx();
-            rStore.deleteRelationship( rel7 );
-            rStore.deleteRelationship( rel4 );
-            rStore.deleteRelationship( rel1 );
-            rStore.deleteRelationship( rel6 );
-            rStore.deleteRelationship( rel3 );
-            rStore.deleteRelationship( rel2 );
-            rStore.deleteRelationship( rel5 );
-            // nStore.deleteNode( nodeIds[2] );
-            // nStore.deleteNode( nodeIds[3] );
-            // nStore.deleteNode( nodeIds[1] );
-            // nStore.deleteNode( nodeIds[4] );
-            // nStore.deleteNode( nodeIds[0] );
-            commitTx();
-            ds.close();
+            nodeIds[i] = ds.nextId( Node.class );
+            nStore.createNode( nodeIds[i] );
         }
-        catch ( Exception e )
+        for ( int i = 0; i < nodeIds.length / 2; i++ )
         {
-            e.printStackTrace();
-            fail( "" + e );
+            rStore.createRelationship( ds.nextId( Relationship.class ),
+                nodeIds[i], nodeIds[i * 2], relType1 );
         }
+        int rel5 = ds.nextId( Relationship.class );
+        rStore.createRelationship( rel5, nodeIds[0], nodeIds[5], relType1 );
+        int rel2 = ds.nextId( Relationship.class );
+        rStore.createRelationship( rel2, nodeIds[1], nodeIds[2], relType1 );
+        int rel3 = ds.nextId( Relationship.class );
+        rStore.createRelationship( rel3, nodeIds[1], nodeIds[3], relType1 );
+        int rel6 = ds.nextId( Relationship.class );
+        rStore.createRelationship( rel6, nodeIds[1], nodeIds[6], relType1 );
+        int rel1 = ds.nextId( Relationship.class );
+        rStore.createRelationship( rel1, nodeIds[0], nodeIds[1], relType1 );
+        int rel4 = ds.nextId( Relationship.class );
+        rStore.createRelationship( rel4, nodeIds[0], nodeIds[4], relType1 );
+        int rel7 = ds.nextId( Relationship.class );
+        rStore.createRelationship( rel7, nodeIds[0], nodeIds[7], relType1 );
+        commitTx();
+        startTx();
+        rStore.deleteRelationship( rel7 );
+        rStore.deleteRelationship( rel4 );
+        rStore.deleteRelationship( rel1 );
+        rStore.deleteRelationship( rel6 );
+        rStore.deleteRelationship( rel3 );
+        rStore.deleteRelationship( rel2 );
+        rStore.deleteRelationship( rel5 );
+        // nStore.deleteNode( nodeIds[2] );
+        // nStore.deleteNode( nodeIds[3] );
+        // nStore.deleteNode( nodeIds[1] );
+        // nStore.deleteNode( nodeIds[4] );
+        // nStore.deleteNode( nodeIds[0] );
+        commitTx();
+        ds.close();
     }
 
-    public void testProps1()
+    public void testProps1() throws Exception
     {
-        try
-        {
-            initializeStores();
-            startTx();
-            int nodeId = ds.nextId( Node.class );
-            nStore.createNode( nodeId );
-            int propertyId = pStore.nextId();
-            nStore.addProperty( nodeId, propertyId, index( "nisse" ),
-                new Integer( 10 ) );
-            commitTx();
-            ds.close();
-            initializeStores();
-            startTx();
-            nStore.changeProperty( nodeId, propertyId, new Integer( 5 ) );
-            nStore.removeProperty( nodeId, propertyId );
-            nStore.deleteNode( nodeId );
-            commitTx();
-            ds.close();
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
+        initializeStores();
+        startTx();
+        int nodeId = ds.nextId( Node.class );
+        nStore.createNode( nodeId );
+        int propertyId = pStore.nextId();
+        nStore.addProperty( nodeId, propertyId, index( "nisse" ),
+            new Integer( 10 ) );
+        commitTx();
+        ds.close();
+        initializeStores();
+        startTx();
+        nStore.changeProperty( nodeId, propertyId, new Integer( 5 ) );
+        nStore.removeProperty( nodeId, propertyId );
+        nStore.deleteNode( nodeId );
+        commitTx();
+        ds.close();
     }
 }

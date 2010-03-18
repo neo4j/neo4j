@@ -19,43 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Test;
 
-import org.neo4j.kernel.impl.nioneo.store.AbstractStore;
-
-public class TestStore extends TestCase
+public class TestStore
 {
-
-    public TestStore( String testName )
-    {
-        super( testName );
-    }
-
-    public static void main( java.lang.String[] args )
-    {
-        junit.textui.TestRunner.run( suite() );
-    }
-
-    public static Test suite()
-    {
-        TestSuite suite = new TestSuite( TestStore.class );
-        return suite;
-    }
-
-    public void setUp()
-    {
-    }
-
-    public void tearDown()
-    {
-    }
-
-    public void testCreateStore()
+    @Test
+    public void testCreateStore() throws IOException
     {
         try
         {
@@ -78,11 +53,6 @@ public class TestStore extends TestCase
             }
             store.close();
         }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
         finally
         {
             File file = new File( "testStore.db" );
@@ -98,7 +68,8 @@ public class TestStore extends TestCase
         }
     }
 
-    public void testStickyStore()
+    @Test
+    public void testStickyStore() throws IOException
     {
         try
         {
@@ -111,10 +82,6 @@ public class TestStore extends TestCase
             store.makeStoreOk();
             store.close();
         }
-        catch ( IOException e )
-        {
-            fail( "" + e );
-        }
         finally
         {
             File file = new File( "testStore.db" );
@@ -130,16 +97,13 @@ public class TestStore extends TestCase
         }
     }
 
-    public void testClose()
+    @Test
+    public void testClose() throws IOException
     {
         try
         {
             Store store = Store.createStore( "testStore.db" );
             store.close();
-        }
-        catch ( IOException e )
-        {
-            fail( "" + e );
         }
         finally
         {
@@ -171,14 +135,14 @@ public class TestStore extends TestCase
         {
         }
 
-        protected void closeImpl()
-        {
-        }
+//        protected void closeImpl()
+//        {
+//        }
 
-        protected boolean fsck( boolean modify )
-        {
-            return false;
-        }
+//        protected boolean fsck( boolean modify )
+//        {
+//            return false;
+//        }
 
         public int getRecordSize()
         {
@@ -196,9 +160,9 @@ public class TestStore extends TestCase
             return new Store( fileName );
         }
 
-        public void flush()
-        {
-        }
+//        public void flush()
+//        {
+//        }
 
         protected void rebuildIdGenerator()
         {
