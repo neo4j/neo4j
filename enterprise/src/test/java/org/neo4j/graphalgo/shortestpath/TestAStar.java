@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.shortestPath;
+package org.neo4j.graphalgo.shortestpath;
 
 import org.junit.Test;
 import org.neo4j.graphalgo.Path;
@@ -6,7 +6,7 @@ import org.neo4j.graphalgo.RelationshipExpander;
 import org.neo4j.graphalgo.shortestpath.AStar;
 import org.neo4j.graphalgo.shortestpath.EstimateEvaluator;
 import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
-import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
+import org.neo4j.graphalgo.testutil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
