@@ -26,9 +26,32 @@ import java.io.File;
 import java.io.IOException;
 
 import org.junit.Test;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestStore
 {
+    private String path()
+    {
+        String path = AbstractNeo4jTestCase.getStorePath( "teststore" );
+        new File( path ).mkdirs();
+        return path;
+    }
+    
+    private String file( String name )
+    {
+        return path() + File.separator + name;
+    }
+    
+    private String storeFile()
+    {
+        return file( "testStore.db" );
+    }
+    
+    private String storeIdFile()
+    {
+        return file( "testStore.db.id" );
+    }
+    
     @Test
     public void testCreateStore() throws IOException
     {
@@ -42,10 +65,10 @@ public class TestStore
             catch ( IllegalArgumentException e )
             { // good
             }
-            Store store = Store.createStore( "testStore.db" );
+            Store store = Store.createStore( storeFile() );
             try
             {
-                Store.createStore( "testStore.db" );
+                Store.createStore( storeFile() );
                 fail( "Creating existing store should throw exception" );
             }
             catch ( IllegalStateException e )
@@ -55,16 +78,21 @@ public class TestStore
         }
         finally
         {
-            File file = new File( "testStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
+        }
+    }
+
+    private void deleteBothFiles()
+    {
+        File file = new File( storeFile() );
+        if ( file.exists() )
+        {
+            assertTrue( file.delete() );
+        }
+        file = new File( storeIdFile() );
+        if ( file.exists() )
+        {
+            assertTrue( file.delete() );
         }
     }
 
@@ -73,27 +101,18 @@ public class TestStore
     {
         try
         {
-            Store.createStore( "testStore.db" ).close();
+            Store.createStore( storeFile() ).close();
             java.nio.channels.FileChannel fileChannel = new java.io.RandomAccessFile(
-                "testStore.db", "rw" ).getChannel();
+                storeFile(), "rw" ).getChannel();
             fileChannel.truncate( fileChannel.size() - 2 );
             fileChannel.close();
-            Store store = new Store( "testStore.db" );
+            Store store = new Store( storeFile() );
             store.makeStoreOk();
             store.close();
         }
         finally
         {
-            File file = new File( "testStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
         }
     }
 
@@ -102,21 +121,12 @@ public class TestStore
     {
         try
         {
-            Store store = Store.createStore( "testStore.db" );
+            Store store = Store.createStore( storeFile() );
             store.close();
         }
         finally
         {
-            File file = new File( "testStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
         }
     }
 

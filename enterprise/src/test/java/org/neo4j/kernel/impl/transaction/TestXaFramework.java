@@ -58,6 +58,23 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     private TransactionManager tm;
     private XaDataSourceManager xaDsMgr;
 
+    private String path()
+    {
+        String path = getStorePath( "xafrmwrk" );
+        new File( path ).mkdirs();
+        return path;
+    }
+    
+    private String file( String name )
+    {
+        return path() + File.separator + name;
+    }
+    
+    private String resourceFile()
+    {
+        return file( "dummy_resource" );
+    }
+    
     @Before
     public void setUpFramework()
     {
@@ -179,7 +196,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             super( map );
             try
             {
-                xaContainer = XaContainer.create( "dummy_resource",
+                xaContainer = XaContainer.create( resourceFile(),
                     new DummyCommandFactory(), new DummyTransactionFactory(), 
                     null );
                 xaContainer.openLogicalLog();
@@ -199,7 +216,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             {
                 public boolean accept( File dir, String fileName )
                 {
-                    return fileName.startsWith( "dummy_resource" );
+                    return fileName.startsWith( resourceFile() );
                 }
             } );
             for ( int i = 0; i < files.length; i++ )
@@ -336,7 +353,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             public boolean accept( File dir, String fileName )
             {
-                return fileName.startsWith( "dummy_resource" );
+                return fileName.startsWith( resourceFile() );
             }
         } );
         for ( int i = 0; i < files.length; i++ )
@@ -397,7 +414,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             public boolean accept( File dir, String fileName )
             {
-                return fileName.startsWith( "dummy_resource" );
+                return fileName.startsWith( resourceFile() );
             }
         } );
         for ( int i = 0; i < files.length; i++ )
