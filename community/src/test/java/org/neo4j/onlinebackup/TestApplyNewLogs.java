@@ -1,9 +1,9 @@
 package org.neo4j.onlinebackup;
 
+import static org.junit.Assert.assertNotNull;
+
 import java.io.File;
 import java.io.IOException;
-
-import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -21,13 +21,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
  */
 public class TestApplyNewLogs
 {
-    private static final String FILE_SEP = System
-        .getProperty( "file.separator" );
+    private static final String FILE_SEP = System.getProperty( "file.separator" );
     private static final String TARGET_DIR = "target";
     private static final String VAR = TARGET_DIR + FILE_SEP + "var";
     private static final String STORE_LOCATION_DIR = VAR + FILE_SEP + "neo-db";
     private static final String BACKUP_LOCATION_DIR = VAR + FILE_SEP
-        + "neo-backup";
+                                                      + "neo-backup";
 
     @Before
     public void clean() throws IOException
@@ -36,14 +35,13 @@ public class TestApplyNewLogs
 
         System.out.println( "setting up simple database and backup-copy" );
 
-        EmbeddedGraphDatabase graphDb = 
-            new EmbeddedGraphDatabase( STORE_LOCATION_DIR );
+        EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase(
+                STORE_LOCATION_DIR );
         graphDb.shutdown();
         Util.copyDir( STORE_LOCATION_DIR, BACKUP_LOCATION_DIR );
         graphDb = new EmbeddedGraphDatabase( STORE_LOCATION_DIR );
         IndexService index = new LuceneIndexService( graphDb );
-        XaDataSourceManager xaDsMgr = 
-            graphDb.getConfig().getTxModule().getXaDataSourceManager();
+        XaDataSourceManager xaDsMgr = graphDb.getConfig().getTxModule().getXaDataSourceManager();
         for ( XaDataSource xaDs : xaDsMgr.getAllRegisteredDataSources() )
         {
             xaDs.keepLogicalLogs( true );
@@ -76,7 +74,7 @@ public class TestApplyNewLogs
         }
         index.shutdown();
         graphDb.shutdown();
-        
+
         Util.copyLogs( STORE_LOCATION_DIR, BACKUP_LOCATION_DIR );
     }
 
@@ -90,8 +88,8 @@ public class TestApplyNewLogs
         Transaction tx = graphDb.beginTx();
         try
         {
-            Assert.assertNotNull( index.getSingleNode( "backup_test", "1" ) );
-            Assert.assertNotNull( index.getSingleNode( "backup_test", "2" ) );
+            assertNotNull( index.getSingleNode( "backup_test", "1" ) );
+            assertNotNull( index.getSingleNode( "backup_test", "2" ) );
         }
         finally
         {
