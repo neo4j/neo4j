@@ -26,7 +26,7 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.Util;
 import org.neo4j.graphalgo.shortestpath.Util.PathCounter;
-import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
+import org.neo4j.graphalgo.testutil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
