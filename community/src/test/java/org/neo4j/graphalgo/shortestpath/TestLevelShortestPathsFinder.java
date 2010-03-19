@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.shortestPath;
+package org.neo4j.graphalgo.shortestpath;
 
 import org.neo4j.graphalgo.shortestpath.LevelShortestPathsFinder;
 import org.neo4j.graphalgo.shortestpath.PathFinder;

@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.shortestPath;
+package org.neo4j.graphalgo.shortestpath;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -15,8 +15,8 @@ import org.neo4j.graphalgo.RelationshipExpander;
 import org.neo4j.graphalgo.shortestpath.LevelShortestPathsFinder;
 import org.neo4j.graphalgo.shortestpath.PathFinder;
 import org.neo4j.graphalgo.shortestpath.SingleStepShortestPathsFinder;
-import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
-import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
+import org.neo4j.graphalgo.testutil.Neo4jAlgoTestCase;
+import org.neo4j.graphalgo.testutil.SimpleGraphBuilder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 
