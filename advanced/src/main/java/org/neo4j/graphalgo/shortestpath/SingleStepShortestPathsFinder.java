@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
  * if one side has a very large amount of relationships, but the other one
  * very few. It performs well however the graph is proportioned.
  */
-public class SingleStepShortestPathsFinder
+public class SingleStepShortestPathsFinder implements PathFinder
 {
     private final GraphDatabaseService graphDb;
     private final int maxDepth;
@@ -44,23 +44,23 @@ public class SingleStepShortestPathsFinder
         this.relExpander = relExpander;
     }
     
-    public Collection<Path> paths( Node start, Node end )
+    public Collection<Path> findPaths( Node start, Node end )
     {
         return internalPaths( start, end, false );
     }
     
-    public Path path( Node start, Node end )
+    public Path findSinglePath( Node start, Node end )
     {
         Collection<Path> paths = internalPaths( start, end, true );
         return IteratorUtil.singleValueOrNull( paths.iterator() );
     }
     
-    public Collection<Path> pathsFromScetch( Node... someNodesAlongTheWay )
+    public Collection<Path> findPathsFromScetch( Node... someNodesAlongTheWay )
     {
         return internalPathsFromScetch( false, someNodesAlongTheWay );
     }
     
-    public Path pathFromScetch( Node... someNodesAlongTheWay )
+    public Path findPathFromScetch( Node... someNodesAlongTheWay )
     {
         Collection<Path> paths = internalPathsFromScetch( true, someNodesAlongTheWay );
         return IteratorUtil.singleValueOrNull( paths.iterator() );
