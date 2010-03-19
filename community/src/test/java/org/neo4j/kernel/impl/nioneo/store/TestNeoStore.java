@@ -68,10 +68,22 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         return true;
     }
 
+    private String path()
+    {
+        String path = AbstractNeo4jTestCase.getStorePath( "test-neostore" );
+        new File( path ).mkdirs();
+        return path;
+    }
+    
+    private String file( String name )
+    {
+        return path() + File.separator + name;
+    }
+    
     @Before
     public void setUpNeoStore() throws Exception
     {
-        NeoStore.createStore( "neo" );
+        NeoStore.createStore( file( "neo" ) );
     }
 
     private static class MyPropertyIndex extends
@@ -123,7 +135,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                 .getLockManager();
             LockReleaser lockReleaser = getEmbeddedGraphDb().getConfig()
                 .getLockReleaser();
-            ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+            ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
                 lockManager, lockReleaser );
         }
         catch ( InstantiationException e )
@@ -159,45 +171,45 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     @After
     public void tearDownNeoStore()
     {
-        File file = new File( "neo" );
+        File file = new File( file( "neo" ) );
         file.delete();
-        file = new File( "neo.id" );
+        file = new File( file( "neo.id" ) );
         file.delete();
-        file = new File( "neo.nodestore.db" );
+        file = new File( file( "neo.nodestore.db" ) );
         file.delete();
-        file = new File( "neo.nodestore.db.id" );
+        file = new File( file( "neo.nodestore.db.id" ) );
         file.delete();
-        file = new File( "neo.propertystore.db" );
+        file = new File( file( "neo.propertystore.db" ) );
         file.delete();
-        file = new File( "neo.propertystore.db.id" );
+        file = new File( file( "neo.propertystore.db.id" ) );
         file.delete();
-        file = new File( "neo.propertystore.db.index" );
+        file = new File( file( "neo.propertystore.db.index" ) );
         file.delete();
-        file = new File( "neo.propertystore.db.index.id" );
+        file = new File( file( "neo.propertystore.db.index.id" ) );
         file.delete();
-        file = new File( "neo.propertystore.db.index.keys" );
+        file = new File( file( "neo.propertystore.db.index.keys" ) );
         file.delete();
-        file = new File( "neo.propertystore.db.index.keys.id" );
+        file = new File( file( "neo.propertystore.db.index.keys.id" ) );
         file.delete();
-        file = new File( "neo.propertystore.db.strings" );
+        file = new File( file( "neo.propertystore.db.strings" ) );
         file.delete();
-        file = new File( "neo.propertystore.db.strings.id" );
+        file = new File( file( "neo.propertystore.db.strings.id" ) );
         file.delete();
-        file = new File( "neo.propertystore.db.arrays" );
+        file = new File( file( "neo.propertystore.db.arrays" ) );
         file.delete();
-        file = new File( "neo.propertystore.db.arrays.id" );
+        file = new File( file( "neo.propertystore.db.arrays.id" ) );
         file.delete();
-        file = new File( "neo.relationshipstore.db" );
+        file = new File( file( "neo.relationshipstore.db" ) );
         file.delete();
-        file = new File( "neo.relationshipstore.db.id" );
+        file = new File( file( "neo.relationshipstore.db.id" ) );
         file.delete();
-        file = new File( "neo.relationshiptypestore.db" );
+        file = new File( file( "neo.relationshiptypestore.db" ) );
         file.delete();
-        file = new File( "neo.relationshiptypestore.db.id" );
+        file = new File( file( "neo.relationshiptypestore.db.id" ) );
         file.delete();
-        file = new File( "neo.relationshiptypestore.db.names" );
+        file = new File( file( "neo.relationshiptypestore.db.names" ) );
         file.delete();
-        file = new File( "neo.relationshiptypestore.db.names.id" );
+        file = new File( file( "neo.relationshiptypestore.db.names.id" ) );
         file.delete();
         file = new File( "." );
         for ( File nioFile : file.listFiles() )

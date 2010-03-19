@@ -108,6 +108,18 @@ public class TestXa extends AbstractNeo4jTestCase
 
     private LockManager lockManager;
     private LockReleaser lockReleaser;
+    
+    private String path()
+    {
+        String path = getStorePath( "xatest" );
+        new File( path ).mkdirs();
+        return path;
+    }
+    
+    private String file( String name )
+    {
+        return path() + File.separator + name;
+    }
 
     @Before
     public void setUpNeoStore() throws Exception
@@ -120,10 +132,10 @@ public class TestXa extends AbstractNeo4jTestCase
         log = Logger
             .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
-        NeoStore.createStore( "neo" );
+        NeoStore.createStore( file( "neo" ) );
         lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
         lockReleaser = getEmbeddedGraphDb().getConfig().getLockReleaser();
-        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
     }
@@ -140,107 +152,107 @@ public class TestXa extends AbstractNeo4jTestCase
         log = Logger
             .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( level );
-        File file = new File( "neo" );
+        File file = new File( file( "neo" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.id" );
+        file = new File( file( "neo.id" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.nodestore.db" );
+        file = new File( file( "neo.nodestore.db" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.nodestore.db.id" );
+        file = new File( file( "neo.nodestore.db.id" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.propertystore.db" );
+        file = new File( file( "neo.propertystore.db" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.propertystore.db.id" );
+        file = new File( file( "neo.propertystore.db.id" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.propertystore.db.index" );
+        file = new File( file( "neo.propertystore.db.index" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.propertystore.db.index.id" );
+        file = new File( file( "neo.propertystore.db.index.id" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.propertystore.db.index.keys" );
+        file = new File( file( "neo.propertystore.db.index.keys" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.propertystore.db.index.keys.id" );
+        file = new File( file( "neo.propertystore.db.index.keys.id" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.propertystore.db.strings" );
+        file = new File( file( "neo.propertystore.db.strings" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.propertystore.db.strings.id" );
+        file = new File( file( "neo.propertystore.db.strings.id" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.propertystore.db.arrays" );
+        file = new File( file( "neo.propertystore.db.arrays" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.propertystore.db.arrays.id" );
+        file = new File( file( "neo.propertystore.db.arrays.id" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.relationshipstore.db" );
+        file = new File( file( "neo.relationshipstore.db" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.relationshipstore.db.id" );
+        file = new File( file( "neo.relationshipstore.db.id" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.relationshiptypestore.db" );
+        file = new File( file( "neo.relationshiptypestore.db" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.relationshiptypestore.db.id" );
+        file = new File( file( "neo.relationshiptypestore.db.id" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.relationshiptypestore.db.names" );
+        file = new File( file( "neo.relationshiptypestore.db.names" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "neo.relationshiptypestore.db.names.id" );
+        file = new File( file( "neo.relationshiptypestore.db.names.id" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "." );
+        file = new File( path() );
         for ( File nioFile : file.listFiles() )
         {
             if ( nioFile.getName().startsWith( "nioneo_logical.log" ) )
@@ -252,40 +264,40 @@ public class TestXa extends AbstractNeo4jTestCase
 
     private void deleteLogicalLogIfExist()
     {
-        File file = new File( "nioneo_logical.log.1" );
+        File file = new File( file( "nioneo_logical.log.1" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "nioneo_logical.log.2" );
+        file = new File( file( "nioneo_logical.log.2" ) );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( "nioneo_logical.log.active" );
+        file = new File( file( "nioneo_logical.log.active" ) );
         assertTrue( file.delete() );
     }
 
     private void renameCopiedLogicalLog()
     {
-        File file = new File( "nioneo_logical.log.bak.1" );
+        File file = new File( file( "nioneo_logical.log.bak.1" ) );
         if ( file.exists() )
         {
-            assertTrue( file.renameTo( new File( "nioneo_logical.log.1" ) ) );
+            assertTrue( file.renameTo( new File( file( "nioneo_logical.log.1" ) ) ) );
         }
         else
         {
-            file = new File( "nioneo_logical.log.bak.2" );
-            assertTrue( file.renameTo( new File( "nioneo_logical.log.2" ) ) );
+            file = new File( file( "nioneo_logical.log.bak.2" ) );
+            assertTrue( file.renameTo( new File( file( "nioneo_logical.log.2" ) ) ) );
         }
-        file = new File( "nioneo_logical.log.bak.active" );
-        assertTrue( file.renameTo( new File( "nioneo_logical.log.active" ) ) );
+        file = new File( file( "nioneo_logical.log.bak.active" ) );
+        assertTrue( file.renameTo( new File( file( "nioneo_logical.log.active" ) ) ) );
     }
 
     private void truncateLogicalLog( int size ) throws IOException
     {
         char active = '1';
-        FileChannel af = new RandomAccessFile( "nioneo_logical.log.active", 
+        FileChannel af = new RandomAccessFile( file( "nioneo_logical.log.active" ), 
             "r" ).getChannel();
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         af.read( buffer );
@@ -293,8 +305,8 @@ public class TestXa extends AbstractNeo4jTestCase
         buffer.flip();
         active = buffer.asCharBuffer().get();
         buffer.clear();
-        FileChannel fileChannel = new RandomAccessFile( "nioneo_logical.log." + 
-            active, "rw" ).getChannel();
+        FileChannel fileChannel = new RandomAccessFile( file( "nioneo_logical.log." + 
+            active ), "rw" ).getChannel();
         if ( fileChannel.size() > size )
         {
             fileChannel.truncate( size );
@@ -313,23 +325,23 @@ public class TestXa extends AbstractNeo4jTestCase
     private void copyLogicalLog() throws IOException
     {
         char active = '1';
-        FileChannel af = new RandomAccessFile( "nioneo_logical.log.active", 
+        FileChannel af = new RandomAccessFile( file( "nioneo_logical.log.active" ), 
             "r" ).getChannel();
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         af.read( buffer );
         buffer.flip();
         FileChannel activeCopy = new RandomAccessFile( 
-            "nioneo_logical.log.bak.active", "rw" ).getChannel();
+                file( "nioneo_logical.log.bak.active" ), "rw" ).getChannel();
         activeCopy.write( buffer );
         activeCopy.close();
         af.close();
         buffer.flip();
         active = buffer.asCharBuffer().get();
         buffer.clear();
-        FileChannel source = new RandomAccessFile( "nioneo_logical.log." + 
-            active, "r" ).getChannel();
-        FileChannel dest = new RandomAccessFile( "nioneo_logical.log.bak." + 
-            active, "rw" ).getChannel();
+        FileChannel source = new RandomAccessFile( file( "nioneo_logical.log." + 
+            active ), "r" ).getChannel();
+        FileChannel dest = new RandomAccessFile( file( "nioneo_logical.log.bak." + 
+            active ), "rw" ).getChannel();
         int read = -1;
         do
         {
@@ -394,7 +406,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
-        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -434,7 +446,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
-        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -474,7 +486,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
-        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -499,7 +511,7 @@ public class TestXa extends AbstractNeo4jTestCase
         renameCopiedLogicalLog();
         truncateLogicalLog( 39 );
         truncateLogicalLog( 40 );
-        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -525,7 +537,7 @@ public class TestXa extends AbstractNeo4jTestCase
         renameCopiedLogicalLog();
         truncateLogicalLog( 32 );
         truncateLogicalLog( 40 );
-        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -554,7 +566,7 @@ public class TestXa extends AbstractNeo4jTestCase
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
         truncateLogicalLog( 141 );
-        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -583,7 +595,7 @@ public class TestXa extends AbstractNeo4jTestCase
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
         truncateLogicalLog( 145 );
-        ds = new NeoStoreXaDataSource( "neo", "nioneo_logical.log",
+        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
