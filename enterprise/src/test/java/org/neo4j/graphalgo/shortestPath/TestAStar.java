@@ -34,7 +34,7 @@ public class TestAStar extends Neo4jAlgoTestCase
         };
         AStar astar = new AStar( graphDb, RelationshipExpander.ALL, new DoubleEvaluator( "length" ),
                 estimateEvaluator );
-        Path path = astar.findPath( nodeA, nodeC );
+        Path path = astar.findSinglePath( nodeA, nodeC );
         assertPath( path, nodeA, nodeB, nodeC );
     }
 }

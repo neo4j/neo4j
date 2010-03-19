@@ -1,6 +1,8 @@
 package org.neo4j.graphalgo.shortestpath;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -16,7 +18,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-public class AStar
+public class AStar implements PathFinder
 {
     private final GraphDatabaseService graphDb;
     private final RelationshipExpander expander;
@@ -32,7 +34,7 @@ public class AStar
         this.estimateEvaluator = estimateEvaluator;
     }
     
-    public Path findPath( Node start, Node end )
+    public Path findSinglePath( Node start, Node end )
     {
         int i = 0;
         Doer doer = new Doer( start, end );
@@ -56,6 +58,12 @@ public class AStar
             }
         }
         return null;
+    }
+    
+    public Collection<Path> findPaths( Node node, Node end )
+    {
+        Path path = findSinglePath( node, end );
+        return path != null ? Arrays.asList( path ) : Collections.<Path>emptyList();
     }
     
     private Path toPath( Node start, LinkedList<Relationship> rels )

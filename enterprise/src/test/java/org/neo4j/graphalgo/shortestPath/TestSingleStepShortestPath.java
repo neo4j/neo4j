@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.neo4j.graphalgo.Path;
 import org.neo4j.graphalgo.RelationshipExpander;
 import org.neo4j.graphalgo.shortestpath.LevelShortestPathsFinder;
+import org.neo4j.graphalgo.shortestpath.PathFinder;
 import org.neo4j.graphalgo.shortestpath.SingleStepShortestPathsFinder;
 import org.neo4j.graphalgo.testUtil.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.testUtil.SimpleGraphBuilder;
@@ -21,6 +22,12 @@ import org.neo4j.graphdb.Node;
 
 public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
 {
+    protected PathFinder instantiatePathFinder( int maxDepth )
+    {
+        return new SingleStepShortestPathsFinder( graphDb, maxDepth,
+                RelationshipExpander.forTypes( MyRelTypes.R1, Direction.BOTH ) );
+    }
+    
     @Test
     public void testSimplestGraph()
     {
@@ -32,9 +39,8 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "s", "t" );
         graph.makeEdge( "s", "t" );
 
-        SingleStepShortestPathsFinder finder = new SingleStepShortestPathsFinder( graphDb, 1,
-                RelationshipExpander.forTypes( MyRelTypes.R1, Direction.BOTH ) );
-        Collection<Path> paths = finder.paths( graph.getNode( "s" ), graph.getNode( "t" ) );
+        PathFinder finder = instantiatePathFinder( 1 );
+        Collection<Path> paths = finder.findPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
         assertEquals( 2, paths.size() );
         assertPaths( paths, "s,t", "s,t" );
     }
@@ -57,9 +63,8 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "n", "o" );
         graph.makeEdge( "o", "t" );
 
-        SingleStepShortestPathsFinder finder = new SingleStepShortestPathsFinder( graphDb, 6,
-                RelationshipExpander.forTypes( MyRelTypes.R1, Direction.BOTH ) );
-        Collection<Path> paths = finder.paths( graph.getNode( "s" ), graph.getNode( "t" ) );
+        PathFinder finder = instantiatePathFinder( 6 );
+        Collection<Path> paths = finder.findPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
         assertPaths( paths, "s,m,o,t", "s,n,o,t" );
     }
     
@@ -84,14 +89,14 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "2", "t" );
         graph.makeEdge( "4", "t" );
         
-        SingleStepShortestPathsFinder singleStepFinder = new SingleStepShortestPathsFinder( graphDb, 3,
-                RelationshipExpander.forTypes( MyRelTypes.R1, Direction.BOTH ) );
-        Collection<Path> paths = singleStepFinder.paths( graph.getNode( "s" ), graph.getNode( "t" ) );
+        PathFinder singleStepFinder = instantiatePathFinder( 3 );
+        Collection<Path> paths = singleStepFinder.findPaths( graph.getNode( "s" ),
+                graph.getNode( "t" ) );
         assertPaths( paths, "s,1,2,t", "s,1,4,t", "s,3,2,t", "s,3,4,t" );
 
         LevelShortestPathsFinder levelFinder = new LevelShortestPathsFinder( 3, MyRelTypes.R1,
                 Direction.BOTH );
-        paths = levelFinder.paths( graph.getNode( "s" ), graph.getNode( "t" ) );
+        paths = levelFinder.findPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
         assertPaths( paths, "s,1,2,t", "s,1,4,t", "s,3,2,t", "s,3,4,t" );
     }
 

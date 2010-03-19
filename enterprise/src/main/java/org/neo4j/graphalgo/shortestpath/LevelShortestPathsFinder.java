@@ -15,7 +15,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-public class LevelShortestPathsFinder
+public class LevelShortestPathsFinder implements PathFinder
 {
     public LevelShortestPathsFinder( int maxlength, RelationshipType type, Direction dir )
     {
@@ -46,7 +46,7 @@ public class LevelShortestPathsFinder
         this.expander = expander;
     }
     
-    public Collection<Path> paths( Node start, Node end )
+    public Collection<Path> findPaths( Node start, Node end )
     {
         if ( start.equals( end ) )
         {
@@ -81,6 +81,16 @@ public class LevelShortestPathsFinder
             }
             return Collections.unmodifiableCollection( result );
         }
+    }
+    
+    /**
+     * This is just a wrapper around {@link #findPaths(Node, Node)}
+     * so there's no added performance in this implementation.
+     */
+    public Path findSinglePath( Node start, Node end )
+    {
+        Collection<Path> paths = findPaths( start, end );
+        return paths.isEmpty() ? null : paths.iterator().next();
     }
 
     private Map<Node, List<Path.Builder>> search( Node start,
