@@ -19,18 +19,21 @@
  */
 package org.neo4j.shell;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
+import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
-public class ShellTest extends TestCase
+public class ShellTest
 {
     private AppCommandParser parse( String line ) throws Exception
     {
@@ -38,6 +41,7 @@ public class ShellTest extends TestCase
             line );
     }
 
+    @Test
     public void testParserEasy() throws Exception
     {
         AppCommandParser parser = this.parse( "ls -la" );
@@ -48,6 +52,7 @@ public class ShellTest extends TestCase
         assertTrue( parser.arguments().isEmpty() );
     }
 
+    @Test
     public void testParserArguments() throws Exception
     {
         AppCommandParser parser = this
@@ -62,6 +67,7 @@ public class ShellTest extends TestCase
         assertException( "set -tsd" );
     }
     
+    @Test
     public void testEnableRemoteShell() throws Exception
     {
         GraphDatabaseService graphDb = new EmbeddedGraphDatabase(
