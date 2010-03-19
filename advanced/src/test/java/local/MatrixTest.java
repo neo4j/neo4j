@@ -19,13 +19,17 @@
  */
 package local;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -43,13 +47,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.remote.BasicGraphDatabaseServer;
-import org.neo4j.remote.RemoteIndexService;
-import org.neo4j.remote.RemoteGraphDatabase;
-import org.neo4j.remote.transports.LocalGraphDatabase;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.remote.BasicGraphDatabaseServer;
+import org.neo4j.remote.RemoteGraphDatabase;
+import org.neo4j.remote.RemoteIndexService;
+import org.neo4j.remote.transports.LocalGraphDatabase;
 
 public class MatrixTest
 {
@@ -95,16 +99,18 @@ public class MatrixTest
     @Test
     public void testHasIndex() throws Exception
     {
-        Assert.assertNotNull( "No indexes could be retreived.", index );
+        assertNotNull( "No indexes could be retreived.", index );
     }
 
     private static enum MatrixRelation implements RelationshipType
     {
-        KNOWS, CODED_BY, LOVES
+        KNOWS,
+        CODED_BY,
+        LOVES
     }
 
-    private static void defineMatrix( GraphDatabaseService graphDb, IndexService index )
-        throws Exception
+    private static void defineMatrix( GraphDatabaseService graphDb,
+            IndexService index ) throws Exception
     {
         // Define nodes
         Node mrAndersson, morpheus, trinity, cypher, agentSmith, theArchitect;
@@ -123,7 +129,7 @@ public class MatrixTest
         mKc = morpheus.createRelationshipTo( cypher, MatrixRelation.KNOWS );
         cKs = cypher.createRelationshipTo( agentSmith, MatrixRelation.KNOWS );
         sCa = agentSmith.createRelationshipTo( theArchitect,
-            MatrixRelation.CODED_BY );
+                MatrixRelation.CODED_BY );
         tLa = trinity.createRelationshipTo( mrAndersson, MatrixRelation.LOVES );
         // Define node properties
         mrAndersson.setProperty( "name", "Thomas Andersson" );
@@ -135,11 +141,11 @@ public class MatrixTest
         // Define relationship properties
         // Index nodes
         indexNodes( index, "name", mrAndersson, morpheus, trinity, cypher,
-            agentSmith, theArchitect );
+                agentSmith, theArchitect );
     }
 
     private static void indexNodes( IndexService index, String key,
-        Node... nodes )
+            Node... nodes )
     {
         for ( Node node : nodes )
         {
@@ -150,42 +156,43 @@ public class MatrixTest
     private static void verifyFriendsOf( Node thomas ) throws Exception
     {
         Traverser traverser = thomas.traverse( Order.BREADTH_FIRST,
-            StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL_BUT_START_NODE,
-            MatrixRelation.KNOWS, Direction.OUTGOING );
+                StopEvaluator.END_OF_GRAPH,
+                ReturnableEvaluator.ALL_BUT_START_NODE, MatrixRelation.KNOWS,
+                Direction.OUTGOING );
         Set<String> actual = new HashSet<String>();
         for ( Node friend : traverser )
         {
-            Assert.assertTrue( "Same friend added twice.", actual
-                .add( ( String ) friend.getProperty( "name" ) ) );
+            assertTrue( "Same friend added twice.",
+                    actual.add( (String) friend.getProperty( "name" ) ) );
         }
-        Assert.assertEquals( "Thomas Anderssons friends are incorrect.",
-            new HashSet<String>( Arrays.asList( "Trinity", "Morpheus",
-                "Cypher", "Agent Smith" ) ), actual );
+        assertEquals( "Thomas Anderssons friends are incorrect.",
+                new HashSet<String>( Arrays.asList( "Trinity", "Morpheus",
+                        "Cypher", "Agent Smith" ) ), actual );
     }
 
     @SuppressWarnings( "serial" )
     private static void verifyHackersInNetworkOf( Node thomas )
-        throws Exception
+            throws Exception
     {
         Traverser traverser = thomas.traverse( Order.BREADTH_FIRST,
-            StopEvaluator.END_OF_GRAPH, new ReturnableEvaluator()
-            {
-                public boolean isReturnableNode( TraversalPosition pos )
+                StopEvaluator.END_OF_GRAPH, new ReturnableEvaluator()
                 {
-                    return pos.notStartNode()
-                        && pos.lastRelationshipTraversed().isType(
-                            MatrixRelation.CODED_BY );
-                }
-            }, MatrixRelation.CODED_BY, Direction.OUTGOING,
-            MatrixRelation.KNOWS, Direction.OUTGOING );
+                    public boolean isReturnableNode( TraversalPosition pos )
+                    {
+                        return pos.notStartNode()
+                               && pos.lastRelationshipTraversed().isType(
+                                       MatrixRelation.CODED_BY );
+                    }
+                }, MatrixRelation.CODED_BY, Direction.OUTGOING,
+                MatrixRelation.KNOWS, Direction.OUTGOING );
         Map<String, Integer> actual = new HashMap<String, Integer>();
         for ( Node hacker : traverser )
         {
-            Assert.assertNull( "Same hacker found twice.", actual.put(
-                ( String ) hacker.getProperty( "name" ), traverser
-                    .currentPosition().depth() ) );
+            assertNull( "Same hacker found twice.", actual.put(
+                    (String) hacker.getProperty( "name" ),
+                    traverser.currentPosition().depth() ) );
         }
-        Assert.assertEquals( "", new HashMap<String, Integer>()
+        assertEquals( "", new HashMap<String, Integer>()
         {
             {
                 put( "The Architect", 4 );
@@ -200,9 +207,9 @@ public class MatrixTest
             @Override
             void of( String id, Transaction tx )
             {
-                Assert.assertFalse( "Transaction \"" + id
-                    + "\" is a placebo transaction.", tx.toString().startsWith(
-                    "Placebo" ) );
+                assertFalse( "Transaction \"" + id
+                             + "\" is a placebo transaction.",
+                        tx.toString().startsWith( "Placebo" ) );
             }
         },
         REQUIRE_PLACEBO
@@ -210,9 +217,9 @@ public class MatrixTest
             @Override
             void of( String id, Transaction tx )
             {
-                Assert.assertTrue( "Transaction \"" + id
-                    + "\" is not a placebo transaction.", tx.toString()
-                    .startsWith( "Placebo" ) );
+                assertTrue( "Transaction \"" + id
+                            + "\" is not a placebo transaction.",
+                        tx.toString().startsWith( "Placebo" ) );
             }
         },
         EITHER
@@ -228,9 +235,9 @@ public class MatrixTest
     }
 
     private static void verifyTransaction( String id, Transaction tx,
-        PlaceboVerifiction verifcation )
+            PlaceboVerifiction verifcation )
     {
-        Assert.assertNotNull( "Transaction \"" + id + "\" is null.", tx );
+        assertNotNull( "Transaction \"" + id + "\" is null.", tx );
         verifcation.of( id, tx );
     }
 
@@ -254,7 +261,7 @@ public class MatrixTest
         {
             verifyFriendsOf( index.getSingleNode( "name", "Thomas Andersson" ) );
             verifyHackersInNetworkOf( index.getSingleNode( "name",
-                "Thomas Andersson" ) );
+                    "Thomas Andersson" ) );
             tx.success();
         }
         finally
