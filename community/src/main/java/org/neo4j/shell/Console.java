@@ -35,5 +35,5 @@ public interface Console
 	/**
 	 * @return the next line read from the console (user input).
 	 */
-	String readLine();
+	String readLine( String prompt );
 }

@@ -45,10 +45,11 @@ public class StandardConsole implements Console
 	/**
 	 * @return the next line read from the console (user input).
 	 */
-	public String readLine()
+	public String readLine( String prompt )
 	{
 	    try
 	    {
+	        format( prompt );
 	        if ( consoleReader == null )
 	        {
 	            consoleReader = new BufferedReader( new InputStreamReader(

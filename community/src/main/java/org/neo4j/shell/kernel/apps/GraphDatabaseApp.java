@@ -270,18 +270,15 @@ public abstract class GraphDatabaseApp extends AbstractApp
             return getDisplayNameForCurrent( server, session );
         }
         
-        StringBuffer result = new StringBuffer(
-            "(" + node.getId() );
         String title = findTitle( server, session, node );
-        if ( title != null )
-        {
-            result.append( ", " + title );
-        }
+        StringBuilder result = new StringBuilder( "(" );
+        result.append( node.getId() );
+        result.append( (title != null ? "," + title : "" ) );
         result.append( ")" );
         return result.toString();
     }
     
-    private static String findTitle( GraphDatabaseShellServer server,
+    protected static String findTitle( GraphDatabaseShellServer server,
         Session session, Node node )
     {
         String keys = ( String ) safeGet( session,
@@ -341,12 +338,10 @@ public abstract class GraphDatabaseApp extends AbstractApp
             return getDisplayNameForCurrent( server, session );
         }
         
-        StringBuffer result = new StringBuffer( "<" );
-        if ( verbose )
-        {
-            result.append( relationship.getId() + ", " );
-        }
-        result.append( relationship.getType().name() + ">" );
+        StringBuilder result = new StringBuilder( "<" );
+        result.append( verbose ? relationship.getId() + "," : "" );
+        result.append( relationship.getType().name() );
+        result.append( ">" );
         return result.toString();
     }
     
@@ -414,7 +409,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         String result = null;
         if ( value.getClass().isArray() )
         {
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder buffer = new StringBuilder();
             int length = Array.getLength( value );
             for ( int i = 0; i < length; i++ )
             {

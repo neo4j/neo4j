@@ -35,7 +35,14 @@ public class SameJvmSession implements Session
 	
 	public void set( String key, Serializable value )
 	{
-		this.properties.put( key, value );
+	    if ( value == null )
+	    {
+	        this.properties.remove( key );
+	    }
+	    else
+	    {
+	        this.properties.put( key, value );
+	    }
 	}
 	
 	public Serializable get( String key )

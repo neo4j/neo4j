@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.shell.App;
@@ -41,7 +43,7 @@ import org.neo4j.shell.util.json.JSONObject;
  */
 public abstract class AbstractApp implements App
 {
-	private Map<String, OptionContext> typeExceptions =
+	private Map<String, OptionContext> optionDescriptions =
 		new HashMap<String, OptionContext>();
 	private AppShellServer server;
 	
@@ -52,19 +54,19 @@ public abstract class AbstractApp implements App
 
 	public OptionValueType getOptionValueType( String option )
 	{
-		OptionContext context = this.typeExceptions.get( option );
+		OptionContext context = this.optionDescriptions.get( option );
 		return context == null ? OptionValueType.NONE : context.getType();
 	}
 
 	protected void addValueType( String option, OptionContext context )
 	{
-		this.typeExceptions.put( option, context );
+		this.optionDescriptions.put( option, context );
 	}
 	
 	public String[] getAvailableOptions()
 	{
-		String[] result = this.typeExceptions.keySet().toArray(
-			new String[ this.typeExceptions.size() ] );
+		String[] result = this.optionDescriptions.keySet().toArray(
+			new String[ this.optionDescriptions.size() ] );
 		Arrays.sort( result );
 		return result;
 	}
@@ -86,13 +88,41 @@ public abstract class AbstractApp implements App
 	
 	public String getDescription( String option )
 	{
-		OptionContext context = this.typeExceptions.get( option );
+		OptionContext context = this.optionDescriptions.get( option );
 		return context == null ? null : context.getDescription();
 	}
 	
 	public void shutdown()
 	{
 	    // Default behaviour is to do nothing
+	}
+	
+	public List<String> completionCandidates( String partOfLine, Session session )
+	{
+//	    String[] parts = partOfLine.split( " " );
+//	    String lastWord = parts[parts.length-1];
+//	    if ( lastWord.startsWith( "-" ) )
+//	    {
+//	        String lastOption = lastWord;
+//	        while ( lastOption.length() > 0 && lastOption.charAt( 0 ) == '-' )
+//	        {
+//	            lastOption = lastOption.substring( 1 );
+//	        }
+//	        
+//	        List<String> list = new ArrayList<String>();
+//	        for ( String option : getAvailableOptions() )
+//	        {
+//	            if ( lastOption.startsWith( option ) )
+//	            {
+//	                list.add( option );
+//	            }
+//	        }
+//	        return list;
+//	    }
+//	    else
+//	    {
+	        return Collections.emptyList();
+//	    }
 	}
 
 	protected void printMany( Output out, String string, int count )

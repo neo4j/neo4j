@@ -33,9 +33,10 @@ public interface ShellClient
 	
 	/**
 	 * Reads the next line from the user console.
+	 * @param prompt the prompt to display.
 	 * @return the next command line from the user.
 	 */
-	String readLine();
+	String readLine( String prompt );
 	
 	/**
 	 * @return the session (or environment) for this client.

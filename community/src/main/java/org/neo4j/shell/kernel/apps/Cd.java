@@ -21,21 +21,28 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.TreeSet;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.TextUtil;
 
 /**
  * Mimics the POSIX application with the same name, i.e. traverses to a node.
  */
 public class Cd extends GraphDatabaseApp
 {
+    private static final String START_ALIAS = "start";
+    private static final String END_ALIAS = "end";
+    
     /**
      * The {@link Session} key to use to store the current node and working
      * directory (i.e. the path which the client got to it).
@@ -60,6 +67,70 @@ public class Cd extends GraphDatabaseApp
     {
         return "Changes the current node or relationship, i.e. traverses " +
        		"one step to another\nnode or relationship. Usage: cd <id>";
+    }
+    
+    @Override
+    public List<String> completionCandidates( String partOfLine, Session session )
+    {
+        String lastWord = TextUtil.lastWordOrQuoteOf( partOfLine, false );
+        if ( lastWord.startsWith( "-" ) )
+        {
+            return super.completionCandidates( partOfLine, session );
+        }
+        Transaction tx = getServer().getDb().beginTx();
+        try
+        {
+            TreeSet<String> result = new TreeSet<String>();
+            NodeOrRelationship current = getCurrent( session );
+            if ( current.isNode() )
+            {
+                // TODO Check if -r is supplied
+                Node node = current.asNode();
+                for ( Relationship rel : node.getRelationships() )
+                {
+                    Node otherNode = rel.getOtherNode( node );
+                    long otherNodeId = otherNode.getId();
+                    String title = findTitle( getServer(), session, otherNode );
+                    if ( title != null )
+                    {
+                        if ( !result.contains( title ) )
+                        {
+                            maybeAddCompletionCandidate( result, title + "," + otherNodeId,
+                                    lastWord );
+                        }
+                    }
+                    maybeAddCompletionCandidate( result, "" + otherNodeId, lastWord );
+                }
+            }
+            else
+            {
+                maybeAddCompletionCandidate( result, START_ALIAS, lastWord );
+                maybeAddCompletionCandidate( result, END_ALIAS, lastWord );
+                Relationship rel = current.asRelationship();
+                maybeAddCompletionCandidate( result, "" + rel.getStartNode().getId(), lastWord );
+                maybeAddCompletionCandidate( result, "" + rel.getEndNode().getId(), lastWord );
+            }
+            tx.success();
+            return new ArrayList<String>( result );
+        }
+        catch ( ShellException e )
+        {
+            e.printStackTrace();
+            return super.completionCandidates( partOfLine, session );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+    
+    private static void maybeAddCompletionCandidate( Collection<String> candidates,
+            String candidate, String lastWord )
+    {
+        if ( lastWord.length() == 0 || candidate.startsWith( lastWord ) )
+        {
+            candidates.add( candidate );
+        }
     }
 
     @Override
@@ -90,24 +161,30 @@ public class Cd extends GraphDatabaseApp
             else if ( arg.equals( "." ) )
             {
             }
-            else if ( arg.equals( "start" ) || arg.equals( "end" ) )
+            else if ( arg.equals( START_ALIAS ) || arg.equals( END_ALIAS ) )
             {
                 newId = getStartOrEnd( current, arg );
                 paths.add( current.getTypedId() );
             }
             else
             {
-                long suppliedId = Long.parseLong( arg );
-                if ( parser.options().containsKey( "r" ) )
+                long suppliedId = -1;
+                try
                 {
-                    newId = new TypedId( NodeOrRelationship.TYPE_RELATIONSHIP,
-                        suppliedId );
+                    suppliedId = Long.parseLong( arg );
                 }
-                else
+                catch ( NumberFormatException e )
                 {
-                    newId = new TypedId( NodeOrRelationship.TYPE_NODE,
-                        suppliedId );
+                    suppliedId = findNodeWithTitle( current.asNode(), arg, session );
+                    if ( suppliedId == -1 )
+                    {
+                        throw new ShellException( "No connected node with title '" + arg + "'" );
+                    }
                 }
+                
+                newId = parser.options().containsKey( "r" ) ?
+                    new TypedId( NodeOrRelationship.TYPE_RELATIONSHIP, suppliedId ) :
+                    new TypedId( NodeOrRelationship.TYPE_NODE, suppliedId );
                 if ( newId.equals( current.getTypedId() ) )
                 {
                     throw new ShellException( "Can't cd to where you stand" );
@@ -130,6 +207,44 @@ public class Cd extends GraphDatabaseApp
         return null;
     }
 
+    private long findNodeWithTitle( Node node, String match, Session session )
+    {
+        Object[] matchParts = splitNodeTitleAndId( match );
+        if ( matchParts[1] != null )
+        {
+            return (Long) matchParts[1];
+        }
+        
+        String titleMatch = (String) matchParts[0];
+        for ( Relationship rel : node.getRelationships() )
+        {
+            Node otherNode = rel.getOtherNode( node );
+            String title = findTitle( getServer(), session, otherNode );
+            if ( titleMatch.equals( title ) )
+            {
+                return otherNode.getId();
+            }
+        }
+        return -1;
+    }
+
+    private Object[] splitNodeTitleAndId( String string )
+    {
+        int index = string.lastIndexOf( "," );
+        String title = null;
+        Long id = null;
+        try
+        {
+            id = Long.parseLong( string.substring( index + 1 ) );
+            title = string.substring( 0, index );
+        }
+        catch ( NumberFormatException e )
+        {
+            title = string;
+        }
+        return new Object[] { title, id };
+    }
+
     private TypedId getStartOrEnd( NodeOrRelationship current, String arg )
         throws ShellException
     {
@@ -138,11 +253,11 @@ public class Cd extends GraphDatabaseApp
             throw new ShellException( "Only allowed on relationships" );
         }
         Node newNode = null;
-        if ( arg.equals( "start" ) )
+        if ( arg.equals( START_ALIAS ) )
         {
             newNode = current.asRelationship().getStartNode();
         }
-        else if ( arg.equals( "end" ) )
+        else if ( arg.equals( END_ALIAS ) )
         {
             newNode = current.asRelationship().getEndNode();
         }

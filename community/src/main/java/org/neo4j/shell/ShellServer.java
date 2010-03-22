@@ -106,5 +106,5 @@ public interface ShellServer extends Remote
 	 * @return all the available commands one can issue to this server.
 	 * @throws RemoteException RMI error.
 	 */
-	Iterable<String> getAllAvailableCommands() throws RemoteException;
+	String[] getAllAvailableCommands() throws RemoteException;
 }

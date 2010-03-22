@@ -1,6 +1,7 @@
 package org.neo4j.shell;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,5 +63,57 @@ public class TextUtil
         }
         
         return result;
+    }
+    
+    public static String lastWordOrQuoteOf( String text, boolean preserveQuotation )
+    {
+        String[] quoteParts = text.split( "\"" );
+        String lastPart = quoteParts[quoteParts.length-1];
+        boolean isWithinQuotes = quoteParts.length % 2 == 0;
+        String lastWord = null;
+        if ( isWithinQuotes )
+        {
+            lastWord = lastPart;
+            if ( preserveQuotation )
+            {
+                lastWord = "\"" + lastWord + (text.endsWith( "\"" ) ? "\"" : "" );
+            }
+        }
+        else
+        {
+            String[] lastPartParts = splitAndKeepEscapedSpaces( lastPart, preserveQuotation );
+            lastWord = lastPartParts[lastPartParts.length-1];
+        }
+        return lastWord;
+    }
+
+    public static String[] splitAndKeepEscapedSpaces( String string, boolean preserveEscapes )
+    {
+        Collection<String> result = new ArrayList<String>();
+        StringBuilder current = new StringBuilder();
+        for ( int i = 0; i < string.length(); i++ )
+        {
+            char ch = string.charAt( i );
+            if ( ch == ' ' )
+            {
+                boolean isGluedSpace = i > 0 && string.charAt( i-1 ) == '\\';
+                if ( !isGluedSpace )
+                {
+                    result.add( current.toString() );
+                    current = new StringBuilder();
+                    continue;
+                }
+            }
+            
+            if ( preserveEscapes || ch != '\\' )
+            {
+                current.append( ch );
+            }
+        }
+        if ( current.length() > 0 )
+        {
+            result.add( current.toString() );
+        }
+        return result.toArray( new String[result.size()] );
     }
 }

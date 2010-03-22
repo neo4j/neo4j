@@ -289,18 +289,10 @@ public class AppCommandParser
 			}
 			else
 			{
-				// Split
-				StringTokenizer spaceTokenizer =
-					new StringTokenizer( token, " " );
-				while ( spaceTokenizer.hasMoreTokens() )
-				{
-					String spaceToken = spaceTokenizer.nextToken();
-					if ( trim )
-					{
-						spaceToken = spaceToken.trim();
-					}
-					result.add( spaceToken );
-				}
+			    for ( String part : TextUtil.splitAndKeepEscapedSpaces( token, false ) )
+			    {
+			        result.add( part );
+			    }
 			}
 			inside = !inside;
 		}

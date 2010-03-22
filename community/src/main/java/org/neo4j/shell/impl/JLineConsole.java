@@ -20,25 +20,17 @@
 package org.neo4j.shell.impl;
 
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-
-import jline.ConsoleReader;
-import jline.History;
 
 import org.neo4j.shell.Console;
 import org.neo4j.shell.ShellClient;
 
 /**
- * Implements the {@link Console} interface with jLine using reflections only.
+ * Implements the {@link Console} interface with jLine using reflections only,
+ * since we don't wan't a runtime dependency on jLine.
  */
 public class JLineConsole implements Console
 {
-	private ShellClient client;
 	private Object consoleReader;
-	private Object completor;
-	private boolean successfulGrabAvailableCommands = true;
 	
 	static JLineConsole newConsoleOrNullIfNotFound( ShellClient client )
 	{
@@ -48,16 +40,23 @@ public class JLineConsole implements Console
 				Class.forName( "jline.ConsoleReader" ).newInstance();
 			consoleReader.getClass().getMethod( "setBellEnabled",
 				Boolean.TYPE ).invoke( consoleReader, false );
-			ConsoleReader reader = (ConsoleReader) consoleReader;
-			reader.setBellEnabled(false);
-	        reader.setUseHistory(true);
+			consoleReader.getClass().getMethod( "setBellEnabled", Boolean.TYPE ).invoke(
+			        consoleReader, false );
+            consoleReader.getClass().getMethod( "setUseHistory", Boolean.TYPE ).invoke(
+                    consoleReader, true );
 
-	        try {
-	            History history = new History();
-	            history.setHistoryFile(new File(".shell_history"));
-	            reader.setHistory(history);
-	        } catch (IOException e) {
-	        }
+	        Object completor = Class.forName( JLineConsole.class.getPackage().getName() + "." +
+	                "ShellTabCompletor" ).getConstructor( ShellClient.class ).newInstance( client );
+            Class<?> completorClass = Class.forName( "jline.Completor" );
+	        consoleReader.getClass().getMethod( "addCompletor",
+	            completorClass ).invoke( consoleReader, completor );
+	        
+            Class<?> historyClass = Class.forName( "jline.History" );
+            Object history = historyClass.newInstance();
+            history.getClass().getMethod( "setHistoryFile", File.class ).invoke( history,
+                    new File( ".shell_history" ) );
+            consoleReader.getClass().getMethod( "setHistory", historyClass ).invoke(
+                    consoleReader, history );
 
 			return new JLineConsole( consoleReader, client );
 		}
@@ -70,7 +69,6 @@ public class JLineConsole implements Console
 	private JLineConsole( Object consoleReader, ShellClient client )
 	{
 		this.consoleReader = consoleReader;
-		this.client = client;
 	}
 	
 	public void format( String format, Object... args )
@@ -78,57 +76,12 @@ public class JLineConsole implements Console
 		System.out.print( format );
 	}
 	
-	private void grabAvailableCommands() throws Exception
+	public String readLine( String prompt )
 	{
-		Class<?> completorClass = Class.forName( "jline.Completor" );
-		if ( completor != null )
-		{
-			consoleReader.getClass().getMethod( "removeCompletor",
-				completorClass ).invoke( consoleReader, completor );
-			completor = null;
-		}
-		
-		ArrayList<String> commandList = new ArrayList<String>();
-		for ( String command :
-			client.getServer().getAllAvailableCommands() )
-		{
-			commandList.add( command );
-		}
-		Object commandsArray = Array.newInstance( String.class,
-			commandList.size() );
-		int counter = 0;
-		for ( String command : commandList )
-		{
-			Array.set( commandsArray, counter++, command );
-		}
-		
-		completor = Class.forName( "jline.SimpleCompletor" ).
-		getConstructor( commandsArray.getClass() ).newInstance(
-			commandsArray );
-		consoleReader.getClass().getMethod( "addCompletor",
-			completorClass ).invoke( consoleReader, completor );
-	}
-	
-	public String readLine()
-	{
-	    try
-	    {
-	        grabAvailableCommands();
-	        successfulGrabAvailableCommands = true;
-	    }
-	    catch ( Exception e )
-	    {
-            // It's ok. Maybe there's problems with the server connection?
-	        if ( successfulGrabAvailableCommands )
-	        {
-	            System.err.println( "Couldn't grab available commands: " +
-	                e.toString() );
-	            successfulGrabAvailableCommands = false;
-	        }
-	    }
-        
 		try
 		{
+		    consoleReader.getClass().getMethod( "setDefaultPrompt", String.class ).invoke(
+		            consoleReader, prompt );
 			return ( String ) consoleReader.getClass().getMethod( "readLine" ).
 				invoke( consoleReader );
 		}

@@ -97,7 +97,7 @@ public class StartLocalClient extends AbstractStarter
         Console console = new StandardConsole();
         console.format( "\nThe store seem locked. Start a read-only client " +
         	"instead (y/n) [y]? " );
-        String input = console.readLine();
+        String input = console.readLine( "" );
         return input.length() == 0 || input.equals( "y" );
     }
 
