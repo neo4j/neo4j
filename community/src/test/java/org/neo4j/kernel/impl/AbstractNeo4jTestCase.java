@@ -19,26 +19,22 @@
  */
 package org.neo4j.kernel.impl;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import java.io.File;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.TestNeo4j;
 
-public abstract class AbstractNeo4jTestCase extends TestCase
+public abstract class AbstractNeo4jTestCase
 {
     protected static final String NEO4J_BASE_PATH = "target/var/";
     
-    public AbstractNeo4jTestCase( String testName )
-    {
-        super( testName );
-    }
-
-    private GraphDatabaseService graphDb;
+    private static GraphDatabaseService graphDb;
     private Transaction tx;
 
     public GraphDatabaseService getGraphDb()
@@ -50,36 +46,60 @@ public abstract class AbstractNeo4jTestCase extends TestCase
     {
         return (EmbeddedGraphDatabase) graphDb;
     }
+    
+    protected boolean restartGraphDbBetweenTests()
+    {
+        return false;
+    }
 
     public Transaction getTransaction()
     {
         return tx;
     }
 
-    public static Test suite()
-    {
-        TestSuite suite = new TestSuite( TestNeo4j.class );
-        return suite;
-    }
-    
     public static String getStorePath( String endPath )
     {
         return NEO4J_BASE_PATH + endPath;
     }
 
-    public void setUp()
+    @BeforeClass
+    public static void setUpDb()
     {
         graphDb = new EmbeddedGraphDatabase( getStorePath( "neo-test" ) );
+    }
+    
+    @Before
+    public void setUpTest()
+    {
+        if ( restartGraphDbBetweenTests() && graphDb == null )
+        {
+            setUpDb();
+        }
         tx = graphDb.beginTx();
     }
-
-    public void tearDown()
+    
+    @After
+    public void tearDownTest()
     {
         if ( tx != null )
         {
             tx.finish();
         }
-        graphDb.shutdown();
+        
+        if ( restartGraphDbBetweenTests() )
+        {
+            graphDb.shutdown();
+            graphDb = null;
+        }
+    }
+
+    @AfterClass
+    public static void tearDownDb()
+    {
+        if ( graphDb != null )
+        {
+            graphDb.shutdown();
+        }
     }
 
     public void setTransaction( Transaction tx )
@@ -110,5 +130,25 @@ public abstract class AbstractNeo4jTestCase extends TestCase
     public NodeManager getNodeManager()
     {
         return ((EmbeddedGraphDatabase) graphDb).getConfig().getGraphDbModule().getNodeManager();
+    }
+
+    public static void deleteFileOrDirectory( File file )
+    {
+        if ( !file.exists() )
+        {
+            return;
+        }
+
+        if ( file.isDirectory() )
+        {
+            for ( File child : file.listFiles() )
+            {
+                deleteFileOrDirectory( child );
+            }
+        }
+        else
+        {
+            file.delete();
+        }
     }
 }

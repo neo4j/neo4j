@@ -19,43 +19,41 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Test;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-import org.neo4j.kernel.impl.nioneo.store.AbstractStore;
-
-public class TestStore extends TestCase
+public class TestStore
 {
-
-    public TestStore( String testName )
+    private String path()
     {
-        super( testName );
+        String path = AbstractNeo4jTestCase.getStorePath( "teststore" );
+        new File( path ).mkdirs();
+        return path;
     }
-
-    public static void main( java.lang.String[] args )
+    
+    private String file( String name )
     {
-        junit.textui.TestRunner.run( suite() );
+        return path() + File.separator + name;
     }
-
-    public static Test suite()
+    
+    private String storeFile()
     {
-        TestSuite suite = new TestSuite( TestStore.class );
-        return suite;
+        return file( "testStore.db" );
     }
-
-    public void setUp()
+    
+    private String storeIdFile()
     {
+        return file( "testStore.db.id" );
     }
-
-    public void tearDown()
-    {
-    }
-
-    public void testCreateStore()
+    
+    @Test
+    public void testCreateStore() throws IOException
     {
         try
         {
@@ -67,10 +65,10 @@ public class TestStore extends TestCase
             catch ( IllegalArgumentException e )
             { // good
             }
-            Store store = Store.createStore( "testStore.db" );
+            Store store = Store.createStore( storeFile() );
             try
             {
-                Store.createStore( "testStore.db" );
+                Store.createStore( storeFile() );
                 fail( "Creating existing store should throw exception" );
             }
             catch ( IllegalStateException e )
@@ -78,81 +76,57 @@ public class TestStore extends TestCase
             }
             store.close();
         }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
-        }
         finally
         {
-            File file = new File( "testStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
         }
     }
 
-    public void testStickyStore()
+    private void deleteBothFiles()
+    {
+        File file = new File( storeFile() );
+        if ( file.exists() )
+        {
+            assertTrue( file.delete() );
+        }
+        file = new File( storeIdFile() );
+        if ( file.exists() )
+        {
+            assertTrue( file.delete() );
+        }
+    }
+
+    @Test
+    public void testStickyStore() throws IOException
     {
         try
         {
-            Store.createStore( "testStore.db" ).close();
+            Store.createStore( storeFile() ).close();
             java.nio.channels.FileChannel fileChannel = new java.io.RandomAccessFile(
-                "testStore.db", "rw" ).getChannel();
+                storeFile(), "rw" ).getChannel();
             fileChannel.truncate( fileChannel.size() - 2 );
             fileChannel.close();
-            Store store = new Store( "testStore.db" );
+            Store store = new Store( storeFile() );
             store.makeStoreOk();
             store.close();
         }
-        catch ( IOException e )
-        {
-            fail( "" + e );
-        }
         finally
         {
-            File file = new File( "testStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
         }
     }
 
-    public void testClose()
+    @Test
+    public void testClose() throws IOException
     {
         try
         {
-            Store store = Store.createStore( "testStore.db" );
+            Store store = Store.createStore( storeFile() );
             store.close();
-        }
-        catch ( IOException e )
-        {
-            fail( "" + e );
         }
         finally
         {
-            File file = new File( "testStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
         }
     }
 
@@ -171,14 +145,14 @@ public class TestStore extends TestCase
         {
         }
 
-        protected void closeImpl()
-        {
-        }
+//        protected void closeImpl()
+//        {
+//        }
 
-        protected boolean fsck( boolean modify )
-        {
-            return false;
-        }
+//        protected boolean fsck( boolean modify )
+//        {
+//            return false;
+//        }
 
         public int getRecordSize()
         {
@@ -196,9 +170,9 @@ public class TestStore extends TestCase
             return new Store( fileName );
         }
 
-        public void flush()
-        {
-        }
+//        public void flush()
+//        {
+//        }
 
         protected void rebuildIdGenerator()
         {

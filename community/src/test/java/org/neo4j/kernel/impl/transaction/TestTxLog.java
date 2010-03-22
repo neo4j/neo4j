@@ -19,31 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
+import org.junit.Test;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.TxLog.Record;
 
-public class TestTxLog extends TestCase
+public class TestTxLog
 {
-    public TestTxLog( String name )
-    {
-        super( name );
-    }
-
-    public static Test suite()
-    {
-        return new TestSuite( TestTxLog.class );
-    }
-
     private void assertEqualByteArray( byte a[], byte b[] )
     {
         assertTrue( a.length == b.length );
@@ -53,16 +44,34 @@ public class TestTxLog extends TestCase
         }
     }
 
+    private String path()
+    {
+        String path = AbstractNeo4jTestCase.getStorePath( "txlog" );
+        new File( path ).mkdirs();
+        return path;
+    }
+    
+    private String file( String name )
+    {
+        return path() + File.separator + name;
+    }
+    
+    private String txFile()
+    {
+        return file( "tx_test_log.tx" );
+    }
+    
+    @Test
     public void testTxLog() throws IOException
     {
-        File file = new File( "tx_test_log.tx" );
+        File file = new File( txFile() );
         if ( file.exists() )
         {
             file.delete();
         }
         try
         {
-            TxLog txLog = new TxLog( "tx_test_log.tx" );
+            TxLog txLog = new TxLog( txFile() );
             assertTrue( !txLog.getDanglingRecords().hasNext() );
             byte globalId[] = new byte[64];
             byte branchId[] = new byte[45];
@@ -85,7 +94,7 @@ public class TestTxLog extends TestCase
             txLog.markAsCommitting( globalId );
             assertEquals( 3, txLog.getRecordCount() );
             txLog.close();
-            txLog = new TxLog( "tx_test_log.tx" );
+            txLog = new TxLog( txFile() );
             assertEquals( 0, txLog.getRecordCount() );
             lists = getRecordLists( txLog.getDanglingRecords() );
             assertEquals( 1, lists.length );
@@ -108,14 +117,14 @@ public class TestTxLog extends TestCase
             assertEquals( 0,
                 getRecordLists( txLog.getDanglingRecords() ).length );
             txLog.close();
-            txLog = new TxLog( "tx_test_log.tx" );
+            txLog = new TxLog( txFile() );
             assertEquals( 0,
                 getRecordLists( txLog.getDanglingRecords() ).length );
             txLog.close();
         }
         finally
         {
-            file = new File( "tx_test_log.tx" );
+            file = new File( txFile() );
             if ( file.exists() )
             {
                 file.delete();
@@ -133,16 +142,17 @@ public class TestTxLog extends TestCase
         return list.toArray( new List[list.size()] );
     }
 
+    @Test
     public void testTruncateTxLog() throws IOException
     {
-        File file = new File( "tx_test_log.tx" );
+        File file = new File( txFile() );
         if ( file.exists() )
         {
             file.delete();
         }
         try
         {
-            TxLog txLog = new TxLog( "tx_test_log.tx" );
+            TxLog txLog = new TxLog( txFile() );
             byte globalId[] = new byte[64];
             byte branchId[] = new byte[45];
             txLog.txStart( globalId );
@@ -152,12 +162,12 @@ public class TestTxLog extends TestCase
             assertEquals( 0,
                 getRecordLists( txLog.getDanglingRecords() ).length );
             txLog.close();
-            txLog = new TxLog( "tx_test_log.tx" );
+            txLog = new TxLog( txFile() );
             txLog.txStart( globalId );
             txLog.addBranch( globalId, branchId );
             txLog.markAsCommitting( globalId );
             txLog.close();
-            txLog = new TxLog( "tx_test_log.tx" );
+            txLog = new TxLog( txFile() );
             assertEquals( 1,
                 getRecordLists( txLog.getDanglingRecords() ).length );
             txLog.truncate();
@@ -166,7 +176,7 @@ public class TestTxLog extends TestCase
         }
         finally
         {
-            file = new File( "tx_test_log.tx" );
+            file = new File( txFile() );
             if ( file.exists() )
             {
                 file.delete();
@@ -174,8 +184,9 @@ public class TestTxLog extends TestCase
         }
     }
 
+    @Test
     public void testTxRecovery()
     {
-
+        // TODO
     }
 }

@@ -19,26 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
 import org.neo4j.kernel.impl.transaction.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-public class TestDeadlockDetection extends TestCase
+public class TestDeadlockDetection
 {
-    public TestDeadlockDetection( String name )
-    {
-        super( name );
-    }
-
     private static LockManager lm = new LockManager( new PlaceboTm() );
-
-    public static Test suite()
-    {
-        return new TestSuite( TestDeadlockDetection.class );
-    }
 
     private static class HelperThread extends Thread
     {
@@ -217,6 +207,7 @@ public class TestDeadlockDetection extends TestCase
         }
     }
 
+    @Test
     public void testDeadlockDetection()
     {
         Object r1 = new ResourceObject( "R1" );
@@ -483,6 +474,7 @@ public class TestDeadlockDetection extends TestCase
         }
     }
 
+    @Test
     public void testStressMultipleThreads()
     {
         for ( int i = 0; i < StressThread.resources.length; i++ )

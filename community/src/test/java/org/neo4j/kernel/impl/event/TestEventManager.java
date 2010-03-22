@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.ArrayList;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.neo4j.kernel.impl.event.Event;
 import org.neo4j.kernel.impl.event.EventData;
 import org.neo4j.kernel.impl.event.EventListenerAlreadyRegisteredException;
@@ -34,19 +37,21 @@ import org.neo4j.kernel.impl.event.EventModule;
 import org.neo4j.kernel.impl.event.ProActiveEventListener;
 import org.neo4j.kernel.impl.event.ReActiveEventListener;
 
-public class TestEventManager extends TestCase
+public class TestEventManager
 {
-    private EventManager evtMgr;
-    private EventModule module = new EventModule();
+    private static EventManager evtMgr;
+    private static EventModule module = new EventModule();
 
-    public void setUp()
+    @BeforeClass
+    public static void setUp()
     {
         module.init();
         module.start();
         evtMgr = module.getEventManager();
     }
 
-    public void tearDown()
+    @AfterClass
+    public static void tearDown()
     {
         module.stop();
         module.destroy();
@@ -78,11 +83,11 @@ public class TestEventManager extends TestCase
             this.originatingThread = data.getOriginatingThread();
         }
 
-        void reset()
-        {
-            this.eventReceived = false;
-            this.originatingThread = null;
-        }
+//        void reset()
+//        {
+//            this.eventReceived = false;
+//            this.originatingThread = null;
+//        }
 
         boolean isEventReceived()
         {
@@ -95,16 +100,7 @@ public class TestEventManager extends TestCase
         }
     }
 
-    public TestEventManager( String testName )
-    {
-        super( testName );
-    }
-
-    public static Test suite()
-    {
-        return new TestSuite( TestEventManager.class );
-    }
-
+    @Test
     public void testProActiveEventListener()
         throws EventListenerAlreadyRegisteredException,
         EventListenerNotRegisteredException
@@ -184,6 +180,7 @@ public class TestEventManager extends TestCase
             new EventData( null ) ) );
     }
 
+    @Test
     public void testReActiveEventListener()
         throws EventListenerAlreadyRegisteredException,
         EventListenerNotRegisteredException
@@ -248,6 +245,7 @@ public class TestEventManager extends TestCase
             Event.TEST_EVENT );
     }
 
+    @Test
     public void testStartStopEventManager()
     {
         module.stop();
@@ -289,6 +287,7 @@ public class TestEventManager extends TestCase
         fail( "Reactive events not received." );
     }
 
+    @Test
     public void testEventData()
     {
         Object data = new Object();
@@ -296,21 +295,15 @@ public class TestEventManager extends TestCase
         assertTrue( eventData.getData() == data );
     }
 
-    public void testReActiveEventOriginatingThread()
+    @Test
+    public void testReActiveEventOriginatingThread() throws Exception
     {
-        try
-        {
-            MyReActiveEventListener listener = new MyReActiveEventListener();
-            evtMgr.registerReActiveEventListener( listener, Event.TEST_EVENT );
-            evtMgr.generateReActiveEvent( Event.TEST_EVENT,
-                new EventData( null ) );
-            waitForReceived( new MyReActiveEventListener[] { listener } );
-            assertEquals( "Wrong originating thread for event", Thread
-                .currentThread(), listener.getOriginatingThread() );
-        }
-        catch ( Exception e )
-        {
-            fail( "Unknown exception: " + e );
-        }
+        MyReActiveEventListener listener = new MyReActiveEventListener();
+        evtMgr.registerReActiveEventListener( listener, Event.TEST_EVENT );
+        evtMgr.generateReActiveEvent( Event.TEST_EVENT,
+            new EventData( null ) );
+        waitForReceived( new MyReActiveEventListener[] { listener } );
+        assertEquals( "Wrong originating thread for event", Thread
+            .currentThread(), listener.getOriginatingThread() );
     }
 }

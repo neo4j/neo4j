@@ -32,8 +32,8 @@ public class TestExceptionTypeOnInvalidIds
     @BeforeClass
     public static void createDatabase()
     {
-        graphdb = new EmbeddedGraphDatabase( "target/id_test" );
-        graphDbReadOnly = new EmbeddedReadOnlyGraphDatabase( "target/id_test" );
+        graphdb = new EmbeddedGraphDatabase( "target/var/id_test" );
+        graphDbReadOnly = new EmbeddedReadOnlyGraphDatabase( "target/var/id_test" );
     }
 
     @AfterClass

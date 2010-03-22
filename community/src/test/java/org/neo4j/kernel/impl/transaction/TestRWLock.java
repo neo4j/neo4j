@@ -19,33 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import org.junit.Test;
 
 import org.neo4j.kernel.impl.transaction.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
-public class TestRWLock extends TestCase
+public class TestRWLock
 {
     private LockManager lm = new LockManager( new PlaceboTm() );
 
-    public TestRWLock( String testName )
-    {
-        super( testName );
-    }
-
-    public static void main( java.lang.String[] args )
-    {
-        junit.textui.TestRunner.run( suite() );
-    }
-
-    public static Test suite()
-    {
-        TestSuite suite = new TestSuite( TestRWLock.class );
-        return suite;
-    }
-
+    @Test
     public void testSingleThread() throws Exception
     {
         try
@@ -330,6 +316,7 @@ public class TestRWLock extends TestCase
         }
     }
 
+    @Test
     public void testMultipleThreads()
     {
         HelperThread t1 = new HelperThread( "T1" );
@@ -551,6 +538,7 @@ public class TestRWLock extends TestCase
         }
     }
 
+    @Test
     public void testStressMultipleThreads()
     {
         ResourceObject r1 = new ResourceObject( "R1" );
