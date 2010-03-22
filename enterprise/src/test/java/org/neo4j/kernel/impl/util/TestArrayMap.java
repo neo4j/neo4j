@@ -19,38 +19,15 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-public class TestArrayMap extends TestCase
+public class TestArrayMap
 {
-	public TestArrayMap( String testName )
-	{
-		super( testName );
-	}
-	
-	public static void main(java.lang.String[] args)
-	{
-		junit.textui.TestRunner.run( suite() );
-	}
-	
-	public static Test suite()
-	{
-		TestSuite suite = new TestSuite( TestArrayMap.class );
-		return suite;
-	}
-	
-	public void setUp()
-	{
-	}
-	
-	public void tearDown()
-	{
-	}
-
+    @Test
 	public void testArrayMap()
 	{
 		ArrayMap<String,Integer> map = new ArrayMap<String,Integer>();

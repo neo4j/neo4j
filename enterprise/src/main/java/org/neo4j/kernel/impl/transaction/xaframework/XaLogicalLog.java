@@ -853,6 +853,14 @@ public class XaLogicalLog
         return new RandomAccessFile( name, "r" ).getChannel();
     }
     
+    public ReadableByteChannel getCommittedTransaction( long txId )
+    {
+        // check if written out 
+        // find log that contains transaction
+        // extract transaction3
+        return null;
+    }
+    
     public long getLogicalLogLength( long version )
     {
         String name = fileName + ".v" + version;

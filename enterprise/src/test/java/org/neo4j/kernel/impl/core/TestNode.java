@@ -19,10 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
@@ -30,11 +35,7 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestNode extends AbstractNeo4jTestCase
 {
-    public TestNode( String testName )
-    {
-        super( testName );
-    }
-
+    @Test
     public void testNodeCreateAndDelete()
     {
         int nodeId = -1;
@@ -56,6 +57,7 @@ public class TestNode extends AbstractNeo4jTestCase
         }
     }
 
+    @Test
     public void testDeletedNode()
     {
         // do some evil stuff
@@ -76,6 +78,7 @@ public class TestNode extends AbstractNeo4jTestCase
         log.setLevel( level );
     }
 
+    @Test
     public void testNodeAddProperty()
     {
         Node node1 = getGraphDb().createNode();
@@ -115,6 +118,7 @@ public class TestNode extends AbstractNeo4jTestCase
         getTransaction().failure();
     }
 
+    @Test
     public void testNodeRemoveProperty()
     {
         String key1 = "key1";
@@ -177,6 +181,7 @@ public class TestNode extends AbstractNeo4jTestCase
         getTransaction().failure();
     }
 
+    @Test
     public void testNodeChangeProperty()
     {
         String key1 = "key1";
@@ -220,6 +225,7 @@ public class TestNode extends AbstractNeo4jTestCase
         node2.delete();
     }
 
+    @Test
     public void testNodeChangeProperty2()
     {
         String key1 = "key1";
@@ -245,6 +251,7 @@ public class TestNode extends AbstractNeo4jTestCase
         node1.delete();
     }
 
+    @Test
     public void testNodeGetProperties()
     {
         String key1 = "key1";
@@ -301,6 +308,7 @@ public class TestNode extends AbstractNeo4jTestCase
         node1.delete();
     }
 
+    @Test
     public void testAddPropertyThenDelete()
     {
         Node node = getGraphDb().createNode();
@@ -316,6 +324,7 @@ public class TestNode extends AbstractNeo4jTestCase
         setTransaction( getGraphDb().beginTx() );
     }
     
+    @Test
     public void testChangeProperty()
     {
         Node node = getGraphDb().createNode();
@@ -331,6 +340,7 @@ public class TestNode extends AbstractNeo4jTestCase
         assertEquals( "test4", node.getProperty( "test" ) );
     }
     
+    @Test
     public void testChangeProperty2()
     {
         Node node = getGraphDb().createNode();

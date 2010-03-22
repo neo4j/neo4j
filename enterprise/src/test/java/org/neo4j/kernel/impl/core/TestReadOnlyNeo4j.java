@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-
+import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -30,13 +30,7 @@ import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 public class TestReadOnlyNeo4j extends AbstractNeo4jTestCase
 {
-
-    public TestReadOnlyNeo4j( String testName )
-    {
-        super( testName );
-    }
-
-    
+    @Test
     public void testSimple()
     {
         GraphDatabaseService readGraphDb = new EmbeddedReadOnlyGraphDatabase( 

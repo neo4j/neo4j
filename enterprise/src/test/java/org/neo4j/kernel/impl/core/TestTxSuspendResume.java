@@ -19,20 +19,19 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertTrue;
+
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestTxSuspendResume extends AbstractNeo4jTestCase
 {
-    public TestTxSuspendResume( String testName )
-    {
-        super( testName );
-    }
-
+    @Test
     public void testMultipleTxSameThread() throws Exception
     {
         EmbeddedGraphDatabase neo2 = new EmbeddedGraphDatabase( getStorePath( "test-neo2" ) );
