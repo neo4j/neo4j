@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.concurrent.CountDownLatch;
 
+import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -30,21 +33,7 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestIsolation extends AbstractNeo4jTestCase
 {
-    public TestIsolation( String testName )
-    {
-        super( testName );
-    }
-
-    public void setUp()
-    {
-        super.setUp();
-    }
-
-    public void tearDown()
-    {
-        super.tearDown();
-    }
-
+    @Test
     public void testSimpleTransactionIsolation()
     {
         commit();

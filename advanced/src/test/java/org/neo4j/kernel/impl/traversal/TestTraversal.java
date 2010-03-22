@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Traverser.Order.BREADTH_FIRST;
 import static org.neo4j.graphdb.Traverser.Order.DEPTH_FIRST;
 
+import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -37,14 +41,8 @@ import org.neo4j.kernel.impl.MyRelTypes;
 
 public class TestTraversal extends AbstractNeo4jTestCase
 {
-    public TestTraversal( String testName )
-    {
-        super( testName );
-    }
-
-    // -- Test operations
-
     // Tests the traverser factory for sanity checks with corrupted input
+    @Test
     public void testSanityChecks1() throws Exception
     {
         // Valid data
@@ -70,6 +68,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         root.delete();
     }
 
+    @Test
     public void testSanityChecks2() throws Exception
     {
         // ------------- with traverser direction -------------
@@ -132,25 +131,26 @@ public class TestTraversal extends AbstractNeo4jTestCase
         }
     }
 
-    private void sanityCheckTraverser( String failMessage, Order type,
-        Node startNode, RelationshipType traversableRel1, Direction direction1,
-        RelationshipType traversableRel2, Direction direction2,
-        StopEvaluator stopEval, ReturnableEvaluator retEval )
-    {
-        try
-        {
-            startNode.traverse( type, stopEval, retEval, traversableRel1,
-                direction1, traversableRel2, direction2 );
-            fail( failMessage );
-        }
-        catch ( IllegalArgumentException iae )
-        {
-            // This is ok
-        }
-    }
+//    private void sanityCheckTraverser( String failMessage, Order type,
+//        Node startNode, RelationshipType traversableRel1, Direction direction1,
+//        RelationshipType traversableRel2, Direction direction2,
+//        StopEvaluator stopEval, ReturnableEvaluator retEval )
+//    {
+//        try
+//        {
+//            startNode.traverse( type, stopEval, retEval, traversableRel1,
+//                direction1, traversableRel2, direction2 );
+//            fail( failMessage );
+//        }
+//        catch ( IllegalArgumentException iae )
+//        {
+//            // This is ok
+//        }
+//    }
 
     // Traverses the full test "ise-tree-like" population breadth first
     // and verifies that it is returned in correct order
+    @Test
     public void testBruteBreadthTraversal() throws Exception
     {
         Node root = this.buildIseTreePopulation();
@@ -194,6 +194,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
     // but only traverses "ise" (TEST) relationships (the population also
     // contains
     // "ise_clone" (TEST_TRAVERSAL) rels)
+    @Test
     public void testMultiRelBreadthTraversal() throws Exception
     {
         Node root = this.buildIseTreePopulation();
@@ -231,6 +232,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
     // Traverses the test "ise-tree-like" population breadth first,
     // starting in the middle of the tree and traversing only in the
     // "forward" direction
+    @Test
     public void testDirectedBreadthTraversal() throws Exception
     {
         // Build test population
@@ -303,6 +305,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
     // Traverses the full test "ise-tree-like" population depth first
     // and verifies that it is returned in correct order
+    @Test
     public void testBruteDepthTraversal() throws Exception
     {
         Node root = this.buildIseTreePopulation();
@@ -361,6 +364,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
     // Traverses the test "ise-tree-like" population depth first,
     // but only traverses "ise" relationships (the population also contains
     // "ise_clone" rels)
+    @Test
     public void testMultiRelDepthTraversal() throws Exception
     {
         Node root = this.buildIseTreePopulation();
@@ -409,6 +413,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
     }
 
     // Verifies that the stop evaluator can stop based on the current node
+    @Test
     public void testStopOnCurrentNode() throws Exception
     {
         // Build ise tree
@@ -464,6 +469,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
     }
 
     // Verifies that the stop evaluator can stop based on the previous node
+    @Test
     public void testStopOnPreviousNode() throws Exception
     {
         // Build ise tree
@@ -517,6 +523,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
     }
 
     // Verifies that the stop evaluator can stop based on the current depth
+    @Test
     public void testStopOnDepth() throws Exception
     {
         // Build ise tree
@@ -564,6 +571,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
     // Verifies that the stop evaluator can stop based on the amount of
     // returned nodes
+    @Test
     public void testStopOnReturnedNodes() throws Exception
     {
         // Build ise tree
@@ -618,6 +626,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
     // Verifies that the stop evaluator can stop based on the last
     // traversed relationship
+    @Test
     public void testStopOnLastRelationship() throws Exception
     {
         // Build ise tree
@@ -676,61 +685,53 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
     // -- Utility operations
 
-    private Node buildIseTreePopulation()
-    // throws CreateException
+    private Node buildIseTreePopulation() throws Exception
     {
-        try
+        // Create population
+        Node[] nodeSpace = new Node[] { null, // empty
+            getGraphDb().createNode(), // 1 [root]
+            getGraphDb().createNode(), // 2
+            getGraphDb().createNode(), // 3
+            getGraphDb().createNode(), // 4
+            getGraphDb().createNode(), // 5
+            getGraphDb().createNode(), // 6
+            getGraphDb().createNode(), // 7
+            getGraphDb().createNode(), // 8
+            getGraphDb().createNode(), // 9
+            getGraphDb().createNode(), // 10
+            getGraphDb().createNode(), // 11
+            getGraphDb().createNode(), // 12
+            getGraphDb().createNode(), // 13
+            getGraphDb().createNode(), // 14
+        };
+
+        String key = "node.test.id";
+        for ( int i = 1; i < nodeSpace.length; i++ )
         {
-            // Create population
-            Node[] nodeSpace = new Node[] { null, // empty
-                getGraphDb().createNode(), // 1 [root]
-                getGraphDb().createNode(), // 2
-                getGraphDb().createNode(), // 3
-                getGraphDb().createNode(), // 4
-                getGraphDb().createNode(), // 5
-                getGraphDb().createNode(), // 6
-                getGraphDb().createNode(), // 7
-                getGraphDb().createNode(), // 8
-                getGraphDb().createNode(), // 9
-                getGraphDb().createNode(), // 10
-                getGraphDb().createNode(), // 11
-                getGraphDb().createNode(), // 12
-                getGraphDb().createNode(), // 13
-                getGraphDb().createNode(), // 14
-            };
-
-            String key = "node.test.id";
-            for ( int i = 1; i < nodeSpace.length; i++ )
-            {
-                nodeSpace[i].setProperty( key, "" + i );
-            }
-
-            RelationshipType ise = MyRelTypes.TEST;
-            RelationshipType clone = MyRelTypes.TEST_TRAVERSAL;
-
-            // Bind it together
-            nodeSpace[1].createRelationshipTo( nodeSpace[2], ise );
-            nodeSpace[2].createRelationshipTo( nodeSpace[5], ise );
-            nodeSpace[5].createRelationshipTo( nodeSpace[10], ise );
-            nodeSpace[5].createRelationshipTo( nodeSpace[11], ise );
-            nodeSpace[5].createRelationshipTo( nodeSpace[12], ise );
-            nodeSpace[5].createRelationshipTo( nodeSpace[13], ise );
-            nodeSpace[2].createRelationshipTo( nodeSpace[6], ise );
-            nodeSpace[1].createRelationshipTo( nodeSpace[3], ise );
-            nodeSpace[1].createRelationshipTo( nodeSpace[4], ise );
-            nodeSpace[3].createRelationshipTo( nodeSpace[7], ise );
-
-            nodeSpace[6].createRelationshipTo( nodeSpace[7], clone );
-            nodeSpace[4].createRelationshipTo( nodeSpace[8], clone );
-            nodeSpace[4].createRelationshipTo( nodeSpace[9], clone );
-            nodeSpace[9].createRelationshipTo( nodeSpace[14], clone );
-
-            return nodeSpace[1]; // root
+            nodeSpace[i].setProperty( key, "" + i );
         }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Failed to create population", e );
-        }
+
+        RelationshipType ise = MyRelTypes.TEST;
+        RelationshipType clone = MyRelTypes.TEST_TRAVERSAL;
+
+        // Bind it together
+        nodeSpace[1].createRelationshipTo( nodeSpace[2], ise );
+        nodeSpace[2].createRelationshipTo( nodeSpace[5], ise );
+        nodeSpace[5].createRelationshipTo( nodeSpace[10], ise );
+        nodeSpace[5].createRelationshipTo( nodeSpace[11], ise );
+        nodeSpace[5].createRelationshipTo( nodeSpace[12], ise );
+        nodeSpace[5].createRelationshipTo( nodeSpace[13], ise );
+        nodeSpace[2].createRelationshipTo( nodeSpace[6], ise );
+        nodeSpace[1].createRelationshipTo( nodeSpace[3], ise );
+        nodeSpace[1].createRelationshipTo( nodeSpace[4], ise );
+        nodeSpace[3].createRelationshipTo( nodeSpace[7], ise );
+
+        nodeSpace[6].createRelationshipTo( nodeSpace[7], clone );
+        nodeSpace[4].createRelationshipTo( nodeSpace[8], clone );
+        nodeSpace[4].createRelationshipTo( nodeSpace[9], clone );
+        nodeSpace[9].createRelationshipTo( nodeSpace[14], clone );
+
+        return nodeSpace[1]; // root
     }
 
     // Deletes a tree-like structure of nodes, starting with 'currentNode'.
@@ -758,16 +759,9 @@ public class TestTraversal extends AbstractNeo4jTestCase
             rel.delete();
             this.deleteNodeTreeRecursively( endNode, depth + 1 );
         }
-        try
-        {
-            String msg = "Deleting " + currentNode + "\t[";
-            String id = (String) currentNode.getProperty( "node.test.id" );
-            msg += id + "]";
-        }
-        catch ( Exception e )
-        {
-            System.err.println( "Err gen msg: " + e );
-        }
+        String msg = "Deleting " + currentNode + "\t[";
+        String id = (String) currentNode.getProperty( "node.test.id" );
+        msg += id + "]";
 
         Iterable<Relationship> allRels = currentNode.getRelationships();
         for ( Relationship rel : allRels )

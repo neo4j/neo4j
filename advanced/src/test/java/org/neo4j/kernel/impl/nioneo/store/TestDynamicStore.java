@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -26,41 +30,34 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Test;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-
-public class TestDynamicStore extends TestCase
+public class TestDynamicStore
 {
-
-    public TestDynamicStore( String testName )
+    private String path()
     {
-        super( testName );
+        String path = AbstractNeo4jTestCase.getStorePath( "dynamicstore" );
+        new File( path ).mkdirs();
+        return path;
     }
-
-    public static void main( java.lang.String[] args )
+    
+    private String file( String name )
     {
-        junit.textui.TestRunner.run( suite() );
+        return path() + File.separator + name;
     }
-
-    public static Test suite()
+    
+    private String dynamicStoreFile()
     {
-        TestSuite suite = new TestSuite( TestDynamicStore.class );
-        return suite;
+        return file( "testDynamicStore.db" );
     }
-
-    public void setUp()
+    
+    private String dynamicStoreIdFile()
     {
+        return file( "testDynamicStore.db.id" );
     }
-
-    public void tearDown()
-    {
-    }
-
+    
+    @Test
     public void testCreateStore()
     {
         try
@@ -75,16 +72,16 @@ public class TestDynamicStore extends TestCase
             }
             try
             {
-                ByteStore.createStore( "testDynamicStore.db", 0 );
+                ByteStore.createStore( dynamicStoreFile(), 0 );
                 fail( "Illegal blocksize should throw exception" );
             }
             catch ( IllegalArgumentException e )
             { // good
             }
-            ByteStore store = ByteStore.createStore( "testDynamicStore.db", 30 );
+            ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30 );
             try
             {
-                ByteStore.createStore( "testDynamicStore.db", 15 );
+                ByteStore.createStore( dynamicStoreFile(), 15 );
                 fail( "Creating existing store should throw exception" );
             }
             catch ( IllegalStateException e )
@@ -94,60 +91,54 @@ public class TestDynamicStore extends TestCase
         }
         finally
         {
-            File file = new File( "testDynamicStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testDynamicStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
         }
     }
 
-    public void testStickyStore()
+    private void deleteBothFiles()
+    {
+        File file = new File( dynamicStoreFile() );
+        if ( file.exists() )
+        {
+            assertTrue( file.delete() );
+        }
+        file = new File( dynamicStoreIdFile() );
+        if ( file.exists() )
+        {
+            assertTrue( file.delete() );
+        }
+    }
+
+    @Test
+    public void testStickyStore() throws IOException
     {
         Logger log = Logger.getLogger( CommonAbstractStore.class.getName() );
         Level level = log.getLevel();
         try
         {
             log.setLevel( Level.OFF );
-            ByteStore.createStore( "testDynamicStore.db", 30 ).close();
+            ByteStore.createStore( dynamicStoreFile(), 30 ).close();
             java.nio.channels.FileChannel fileChannel = new java.io.RandomAccessFile(
-                "testDynamicStore.db", "rw" ).getChannel();
+                dynamicStoreFile(), "rw" ).getChannel();
             fileChannel.truncate( fileChannel.size() - 2 );
             fileChannel.close();
-            ByteStore store = new ByteStore( "testDynamicStore.db" );
+            ByteStore store = new ByteStore( dynamicStoreFile() );
             store.makeStoreOk();
             store.close();
-        }
-        catch ( IOException e )
-        {
-            fail( "" + e );
         }
         finally
         {
             log.setLevel( level );
-            File file = new File( "testDynamicStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testDynamicStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
         }
     }
 
+    @Test
     public void testClose()
     {
         try
         {
-            ByteStore store = ByteStore.createStore( "testDynamicStore.db", 30 );
+            ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30 );
             int blockId = store.nextBlockId();
             Collection<DynamicRecord> records = store.allocateRecords( blockId,
                 new byte[10] );
@@ -180,25 +171,17 @@ public class TestDynamicStore extends TestCase
         }
         finally
         {
-            File file = new File( "testDynamicStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testDynamicStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
         }
     }
 
+    @Test
     public void testStoreGetCharsFromString()
     {
         try
         {
             final String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            ByteStore store = ByteStore.createStore( "testDynamicStore.db", 30 );
+            ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30 );
             int blockId = store.nextBlockId();
             char[] chars = new char[STR.length()];
             STR.getChars( 0, STR.length(), chars, 0 );
@@ -213,23 +196,15 @@ public class TestDynamicStore extends TestCase
         }
         finally
         {
-            File file = new File( "testDynamicStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testDynamicStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
         }
     }
 
+    @Test
     public void testRandomTest()
     {
         Random random = new Random( System.currentTimeMillis() );
-        ByteStore store = ByteStore.createStore( "testDynamicStore.db", 30 );
+        ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30 );
         java.util.ArrayList<Integer> idsTaken = new java.util.ArrayList<Integer>();
         java.util.Map<Integer,byte[]> byteData = new java.util.HashMap<Integer,byte[]>();
         float deleteIndex = 0.2f;
@@ -278,28 +253,14 @@ public class TestDynamicStore extends TestCase
                 if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
                 {
                     store.close();
-                    store = new ByteStore( "testDynamicStore.db" );
+                    store = new ByteStore( dynamicStoreFile() );
                 }
             }
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            fail( "" + e );
         }
         finally
         {
             store.close();
-            File file = new File( "testDynamicStore.db" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
-            file = new File( "testDynamicStore.db.id" );
-            if ( file.exists() )
-            {
-                assertTrue( file.delete() );
-            }
+            deleteBothFiles();
         }
     }
 
@@ -334,9 +295,9 @@ public class TestDynamicStore extends TestCase
         // return getAsChar( blockId );
         // }
 
-        public void flush()
-        {
-        }
+//        public void flush()
+//        {
+//        }
     }
 
     private byte[] createRandomBytes( Random r )

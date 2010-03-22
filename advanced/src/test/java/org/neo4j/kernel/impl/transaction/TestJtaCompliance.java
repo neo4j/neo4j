@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
@@ -26,12 +30,11 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-import junit.framework.Test;
-import junit.framework.TestSuite;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.transaction.TxModule;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
@@ -41,19 +44,9 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
     private TransactionManager tm;
     private XaDataSourceManager xaDsMgr;
 
-    public TestJtaCompliance( String name )
+    @Before
+    public void setUpFramework()
     {
-        super( name );
-    }
-
-    public static Test suite()
-    {
-        return new TestSuite( TestJtaCompliance.class );
-    }
-
-    public void setUp()
-    {
-        super.setUp();
         getTransaction().finish();
         TxModule txModule = getEmbeddedGraphDb().getConfig().getTxModule();
         tm = txModule.getTxManager();
@@ -96,7 +89,8 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         }
     }
 
-    public void tearDown()
+    @After
+    public void tearDownFramework()
     {
         xaDsMgr.unregisterDataSource( "fakeRes1" );
         xaDsMgr.unregisterDataSource( "fakeRes2" );
@@ -117,7 +111,6 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         {
             e.printStackTrace();
         }
-        super.tearDown();
     }
 
     /**
@@ -129,6 +122,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * TODO: check if commit is restricted to the thread that started the
      * transaction, if not, do some testing.
      */
+    @Test
     public void testBeginCommit() throws Exception
     {
         tm.begin();
@@ -164,6 +158,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * TODO: check if rollback is restricted to the thread that started the
      * transaction, if not, do some testing.
      */
+    @Test
     public void testBeginRollback() throws Exception
     {
         tm.begin();
@@ -204,6 +199,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * already associated with another thread. o Test if a suspended thread may
      * be resumed by another thread.
      */
+    @Test
     public void testSuspendResume() throws Exception
     {
         tm.begin();
@@ -250,6 +246,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * implementations so a branch is created within the same global
      * transaction.
      */
+    @Test
     public void test2PhaseCommits1() throws Exception
     {
         tm.begin();
@@ -347,6 +344,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * o Tests that two enlistments of same resource (according to the
      * isSameRM() method) only receive one set of prepare/commit calls.
      */
+    @Test
     public void test2PhaseCommits2() throws Exception
     {
         tm.begin();
@@ -419,6 +417,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
     /**
      * o Tests that multiple enlistments receive rollback calls properly.
      */
+    @Test
     public void testRollback1() throws Exception
     {
         tm.begin();
@@ -508,6 +507,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * o Tests that multiple enlistments of same (according to isSameRM()
      * method) only receive one set of rollback calls.
      */
+    @Test
     public void testRollback2() throws Exception
     {
         tm.begin();
@@ -573,6 +573,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * 
      * TODO: if supported, do some testing :)
      */
+    @Test
     public void testNestedTransactions() throws Exception
     {
         assertTrue( tm.getTransaction() == null );
@@ -644,6 +645,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * NOTE: Not sure if the check of Status is correct according to
      * specification.
      */
+    @Test
     public void testTransactionHook() throws Exception
     {
         // test for commit
@@ -683,6 +685,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * TODO: Implement a FakeXAResource to check: STATUS_COMMITTING
      * STATUS_PREPARED STATUS_PREPEARING STATUS_ROLLING_BACK
      */
+    @Test
     public void testStatus() throws Exception
     {
         assertTrue( tm.getStatus() == Status.STATUS_NO_TRANSACTION );

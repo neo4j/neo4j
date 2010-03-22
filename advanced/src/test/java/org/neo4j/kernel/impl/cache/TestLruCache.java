@@ -19,30 +19,15 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
+import org.junit.Test;
 import org.neo4j.kernel.impl.cache.LruCache;
 
-public class TestLruCache extends TestCase
+public class TestLruCache
 {
-    public TestLruCache( String testName )
-    {
-        super( testName );
-    }
-
-    public static void main( java.lang.String[] args )
-    {
-        junit.textui.TestRunner.run( suite() );
-    }
-
-    public static Test suite()
-    {
-        TestSuite suite = new TestSuite( TestLruCache.class );
-        return suite;
-    }
-
+    @Test
     public void testCreate()
     {
         try
@@ -112,6 +97,7 @@ public class TestLruCache extends TestCase
         }
     }
 
+    @Test
     public void testSimple()
     {
         LruCacheTest<Object,Object> cache = new LruCacheTest<Object,Object>(
@@ -146,6 +132,7 @@ public class TestLruCache extends TestCase
         assertEquals( 0, cache.size() );
     }
 
+    @Test
     public void testResize()
     {
         LruCacheTest<Object,Object> cache = new LruCacheTest<Object,Object>(

@@ -5,6 +5,9 @@
     executed because it would then have to have a following prepare entry (can 
     not happen since we do flush on them). Would however be nice to have code 
     that tests this so user don't get an exception on recovery.
-    
-Last committed tx id written to neostore should also be written to log at 
-right time.
+
+[2010-02-25] Bug fix [3933] needs to be merged into 1.0.1
+
+[2010-02-25] Embedd checksum to logical log
+    We need to be able to do a checksum on the logical log before applying it 
+    during replication/backup.

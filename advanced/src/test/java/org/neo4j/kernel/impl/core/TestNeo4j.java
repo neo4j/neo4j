@@ -19,9 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.Iterator;
 import java.util.Random;
 
+import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -35,11 +41,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 
 public class TestNeo4j extends AbstractNeo4jTestCase
 {
-    public TestNeo4j( String testName )
-    {
-        super( testName );
-    }
-
+    @Test
     public void testReferenceNode()
     {
         // fix this test when we can set reference node again
@@ -75,6 +77,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         }
     }
 
+    @Test
     public void testBasicNodeRelationships()
     {
         Node firstNode = null;
@@ -151,12 +154,13 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         return false;
     }
 
-    private static enum RelTypes implements RelationshipType
-    {
-        ONE_MORE_RELATIONSHIP;
-    }
+//    private static enum RelTypes implements RelationshipType
+//    {
+//        ONE_MORE_RELATIONSHIP;
+//    }
 
     // TODO: fix this testcase
+    @Test
     public void testIdUsageInfo()
     {
         GraphDbModule graphDbModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
@@ -201,6 +205,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         setTransaction( getGraphDb().beginTx() );
     }
 
+    @Test
     public void testRandomPropertyName()
     {
         Node node1 = getGraphDb().createNode();
@@ -211,6 +216,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         node1.delete();
     }
 
+    @Test
     public void testNodeChangePropertyArray() throws Exception
     {
         Transaction tx = getTransaction();
@@ -261,6 +267,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         setTransaction( getGraphDb().beginTx() );
     }
 
+    @Test
     public void testMultipleNeos()
     {
         GraphDatabaseService graphDb2 = new EmbeddedGraphDatabase( getStorePath( "test-neo2" ) );
@@ -272,6 +279,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         graphDb2.shutdown();
     }
     
+    @Test
     public void testGetAllNode()
     {
         long highId = getNodeManager().getHighestPossibleIdInUse( Node.class );

@@ -19,38 +19,15 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import org.junit.Test;
 import org.neo4j.kernel.impl.util.ArrayIntSet;
 
-public class TestArrayIntSet extends TestCase
+public class TestArrayIntSet
 {
-    public TestArrayIntSet( String testName )
-    {
-        super( testName );
-    }
-
-    public static void main( java.lang.String[] args )
-    {
-        junit.textui.TestRunner.run( suite() );
-    }
-
-    public static Test suite()
-    {
-        TestSuite suite = new TestSuite( TestArrayIntSet.class );
-        return suite;
-    }
-
-    public void setUp()
-    {
-    }
-
-    public void tearDown()
-    {
-    }
-
+    @Test
     public void testArrayIntSet()
     {
         ArrayIntSet set = new ArrayIntSet();
@@ -131,6 +108,7 @@ public class TestArrayIntSet extends TestCase
         assertEquals( 0, count );
     }
     
+    @Test
     public void testContains()
     {
         ArrayIntSet set = new ArrayIntSet();
