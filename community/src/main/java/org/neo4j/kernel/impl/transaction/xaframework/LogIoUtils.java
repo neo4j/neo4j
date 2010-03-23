@@ -161,4 +161,47 @@ class LogIoUtils
         }
         return new LogEntry.Command( identifier, command );
     }
+    
+    static void writeLogEntry( LogEntry entry, LogBuffer buffer, 
+            XaCommandFactory cf ) throws IOException
+    {
+        if ( entry instanceof LogEntry.Command )
+        {
+            buffer.put( LogEntry.COMMAND ).putInt( entry.getIdentifier() );
+            XaCommand command = ((LogEntry.Command) entry).getXaCommand();
+            command.writeToFile( buffer );
+        }
+        else if ( entry instanceof LogEntry.Start )
+        {
+            LogEntry.Start start = (LogEntry.Start) entry;
+            Xid xid = start.getXid();
+            byte globalId[] = xid.getGlobalTransactionId();
+            byte branchId[] = xid.getBranchQualifier();
+            int formatId = xid.getFormatId();
+            int identifier = start.getIdentifier();
+            buffer.put( LogEntry.TX_START ).put( (byte) globalId.length ).put(
+                (byte) branchId.length ).put( globalId ).put( branchId )
+                .putInt( identifier ).putInt( formatId );
+        }
+        else if ( entry instanceof LogEntry.Done )
+        {
+            buffer.put( LogEntry.DONE ).putInt( entry.getIdentifier() );
+        }
+        else if ( entry instanceof LogEntry.OnePhaseCommit )
+        {
+            buffer.put( LogEntry.TX_1P_COMMIT ).putInt( 
+                    entry.getIdentifier() ).putLong( 
+                            ((LogEntry.OnePhaseCommit) entry).getTxId() );
+        }
+        else if ( entry instanceof LogEntry.Prepare )
+        {
+            buffer.put( LogEntry.TX_PREPARE ).putInt( entry.getIdentifier() );
+        }
+        else if ( entry instanceof LogEntry.TwoPhaseCommit )
+        {
+            buffer.put( LogEntry.TX_2P_COMMIT ).putInt( 
+                    entry.getIdentifier() ).putLong( 
+                            ((LogEntry.OnePhaseCommit) entry).getTxId() );
+        }
+    }
 }

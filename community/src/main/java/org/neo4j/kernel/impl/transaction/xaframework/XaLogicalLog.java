@@ -26,6 +26,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -60,20 +62,6 @@ import org.neo4j.kernel.impl.util.FileUtils;
 public class XaLogicalLog
 {
     private Logger log;
-    // empty record due to memory mapped file
-    private static final byte EMPTY = (byte) 0;
-    // tx has started
-    private static final byte TX_START = (byte) 1;
-    // tx has been prepared
-    private static final byte TX_PREPARE = (byte) 2;
-    // a XaCommand in a transaction
-    private static final byte COMMAND = (byte) 3;
-    // done, either a read only tx or rolledback/forget
-    private static final byte DONE = (byte) 4;
-    // tx one-phase commit
-    private static final byte TX_1P_COMMIT = (byte) 5;
-    // tx two-phase commit
-    private static final byte TX_2P_COMMIT = (byte) 6;
     
     private static final char CLEAN = 'C';
     private static final char LOG1 = '1';
@@ -287,7 +275,7 @@ public class XaLogicalLog
             byte branchId[] = xid.getBranchQualifier();
             int formatId = xid.getFormatId();
             long position = writeBuffer.getFileChannelPosition();
-            writeBuffer.put( TX_START ).put( (byte) globalId.length ).put(
+            writeBuffer.put( LogEntry.TX_START ).put( (byte) globalId.length ).put(
                 (byte) branchId.length ).put( globalId ).put( branchId )
                 .putInt( xidIdent ).putInt( formatId );
             xidIdentMap.put( xidIdent, 
@@ -332,7 +320,7 @@ public class XaLogicalLog
         assert xidIdentMap.get( identifier ) != null;
         try
         {
-            writeBuffer.put( TX_PREPARE ).putInt( identifier );
+            writeBuffer.put( LogEntry.TX_PREPARE ).putInt( identifier );
             writeBuffer.force();
         }
         catch ( IOException e )
@@ -375,7 +363,7 @@ public class XaLogicalLog
         assert txId != -1;
         try
         {
-            writeBuffer.put( TX_1P_COMMIT ).putInt( 
+            writeBuffer.put( LogEntry.TX_1P_COMMIT ).putInt( 
                 identifier ).putLong( txId );
             writeBuffer.force();
         }
@@ -427,7 +415,7 @@ public class XaLogicalLog
         assert xidIdentMap.get( identifier ) != null;
         try
         {
-            writeBuffer.put( DONE ).putInt( identifier );
+            writeBuffer.put( LogEntry.DONE ).putInt( identifier );
             xidIdentMap.remove( identifier );
         }
         catch ( IOException e )
@@ -441,7 +429,7 @@ public class XaLogicalLog
     synchronized void doneInternal( int identifier ) throws IOException
     {
         buffer.clear();
-        buffer.put( DONE ).putInt( identifier );
+        buffer.put( LogEntry.DONE ).putInt( identifier );
         buffer.flip();
         fileChannel.write( buffer );
         xidIdentMap.remove( identifier );
@@ -476,7 +464,7 @@ public class XaLogicalLog
         assert txId != -1;
         try
         {
-            writeBuffer.put( TX_2P_COMMIT ).putInt( 
+            writeBuffer.put( LogEntry.TX_2P_COMMIT ).putInt( 
                 identifier ).putLong( txId );
             writeBuffer.force();
         }
@@ -528,7 +516,7 @@ public class XaLogicalLog
     {
         checkLogRotation();
         assert xidIdentMap.get( identifier ) != null;
-        writeBuffer.put( COMMAND ).putInt( identifier );
+        writeBuffer.put( LogEntry.COMMAND ).putInt( identifier );
         command.writeToFile( writeBuffer ); // fileChannel, buffer );
     }
 
@@ -750,19 +738,19 @@ public class XaLogicalLog
         byte entry = buffer.get();
         switch ( entry )
         {
-            case TX_START:
+            case LogEntry.TX_START:
                 return readTxStartEntry();
-            case TX_PREPARE:
+            case LogEntry.TX_PREPARE:
                 return readTxPrepareEntry();
-            case TX_1P_COMMIT:
+            case LogEntry.TX_1P_COMMIT:
                 return readTxOnePhaseCommit();
-            case TX_2P_COMMIT:
+            case LogEntry.TX_2P_COMMIT:
                 return readTxTwoPhaseCommit();
-            case COMMAND:
+            case LogEntry.COMMAND:
                 return readCommandEntry();
-            case DONE:
+            case LogEntry.DONE:
                 return readDoneEntry();
-            case EMPTY:
+            case LogEntry.EMPTY:
                 fileChannel.position( fileChannel.position() - 1 );
                 return false;
             default:
@@ -811,7 +799,94 @@ public class XaLogicalLog
         return new RandomAccessFile( name, "r" ).getChannel();
     }
     
-    public ReadableByteChannel getCommittedTransaction( long txId )
+    private List<LogEntry> extractTransactionFromLog( long txId, 
+            long expectedVersion, ReadableByteChannel log ) throws IOException
+    {
+        buffer.clear();
+        buffer.limit( 8 );
+        log.read( buffer );
+        long versionInLog = buffer.getLong();
+        if ( versionInLog != expectedVersion )
+        {
+            throw new IOException( "Expected version " + expectedVersion + 
+                    " but got " + versionInLog );
+        }
+        long prevTxId = buffer.getLong();
+        if ( prevTxId < txId )
+        {
+            throw new IOException( "Log says " + txId + 
+                    " can not exist in this log (prev tx id=" + prevTxId + ")" );
+        }
+        List<LogEntry> logEntryList = null;
+        Map<Integer,List<LogEntry>> transactions = 
+            new HashMap<Integer,List<LogEntry>>();
+        while ( logEntryList == null && 
+                fileChannel.read( buffer ) != buffer.limit() )
+        {
+            buffer.flip();
+            byte entry = buffer.get();
+            LogEntry logEntry;
+            switch ( entry )
+            {
+            case LogEntry.TX_START:
+                logEntry = LogIoUtils.readTxStartEntry( buffer, log, -1 );
+                List<LogEntry> list = new LinkedList<LogEntry>();
+                list.add( logEntry );
+                transactions.put( logEntry.getIdentifier(), list );
+                break;
+            case LogEntry.TX_PREPARE:
+                logEntry = LogIoUtils.readTxPrepareEntry( buffer, log );
+                transactions.get( logEntry.getIdentifier() ).add( logEntry );
+                break;
+            case LogEntry.TX_1P_COMMIT:
+                logEntry = LogIoUtils.readTxOnePhaseCommit( buffer, log );
+                if ( ((LogEntry.OnePhaseCommit) logEntry).getTxId() == txId )
+                {
+                    logEntryList = transactions.get( logEntry.getIdentifier() );
+                    logEntryList.add( logEntry );
+                }
+                else
+                {
+                    transactions.remove( logEntry.getIdentifier() );
+                }
+                break;
+            case LogEntry.TX_2P_COMMIT:
+                logEntry = LogIoUtils.readTxTwoPhaseCommit( buffer, log );
+                if ( ((LogEntry.TwoPhaseCommit) logEntry).getTxId() == txId )
+                {
+                    logEntryList = transactions.get( logEntry.getIdentifier() );
+                    logEntryList.add( logEntry );
+                }
+                else
+                {
+                    transactions.remove( logEntry.getIdentifier() );
+                }
+                break;
+            case LogEntry.COMMAND:
+                logEntry = LogIoUtils.readTxCommand( buffer, log, cf );
+                transactions.get( logEntry.getIdentifier() ).add( logEntry );
+                break;
+            case LogEntry.DONE:
+                logEntry = LogIoUtils.readTxDoneEntry( buffer, log );
+                transactions.remove( logEntry.getIdentifier() );
+                break;
+            default:
+                throw new IOException( "Unable to locate transaction["
+                    + txId + "]" );
+            }
+            buffer.clear();
+            buffer.limit( 1 );
+        }
+        if ( logEntryList == null )
+        {
+            throw new IOException( "Transaction[" + txId + 
+                    "] not found in log (" + expectedVersion + ", " + 
+                    prevTxId + ")" );
+        }
+        return logEntryList;
+    }
+    
+    public synchronized ReadableByteChannel getCommittedTransaction( long txId )
         throws IOException
     {
         // check if written out
@@ -825,7 +900,7 @@ public class XaLogicalLog
         // find log that contains transaction
         long version = logVersion;
         long committedTx = previousLogLastCommittedTx;
-        while ( committedTx < txId )
+        while ( committedTx <= txId )
         {
             version--;
             ReadableByteChannel log = getLogicalLog( version );
@@ -847,8 +922,41 @@ public class XaLogicalLog
         }
         
         // extract transaction
-        // ReadableByteChannel log
-        return null;
+        ReadableByteChannel log;
+        if ( version < logVersion )
+        {
+            log = getLogicalLog( version );
+        }
+        else
+        {
+            String currentLogName = 
+                fileName + (currentLog == LOG1 ? ".1" : ".2" );
+            log = new RandomAccessFile( currentLogName, "r" ).getChannel();
+        }
+        List<LogEntry> logEntryList = 
+            extractTransactionFromLog( txId, version, log );
+        log.close();
+        // write out
+        String tmpName = "temporary-tx-write-out-" + txId + "-" + 
+            System.currentTimeMillis();
+        while ( new File( tmpName ).exists() )
+        {
+            tmpName = "temporary-tx-write-out-" + txId + "-" + 
+                System.currentTimeMillis() + "_";
+        }
+        FileChannel txLog = new RandomAccessFile( tmpName, "r" ).getChannel();
+        LogBuffer buf = new DirectMappedLogBuffer( txLog );
+        for ( LogEntry entry : logEntryList )
+        {
+            LogIoUtils.writeLogEntry( entry, buf, cf );
+        }
+        txLog.close();
+        if ( !new File( tmpName ).renameTo( new File( name ) ) )
+        {
+            throw new IOException( "Failed to rename " + tmpName + " to " + 
+                name );
+        }
+        return new RandomAccessFile( name, "r" ).getChannel();
     }
     
     public long getLogicalLogLength( long version )
@@ -925,25 +1033,25 @@ public class XaLogicalLog
             byte entry = buffer.get();
             switch ( entry )
             {
-                case TX_START:
+                case LogEntry.TX_START:
                     readTxStartEntry();
                     return true;
-                case TX_PREPARE:
+                case LogEntry.TX_PREPARE:
                     readTxPrepareEntry();
                     return true;
-                case TX_1P_COMMIT:
+                case LogEntry.TX_1P_COMMIT:
                     readAndApplyTxOnePhaseCommit();
                     return true;
-                case TX_2P_COMMIT:
+                case LogEntry.TX_2P_COMMIT:
                     readAndApplyTxTwoPhaseCommit();
                     return true;
-                case COMMAND:
+                case LogEntry.COMMAND:
                     readCommandEntry();
                     return true;
-                case DONE:
+                case LogEntry.DONE:
                     readDoneEntry();
                     return true;
-                case EMPTY:
+                case LogEntry.EMPTY:
                     return false;
                 default:
                     throw new IOException( "Internal recovery failed, "
@@ -1240,25 +1348,25 @@ public class XaLogicalLog
             byte entry = buffer.get();
             switch ( entry )
             {
-                case TX_START:
+                case LogEntry.TX_START:
                     readAndWriteTxStartEntry( newLog );
                     break;
-                case TX_PREPARE:
+                case LogEntry.TX_PREPARE:
                     readAndWriteTxPrepareEntry( newLog );
                     break;
-                case TX_1P_COMMIT:
+                case LogEntry.TX_1P_COMMIT:
                     readAndWriteTxOnePhaseCommit( newLog );
                     break;
-                case TX_2P_COMMIT:
+                case LogEntry.TX_2P_COMMIT:
                     readAndWriteTxTwoPhaseCommit( newLog );
                     break;
-                case COMMAND:
+                case LogEntry.COMMAND:
                     readAndWriteCommandEntry( newLog );
                     break;
-                case DONE:
+                case LogEntry.DONE:
                     readAndVerifyDoneEntry();
                     break;
-                case EMPTY:
+                case LogEntry.EMPTY:
                     emptyHit = true;
                     break;
                 default:
@@ -1341,7 +1449,7 @@ public class XaLogicalLog
         throws IOException
     {
         buffer.clear();
-        buffer.put( COMMAND );
+        buffer.put( LogEntry.COMMAND );
         buffer.limit( 1 + 4 );
         if ( fileChannel.read( buffer ) != 4 )
         {
@@ -1395,7 +1503,7 @@ public class XaLogicalLog
     {
         buffer.clear();
         buffer.limit( 1 + 12 );
-        buffer.put( TX_1P_COMMIT );
+        buffer.put( LogEntry.TX_1P_COMMIT );
         if ( fileChannel.read( buffer ) != 12 )
         {
             throw new IllegalStateException( "Unable to read 1P commit entry" );
@@ -1422,7 +1530,7 @@ public class XaLogicalLog
     {
         buffer.clear();
         buffer.limit( 1 + 12 );
-        buffer.put( TX_2P_COMMIT );
+        buffer.put( LogEntry.TX_2P_COMMIT );
         if ( fileChannel.read( buffer ) != 12 )
         {
             throw new IllegalStateException( "Unable to read 2P commit entry" );
@@ -1452,7 +1560,7 @@ public class XaLogicalLog
         // get the tx identifier
         buffer.clear();
         buffer.limit( 1 + 4 );
-        buffer.put( TX_PREPARE );
+        buffer.put( LogEntry.TX_PREPARE );
         if ( fileChannel.read( buffer ) != 4 )
         {
             throw new IllegalStateException( "Unable to read prepare entry" );
@@ -1479,7 +1587,7 @@ public class XaLogicalLog
     {
         // get the global id
         buffer.clear();
-        buffer.put( TX_START );
+        buffer.put( LogEntry.TX_START );
         buffer.limit( 3 );
         if ( fileChannel.read( buffer ) != 2 )
         {

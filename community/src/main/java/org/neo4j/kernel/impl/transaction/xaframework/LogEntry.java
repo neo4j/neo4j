@@ -23,6 +23,15 @@ import javax.transaction.xa.Xid;
 
 abstract class LogEntry
 {
+    // empty record due to memory mapped file
+    static final byte EMPTY = (byte) 0;
+    static final byte TX_START = (byte) 1;
+    static final byte TX_PREPARE = (byte) 2;
+    static final byte COMMAND = (byte) 3;
+    static final byte DONE = (byte) 4;
+    static final byte TX_1P_COMMIT = (byte) 5;
+    static final byte TX_2P_COMMIT = (byte) 6;
+
     private final int identifier;
     
     LogEntry( int identifier )
