@@ -1,16 +1,17 @@
 package org.neo4j.graphmatching;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
 /**
@@ -333,87 +334,31 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         return relItr;
     }
 
-    private boolean checkProperties( PatternNode patternNode, Node node )
+    private boolean checkProperties(
+            AbstractPatternObject<? extends PropertyContainer> patternObject,
+            PropertyContainer object )
     {
-        Node associatedNode = patternNode.getAssociation();
-        if ( associatedNode != null && !node.equals( associatedNode ) )
+        PropertyContainer associatedObject = patternObject.getAssociation();
+        if ( associatedObject != null && !object.equals( associatedObject ) )
         {
             return false;
         }
-        for ( String propertyName : patternNode.getPropertiesExist() )
+        
+        for ( Map.Entry<String, Collection<ValueMatcher>> matchers :
+                patternObject.getPropertyConstraints() )
         {
-            if ( !node.hasProperty( propertyName ) )
+            String key = matchers.getKey();
+            Object propertyValue = object.getProperty( key, null );
+            for ( ValueMatcher matcher : matchers.getValue() )
             {
-                return false;
-            }
-        }
-
-        for ( String propertyName : patternNode.getPropertiesEqual() )
-        {
-            if ( !hasPropertyValue( node, patternNode, propertyName ) )
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private boolean checkProperties( PatternRelationship patternRel,
-        Relationship rel )
-    {
-        Relationship associatedRel = patternRel.getAssociation();
-        if ( associatedRel != null && !rel.equals( associatedRel ) )
-        {
-            return false;
-        }
-        for ( String propertyName : patternRel.getPropertiesExist() )
-        {
-            if ( !rel.hasProperty( propertyName ) )
-            {
-                return false;
-            }
-        }
-
-        for ( String propertyName : patternRel.getPropertiesEqual() )
-        {
-            if ( !hasPropertyValue( rel, patternRel, propertyName ) )
-            {
-                return false;
+                if ( !matcher.matches( propertyValue ) )
+                {
+                    return false;
+                }
             }
         }
 
         return true;
-    }
-
-    private boolean hasPropertyValue( Node node, PatternNode patternNode,
-        String propertyName )
-    {
-        if ( !node.hasProperty( propertyName ) )
-        {
-            return false;
-        }
-        Object[] patternValues = patternNode.getPropertyValue( propertyName );
-        Object rawValue = node.getProperty( propertyName );
-        Collection<Object> rawValues = ArrayPropertyUtil
-            .propertyValueToCollection( rawValue );
-        rawValues.retainAll( Arrays.asList( patternValues ) );
-        return !rawValues.isEmpty();
-    }
-
-    private boolean hasPropertyValue( Relationship rel,
-        PatternRelationship patternRel, String propertyName )
-    {
-        if ( !rel.hasProperty( propertyName ) )
-        {
-            return false;
-        }
-        Object[] patternValues = patternRel.getPropertyValue( propertyName );
-        Object rawValue = rel.getProperty( propertyName );
-        Collection<Object> rawValues = ArrayPropertyUtil
-            .propertyValueToCollection( rawValue );
-        rawValues.retainAll( Arrays.asList( patternValues ) );
-        return !rawValues.isEmpty();
     }
 
     public Iterator<PatternMatch> iterator()

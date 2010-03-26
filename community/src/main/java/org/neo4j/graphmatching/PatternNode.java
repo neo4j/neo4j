@@ -1,16 +1,12 @@
 package org.neo4j.graphmatching;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 
-public class PatternNode
+public class PatternNode extends AbstractPatternObject<Node>
 {
     public static final PatternGroup DEFAULT_PATTERN_GROUP = new PatternGroup();
     
@@ -19,13 +15,8 @@ public class PatternNode
 	private LinkedList<PatternRelationship> optionalRelationships =
 		new LinkedList<PatternRelationship>();
 	 
-	private Set<String> propertiesExist = new HashSet<String>();
-	private Map<String, Object[]> propertiesEqual =
-		new HashMap<String, Object[]>();
 	private final String label;
 	private final PatternGroup group;
-	
-	private Node associatedNode = null; 
 	
 	public PatternNode()
 	{
@@ -165,19 +156,6 @@ public class PatternNode
         return relationship;
     }
     
-	public void addPropertyExistConstraint( String propertyName )
-	{
-		this.propertiesExist.add( propertyName );
-	}
-	
-	public void addPropertyEqualConstraint( String propertyName,
-		Object... atLeastOneOfTheseValues )
-	{
-		assert atLeastOneOfTheseValues != null &&
-			atLeastOneOfTheseValues.length > 0;
-		this.propertiesEqual.put( propertyName, atLeastOneOfTheseValues );
-	}
-	
 	public String getLabel()
 	{
 		return this.label;
@@ -187,30 +165,5 @@ public class PatternNode
 	public String toString()
 	{
 		return this.label;
-	}
-	
-	public Set<String> getPropertiesExist()
-	{
-		return this.propertiesExist;
-	}
-	
-	public Set<String> getPropertiesEqual()
-	{
-		return this.propertiesEqual.keySet();
-	}
-	
-	public Object[] getPropertyValue( String propertyName )
-	{
-		return this.propertiesEqual.get( propertyName );
-	}
-	
-	public void setAssociation( Node node )
-	{
-	    associatedNode = node;
-	}
-
-	public Node getAssociation()
-	{
-	    return associatedNode;
 	}
 }

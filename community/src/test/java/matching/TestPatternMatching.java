@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -19,6 +20,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphmatching.CommonValueMatchers;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
@@ -126,14 +128,13 @@ public class TestPatternMatching
         Node b1 = createInstance( "b1" );
 
         Relationship rel = a1.createRelationshipTo( b1, R1 );
-        // rel.setProperty( "musthave", true );
         rel = a1.createRelationshipTo( b1, R2 );
         rel.setProperty( "musthave", true );
         
         PatternNode pA = new PatternNode();
         PatternNode pB = new PatternNode();
         PatternRelationship pRel = pA.createRelationshipTo( pB );
-        pRel.addPropertyExistConstraint( "musthave" );
+        pRel.addPropertyConstraint( "musthave", CommonValueMatchers.has() );
         int count = 0;
         for ( PatternMatch match : 
             doMatch( pA, a1 ) )
@@ -371,8 +372,10 @@ public class TestPatternMatching
 		a.setProperty( "hasProperty", true );
 		Node b1 = createInstance( "B1" );
 		b1.setProperty( "equals", 1 );
+        b1.setProperty( "name", "Thomas Anderson" );
 		Node b2 = createInstance( "B2" );
 		b2.setProperty( "equals", 1 );
+		b2.setProperty( "name", "Thomas Anderson" );
 		Node b3 = createInstance( "B3" );
 		b3.setProperty( "equals", 2 );
 		Node c = createInstance( "C" );
@@ -387,9 +390,11 @@ public class TestPatternMatching
 		b3.createRelationshipTo( c, R );
 		
 		PatternNode pA = new PatternNode();
-		pA.addPropertyExistConstraint( "hasProperty" );
+		pA.addPropertyConstraint( "hasProperty", CommonValueMatchers.has() );
 		PatternNode pB = new PatternNode();
-		pB.addPropertyEqualConstraint( "equals", 1 );
+		pB.addPropertyConstraint( "equals", CommonValueMatchers.exact( 1 ) );
+		pB.addPropertyConstraint( "name", CommonValueMatchers.regex( Pattern.compile(
+		        "^Thomas.*" ) ) );
 		PatternNode pC = new PatternNode();
 		
 		pA.createRelationshipTo( pB, R );
@@ -610,9 +615,9 @@ public class TestPatternMatching
 		b3.createRelationshipTo( c, R );
 		
 		PatternNode pA = new PatternNode();
-		pA.addPropertyExistConstraint( "hasProperty" );
+		pA.addPropertyConstraint( "hasProperty", CommonValueMatchers.has() );
 		PatternNode pB = new PatternNode();
-		pB.addPropertyEqualConstraint( "equals", 1 );
+		pB.addPropertyConstraint( "equals", CommonValueMatchers.exactAny( 1 ) );
 		PatternNode pC = new PatternNode();
 		
 		pA.createRelationshipTo( pB, R );

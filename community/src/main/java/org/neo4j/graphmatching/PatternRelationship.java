@@ -1,15 +1,10 @@
 package org.neo4j.graphmatching;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-public class PatternRelationship
+public class PatternRelationship extends AbstractPatternObject<Relationship>
 {
 	private final RelationshipType type;
     private final boolean directed;
@@ -19,11 +14,6 @@ public class PatternRelationship
 	private final PatternNode secondNode;
 	
 	private boolean isMarked = false;
-    private Set<String> propertiesExist = new HashSet<String>();
-    private Map<String,Object[]> propertiesEqual = 
-        new HashMap<String,Object[]>();
-        
-    private Relationship associatedRel = null;
     
     PatternRelationship( PatternNode firstNode, 
         PatternNode secondNode, boolean optional, boolean directed )
@@ -124,42 +114,4 @@ public class PatternRelationship
 	{
 		return type + ":" + optional;
 	}
-
-    public void addPropertyExistConstraint( String propertyName )
-    {
-        this.propertiesExist.add( propertyName );
-    }
-    
-    public void addPropertyEqualConstraint( String propertyName,
-        Object... atLeastOneOfTheseValues )
-    {
-        assert atLeastOneOfTheseValues != null &&
-            atLeastOneOfTheseValues.length > 0;
-        this.propertiesEqual.put( propertyName, atLeastOneOfTheseValues );
-    }
-    
-    Set<String> getPropertiesExist()
-    {
-        return this.propertiesExist;
-    }
-    
-    Set<String> getPropertiesEqual()
-    {
-        return this.propertiesEqual.keySet();
-    }
-    
-    Object[] getPropertyValue( String propertyName )
-    {
-        return this.propertiesEqual.get( propertyName );
-    }
-
-    public void setAssociation( Relationship rel )
-    {
-        associatedRel = rel;
-    }
-
-    public Relationship getAssociation()
-    {
-        return associatedRel;
-    }
 }
