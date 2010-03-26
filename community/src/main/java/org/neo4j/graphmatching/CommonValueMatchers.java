@@ -75,13 +75,19 @@ public abstract class CommonValueMatchers
 
         public boolean matches( Object value )
         {
-            if ( value == null )
+            if ( value != null )
             {
-                return false;
-            }
-            for ( Object item : ArrayPropertyUtil.propertyValueToCollection( value ) )
-            {
-                if ( item != null && item.equals( valueToMatch ) )
+                if ( value.getClass().isArray() )
+                {
+                    for ( Object item : ArrayPropertyUtil.propertyValueToCollection( value ) )
+                    {
+                        if ( item != null && item.equals( valueToMatch ) )
+                        {
+                            return true;
+                        }
+                    }
+                }
+                else if ( value.equals( valueToMatch ) )
                 {
                     return true;
                 }
