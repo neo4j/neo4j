@@ -31,24 +31,24 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class TestMatchingOfCircularPattern
 {
+    static private final boolean STATIC_PATTERN = false;
+
     private static class VisibleMessagesByFollowedUsers implements
             Iterable<Node>
     {
-        private static final PatternNode start = new PatternNode();
-        private static final PatternNode message = new PatternNode();
-        static
-        {
-            PatternNode user = new PatternNode();
-            start.createRelationshipTo( user, withName( "FOLLOWS" ) );
-            user.createRelationshipTo( message, withName( "CREATED" ) );
-            message.createRelationshipTo( start, withName( "IS_VISIBLE_BY" ) );
-        }
+        private final PatternNode start = new PatternNode();
+        private final PatternNode message = new PatternNode();
 
         private final Node startNode;
 
         public VisibleMessagesByFollowedUsers( Node startNode )
         {
             this.startNode = startNode;
+            if ( !STATIC_PATTERN ) start.setAssociation( startNode );
+            PatternNode user = new PatternNode();
+            start.createRelationshipTo( user, withName( "FOLLOWS" ) );
+            user.createRelationshipTo( message, withName( "CREATED" ) );
+            message.createRelationshipTo( start, withName( "IS_VISIBLE_BY" ) );
         }
 
         public Iterator<Node> iterator()
@@ -95,6 +95,24 @@ public class TestMatchingOfCircularPattern
         {
             message.createRelationshipTo( user, withName( "IS_VISIBLE_BY" ) );
         }
+    }
+
+    @Test
+    public void straightPathsWork()
+    {
+        Node start = graphdb.createNode();
+        Node u1 = graphdb.createNode(), u2 = graphdb.createNode(), u3 = graphdb.createNode();
+        start.createRelationshipTo( u1, withName( "FOLLOWS" ) );
+        start.createRelationshipTo( u2, withName( "FOLLOWS" ) );
+        start.createRelationshipTo( u3, withName( "FOLLOWS" ) );
+        createMessage( u1, "visible", start );
+        createMessage( u2, "visible", start );
+        createMessage( u3, "visible", start );
+        for ( Node message : new VisibleMessagesByFollowedUsers( start ) )
+        {
+            verifyMessage( message );
+        }
+        tx.success();
     }
 
     @Test
