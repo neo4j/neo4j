@@ -39,6 +39,21 @@ public abstract class CommonValueMatchers
         return new ExactAnyMatcher( valueToMatch );
     }
     
+    /**
+     * Checks for equality between a value and any one of
+     * {@code anyOfTheseToMatch}. If the value is an array each item in
+     * the array is matched against any one of {@code valueToMatch} and if
+     * any of those matches it's considered a match.
+     * 
+     * @param anyOfTheseToMatch the expected value.
+     * @return whether or not a value is equal to any one of
+     * {@code anyOfTheseToMatch}.
+     */
+    public static ValueMatcher exactAnyOf( Object... anyOfTheseToMatch )
+    {
+        return new ExactAnyMatcher( anyOfTheseToMatch );
+    }
+    
     public static ValueMatcher has()
     {
         return HAS;
@@ -66,11 +81,11 @@ public abstract class CommonValueMatchers
     
     private static class ExactAnyMatcher implements ValueMatcher
     {
-        private final Object valueToMatch;
+        private final Object[] valuesToMatch;
 
-        public ExactAnyMatcher( Object valueToMatch )
+        public ExactAnyMatcher( Object... valueToMatch )
         {
-            this.valueToMatch = valueToMatch;
+            this.valuesToMatch = valueToMatch;
         }
 
         public boolean matches( Object value )
@@ -81,13 +96,25 @@ public abstract class CommonValueMatchers
                 {
                     for ( Object item : ArrayPropertyUtil.propertyValueToCollection( value ) )
                     {
-                        if ( item != null && item.equals( valueToMatch ) )
+                        if ( item != null && anyMatches( item ) )
                         {
                             return true;
                         }
                     }
                 }
-                else if ( value.equals( valueToMatch ) )
+                else if ( anyMatches( value ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        private boolean anyMatches( Object value )
+        {
+            for ( Object matchValue : valuesToMatch )
+            {
+                if ( value.equals( matchValue ) )
                 {
                     return true;
                 }
