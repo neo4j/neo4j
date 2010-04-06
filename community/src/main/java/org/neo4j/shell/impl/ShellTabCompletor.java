@@ -27,7 +27,7 @@ class ShellTabCompletor implements Completor
     
     public int complete( String buffer, int cursor, List candidates )
     {
-        if ( buffer == null || buffer.isEmpty() )
+        if ( buffer == null || buffer.length() == 0 )
         {
             return cursor;
         }
