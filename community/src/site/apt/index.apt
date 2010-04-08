@@ -4,7 +4,7 @@ The Neo4j graph pattern matching component
  Neo4j Graph Database.
 
  The pattern matching is done by first defining a graph pattern and then
- searching for matching occurances of that pattern in the graph around a
+ searching for matching occurrences of that pattern in the graph around a
  given anchor node.
 
 * Introduction to the API
@@ -30,6 +30,10 @@ The Neo4j graph pattern matching component
 ** Find all Nodes related to a given set of Nodes
 
 %{snippet|id=findNodesWithRelationshipsTo|file=src/test/java/examples/TestSiteIndexExamples.java}
+
+** Finding friends that I've known for a specified amount of time
+
+%{snippet|id=findFriends|file=src/test/java/examples/TestSiteIndexExamples.java}
 
 * Learning more
 

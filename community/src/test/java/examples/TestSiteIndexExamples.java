@@ -1,24 +1,37 @@
 package examples;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.commons.iterator.IterableWrapper;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphmatching.CommonValueMatchers;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
+import org.neo4j.graphmatching.PatternRelationship;
+import org.neo4j.graphmatching.ValueMatcher;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * Example code for the index page of the component site.
- * 
+ *
  * @author Tobias Ivarsson
  */
 public class TestSiteIndexExamples
@@ -56,6 +69,70 @@ public class TestSiteIndexExamples
     }
     // END SNIPPET: findNodesWithRelationshipsTo
 
+    // START SNIPPET: findFriends
+    private static final long MILLSECONDS_PER_DAY = 1000 * 60 * 60 * 24;
+
+    enum FriendshipTypes implements RelationshipType
+    {
+        FRIEND,
+        LIVES_IN
+    }
+
+    /**
+     * Find all friends the specified person has known for more than the
+     * specified number of years.
+     *
+     * @param me the node to find the friends of.
+     * @param livesIn The name of the place where the friends should live.
+     * @param knownForYears the minimum age (in years) of the friendship.
+     * @return all nodes that live in the specified place that the specified
+     *         nodes has known for the specified number of years.
+     */
+    public Iterable<Node> findFriendsSinceSpecifiedTimeInSpecifiedPlace(
+            Node me, String livesIn,
+            final int knownForYears )
+    {
+        PatternNode root = new PatternNode(), place = new PatternNode();
+        final PatternNode friend = new PatternNode();
+        // Define the friendship
+        PatternRelationship friendship = root.createRelationshipTo( friend,
+                FriendshipTypes.FRIEND, Direction.BOTH );
+        // Define the age of the friendship
+        friendship.addPropertyConstraint( "since", new ValueMatcher()
+        {
+            long now = new Date().getTime();
+
+            public boolean matches( Object value )
+            {
+                if ( value instanceof Long )
+                {
+                    long ageInDays = ( now - (Long) value )
+                                     / MILLSECONDS_PER_DAY;
+                    return ageInDays > ( knownForYears * 365 );
+                }
+                return false;
+            }
+        } );
+        // Define the place where the friend lives
+        friend.createRelationshipTo( place, FriendshipTypes.LIVES_IN );
+        place.addPropertyConstraint( "name",
+                CommonValueMatchers.exact( livesIn ) );
+        // Perform the matching
+        PatternMatcher matcher = PatternMatcher.getMatcher();
+        Iterable<PatternMatch> matches = matcher.match( root, me );
+        // Return the result
+        return new IterableWrapper<Node, PatternMatch>( matches )
+        {
+            @Override
+            protected Node underlyingObjectToObject( PatternMatch match )
+            {
+                return match.getNodeFor( friend );
+            }
+        };
+    }
+
+    // END SNIPPET: findFriends
+
     @Test
     public void verifyFunctionalityOfFindNodesWithRelationshipsTo()
             throws Exception
@@ -92,6 +169,68 @@ public class TestSiteIndexExamples
         {
             tx.finish();
         }
+    }
+
+    @Test
+    public void verifyFunctionalityOfFindFriendsSinceSpecifiedTimeInSpecifiedPlace()
+            throws Exception
+    {
+        Node root = createGraph( new GraphDefinition<Node>()
+        {
+            public Node create( GraphDatabaseService graphdb )
+            {
+                Node me = graphdb.createNode();
+                Node stockholm = graphdb.createNode(), gothenburg = graphdb.createNode();
+                stockholm.setProperty( "name", "Stockholm" );
+                gothenburg.setProperty( "name", "Gothenburg" );
+
+                Node andy = friend( me, graphdb.createNode(), "Andy", 10,
+                        stockholm );
+                friend( me, graphdb.createNode(), "Bob", 5, stockholm );
+                Node cecilia = friend( me, graphdb.createNode(), "Cecilia", 2,
+                        stockholm );
+                andy.createRelationshipTo( cecilia, FriendshipTypes.FRIEND ).setProperty(
+                        "since", yearsAgo( 10 ) );
+                friend( me, graphdb.createNode(), "David", 10, gothenburg );
+
+                return me;
+            }
+
+            Node friend( Node me, Node friend, String name, int knownForYears,
+                    Node place )
+            {
+                friend.setProperty( "name", name );
+                me.createRelationshipTo( friend, FriendshipTypes.FRIEND ).setProperty(
+                        "since", yearsAgo( knownForYears ) );
+                friend.createRelationshipTo( place, FriendshipTypes.LIVES_IN );
+                return friend;
+            }
+
+            Calendar calendar = Calendar.getInstance();
+
+            long yearsAgo( int years )
+            {
+                return new GregorianCalendar( calendar.get( Calendar.YEAR )
+                                              - years,
+                        calendar.get( Calendar.MONTH ),
+                        calendar.get( Calendar.DATE ) ).getTime().getTime();
+            }
+        } );
+
+        Set<String> expected = new HashSet<String>( Arrays.asList( "Andy",
+                "Bob" ) );
+
+        Iterable<Node> friends = findFriendsSinceSpecifiedTimeInSpecifiedPlace(
+                root, "Stockholm", 3 );
+
+        for ( Node friend : friends )
+        {
+            String name = (String) friend.getProperty( "name", null );
+            assertNotNull( name );
+            assertTrue( "Unexpected friend: " + name, expected.remove( name ) );
+        }
+        assertTrue( "These friends were not found: " + expected,
+                expected.isEmpty() );
     }
 
     private int count( Iterable<?> objects )
