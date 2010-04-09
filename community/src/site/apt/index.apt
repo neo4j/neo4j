@@ -29,11 +29,11 @@ The Neo4j graph pattern matching component
 
 ** Find all Nodes related to a given set of Nodes
 
-%{snippet|id=findNodesWithRelationshipsTo|file=src/test/java/examples/TestSiteIndexExamples.java}
+%{source-code|snippet=findNodesWithRelationshipsTo|file=src/test/java/examples/TestSiteIndexExamples.java}
 
 ** Finding friends that I've known for a specified amount of time
 
-%{snippet|id=findFriends|file=src/test/java/examples/TestSiteIndexExamples.java}
+%{source-code|snippet=findFriends|file=src/test/java/examples/TestSiteIndexExamples.java}
 
 * Learning more
 
