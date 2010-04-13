@@ -64,73 +64,7 @@
   </developers>
 
   <build>
-    <!-- resources>
-      <resource>
-        <directory>src/bin</directory>
-        <filtering>true</filtering>
-      </resource>
-    </resources-->
-    <sourceDirectory>src/main/java</sourceDirectory>
-    <testSourceDirectory>src/test/java</testSourceDirectory>
     <plugins>
-      <plugin>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>filter-scripts</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>resources</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin
-				</artifactId>
-        <configuration>
-          <repositoryLayout>flat</repositoryLayout>
-          <repositoryName>lib</repositoryName>
-          <includeConfigurationDirectoryInClasspath>false
-          </includeConfigurationDirectoryInClasspath>
-          <programs>
-            <program>
-              <mainClass>org.neo4j.shell.StartClient
-              </mainClass>
-              <name>${project.artifactId}</name>
-            </program>
-          </programs>
-        </configuration>
-        <executions>
-          <execution>
-            <id>examples</id>
-            <phase>package</phase>
-            <goals>
-              <goal>assemble</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <finalName>${project.artifactId}-${project.version}-standalone</finalName>
-          <descriptors>
-            <descriptor>src/main/assembly/shell-assembly.xml
-						</descriptor>
-          </descriptors>
-        </configuration>
-        <executions>
-          <execution>
-            <id>shell-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
