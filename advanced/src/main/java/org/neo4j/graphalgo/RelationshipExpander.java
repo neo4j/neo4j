@@ -20,7 +20,7 @@ public class RelationshipExpander
             new RelationshipType[0], new Direction[0] );
 
     private final RelationshipType[] types;
-    private final Map<RelationshipType, Direction> directions;
+    private final Map<String, Direction> directions;
 
     private RelationshipExpander( RelationshipType[] types, Direction[] dirs )
     {
@@ -29,11 +29,11 @@ public class RelationshipExpander
             throw new IllegalArgumentException();
         }
         this.types = new RelationshipType[types.length];
-        this.directions = new HashMap<RelationshipType, Direction>();
+        this.directions = new HashMap<String, Direction>();
         for ( int i = 0; i < types.length; i++ )
         {
             this.types[i] = types[i];
-            this.directions.put( types[i], dirs[i] );
+            this.directions.put( types[i].name(), dirs[i] );
         }
     }
 
@@ -46,7 +46,7 @@ public class RelationshipExpander
         if ( types.length == 1 )
         {
             RelationshipType type = types[0];
-            return start.getRelationships( type, directions.get( type ) );
+            return start.getRelationships( type, directions.get( type.name() ) );
         }
         return new FilteringIterable<Relationship>(
                 start.getRelationships( types ) )
@@ -54,7 +54,7 @@ public class RelationshipExpander
             @Override
             protected boolean passes( Relationship item )
             {
-                switch ( directions.get( item.getType() ) )
+                switch ( directions.get( item.getType().name() ) )
                 {
                 case INCOMING:
                     return item.getEndNode().equals( start );
