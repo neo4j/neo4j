@@ -561,7 +561,7 @@ class WriteTransaction extends XaTransaction
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord != null )
         {
-            return nodeRecord.inUse();
+            return true;
         }
         return getNodeStore().loadLightNode( nodeId );
     }
@@ -571,10 +571,10 @@ class WriteTransaction extends XaTransaction
         RelationshipRecord relRecord = getRelationshipRecord( id );
         if ( relRecord != null )
         {
-            if ( !relRecord.inUse() )
-            {
-                return null;
-            }
+//            if ( !relRecord.inUse() )
+//            {
+//                return null;
+//            }
             return new RelationshipData( id, relRecord.getFirstNode(),
                 relRecord.getSecondNode(), relRecord.getType() );
         }
@@ -793,11 +793,11 @@ class WriteTransaction extends XaTransaction
         {
             nodeRecord = getNodeStore().getRecord( nodeId );
         }
-        else if ( !nodeRecord.inUse() )
-        {
-            return new RelationshipChainPosition( 
-                Record.NO_NEXT_RELATIONSHIP.intValue() );
-        }
+//        else if ( !nodeRecord.inUse() )
+//        {
+//            return new RelationshipChainPosition( 
+//                Record.NO_NEXT_RELATIONSHIP.intValue() );
+//        }
         int nextRel = nodeRecord.getNextRel();
         return new RelationshipChainPosition( nextRel );
     }
@@ -948,7 +948,15 @@ class WriteTransaction extends XaTransaction
     public ArrayMap<Integer,PropertyData> relGetProperties( int relId )
     {
         RelationshipRecord relRecord = getRelationshipRecord( relId );
-        if ( relRecord == null )
+        if ( relRecord != null )
+        {
+            if ( !relRecord.inUse() )
+            {
+                throw new IllegalStateException( "Relationship[" + relId + 
+                        "] has been deleted in this tx" );
+            }
+        }
+        else
         {
             relRecord = getRelationshipStore().getRecord( relId );
         }
@@ -981,11 +989,19 @@ class WriteTransaction extends XaTransaction
     ArrayMap<Integer,PropertyData> nodeGetProperties( int nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
-        if ( nodeRecord == null )
+        if ( nodeRecord != null )
+        {
+            if ( !nodeRecord.inUse() )
+            {
+                throw new IllegalStateException( "Node[" + nodeId + 
+                        "] has been deleted in this tx" );
+            }
+        }
+        else
         {
             nodeRecord = getNodeStore().getRecord( nodeId );
         }
-        else if ( !nodeRecord.inUse() )
+        if ( !nodeRecord.inUse() )
         {
             throw new InvalidRecordException( "Node[" + nodeId + 
                 "] not in use" );

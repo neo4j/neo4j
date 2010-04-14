@@ -788,6 +788,7 @@ public class NodeManager
     void deleteNode( NodeImpl node )
     {
         int nodeId = (int) node.getId();
+        deletePrimitive( node );
         persistenceManager.nodeDelete( nodeId );
         // remove from node cache done via event
     }
@@ -813,6 +814,7 @@ public class NodeManager
     void deleteRelationship( RelationshipImpl rel )
     {
         int relId = (int) rel.getId();
+        deletePrimitive( rel );
         persistenceManager.relDelete( relId );
         // remove in rel cache done via event
     }
@@ -877,6 +879,11 @@ public class NodeManager
         Primitive primitive )
     {
         return lockReleaser.getCowPropertyRemoveMap( primitive );
+    }
+    
+    private void deletePrimitive( Primitive primitive )
+    {
+        lockReleaser.deletePrimitive( primitive );
     }
 
     public ArrayMap<Integer,PropertyData> getCowPropertyAddMap(

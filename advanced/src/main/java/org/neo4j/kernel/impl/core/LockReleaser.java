@@ -77,6 +77,8 @@ public class LockReleaser
 
         }
 
+        boolean deleted = false;
+        
         ArrayMap<String,IntArray> relationshipAddMap = null;
         ArrayMap<String,IntArray> relationshipRemoveMap = null;
         ArrayMap<Integer,PropertyData> propertyAddMap = null;
@@ -90,6 +92,8 @@ public class LockReleaser
 
         }
 
+        boolean deleted = false;
+        
         ArrayMap<Integer,PropertyData> propertyAddMap = null;
         ArrayMap<Integer,PropertyData> propertyRemoveMap = null;
     }
@@ -428,6 +432,11 @@ public class LockReleaser
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null )
             {
+                if ( element.deleted )
+                {
+                    throw new IllegalStateException( "Node[" + 
+                            primitive.id + "] has been deleted in this tx" );
+                }
                 return element.propertyRemoveMap;
             }
         }
@@ -439,6 +448,11 @@ public class LockReleaser
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null )
             {
+                if ( element.deleted )
+                {
+                    throw new IllegalStateException( "Relationship[" + 
+                            primitive.id + "] has been deleted in this tx" );
+                }
                 return element.propertyRemoveMap;
             }
         }
@@ -456,6 +470,11 @@ public class LockReleaser
             CowNodeElement element = cowElements.get( primitive.id );
             if ( element != null )
             {
+                if ( element.deleted )
+                {
+                    throw new IllegalStateException( "Node[" + 
+                            primitive.id + "] has been deleted in this tx" );
+                }
                 return element.propertyAddMap;
             }
         }
@@ -467,6 +486,11 @@ public class LockReleaser
             CowRelElement element = cowElements.get( primitive.id );
             if ( element != null )
             {
+                if ( element.deleted )
+                {
+                    throw new IllegalStateException( "Relationship[" + 
+                            primitive.id + "] has been deleted in this tx" );
+                }
                 return element.propertyAddMap;
             }
         }
@@ -502,6 +526,11 @@ public class LockReleaser
             ArrayMap<Integer,CowNodeElement> cowElements = 
                 primitiveElement.nodes;
             CowNodeElement element = cowElements.get( primitive.id );
+            if ( element != null && element.deleted )
+            {
+                throw new IllegalStateException( "Node[" + 
+                        primitive.id + "] has been deleted in this tx" );
+            }
             if ( element == null )
             {
                 element = new CowNodeElement();
@@ -518,6 +547,11 @@ public class LockReleaser
             ArrayMap<Integer,CowRelElement> cowElements = 
                 primitiveElement.relationships;
             CowRelElement element = cowElements.get( primitive.id );
+            if ( element != null && element.deleted )
+            {
+                throw new IllegalStateException( "Relationship[" + 
+                        primitive.id + "] has been deleted in this tx" );
+            }
             if ( element == null )
             {
                 element = new CowRelElement();
@@ -545,6 +579,11 @@ public class LockReleaser
             ArrayMap<Integer,CowNodeElement> cowElements = 
                 primitiveElement.nodes;
             CowNodeElement element = cowElements.get( primitive.id );
+            if ( element != null && element.deleted )
+            {
+                throw new IllegalStateException( "Node[" + 
+                        primitive.id + "] has been deleted in this tx" );
+            }
             if ( element == null )
             {
                 element = new CowNodeElement();
@@ -561,6 +600,11 @@ public class LockReleaser
             ArrayMap<Integer,CowRelElement> cowElements = 
                 primitiveElement.relationships;
             CowRelElement element = cowElements.get( primitive.id );
+            if ( element != null && element.deleted )
+            {
+                throw new IllegalStateException( "Relationship[" + 
+                        primitive.id + "] has been deleted in this tx" );
+            }
             if ( element == null )
             {
                 element = new CowRelElement();
@@ -575,6 +619,45 @@ public class LockReleaser
         return null;
     }
 
+    public void deletePrimitive( Primitive primitive )
+    {
+        PrimitiveElement primitiveElement = getAndSetupPrimitiveElement();
+        if ( primitive instanceof NodeImpl )
+        {
+            ArrayMap<Integer,CowNodeElement> cowElements = 
+                primitiveElement.nodes;
+            CowNodeElement element = cowElements.get( primitive.id );
+            if ( element != null && element.deleted )
+            {
+                throw new IllegalStateException( "Node[" + 
+                        primitive.id + "] has already been deleted in this tx" );
+            }
+            if ( element == null )
+            {
+                element = new CowNodeElement();
+                cowElements.put( primitive.id, element );
+            }
+            element.deleted = true;
+        }
+        else if ( primitive instanceof RelationshipImpl )
+        {
+            ArrayMap<Integer,CowRelElement> cowElements = 
+                primitiveElement.relationships;
+            CowRelElement element = cowElements.get( primitive.id );
+            if ( element != null && element.deleted )
+            {
+                throw new IllegalStateException( "Relationship[" + 
+                        primitive.id + "] has already been deleted in this tx" );
+            }
+            if ( element == null )
+            {
+                element = new CowRelElement();
+                cowElements.put( primitive.id, element );
+            }
+            element.deleted = true;
+        }
+    }
+    
     public void removeNodeFromCache( int nodeId )
     {
         if ( nodeManager != null )
@@ -641,5 +724,4 @@ public class LockReleaser
             nodeManager.clearCache();
         }
     }
-
 }
