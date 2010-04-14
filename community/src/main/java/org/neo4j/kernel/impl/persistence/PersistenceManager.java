@@ -191,6 +191,10 @@ public class PersistenceManager
         ResourceConnection con = null;
 
         Transaction tx = this.getCurrentTransaction();
+        if ( tx == null )
+        {
+            throw new NotInTransactionException();
+        }
         con = txConnectionMap.get( tx );
         if ( con == null )
         {
@@ -225,19 +229,11 @@ public class PersistenceManager
     {
         try
         {
-            Transaction tx = transactionManager.getTransaction();
-    
-            if ( tx == null )
-            {
-                throw new NotInTransactionException( "No transaction found "
-                    + "for current thread" );
-            }
-    
-            return tx;
+            return transactionManager.getTransaction();
         }
         catch ( SystemException se )
         {
-            throw new NotInTransactionException( "Error fetching transaction "
+            throw new TransactionFailureException( "Error fetching transaction "
                 + "for current thread", se );
         }
     }
@@ -294,6 +290,10 @@ public class PersistenceManager
     void delistResourcesForTransaction() throws NotInTransactionException
     {
         Transaction tx = this.getCurrentTransaction();
+        if ( tx == null )
+        {
+            throw new NotInTransactionException();
+        }
         ResourceConnection con = txConnectionMap.get( tx );
         if ( con != null )
         {
