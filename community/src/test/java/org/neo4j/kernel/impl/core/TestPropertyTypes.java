@@ -26,9 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.core.GraphDbModule;
 
 public class TestPropertyTypes extends AbstractNeo4jTestCase
 {
@@ -44,13 +42,6 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     public void deleteInitialNode()
     {
         node1.delete();
-    }
-
-    private void clearCache()
-    {
-        GraphDbModule graphDbModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
-            .getGraphDbModule();
-        graphDbModule.getNodeManager().clearCache();
     }
 
     @Test
