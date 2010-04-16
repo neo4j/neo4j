@@ -20,38 +20,11 @@ Getting Started
     To use Remote Graph Database over RMI you first need to configure
     the server:
 
----
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.remote.transports.LocalGraphDatabase;
-import org.neo4j.remote.transports.RmiTransport;
-
-public class ThatStartsARemoteGraphDatabaseRMIServer
-{
-    private static final String RESOURCE_URI = "rmi://rmi-server/neo4j-graphdb";
-
-    public static void publishServer( GraphDatabaseService neo )
-    {
-        RmiTransport.register( new LocalGraphDatabase( neo ), RESOURCE_URI );
-    }
-}
----
+%{source-code|snippet=class|file=src/test/java/examples/ThatStartsARemoteGraphDatabaseRMIServer.java}
 
     Then you connect to the Remote Graph Database server like so:
 
----
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.remote.RemoteGraphDatabase;
-
-public class ThatConnectsToARemoteGraphDatabaseServer
-{
-    private static final String RESOURCE_URI = "rmi://rmi-server/neo4j-graphdb";
-
-    public static GraphDatabaseService connect()
-    {
-        return new RemoteGraphDatabase( RESOURCE_URI );
-    }
-}
----
+%{source-code|snippet=class|file=src/test/java/examples/ThatConnectsToARemoteGraphDatabaseServer.java}
 
     Then you use the Remote Graph Database service just like you use a
     normal GraphDatabaseService.
@@ -60,7 +33,7 @@ public class ThatConnectsToARemoteGraphDatabaseServer
     Graph Database rmi transport layer classes:
 
 ---
-rmiregistry -J-Djava.class.path=remote-neo.jar
+rmiregistry -J-Djava.class.path=neo4j-remote-graphdb-<VERSION>.jar
 ---
 
     If you only want to make a Neo4j Graph Database store available as
@@ -69,7 +42,8 @@ rmiregistry -J-Djava.class.path=remote-neo.jar
     method in the RmiTransport class that does this:
 
 ---
-java -cp kernel.jar:jta.jar:remote-graphdb.jar org.neo4j.remote.transports.RmiTransport path/to/neo/store rmi://rmi-server/neo-service
+java -cp neo4j-kernel-<VERSION>.jar:jta_1.1.jar:neo4j-remote-graphdb-<VERSION>.jar
+	org.neo4j.remote.transports.RmiTransport path/to/neo/store rmi://rmi-server/neo-service
 ---
 
     If the rmi-server is found to be the local machine and the local machine
@@ -83,58 +57,11 @@ Adding Indexes
     to do this the index services in your application needs to be
     registered with your Remote Graph Database server.
 
----
-import java.util.Map;
-import java.util.HashMap;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.remote.BasicGraphDatabaseServer;
-import org.neo4j.remote.transports.LocalGraphDatabase;
-import org.neo4j.util.index.IndexService;
-
-public final class RemoteGraphDatabaseServerFactory
-{
-    private GraphDatabaseService neo;
-    private Map<String, IndexService> indexes = new HashMap<String, IndexService>;
-
-    public RemoteGraphDatabaseServerFactory(GraphDatabaseService neo)
-    {
-        this.neo = neo;
-    }
-
-    public static BasicGraphDatabaseServer create()
-    {
-        BasicGraphDatabaseServer server = new LocalGraphDatabase( neo );
-        for ( Map.Entry<String, IndexService> entry : indexes.entrySet() )
-        {
-            server.registerIndexService( entry.getKey(), entry.getValue() );
-        }
-        return server;
-    }
-
-    public RemoteGraphDatabaseServerFactory addIndex(String id, IndexService service)
-    {
-        indexes.put(id, service);
-        return this;
-    }
-}
----
+%{source-code|snippet=class|file=src/test/java/examples/RemoteGraphDatabaseServerFactory.java}
 
     Then the indexes are available for access as remote indexes on the client:
 
----
-import org.neo4j.remote.RemoteIndexService;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.util.index.IndexService;
-
-public class ThatAccessesARemoteIndexService
-{
-    public static IndexService getIndexService(GraphDatabaseService remoteDb, String indexId)
-    {
-        return new RemoteIndexService( remoteDb, indexId );
-    }
-}
----
+%{source-code|snippet=class|file=src/test/java/examples/ThatAccessesARemoteIndexService.java}
 
     When running a stand alone Remote Graph Database server index
     services can be registered by adding additional arguments to the
