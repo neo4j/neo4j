@@ -1,5 +1,6 @@
 package examples;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -70,7 +71,7 @@ public class SiteExamples
     
     @Test
     // START SNIPPET: shortestPathUsage
-    public void shortestPathUsage()
+    public void shortestPathExample()
     {
         Node startNode = graphDb.createNode();
         Node middleNode1 = graphDb.createNode();
@@ -97,15 +98,19 @@ public class SiteExamples
     }
 
     @Test
-    // START SNIPPET: dijkstraUsage
     public void dijkstraUsage()
     {
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
-        
+        findShortestPathWithDijkstra( node1, node2 );
+    }
+    
+    // START SNIPPET: dijkstraUsage
+    public List<PropertyContainer> findShortestPathWithDijkstra( Node start, Node end )
+    {
         // Set up Dijkstra
         SingleSourceSingleSinkShortestPath<Double> sp;
-        sp = new Dijkstra<Double>( 0.0, node1, node2, new DoubleEvaluator(
+        sp = new Dijkstra<Double>( 0.0, start, end, new DoubleEvaluator(
                 "cost" ), new DoubleAdder(), new DoubleComparator(),
                 Direction.BOTH, DynamicRelationshipType.withName( "MY_TYPE" ) );
 
@@ -113,7 +118,7 @@ public class SiteExamples
         sp.getCost();
 
         // Get the path itself
-        List<PropertyContainer> path = sp.getPath();
+        return sp.getPath();
     }
     // END SNIPPET: dijkstraUsage
     
@@ -142,7 +147,7 @@ public class SiteExamples
     
     @Test
     // START SNIPPET: astarUsage
-    public void astarUsage()
+    public void astarExample()
     {
         Node nodeA = createNode( "name", "A", "x", 0d, "y", 0d );
         Node nodeB = createNode( "name", "B", "x", 2d, "y", 1d );
@@ -168,8 +173,14 @@ public class SiteExamples
     // END SNIPPET: astarUsage
     
     @Test
-    // START SNIPPET: centralityUsage
     public void centralityUsage()
+    {
+        Node targetNode = graphDb.createNode();
+        getCentrality( targetNode, new HashSet<Node>( Arrays.asList( targetNode ) ) );
+    }
+    
+    // START SNIPPET: centralityUsage
+    public double getCentrality( Node targetNode, Set<Node> nodeSet )
     {
         // Set up shortest path algorithm.
         // Observe that we don't need to specify a start node.
@@ -178,24 +189,12 @@ public class SiteExamples
             null, Direction.BOTH, ExampleTypes.MY_TYPE );
                 
         // Set up betweenness centrality algorithm.
-        Node targetNode = createGraph();
-        Set<Node> nodeSet = getNodesToCalculateBetweenessFor( targetNode );
         BetweennessCentrality<Integer> betweennessCentrality;
         betweennessCentrality = new BetweennessCentrality<Integer>(
             singleSourceShortestPath, nodeSet );
 
         // Get centrality value for a node.
-        Double value = betweennessCentrality.getCentrality( targetNode );
+        return betweennessCentrality.getCentrality( targetNode );
     }
     // END SNIPPET: centralityUsage
-
-    private Set<Node> getNodesToCalculateBetweenessFor( Node targetNode )
-    {
-        return new HashSet<Node>();
-    }
-
-    private Node createGraph()
-    {
-        return graphDb.createNode();
-    }
 }
