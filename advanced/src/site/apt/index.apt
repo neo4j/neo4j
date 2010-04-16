@@ -40,13 +40,13 @@ Shortest path
 
 %{source-code|snippet=astarUsage|file=src/test/java/examples/SiteExamples.java}
 
-Centrality package
-
-	The centrality package contains implementations of the centrality measures
-	mentioned earlier. Most centrality measures require an underlying shortest
-	path algorithm of the type SingleSourceShortestPath (i.e. from one node to
-	many others). The only other thing that is needed is a set of the nodes we
-	would like a centrality value computed for.
-	Example:
-
-%{source-code|snippet=centralityUsage|file=src/test/java/examples/SiteExamples.java}
+~~Centrality package
+~~
+~~	The centrality package contains implementations of the centrality measures
+~~	mentioned earlier. Most centrality measures require an underlying shortest
+~~	path algorithm of the type SingleSourceShortestPath (i.e. from one node to
+~~	many others). The only other thing that is needed is a set of the nodes we
+~~	would like a centrality value computed for.
+~~	Example:
+~~
+~~%{source-code|snippet=centralityUsage|file=src/test/java/examples/SiteExamples.java}
