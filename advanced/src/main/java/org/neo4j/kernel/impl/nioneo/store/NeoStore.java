@@ -119,6 +119,11 @@ public class NeoStore extends AbstractStore
 
     public void flushAll()
     {
+        if ( relTypeStore == null || propStore == null || relStore == null || 
+                nodeStore == null )
+        {
+            return;
+        }
         relTypeStore.flushAll();
         propStore.flushAll();
         relStore.flushAll();
