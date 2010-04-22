@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.testutil;
+package common;
 
 import java.io.BufferedReader;
 import java.io.File;

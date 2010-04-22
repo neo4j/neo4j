@@ -26,9 +26,10 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.Util;
 import org.neo4j.graphalgo.shortestpath.Util.PathCounter;
-import org.neo4j.graphalgo.testutil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+
+import common.Neo4jAlgoTestCase;
 
 public class UtilTest extends Neo4jAlgoTestCase
 {

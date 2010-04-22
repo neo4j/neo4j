@@ -24,9 +24,10 @@ import java.util.HashMap;
 import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
-import org.neo4j.graphalgo.testutil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
+
+import common.Neo4jAlgoTestCase;
 
 /**
  * This set of tests is mainly made to test the "backwards" argument to the

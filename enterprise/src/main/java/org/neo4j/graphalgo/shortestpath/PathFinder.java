@@ -2,8 +2,8 @@ package org.neo4j.graphalgo.shortestpath;
 
 import java.util.Collection;
 
-import org.neo4j.graphalgo.Path;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 
 public interface PathFinder
 {

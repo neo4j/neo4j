@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo;
+package org.neo4j.graphdb;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,6 +21,13 @@ public class RelationshipExpander
 
     private final RelationshipType[] types;
     private final Map<String, Direction> directions;
+    
+    private RelationshipExpander( RelationshipType[] types,
+            Map<String, Direction> directions)
+    {
+        this.types = types;
+        this.directions = directions;
+    }
 
     private RelationshipExpander( RelationshipType[] types, Direction[] dirs )
     {
@@ -39,6 +46,12 @@ public class RelationshipExpander
 
     public Iterable<Relationship> expand( final Node start )
     {
+        return expand( start, false );
+    }
+    
+    public Iterable<Relationship> expand( final Node start,
+            final boolean reversedDirection )
+    {
         if ( types.length == 0 )
         {
             return start.getRelationships();
@@ -46,7 +59,9 @@ public class RelationshipExpander
         if ( types.length == 1 )
         {
             RelationshipType type = types[0];
-            return start.getRelationships( type, directions.get( type.name() ) );
+            Direction direction = directions.get( type.name() );
+            return start.getRelationships( type,
+                    reversedDirection ? direction.reverse() : direction );
         }
         return new FilteringIterable<Relationship>(
                 start.getRelationships( types ) )
@@ -57,14 +72,61 @@ public class RelationshipExpander
                 switch ( directions.get( item.getType().name() ) )
                 {
                 case INCOMING:
-                    return item.getEndNode().equals( start );
+                    return reversedDirection ? item.getStartNode().equals( start ) :
+                            item.getEndNode().equals( start );
                 case OUTGOING:
-                    return item.getStartNode().equals( start );
+                    return reversedDirection ? item.getEndNode().equals( start ) :
+                            item.getStartNode().equals( start );
                 default:
                     return true;
                 }
             }
         };
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return Arrays.hashCode( types );
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if (this == obj)
+        {
+            return true;
+        }
+        if ( obj instanceof RelationshipExpander )
+        {
+            RelationshipExpander that = (RelationshipExpander) obj;
+            return Arrays.equals( this.types, that.types ) && this.directions.equals( that.directions );
+        }
+        return false;
+    }
+
+    public RelationshipExpander add( RelationshipType type, Direction direction )
+    {
+        Direction existingDirection = directions.get( type.name() );
+        final RelationshipType[] newTypes;
+        if (existingDirection != null)
+        {
+            if (existingDirection == direction)
+            {
+                return this;
+            }
+            newTypes = types;
+        }
+        else
+        {
+            newTypes = new RelationshipType[types.length + 1];
+            System.arraycopy( types, 0, newTypes, 0, types.length );
+            newTypes[types.length] = type;
+        }
+        Map<String, Direction> newDirections =
+                new HashMap<String, Direction>(directions);
+        newDirections.put( type.name(), direction );
+        return new RelationshipExpander(newTypes, newDirections);
     }
 
     public static RelationshipExpander forTypes( RelationshipType type,
@@ -117,5 +179,4 @@ public class RelationshipExpander
         }
         return type.cast( target );
     }
-
 }

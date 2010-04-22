@@ -12,11 +12,12 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.neo4j.commons.iterator.PrefetchingIterator;
-import org.neo4j.graphalgo.Path;
-import org.neo4j.graphalgo.RelationshipExpander;
+import org.neo4j.graphalgo.PathImpl;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipExpander;
 
 public class AStar implements PathFinder
 {
@@ -36,7 +37,6 @@ public class AStar implements PathFinder
     
     public Path findSinglePath( Node start, Node end )
     {
-        int i = 0;
         Doer doer = new Doer( start, end );
         while ( doer.hasNext() )
         {
@@ -68,7 +68,7 @@ public class AStar implements PathFinder
     
     private Path toPath( Node start, LinkedList<Relationship> rels )
     {
-        Path.Builder builder = new Path.Builder( start );
+        PathImpl.Builder builder = new PathImpl.Builder( start );
         for ( Relationship rel : rels )
         {
             builder = builder.push( rel );
