@@ -23,10 +23,11 @@ import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
 import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
-import org.neo4j.graphalgo.testutil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+
+import common.Neo4jAlgoTestCase;
 
 public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
 {

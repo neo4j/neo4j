@@ -29,10 +29,11 @@ import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
 import org.neo4j.graphalgo.shortestpath.Util;
 import org.neo4j.graphalgo.shortestpath.Util.PathCounter;
-import org.neo4j.graphalgo.testutil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+
+import common.Neo4jAlgoTestCase;
 
 public class BetweennessCentralityTest extends Neo4jAlgoTestCase
 {

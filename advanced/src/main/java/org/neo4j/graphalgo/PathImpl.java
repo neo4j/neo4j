@@ -6,9 +6,10 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-public final class Path
+public final class PathImpl implements Path
 {
     public static final class Builder
     {
@@ -44,7 +45,7 @@ public final class Path
 
         public Path build()
         {
-            return new Path( this, null );
+            return new PathImpl( this, null );
         }
 
         public Builder push( Relationship relationship )
@@ -58,7 +59,7 @@ public final class Path
 
         public Path build( Builder other )
         {
-            return new Path( this, other );
+            return new PathImpl( this, other );
         }
 
         @Override
@@ -83,11 +84,13 @@ public final class Path
 
     private final Node start;
     private final Relationship[] path;
+    private final Node end;
 
-    private Path( Builder left, Builder right )
+    private PathImpl( Builder left, Builder right )
     {
         // System.out.println( left );
         // System.out.println( right );
+        Node endNode = null;
         path = new Relationship[left.size + ( right == null ? 0 : right.size )];
         if ( right != null )
         {
@@ -97,7 +100,9 @@ public final class Path
                 right = right.previous;
             }
             assert right.relationship == null : "right Path.Builder size error";
+            endNode = right.start;
         }
+        
         for ( int i = left.size - 1; i >= 0; i-- )
         {
             path[i] = left.relationship;
@@ -105,6 +110,7 @@ public final class Path
         }
         assert left.relationship == null : "left Path.Builder size error";
         start = left.start;
+        end = endNode;
     }
 
     public static Path singular( Node start )
@@ -116,8 +122,24 @@ public final class Path
     {
         return start;
     }
+    
+    public Node getEndNode()
+    {
+        if ( end != null )
+        {
+            return end;
+        }
+        
+        // TODO We could really figure this out in the constructor
+        Node stepNode = null;
+        for ( Node node : nodes() )
+        {
+            stepNode = node;
+        }
+        return stepNode;
+    }
 
-    public Iterable<Node> getNodes()
+    public Iterable<Node> nodes()
     {
         return new Iterable<Node>()
         {
@@ -164,7 +186,7 @@ public final class Path
         };
     }
 
-    public Iterable<Relationship> getRelationships()
+    public Iterable<Relationship> relationships()
     {
         return Collections.unmodifiableCollection( Arrays.asList( path ) );
     }
@@ -197,8 +219,24 @@ public final class Path
         else if ( obj instanceof Path )
         {
             Path other = (Path) obj;
-            return start.equals( other.start )
-                   && Arrays.equals( path, other.path );
+            if ( !start.equals( other.getStartNode() ) )
+            {
+                return false;
+            }
+            
+            Iterator<Relationship> thisPathIterator =
+                    this.relationships().iterator();
+            Iterator<Relationship> thatPathIterator =
+                    other.relationships().iterator();
+            while ( thisPathIterator.hasNext() && thatPathIterator.hasNext() )
+            {
+                if ( thisPathIterator.hasNext() != thatPathIterator.hasNext() )
+                {
+                    return false;
+                }
+                return thisPathIterator.next().equals( thatPathIterator.next() );
+            }
+            return true;
         }
         else
         {

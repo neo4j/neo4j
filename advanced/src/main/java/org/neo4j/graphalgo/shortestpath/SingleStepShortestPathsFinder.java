@@ -15,12 +15,14 @@ import org.neo4j.commons.iterator.CollectionWrapper;
 import org.neo4j.commons.iterator.IteratorUtil;
 import org.neo4j.commons.iterator.NestingIterator;
 import org.neo4j.commons.iterator.PrefetchingIterator;
-import org.neo4j.graphalgo.Path;
-import org.neo4j.graphalgo.RelationshipExpander;
-import org.neo4j.graphalgo.Path.Builder;
+import org.neo4j.graphalgo.PathImpl;
+import org.neo4j.graphalgo.PathImpl.Builder;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.Transaction;
 
 /**
@@ -29,6 +31,10 @@ import org.neo4j.graphdb.Transaction;
  * between each traversal. It does so to minimize the traversal overhead
  * if one side has a very large amount of relationships, but the other one
  * very few. It performs well however the graph is proportioned.
+ * 
+ * Relationships are traversed in the specified directions from the start node,
+ * but in the reverse direction ( {@link Direction#reverse()} ) from the
+ * end node. This doesn't affect {@link Direction#BOTH}.
  */
 public class SingleStepShortestPathsFinder implements PathFinder
 {
@@ -127,12 +133,12 @@ public class SingleStepShortestPathsFinder implements PathFinder
 
     private Path merge( Path start, Path end )
     {
-        Path.Builder builder = new Path.Builder( start.getStartNode() );
-        for ( Relationship rel : start.getRelationships() )
+        PathImpl.Builder builder = new PathImpl.Builder( start.getStartNode() );
+        for ( Relationship rel : start.relationships() )
         {
             builder = builder.push( rel );
         }
-        for ( Relationship rel : end.getRelationships() )
+        for ( Relationship rel : end.relationships() )
         {
             builder = builder.push( rel );
         }
@@ -158,7 +164,7 @@ public class SingleStepShortestPathsFinder implements PathFinder
     {
         if ( start.equals( end ) )
         {
-            return Arrays.asList( Path.singular( start ) );
+            return Arrays.asList( PathImpl.singular( start ) );
         }
 
         Map<Integer, Collection<Hit>> hits =
@@ -169,10 +175,10 @@ public class SingleStepShortestPathsFinder implements PathFinder
         ValueHolder<Integer> sharedCurrentDepth = new ValueHolder<Integer>( 0 );
         final DirectionData startData = new DirectionData( start,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
-                sharedCurrentDepth, stopAsap );
+                sharedCurrentDepth, stopAsap, false );
         final DirectionData endData = new DirectionData( end,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
-                sharedCurrentDepth, stopAsap );
+                sharedCurrentDepth, stopAsap, true );
         
         while ( startData.hasNext() || endData.hasNext() )
         {
@@ -209,10 +215,10 @@ public class SingleStepShortestPathsFinder implements PathFinder
             Collection<LinkedList<Relationship>> endPaths = getPaths( hit, hit.end );
             for ( LinkedList<Relationship> startPath : startPaths )
             {
-                Path.Builder startBuilder = toBuilder( start, startPath );
+                PathImpl.Builder startBuilder = toBuilder( start, startPath );
                 for ( LinkedList<Relationship> endPath : endPaths )
                 {
-                    Path.Builder endBuilder = toBuilder( end, endPath );
+                    PathImpl.Builder endBuilder = toBuilder( end, endPath );
                     Path path = startBuilder.build( endBuilder );
                     paths.add( path );
                 }
@@ -295,7 +301,7 @@ public class SingleStepShortestPathsFinder implements PathFinder
 
     private Builder toBuilder( Node startNode, LinkedList<Relationship> rels )
     {
-        Path.Builder builder = new Path.Builder( startNode );
+        PathImpl.Builder builder = new PathImpl.Builder( startNode );
         for ( Relationship rel : rels )
         {
             builder = builder.push( rel );
@@ -398,10 +404,11 @@ public class SingleStepShortestPathsFinder implements PathFinder
         private boolean haveFoundSomething;
         private boolean stop;
         private final boolean stopAsap;
+        private final boolean reversed;
         
         DirectionData( Node startNode, Collection<Long> sharedVisitedRels,
                 ValueHolder<Integer> sharedFrozenDepth, ValueHolder<Boolean> sharedStop,
-                ValueHolder<Integer> sharedCurrentDepth, boolean stopAsap )
+                ValueHolder<Integer> sharedCurrentDepth, boolean stopAsap, boolean reversed )
         {
             this.visitedNodes.put( startNode, new LevelData( null, 0 ) );
             this.nextNodes.add( startNode );
@@ -409,6 +416,7 @@ public class SingleStepShortestPathsFinder implements PathFinder
             this.sharedStop = sharedStop;
             this.sharedCurrentDepth = sharedCurrentDepth;
             this.stopAsap = stopAsap;
+            this.reversed = reversed;
             prepareNextLevel();
         }
         
@@ -424,7 +432,7 @@ public class SingleStepShortestPathsFinder implements PathFinder
                 protected Iterator<Relationship> createNestedIterator( Node node )
                 {
                     lastParentTraverserNode = node;
-                    return relExpander.expand( node ).iterator();
+                    return relExpander.expand( node, reversed ).iterator();
                 }
             };
             this.currentDepth++;

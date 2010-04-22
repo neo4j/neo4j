@@ -25,12 +25,13 @@ import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
 import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
-import org.neo4j.graphalgo.testutil.Neo4jAlgoTestCase;
-import org.neo4j.graphalgo.testutil.SimpleGraphBuilder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+
+import common.Neo4jAlgoTestCase;
+import common.SimpleGraphBuilder;
 
 public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
 {

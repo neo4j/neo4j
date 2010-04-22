@@ -24,10 +24,11 @@ import java.util.List;
 import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.FloydWarshall;
-import org.neo4j.graphalgo.testutil.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+
+import common.Neo4jAlgoTestCase;
 
 public class FloydWarshallTest extends Neo4jAlgoTestCase
 {
