@@ -31,6 +31,7 @@ import java.util.TreeMap;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
@@ -48,18 +49,18 @@ public class Ls extends GraphDatabaseApp
     public Ls()
     {
         super();
-        this.addValueType( "d", new OptionContext( OptionValueType.MUST,
+        this.addOptionDefinition( "d", new OptionDefinition( OptionValueType.MUST,
             "Direction filter for relationships: "
                 + this.directionAlternatives() ) );
-        this.addValueType( "v", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "v", new OptionDefinition( OptionValueType.NONE,
             "Verbose mode" ) );
-        this.addValueType( "q", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "q", new OptionDefinition( OptionValueType.NONE,
             "Quiet mode" ) );
-        this.addValueType( "p", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "p", new OptionDefinition( OptionValueType.NONE,
             "Lists properties" ) );
-        this.addValueType( "r", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "r", new OptionDefinition( OptionValueType.NONE,
             "Lists relationships" ) );
-        this.addValueType( "f", new OptionContext( OptionValueType.MUST,
+        this.addOptionDefinition( "f", new OptionDefinition( OptionValueType.MUST,
             "Filters node property keys/values. Supplied either as a single " +
             "value\n" +
             "or as a JSON string where both keys and values can " +
@@ -73,9 +74,9 @@ public class Ls extends GraphDatabaseApp
             "   gets listed, as well as the 'age' property. Also " +
             "relationships\n" +
             "   matching '.*name' or 'age' gets listed" ) );
-        this.addValueType( "i", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "i", new OptionDefinition( OptionValueType.NONE,
             "Filters are case-insensitive (case-sensitive by default)" ) );
-        this.addValueType( "l", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "l", new OptionDefinition( OptionValueType.NONE,
             "Filters matches more loosely, i.e. it's considered a match if " +
             "just\n" +
             "a part of a value matches the pattern, not necessarily " +

@@ -36,9 +36,9 @@ public interface App
 	/**
 	 * @param option the name of the option. An option could be like this:
 	 * "ls -l" where "l" is an option.
-	 * @return the option context for {@code option}.
+	 * @return the option definition for {@code option}.
 	 */
-	OptionValueType getOptionValueType( String option );
+	OptionDefinition getOptionDefinition( String option );
 	
 	/**
 	 * @return the available options.

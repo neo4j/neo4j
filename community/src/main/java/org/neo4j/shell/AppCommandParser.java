@@ -33,7 +33,7 @@ import java.util.StringTokenizer;
  * 
  * o ls is the app.
  * o p and f are options, p w/o value and f has the value "title.*"
- *   (defined in {@link App#getOptionValueType(String)}.
+ *   (defined in {@link App#getOptionDescription(String)}.
  * o long-option is also an option
  * o 12 is an argument.
  */
@@ -151,7 +151,10 @@ public class AppCommandParser
 		String optionName ) throws ShellException
 	{
 		String value = null;
-		OptionValueType type = this.app.getOptionValueType( optionName );
+		OptionDefinition definition =
+		        this.app.getOptionDefinition( optionName );
+		OptionValueType type = definition == null ?
+		        OptionValueType.NONE : definition.getType();
 		if ( type == OptionValueType.MUST )
 		{
 			whereAreWe++;

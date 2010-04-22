@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
@@ -15,7 +16,7 @@ import org.neo4j.shell.impl.AbstractApp;
 public class Script extends AbstractApp
 {
     {
-        addValueType( "v", new OptionContext( OptionValueType.NONE,
+        addOptionDefinition( "v", new OptionDefinition( OptionValueType.NONE,
                 "Verbose, print commands" ) );
     }
     

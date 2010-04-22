@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
@@ -45,15 +46,15 @@ public class Mkrel extends GraphDatabaseApp
      */
     public Mkrel()
     {
-        this.addValueType( "t", new OptionContext( OptionValueType.MUST,
+        this.addOptionDefinition( "t", new OptionDefinition( OptionValueType.MUST,
             "The relationship type" ) );
-        this.addValueType( "n", new OptionContext( OptionValueType.MUST,
+        this.addOptionDefinition( "n", new OptionDefinition( OptionValueType.MUST,
             "The node id to connect to" ) );
-        this.addValueType( "d", new OptionContext( OptionValueType.MUST,
+        this.addOptionDefinition( "d", new OptionDefinition( OptionValueType.MUST,
             "The direction: " + this.directionAlternatives() + "." ) );
-        this.addValueType( "c", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "c", new OptionDefinition( OptionValueType.NONE,
             "Supplied if there should be created a new node" ) );
-        this.addValueType( "v", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "v", new OptionDefinition( OptionValueType.NONE,
             "Verbose mode: display created nodes/relationships" ) );
     }
 

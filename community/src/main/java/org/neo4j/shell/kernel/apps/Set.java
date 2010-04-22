@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
@@ -131,7 +132,7 @@ public class Set extends GraphDatabaseApp
     public Set()
     {
         super();
-        this.addValueType( "t", new OptionContext( OptionValueType.MUST,
+        this.addOptionDefinition( "t", new OptionDefinition( OptionValueType.MUST,
             "Value type, f.ex: String, String[], int, long[], byte a.s.o.\n" +
             "If an array type is supplied the value(s) are given in a " +
             "JSON-style\n" +

@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
@@ -24,20 +25,20 @@ public class Index extends GraphDatabaseApp
     private boolean firstRun = true;
     
     {
-        addValueType( "g", new OptionContext( OptionValueType.NONE,
+        addOptionDefinition( "g", new OptionDefinition( OptionValueType.NONE,
                 "Get nodes for the given key and value" ) );
-        addValueType( "i", new OptionContext( OptionValueType.NONE,
+        addOptionDefinition( "i", new OptionDefinition( OptionValueType.NONE,
                 "Index the current node with a key and (optionally) value.\n" +
                 "If no value is given the property value for the key is " +
                 "used" ) );
-        addValueType( "r", new OptionContext( OptionValueType.NONE,
+        addOptionDefinition( "r", new OptionDefinition( OptionValueType.NONE,
                 "Removes a key-value pair for the current node from the index.\n" +
                 "If no value is given the property value for the key is used" ) );
-        addValueType( "c", OPTION_CONTEXT_FOR_C );
-        addValueType( "cd", new OptionContext( OptionValueType.NONE,
+        addOptionDefinition( "c", OPTION_DEF_FOR_C );
+        addOptionDefinition( "cd", new OptionDefinition( OptionValueType.NONE,
                 "Does a 'cd' command to the returned node.\n" +
                 "Could also be done using the -c option. (Implies -g)" ) );
-        addValueType( "ls", new OptionContext( OptionValueType.NONE,
+        addOptionDefinition( "ls", new OptionDefinition( OptionValueType.NONE,
                 "Does a 'ls' command on the returned nodes.\n" +
                 "Could also be done using the -c option. (Implies -g)" ) );
     }

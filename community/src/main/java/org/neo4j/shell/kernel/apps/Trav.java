@@ -36,6 +36,7 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
@@ -52,15 +53,15 @@ public class Trav extends GraphDatabaseApp
     public Trav()
     {
         super();
-        this.addValueType( "o", new OptionContext( OptionValueType.MUST,
+        this.addOptionDefinition( "o", new OptionDefinition( OptionValueType.MUST,
             "The traversal order [BREADTH_FIRST/DEPTH_FIRST/breadth/depth]" ) );
-        this.addValueType( "r", new OptionContext( OptionValueType.MUST,
+        this.addOptionDefinition( "r", new OptionDefinition( OptionValueType.MUST,
             "The relationship type(s) expressed as a JSON string " +
             "(supports regex\n" +
             "matching of the types) f.ex. " +
             "\"MY_REL_TYPE:out,.*_HAS_.*:both\".\n" +
             "Matching is case-insensitive." ) );
-        this.addValueType( "f", new OptionContext( OptionValueType.MUST,
+        this.addOptionDefinition( "f", new OptionDefinition( OptionValueType.MUST,
             "Filters node property keys/values. Supplied either as a single " +
             "value\n" +
             "or as a JSON string where both keys and values can " +
@@ -73,14 +74,14 @@ public class Trav extends GraphDatabaseApp
             "property value\n" +
             "   for that key matches 'ma.*' AND has the 'age' property " +
             "gets listed" ) );
-        this.addValueType( "i", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "i", new OptionDefinition( OptionValueType.NONE,
             "Filters are case-insensitive (case-sensitive by default)" ) );
-        this.addValueType( "l", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "l", new OptionDefinition( OptionValueType.NONE,
             "Filters matches more loosely, i.e. it's considered a match if " +
             "just\n" +
             "a part of a value matches the pattern, not necessarily " +
             "the whole value" ) );
-        this.addValueType( "c", OPTION_CONTEXT_FOR_C );
+        this.addOptionDefinition( "c", OPTION_DEF_FOR_C );
     }
     
     @Override

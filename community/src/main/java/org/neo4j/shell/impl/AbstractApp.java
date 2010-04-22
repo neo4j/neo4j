@@ -31,7 +31,7 @@ import java.util.Map;
 
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppShellServer;
-import org.neo4j.shell.OptionValueType;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.util.json.JSONArray;
@@ -43,8 +43,8 @@ import org.neo4j.shell.util.json.JSONObject;
  */
 public abstract class AbstractApp implements App
 {
-	private Map<String, OptionContext> optionDescriptions =
-		new HashMap<String, OptionContext>();
+	private Map<String, OptionDefinition> optionDefinitions =
+		new HashMap<String, OptionDefinition>();
 	private AppShellServer server;
 	
 	public String getName()
@@ -52,21 +52,21 @@ public abstract class AbstractApp implements App
 		return this.getClass().getSimpleName().toLowerCase();
 	}
 
-	public OptionValueType getOptionValueType( String option )
+	public OptionDefinition getOptionDefinition( String option )
 	{
-		OptionContext context = this.optionDescriptions.get( option );
-		return context == null ? OptionValueType.NONE : context.getType();
+		return this.optionDefinitions.get( option );
 	}
 
-	protected void addValueType( String option, OptionContext context )
+	protected void addOptionDefinition( String option,
+	        OptionDefinition definition )
 	{
-		this.optionDescriptions.put( option, context );
+		this.optionDefinitions.put( option, definition );
 	}
 	
 	public String[] getAvailableOptions()
 	{
-		String[] result = this.optionDescriptions.keySet().toArray(
-			new String[ this.optionDescriptions.size() ] );
+		String[] result = this.optionDefinitions.keySet().toArray(
+			new String[ this.optionDefinitions.size() ] );
 		Arrays.sort( result );
 		return result;
 	}
@@ -88,8 +88,8 @@ public abstract class AbstractApp implements App
 	
 	public String getDescription( String option )
 	{
-		OptionContext context = this.optionDescriptions.get( option );
-		return context == null ? null : context.getDescription();
+		OptionDefinition definition = this.optionDefinitions.get( option );
+		return definition == null ? null : definition.getDescription();
 	}
 	
 	public void shutdown()
@@ -99,30 +99,7 @@ public abstract class AbstractApp implements App
 	
 	public List<String> completionCandidates( String partOfLine, Session session )
 	{
-//	    String[] parts = partOfLine.split( " " );
-//	    String lastWord = parts[parts.length-1];
-//	    if ( lastWord.startsWith( "-" ) )
-//	    {
-//	        String lastOption = lastWord;
-//	        while ( lastOption.length() > 0 && lastOption.charAt( 0 ) == '-' )
-//	        {
-//	            lastOption = lastOption.substring( 1 );
-//	        }
-//	        
-//	        List<String> list = new ArrayList<String>();
-//	        for ( String option : getAvailableOptions() )
-//	        {
-//	            if ( lastOption.startsWith( option ) )
-//	            {
-//	                list.add( option );
-//	            }
-//	        }
-//	        return list;
-//	    }
-//	    else
-//	    {
-	        return Collections.emptyList();
-//	    }
+	    return Collections.emptyList();
 	}
 
 	protected void printMany( Output out, String string, int count )
@@ -270,39 +247,4 @@ public abstract class AbstractApp implements App
             }
         }
     }
-    
-	/**
-	 * Groups an {@link OptionValueType} and a description.
-	 */
-	public static class OptionContext
-	{
-		private OptionValueType type;
-		private String description;
-		
-		/**
-		 * @param type the type for the option.
-		 * @param description the description of the option.
-		 */
-		public OptionContext( OptionValueType type, String description )
-		{
-			this.type = type;
-			this.description = description;
-		}
-		
-		/**
-		 * @return the option value type.
-		 */
-		public OptionValueType getType()
-		{
-			return this.type;
-		}
-		
-		/**
-		 * @return the description.
-		 */
-		public String getDescription()
-		{
-			return this.description;
-		}
-	}
 }

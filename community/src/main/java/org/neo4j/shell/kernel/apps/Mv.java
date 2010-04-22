@@ -20,6 +20,7 @@
 package org.neo4j.shell.kernel.apps;
 
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
@@ -37,7 +38,7 @@ public class Mv extends GraphDatabaseApp
     public Mv()
     {
         super();
-        this.addValueType( "o", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "o", new OptionDefinition( OptionValueType.NONE,
             "To override if the key already exists" ) );
     }
 

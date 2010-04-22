@@ -31,6 +31,7 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
@@ -47,7 +48,7 @@ public class Rmrel extends GraphDatabaseApp
      */
     public Rmrel()
     {
-        this.addValueType( "d", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "d", new OptionDefinition( OptionValueType.NONE,
             "Must be supplied if the affected other node gets decoupled\n" +
             "after this operation so that it gets deleted." ) );
     }
@@ -143,7 +144,7 @@ public class Rmrel extends GraphDatabaseApp
         Node refNode = getServer().getDb().getReferenceNode();
         Traverser traverser = node.traverse( Order.DEPTH_FIRST,
             StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL,
-            filterList.toArray() );
+            filterList.toArray() ); 
         for ( Node testNode : traverser )
         {
             if ( refNode.equals( testNode ) )

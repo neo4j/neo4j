@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
@@ -54,10 +55,10 @@ public class Cd extends GraphDatabaseApp
      */
     public Cd()
     {
-        this.addValueType( "a", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "a", new OptionDefinition( OptionValueType.NONE,
             "Absolute id, new primitive doesn't need to be connected to " +
             "the\ncurrent one" ) );
-        this.addValueType( "r", new OptionContext( OptionValueType.NONE,
+        this.addOptionDefinition( "r", new OptionDefinition( OptionValueType.NONE,
             "Makes the supplied id represent a relationship instead of " +
             "a node" ) );
     }

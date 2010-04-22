@@ -35,6 +35,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
@@ -51,7 +52,8 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 public abstract class GraphDatabaseApp extends AbstractApp
 {
     private static final String CURRENT_KEY = "CURRENT_DIR";
-    static final OptionContext OPTION_CONTEXT_FOR_C = new OptionContext( OptionValueType.MUST,
+    static final OptionDefinition OPTION_DEF_FOR_C = new OptionDefinition(
+            OptionValueType.MUST,
             "Command to run for each returned node. Use $n as a node-id " +
             "replacement.\n" +
             "Example: -c \"ls -f name $n\". Multiple commands " +
