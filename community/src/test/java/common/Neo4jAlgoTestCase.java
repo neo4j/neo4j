@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.testutil;
+package common;
 
 import static org.junit.Assert.assertEquals;
 
@@ -22,9 +22,9 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.neo4j.graphalgo.Path;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -81,7 +81,7 @@ public abstract class Neo4jAlgoTestCase
     protected void assertPath( Path path, Node... nodes )
     {
         int i = 0;
-        for ( Node node : path.getNodes() )
+        for ( Node node : path.nodes() )
         {
             assertEquals( nodes[i++], node );
         }

@@ -20,9 +20,10 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
-import org.neo4j.graphalgo.testutil.Neo4jAlgoTestCase;
-import org.neo4j.graphalgo.testutil.SimpleGraphBuilder;
 import org.neo4j.graphdb.Direction;
+
+import common.Neo4jAlgoTestCase;
+import common.SimpleGraphBuilder;
 
 public class DijkstraTest extends Neo4jAlgoTestCase
 {

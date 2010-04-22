@@ -8,11 +8,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphalgo.Path;
-import org.neo4j.graphalgo.RelationshipExpander;
+import org.neo4j.graphalgo.PathImpl;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 
 public class LevelShortestPathsFinder implements PathFinder
@@ -50,17 +51,17 @@ public class LevelShortestPathsFinder implements PathFinder
     {
         if ( start.equals( end ) )
         {
-            return Arrays.asList( Path.singular( start ) );
+            return Arrays.asList( PathImpl.singular( start ) );
         }
         else
         {
-            Map<Node, List<Path.Builder>> startMap, endMap;
+            Map<Node, List<PathImpl.Builder>> startMap, endMap;
             startMap = pathBuilderMap( start );
             endMap = pathBuilderMap( end );
             Collection<Path> result = new LinkedList<Path>();
             for ( int depth = 0; depth < maxlength && result.isEmpty(); depth++ )
             {
-                Map<Node, List<Path.Builder>> source, target;
+                Map<Node, List<PathImpl.Builder>> source, target;
                 
                 // source will be the smallest, target the biggest
                 boolean startMapIsSmallest = startMap.size() < endMap.size();
@@ -68,7 +69,7 @@ public class LevelShortestPathsFinder implements PathFinder
                 target = startMapIsSmallest ? endMap : startMap;
                 
                 // Do one level from the smallest side
-                Map<Node, List<Path.Builder>> resultMap =
+                Map<Node, List<PathImpl.Builder>> resultMap =
                     search( start, source, target, result );
                 if ( startMapIsSmallest )
                 {
@@ -93,25 +94,25 @@ public class LevelShortestPathsFinder implements PathFinder
         return paths.isEmpty() ? null : paths.iterator().next();
     }
 
-    private Map<Node, List<Path.Builder>> search( Node start,
-            Map<Node, List<Path.Builder>> source,
-            Map<Node, List<Path.Builder>> target, Collection<Path> result )
+    private Map<Node, List<PathImpl.Builder>> search( Node start,
+            Map<Node, List<PathImpl.Builder>> source,
+            Map<Node, List<PathImpl.Builder>> target, Collection<Path> result )
     {
-        Map<Node, List<Path.Builder>> replacement = new HashMap<Node, List<Path.Builder>>();
-        for ( Map.Entry<Node, List<Path.Builder>> entry : source.entrySet() )
+        Map<Node, List<PathImpl.Builder>> replacement = new HashMap<Node, List<PathImpl.Builder>>();
+        for ( Map.Entry<Node, List<PathImpl.Builder>> entry : source.entrySet() )
         {
             Node node = entry.getKey();
-            List<Path.Builder> paths = entry.getValue();
+            List<PathImpl.Builder> paths = entry.getValue();
             for ( Relationship rel : expander.expand( node ) )
             {
                 Node other = rel.getOtherNode( node );
-                List<Path.Builder> otherPaths = target.get( other );
-                for ( Path.Builder path : paths )
+                List<PathImpl.Builder> otherPaths = target.get( other );
+                for ( PathImpl.Builder path : paths )
                 {
                     path = path.push( rel );
                     if ( otherPaths != null ) // we got a match
                     {
-                        for ( Path.Builder otherPath : otherPaths )
+                        for ( PathImpl.Builder otherPath : otherPaths )
                         {
                             if ( path.getStartNode().equals( start ) )
                             {
@@ -125,10 +126,10 @@ public class LevelShortestPathsFinder implements PathFinder
                     }
                     if ( result.isEmpty() ) // only needed if we have no result
                     {
-                        List<Path.Builder> newPaths = replacement.get( other );
+                        List<PathImpl.Builder> newPaths = replacement.get( other );
                         if ( newPaths == null )
                         {
-                            newPaths = new LinkedList<Path.Builder>();
+                            newPaths = new LinkedList<PathImpl.Builder>();
                             replacement.put( other, newPaths );
                         }
                         newPaths.add( path );
@@ -139,11 +140,11 @@ public class LevelShortestPathsFinder implements PathFinder
         return replacement;
     }
 
-    private static Map<Node, List<Path.Builder>> pathBuilderMap( Node node )
+    private static Map<Node, List<PathImpl.Builder>> pathBuilderMap( Node node )
     {
-        Map<Node, List<Path.Builder>> result = new HashMap<Node, List<Path.Builder>>();
-        result.put( node, new LinkedList<Path.Builder>(
-                Arrays.asList( new Path.Builder( node ) ) ) );
+        Map<Node, List<PathImpl.Builder>> result = new HashMap<Node, List<PathImpl.Builder>>();
+        result.put( node, new LinkedList<PathImpl.Builder>(
+                Arrays.asList( new PathImpl.Builder( node ) ) ) );
         return result;
     }
 }
