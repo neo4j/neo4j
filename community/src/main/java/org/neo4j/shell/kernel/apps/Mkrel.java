@@ -42,14 +42,13 @@ public class Mkrel extends GraphDatabaseApp
     public static final String KEY_LAST_CREATED_RELATIONSHIP = "LAST_CREATED_RELATIONSHIP";
     
     /**
-     * Constructs a new application which can create relationships in Neo4j.
+     * Constructs a new application which can create relationships and nodes
+     * in Neo4j.
      */
     public Mkrel()
     {
         this.addOptionDefinition( "t", new OptionDefinition( OptionValueType.MUST,
             "The relationship type" ) );
-        this.addOptionDefinition( "n", new OptionDefinition( OptionValueType.MUST,
-            "The node id to connect to" ) );
         this.addOptionDefinition( "d", new OptionDefinition( OptionValueType.MUST,
             "The direction: " + this.directionAlternatives() + "." ) );
         this.addOptionDefinition( "c", new OptionDefinition( OptionValueType.NONE,
@@ -61,7 +60,9 @@ public class Mkrel extends GraphDatabaseApp
     @Override
     public String getDescription()
     {
-        return "Creates a relationship to a node";
+        return "Creates a relationship to a new or existing node, f.ex:\n" +
+        		"mkrel -ct KNOWS (will create a relationship to a new node)\n" +
+        		"mkrel -t KNOWS 123 (will create a relationship to node with id 123)";
     }
 
     @Override
@@ -71,7 +72,7 @@ public class Mkrel extends GraphDatabaseApp
         assertCurrentIsNode( session );
         
         boolean createNode = parser.options().containsKey( "c" );
-        boolean suppliedNode = parser.options().containsKey( "n" );
+        boolean suppliedNode = !parser.arguments().isEmpty();
         Node node = null;
         if ( createNode )
         {
@@ -80,12 +81,12 @@ public class Mkrel extends GraphDatabaseApp
         }
         else if ( suppliedNode )
         {
-            node = getNodeById( Long.parseLong( parser.options().get( "n" ) ) );
+            node = getNodeById( Long.parseLong( parser.arguments().get( 0 ) ) );
         }
         else
         {
             throw new ShellException( "Must either create node (-c)"
-                + " or supply node id (-n <id>)" );
+                + " or supply node id as the first argument" );
         }
 
         if ( parser.options().get( "t" ) == null )
