@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -46,6 +47,11 @@ abstract class Primitive
     {
         this.id = id;
         this.nodeManager = nodeManager;
+    }
+    
+    public GraphDatabaseService getGraphDatabase()
+    {
+        return nodeManager.graphDbService;
     }
 
     Primitive( int id, boolean newPrimitive, NodeManager nodeManager )

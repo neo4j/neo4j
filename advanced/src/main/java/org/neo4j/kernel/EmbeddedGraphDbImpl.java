@@ -67,7 +67,7 @@ class EmbeddedGraphDbImpl
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
-        graphDbInstance.start();
+        graphDbInstance.start( graphDbService );
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
@@ -86,7 +86,7 @@ class EmbeddedGraphDbImpl
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
-        graphDbInstance.start( params );
+        graphDbInstance.start( graphDbService, params );
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
