@@ -29,6 +29,7 @@ import java.util.Map;
 
 import javax.transaction.xa.XAException;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -1656,6 +1657,11 @@ class WriteTransaction extends XaTransaction
         public long getId()
         {
             return this.id;
+        }
+
+        public GraphDatabaseService getGraphDatabase()
+        {
+            throw new UnsupportedOperationException( "Lockable rel" );
         }
 
         public Node[] getNodes()
