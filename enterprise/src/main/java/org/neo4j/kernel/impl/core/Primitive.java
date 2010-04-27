@@ -53,7 +53,7 @@ abstract class Primitive
     
     public GraphDatabaseService getGraphDatabase()
     {
-        return nodeManager.graphDbService;
+        return nodeManager.getGraphDbService();
     }
 
     Primitive( int id, boolean newPrimitive, NodeManager nodeManager )
