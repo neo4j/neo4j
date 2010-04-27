@@ -22,9 +22,8 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.lang.reflect.Method;
 import java.util.Map;
-
-import com.sun.management.UnixOperatingSystemMXBean;
 
 class AutoConfigurator
 {
@@ -39,18 +38,26 @@ class AutoConfigurator
         this.useMemoryMapped = useMemoryMapped;
         OperatingSystemMXBean osBean = 
             ManagementFactory.getOperatingSystemMXBean();
-        if ( osBean instanceof UnixOperatingSystemMXBean )
+        long mem = -1;
+        try 
         {
-            
-            long mem = (( UnixOperatingSystemMXBean) 
-                    osBean).getTotalPhysicalMemorySize();
+            Class<?> beanClass = 
+                Class.forName( "com.sun.management.UnixOperatingSystemMXBean" );
+            Method method = beanClass.getMethod( "getTotalPhysicalMemorySize" );
+            mem = (Long) method.invoke( osBean, new Object[0] );
+        }
+        catch ( Exception e )
+        { // ok we tried but probably 1.5 JVM or other OS
+        }
+        if ( mem != -1 )
+        {
             totalPhysicalMemMb = (int) (mem / 1024 / 1024 );
         }
         else
         {
             totalPhysicalMemMb = -1;
         }
-        long mem = Runtime.getRuntime().maxMemory();
+        mem = Runtime.getRuntime().maxMemory();
         maxVmUsageMb = (int) ( mem / 1024 / 1024 );
     }
     
