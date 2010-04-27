@@ -49,7 +49,7 @@ class NodeProxy implements Node
     
     public GraphDatabaseService getGraphDatabase()
     {
-        return nm.graphDbService;
+        return nm.getGraphDbService();
     }
 
     public void delete()

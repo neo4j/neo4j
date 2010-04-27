@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,8 +36,10 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
+import javax.management.MBeanServer;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -53,19 +56,24 @@ import org.neo4j.kernel.ShellService.ShellNotAvailableException;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
+import org.neo4j.kernel.impl.manage.CacheMonitor;
+import org.neo4j.kernel.impl.manage.Neo4jMonitor;
+import org.neo4j.kernel.impl.manage.PrimitiveMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 
 class EmbeddedGraphDbImpl
 {
     private static Logger log =
         Logger.getLogger( EmbeddedGraphDbImpl.class.getName() );
+    private static final AtomicInteger INSTANCE_ID_COUNTER = new AtomicInteger();
     private ShellService shellService;
     private Transaction placeboTransaction = null;
     private final GraphDbInstance graphDbInstance;
     private final GraphDatabaseService graphDbService;
     private final NodeManager nodeManager;
     private final String storeDir;
-    
+    private final int instanceId = INSTANCE_ID_COUNTER.incrementAndGet();
+
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
     private final Collection<TransactionEventHandler<?>> transactionEventHandlers =
@@ -76,7 +84,7 @@ class EmbeddedGraphDbImpl
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already exist.
-     * 
+     *
      * @param storeDir the store directory for the Neo4j db files
      */
     public EmbeddedGraphDbImpl( String storeDir,
@@ -88,13 +96,14 @@ class EmbeddedGraphDbImpl
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
+        registerMXBeans();
     }
 
     /**
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
      * with a set of configuration parameters. Will most likely be removed in
      * future releases.
-     * 
+     *
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
      */
@@ -107,13 +116,33 @@ class EmbeddedGraphDbImpl
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
+        registerMXBeans();
+    }
+
+    private void registerMXBeans()
+    {
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        register( mbs, new PrimitiveMonitor( instanceId, nodeManager ) );
+        register( mbs, new CacheMonitor( instanceId, nodeManager ) );
+    }
+
+    private static void register( MBeanServer mbs, Neo4jMonitor monitor )
+    {
+        try
+        {
+            mbs.registerMBean( monitor, monitor.getObjectName() );
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
     }
 
     /**
      * A non-standard Convenience method that loads a standard property file and
      * converts it into a generic <Code>Map<String,String></CODE>. Will most
      * likely be removed in future releases.
-     * 
+     *
      * @param file the property file to load
      * @return a map containing the properties from the file
      * @throws IllegalArgumentException if file does not exist
@@ -182,7 +211,7 @@ class EmbeddedGraphDbImpl
         {
             sendShutdownEvent();
         }
-        
+
         if ( this.shellService != null )
         {
             try
@@ -327,7 +356,7 @@ class EmbeddedGraphDbImpl
     /**
      * Returns a non-standard configuration object. Will most likely be removed
      * in future releases.
-     * 
+     *
      * @return a configuration object
      */
     public Config getConfig()
@@ -474,20 +503,20 @@ class EmbeddedGraphDbImpl
             throw new UnsupportedOperationException();
         }
     }
-    
+
     <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         this.transactionEventHandlers.add( handler );
         return handler;
     }
-    
+
     <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         return unregisterHandler( this.transactionEventHandlers, handler );
     }
-    
+
     KernelEventHandler registerKernelEventHandler(
             KernelEventHandler handler )
     {
@@ -495,7 +524,7 @@ class EmbeddedGraphDbImpl
         {
             return handler;
         }
-        
+
         // Some algo for putting it in the right place
         for ( KernelEventHandler registeredHandler : this.kernelEventHandlers )
         {
@@ -513,17 +542,17 @@ class EmbeddedGraphDbImpl
                 return handler;
             }
         }
-        
+
         this.kernelEventHandlers.add( handler );
         return handler;
     }
-    
+
     KernelEventHandler unregisterKernelEventHandler(
             KernelEventHandler handler )
     {
         return unregisterHandler( this.kernelEventHandlers, handler );
     }
-    
+
     private <T> T unregisterHandler( Collection<?> setOfHandlers, T handler )
     {
         if ( !setOfHandlers.remove( handler ) )
