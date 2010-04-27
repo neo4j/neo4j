@@ -25,6 +25,7 @@ import java.util.Map;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
@@ -65,9 +66,10 @@ class GraphDbInstance
         return config;
     }
 
-    public void start( KernelPanicEventGenerator kpe )
+    public void start( GraphDatabaseService graphDb,
+            KernelPanicEventGenerator kpe )
     {
-        start( new HashMap<String, String>(), kpe );
+        start( graphDb, new HashMap<String, String>(), kpe );
     }
 
     private Map<Object, Object> getDefaultParams()
@@ -91,6 +93,7 @@ class GraphDbInstance
 
     /**
      * Starts Neo4j with default configuration
+     * @param graphDb The graph database service.
      * 
      * @param storeDir path to directory where Neo4j store is located
      * @param create if true a new Neo4j store will be created if no store exist
@@ -98,8 +101,8 @@ class GraphDbInstance
      * @param configuration parameters
      * @throws StartupFailedException if unable to start
      */
-    public synchronized void start( Map<String, String> stringParams, 
-            KernelPanicEventGenerator kpe )
+    public synchronized void start( GraphDatabaseService graphDb,
+            Map<String, String> stringParams, KernelPanicEventGenerator kpe )
     {
         if ( started )
         {
@@ -117,7 +120,7 @@ class GraphDbInstance
         {
             params.put( entry.getKey(), entry.getValue() );
         }
-        config = new Config( storeDir, params, kpe );
+        config = new Config( graphDb, storeDir, params, kpe );
 
         String separator = System.getProperty( "file.separator" );
         String store = storeDir + separator + "neostore";

@@ -84,7 +84,7 @@ class EmbeddedGraphDbImpl
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
-        graphDbInstance.start( kernelPanicEventGenerator );
+        graphDbInstance.start( graphDbService, kernelPanicEventGenerator );
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
@@ -103,7 +103,7 @@ class EmbeddedGraphDbImpl
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
-        graphDbInstance.start( params, kernelPanicEventGenerator );
+        graphDbInstance.start( graphDbService, params, kernelPanicEventGenerator );
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
