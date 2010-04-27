@@ -78,9 +78,9 @@ class RelationshipImpl extends Primitive implements Relationship,
         nodeManager.relRemoveProperty( this, propertyId );
     }
 
-    protected ArrayMap<Integer,PropertyData> loadProperties()
+    protected ArrayMap<Integer,PropertyData> loadProperties( boolean light )
     {
-        return nodeManager.loadProperties( this );
+        return nodeManager.loadProperties( this, light );
     }
 
     public Node[] getNodes()

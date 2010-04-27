@@ -29,7 +29,6 @@ import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
@@ -49,7 +48,6 @@ public class GraphDbModule
 
     private static final int INDEX_COUNT = 2500;
 
-    private final GraphDatabaseService graphDbService;
     private final TransactionManager transactionManager;
     private final AdaptiveCacheManager cacheManager;
     private final LockManager lockManager;
@@ -59,12 +57,20 @@ public class GraphDbModule
     
     private boolean readOnly = false;
 
-    public GraphDbModule( GraphDatabaseService graphDb,
-            AdaptiveCacheManager cacheManager, LockManager lockManager,
-            TransactionManager transactionManager, IdGenerator idGenerator,
-            boolean readOnly )
+    public GraphDbModule( AdaptiveCacheManager cacheManager,
+        LockManager lockManager, TransactionManager transactionManager,
+        IdGenerator idGenerator )
     {
-        this.graphDbService = graphDb;
+        this.cacheManager = cacheManager;
+        this.lockManager = lockManager;
+        this.transactionManager = transactionManager;
+        this.idGenerator = idGenerator;
+    }
+
+    public GraphDbModule( AdaptiveCacheManager cacheManager,
+        LockManager lockManager, TransactionManager transactionManager,
+        IdGenerator idGenerator, boolean readOnly )
+    {
         this.cacheManager = cacheManager;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
@@ -91,16 +97,14 @@ public class GraphDbModule
         }
         if ( !readOnly )
         {
-            nodeManager = new NodeManager( graphDbService, cacheManager,
-                    lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, useNewCache );
+            nodeManager = new NodeManager( cacheManager, lockManager, lockReleaser, 
+                transactionManager, persistenceManager, idGenerator, useNewCache );
         }
         else
         {
-            nodeManager = new ReadOnlyNodeManager( graphDbService,
-                    cacheManager, lockManager, lockReleaser,
-                    transactionManager, persistenceManager, idGenerator,
-                    useNewCache );
+            nodeManager = new ReadOnlyNodeManager( cacheManager, lockManager, 
+                lockReleaser, transactionManager, persistenceManager, 
+                idGenerator, useNewCache );
         }
         // load and verify from PS
         RelationshipTypeData relTypes[] = null;

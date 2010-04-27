@@ -21,11 +21,10 @@ package org.neo4j.kernel;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.GraphDbModule;
-import org.neo4j.kernel.impl.event.EventModule;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
 import org.neo4j.kernel.impl.persistence.PersistenceModule;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -36,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.TxModule;
  */
 public class Config
 {
-    private EventModule eventModule;
+//    private EventModule eventModule;
     private AdaptiveCacheManager cacheManager;
     private TxModule txModule;
     private LockManager lockManager;
@@ -48,12 +47,15 @@ public class Config
     private GraphDbModule graphDbModule;
     private String storeDir;
     private final Map<Object, Object> params;
+    
+    private final KernelPanicEventGenerator kpe;
 
     private final boolean readOnly;
     private final boolean backupSlave;
     
-    Config( GraphDatabaseService graphDb, String storeDir, Map<Object, Object> params )
+    Config( String storeDir, Map<Object, Object> params, KernelPanicEventGenerator kpe )
     {
+        this.kpe = kpe;
         this.storeDir = storeDir;
         this.params = params;
         String readOnlyStr = (String) params.get( "read_only" );
@@ -76,21 +78,21 @@ public class Config
             backupSlave = false;
         }
         params.put( "read_only", readOnly );
-        eventModule = new EventModule();
+//        eventModule = new EventModule();
         cacheManager = new AdaptiveCacheManager();
         if ( !readOnly )
         {
-            txModule = new TxModule( this.storeDir );
+            txModule = new TxModule( this.storeDir, kpe );
         }
         else
         {
-            txModule = new TxModule( true );
+            txModule = new TxModule( true, kpe );
         }
         lockManager = new LockManager( txModule.getTxManager() );
         lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         persistenceModule = new PersistenceModule();
         idGeneratorModule = new IdGeneratorModule();
-        graphDbModule = new GraphDbModule( graphDb, cacheManager, lockManager,
+        graphDbModule = new GraphDbModule( cacheManager, lockManager,
                 txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
                 readOnly );
     }
@@ -111,10 +113,10 @@ public class Config
         return create;
     }
 
-    public EventModule getEventModule()
-    {
-        return eventModule;
-    }
+//    public EventModule getEventModule()
+//    {
+//        return eventModule;
+//    }
 
     public TxModule getTxModule()
     {

@@ -47,6 +47,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreFailureException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -73,10 +74,13 @@ public class TxManager implements TransactionManager
     private TxLog txLog = null;
     private XaDataSourceManager xaDsManager = null;
     private boolean tmOk = false;
+    
+    private final KernelPanicEventGenerator kpe;
 
-    TxManager( String txLogDir )
+    TxManager( String txLogDir, KernelPanicEventGenerator kpe )
     {
         this.txLogDir = txLogDir;
+        this.kpe = kpe;
     }
 
     synchronized int getNextEventIdentifier()
@@ -186,7 +190,7 @@ public class TxManager implements TransactionManager
             }
             else
             {
-                tmOk = false;
+                setTmNotOk();
                 log.severe( "Unknown active tx log file[" + txLog.getName()
                     + "], unable to switch." );
                 throw new IOException( "Unknown txLogFile[" + txLog.getName()
@@ -212,6 +216,7 @@ public class TxManager implements TransactionManager
     void setTmNotOk()
     {
         tmOk = false;
+        kpe.generateEvent( null );
     }
 
     private void recover( Iterator<List<TxLog.Record>> danglingRecordList )
@@ -510,7 +515,7 @@ public class TxManager implements TransactionManager
         {
             e.printStackTrace();
             log.severe( "Error writing transaction log" );
-            tmOk = false;
+            setTmNotOk();
             throw new SystemException( "TM encountered a problem, "
                 + " error writing transaction log," + e );
         }
@@ -580,7 +585,7 @@ public class TxManager implements TransactionManager
                 if ( tx.getStatus() == Status.STATUS_COMMITTED )
                 {
                     // this should never be
-                    tmOk = false;
+                    setTmNotOk();
                     throw new TransactionFailureException(
                         "commit threw exception but status is committed?", e );
                 }
@@ -603,7 +608,7 @@ public class TxManager implements TransactionManager
                     + "Some resources may be commited others not. "
                     + "Neo4j kernel should be SHUTDOWN for "
                     + "resource maintance and transaction recovery ---->" );
-                tmOk = false;
+                setTmNotOk();
                 if ( sfe != null )
                 {
                     sfe.printStackTrace();
@@ -626,7 +631,7 @@ public class TxManager implements TransactionManager
             {
                 e.printStackTrace();
                 log.severe( "Error writing transaction log" );
-                tmOk = false;
+                setTmNotOk();
                 throw new SystemException( "TM encountered a problem, "
                     + " error writing transaction log," + e );
             }
@@ -656,7 +661,7 @@ public class TxManager implements TransactionManager
         {
             e.printStackTrace();
             log.severe( "Error writing transaction log" );
-            tmOk = false;
+            setTmNotOk();
             throw new SystemException( "TM encountered a problem, "
                 + " error writing transaction log," + e );
         }
@@ -677,7 +682,7 @@ public class TxManager implements TransactionManager
                 + "Some resources may be commited others not. "
                 + "Neo4j kernel should be SHUTDOWN for "
                 + "resource maintance and transaction recovery ---->" );
-            tmOk = false;
+            setTmNotOk();
             throw new HeuristicMixedException( "Unable to rollback "
                 + " ---> error code for rollback: " + e.errorCode );
         }
@@ -695,7 +700,7 @@ public class TxManager implements TransactionManager
         {
             e.printStackTrace();
             log.severe( "Error writing transaction log" );
-            tmOk = false;
+            setTmNotOk();
             throw new SystemException( "TM encountered a problem, "
                 + " error writing transaction log," + e );
         }
@@ -734,7 +739,7 @@ public class TxManager implements TransactionManager
                     + "Some resources may be commited others not. "
                     + "Neo4j kernel should be SHUTDOWN for "
                     + "resource maintance and transaction recovery ---->" );
-                tmOk = false;
+                setTmNotOk();
                 throw new SystemException( "Unable to rollback "
                     + " ---> error code for rollback: " + e.errorCode );
             }
@@ -751,7 +756,7 @@ public class TxManager implements TransactionManager
             {
                 e.printStackTrace();
                 log.severe( "Error writing transaction log" );
-                tmOk = false;
+                setTmNotOk();
                 throw new SystemException( "TM encountered a problem, "
                     + " error writing transaction log," + e );
             }
