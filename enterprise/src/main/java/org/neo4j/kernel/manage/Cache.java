@@ -1,13 +1,12 @@
-package org.neo4j.kernel.impl.manage;
+package org.neo4j.kernel.manage;
 
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.manage.CacheMXBean;
 
-public class CacheMonitor extends Neo4jMonitor implements CacheMXBean
+class Cache extends Neo4jJmx implements CacheMBean
 {
     private final NodeManager nodeManager;
 
-    public CacheMonitor( int instanceId, NodeManager nodeManager )
+    Cache( int instanceId, NodeManager nodeManager )
     {
         super( instanceId );
         this.nodeManager = nodeManager;

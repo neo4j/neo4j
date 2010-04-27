@@ -1,8 +1,8 @@
 package org.neo4j.kernel.manage;
 
-public interface CacheMXBean
+public interface CacheMBean
 {
-    String NAME = "Cache";
+    final String NAME = "Cache";
 
     String getCacheType();
 

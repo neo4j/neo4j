@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.Serializable;
-import java.lang.management.ManagementFactory;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,7 +38,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-import javax.management.MBeanServer;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -56,13 +54,15 @@ import org.neo4j.kernel.ShellService.ShellNotAvailableException;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
-import org.neo4j.kernel.impl.manage.CacheMonitor;
-import org.neo4j.kernel.impl.manage.Neo4jMonitor;
-import org.neo4j.kernel.impl.manage.PrimitiveMonitor;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TransactionFailureException;
+import org.neo4j.kernel.manage.Neo4jJmx;
 
 class EmbeddedGraphDbImpl
 {
+    // FIXME: create this version string during the build!
+    private static final String KERNEL_VERSION = "neo4j-kernel-1.1";
+
     private static Logger log =
         Logger.getLogger( EmbeddedGraphDbImpl.class.getName() );
     private static final AtomicInteger INSTANCE_ID_COUNTER = new AtomicInteger();
@@ -87,55 +87,54 @@ class EmbeddedGraphDbImpl
      *
      * @param storeDir the store directory for the Neo4j db files
      */
-    public EmbeddedGraphDbImpl( String storeDir,
-        GraphDatabaseService graphDbService )
+    public EmbeddedGraphDbImpl( String storeDir, GraphDatabaseService graphDbService )
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
-        graphDbInstance.start( graphDbService, kernelPanicEventGenerator );
+        Map<Object, Object> params = graphDbInstance.start( graphDbService,
+                kernelPanicEventGenerator );
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
-        registerMXBeans();
+        initJMX( params );
     }
 
     /**
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
      * with a set of configuration parameters. Will most likely be removed in
      * future releases.
-     *
+     * 
      * @param storeDir the store directory for the db files
-     * @param params configuration parameters
+     * @param config configuration parameters
      */
-    public EmbeddedGraphDbImpl( String storeDir, Map<String,String> params,
+    public EmbeddedGraphDbImpl( String storeDir, Map<String, String> config,
         GraphDatabaseService graphDbService )
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
-        graphDbInstance.start( graphDbService, params, kernelPanicEventGenerator );
+        Map<Object, Object> params = graphDbInstance.start( graphDbService,
+                config, kernelPanicEventGenerator );
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
-        registerMXBeans();
+        initJMX( params );
     }
 
-    private void registerMXBeans()
+    private void initJMX( final Map<Object, Object> params )
     {
-        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-        register( mbs, new PrimitiveMonitor( instanceId, nodeManager ) );
-        register( mbs, new CacheMonitor( instanceId, nodeManager ) );
-    }
-
-    private static void register( MBeanServer mbs, Neo4jMonitor monitor )
-    {
-        try
+        Neo4jJmx.initJMX( new Neo4jJmx.Creator(
+                instanceId, KERNEL_VERSION,
+                (NeoStoreXaDataSource) graphDbInstance.getConfig().getTxModule()
+                .getXaDataSourceManager().getXaDataSource( "nioneodb" ) )
         {
-            mbs.registerMBean( monitor, monitor.getObjectName() );
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-        }
+            @Override
+            protected void create( Neo4jJmx.Factory jmx )
+            {
+                jmx.createPrimitiveMBean( nodeManager );
+                jmx.createCacheMBean( nodeManager );
+                jmx.createDynamicConfigurationMBean( params );
+            }
+        } );
     }
 
     /**
