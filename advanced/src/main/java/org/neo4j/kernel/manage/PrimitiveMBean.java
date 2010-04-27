@@ -1,8 +1,8 @@
 package org.neo4j.kernel.manage;
 
-public interface PrimitiveMXBean
+public interface PrimitiveMBean
 {
-    String NAME = "Primitive count";
+    final String NAME = "Primitive count";
 
     long getNumberOfNodeIdsInUse();
 
