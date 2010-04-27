@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import java.util.Map;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
@@ -53,7 +54,8 @@ public class Config
     private final boolean readOnly;
     private final boolean backupSlave;
     
-    Config( String storeDir, Map<Object, Object> params, KernelPanicEventGenerator kpe )
+    Config( GraphDatabaseService graphDb, String storeDir, Map<Object, Object> params,
+            KernelPanicEventGenerator kpe )
     {
         this.kpe = kpe;
         this.storeDir = storeDir;
@@ -92,7 +94,7 @@ public class Config
         lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         persistenceModule = new PersistenceModule();
         idGeneratorModule = new IdGeneratorModule();
-        graphDbModule = new GraphDbModule( cacheManager, lockManager,
+        graphDbModule = new GraphDbModule( graphDb, cacheManager, lockManager,
                 txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
                 readOnly );
     }

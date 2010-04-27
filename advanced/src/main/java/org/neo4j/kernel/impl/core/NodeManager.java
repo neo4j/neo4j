@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -59,7 +60,8 @@ public class NodeManager
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
 
     private int referenceNodeId = 0;
-    
+
+    final GraphDatabaseService graphDbService; 
     private final Cache<Integer,NodeImpl> nodeCache;
     private final Cache<Integer,RelationshipImpl> relCache;
     private final AdaptiveCacheManager cacheManager;
@@ -81,13 +83,15 @@ public class NodeManager
     
     private static final int LOCK_STRIPE_COUNT = 5;
     private final ReentrantLock loadLocks[] = 
-        new ReentrantLock[LOCK_STRIPE_COUNT]; 
+        new ReentrantLock[LOCK_STRIPE_COUNT];
 
-    NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager, 
-        LockReleaser lockReleaser, TransactionManager transactionManager, 
-        PersistenceManager persistenceManager, IdGenerator idGenerator, 
-        boolean useNewCaches )
+    NodeManager( GraphDatabaseService graphDb,
+            AdaptiveCacheManager cacheManager, LockManager lockManager,
+            LockReleaser lockReleaser, TransactionManager transactionManager,
+            PersistenceManager persistenceManager, IdGenerator idGenerator,
+            boolean useNewCaches )
     {
+        this.graphDbService = graphDb;
         this.cacheManager = cacheManager;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;

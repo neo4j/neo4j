@@ -206,6 +206,11 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             this.properties = properties;
         }
         
+        public GraphDatabaseService getGraphDatabase()
+        {
+            return graphDbService;
+        }
+        
         public Relationship createRelationshipTo( Node otherNode, 
             RelationshipType type )
         {
@@ -406,13 +411,17 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         private final BatchGraphDatabaseImpl graphDbService;
         private final Map<String,Object> properties;
         
-        
         RelationshipBatchImpl( SimpleRelationship rel, 
             BatchGraphDatabaseImpl graphDbService, Map<String,Object> properties )
         {
             this.rel = rel;
             this.graphDbService = graphDbService;
             this.properties = properties;
+        }
+        
+        public GraphDatabaseService getGraphDatabase()
+        {
+            return graphDbService;
         }
         
         Map<String,Object> getProperties()
