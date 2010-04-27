@@ -3,23 +3,24 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.kernel;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,13 +39,13 @@ import org.neo4j.kernel.impl.util.FileUtils;
 
 class GraphDbInstance
 {
-    private static final String NIO_NEO_DB_CLASS = 
+    private static final String NIO_NEO_DB_CLASS =
         "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
     private static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
-    private static final String LUCENE_DS_CLASS = 
+    private static final String LUCENE_DS_CLASS =
         "org.neo4j.index.lucene.LuceneDataSource";
-    private static final String LUCENE_FULLTEXT_DS_CLASS = 
+    private static final String LUCENE_FULLTEXT_DS_CLASS =
         "org.neo4j.index.lucene.LuceneFulltextDataSource";
 
     private boolean started = false;
@@ -66,10 +67,10 @@ class GraphDbInstance
         return config;
     }
 
-    public void start( GraphDatabaseService graphDb,
+    public Map<Object, Object> start( GraphDatabaseService graphDb,
             KernelPanicEventGenerator kpe )
     {
-        start( graphDb, new HashMap<String, String>(), kpe );
+        return start( graphDb, new HashMap<String, String>(), kpe );
     }
 
     private Map<Object, Object> getDefaultParams()
@@ -94,14 +95,15 @@ class GraphDbInstance
     /**
      * Starts Neo4j with default configuration
      * @param graphDb The graph database service.
-     * 
+     *
      * @param storeDir path to directory where Neo4j store is located
      * @param create if true a new Neo4j store will be created if no store exist
      *            at <CODE>storeDir</CODE>
      * @param configuration parameters
      * @throws StartupFailedException if unable to start
      */
-    public synchronized void start( GraphDatabaseService graphDb,
+    public synchronized Map<Object, Object> start(
+            GraphDatabaseService graphDb,
             Map<String, String> stringParams, KernelPanicEventGenerator kpe )
     {
         if ( started )
@@ -204,6 +206,7 @@ class GraphDbInstance
             }
         }
         started = true;
+        return Collections.unmodifiableMap( params );
     }
 
     private void cleanWriteLocksInLuceneDirectory( String luceneDir )
@@ -240,7 +243,7 @@ class GraphDbInstance
 
     /**
      * Returns true if Neo4j is started.
-     * 
+     *
      * @return True if Neo4j started
      */
     public boolean started()
