@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.IntArray;
 
 /**
  * A connection to a {@link PersistenceSource}. <CODE>ResourceConnection</CODE>
@@ -75,9 +76,11 @@ public interface ResourceConnection
 
     public PropertyIndexData[] loadPropertyIndexes( int maxCount );
 
-    public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId );
+    public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId, 
+            boolean light );
 
-    public ArrayMap<Integer,PropertyData> relLoadProperties( int relId );
+    public ArrayMap<Integer,PropertyData> relLoadProperties( int relId, 
+            boolean light);
 
     public RelationshipData relLoadLight( int id );
 
@@ -91,4 +94,12 @@ public interface ResourceConnection
 
     public Iterable<RelationshipData> getMoreRelationships( int nodeId,  
         RelationshipChainPosition position );
+
+    public IntArray getCreatedNodes();
+
+    public boolean isNodeCreated( int nodeId );
+
+    public boolean isRelationshipCreated( int relId );
+
+    public int getKeyIdForProperty( int propertyId );
 }

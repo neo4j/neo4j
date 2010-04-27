@@ -23,6 +23,7 @@ import java.util.Map;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
@@ -43,16 +44,19 @@ public class TxModule
 
     private final TransactionManager txManager;
     private final XaDataSourceManager xaDsManager;
+    private final KernelPanicEventGenerator kpe;
 
-    public TxModule( String txLogDir )
+    public TxModule( String txLogDir, KernelPanicEventGenerator kpe )
     {
         this.txLogDir = txLogDir;
-        this.txManager = new TxManager( txLogDir );
+        this.kpe = kpe;
+        this.txManager = new TxManager( txLogDir, kpe );
         this.xaDsManager = new XaDataSourceManager();
     }
     
-    public TxModule( boolean readOnly )
+    public TxModule( boolean readOnly, KernelPanicEventGenerator kpe )
     {
+        this.kpe = kpe;
         if ( readOnly )
         {
             this.txManager = new ReadOnlyTxManager(); 

@@ -23,16 +23,22 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,8 +47,12 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.ShellService.ShellNotAvailableException;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 
 class EmbeddedGraphDbImpl
@@ -55,6 +65,13 @@ class EmbeddedGraphDbImpl
     private final GraphDatabaseService graphDbService;
     private final NodeManager nodeManager;
     private final String storeDir;
+    
+    private final List<KernelEventHandler> kernelEventHandlers =
+            new CopyOnWriteArrayList<KernelEventHandler>();
+    private final Collection<TransactionEventHandler<?>> transactionEventHandlers =
+            new CopyOnWriteArraySet<TransactionEventHandler<?>>();
+    private final KernelPanicEventGenerator kernelPanicEventGenerator =
+            new KernelPanicEventGenerator( kernelEventHandlers );
 
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
@@ -67,7 +84,7 @@ class EmbeddedGraphDbImpl
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
-        graphDbInstance.start( graphDbService );
+        graphDbInstance.start( kernelPanicEventGenerator );
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
@@ -86,7 +103,7 @@ class EmbeddedGraphDbImpl
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
-        graphDbInstance.start( graphDbService, params );
+        graphDbInstance.start( params, kernelPanicEventGenerator );
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
@@ -161,11 +178,17 @@ class EmbeddedGraphDbImpl
 
     public void shutdown()
     {
+        if ( graphDbInstance.started() )
+        {
+            sendShutdownEvent();
+        }
+        
         if ( this.shellService != null )
         {
             try
             {
                 this.shellService.shutdown();
+                this.shellService = null;
             }
             catch ( Throwable t )
             {
@@ -173,6 +196,14 @@ class EmbeddedGraphDbImpl
             }
         }
         graphDbInstance.shutdown();
+    }
+
+    private void sendShutdownEvent()
+    {
+        for ( KernelEventHandler handler : this.kernelEventHandlers )
+        {
+            handler.beforeShutdown();
+        }
     }
 
     public boolean enableRemoteShell()
@@ -233,16 +264,32 @@ class EmbeddedGraphDbImpl
             return placeboTransaction;
         }
         TransactionManager txManager = graphDbInstance.getTransactionManager();
+        Transaction result = null;
         try
         {
             txManager.begin();
+            result = new TransactionImpl( txManager );
+            registerTransactionEventHookIfNeeded( txManager, result );
         }
         catch ( Exception e )
         {
             throw new TransactionFailureException(
                 "Unable to begin transaction", e );
         }
-        return new TransactionImpl( txManager );
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void registerTransactionEventHookIfNeeded(
+            TransactionManager txManager, Transaction transaction )
+            throws SystemException, RollbackException
+    {
+        if ( !this.transactionEventHandlers.isEmpty() )
+        {
+            txManager.getTransaction().registerSynchronization(
+                    new TransactionEventsSyncHook( this.nodeManager, transaction,
+                            this.transactionEventHandlers ) );
+        }
     }
 
     private static class PlaceboTransaction implements Transaction
@@ -337,6 +384,10 @@ class EmbeddedGraphDbImpl
                     }
                 }
             }
+            catch ( RollbackException e )
+            {
+                throw new TransactionFailureException( "Unable to commit transaction", e );
+            }
             catch ( Exception e )
             {
                 if ( success )
@@ -422,5 +473,63 @@ class EmbeddedGraphDbImpl
         {
             throw new UnsupportedOperationException();
         }
+    }
+    
+    <T> TransactionEventHandler<T> registerTransactionEventHandler(
+            TransactionEventHandler<T> handler )
+    {
+        this.transactionEventHandlers.add( handler );
+        return handler;
+    }
+    
+    <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
+            TransactionEventHandler<T> handler )
+    {
+        return unregisterHandler( this.transactionEventHandlers, handler );
+    }
+    
+    KernelEventHandler registerKernelEventHandler(
+            KernelEventHandler handler )
+    {
+        if ( this.kernelEventHandlers.contains( handler ) )
+        {
+            return handler;
+        }
+        
+        // Some algo for putting it in the right place
+        for ( KernelEventHandler registeredHandler : this.kernelEventHandlers )
+        {
+            KernelEventHandler.ExecutionOrder order =
+                    handler.orderComparedTo( registeredHandler );
+            int index = this.kernelEventHandlers.indexOf( registeredHandler );
+            if ( order == KernelEventHandler.ExecutionOrder.BEFORE )
+            {
+                this.kernelEventHandlers.add( index, handler );
+                return handler;
+            }
+            else if ( order == KernelEventHandler.ExecutionOrder.AFTER )
+            {
+                this.kernelEventHandlers.add( index + 1, handler );
+                return handler;
+            }
+        }
+        
+        this.kernelEventHandlers.add( handler );
+        return handler;
+    }
+    
+    KernelEventHandler unregisterKernelEventHandler(
+            KernelEventHandler handler )
+    {
+        return unregisterHandler( this.kernelEventHandlers, handler );
+    }
+    
+    private <T> T unregisterHandler( Collection<?> setOfHandlers, T handler )
+    {
+        if ( !setOfHandlers.remove( handler ) )
+        {
+            throw new IllegalStateException( handler + " isn't registered" );
+        }
+        return handler;
     }
 }
