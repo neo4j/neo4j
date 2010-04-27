@@ -306,4 +306,11 @@ class ReadTransaction
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
         return indexStore.getPropertyIndexes( count );
     }
+
+    public int getKeyIdForProperty( int propertyId )
+    {
+        PropertyRecord propRecord = 
+            getPropertyStore().getLightRecord( propertyId );
+        return propRecord.getKeyIndexId();
+    }
 }

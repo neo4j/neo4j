@@ -32,6 +32,7 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
@@ -722,6 +723,183 @@ public class LockReleaser
         if ( nodeManager != null )
         {
             nodeManager.clearCache();
+        }
+    }
+    
+    public TransactionData getTransactionData()
+    {
+        TransactionDataImpl result = new TransactionDataImpl();
+        PrimitiveElement element = cowMap.get( getTransaction() );
+        populateCreatedNodes( element, result );
+        if ( element == null )
+        {
+            return result;
+        }
+        if ( element.nodes != null )
+        {
+            populateNodeRelEvent( element, result );
+        }
+        if ( element.relationships != null )
+        {
+            populateRelationshipPropertyEvents( element, result );
+        }
+        return result;
+    }
+
+    private void populateRelationshipPropertyEvents( PrimitiveElement element,
+            TransactionDataImpl result )
+    {
+        for ( int relId : element.relationships.keySet() )
+        {
+            CowRelElement relElement = element.relationships.get( relId );
+            RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
+            RelationshipImpl relImpl = nodeManager.getRelForProxy( relId );
+            if ( relElement.deleted )
+            {
+                if ( nodeManager.relCreated( relId ) )
+                {
+                    continue;
+                }
+                List<PropertyEventData> props = 
+                    relImpl.getAllCommittedProperties();
+                for ( PropertyEventData data : props )
+                {
+                    result.removedProperty( rel, data.getKey(), data.getValue() );
+                }
+            }
+            else
+            {
+                if ( relElement.propertyAddMap != null )
+                {
+                    for ( PropertyData data : relElement.propertyAddMap.values() )
+                    {
+                        String key = nodeManager.getKeyForProperty( data.getId() );
+                        Object oldValue = relImpl.getCommittedPropertyValue( key );
+                        Object newValue = data.getValue();
+                        result.assignedProperty( rel, key, newValue, oldValue );
+                    }
+                }
+                if ( relElement.propertyRemoveMap != null )
+                {
+                    for ( PropertyData data : relElement.propertyRemoveMap.values() )
+                    {
+                        String key = nodeManager.getKeyForProperty( data.getId() );
+                        Object oldValue = relImpl.getCommittedPropertyValue( key );
+                        result.removedProperty( rel, key, oldValue );
+                    }
+                }
+            }
+        }
+    }
+
+    private void populateNodeRelEvent( PrimitiveElement element,
+            TransactionDataImpl result )
+    {
+        for ( int nodeId : element.nodes.keySet() )
+        {
+            CowNodeElement nodeElement = element.nodes.get( nodeId );
+            NodeProxy node = new NodeProxy( nodeId, nodeManager );
+            NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId );
+            if ( nodeElement.relationshipAddMap != null )
+            {
+                for ( String type : nodeElement.relationshipAddMap.keySet() )
+                {
+                    IntArray createdRels = 
+                        nodeElement.relationshipAddMap.get( type );
+                    for ( int i = 0; i < createdRels.length(); i++ )
+                    {
+                        int relId = createdRels.get( i );
+                        CowRelElement relElement = 
+                            element.relationships.get( relId );
+                        if ( relElement != null && relElement.deleted )
+                        {
+                            continue;
+                        }
+                        RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
+                        if ( rel.getStartNode().getId() == nodeId )
+                        {
+                            result.created( new RelationshipProxy( relId, nodeManager ) );
+                        }
+                    }
+                }
+            }
+            if ( nodeElement.relationshipRemoveMap != null )
+            {
+                for ( String type : nodeElement.relationshipRemoveMap.keySet() )
+                {
+                    IntArray deletedRels = 
+                        nodeElement.relationshipRemoveMap.get( type );
+                    for ( int i = 0; i < deletedRels.length(); i++ )
+                    {
+                        int relId = deletedRels.get( i );
+                        if ( nodeManager.relCreated( relId ) )
+                        {
+                            continue;
+                        }
+                        RelationshipProxy rel = new RelationshipProxy( relId, nodeManager );
+                        if ( rel.getStartNode().getId() == nodeId )
+                        {
+                            result.deleted( new RelationshipProxy( relId, nodeManager ) );
+                        }
+                    }
+                }
+            }
+            if ( nodeElement.deleted )
+            {
+                if ( nodeManager.nodeCreated( nodeId ) )
+                {
+                    continue;
+                }
+                result.deleted( node );
+                List<PropertyEventData> props = 
+                    nodeImpl.getAllCommittedProperties();
+                for ( PropertyEventData data : props )
+                {
+                    result.removedProperty( node, data.getKey(), 
+                            data.getValue() );
+                }
+            }
+            else
+            {
+                if ( nodeElement.propertyAddMap != null )
+                {
+                    for ( PropertyData data : nodeElement.propertyAddMap.values() )
+                    {
+                        String key = nodeManager.getKeyForProperty( data.getId() );
+                        Object oldValue = nodeImpl.getCommittedPropertyValue( key );
+                        Object newValue = data.getValue();
+                        result.assignedProperty( node, key, newValue, oldValue );
+                    }
+                }
+                if ( nodeElement.propertyRemoveMap != null )
+                {
+                    for ( PropertyData data : nodeElement.propertyRemoveMap.values() )
+                    {
+                        String key = nodeManager.getKeyForProperty( data.getId() );
+                        Object oldValue = nodeImpl.getCommittedPropertyValue( key );
+                        result.removedProperty( node, key, oldValue );
+                    }
+                }
+            }
+        }
+    }
+
+    private void populateCreatedNodes( PrimitiveElement element, 
+            TransactionDataImpl result )
+    {
+        IntArray createdNodes = nodeManager.getCreatedNodes();
+        for ( int i = 0; i < createdNodes.length(); i++ )
+        {
+            int nodeId = createdNodes.get( i );
+            if ( element != null && element.nodes != null )
+            {
+                CowNodeElement nodeElement = element.nodes.get( nodeId );
+                if ( nodeElement != null && nodeElement.deleted )
+                {
+                    continue;
+                }
+            }
+            result.created( new NodeProxy( nodeId, nodeManager ) );
         }
     }
 }

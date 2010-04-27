@@ -109,7 +109,8 @@ public interface RelationshipEventConsumer
      * @throws IOException
      *             If unable to get the properties
      */
-    public ArrayMap<Integer,PropertyData> getProperties( int relId );
+    public ArrayMap<Integer,PropertyData> getProperties( int relId, 
+            boolean light );
 
     /**
      * Gets a relationship with a given id.
@@ -126,4 +127,6 @@ public interface RelationshipEventConsumer
 
     public Iterable<RelationshipData> getMoreRelationships( int nodeId, 
         RelationshipChainPosition position );
+
+    public boolean isRelationshipCreated( int relId );
 }

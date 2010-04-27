@@ -78,9 +78,9 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         nodeManager.nodeRemoveProperty( this, propertyId );
     }
 
-    protected ArrayMap<Integer,PropertyData> loadProperties()
+    protected ArrayMap<Integer,PropertyData> loadProperties( boolean light )
     {
-        return nodeManager.loadProperties( this );
+        return nodeManager.loadProperties( this, light );
     }
     
     List<RelTypeElementIterator> getAllRelationships()

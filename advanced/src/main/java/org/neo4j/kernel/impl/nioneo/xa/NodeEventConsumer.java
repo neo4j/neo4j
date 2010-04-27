@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.IntArray;
 
 /**
  * Defines the operations in Neo4j kernel that are node related.
@@ -112,5 +113,10 @@ public interface NodeEventConsumer
      * @throws IOException
      *             If unable to get the properties
      */
-    public ArrayMap<Integer,PropertyData> getProperties( int nodeId );
+    public ArrayMap<Integer,PropertyData> getProperties( int nodeId, 
+            boolean light );
+
+    public IntArray getCreatedNodes();
+
+    public boolean isNodeCreated( int nodeId );
 }

@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -36,6 +35,7 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LruCache;
@@ -59,8 +59,7 @@ public class NodeManager
     private static Logger log = Logger.getLogger( NodeManager.class.getName() );
 
     private int referenceNodeId = 0;
-
-    final GraphDatabaseService graphDbService; 
+    
     private final Cache<Integer,NodeImpl> nodeCache;
     private final Cache<Integer,RelationshipImpl> relCache;
     private final AdaptiveCacheManager cacheManager;
@@ -82,15 +81,13 @@ public class NodeManager
     
     private static final int LOCK_STRIPE_COUNT = 5;
     private final ReentrantLock loadLocks[] = 
-        new ReentrantLock[LOCK_STRIPE_COUNT];
+        new ReentrantLock[LOCK_STRIPE_COUNT]; 
 
-    NodeManager( GraphDatabaseService graphDb,
-            AdaptiveCacheManager cacheManager, LockManager lockManager,
-            LockReleaser lockReleaser, TransactionManager transactionManager,
-            PersistenceManager persistenceManager, IdGenerator idGenerator,
-            boolean useNewCaches )
+    NodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager, 
+        LockReleaser lockReleaser, TransactionManager transactionManager, 
+        PersistenceManager persistenceManager, IdGenerator idGenerator, 
+        boolean useNewCaches )
     {
-        this.graphDbService = graphDb;
         this.cacheManager = cacheManager;
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
@@ -519,7 +516,7 @@ public class NodeManager
         return relTypeHolder.getRelationshipType( id );
     }
 
-    Relationship getRelForProxy( int relId )
+    RelationshipImpl getRelForProxy( int relId )
     {
         RelationshipImpl relationship = relCache.get( relId );
         if ( relationship != null )
@@ -619,15 +616,18 @@ public class NodeManager
         return newRelationshipMap;
     }
     
-    ArrayMap<Integer,PropertyData> loadProperties( NodeImpl node )
+    ArrayMap<Integer,PropertyData> loadProperties( NodeImpl node, 
+            boolean light )
     {
-        return persistenceManager.loadNodeProperties( (int) node.getId() );
+        return persistenceManager.loadNodeProperties( (int) node.getId(), 
+                light );
     }
 
-    ArrayMap<Integer,PropertyData> loadProperties( RelationshipImpl relationship )
+    ArrayMap<Integer,PropertyData> loadProperties( 
+            RelationshipImpl relationship, boolean light )
     {
         return persistenceManager.loadRelProperties( 
-            (int) relationship.getId() );
+            (int) relationship.getId(), light );
     }
 
     int getNodeMaxCacheSize()
@@ -921,5 +921,31 @@ public class NodeManager
     void addPropertyIndex( PropertyIndexData index )
     {
         propertyIndexManager.addPropertyIndex( index );
+    }
+    
+    public TransactionData getTransactionData()
+    {
+        return lockReleaser.getTransactionData();
+    }
+
+    IntArray getCreatedNodes()
+    {
+        return persistenceManager.getCreatedNodes();
+    }
+
+    boolean nodeCreated( int nodeId )
+    {
+        return persistenceManager.isNodeCreated( nodeId );
+    }
+    
+    boolean relCreated( int relId )
+    {
+        return persistenceManager.isRelationshipCreated( relId );
+    }
+
+    public String getKeyForProperty( int propertyId )
+    {
+        int keyId = persistenceManager.getKeyIdForProperty( propertyId );
+        return propertyIndexManager.getIndexFor( keyId ).getKey();
     }
 }

@@ -29,7 +29,6 @@ import java.util.Map;
 
 import javax.transaction.xa.XAException;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -62,6 +61,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.IntArray;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
@@ -946,12 +946,13 @@ class WriteTransaction extends XaTransaction
         }
     }
 
-    public ArrayMap<Integer,PropertyData> relGetProperties( int relId )
+    public ArrayMap<Integer,PropertyData> relGetProperties( int relId, 
+            boolean light )
     {
         RelationshipRecord relRecord = getRelationshipRecord( relId );
         if ( relRecord != null )
         {
-            if ( !relRecord.inUse() )
+            if ( !relRecord.inUse() && !light )
             {
                 throw new IllegalStateException( "Relationship[" + relId + 
                         "] has been deleted in this tx" );
@@ -987,12 +988,12 @@ class WriteTransaction extends XaTransaction
         return propertyMap;
     }
 
-    ArrayMap<Integer,PropertyData> nodeGetProperties( int nodeId )
+    ArrayMap<Integer,PropertyData> nodeGetProperties( int nodeId, boolean light )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord != null )
         {
-            if ( !nodeRecord.inUse() )
+            if ( !nodeRecord.inUse() && !light )
             {
                 throw new IllegalStateException( "Node[" + nodeId + 
                         "] has been deleted in this tx" );
@@ -1659,11 +1660,6 @@ class WriteTransaction extends XaTransaction
             return this.id;
         }
 
-        public GraphDatabaseService getGraphDatabase()
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
         public Node[] getNodes()
         {
             throw new UnsupportedOperationException( "Lockable rel" );
@@ -1742,5 +1738,48 @@ class WriteTransaction extends XaTransaction
         {
             return "Lockable relationship #" + this.getId();
         }
+    }
+    
+    public IntArray getCreatedNodes()
+    {
+        IntArray createdNodes = new IntArray();
+        for ( NodeRecord record : nodeRecords.values() )
+        {
+            if ( record.isCreated() )
+            {
+                createdNodes.add( record.getId() );
+            }
+        }
+        return createdNodes;
+    }
+    
+    public boolean nodeCreated( int nodeId )
+    {
+        NodeRecord record = nodeRecords.get( nodeId );
+        if ( record != null )
+        {
+            return record.isCreated();
+        }
+        return false;
+    }
+
+    public boolean relCreated( int relId )
+    {
+        RelationshipRecord record = relRecords.get( relId );
+        if ( record != null )
+        {
+            return record.isCreated();
+        }
+        return false;
+    }
+
+    public int getKeyIdForProperty( int propertyId )
+    {
+        PropertyRecord propRecord = getPropertyRecord( propertyId );
+        if ( propRecord == null )
+        {
+            propRecord = getPropertyStore().getLightRecord( propertyId );
+        }
+        return propRecord.getKeyIndexId();
     }
 }
