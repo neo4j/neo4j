@@ -634,16 +634,14 @@ public class NodeManager
             (int) relationship.getId(), light );
     }
 
-    int getNodeMaxCacheSize()
+    public int getNodeCacheSize()
     {
-        // return nodeCache.maxSize();
-        return -1;
+        return nodeCache.size();
     }
 
-    int getRelationshipMaxCacheSize()
+    public int getRelationshipCacheSize()
     {
-        // return relCache.maxSize();
-        return -1;
+        return relCache.size();
     }
 
     public void clearCache()
