@@ -58,6 +58,7 @@ public class GraphDbModule
     private NodeManager nodeManager;
     
     private boolean readOnly = false;
+    private boolean useNewCache = true;
 
     public GraphDbModule( GraphDatabaseService graphDb,
             AdaptiveCacheManager cacheManager, LockManager lockManager,
@@ -83,7 +84,6 @@ public class GraphDbModule
         {
             return;
         }
-        boolean useNewCache = true;
         if ( params.containsKey( "use_old_cache" ) && 
             params.get( "use_old_cache" ).equals( "true" ) )
         {
@@ -118,6 +118,11 @@ public class GraphDbModule
         }
         nodeManager.start( params );
         startIsOk = false;
+    }
+
+    public boolean isUsingSoftReferenceCache()
+    {
+        return useNewCache;
     }
     
     private void beginTx()
