@@ -20,7 +20,6 @@
     <bundle.namespace>org.neo4j.remote</bundle.namespace>
     <short-name>remote-graphdb</short-name>
     <agent-main>org.neo4j.remote.Agent</agent-main>
-    <protoc-name>protoc</protoc-name>
   </properties>
  
   <packaging>bundle</packaging>
@@ -72,13 +71,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <activation><os><family>mac</family></os></activation>
-      <properties><protoc-name>protoc-mac</protoc-name></properties>
-    </profile>
-  </profiles>
 
   <build>
     <plugins>
@@ -134,11 +126,9 @@
             <configuration>
               <tasks>
                 <mkdir dir="target/generated-sources/protobuf"/>
-                <exec executable="bin/${protoc-name}">
+                <exec executable="bin/protoc">
                   <arg value="--java_out=target/generated-sources/protobuf"/>
                   <arg value="src/main/protobuf/RemoteNeo.proto"/>
-                  <env key="DYLD_LIBRARY_PATH" file="bin"/>
-                  <env key="LD_LIBRARY_PATH" file="bin"/>
                 </exec>
               </tasks>
               <sourceRoot>target/generated-sources/protobuf</sourceRoot>
