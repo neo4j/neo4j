@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -29,6 +29,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.TransactionEventHandler;
 
 /**
  * A remote connection to a running {@link GraphDatabaseService Graph Database}
@@ -172,7 +174,7 @@ public final class RemoteGraphDatabase implements GraphDatabaseService
 
     private RemoteGraphDatabase( RemoteConnection connection, ConfigurationModule config )
     {
-        this.engine = new RemoteGraphDbEngine( connection, config );
+        this.engine = new RemoteGraphDbEngine( this, connection, config );
     }
 
     /**
@@ -229,6 +231,34 @@ public final class RemoteGraphDatabase implements GraphDatabaseService
         engine.shutdown();
     }
 
+    public KernelEventHandler registerKernelEventHandler(
+            KernelEventHandler handler )
+    {
+        throw new UnsupportedOperationException(
+                "Event handlers not suppoerted by RemoteGraphDatabase." );
+    }
+
+    public KernelEventHandler unregisterKernelEventHandler(
+            KernelEventHandler handler )
+    {
+        throw new UnsupportedOperationException(
+                "Event handlers not suppoerted by RemoteGraphDatabase." );
+    }
+
+    public <T> TransactionEventHandler<T> registerTransactionEventHandler(
+            TransactionEventHandler<T> handler )
+    {
+        throw new UnsupportedOperationException(
+                "Event handlers not suppoerted by RemoteGraphDatabase." );
+    }
+
+    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
+            TransactionEventHandler<T> handler )
+    {
+        throw new UnsupportedOperationException(
+                "Event handlers not suppoerted by RemoteGraphDatabase." );
+    }
+
     RemoteGraphDbEngine getEngine()
     {
         return engine;
@@ -241,8 +271,7 @@ public final class RemoteGraphDatabase implements GraphDatabaseService
         return false;
     }
 
-    public boolean enableRemoteShell(
-        Map<String, Serializable> initialProperties )
+    public boolean enableRemoteShell( Map<String, Serializable> initialProperties )
     {
         // NOTE This might not be something that we wish to support in RemoteGraphDatabase
         return false;
