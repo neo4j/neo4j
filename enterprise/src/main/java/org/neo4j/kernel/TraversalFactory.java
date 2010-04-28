@@ -46,7 +46,7 @@ public class TraversalFactory
     {
         return new DefaultExpander().add( type, dir );
     }
-
+    
     /**
      * Creates a new {@link RelationshipExpander} which is set to expand
      * relationships with two different types and directions.
@@ -87,6 +87,16 @@ public class TraversalFactory
             expander = expander.add( types[i], directions[i] );
         }
         return expander;
+    }
+    
+    /**
+     * Returns a {@link RelationshipExpander} which expands relationships
+     * of all types and directions.
+     * @return a relationship expander which expands all relationships.
+     */
+    public static RelationshipExpander expanderForAllTypes()
+    {
+        return DefaultExpander.ALL;
     }
 
     private static Object[] EMPTY_ARRAY = new Object[0];
