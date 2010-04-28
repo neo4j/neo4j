@@ -5,7 +5,6 @@ class LockManager extends Neo4jJmx implements LockManagerMBean
     LockManager( int instanceId )
     {
         super( instanceId );
-        // TODO Auto-generated constructor stub
     }
 
     public long getNumberOfAdvertedDeadlocks()

@@ -14,6 +14,7 @@ import javax.management.ObjectName;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
 public abstract class Neo4jJmx
 {
@@ -93,10 +94,10 @@ public abstract class Neo4jJmx
                 failedToRegister( "ConfigurationMBean" );
         }
 
-        public void createMemoryMappingMBean( TxModule txModule )
+        public void createMemoryMappingMBean( XaDataSourceManager datasourceMananger )
         {
             NeoStoreXaDataSource datasource = (NeoStoreXaDataSource)
-                    txModule.getXaDataSourceManager().getXaDataSource( "nioneodb" );
+                    datasourceMananger.getXaDataSource( "nioneodb" );
             if ( !register( new MemoryMappingMonitor.MXBeanImplementation(
                     instanceId, datasource ) ) )
             {
@@ -106,11 +107,13 @@ public abstract class Neo4jJmx
             }
         }
 
-        public void createXaManagerMBean()
+        public void createXaManagerMBean( XaDataSourceManager datasourceMananger )
         {
-            if ( !register( new XaMonitor.MXBeanImplementation( instanceId ) ) )
+            if ( !register( new XaMonitor.MXBeanImplementation( instanceId,
+                    datasourceMananger ) ) )
             {
-                if ( !register( new XaMonitor.XaManager( instanceId ) ) )
+                if ( !register( new XaMonitor.XaManager( instanceId,
+                        datasourceMananger ) ) )
                     failedToRegister( "XaManagerMBean" );
             }
         }
