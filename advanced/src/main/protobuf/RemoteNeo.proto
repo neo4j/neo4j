@@ -1,0 +1,78 @@
+package org.neo4j.remote;
+
+option java_package = "org.neo4j.remote.impl.protobuf";
+
+message Property {
+  required string key = 1;
+  enum PropertyType {
+    REMOVED = 1;
+  
+    BOOL = 2;
+    BYTE = 3;
+    CHAR = 4;
+    SHORT = 5;
+    INTEGER = 6;
+    LONG = 7;
+    FLOAT = 8;
+    DOUBLE = 9;
+    STRING = 10;
+    
+    BOOL_ARRAY = 11;
+    BYTE_ARRAY = 12;
+    CHAR_ARRAY = 13;
+    SHORT_ARRAY = 14;
+    INTEGER_ARRAY = 15;
+    LONG_ARRAY = 16;
+    FLOAT_ARRAY = 17;
+    DOUBLE_ARRAY = 18;
+    STRING_ARRAY = 19;
+  }
+  required PropertyType type = 2;
+  
+  optional bool   boolean_data = 3;
+  optional sint64 integer_data = 4;
+  optional float  float_data   = 5;
+  optional double double_data  = 6;
+  optional string string_data  = 7;
+  
+  repeated bool   boolean_array = 8;
+  repeated sint64 integer_array = 9;
+  repeated float  float_array   = 10;
+  repeated double double_array  = 11;
+  repeated string string_array  = 12;
+}
+
+message Record {
+  enum RecordType {
+    NODE = 0;
+    RELATIONSHIP = 1;
+  }
+  required RecordType type = 1;
+  required uint64 id = 2;
+  
+  optional uint64 start = 3;
+  optional uint64 end = 4;
+  optional string label = 5;
+  
+  repeated Property property = 6;
+}
+
+message IteratorSpecification {
+  optional uint32 token = 1;
+  repeated uint64 record_data = 2;
+  repeated string string_data = 3;
+}
+
+message RemoteResponse {
+  optional uint32 tx_id = 1;
+  
+  repeated Record updates = 10;
+}
+
+message RemoteRequest {
+  enum RequestMethod {
+    BEGIN_TX = 1;
+  }
+  required RequestMethod method = 1;
+  optional uint32 tx_id = 2;
+}
