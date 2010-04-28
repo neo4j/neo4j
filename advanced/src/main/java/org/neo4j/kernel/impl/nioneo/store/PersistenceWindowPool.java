@@ -579,4 +579,10 @@ class PersistenceWindowPool
     {
         log.warning( "[" + storeName + "] " + logMessage );
     }
+    
+    WindowPoolStats getStats()
+    {
+        return new WindowPoolStats( storeName, availableMem, memUsed, brickCount, 
+                brickSize, hit, miss, ooe );
+    }
 }

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -359,5 +361,15 @@ public class NeoStore extends AbstractStore
     public int getRelationshipGrabSize()
     {
         return REL_GRAB_SIZE;
+    }
+    
+    public List<WindowPoolStats> getAllWindowPoolStats()
+    {
+        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        list.addAll( nodeStore.getAllWindowPoolStats() );
+        list.addAll( propStore.getAllWindowPoolStats() );
+        list.addAll( relStore.getAllWindowPoolStats() );
+        list.addAll( relTypeStore.getAllWindowPoolStats() );
+        return list;
     }
 }

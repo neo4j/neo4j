@@ -24,6 +24,7 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -176,6 +177,13 @@ public class TestStore
 
         protected void rebuildIdGenerator()
         {
+        }
+
+        @Override
+        public List<WindowPoolStats> getAllWindowPoolStats()
+        {
+            // TODO Auto-generated method stub
+            return null;
         }
     }
 }

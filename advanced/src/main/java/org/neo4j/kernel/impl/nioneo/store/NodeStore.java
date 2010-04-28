@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -211,5 +213,12 @@ public class NodeStore extends AbstractStore implements Store
             "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
+    }
+
+    public List<WindowPoolStats> getAllWindowPoolStats()
+    {
+        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        list.add( getWindowPoolStats() );
+        return list;
     }
 }

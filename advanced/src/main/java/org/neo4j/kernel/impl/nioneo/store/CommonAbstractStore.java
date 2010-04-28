@@ -679,4 +679,10 @@ public abstract class CommonAbstractStore
     {
         return idGenerator.getNumberOfIdsInUse();
     }
+
+    
+    public WindowPoolStats getWindowPoolStats()
+    {
+        return windowPool.getStats();
+    }
 }
