@@ -362,7 +362,8 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType relationshipType, Direction direction )
     {
-        return OldTraverserWrapper.traverse( this, traversalOrder, stopEvaluator,
+        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ), 
+                traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipType, direction );
     }
 
@@ -371,7 +372,8 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         RelationshipType firstRelationshipType, Direction firstDirection,
         RelationshipType secondRelationshipType, Direction secondDirection )
     {
-        return OldTraverserWrapper.traverse( this, traversalOrder, stopEvaluator,
+        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ), 
+                traversalOrder, stopEvaluator,
                 returnableEvaluator, firstRelationshipType, firstDirection,
                 secondRelationshipType, secondDirection );
     }
@@ -380,7 +382,8 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         Object... relationshipTypesAndDirections )
     {
-        return OldTraverserWrapper.traverse( this, traversalOrder, stopEvaluator,
+        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ), 
+                traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipTypesAndDirections );
     }
 
