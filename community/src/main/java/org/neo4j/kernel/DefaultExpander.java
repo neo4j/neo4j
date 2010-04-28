@@ -17,7 +17,7 @@ import org.neo4j.graphdb.RelationshipType;
  */
 public class DefaultExpander implements RelationshipExpander
 {
-    public static RelationshipExpander ALL = new DefaultExpander(
+    static RelationshipExpander ALL = new DefaultExpander(
             new RelationshipType[0], new Direction[0] );
     
     private final RelationshipType[] types;
