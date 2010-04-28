@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
@@ -309,4 +310,6 @@ public abstract class AbstractStore extends CommonAbstractStore
         closeIdGenerator();
         openIdGenerator();
     }
+    
+    public abstract List<WindowPoolStats> getAllWindowPoolStats();
 }
