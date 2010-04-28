@@ -17,9 +17,9 @@ public final class WindowPoolInfo implements Serializable
     private final int missCount;
     private final int oomCount;
 
-    @ConstructorProperties( { "WindowPoolName", "AvailableMemory",
-            "UsedMemory", "NumberOfWindows", "WindowSize", "WindowHitCount",
-            "WindowMissCount", "NumberOfOutOfMemory" } )
+    @ConstructorProperties( { "windowPoolName", "availableMemory",
+            "usedMemory", "numberOfWindows", "windowSize", "windowHitCount",
+            "windowMissCount", "numberOfOutOfMemory" } )
     public WindowPoolInfo( String name, long memAvail, long memUsed,
             int windowCount, int windowSize, int hitCount, int missCount,
             int oomCount )
