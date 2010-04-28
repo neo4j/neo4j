@@ -67,8 +67,8 @@ class TraversalRulesImpl extends PrefetchingIterator<Position>
     
     public boolean shouldExpandBeyond( ExpansionSource source )
     {
-        return !this.pruning.pruneAfter( source.position() ) &&
-                this.uniquness.check( source, false );
+        return this.uniquness.check( source, false ) &&
+                !this.pruning.pruneAfter( source.position() );
     }
 
     public boolean okToReturn( ExpansionSource source )
