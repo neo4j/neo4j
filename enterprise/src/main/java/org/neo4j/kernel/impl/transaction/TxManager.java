@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import javax.transaction.HeuristicMixedException;
@@ -48,7 +49,6 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.nioneo.store.StoreFailureException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
@@ -76,6 +76,11 @@ public class TxManager implements TransactionManager
     private boolean tmOk = false;
     
     private final KernelPanicEventGenerator kpe;
+    
+    private final AtomicInteger startedTxCount = new AtomicInteger( 0 );
+    private final AtomicInteger comittedTxCount = new AtomicInteger( 0 );
+    private final AtomicInteger rolledBackTxCount = new AtomicInteger( 0 );
+    private int peakConcurrentTransactions = 0;
 
     TxManager( String txLogDir, KernelPanicEventGenerator kpe )
     {
@@ -501,6 +506,12 @@ public class TxManager implements TransactionManager
         }
         tx = new TransactionImpl( this );
         txThreadMap.put( thread, tx );
+        int concurrentTxCount = txThreadMap.size();
+        if ( concurrentTxCount > peakConcurrentTransactions )
+        {
+            peakConcurrentTransactions = concurrentTxCount;
+        }
+        startedTxCount.incrementAndGet();
         // start record written on resource enlistment
     }
     
@@ -545,10 +556,12 @@ public class TxManager implements TransactionManager
         // delist resources?
         if ( tx.getStatus() == Status.STATUS_ACTIVE )
         {
+            comittedTxCount.incrementAndGet();
             commit( thread, tx );
         }
         else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
         {
+            rolledBackTxCount.incrementAndGet();
             rollbackCommit( thread, tx );
         }
         else
@@ -563,7 +576,7 @@ public class TxManager implements TransactionManager
         HeuristicRollbackException
     {
         // mark as commit in log done TxImpl.doCommit()
-        StoreFailureException sfe = null;
+        Throwable commitFailureCause = null;
         int xaErrorCode = -1;
         if ( tx.getResourceCount() == 0 )
         {
@@ -590,9 +603,9 @@ public class TxManager implements TransactionManager
                         "commit threw exception but status is committed?", e );
                 }
             }
-            catch ( StoreFailureException e )
+            catch ( Throwable t )
             {
-                sfe = e;
+                commitFailureCause = t;
             }
         }
         if ( tx.getStatus() != Status.STATUS_COMMITTED )
@@ -609,9 +622,9 @@ public class TxManager implements TransactionManager
                     + "Neo4j kernel should be SHUTDOWN for "
                     + "resource maintance and transaction recovery ---->" );
                 setTmNotOk();
-                if ( sfe != null )
+                if ( commitFailureCause != null )
                 {
-                    sfe.printStackTrace();
+                    commitFailureCause.printStackTrace();
                 }
                 throw new HeuristicMixedException(
                     "Unable to rollback ---> error code in commit: "
@@ -636,7 +649,7 @@ public class TxManager implements TransactionManager
                     + " error writing transaction log," + e );
             }
             tx.setStatus( Status.STATUS_NO_TRANSACTION );
-            if ( sfe == null )
+            if ( commitFailureCause == null )
             {
                 throw new HeuristicRollbackException(
                     "Failed to commit, transaction rolledback ---> "
@@ -645,7 +658,8 @@ public class TxManager implements TransactionManager
             else
             {
                 throw new HeuristicRollbackException(
-                    "Failed to commit, transaction rolledback ---> " + sfe );
+                    "Failed to commit, transaction rolledback ---> " + 
+                    commitFailureCause );
             }
         }
         tx.doAfterCompletion();
@@ -730,6 +744,7 @@ public class TxManager implements TransactionManager
             // delist resources?
             try
             {
+                rolledBackTxCount.incrementAndGet();
                 tx.doRollback();
             }
             catch ( XAException e )
@@ -769,7 +784,7 @@ public class TxManager implements TransactionManager
         }
     }
 
-    public int getStatus() // throws SystemException
+    public int getStatus()
     {
         Thread thread = Thread.currentThread();
         TransactionImpl tx = txThreadMap.get( thread );
@@ -923,5 +938,30 @@ public class TxManager implements TransactionManager
             return tx.getEventIdentifier();
         }
         return -1;
+    }
+    
+    public int getStartedTxCount()
+    {
+        return startedTxCount.get();
+    }
+
+    public int getCommittedTxCount()
+    {
+        return comittedTxCount.get();
+    }
+    
+    public int getRolledbackTxCount()
+    {
+        return rolledBackTxCount.get();
+    }
+    
+    public int getActiveTxCount()
+    {
+        return txThreadMap.size();
+    }
+    
+    public int getPeakConcurrentTxCount()
+    {
+        return peakConcurrentTransactions;
     }
 }
