@@ -138,6 +138,7 @@
                   <arg value="--java_out=target/generated-sources/protobuf"/>
                   <arg value="src/main/protobuf/RemoteNeo.proto"/>
                   <env key="DYLD_LIBRARY_PATH" file="bin"/>
+                  <env key="LD_LIBRARY_PATH" file="bin"/>
                 </exec>
               </tasks>
               <sourceRoot>target/generated-sources/protobuf</sourceRoot>
