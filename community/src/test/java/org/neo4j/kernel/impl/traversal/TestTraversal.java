@@ -25,6 +25,14 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Traverser.Order.BREADTH_FIRST;
 import static org.neo4j.graphdb.Traverser.Order.DEPTH_FIRST;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -131,23 +139,6 @@ public class TestTraversal extends AbstractNeo4jTestCase
         }
     }
 
-//    private void sanityCheckTraverser( String failMessage, Order type,
-//        Node startNode, RelationshipType traversableRel1, Direction direction1,
-//        RelationshipType traversableRel2, Direction direction2,
-//        StopEvaluator stopEval, ReturnableEvaluator retEval )
-//    {
-//        try
-//        {
-//            startNode.traverse( type, stopEval, retEval, traversableRel1,
-//                direction1, traversableRel2, direction2 );
-//            fail( failMessage );
-//        }
-//        catch ( IllegalArgumentException iae )
-//        {
-//            // This is ok
-//        }
-//    }
-
     // Traverses the full test "ise-tree-like" population breadth first
     // and verifies that it is returned in correct order
     @Test
@@ -163,20 +154,12 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
         try
         {
-            this.assertNextNodeId( traverser, "1" );
-            this.assertNextNodeId( traverser, "2" );
-            this.assertNextNodeId( traverser, "3" );
-            this.assertNextNodeId( traverser, "4" );
-            this.assertNextNodeId( traverser, "5" );
-            this.assertNextNodeId( traverser, "6" );
-            this.assertNextNodeId( traverser, "7" );
-            this.assertNextNodeId( traverser, "8" );
-            this.assertNextNodeId( traverser, "9" );
-            this.assertNextNodeId( traverser, "10" );
-            this.assertNextNodeId( traverser, "11" );
-            this.assertNextNodeId( traverser, "12" );
-            this.assertNextNodeId( traverser, "13" );
-            this.assertNextNodeId( traverser, "14" );
+            this.assertLevelsOfNodes( traverser, new String[][] {
+                    new String[] { "1" },
+                    new String[] { "2", "3", "4" },
+                    new String[] { "5", "6", "7", "8", "9" },
+                    new String[] { "10", "11", "12", "13", "14" }
+            } );
             assertTrue( "Too many nodes returned from traversal", traverser
                 .iterator().hasNext() == false );
         }
@@ -187,6 +170,38 @@ public class TestTraversal extends AbstractNeo4jTestCase
         finally
         {
             this.deleteNodeTreeRecursively( root, 0 );
+        }
+    }
+    
+    private void assertNodes( Traverser traverser, String... expectedNodes )
+    {
+        Set<String> set = new HashSet<String>( Arrays.asList( expectedNodes ) );
+        for ( Node node : traverser )
+        {
+            assertTrue( set.remove( node.getProperty( "node.test.id" ) ) );
+        }
+        assertTrue( set.isEmpty() );
+    }
+
+    private void assertLevelsOfNodes( Traverser traverser, String[][] nodes )
+    {
+        Map<Integer, Collection<String>> map = new HashMap<Integer, Collection<String>>();
+        for ( Node node : traverser )
+        {
+            Collection<String> collection = map.get( traverser.currentPosition().depth() );
+            if ( collection == null )
+            {
+                collection = new ArrayList<String>();
+                map.put( traverser.currentPosition().depth(), collection );
+            }
+            String name = (String) node.getProperty( "node.test.id" );
+            collection.add( name );
+        }
+        
+        for ( int i = 0; i < nodes.length; i++ )
+        {
+            Collection<String> expected = Arrays.asList( nodes[i] );
+            assertEquals( expected, map.get( i ) );
         }
     }
 
@@ -205,17 +220,12 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
         try
         {
-            this.assertNextNodeId( traverser, "1" );
-            this.assertNextNodeId( traverser, "2" );
-            this.assertNextNodeId( traverser, "3" );
-            this.assertNextNodeId( traverser, "4" );
-            this.assertNextNodeId( traverser, "5" );
-            this.assertNextNodeId( traverser, "6" );
-            this.assertNextNodeId( traverser, "7" );
-            this.assertNextNodeId( traverser, "10" );
-            this.assertNextNodeId( traverser, "11" );
-            this.assertNextNodeId( traverser, "12" );
-            this.assertNextNodeId( traverser, "13" );
+            this.assertLevelsOfNodes( traverser, new String[][] {
+                new String[] { "1" },
+                new String[] { "2", "3", "4" },
+                new String[] { "5", "6", "7" },
+                new String[] { "10", "11", "12", "13" },
+            } );
             assertTrue( "Too many nodes returned from traversal", traverser
                 .iterator().hasNext() == false );
         }
@@ -318,36 +328,8 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
         try
         {
-            this.assertNextNodeId( traverser, "1" );
-            this.assertNextNodeId( traverser, "4" );
-            this.assertNextNodeId( traverser, "9" );
-            this.assertNextNodeId( traverser, "14" );
-            this.assertNextNodeId( traverser, "8" );
-            this.assertNextNodeId( traverser, "3" );
-            this.assertNextNodeId( traverser, "7" );
-            this.assertNextNodeId( traverser, "6" );
-            this.assertNextNodeId( traverser, "2" );
-            this.assertNextNodeId( traverser, "5" );
-            this.assertNextNodeId( traverser, "13" );
-            this.assertNextNodeId( traverser, "12" );
-            this.assertNextNodeId( traverser, "11" );
-            this.assertNextNodeId( traverser, "10" );
-
-            // this is another possible order, depending on traversal
-            // implementation/PS
-            // this.assertNextNodeId( traverser, "2" );
-            // this.assertNextNodeId( traverser, "5" );
-            // this.assertNextNodeId( traverser, "10" );
-            // this.assertNextNodeId( traverser, "11" );
-            // this.assertNextNodeId( traverser, "12" );
-            // this.assertNextNodeId( traverser, "13" );
-            // this.assertNextNodeId( traverser, "6" );
-            // this.assertNextNodeId( traverser, "7" );
-            // this.assertNextNodeId( traverser, "3" );
-            // this.assertNextNodeId( traverser, "4" );
-            // this.assertNextNodeId( traverser, "8" );
-            // this.assertNextNodeId( traverser, "9" );
-            // this.assertNextNodeId( traverser, "14" );
+            this.assertNodes( traverser, "1", "2", "3", "4", "5", "6", "7",
+                    "8", "9", "10", "11", "12", "13", "14" );
             assertTrue( "Too many nodes returned from traversal", traverser
                 .iterator().hasNext() == false );
         }
@@ -375,30 +357,8 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
         try
         {
-            this.assertNextNodeId( traverser, "1" );
-            this.assertNextNodeId( traverser, "4" );
-            this.assertNextNodeId( traverser, "3" );
-            this.assertNextNodeId( traverser, "7" );
-            this.assertNextNodeId( traverser, "2" );
-            this.assertNextNodeId( traverser, "6" );
-            this.assertNextNodeId( traverser, "5" );
-            this.assertNextNodeId( traverser, "13" );
-            this.assertNextNodeId( traverser, "12" );
-            this.assertNextNodeId( traverser, "11" );
-            this.assertNextNodeId( traverser, "10" );
-
-            // this is another possible order, depends on traversal
-            // implementation/PS
-            // this.assertNextNodeId( traverser, "2" );
-            // this.assertNextNodeId( traverser, "5" );
-            // this.assertNextNodeId( traverser, "10" );
-            // this.assertNextNodeId( traverser, "11" );
-            // this.assertNextNodeId( traverser, "12" );
-            // this.assertNextNodeId( traverser, "13" );
-            // this.assertNextNodeId( traverser, "6" );
-            // this.assertNextNodeId( traverser, "3" );
-            // this.assertNextNodeId( traverser, "7" );
-            // this.assertNextNodeId( traverser, "4" );
+            assertNodes( traverser, "1", "2", "3", "4", "5", "6", "7",
+                    "10", "11", "12", "13" );
             assertTrue( "Too many nodes returned from traversal", traverser
                 .iterator().hasNext() == false );
         }
@@ -604,11 +564,11 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
         try
         {
-            this.assertNextNodeId( traverser, "1" );
-            this.assertNextNodeId( traverser, "2" );
-            this.assertNextNodeId( traverser, "3" );
-            this.assertNextNodeId( traverser, "4" );
-            this.assertNextNodeId( traverser, "5" );
+            this.assertLevelsOfNodes( traverser, new String[][] {
+                new String[] { "1" },
+                new String[] { "2", "3", "4" },
+                new String[] { "5" },
+            } );
 
             assertTrue( "Too many nodes returned from traversal", traverser
                 .iterator().hasNext() == false );
@@ -655,19 +615,12 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
         try
         {
-            this.assertNextNodeId( traverser, "1" );
-            this.assertNextNodeId( traverser, "2" );
-            this.assertNextNodeId( traverser, "3" );
-            this.assertNextNodeId( traverser, "4" );
-            this.assertNextNodeId( traverser, "5" );
-            this.assertNextNodeId( traverser, "6" );
-            this.assertNextNodeId( traverser, "7" );
-            this.assertNextNodeId( traverser, "8" );
-            this.assertNextNodeId( traverser, "9" );
-            this.assertNextNodeId( traverser, "10" );
-            this.assertNextNodeId( traverser, "11" );
-            this.assertNextNodeId( traverser, "12" );
-            this.assertNextNodeId( traverser, "13" );
+            this.assertLevelsOfNodes( traverser, new String[][] {
+                new String[] { "1" },
+                new String[] { "2", "3", "4" },
+                new String[] { "5", "6", "7", "8", "9" },
+                new String[] { "10", "11", "12", "13" }
+            } );
 
             assertTrue( "Too many nodes returned from traversal", traverser
                 .iterator().hasNext() == false );
@@ -715,6 +668,16 @@ public class TestTraversal extends AbstractNeo4jTestCase
         RelationshipType clone = MyRelTypes.TEST_TRAVERSAL;
 
         // Bind it together
+        // 
+        //               ----(1)-------
+        //              /      \       \
+        //          --(2)--    (3)     (4)--
+        //         /       \     \      |   \
+        //     --(5)----- (6)---(7)   (8)  (9)
+        //    /   |   \  \                  |
+        //  (10) (11)(12)(13)              (14)
+        //
+        
         nodeSpace[1].createRelationshipTo( nodeSpace[2], ise );
         nodeSpace[2].createRelationshipTo( nodeSpace[5], ise );
         nodeSpace[5].createRelationshipTo( nodeSpace[10], ise );
