@@ -5,7 +5,7 @@ import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.kernel.TraversalFactory;
 
 import common.Neo4jAlgoTestCase;
 
@@ -33,7 +33,7 @@ public class TestAStar extends Neo4jAlgoTestCase
                 return result;
             }
         };
-        AStar astar = new AStar( graphDb, RelationshipExpander.ALL,
+        AStar astar = new AStar( graphDb, TraversalFactory.expanderForAllTypes(),
                 new DoubleEvaluator( "length" ), estimateEvaluator );
         Path path = astar.findSinglePath( nodeA, nodeC );
         assertPath( path, nodeA, nodeB, nodeC );

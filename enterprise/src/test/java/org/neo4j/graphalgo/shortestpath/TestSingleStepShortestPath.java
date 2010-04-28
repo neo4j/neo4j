@@ -13,7 +13,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.kernel.TraversalFactory;
 
 import common.Neo4jAlgoTestCase;
 import common.SimpleGraphBuilder;
@@ -23,7 +23,7 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
     protected PathFinder instantiatePathFinder( int maxDepth )
     {
         return new SingleStepShortestPathsFinder( graphDb, maxDepth,
-                RelationshipExpander.forTypes( MyRelTypes.R1, Direction.BOTH ) );
+                TraversalFactory.expanderForTypes( MyRelTypes.R1, Direction.BOTH ) );
     }
     
     @Test
@@ -112,7 +112,7 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,g,h,i,j,k,l,m" );
         
         PathFinder finder = new SingleStepShortestPathsFinder( graphDb, 4,
-                RelationshipExpander.forTypes( MyRelTypes.R1, Direction.OUTGOING ) );
+                TraversalFactory.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ) );
         assertPaths( finder.findPaths( graph.getNode( "a" ), graph.getNode( "j" ) ),
                 "a,g,h,i,j" );
     }
