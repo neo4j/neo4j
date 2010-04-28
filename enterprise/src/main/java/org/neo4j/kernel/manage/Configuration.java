@@ -39,7 +39,6 @@ class Configuration extends Neo4jJmx implements DynamicMBean
         return keys.toArray( new MBeanAttributeInfo[keys.size()] );
     }
 
-    @Override
     public Object getAttribute( String attribute )
             throws AttributeNotFoundException, MBeanException,
             ReflectionException
@@ -47,7 +46,6 @@ class Configuration extends Neo4jJmx implements DynamicMBean
         return config.get( attribute );
     }
 
-    @Override
     public AttributeList getAttributes( String[] attributes )
     {
         AttributeList result = new AttributeList( attributes.length );
@@ -65,28 +63,24 @@ class Configuration extends Neo4jJmx implements DynamicMBean
         return result;
     }
 
-    @Override
     public MBeanInfo getMBeanInfo()
     {
         return new MBeanInfo( getClass().getName(), "Neo4j configuration",
                 keys(), null, null, null );
     }
 
-    @Override
     public Object invoke( String actionName, Object[] params, String[] signature )
             throws MBeanException, ReflectionException
     {
         throw new MBeanException( new NoSuchMethodException( actionName ) );
     }
 
-    @Override
     public void setAttribute( Attribute attribute )
             throws AttributeNotFoundException, InvalidAttributeValueException,
             MBeanException, ReflectionException
     {
     }
 
-    @Override
     public AttributeList setAttributes( AttributeList attributes )
     {
         return getAttributes( new String[0] );

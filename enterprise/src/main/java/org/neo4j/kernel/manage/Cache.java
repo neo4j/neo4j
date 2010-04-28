@@ -12,20 +12,17 @@ class Cache extends Neo4jJmx implements CacheMBean
         this.nodeManager = nodeManager;
     }
 
-    @Override
     public String getCacheType()
     {
         return nodeManager.isUsingSoftReferenceCache() ? "soft reference cache"
                 : "lru cache";
     }
 
-    @Override
     public int getNodeCacheSize()
     {
         return nodeManager.getNodeCacheSize();
     }
 
-    @Override
     public int getRelationshipCacheSize()
     {
         return nodeManager.getRelationshipCacheSize();

@@ -16,26 +16,22 @@ class Primitive extends Neo4jJmx implements PrimitiveMBean
         this.nodeManager = nodeManager;
     }
 
-    @Override
     public long getNumberOfNodeIdsInUse()
     {
         return nodeManager.getNumberOfIdsInUse( Node.class );
     }
 
-    @Override
     public long getNumberOfRelationshipIdsInUse()
     {
         return nodeManager.getNumberOfIdsInUse( Relationship.class );
     }
 
 
-    @Override
     public long getNumberOfPropertyIdsInUse()
     {
         return nodeManager.getNumberOfIdsInUse( PropertyStore.class );
     }
 
-    @Override
     public long getNumberOfRelationshipTypeIdsInUse()
     {
         return nodeManager.getNumberOfIdsInUse( RelationshipType.class );
