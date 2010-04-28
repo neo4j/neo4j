@@ -29,10 +29,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.TraversalFactory;
 
 public class SiteExamples
 {
@@ -84,7 +84,7 @@ public class SiteExamples
         // Will find the shortest path between startNode and endNode via
         // "MY_TYPE" relationships (irregardless of their directions)
         PathFinder shortestPathFinder = new SingleStepShortestPathsFinder( graphDb, 15,
-                RelationshipExpander.forTypes( ExampleTypes.MY_TYPE, Direction.BOTH ) );
+                TraversalFactory.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ) );
         Iterable<Path> paths = shortestPathFinder.findPaths( startNode, endNode );
     }
     // END SNIPPET: shortestPathUsage
@@ -166,7 +166,7 @@ public class SiteExamples
                 return result;
             }
         };
-        AStar astar = new AStar( graphDb, RelationshipExpander.ALL,
+        AStar astar = new AStar( graphDb, TraversalFactory.expanderForAllTypes(),
                 new DoubleEvaluator( "length" ), estimateEvaluator );
         Path path = astar.findSinglePath( nodeA, nodeC );
     }
