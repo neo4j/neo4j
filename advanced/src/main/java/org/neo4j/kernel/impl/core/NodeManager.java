@@ -26,16 +26,11 @@ import java.util.logging.Logger;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
-import org.neo4j.graphdb.Traverser;
-import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
@@ -51,7 +46,6 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
-import org.neo4j.kernel.impl.traversal.InternalTraverserFactory;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.IntArray;
 
@@ -69,7 +63,6 @@ public class NodeManager
     private final TransactionManager transactionManager;
     private final LockReleaser lockReleaser;
     private final PropertyIndexManager propertyIndexManager;
-    private final InternalTraverserFactory traverserFactory;
     private final RelationshipTypeHolder relTypeHolder;
     private final PersistenceManager persistenceManager;
     private final IdGenerator idGenerator;
@@ -102,7 +95,6 @@ public class NodeManager
         lockReleaser.setPropertyIndexManager( propertyIndexManager );
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
-        this.traverserFactory = new InternalTraverserFactory();
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator );
         if ( useNewCaches )
@@ -726,24 +718,6 @@ public class NodeManager
     public void removeRelationshipTypeFromCache( int id )
     {
         relTypeHolder.removeRelType( id );
-    }
-
-    Traverser createTraverser( Order traversalOrder, NodeImpl node,
-        RelationshipType relationshipType, Direction direction,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator )
-    {
-        return traverserFactory.createTraverser( traversalOrder, new NodeProxy(
-            (int) node.getId(), this ), relationshipType, direction,
-            stopEvaluator, returnableEvaluator );
-    }
-
-    Traverser createTraverser( Order traversalOrder, NodeImpl node,
-        RelationshipType[] types, Direction[] dirs,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator )
-    {
-        return traverserFactory.createTraverser( traversalOrder, new NodeProxy(
-            (int) node.getId(), this ), types, dirs, stopEvaluator,
-            returnableEvaluator );
     }
 
     void addPropertyIndexes( PropertyIndexData[] propertyIndexes )

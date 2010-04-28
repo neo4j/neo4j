@@ -19,6 +19,10 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.graphdb.traversal.ReturnFilter;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.TraversalFactory;
+
 /**
  * A client hook for evaluating whether a specific node should be returned from
  * a traverser.
@@ -47,7 +51,13 @@ package org.neo4j.graphdb;
  * };
  * </code>
  * </pre>
+ * 
+ * @deprecated because of the introduction of a new traversal framework,
+ * see more information at {@link TraversalDescription} and
+ * {@link TraversalFactory} and the new traversal framework's equivalent
+ * {@link ReturnFilter}.
  */
+@Deprecated
 public interface ReturnableEvaluator
 {
     /**

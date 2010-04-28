@@ -144,6 +144,11 @@ as graphs rather than tables. For more information, see http://neo4j.org.
      <artifactId>geronimo-jta_1.1_spec</artifactId>
      <version>1.1.1</version>
    </dependency>
+   <dependency>
+     <groupId>org.neo4j</groupId>
+     <artifactId>neo4j-commons</artifactId>
+     <version>1.1-SNAPSHOT</version>
+   </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
