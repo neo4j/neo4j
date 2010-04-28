@@ -15,18 +15,19 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.TraversalFactory;
 
 public class LevelShortestPathsFinder implements PathFinder
 {
     public LevelShortestPathsFinder( int maxlength, RelationshipType type, Direction dir )
     {
-        this( maxlength, RelationshipExpander.forTypes( type, dir ) );
+        this( maxlength, TraversalFactory.expanderForTypes( type, dir ) );
     }
 
     public LevelShortestPathsFinder( int maxlength, RelationshipType type1,
             Direction dir1, RelationshipType type2, Direction dir2 )
     {
-        this( maxlength, RelationshipExpander.forTypes( type1, dir1, type2,
+        this( maxlength, TraversalFactory.expanderForTypes( type1, dir1, type2,
                 dir2 ) );
     }
 
@@ -34,7 +35,7 @@ public class LevelShortestPathsFinder implements PathFinder
             Direction dir1, RelationshipType type2, Direction dir2,
             Object... more )
     {
-        this( maxlength, RelationshipExpander.forTypes( type1, dir1, type2,
+        this( maxlength, TraversalFactory.expanderForTypes( type1, dir1, type2,
                 dir2, more ) );
     }
 
