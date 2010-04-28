@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -32,14 +32,17 @@ import org.neo4j.graphdb.Traverser.Order;
 
 final class RemoteGraphDbEngine
 {
+    final RemoteGraphDatabase graphDb;
     private final ThreadLocal<RemoteTransaction> current = new ThreadLocal<RemoteTransaction>();
     private final RemoteConnection connection;
     private final ConfigurationFactory factory;
     private final Map<String, RelationshipType> typesCache = null;
     private final LocalTraversalService traversal = new LocalTraversalService();
 
-    RemoteGraphDbEngine( RemoteConnection connection, ConfigurationModule module )
+    RemoteGraphDbEngine( RemoteGraphDatabase graphDb,
+            RemoteConnection connection, ConfigurationModule module )
     {
+        this.graphDb = graphDb;
         this.connection = connection;
         this.factory = new ConfigurationFactory( module, connection
             .configure( Configuration.of( module ) ) );
@@ -417,12 +420,12 @@ final class RemoteGraphDbEngine
     {
         receive( connection.removeIndexNode( txId, indexId, nodeId, key ) );
     }
-    
+
     void removeIndexNode( int txId, int indexId, String key )
     {
         receive( connection.removeIndexNode( txId, indexId, key ) );
     }
-    
+
     interface CloseableIteratorWithSize<T> extends CloseableIterator<T>
     {
         long size();
