@@ -26,43 +26,36 @@ class Kernel extends Neo4jJmx implements KernelMBean
         kernelStartTime = new Date().getTime();
     }
 
-    @Override
     public Date getKernelStartTime()
     {
         return new Date( kernelStartTime );
     }
 
-    @Override
     public Date getStoreCreationDate()
     {
         return new Date( storeCreationDate );
     }
 
-    @Override
     public long getStoreId()
     {
         return storeId;
     }
 
-    @Override
     public long getStoreLogVersion()
     {
         return storeLogVersion;
     }
 
-    @Override
     public String getKernelVersion()
     {
         return kernelVersion;
     }
 
-    @Override
     public boolean isReadOnly()
     {
         return isReadOnly;
     }
 
-    @Override
     public String getStoreDirectory()
     {
         return storeDir;
