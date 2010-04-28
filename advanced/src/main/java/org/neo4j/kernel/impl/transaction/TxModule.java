@@ -196,4 +196,49 @@ public class TxModule
     {
         return xaDsManager;
     }
+
+    public int getStartedTxCount()
+    {
+        if ( txManager instanceof TxManager )
+        {
+            return ((TxManager) txManager).getStartedTxCount();
+        }
+        return 0;
+    }
+
+    public int getCommittedTxCount()
+    {
+        if ( txManager instanceof TxManager )
+        {
+            return ((TxManager) txManager).getCommittedTxCount();
+        }
+        return 0;
+    }
+    
+    public int getRolledbackTxCount()
+    {
+        if ( txManager instanceof TxManager )
+        {
+            return ((TxManager) txManager).getRolledbackTxCount();
+        }
+        return 0;
+    }
+    
+    public int getActiveTxCount()
+    {
+        if ( txManager instanceof TxManager )
+        {
+            return ((TxManager) txManager).getActiveTxCount();
+        }
+        return 0;
+    }
+    
+    public int getPeakConcurrentTxCount()
+    {
+        if ( txManager instanceof TxManager )
+        {
+            return ((TxManager) txManager).getPeakConcurrentTxCount();
+        }
+        return 0;
+    }
 }
