@@ -19,6 +19,10 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.graphdb.traversal.Position;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.TraversalFactory;
+
 /**
  * Encapsulates information about the current traversal position.
  * 
@@ -28,7 +32,13 @@ package org.neo4j.graphdb;
  * evaluating whether a position in a traversal is a point where the traversal
  * should stop or if the node at that position is to be part of the result
  * respectively.
+ * 
+ * @deprecated because of the introduction of a new traversal framework,
+ * see more information at {@link TraversalDescription} and
+ * {@link TraversalFactory} and the new traversal framework's equivalent
+ * {@link Position}.
  */
+@Deprecated
 public interface TraversalPosition
 {
     /**

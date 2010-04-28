@@ -19,6 +19,10 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.graphdb.traversal.PruneEvaluator;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.TraversalFactory;
+
 /**
  * A client hook for evaluating whether the traverser should traverse beyond a
  * specific node. This is used for pruning the traversal.
@@ -55,7 +59,13 @@ package org.neo4j.graphdb;
  * };
  * </code>
  * </pre>
+ * 
+ * @deprecated because of the introduction of a new traversal framework,
+ * see more information at {@link TraversalDescription} and
+ * {@link TraversalFactory} and the new traversal framework's equivalent
+ * {@link PruneEvaluator}.
  */
+@Deprecated
 public interface StopEvaluator
 {
     /**
