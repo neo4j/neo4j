@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Stack;
 
 import org.neo4j.commons.iterator.IterableWrapper;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
@@ -19,6 +21,7 @@ import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.ReturnFilter;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.kernel.OrderedByTypeExpander;
 import org.neo4j.kernel.TraversalFactory;
 
 public class OldTraverserWrapper
@@ -144,6 +147,15 @@ public class OldTraverserWrapper
         TraverserImpl result = new TraverserImpl();
         TraversalDescription description = traversal( result, traversalOrder,
                 stopEvaluator, returnableEvaluator );
+        description = description.expand( toExpander( relationshipTypesAndDirections ) );
+        result.iter = description.traverse( node ).iterator();
+        return result;
+    }
+
+    private static RelationshipExpander toExpander(
+            Object[] relationshipTypesAndDirections )
+    {
+        Stack<Object[]> entries = new Stack<Object[]>();
         for ( int i = 0; i < relationshipTypesAndDirections.length; i += 2 )
         {
             Object relType = relationshipTypesAndDirections[i];
@@ -170,11 +182,17 @@ public class OldTraverserWrapper
                     "Expected Direction at var args pos " + (i+1)
                         + ", found " + direction );
             }
-            description = description.relationships(
-                    (RelationshipType) relType, (Direction) direction );
+            entries.push( new Object[] { relType, direction } );
         }
-        result.iter = description.traverse( node ).iterator();
-        return result;
+        
+        OrderedByTypeExpander expander = new OrderedByTypeExpander();
+        while ( !entries.isEmpty() )
+        {
+            Object[] entry = entries.pop();
+            expander = (OrderedByTypeExpander) expander.add(
+                    (RelationshipType) entry[0], (Direction) entry[1] );
+        }
+        return expander;
     }
 
     private static TraversalDescription traversal( TraverserImpl traverser,
