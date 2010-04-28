@@ -1,5 +1,7 @@
 package org.neo4j.kernel.manage;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Date;
 
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -21,8 +23,20 @@ class Kernel extends Neo4jJmx implements KernelMBean
         storeCreationDate = datasource.getCreationTime();
         storeLogVersion = datasource.getCurrentLogVersion();
         isReadOnly = datasource.isReadOnly();
-        storeDir = datasource.getStoreDir();
         storeId = datasource.getRandomIdentifier();
+
+        @SuppressWarnings( "hiding" )
+        String storeDir;
+        try
+        {
+            storeDir = new File( datasource.getStoreDir() ).getCanonicalFile().getAbsolutePath();
+        }
+        catch ( IOException e )
+        {
+            storeDir = new File( datasource.getStoreDir() ).getAbsolutePath();
+        }
+        this.storeDir = storeDir;
+
         kernelStartTime = new Date().getTime();
     }
 
@@ -36,9 +50,9 @@ class Kernel extends Neo4jJmx implements KernelMBean
         return new Date( storeCreationDate );
     }
 
-    public long getStoreId()
+    public String getStoreId()
     {
-        return storeId;
+        return Long.toHexString( storeId );
     }
 
     public long getStoreLogVersion()
