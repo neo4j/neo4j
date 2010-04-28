@@ -18,12 +18,12 @@ import org.neo4j.graphdb.RelationshipType;
 public class DefaultExpander implements RelationshipExpander
 {
     static RelationshipExpander ALL = new DefaultExpander(
-            new RelationshipType[0], new Direction[0] );
+            new RelationshipType[0], new HashMap<String, Direction>() );
     
     private final RelationshipType[] types;
     private final Map<String, Direction> directions;
     
-    private DefaultExpander( RelationshipType[] types,
+    protected DefaultExpander( RelationshipType[] types,
             Map<String, Direction> directions)
     {
         this.types = types;
@@ -35,20 +35,15 @@ public class DefaultExpander implements RelationshipExpander
         this.types = new RelationshipType[0];
         this.directions = new HashMap<String, Direction>();
     }
-
-    private DefaultExpander( RelationshipType[] types, Direction[] dirs )
+    
+    protected RelationshipType[] getTypes()
     {
-        if ( types.length != dirs.length )
-        {
-            throw new IllegalArgumentException();
-        }
-        this.types = new RelationshipType[types.length];
-        this.directions = new HashMap<String, Direction>();
-        for ( int i = 0; i < types.length; i++ )
-        {
-            this.types[i] = types[i];
-            this.directions.put( types[i].name(), dirs[i] );
-        }
+        return this.types;
+    }
+    
+    protected Direction getDirection( RelationshipType type )
+    {
+        return this.directions.get( type );
     }
 
     /* (non-Javadoc)
@@ -76,6 +71,14 @@ public class DefaultExpander implements RelationshipExpander
             return start.getRelationships( type,
                     reversedDirection ? direction.reverse() : direction );
         }
+        return getRelationshipsForMultipleTypes( start, reversedDirection,
+                types, directions );
+    }
+    
+    protected Iterable<Relationship> getRelationshipsForMultipleTypes(
+            final Node start, final boolean reversedDirection,
+            RelationshipType[] types, final Map<String, Direction> directions )
+    {
         return new FilteringIterable<Relationship>(
                 start.getRelationships( types ) )
         {
@@ -143,6 +146,12 @@ public class DefaultExpander implements RelationshipExpander
         Map<String, Direction> newDirections =
                 new HashMap<String, Direction>(directions);
         newDirections.put( type.name(), direction );
-        return new DefaultExpander(newTypes, newDirections);
+        return (DefaultExpander) newExpander(newTypes, newDirections);
+    }
+    
+    protected RelationshipExpander newExpander( RelationshipType[] types,
+            Map<String, Direction> directions )
+    {
+        return new DefaultExpander( types, directions );
     }
 }
