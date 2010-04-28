@@ -14,7 +14,7 @@ public interface KernelMBean
 
     Date getStoreCreationDate();
 
-    long getStoreId();
+    String getStoreId();
 
     long getStoreLogVersion();
 

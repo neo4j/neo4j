@@ -60,8 +60,7 @@ import org.neo4j.kernel.manage.Neo4jJmx;
 
 class EmbeddedGraphDbImpl
 {
-    // FIXME: create this version string during the build!
-    private static final String KERNEL_VERSION = "neo4j-kernel-1.1";
+    private static final String KERNEL_VERSION = Version.get();
 
     private static Logger log =
         Logger.getLogger( EmbeddedGraphDbImpl.class.getName() );
@@ -72,7 +71,7 @@ class EmbeddedGraphDbImpl
     private final GraphDatabaseService graphDbService;
     private final NodeManager nodeManager;
     private final String storeDir;
-    private final int instanceId = INSTANCE_ID_COUNTER.incrementAndGet();
+    private final int instanceId = INSTANCE_ID_COUNTER.getAndIncrement();
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -80,6 +79,8 @@ class EmbeddedGraphDbImpl
             new CopyOnWriteArraySet<TransactionEventHandler<?>>();
     private final KernelPanicEventGenerator kernelPanicEventGenerator =
             new KernelPanicEventGenerator( kernelEventHandlers );
+
+    private final Runnable jmxShutdownHook;
 
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
@@ -96,14 +97,14 @@ class EmbeddedGraphDbImpl
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
-        initJMX( params );
+        jmxShutdownHook = initJMX( params );
     }
 
     /**
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
      * with a set of configuration parameters. Will most likely be removed in
      * future releases.
-     * 
+     *
      * @param storeDir the store directory for the db files
      * @param config configuration parameters
      */
@@ -117,12 +118,12 @@ class EmbeddedGraphDbImpl
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
-        initJMX( params );
+        jmxShutdownHook = initJMX( params );
     }
 
-    private void initJMX( final Map<Object, Object> params )
+    private Runnable initJMX( final Map<Object, Object> params )
     {
-        Neo4jJmx.initJMX( new Neo4jJmx.Creator(
+        return Neo4jJmx.initJMX( new Neo4jJmx.Creator(
                 instanceId, KERNEL_VERSION,
                 (NeoStoreXaDataSource) graphDbInstance.getConfig().getTxModule()
                 .getXaDataSourceManager().getXaDataSource( "nioneodb" ) )
@@ -130,9 +131,13 @@ class EmbeddedGraphDbImpl
             @Override
             protected void create( Neo4jJmx.Factory jmx )
             {
+                jmx.createDynamicConfigurationMBean( params );
                 jmx.createPrimitiveMBean( nodeManager );
                 jmx.createCacheMBean( nodeManager );
-                jmx.createDynamicConfigurationMBean( params );
+                // jmx.createLockManagerMBean();
+                jmx.createTransactionManagerMBean( getConfig().getTxModule() );
+                jmx.createMemoryMappingMBean( getConfig().getTxModule() );
+                // jmx.createXaManagerMBean();
             }
         } );
     }
@@ -210,6 +215,8 @@ class EmbeddedGraphDbImpl
         {
             sendShutdownEvent();
         }
+
+        jmxShutdownHook.run();
 
         if ( this.shellService != null )
         {
