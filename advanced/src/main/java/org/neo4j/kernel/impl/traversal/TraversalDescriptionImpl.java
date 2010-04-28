@@ -13,6 +13,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.kernel.DefaultExpander;
+import org.neo4j.kernel.TraversalFactory;
 
 public final class TraversalDescriptionImpl implements TraversalDescription
 {
@@ -35,7 +36,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     
     public TraversalDescriptionImpl()
     {
-        this( DefaultExpander.ALL, Uniqueness.NODE_GLOBAL, null,
+        this( TraversalFactory.expanderForAllTypes(), Uniqueness.NODE_GLOBAL, null,
                 PruneEvaluator.NONE, ReturnFilter.ALL, DEPTH_FIRST_SELECTOR );
     }
 
