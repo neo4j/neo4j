@@ -4,7 +4,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 /**
  * The interface of an event handler for Neo4j Kernel life cycle events.
- * 
+ *
  * @author Tobias Ivarsson
  */
 public interface KernelEventHandler
@@ -21,7 +21,7 @@ public interface KernelEventHandler
     /**
      * This is invoked when the Neo4j Graph Database enters a state from which
      * it cannot continue.
-     * 
+     *
      * @param error an object describing the state that the
      *            {@link GraphDatabaseService} failed to recover from.
      */
@@ -33,7 +33,7 @@ public interface KernelEventHandler
      * desirable to expose it. It can be used to aid in the decision process
      * of in which order to execute the handlers, see
      * {@link #orderComparedTo(KernelEventHandler)}.
-     * 
+     *
      * @return the resource associated to this event handler, or {@code null}.
      */
     Object getResource();
@@ -41,11 +41,11 @@ public interface KernelEventHandler
     /**
      * Gives a hint about when to execute this event handler, compared to other
      * handlers. If this handler must be executed before {@code other} then
-     * {@link ExecutionOrder#BEFORE} should be returned. If this handler must
-     * be executed after {@code other} then {@link ExecutionOrder#AFTER} should
-     * be returned. If it doesn't matter {@link ExecutionOrder#ANY} should be
-     * returned.
-     * 
+     * {@link ExecutionOrder#BEFORE} should be returned. If this handler must be
+     * executed after {@code other} then {@link ExecutionOrder#AFTER} should be
+     * returned. If it doesn't matter {@link ExecutionOrder#DOESNT_MATTER}
+     * should be returned.
+     *
      * @param other the other event handler to compare to.
      * @return the execution order compared to {@code other}.
      */
@@ -56,7 +56,7 @@ public interface KernelEventHandler
      * handler should be executed {@link ExecutionOrder#BEFORE},
      * {@link ExecutionOrder#AFTER} another handler, or it
      * {@link ExecutionOrder#DOESNT_MATTER}.
-     * 
+     *
      * @author mattias
      *
      */
@@ -67,13 +67,13 @@ public interface KernelEventHandler
          * event handler.
          */
         BEFORE,
-        
+
         /**
          * Says that the event handler must be executed after the compared
          * event handler.
          */
         AFTER,
-        
+
         /**
          * Says that it doesn't matter in which order the event handler is
          * executed in comparison to another event handler.

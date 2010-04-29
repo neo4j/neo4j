@@ -25,6 +25,8 @@ import java.util.Map;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.kernel.DeadlockDetectedException;
+
 /**
  * The LockManager can lock resources for reading or writing. By doing this one
  * may achieve different transaction isolation levels. A resource can for now be

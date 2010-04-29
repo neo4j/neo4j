@@ -23,6 +23,7 @@ import java.util.Map;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
