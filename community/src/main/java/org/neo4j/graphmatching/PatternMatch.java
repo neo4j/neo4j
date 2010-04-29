@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2008-2010 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.graphmatching;
 
 import java.util.Arrays;
@@ -13,18 +32,18 @@ import org.neo4j.graphdb.Relationship;
  */
 public class PatternMatch
 {
-	private Map<PatternNode,PatternElement> elements = 
+	private Map<PatternNode,PatternElement> elements =
 		new HashMap<PatternNode, PatternElement>();
-	private Map<PatternRelationship,Relationship> relElements = 
+	private Map<PatternRelationship,Relationship> relElements =
         new HashMap<PatternRelationship,Relationship>();
-    
-	PatternMatch( Map<PatternNode,PatternElement> elements, 
+
+	PatternMatch( Map<PatternNode,PatternElement> elements,
         Map<PatternRelationship,Relationship> relElements )
 	{
 		this.elements = elements;
         this.relElements = relElements;
 	}
-	
+
 	/**
 	 * @param node the {@link PatternNode} to get the {@link Node} for.
 	 * @return the actual {@link Node} for this particular match, represented
@@ -35,7 +54,7 @@ public class PatternMatch
 		return elements.containsKey( node ) ?
 			elements.get( node ).getNode() : null;
 	}
-    
+
     /**
      * @param rel the {@link PatternRelationship} to get the
      * {@link Relationship} for.
@@ -47,7 +66,12 @@ public class PatternMatch
         return relElements.containsKey( rel ) ?
             relElements.get( rel ) : null;
     }
-	
+
+    /**
+     * Get the matched elements in this match.
+     *
+     * @return an iterable over the matched elements in this match instance.
+     */
 	public Iterable<PatternElement> getElements()
 	{
 		return elements.values();
@@ -63,7 +87,7 @@ public class PatternMatch
 	{
 		Map<PatternNode, PatternElement> matchMap =
 			new HashMap<PatternNode, PatternElement>();
-        Map<PatternRelationship, Relationship> relElements = 
+        Map<PatternRelationship, Relationship> relElements =
             new HashMap<PatternRelationship, Relationship>();
 		for ( PatternMatch match : matches )
 		{
@@ -81,8 +105,8 @@ public class PatternMatch
 				if ( !exists )
 				{
 					matchMap.put( node, match.elements.get( node ) );
-                    relElements.put( 
-                        match.elements.get( node ).getFromPatternRelationship(), 
+                    relElements.put(
+                        match.elements.get( node ).getFromPatternRelationship(),
                         match.elements.get( node ).getFromRelationship() );
 				}
 			}
@@ -91,6 +115,13 @@ public class PatternMatch
 		return mergedMatch;
 	}
 
+    /**
+     * Used to merge matches. An example is to merge in an "optional" subgraph
+     * match into a match.
+     * 
+     * @param matches the matches to merge together.
+     * @return the merged matches as one match.
+     */
 	public static PatternMatch merge( PatternMatch... matches )
 	{
 		return merge( Arrays.asList( matches ) );

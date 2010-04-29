@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2008-2010 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.graphmatching;
 
 import java.util.Arrays;
@@ -14,32 +33,70 @@ import org.neo4j.graphmatching.filter.FilterBinaryNode;
 import org.neo4j.graphmatching.filter.FilterExpression;
 import org.neo4j.graphmatching.filter.FilterValueGetter;
 
+/**
+ * The PatternMatcher is the engine that performs the matching of a graph
+ * pattern with the actual graph.
+ */
 public class PatternMatcher
 {
 	private static PatternMatcher matcher = new PatternMatcher();
-	
+
 	private PatternMatcher()
 	{
 	}
-	
+
+    /**
+     * Get the sole instance of the {@link PatternMatcher}.
+     *
+     * @return the instance of {@link PatternMatcher}.
+     */
 	public static PatternMatcher getMatcher()
 	{
 		return matcher;
 	}
-	
-    public Iterable<PatternMatch> match( PatternNode start, 
+
+    /**
+     * Find occurrences of the pattern defined by the given {@link PatternNode}
+     * where the given {@link PatternNode} starts matching at the given
+     * {@link Node}.
+     *
+     * @param start the {@link PatternNode} to start matching at.
+     * @param startNode the {@link Node} to start matching at.
+     * @return all matching instances of the pattern.
+     */
+    public Iterable<PatternMatch> match( PatternNode start,
         Node startNode )
     {
         return match( start, startNode, null );
     }
-    
-	public Iterable<PatternMatch> match( PatternNode start, 
+
+    /**
+     * Find occurrences of the pattern defined by the given {@link PatternNode}
+     * where the given {@link PatternNode} starts matching at the given
+     * {@link Node}.
+     *
+     * @param start the {@link PatternNode} to start matching at.
+     * @param startNode the {@link Node} to start matching at.
+     * @param objectVariables mapping from names to {@link PatternNode}s.
+     * @return all matching instances of the pattern.
+     */
+	public Iterable<PatternMatch> match( PatternNode start,
 		Node startNode, Map<String, PatternNode> objectVariables )
 	{
 		return match( start, startNode, objectVariables,
 		    ( Collection<PatternNode> ) null );
 	}
-	
+
+    /**
+     * Find occurrences of the pattern defined by the given {@link PatternNode}
+     * where the given {@link PatternNode} starts matching at the given
+     * {@link Node}.
+     *
+     * @param start the {@link PatternNode} to start matching at.
+     * @param objectVariables mapping from names to {@link PatternNode}s.
+     * @param optional nodes that form sub-patterns connected to this pattern.
+     * @return all matching instances of the pattern.
+     */
     public Iterable<PatternMatch> match( PatternNode start,
             Map<String, PatternNode> objectVariables,
             PatternNode... optional )
@@ -47,20 +104,41 @@ public class PatternMatcher
         return match( start, objectVariables,
             Arrays.asList( optional ) );
     }
-    
+
+    /**
+     * Find occurrences of the pattern defined by the given {@link PatternNode}
+     * where the given {@link PatternNode} starts matching at the given
+     * {@link Node}.
+     *
+     * @param start the {@link PatternNode} to start matching at.
+     * @param objectVariables mapping from names to {@link PatternNode}s.
+     * @param optional nodes that form sub-patterns connected to this pattern.
+     * @return all matching instances of the pattern.
+     */
 	public Iterable<PatternMatch> match( PatternNode start,
 	        Map<String, PatternNode> objectVariables,
-	        Collection<PatternNode> optional ) 
+	        Collection<PatternNode> optional )
     {
 	    Node startNode = start.getAssociation();
         if ( startNode == null )
         {
-            throw new IllegalStateException( 
+            throw new IllegalStateException(
                     "Associating node for start pattern node is null" );
         }
 	    return match( start, startNode, objectVariables, optional );
     }
-	
+
+    /**
+     * Find occurrences of the pattern defined by the given {@link PatternNode}
+     * where the given {@link PatternNode} starts matching at the given
+     * {@link Node}.
+     *
+     * @param start the {@link PatternNode} to start matching at.
+     * @param startNode the {@link Node} to start matching at.
+     * @param objectVariables mapping from names to {@link PatternNode}s.
+     * @param optional nodes that form sub-patterns connected to this pattern.
+     * @return all matching instances of the pattern.
+     */
 	public Iterable<PatternMatch> match( PatternNode start,
 		Node startNode, Map<String, PatternNode> objectVariables,
 		Collection<PatternNode> optional )
@@ -68,8 +146,8 @@ public class PatternMatcher
         Node currentStartNode = start.getAssociation();
         if ( currentStartNode != null && !currentStartNode.equals( startNode ) )
         {
-            throw new IllegalStateException( 
-                    "Start patter node already has associated " + 
+            throw new IllegalStateException(
+                    "Start patter node already has associated " +
                     currentStartNode + ", can not start with " + startNode );
         }
 	    Iterable<PatternMatch> result = null;
@@ -82,7 +160,7 @@ public class PatternMatcher
 			result = new PatternFinder( this, start, startNode, false,
 			    optional );
 		}
-		
+
 		if ( objectVariables != null )
 		{
     		// Uses the FILTER expressions
@@ -90,7 +168,18 @@ public class PatternMatcher
 		}
 		return result;
 	}
-	
+
+    /**
+     * Find occurrences of the pattern defined by the given {@link PatternNode}
+     * where the given {@link PatternNode} starts matching at the given
+     * {@link Node}.
+     *
+     * @param start the {@link PatternNode} to start matching at.
+     * @param startNode the {@link Node} to start matching at.
+     * @param objectVariables mapping from names to {@link PatternNode}s.
+     * @param optional nodes that form sub-patterns connected to this pattern.
+     * @return all matching instances of the pattern.
+     */
 	public Iterable<PatternMatch> match( PatternNode start,
 		Node startNode, Map<String, PatternNode> objectVariables,
 		PatternNode... optional )
@@ -98,7 +187,7 @@ public class PatternMatcher
 		return match( start, startNode, objectVariables,
 		    Arrays.asList( optional ) );
 	}
-	
+
 	private static class SimpleRegexValueGetter implements FilterValueGetter
 	{
 	    private PatternMatch match;
@@ -106,7 +195,7 @@ public class PatternMatcher
 	        new HashMap<String, PatternNode>();
 	    private Map<String, String> labelToProperty =
 	        new HashMap<String, String>();
-	    
+
 	    SimpleRegexValueGetter( Map<String, PatternNode> objectVariables,
 	        PatternMatch match, FilterExpression[] expressions )
 	    {
@@ -117,7 +206,7 @@ public class PatternMatcher
             }
             this.labelToNode = objectVariables;
 	    }
-	    
+
 	    private void mapFromExpression( FilterExpression expression )
 	    {
 	        if ( expression instanceof FilterBinaryNode )
@@ -144,20 +233,20 @@ public class PatternMatcher
                     "'" );
             }
             Node node = this.match.getNodeFor( pNode );
-            
+
             String propertyKey = labelToProperty.get( label );
             if ( propertyKey == null )
             {
                 throw new RuntimeException( "No property key for label '" +
                     label + "'" );
             }
-            
+
             Object rawValue = node.getProperty( propertyKey, null );
             if ( rawValue == null )
             {
                 return new String[ 0 ];
             }
-            
+
             Collection<Object> values =
                 ArrayPropertyUtil.propertyValueToCollection( rawValue );
             String[] result = new String[ values.size() ];
@@ -169,12 +258,12 @@ public class PatternMatcher
             return result;
         }
 	}
-	
+
 	private static class FilteredPatternFinder
 	    extends FilteringIterable<PatternMatch>
 	{
 	    private final Map<String, PatternNode> objectVariables;
-	    
+
         public FilteredPatternFinder( Iterable<PatternMatch> source,
             Map<String, PatternNode> objectVariables )
         {
@@ -205,5 +294,5 @@ public class PatternMatcher
             }
             return true;
         }
-	}	
+	}
 }

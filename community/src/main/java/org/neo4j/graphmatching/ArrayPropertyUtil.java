@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2008-2010 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.graphmatching;
 
 import java.lang.reflect.Array;
@@ -6,7 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Just a temporary utility for dealing with Neo4j properties which are arrays.
+ * Just a temporary utility for dealing with Neo4j properties that are arrays.
  * Since the Neo4j kernel arrays are returned as fundamental types, f.ex. int[],
  * float[], String[] etc... And we'd like to deal with those as objects instead
  * so that an equals method may be used.

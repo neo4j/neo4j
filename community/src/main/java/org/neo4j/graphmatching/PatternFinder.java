@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2008-2010 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.graphmatching;
 
 import java.util.Collection;
@@ -9,7 +28,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -307,29 +325,13 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         Iterator<Relationship> relItr = null;
         if ( pRel.anyRelType() )
         {
-            if ( pRel.isDirected() )
-            {
-                relItr = currentNode.getRelationships(
+            relItr = currentNode.getRelationships(
                     pRel.getDirectionFrom( fromNode ) ).iterator();
-            }
-            else
-            {
-                relItr = currentNode.getRelationships( 
-                        Direction.BOTH ).iterator();
-            }
         }
         else
         {
-            if ( pRel.isDirected() )
-            {
-                relItr = currentNode.getRelationships( pRel.getType(),
+            relItr = currentNode.getRelationships( pRel.getType(),
                     pRel.getDirectionFrom( fromNode ) ).iterator();
-            }
-            else
-            {
-                relItr = currentNode.getRelationships( pRel.getType(),
-                        Direction.BOTH ).iterator();
-            }
         }
         return relItr;
     }
@@ -343,13 +345,13 @@ class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
         {
             return false;
         }
-        
+
         for ( Map.Entry<String, Collection<ValueMatcher>> matchers :
                 patternObject.getPropertyConstraints() )
         {
             String key = matchers.getKey();
             Object propertyValue = object.getProperty( key, null );
-            for ( ValueMatcher matcher : matchers.getValue() )
+            for ( @SuppressWarnings( "hiding" ) ValueMatcher matcher : matchers.getValue() )
             {
                 if ( !matcher.matches( propertyValue ) )
                 {

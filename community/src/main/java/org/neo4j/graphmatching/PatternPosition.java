@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2008-2010 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.graphmatching;
 
 import java.util.Iterator;
@@ -8,10 +27,10 @@ import org.neo4j.graphdb.Relationship;
 
 /**
  * Represents a position were we are in the pattern itself. So the
- * {@link PatternMatcher} starts matching from a starting point,
- * on a {@link PatternNode} and when trying to find a complete match (a complete
- * match is a graph) it uses the {@link PatternPosition} to know where in
- * the matching pattern we are at the moment.
+ * {@link PatternMatcher} starts matching from a starting point, on a
+ * {@link PatternNode} and when trying to find a complete match (a complete
+ * match is a graph) it uses the PatternPosition to know where in the matching
+ * pattern we are at the moment.
  */
 class PatternPosition
 {
@@ -33,7 +52,7 @@ class PatternPosition
 		this.optional = optional;
 	}
 
-    PatternPosition( Node currentNode, PatternNode pNode, 
+    PatternPosition( Node currentNode, PatternNode pNode,
         PatternRelationship fromPRel, Relationship fromRel, boolean optional )
     {
         this.currentNode = currentNode;
@@ -43,7 +62,7 @@ class PatternPosition
         this.fromPRel = fromPRel;
         this.fromRel = fromRel;
     }
-    
+
 	Node getCurrentNode()
 	{
 		return currentNode;
@@ -123,7 +142,7 @@ class PatternPosition
     {
 		returnPrevious = previous;
     }
-	
+
 	@Override
 	public String toString()
 	{
@@ -134,7 +153,7 @@ class PatternPosition
     {
         return fromPRel;
     }
-    
+
     public Relationship fromRelationship()
     {
         return fromRel;
