@@ -5,6 +5,7 @@ import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import javax.management.DynamicMBean;
 import javax.management.MBeanServer;
@@ -18,6 +19,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
 public abstract class Neo4jJmx
 {
+    private static final Logger log = Logger.getLogger( Neo4jJmx.class.getName() );
     /*
     public static <BEAN> Iterable<BEAN> getBeans( Class<BEAN> beanType )
     {
@@ -124,9 +126,10 @@ public abstract class Neo4jJmx
                 failedToRegister( "TransactionManagerMBean" );
         }
 
-        public void createLockManagerMBean()
+        public void createLockManagerMBean(
+                org.neo4j.kernel.impl.transaction.LockManager lockManager )
         {
-            if ( !register( new LockManager( instanceId ) ) )
+            if ( !register( new LockManager( instanceId, lockManager ) ) )
                 failedToRegister( "LockManagerMBean" );
         }
 
@@ -182,14 +185,14 @@ public abstract class Neo4jJmx
         }
         catch ( Exception e )
         {
-            System.err.println( "Failed to unregister JMX Bean " + bean );
+            log.warning( "Failed to unregister JMX Bean " + bean );
             e.printStackTrace();
         }
     }
 
     private static void failedToRegister( String mBean )
     {
-        System.err.println( "Failed to register " + mBean );
+        log.info( "Failed to register " + mBean );
     }
 
     private final ObjectName objectName;

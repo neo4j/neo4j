@@ -134,7 +134,7 @@ class EmbeddedGraphDbImpl
                 jmx.createDynamicConfigurationMBean( params );
                 jmx.createPrimitiveMBean( nodeManager );
                 jmx.createCacheMBean( nodeManager );
-                // jmx.createLockManagerMBean();
+                jmx.createLockManagerMBean( getConfig().getLockManager() );
                 jmx.createTransactionManagerMBean( getConfig().getTxModule() );
                 jmx.createMemoryMappingMBean( getConfig().getTxModule().getXaDataSourceManager() );
                 jmx.createXaManagerMBean( getConfig().getTxModule().getXaDataSourceManager() );
