@@ -35,14 +35,13 @@ public class TransactionEventsSyncHook<T> implements Synchronization
 
     public void beforeCompletion()
     {
-        TransactionData data = null;
-        data = nodeManager.getTransactionData();
+        this.transactionData = nodeManager.getTransactionData();
         states = new ArrayList<HandlerAndState>();
         for ( TransactionEventHandler<T> handler : this.handlers )
         {
             try
             {
-                T state = handler.beforeCommit( data );
+                T state = handler.beforeCommit( transactionData );
                 states.add( new HandlerAndState( handler, state ) );
             }
             catch ( Throwable t )
