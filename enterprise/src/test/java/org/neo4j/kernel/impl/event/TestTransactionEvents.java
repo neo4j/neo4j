@@ -332,18 +332,21 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
 
         public void afterCommit( TransactionData data, T state )
         {
+            assertNotNull( data );
             this.receivedState = state;
             this.afterCommit = counter++;
         }
 
         public void afterRollback( TransactionData data, T state )
         {
+            assertNotNull( data );
             this.receivedState = state;
             this.afterRollback = counter++;
         }
 
         public T beforeCommit( TransactionData data ) throws Exception
         {
+            assertNotNull( data );
             this.receivedTransactionData = data;
             this.beforeCommit = counter++;
             if ( this.beforeCommit == 2 )
