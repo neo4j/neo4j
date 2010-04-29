@@ -28,10 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.IdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 class RelationshipTypeHolder

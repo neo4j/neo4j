@@ -3,41 +3,34 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.graphdb;
 
-public class DeadlockDetectedException extends RuntimeException
+/**
+ * Signals that a transaction failed and has been rolled back.
+ */
+public class TransactionFailureException extends RuntimeException
 {
-    public DeadlockDetectedException()
+    public TransactionFailureException( String msg )
     {
-        super();
+        super( msg );
     }
 
-    public DeadlockDetectedException( String message )
+    public TransactionFailureException( String msg, Throwable cause )
     {
-        super( message );
-    }
-
-    public DeadlockDetectedException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
-
-    public DeadlockDetectedException( Throwable cause )
-    {
-        super( cause );
+        super( msg, cause );
     }
 }

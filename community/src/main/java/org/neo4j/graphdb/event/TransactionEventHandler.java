@@ -2,7 +2,7 @@ package org.neo4j.graphdb.event;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.transaction.TransactionFailureException;
+import org.neo4j.graphdb.TransactionFailureException;
 
 /**
  * The interface of an event handler for Neo4j Transaction events.
