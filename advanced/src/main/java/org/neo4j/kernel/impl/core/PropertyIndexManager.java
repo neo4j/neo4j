@@ -31,10 +31,10 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.persistence.IdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class PropertyIndexManager

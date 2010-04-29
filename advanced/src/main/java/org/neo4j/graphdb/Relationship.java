@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -43,19 +43,19 @@ package org.neo4j.graphdb;
  * relationship's start node and end node and their relation to
  * {@link Direction#OUTGOING} and {@link Direction#INCOMING} are defined so that
  * the assertions in the following code are <code>true</code>:
- * 
+ *
  * <pre>
  * <code>
  * {@link Node} a = graphDb.{@link GraphDatabaseService#createNode() createNode}(), b = graphDb.{@link GraphDatabaseService#createNode() createNode}();
  * {@link Relationship} rel = a.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( b, {@link RelationshipType MyRels.REL_TYPE} );
  * // Now we have: (a) --- REL_TYPE ---&gt; (b)
- * 
+ *
  * assert rel.{@link Relationship#getStartNode() getStartNode}().equals( a );
  * assert rel.{@link Relationship#getEndNode() getEndNode}().equals( b );
  * assert rel.{@link Relationship#getNodes() getNodes}()[0].equals( a ) &amp;&amp; rel.{@link Relationship#getNodes() getNodes}()[1].equals( b );
  * </code>
  * </pre>
- * 
+ *
  * Even though all relationships have a direction they are equally well
  * traversed in both directions so there's no need to create duplicate
  * relationships in the opposite direction (with regard to traversal or
@@ -77,7 +77,7 @@ public interface Relationship extends PropertyContainer
      * span: if the relationship is deleted, it's likely that a new relationship
      * at some point will get the old id. This makes relationship ids brittle as
      * public APIs.
-     * 
+     *
      * @return the id of this node
      */
     public long getId();
@@ -95,7 +95,7 @@ public interface Relationship extends PropertyContainer
      * start node relates to {@link Direction directions} as arguments to the
      * {@link Node#getRelationships() relationship accessors} in Node, see the
      * class documentation of Relationship.
-     * 
+     *
      * @return the start node of this relationship
      */
     public Node getStartNode();
@@ -105,7 +105,7 @@ public interface Relationship extends PropertyContainer
      * node relates to {@link Direction directions} as arguments to the
      * {@link Node#getRelationships() relationship accessors} in Node, see the
      * class documentation of Relationship.
-     * 
+     *
      * @return the end node of this relationship
      */
     public Node getEndNode();
@@ -120,12 +120,12 @@ public interface Relationship extends PropertyContainer
      * a relationship, use the following:
      * <p>
      * <code>
-	 * Node endNode = node.getSingleRelationship( MyRels.REL_TYPE ).getOtherNode ( node );
+	 * Node endNode = node.getSingleRelationship( MyRels.REL_TYPE ).getOtherNode( node );
 	 * </code>
      * <p>
      * This operation will throw a runtime exception if <code>node</code> is
      * neither this relationship's start node nor its end node.
-     * 
+     *
      * @param node the start or end node of this relationship
      * @return the other node
      * @throws RuntimeException if the given node is neither the start nor end
@@ -137,7 +137,7 @@ public interface Relationship extends PropertyContainer
      * Returns the two nodes that are attached to this relationship. The first
      * element in the array will be the start node, the second element the end
      * node.
-     * 
+     *
      * @return the two nodes that are attached to this relationship
      */
     public Node[] getNodes();
@@ -152,7 +152,7 @@ public interface Relationship extends PropertyContainer
      * == operator. If you want to know whether this relationship is of a
      * certain type, use the {@link #isType(RelationshipType) isType()}
      * operation.
-     * 
+     *
      * @return the type of this relationship
      */
     public RelationshipType getType();
@@ -162,7 +162,7 @@ public interface Relationship extends PropertyContainer
      * This is a convenience method that checks for equality using the contract
      * specified by RelationshipType, i.e. by checking for equal
      * {@link RelationshipType#name() names}.
-     * 
+     *
      * @param type the type to check
      * @return <code>true</code> if this relationship is of the type
      *         <code>type</code>, <code>false</code> otherwise or if
