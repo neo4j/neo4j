@@ -147,7 +147,7 @@ as graphs rather than tables. For more information, see http://neo4j.org.
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.1</version>
+      <version>4.7</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

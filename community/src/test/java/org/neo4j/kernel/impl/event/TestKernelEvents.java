@@ -14,7 +14,7 @@ public class TestKernelEvents
 {
     private static final Object RESOURCE1 = new Object();
     private static final Object RESOURCE2 = new Object();
-    
+
     @Test
     public void testRegisterUnregisterHandlers()
     {
@@ -69,10 +69,10 @@ public class TestKernelEvents
                 handler1 ) );
         assertTrue( handler2 == graphDb.unregisterKernelEventHandler(
                 handler2 ) );
-        
+
         graphDb.shutdown();
     }
-    
+
     @Test
     public void testShutdownEvents()
     {
@@ -101,24 +101,24 @@ public class TestKernelEvents
         };
         graphDb.registerKernelEventHandler( handler1 );
         graphDb.registerKernelEventHandler( handler2 );
-        
+
         graphDb.shutdown();
-        
-        assertEquals( 0, handler2.beforeShutdown );
-        assertEquals( 1, handler1.beforeShutdown );
+
+        assertEquals( Integer.valueOf( 0 ), handler2.beforeShutdown );
+        assertEquals( Integer.valueOf( 1 ), handler1.beforeShutdown );
     }
-    
+
     private static abstract class DummyKernelEventHandler implements KernelEventHandler
     {
         private static int counter;
         private Integer beforeShutdown, kernelPanic;
         private final Object resource;
-        
+
         DummyKernelEventHandler( Object resource )
         {
             this.resource = resource;
         }
-        
+
         public void beforeShutdown()
         {
             beforeShutdown = counter++;
