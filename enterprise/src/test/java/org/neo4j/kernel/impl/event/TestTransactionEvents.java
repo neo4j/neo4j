@@ -77,7 +77,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         assertNotNull( handler1.receivedTransactionData );
         getGraphDb().unregisterTransactionEventHandler( handler1 );
     }
-    
+
     @Test
     public void makeSureHandlersCantBeRegisteredTwice()
     {
@@ -88,11 +88,11 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         getGraphDb().registerTransactionEventHandler( handler );
         newTransaction();
         commit();
-        
-        assertEquals( 0, handler.beforeCommit );
-        assertEquals( 1, handler.afterCommit );
+
+        assertEquals( Integer.valueOf( 0 ), handler.beforeCommit );
+        assertEquals( Integer.valueOf( 1 ), handler.afterCommit );
         assertNull( handler.afterRollback );
-        
+
         getGraphDb().unregisterTransactionEventHandler( handler );
     }
 
@@ -149,7 +149,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         {
             getGraphDb().unregisterTransactionEventHandler( handler );
         }
-        
+
         // Use the above data and modify it, change properties, delete stuff
         expectedData = new ExpectedTransactionData();
         handler = new VerifyingTransactionEventHandler( expectedData );
@@ -196,7 +196,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
 
             tempRel.delete();
             tempNode.delete();
-            
+
             newTransaction();
         }
         finally
@@ -204,14 +204,14 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             getGraphDb().unregisterTransactionEventHandler( handler );
         }
     }
-    
+
     @Test
     public void makeSureBeforeAfterAreCalledCorrectly()
     {
         commit();
-        
+
         List<TransactionEventHandler<Object>> handlers =
-                new ArrayList<TransactionEventHandler<Object>>(); 
+                new ArrayList<TransactionEventHandler<Object>>();
         handlers.add( new FailingEventHandler<Object>(
                 new DummyTransactionEventHandler<Object>( null ), false ) );
         handlers.add( new FailingEventHandler<Object>(
@@ -224,7 +224,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         {
             getGraphDb().registerTransactionEventHandler( handler );
         }
-        
+
         try
         {
             newTransaction();
@@ -238,7 +238,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
                 // OK
             }
             verifyHandlerCalls( handlers, false );
-            
+
             getGraphDb().unregisterTransactionEventHandler( handlers.remove( 2 ) );
             for ( TransactionEventHandler<Object> handler : handlers )
             {
@@ -256,7 +256,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             }
         }
     }
-    
+
     private void verifyHandlerCalls(
             List<TransactionEventHandler<Object>> handlers, boolean txSuccess )
     {
@@ -266,15 +266,17 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
                     (DummyTransactionEventHandler<Object>) ((FailingEventHandler<Object>) handler).source;
             if ( txSuccess )
             {
-                assertEquals( 0, realHandler.beforeCommit );
-                assertEquals( 1, realHandler.afterCommit );
+                assertEquals( Integer.valueOf( 0 ), realHandler.beforeCommit );
+                assertEquals( Integer.valueOf( 1 ), realHandler.afterCommit );
             }
             else
             {
                 if ( realHandler.counter > 0 )
                 {
-                    assertEquals( 0, realHandler.beforeCommit );
-                    assertEquals( 1, realHandler.afterRollback );
+                    assertEquals( Integer.valueOf( 0 ),
+                            realHandler.beforeCommit );
+                    assertEquals( Integer.valueOf( 1 ),
+                            realHandler.afterRollback );
                 }
             }
         }
@@ -284,7 +286,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
     {
         TXEVENT
     }
-    
+
     private static class FailingEventHandler<T> implements TransactionEventHandler<T>
     {
         private final TransactionEventHandler<T> source;
@@ -295,7 +297,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             this.source = source;
             this.willFail = willFail;
         }
-        
+
         public void afterCommit( TransactionData data, T state )
         {
             source.afterCommit( data, state );
@@ -355,7 +357,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             }
             return object;
         }
-        
+
         void reset()
         {
             receivedTransactionData = null;
