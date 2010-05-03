@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
+import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
@@ -33,22 +34,22 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.remote.RemoteResponse.ResponseBuilder;
 import org.neo4j.index.IndexHits;
 import org.neo4j.index.IndexService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.remote.RemoteResponse.ResponseBuilder;
 
 /**
  * A Basic implementation of a Server for a remote graph database. This implementation relies
  * on the {@link GraphDatabaseService} API to perform the actions of the remote graph database
  * communication protocol.
- * 
+ *
  * To make a concrete implementation the subclass needs to implement the two
  * abstract methods that provide a {@link GraphDatabaseService} implementation upon
  * connection. One for authenticated connection and one for unauthenticated
  * connection. One also needs to provide the transaction manager used by the
  * {@link GraphDatabaseService} to the constructor of the server.
- * 
+ *
  * @author Tobias Ivarsson
  */
 public abstract class BasicGraphDatabaseServer implements ConnectionTarget
@@ -91,7 +92,7 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
     /**
      * Get the size of the next batch of {@link Node}s sent to the client in an
      * iteration.
-     * 
+     *
      * Override to change the default batch size or create a smarter batching
      * scheme.
      * @param returned
@@ -120,7 +121,7 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
     /**
      * Get the size of the next batch of {@link RelationshipType}s sent to the
      * client in an iteration.
-     * 
+     *
      * Override to change the default batch size or create a smarter batching
      * scheme.
      * @param returned
@@ -149,7 +150,7 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
     /**
      * Get the size of the next batch of {@link Relationship}s sent to the
      * client in an iteration.
-     * 
+     *
      * Override to change the default batch size or create a smarter batching
      * scheme.
      * @param returned
@@ -178,7 +179,7 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
     /**
      * Get the size of the next batch of property keys sent to the client in an
      * iteration.
-     * 
+     *
      * Override to change the default batch size or create a smarter batching
      * scheme.
      * @param returned
@@ -286,24 +287,28 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
         suspendTransaction();
         try
         {
-            txManager.resume( transaction );
-        }
-        catch ( InvalidTransactionException ex )
-        {
-            throw new RuntimeException(
-                "TODO: better exception. InvalidTransactionException in tx resume.",
-                ex );
-        }
-        catch ( IllegalStateException ex )
-        {
-            throw new RuntimeException(
-                "TODO: better exception. IllegalStateException in tx resume.",
-                ex );
+            try
+            {
+                txManager.resume( transaction );
+            }
+            catch ( InvalidTransactionException ex )
+            {
+                throw new RuntimeException(
+                        "TODO: better exception. InvalidTransactionException in tx resume.",
+                        ex );
+            }
+            catch ( IllegalStateException ex )
+            {
+                if ( transaction.getStatus() != Status.STATUS_ACTIVE )
+                    throw new RuntimeException(
+                            "TODO: better exception. IllegalStateException in tx resume.",
+                            ex );
+            }
         }
         catch ( SystemException ex )
         {
             throw new RuntimeException(
-                "TODO: better exception. SystemException in tx resume.", ex );
+                    "TODO: better exception. SystemException in tx resume.", ex );
         }
     }
 
@@ -652,12 +657,12 @@ public abstract class BasicGraphDatabaseServer implements ConnectionTarget
     {
         indexes[ indexId ].index.removeIndex( graphDb.getNodeById( nodeId ), key );
     }
-    
+
     void removeIndexNode( GraphDatabaseService graphDb, int indexId, String key )
     {
         indexes[ indexId ].index.removeIndex( key );
     }
-    
+
     public long getTotalNumberOfNodes( GraphDatabaseService graphDb )
     {
         if ( graphDb instanceof EmbeddedGraphDatabase )
