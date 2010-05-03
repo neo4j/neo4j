@@ -35,7 +35,7 @@ import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.kernel.impl.transaction.TransactionFailureException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -161,10 +161,15 @@ public class XaLogicalLog
             {
                 // clean
                 String newLog = fileName + ".1";
-                if ( new File( newLog ).exists() )
+                File file = new File( newLog );
+                if ( file.exists() )
                 {
-                    throw new IllegalStateException( 
-                        "Active marked as clean but log " + newLog + " exist" );
+                    fixCleanKill( newLog );
+                }
+                file = new File( fileName + ".2" );
+                if ( file.exists() )
+                {
+                    fixCleanKill( fileName + ".2" );
                 }
                 open( newLog );
                 setActiveLog( LOG1 );
@@ -219,6 +224,21 @@ public class XaLogicalLog
         else
         {
             writeBuffer = new MemoryMappedLogBuffer( fileChannel );
+        }
+    }
+    
+    private void fixCleanKill( String fileName ) throws IOException
+    {
+        File file = new File( fileName );
+        if ( !keepLogs && !file.delete() )
+        {
+            throw new IllegalStateException( 
+                "Active marked as clean and unable to delete log " + 
+                fileName );
+        }
+        else
+        {
+            renameCurrentLogFileAndIncrementVersion( fileName, file.length() );
         }
     }
     

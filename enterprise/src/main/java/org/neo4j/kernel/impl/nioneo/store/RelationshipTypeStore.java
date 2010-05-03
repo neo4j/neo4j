@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -439,5 +440,13 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
+    }
+
+    public List<WindowPoolStats> getAllWindowPoolStats()
+    {
+        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        list.add( typeNameStore.getWindowPoolStats() );
+        list.add( getWindowPoolStats() );
+        return list;
     }
 }

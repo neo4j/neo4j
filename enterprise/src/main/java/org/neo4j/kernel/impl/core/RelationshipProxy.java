@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -37,6 +38,11 @@ class RelationshipProxy implements Relationship
     public long getId()
     {
         return relId;
+    }
+    
+    public GraphDatabaseService getGraphDatabase()
+    {
+        return nm.getGraphDbService();
     }
 
     public void delete()

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -260,5 +262,12 @@ public class RelationshipStore extends AbstractStore implements Store
         {
             releaseWindow( window );
         }
+    }
+
+    public List<WindowPoolStats> getAllWindowPoolStats()
+    {
+        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        list.add( getWindowPoolStats() );
+        return list;
     }
 }

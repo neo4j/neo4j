@@ -29,6 +29,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
@@ -36,8 +37,8 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
-import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.IntArray;
 
 public class PersistenceManager
 {
@@ -93,14 +94,16 @@ public class PersistenceManager
         return getReadOnlyResource().getMoreRelationships( nodeId, position );
     }
     
-    public ArrayMap<Integer,PropertyData> loadNodeProperties( int nodeId )
+    public ArrayMap<Integer,PropertyData> loadNodeProperties( int nodeId, 
+            boolean light )
     {
-        return getReadOnlyResource().nodeLoadProperties( nodeId );
+        return getReadOnlyResource().nodeLoadProperties( nodeId, light );
     }
 
-    public ArrayMap<Integer,PropertyData> loadRelProperties( int relId )
+    public ArrayMap<Integer,PropertyData> loadRelProperties( int relId, 
+            boolean light )
     {
-        return getReadOnlyResource().relLoadProperties( relId );
+        return getReadOnlyResource().relLoadProperties( relId, light );
     }
 
     public RelationshipData loadLightRelationship( int id )
@@ -191,6 +194,10 @@ public class PersistenceManager
         ResourceConnection con = null;
 
         Transaction tx = this.getCurrentTransaction();
+        if ( tx == null )
+        {
+            throw new NotInTransactionException();
+        }
         con = txConnectionMap.get( tx );
         if ( con == null )
         {
@@ -225,19 +232,11 @@ public class PersistenceManager
     {
         try
         {
-            Transaction tx = transactionManager.getTransaction();
-    
-            if ( tx == null )
-            {
-                throw new NotInTransactionException( "No transaction found "
-                    + "for current thread" );
-            }
-    
-            return tx;
+            return transactionManager.getTransaction();
         }
         catch ( SystemException se )
         {
-            throw new NotInTransactionException( "Error fetching transaction "
+            throw new TransactionFailureException( "Error fetching transaction "
                 + "for current thread", se );
         }
     }
@@ -294,6 +293,10 @@ public class PersistenceManager
     void delistResourcesForTransaction() throws NotInTransactionException
     {
         Transaction tx = this.getCurrentTransaction();
+        if ( tx == null )
+        {
+            throw new NotInTransactionException();
+        }
         ResourceConnection con = txConnectionMap.get( tx );
         if ( con != null )
         {
@@ -319,4 +322,25 @@ public class PersistenceManager
             con.destroy();
         }
     }
+
+    public IntArray getCreatedNodes()
+    {
+        return getResource().getCreatedNodes();
+    }
+
+    public boolean isNodeCreated( int nodeId )
+    {
+        return getResource().isNodeCreated( nodeId );
+    }
+
+    public boolean isRelationshipCreated( int relId )
+    {
+        return getResource().isRelationshipCreated( relId );
+    }
+
+    public int getKeyIdForProperty( int propertyId )
+    {
+        return getReadOnlyResource().getKeyIdForProperty( propertyId );
+    }
+
 }

@@ -127,6 +127,16 @@ public abstract class AbstractNeo4jTestCase
         }
     }
     
+    public void rollback()
+    {
+        if ( tx != null )
+        {
+            tx.failure();
+            tx.finish();
+            tx = null;
+        }
+    }
+    
     public NodeManager getNodeManager()
     {
         return ((EmbeddedGraphDatabase) graphDb).getConfig().getGraphDbModule().getNodeManager();
@@ -150,5 +160,11 @@ public abstract class AbstractNeo4jTestCase
         {
             file.delete();
         }
+    }
+    
+    protected void clearCache()
+    {
+        getEmbeddedGraphDb().getConfig().getGraphDbModule()
+            .getNodeManager().clearCache();
     }
 }
