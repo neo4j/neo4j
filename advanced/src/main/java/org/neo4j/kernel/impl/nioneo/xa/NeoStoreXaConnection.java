@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -33,11 +34,11 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
-import org.neo4j.kernel.impl.transaction.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.IntArray;
 
 /**
  * {@link XaConnection} implementation for the Neo4j kernel native store. Contains
@@ -221,9 +222,21 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             xaCon.getWriteTransaction().nodeRemoveProperty( nodeId, propertyId );
         }
 
-        public ArrayMap<Integer,PropertyData> getProperties( int nodeId )
+        public ArrayMap<Integer,PropertyData> getProperties( int nodeId, 
+                boolean light )
         {
-            return xaCon.getWriteTransaction().nodeGetProperties( nodeId );
+            return xaCon.getWriteTransaction().nodeGetProperties( nodeId, 
+                    light );
+        }
+
+        public IntArray getCreatedNodes()
+        {
+            return xaCon.getWriteTransaction().getCreatedNodes();
+        }
+
+        public boolean isNodeCreated( int nodeId )
+        {
+            return xaCon.getWriteTransaction().nodeCreated( nodeId );
         }
     };
 
@@ -267,9 +280,10 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             xaCon.getWriteTransaction().relRemoveProperty( relId, propertyId );
         }
 
-        public ArrayMap<Integer,PropertyData> getProperties( int relId )
+        public ArrayMap<Integer,PropertyData> getProperties( int relId, 
+                boolean light )
         {
-            return xaCon.getWriteTransaction().relGetProperties( relId );
+            return xaCon.getWriteTransaction().relGetProperties( relId, light );
         }
 
         public RelationshipData getRelationship( int id )
@@ -289,6 +303,12 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
         {
             return xaCon.getWriteTransaction().getMoreRelationships( nodeId, 
                 position );
+        }
+
+        public boolean isRelationshipCreated( int relId )
+        {
+            // TODO Auto-generated method stub
+            return xaCon.getWriteTransaction().relCreated( relId );
         }
     };
 

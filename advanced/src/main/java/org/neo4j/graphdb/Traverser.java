@@ -22,6 +22,9 @@ package org.neo4j.graphdb;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.TraversalFactory;
+
 /**
  * A traversal in the node space. A Traverser is an {@link Iterable} that
  * encapsulates a number of traversal parameters (defined at traverser creation)
@@ -64,7 +67,16 @@ import java.util.Iterator;
  * href="http://wiki.neo4j.org/content/Traversal">wiki documentation</a>.
  * 
  * @see Node#traverse
+ * 
+ * @deprecated because of an unnatural and too tight coupling with
+ * {@link Node}. Also because of the introduction of a new traversal framework
+ * and the usage of it. The new way of doing traversals is by creating a
+ * new {@link TraversalDescription} from
+ * {@link TraversalFactory#createTraversalDescription()}, add rules and
+ * behaviours to it and then calling
+ * {@link TraversalDescription#traverse(Node)}.
  */
+@Deprecated
 public interface Traverser extends Iterable<Node>
 {
     /**

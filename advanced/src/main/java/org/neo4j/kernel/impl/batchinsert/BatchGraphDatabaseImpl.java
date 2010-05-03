@@ -37,6 +37,8 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 
@@ -202,6 +204,11 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             this.id = id;
             this.graphDbService = graphDbService;
             this.properties = properties;
+        }
+        
+        public GraphDatabaseService getGraphDatabase()
+        {
+            return graphDbService;
         }
         
         public Relationship createRelationshipTo( Node otherNode, 
@@ -404,13 +411,17 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         private final BatchGraphDatabaseImpl graphDbService;
         private final Map<String,Object> properties;
         
-        
         RelationshipBatchImpl( SimpleRelationship rel, 
             BatchGraphDatabaseImpl graphDbService, Map<String,Object> properties )
         {
             this.rel = rel;
             this.graphDbService = graphDbService;
             this.properties = properties;
+        }
+        
+        public GraphDatabaseService getGraphDatabase()
+        {
+            return graphDbService;
         }
         
         Map<String,Object> getProperties()
@@ -635,5 +646,29 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     {
         nodes.clear();
         rels.clear();
+    }
+
+    public KernelEventHandler registerKernelEventHandler(
+            KernelEventHandler handler )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public <T> TransactionEventHandler<T> registerTransactionEventHandler(
+            TransactionEventHandler<T> handler )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public KernelEventHandler unregisterKernelEventHandler(
+            KernelEventHandler handler )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
+            TransactionEventHandler<T> handler )
+    {
+        throw new UnsupportedOperationException();
     }
 }

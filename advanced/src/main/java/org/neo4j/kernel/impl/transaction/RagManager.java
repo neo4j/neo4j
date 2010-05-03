@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,11 +25,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
@@ -70,17 +73,24 @@ class RagManager
     // o When the transaction wakes up from waiting on a resource the
     // stopWaitOn( resource ) method must be invoked
 
-    private final Map<Object,List<Transaction>> resourceMap = 
+    private final Map<Object,List<Transaction>> resourceMap =
         new HashMap<Object,List<Transaction>>();
 
-    private final ArrayMap<Transaction,Object> waitingTxMap = 
+    private final ArrayMap<Transaction,Object> waitingTxMap =
         new ArrayMap<Transaction,Object>( 5, false, true );
 
     private final TransactionManager tm;
 
+    private final AtomicInteger deadlockCount = new AtomicInteger();
+
     RagManager( TransactionManager tm )
     {
         this.tm = tm;
+    }
+
+    long getDeadlockCount()
+    {
+        return deadlockCount.longValue();
     }
 
     synchronized void lockAcquired( Object resource, Transaction tx )
@@ -205,7 +215,8 @@ class RagManager
                 }
             }
             while ( !graphStack.isEmpty() );
-            throw new DeadlockDetectedException( waitingTx + 
+            deadlockCount.incrementAndGet();
+            throw new DeadlockDetectedException( waitingTx +
                 " can't wait on resource " + resource + " since => " + circle );
         }
         checkedTransactions.add( lockingTx );
@@ -302,7 +313,7 @@ class RagManager
         }
         catch ( SystemException e )
         {
-            throw new TransactionFailureException( 
+            throw new TransactionFailureException(
                 "Could not get current transaction.", e );
         }
     }

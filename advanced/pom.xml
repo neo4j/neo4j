@@ -79,6 +79,19 @@ as graphs rather than tables. For more information, see http://neo4j.org.
   </developers>
 
   <build>
+    <resources>
+      <resource>
+        <directory>${basedir}</directory>
+        <targetPath>META-INF</targetPath>
+        <includes>
+          <include>NOTICE.txt</include>
+          <include>LICENSE.txt</include>
+          <include>COPYRIGHT.txt</include>
+          <include>README*.txt</include>
+          <include>CHANGES.txt</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -94,6 +107,22 @@ as graphs rather than tables. For more information, see http://neo4j.org.
             <descriptor>src/main/assembly/source-release.xml</descriptor>
           </descriptors>
         </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <excludes>
+                <exclude>**/README*.txt</exclude>
+                <exclude>**/CHANGES.txt</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -117,7 +146,7 @@ as graphs rather than tables. For more information, see http://neo4j.org.
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.1</version>
+      <version>4.7</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

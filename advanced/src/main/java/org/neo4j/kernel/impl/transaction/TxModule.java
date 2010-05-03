@@ -23,6 +23,8 @@ import java.util.Map;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
@@ -43,16 +45,19 @@ public class TxModule
 
     private final TransactionManager txManager;
     private final XaDataSourceManager xaDsManager;
+    private final KernelPanicEventGenerator kpe;
 
-    public TxModule( String txLogDir )
+    public TxModule( String txLogDir, KernelPanicEventGenerator kpe )
     {
         this.txLogDir = txLogDir;
-        this.txManager = new TxManager( txLogDir );
+        this.kpe = kpe;
+        this.txManager = new TxManager( txLogDir, kpe );
         this.xaDsManager = new XaDataSourceManager();
     }
     
-    public TxModule( boolean readOnly )
+    public TxModule( boolean readOnly, KernelPanicEventGenerator kpe )
     {
+        this.kpe = kpe;
         if ( readOnly )
         {
             this.txManager = new ReadOnlyTxManager(); 
@@ -191,5 +196,50 @@ public class TxModule
     public XaDataSourceManager getXaDataSourceManager()
     {
         return xaDsManager;
+    }
+
+    public int getStartedTxCount()
+    {
+        if ( txManager instanceof TxManager )
+        {
+            return ((TxManager) txManager).getStartedTxCount();
+        }
+        return 0;
+    }
+
+    public int getCommittedTxCount()
+    {
+        if ( txManager instanceof TxManager )
+        {
+            return ((TxManager) txManager).getCommittedTxCount();
+        }
+        return 0;
+    }
+    
+    public int getRolledbackTxCount()
+    {
+        if ( txManager instanceof TxManager )
+        {
+            return ((TxManager) txManager).getRolledbackTxCount();
+        }
+        return 0;
+    }
+    
+    public int getActiveTxCount()
+    {
+        if ( txManager instanceof TxManager )
+        {
+            return ((TxManager) txManager).getActiveTxCount();
+        }
+        return 0;
+    }
+    
+    public int getPeakConcurrentTxCount()
+    {
+        if ( txManager instanceof TxManager )
+        {
+            return ((TxManager) txManager).getPeakConcurrentTxCount();
+        }
+        return 0;
     }
 }

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import javax.transaction.xa.XAException;
 
-import org.neo4j.kernel.impl.transaction.TransactionFailureException;
+import org.neo4j.graphdb.TransactionFailureException;
 
 /**
  * <CODE>XaTransaction</CODE> holds all the commands that participate in the

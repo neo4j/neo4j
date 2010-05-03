@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -34,6 +35,7 @@ import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Store;
+import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -214,6 +216,7 @@ public class NeoStoreXaDataSource extends XaDataSource
 
     public void close()
     {
+        neoStore.flushAll();
         xaContainer.close();
         if ( logApplied )
         {
@@ -459,5 +462,10 @@ public class NeoStoreXaDataSource extends XaDataSource
     public String getFileName( long version )
     {
         return xaContainer.getLogicalLog().getFileName( version );
+    }
+    
+    public List<WindowPoolStats> getWindowPoolStats()
+    {
+        return neoStore.getAllWindowPoolStats();
     }
 }

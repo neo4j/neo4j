@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 import javax.transaction.TransactionManager;
+
+import org.neo4j.kernel.DeadlockDetectedException;
 
 /**
  * The LockManager can lock resources for reading or writing. By doing this one
@@ -44,7 +46,7 @@ import javax.transaction.TransactionManager;
  */
 public class LockManager
 {
-    private final Map<Object,RWLock> resourceLockMap = 
+    private final Map<Object,RWLock> resourceLockMap =
         new HashMap<Object,RWLock>();
 
     private final RagManager ragManager;
@@ -54,12 +56,17 @@ public class LockManager
         ragManager = new RagManager( tm );
     }
 
+    public long getDetectedDeadlockCount()
+    {
+        return ragManager.getDeadlockCount();
+    }
+
     /**
      * Tries to acquire read lock on <CODE>resource</CODE> for the current
      * transaction. If read lock can't be acquired the transaction will wait for
      * the lransaction until it can acquire it. If waiting leads to dead lock a
      * {@link DeadlockDetectedException} will be thrown.
-     * 
+     *
      * @param resource
      *            The resource
      * @throws DeadlockDetectedException
@@ -93,7 +100,7 @@ public class LockManager
      * transaction. If write lock can't be acquired the transaction will wait
      * for the lock until it can acquire it. If waiting leads to dead lock a
      * {@link DeadlockDetectedException} will be thrown.
-     * 
+     *
      * @param resource
      *            The resource
      * @throws DeadlockDetectedException
@@ -126,7 +133,7 @@ public class LockManager
      * Releases a read lock held by the current transaction on <CODE>resource</CODE>.
      * If current transaction don't have read lock a
      * {@link LockNotFoundException} will be thrown.
-     * 
+     *
      * @param resource
      *            The resource
      * @throws IllegalResourceException
@@ -149,8 +156,8 @@ public class LockManager
                 throw new LockNotFoundException( "Lock not found for: "
                     + resource );
             }
-            if ( !lock.isMarked() && lock.getReadCount() == 1 && 
-                lock.getWriteCount() == 0 && 
+            if ( !lock.isMarked() && lock.getReadCount() == 1 &&
+                lock.getWriteCount() == 0 &&
                 lock.getWaitingThreadsCount() == 0 )
             {
                 resourceLockMap.remove( resource );
@@ -163,7 +170,7 @@ public class LockManager
      * Releases a read lock held by the current transaction on <CODE>resource</CODE>.
      * If current transaction don't have read lock a
      * {@link LockNotFoundException} will be thrown.
-     * 
+     *
      * @param resource
      *            The resource
      * @throws IllegalResourceException
@@ -186,8 +193,8 @@ public class LockManager
                 throw new LockNotFoundException( "Lock not found for: "
                     + resource );
             }
-            if ( !lock.isMarked() && lock.getReadCount() == 0 && 
-                lock.getWriteCount() == 1 && 
+            if ( !lock.isMarked() && lock.getReadCount() == 0 &&
+                lock.getWriteCount() == 1 &&
                 lock.getWaitingThreadsCount() == 0 )
             {
                 resourceLockMap.remove( resource );
@@ -200,7 +207,7 @@ public class LockManager
     /**
      * Utility method for debugging. Dumps info to console of txs having locks
      * on resources.
-     * 
+     *
      * @param resource
      */
     public void dumpLocksOnResource( Object resource )

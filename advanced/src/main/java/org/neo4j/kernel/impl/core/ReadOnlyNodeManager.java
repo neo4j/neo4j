@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -31,13 +32,15 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 
 class ReadOnlyNodeManager extends NodeManager
 {
-    ReadOnlyNodeManager( AdaptiveCacheManager cacheManager, LockManager lockManager, 
-        LockReleaser lockReleaser, TransactionManager transactionManager, 
-        PersistenceManager persistenceManager, IdGenerator idGenerator, 
-        boolean useNewCaches )
+    ReadOnlyNodeManager( GraphDatabaseService graphDbService,
+            AdaptiveCacheManager cacheManager, LockManager lockManager,
+            LockReleaser lockReleaser, TransactionManager transactionManager,
+            PersistenceManager persistenceManager, IdGenerator idGenerator,
+            boolean useNewCaches )
     {
-        super( cacheManager, lockManager, lockReleaser, transactionManager,
-            persistenceManager, idGenerator, useNewCaches );
+        super( graphDbService, cacheManager, lockManager, lockReleaser,
+                transactionManager, persistenceManager, idGenerator,
+                useNewCaches );
     }
 
     @Override

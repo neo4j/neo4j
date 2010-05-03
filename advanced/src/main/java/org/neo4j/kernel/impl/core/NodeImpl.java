@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.IntArray;
 
@@ -78,9 +79,9 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         nodeManager.nodeRemoveProperty( this, propertyId );
     }
 
-    protected ArrayMap<Integer,PropertyData> loadProperties()
+    protected ArrayMap<Integer,PropertyData> loadProperties( boolean light )
     {
-        return nodeManager.loadProperties( this );
+        return nodeManager.loadProperties( this, light );
     }
     
     List<RelTypeElementIterator> getAllRelationships()
@@ -361,17 +362,9 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType relationshipType, Direction direction )
     {
-        if ( direction == null )
-        {
-            throw new IllegalArgumentException( "Null direction" );
-        }
-        if ( relationshipType == null )
-        {
-            throw new IllegalArgumentException( "Null relationship type" );
-        }
-        // rest of parameters will be validated in traverser package
-        return nodeManager.createTraverser( traversalOrder, this,
-            relationshipType, direction, stopEvaluator, returnableEvaluator );
+        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ), 
+                traversalOrder, stopEvaluator,
+                returnableEvaluator, relationshipType, direction );
     }
 
     public Traverser traverse( Order traversalOrder,
@@ -379,63 +372,19 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         RelationshipType firstRelationshipType, Direction firstDirection,
         RelationshipType secondRelationshipType, Direction secondDirection )
     {
-        if ( firstDirection == null || secondDirection == null )
-        {
-            throw new IllegalArgumentException( "Null direction, "
-                + "firstDirection=" + firstDirection + "secondDirection="
-                + secondDirection );
-        }
-        if ( firstRelationshipType == null || secondRelationshipType == null )
-        {
-            throw new IllegalArgumentException( "Null rel type, " + "first="
-                + firstRelationshipType + "second=" + secondRelationshipType );
-        }
-        // rest of parameters will be validated in traverser package
-        RelationshipType[] types = new RelationshipType[2];
-        Direction[] dirs = new Direction[2];
-        types[0] = firstRelationshipType;
-        types[1] = secondRelationshipType;
-        dirs[0] = firstDirection;
-        dirs[1] = secondDirection;
-        return nodeManager.createTraverser( traversalOrder, this, types, dirs,
-            stopEvaluator, returnableEvaluator );
+        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ), 
+                traversalOrder, stopEvaluator,
+                returnableEvaluator, firstRelationshipType, firstDirection,
+                secondRelationshipType, secondDirection );
     }
 
     public Traverser traverse( Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         Object... relationshipTypesAndDirections )
     {
-        int length = relationshipTypesAndDirections.length;
-        if ( (length % 2) != 0 || length == 0 )
-        {
-            throw new IllegalArgumentException( "Variable argument should "
-                + " consist of [RelationshipType,Direction] pairs" );
-        }
-        int elements = relationshipTypesAndDirections.length / 2;
-        RelationshipType[] types = new RelationshipType[elements];
-        Direction[] dirs = new Direction[elements];
-        int j = 0;
-        for ( int i = 0; i < elements; i++ )
-        {
-            Object relType = relationshipTypesAndDirections[j++];
-            if ( !(relType instanceof RelationshipType) )
-            {
-                throw new IllegalArgumentException(
-                    "Expected RelationshipType at var args pos " + (j - 1)
-                        + ", found " + relType );
-            }
-            types[i] = (RelationshipType) relType;
-            Object direction = relationshipTypesAndDirections[j++];
-            if ( !(direction instanceof Direction) )
-            {
-                throw new IllegalArgumentException(
-                    "Expected Direction at var args pos " + (j - 1)
-                        + ", found " + direction );
-            }
-            dirs[i] = (Direction) direction;
-        }
-        return nodeManager.createTraverser( traversalOrder, this, types, dirs,
-            stopEvaluator, returnableEvaluator );
+        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ), 
+                traversalOrder, stopEvaluator,
+                returnableEvaluator, relationshipTypesAndDirections );
     }
 
     public boolean hasRelationship()
