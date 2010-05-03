@@ -5,10 +5,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
+import java.util.Stack;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -78,7 +77,7 @@ public class TreeGraphTest extends AbstractTestBase
     {
         Traverser traverser = new TraversalDescriptionImpl().breadthFirst().traverse(
                 referenceNode() );
-        Deque<Set<String>> levels = new LinkedList<Set<String>>();
+        Stack<Set<String>> levels = new Stack<Set<String>>();
         levels.push( new HashSet<String>( Arrays.asList( "5", "6", "7", "8",
                 "9", "A", "B", "C", "D" ) ) );
         levels.push( new HashSet<String>( Arrays.asList( "2", "3", "4" ) ) );

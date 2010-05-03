@@ -1,6 +1,5 @@
 package org.neo4j.kernel.manage;
 
-import java.beans.ConstructorProperties;
 import java.io.Serializable;
 
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
@@ -17,9 +16,11 @@ public final class WindowPoolInfo implements Serializable
     private final int missCount;
     private final int oomCount;
 
+    /* Java 1.6 specific
     @ConstructorProperties( { "windowPoolName", "availableMemory",
             "usedMemory", "numberOfWindows", "windowSize", "windowHitCount",
             "windowMissCount", "numberOfOutOfMemory" } )
+    */
     public WindowPoolInfo( String name, long memAvail, long memUsed,
             int windowCount, int windowSize, int hitCount, int missCount,
             int oomCount )

@@ -1,6 +1,5 @@
 package org.neo4j.kernel.manage;
 
-import java.beans.ConstructorProperties;
 import java.io.Serializable;
 
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -10,7 +9,9 @@ public final class XaResourceInfo implements Serializable
     private final String name;
     private final String branchId;
 
+    /* Java 1.6 specific
     @ConstructorProperties( { "name", "branchId" } )
+    */
     public XaResourceInfo( String name, String branchId )
     {
         this.name = name;
