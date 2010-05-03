@@ -1,27 +1,6 @@
-/*
- * Copyright (c) 2008-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- * 
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
-package local;
+package org.neo4j.remote.test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -30,11 +9,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,58 +24,42 @@ import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.index.IndexService;
-import org.neo4j.index.lucene.LuceneIndexService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.remote.BasicGraphDatabaseServer;
+import org.neo4j.remote.AbstractTestBase;
 import org.neo4j.remote.RemoteGraphDatabase;
-import org.neo4j.remote.RemoteIndexService;
-import org.neo4j.remote.transports.LocalGraphDatabase;
 
-public class MatrixTest
+public class TheMatrixTest extends AbstractTestBase
 {
-    private static EmbeddedGraphDatabase backend;
-
-    private static BasicGraphDatabaseServer server;
-
-    private static IndexService nodeIndex;
-
-    @BeforeClass
-    public static void startBackend()
+    public TheMatrixTest( Callable<RemoteGraphDatabase> factory )
     {
-        backend = new EmbeddedGraphDatabase( "target/neo" );
-        server = new LocalGraphDatabase( backend );
-        nodeIndex = new LuceneIndexService( backend );
-        server.registerIndexService( "node index", nodeIndex );
+        super( factory );
     }
 
-    @AfterClass
-    public static void stopBackend()
+    public @Test
+    void testTheMatrix() throws Exception
     {
-        nodeIndex.shutdown();
-        backend.shutdown();
-    }
-
-    private GraphDatabaseService graphDb;
-
-    private IndexService index;
-
-    @Before
-    public void connect()
-    {
-        graphDb = new RemoteGraphDatabase( server );
-        index = new RemoteIndexService( graphDb, "node index" );
-    }
-
-    @After
-    public void disconnect()
-    {
-        graphDb.shutdown();
-    }
-
-    @Test
-    public void testHasIndex() throws Exception
-    {
-        assertNotNull( "No indexes could be retreived.", index );
+        Transaction tx = graphDb().beginTx();
+        try
+        {
+            defineMatrix( graphDb(), indexService() );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        tx = graphDb().beginTx();
+        try
+        {
+            verifyFriendsOf( indexService().getSingleNode( "name",
+                    "Thomas Andersson" ) );
+            verifyHackersInNetworkOf( indexService().getSingleNode( "name",
+                    "Thomas Andersson" ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     private static enum MatrixRelation implements RelationshipType
@@ -121,8 +81,7 @@ public class MatrixTest
         agentSmith = graphDb.createNode();
         theArchitect = graphDb.createNode();
         // Define relationships
-        @SuppressWarnings( "unused" )
-        Relationship aKm, aKt, mKt, mKc, cKs, sCa, tLa;
+        @SuppressWarnings( "unused" ) Relationship aKm, aKt, mKt, mKc, cKs, sCa, tLa;
         aKm = mrAndersson.createRelationshipTo( morpheus, MatrixRelation.KNOWS );
         aKt = mrAndersson.createRelationshipTo( trinity, MatrixRelation.KNOWS );
         mKt = morpheus.createRelationshipTo( trinity, MatrixRelation.KNOWS );
@@ -153,6 +112,7 @@ public class MatrixTest
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     private static void verifyFriendsOf( Node thomas ) throws Exception
     {
         Traverser traverser = thomas.traverse( Order.BREADTH_FIRST,
@@ -170,7 +130,7 @@ public class MatrixTest
                         "Cypher", "Agent Smith" ) ), actual );
     }
 
-    @SuppressWarnings( "serial" )
+    @SuppressWarnings( { "serial", "deprecation" } )
     private static void verifyHackersInNetworkOf( Node thomas )
             throws Exception
     {
@@ -198,75 +158,5 @@ public class MatrixTest
                 put( "The Architect", 4 );
             }
         }, actual );
-    }
-
-    private enum PlaceboVerifiction
-    {
-        REQUIRE_PROPER
-        {
-            @Override
-            void of( String id, Transaction tx )
-            {
-                assertFalse( "Transaction \"" + id
-                             + "\" is a placebo transaction.",
-                        tx.toString().startsWith( "Placebo" ) );
-            }
-        },
-        REQUIRE_PLACEBO
-        {
-            @Override
-            void of( String id, Transaction tx )
-            {
-                assertTrue( "Transaction \"" + id
-                            + "\" is not a placebo transaction.",
-                        tx.toString().startsWith( "Placebo" ) );
-            }
-        },
-        EITHER
-        {
-            @Override
-            void of( String id, Transaction tx )
-            {
-            }
-        };
-
-        abstract void of( String id, Transaction tx );
-
-    }
-
-    private static void verifyTransaction( String id, Transaction tx,
-            PlaceboVerifiction verifcation )
-    {
-        assertNotNull( "Transaction \"" + id + "\" is null.", tx );
-        verifcation.of( id, tx );
-    }
-
-    @Test
-    public void testTheMatrix() throws Exception
-    {
-        Transaction tx = graphDb.beginTx();
-        verifyTransaction( "nr 1", tx, PlaceboVerifiction.REQUIRE_PROPER );
-        try
-        {
-            defineMatrix( graphDb, index );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-        tx = graphDb.beginTx();
-        verifyTransaction( "nr 2", tx, PlaceboVerifiction.REQUIRE_PROPER );
-        try
-        {
-            verifyFriendsOf( index.getSingleNode( "name", "Thomas Andersson" ) );
-            verifyHackersInNetworkOf( index.getSingleNode( "name",
-                    "Thomas Andersson" ) );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
     }
 }
