@@ -28,7 +28,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.transaction.TransactionFailureException;
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.TransactionEventHandler;
 
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
@@ -163,5 +165,29 @@ public final class EmbeddedReadOnlyGraphDatabase implements
     public Iterable<Node> getAllNodes()
     {
         return graphDbImpl.getAllNodes();
+    }
+
+    public KernelEventHandler registerKernelEventHandler(
+            KernelEventHandler handler )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public <T> TransactionEventHandler<T> registerTransactionEventHandler(
+            TransactionEventHandler<T> handler )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public KernelEventHandler unregisterKernelEventHandler(
+            KernelEventHandler handler )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
+            TransactionEventHandler<T> handler )
+    {
+        throw new UnsupportedOperationException();
     }
 }

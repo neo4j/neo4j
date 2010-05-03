@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.persistence.ResourceConnection;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.IntArray;
 
 /**
  * The NioNeo persistence source implementation. If this class is registered as
@@ -234,8 +235,10 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return readTransaction.nodeLoadLight( id );
         }
 
-        public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId )
+        public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId, 
+                boolean light )
         {
+            // ignore light load
             return readTransaction.nodeGetProperties( nodeId );
         }
 
@@ -244,8 +247,10 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return readTransaction.relationshipLoad( id );
         }
 
-        public ArrayMap<Integer,PropertyData> relLoadProperties( int relId )
+        public ArrayMap<Integer,PropertyData> relLoadProperties( int relId, 
+                boolean light )
         {
+            // ignore light load
             return readTransaction.relGetProperties( relId );
         }
 
@@ -273,6 +278,26 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             RelationshipChainPosition position )
         {
             return readTransaction.getMoreRelationships( nodeId, position );
+        }
+
+        public IntArray getCreatedNodes()
+        {
+            return new IntArray();
+        }
+
+        public boolean isNodeCreated( int nodeId )
+        {
+            return false;
+        }
+
+        public boolean isRelationshipCreated( int relId )
+        {
+            return false;
+        }
+
+        public int getKeyIdForProperty( int propertyId )
+        {
+            return readTransaction.getKeyIdForProperty( propertyId );
         }
     }
 
@@ -401,9 +426,10 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return nodeConsumer.loadLightNode( id );
         }
 
-        public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId )
+        public ArrayMap<Integer,PropertyData> nodeLoadProperties( int nodeId, 
+                boolean light )
         {
-            return nodeConsumer.getProperties( nodeId );
+            return nodeConsumer.getProperties( nodeId, light );
         }
 
         public RelationshipData relLoadLight( int id )
@@ -411,9 +437,10 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             return relConsumer.getRelationship( id );
         }
 
-        public ArrayMap<Integer,PropertyData> relLoadProperties( int relId )
+        public ArrayMap<Integer,PropertyData> relLoadProperties( int relId, 
+                boolean light )
         {
-            return relConsumer.getProperties( relId );
+            return relConsumer.getProperties( relId, light );
         }
 
         public void createPropertyIndex( String key, int id )
@@ -436,6 +463,26 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             RelationshipChainPosition position )
         {
             return relConsumer.getMoreRelationships( nodeId, position );
+        }
+
+        public IntArray getCreatedNodes()
+        {
+            return nodeConsumer.getCreatedNodes();
+        }
+
+        public boolean isNodeCreated( int nodeId )
+        {
+            return nodeConsumer.isNodeCreated( nodeId );
+        }
+
+        public boolean isRelationshipCreated( int relId )
+        {
+            return relConsumer.isRelationshipCreated( relId );
+        }
+
+        public int getKeyIdForProperty( int propertyId )
+        {
+            return xaCon.getWriteTransaction().getKeyIdForProperty( propertyId );
         }
     }
 

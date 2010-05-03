@@ -413,7 +413,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         int rel1, int rel2, int relType1, int relType2 ) throws IOException
     {
         assertTrue( nStore.loadLightNode( node ) );
-        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node );
+        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node, 
+                false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -477,7 +478,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         int rel1, int rel2, int relType1, int relType2 ) throws IOException
     {
         assertTrue( nStore.loadLightNode( node ) );
-        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node );
+        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node, 
+                false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -540,7 +542,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     private void validateRel1( int rel, int prop1, int prop2, int prop3,
         int firstNode, int secondNode, int relType ) throws IOException
     {
-        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel );
+        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel, 
+                false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -584,7 +587,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     private void validateRel2( int rel, int prop1, int prop2, int prop3,
         int firstNode, int secondNode, int relType ) throws IOException
     {
-        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel );
+        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel, 
+                false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -658,7 +662,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     private void deleteRel1( int rel, int prop1, int prop2, int prop3,
         int firstNode, int secondNode, int relType ) throws IOException
     {
-        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel );
+        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel, 
+                false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -691,7 +696,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             count++;
         }
         assertEquals( 3, count );
-        assertEquals( 2, rStore.getProperties( rel ).size() );
+        assertEquals( 2, rStore.getProperties( rel, false ).size() );
         RelationshipData relData = rStore.getRelationship( rel );
         assertEquals( firstNode, relData.firstNode() );
         assertEquals( secondNode, relData.secondNode() );
@@ -714,7 +719,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     private void deleteRel2( int rel, int prop1, int prop2, int prop3,
         int firstNode, int secondNode, int relType ) throws IOException
     {
-        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel );
+        ArrayMap<Integer,PropertyData> props = rStore.getProperties( rel, 
+                false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -747,7 +753,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             count++;
         }
         assertEquals( 3, count );
-        assertEquals( 2, rStore.getProperties( rel ).size() );
+        assertEquals( 2, rStore.getProperties( rel, false ).size() );
         RelationshipData relData = rStore.getRelationship( rel );
         assertEquals( firstNode, relData.firstNode() );
         assertEquals( secondNode, relData.secondNode() );
@@ -768,7 +774,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     private void deleteNode1( int node, int prop1, int prop2, int prop3 )
         throws IOException
     {
-        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node );
+        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node, 
+                false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -801,7 +808,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             count++;
         }
         assertEquals( 3, count );
-        assertEquals( 2, nStore.getProperties( node ).size() );
+        assertEquals( 2, nStore.getProperties( node, false ).size() );
 
         RelationshipChainPosition pos = 
             rStore.getRelationshipChainPosition( node );
@@ -814,7 +821,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     private void deleteNode2( int node, int prop1, int prop2, int prop3 )
         throws IOException
     {
-        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node );
+        ArrayMap<Integer,PropertyData> props = nStore.getProperties( node, 
+                false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -847,7 +855,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             count++;
         }
         assertEquals( 3, count );
-        assertEquals( 2, nStore.getProperties( node ).size() );
+        assertEquals( 2, nStore.getProperties( node, false ).size() );
         RelationshipChainPosition pos = 
             rStore.getRelationshipChainPosition( node );
         Iterator<RelationshipData> rels = 

@@ -37,4 +37,6 @@ public interface Store
     public long getHighestPossibleIdInUse();
 
     public long getNumberOfIdsInUse();
+    
+    public WindowPoolStats getWindowPoolStats();
 }

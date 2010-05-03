@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
@@ -32,7 +32,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
@@ -647,13 +646,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node1.delete();
         node2.delete();
         rel1.delete();
-    }
-
-    private void clearCache()
-    {
-        GraphDbModule graphDbModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
-            .getGraphDbModule();
-        graphDbModule.getNodeManager().clearCache();
     }
 
     @Test

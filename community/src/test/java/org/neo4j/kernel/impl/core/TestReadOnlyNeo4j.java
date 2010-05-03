@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 public class TestReadOnlyNeo4j extends AbstractNeo4jTestCase
 {
@@ -69,5 +74,69 @@ public class TestReadOnlyNeo4j extends AbstractNeo4jTestCase
         }
         tx.finish();
         readGraphDb.shutdown();
+    }
+    
+    @Test
+    public void testReadOnlyOperationsAndNoTransaction()
+    {
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        Relationship rel = node1.createRelationshipTo( node2, 
+                DynamicRelationshipType.withName( "TEST" ) );
+        node1.setProperty( "key1", "value1" );
+        rel.setProperty( "key1", "value1" );
+        commit();
+        
+        // make sure write operations still throw exception
+        try
+        {
+            getGraphDb().createNode();
+            fail( "Write operation and no transaction should throw exception" );
+        }
+        catch ( NotInTransactionException e )
+        { // good
+        }
+        try
+        {
+            node1.createRelationshipTo( node2, 
+                    DynamicRelationshipType.withName( "TEST2" ) );
+            fail( "Write operation and no transaction should throw exception" );
+        }
+        catch ( NotInTransactionException e )
+        { // good
+        }
+        try
+        {
+            node1.setProperty( "key1", "value2" );
+            fail( "Write operation and no transaction should throw exception" );
+        }
+        catch ( NotInTransactionException e )
+        { // good
+        }
+
+        try
+        {
+            rel.removeProperty( "key1" );
+            fail( "Write operation and no transaction should throw exception" );
+        }
+        catch ( NotInTransactionException e )
+        { // good
+        }
+        
+        // clear caches and try reads
+        getEmbeddedGraphDb().getConfig().getGraphDbModule().
+            getNodeManager().clearCache();
+        
+        assertEquals( node1, getGraphDb().getNodeById( node1.getId() ) );
+        assertEquals( node2, getGraphDb().getNodeById( node2.getId() ) );
+        assertEquals( rel, getGraphDb().getRelationshipById( rel.getId() ) );
+        getEmbeddedGraphDb().getConfig().getGraphDbModule().
+            getNodeManager().clearCache();
+        
+        assertEquals( "value1", node1.getProperty( "key1" ) );
+        Relationship loadedRel = node1.getSingleRelationship( 
+                DynamicRelationshipType.withName( "TEST" ), Direction.OUTGOING );
+        assertEquals( rel, loadedRel );
+        assertEquals( "value1", loadedRel.getProperty( "key1" ) );
     }
 }

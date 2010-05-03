@@ -381,7 +381,7 @@ public class TestXa extends AbstractNeo4jTestCase
         int n1prop1 = ds.nextId( PropertyStore.class );
         xaCon.getNodeConsumer().addProperty( node1, n1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().getProperties( node1 );
+        xaCon.getNodeConsumer().getProperties( node1, false );
         int relType1 = ds.nextId( RelationshipType.class );
         xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
             "relationshiptype1" );
@@ -629,7 +629,7 @@ public class TestXa extends AbstractNeo4jTestCase
         int n1prop1 = ds.nextId( PropertyStore.class );
         xaCon.getNodeConsumer().addProperty( node1, n1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().getProperties( node1 );
+        xaCon.getNodeConsumer().getProperties( node1, false );
         int relType1 = ds.nextId( RelationshipType.class );
         xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
             "relationshiptype1" );
@@ -672,7 +672,7 @@ public class TestXa extends AbstractNeo4jTestCase
         int n1prop1 = ds.nextId( PropertyStore.class );
         xaCon.getNodeConsumer().addProperty( node1, n1prop1,
             index( "prop1" ), "string1" );
-        xaCon.getNodeConsumer().getProperties( node1 );
+        xaCon.getNodeConsumer().getProperties( node1, false );
         int relType1 = ds.nextId( RelationshipType.class );
         xaCon.getRelationshipTypeConsumer().addRelationshipType( relType1,
             "relationshiptype1" );

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -366,5 +367,13 @@ public class PropertyIndexStore extends AbstractStore implements Store
             "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
+    }
+
+    public List<WindowPoolStats> getAllWindowPoolStats()
+    {
+        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        list.add( keyPropertyStore.getWindowPoolStats() );
+        list.add( getWindowPoolStats() );
+        return list;
     }
 }
