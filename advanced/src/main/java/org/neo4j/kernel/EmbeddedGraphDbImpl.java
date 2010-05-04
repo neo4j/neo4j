@@ -214,9 +214,8 @@ class EmbeddedGraphDbImpl
         if ( graphDbInstance.started() )
         {
             sendShutdownEvent();
+            jmxShutdownHook.run();
         }
-
-        jmxShutdownHook.run();
 
         if ( this.shellService != null )
         {
