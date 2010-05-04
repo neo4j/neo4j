@@ -19,7 +19,9 @@
  */
 package org.neo4j.shell;
 
+import java.rmi.RemoteException;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -35,6 +37,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
  */
 public class StartLocalClient extends AbstractStarter
 {
+    private static AtomicBoolean hasBeenShutdown = new AtomicBoolean();
     public static final String ARG_PATH = "path";
     public static final String ARG_READONLY = "readonly";
     
@@ -139,8 +142,7 @@ public class StartLocalClient extends AbstractStarter
             @Override
             public void run()
             {
-                server.shutdown();
-                graph.shutdown();
+                shutdownIfNecessary( server, graph );
             }
         } );
         
@@ -149,7 +151,23 @@ public class StartLocalClient extends AbstractStarter
         ShellClient client = new SameJvmClient( server );
         setSessionVariablesFromArgs( client, args );
         client.grabPrompt();
-        server.shutdown();
-        graph.shutdown();
+        shutdownIfNecessary( server, graph );
+    }
+
+    private static void shutdownIfNecessary( ShellServer server,
+            GraphDatabaseService graphDb )
+    {
+        try
+        {
+            if ( !hasBeenShutdown.compareAndSet( false, true ) )
+            {
+                server.shutdown();
+                graphDb.shutdown();
+            }
+        }
+        catch ( RemoteException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }
