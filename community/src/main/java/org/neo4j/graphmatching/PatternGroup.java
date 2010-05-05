@@ -24,16 +24,30 @@ import java.util.Collection;
 
 import org.neo4j.graphmatching.filter.FilterExpression;
 
+/**
+ * Represents a group in SPARQL. A group can carry filters, which can restrict
+ * the returned result set.
+ */
 public class PatternGroup
 {
     private Collection<FilterExpression> regexExpression =
         new ArrayList<FilterExpression>();
     
+    /**
+     * Adds a filter expression to the list of filters for this group.
+     * @param regexRepression the {@link FilterExpression} to add to this
+     * group.
+     */
     public void addFilter( FilterExpression regexRepression )
     {
         this.regexExpression.add( regexRepression );
     }
     
+    /**
+     * Returns the filter expressions which has been added for this group with
+     * {@link #addFilter(FilterExpression)}.
+     * @return the filters for this group.
+     */
     public FilterExpression[] getFilters()
     {
         return this.regexExpression.toArray(

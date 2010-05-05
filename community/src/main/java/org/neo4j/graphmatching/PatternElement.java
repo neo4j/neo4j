@@ -22,6 +22,12 @@ package org.neo4j.graphmatching;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
+/**
+ * Represents a part of a match. It holds the matching {@link Node}, its
+ * corresponsing {@link PatternNode} in the client-supplied pattern as well
+ * as the last {@link Relationship} and {@link PatternRelationship} to get
+ * there.
+ */
 public class PatternElement
 {
 	private PatternNode pNode;
@@ -38,11 +44,22 @@ public class PatternElement
         this.prevRel = rel;
 	}
 
+	/**
+	 * Returns the {@link PatternNode} corresponding to the matching
+	 * {@link Node}.
+	 * @return the {@link PatternNode} corresponsing to matching {@link Node}.
+	 */
 	public PatternNode getPatternNode()
 	{
 		return pNode;
 	}
 
+    /**
+     * Returns the matching {@link Node} which is just one part of the whole
+     * match.
+     * @return the matching {@link Node} which is just one part of the whole
+     * match.
+     */
 	public Node getNode()
 	{
 		return node;
@@ -54,11 +71,22 @@ public class PatternElement
 		return pNode.toString();
 	}
 
+    /**
+     * Returns the {@link PatternRelationship} corresponding to the matching
+     * {@link Relationship}.
+     * @return the {@link PatternRelationship} corresponsing to matching
+     * {@link Relationship}.
+     */
     public PatternRelationship getFromPatternRelationship()
     {
         return prevPatternRel;
     }
 
+    /**
+     * Returns the {@link Relationship} traversed to get to the {@link Node}
+     * returned from {@link #getNode()}.
+     * @return the {@link Relationship} traversed to get to this node.
+     */
     public Relationship getFromRelationship()
     {
         return prevRel;
