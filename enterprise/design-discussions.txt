@@ -48,3 +48,12 @@ Features still missing
 * How does a new master know if a client has had a transaction opened before or
   not? How do we differentiate from the first lock in a transaction and the
   rest of them?
+
+
+Locking sequence
+================
+1. Acquire local lock
+2. Acquire lock at master
+   If fail: release local lock
+   If success: proceed
+
