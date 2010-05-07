@@ -4,7 +4,6 @@ Interaction points
 * Allocate ID range
 * Commit transaction
 * Rollback transaction (release locks)
-* Master push
 * Slave pull
 
 All responses have the possibility to return a number of transaction logs.
@@ -33,10 +32,6 @@ Commit transaction
 
 Rollback transaction
 --------------------
-
-
-Master push
------------
 
 
 Slave pull
