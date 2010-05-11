@@ -14,13 +14,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.shortestpath.std;
+package org.neo4j.graphalgo.util;
 
-import java.util.Comparator;
+import org.neo4j.graphalgo.CostEvaluator;
+import org.neo4j.graphdb.Relationship;
 
-public class IntegerComparator implements Comparator<Integer>
+public class IntegerEvaluator implements CostEvaluator<Integer>
 {
-    public int compare(Integer o1, Integer o2) {
-        return o1 - o2;
+    private String costpropertyName;
+
+    public IntegerEvaluator( String costpropertyName )
+    {
+        super();
+        this.costpropertyName = costpropertyName;
+    }
+
+    /**
+     * @see CostEvaluator
+     */
+    public Integer getCost( Relationship relationship, boolean backwards )
+    {
+        return (Integer) relationship.getProperty( costpropertyName );
     }
 }

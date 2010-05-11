@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.shortestpath;
+package org.neo4j.graphalgo;
 
 import org.neo4j.graphdb.Relationship;
 

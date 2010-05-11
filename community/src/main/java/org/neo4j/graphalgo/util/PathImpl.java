@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo;
+package org.neo4j.graphalgo.util;
 
 import java.util.Arrays;
 import java.util.Collections;

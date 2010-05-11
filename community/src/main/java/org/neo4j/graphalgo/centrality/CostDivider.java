@@ -16,7 +16,7 @@
  */
 package org.neo4j.graphalgo.centrality;
 
-import org.neo4j.graphalgo.shortestpath.CostAccumulator;
+import org.neo4j.graphalgo.CostAccumulator;
 
 /**
  * To make calculations as general as possible, this follows a similar idea to
