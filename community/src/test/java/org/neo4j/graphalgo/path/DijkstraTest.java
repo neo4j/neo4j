@@ -11,7 +11,6 @@ import java.util.Set;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.util.DoubleEvaluator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -20,55 +19,50 @@ import org.neo4j.kernel.TraversalFactory;
 
 import common.Neo4jAlgoTestCase;
 
-public class TestAStar extends Neo4jAlgoTestCase
+public class DijkstraTest extends Neo4jAlgoTestCase
 {
-    static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = new EstimateEvaluator<Double>()
-    {
-        public Double getCost( Node node, Node goal )
-        {
-            double dx = (Double) node.getProperty( "x" )
-                        - (Double) goal.getProperty( "x" );
-            double dy = (Double) node.getProperty( "y" )
-                        - (Double) goal.getProperty( "y" );
-            double result = Math.sqrt( Math.pow( dx, 2 ) + Math.pow( dy, 2 ) );
-            return result;
-        }
-    };
-
     @Test
-    public void testSimplest()
+    public void testNothing()
     {
-        Node nodeA = graph.makeNode( "A", "x", 0d, "y", 0d );
-        Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
-        Node nodeC = graph.makeNode( "C", "x", 7d, "y", 0d );
-        Relationship relAB = graph.makeEdge( "A", "B", "length", 2d );
-        Relationship relBC = graph.makeEdge( "B", "C", "length", 3d );
-        Relationship relAC = graph.makeEdge( "A", "C", "length", 10d );
+    }
 
-        AStar astar = new AStar( graphDb,
-                TraversalFactory.expanderForAllTypes(), new DoubleEvaluator(
-                        "length" ), ESTIMATE_EVALUATOR );
+    @Ignore
+    @Test
+    public void canGetPathsInTriangleGraph() throws Exception
+    {
+        Node nodeA = graph.makeNode( "A" );
+        Node nodeB = graph.makeNode( "B" );
+        Node nodeC = graph.makeNode( "C" );
+        graph.makeEdge( "A", "B", "length", 2d );
+        graph.makeEdge( "B", "C", "length", 3d );
+        graph.makeEdge( "A", "C", "length", 10d );
 
-        Path path = astar.findSinglePath( nodeA, nodeC );
-        assertPath( path, nodeA, nodeB, nodeC );
+        Dijkstra algo = new Dijkstra( TraversalFactory.expanderForAllTypes(),
+                new DoubleEvaluator( "length" ) );
+
+        Iterator<Path> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
+        assertTrue( "expected at least one path", paths.hasNext() );
+        assertPath( paths.next(), nodeA, nodeB, nodeC );
+        assertFalse( "expected at most one path", paths.hasNext() );
+
+        assertPath( algo.findSinglePath( nodeA, nodeC ), nodeA, nodeB, nodeC );
     }
 
     @Ignore
     @Test
     public void canGetMultiplePathsInTriangleGraph() throws Exception
     {
-        Node nodeA = graph.makeNode( "A", "x", 0d, "y", 0d );
-        Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
-        Node nodeC = graph.makeNode( "C", "x", 7d, "y", 0d );
+        Node nodeA = graph.makeNode( "A" );
+        Node nodeB = graph.makeNode( "B" );
+        Node nodeC = graph.makeNode( "C" );
         Set<Relationship> expectedFirsts = new HashSet<Relationship>();
         expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
         expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
         Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 2d );
         graph.makeEdge( "A", "C", "length", 5d );
 
-        AStar algo = new AStar( graphDb,
-                TraversalFactory.expanderForAllTypes(), new DoubleEvaluator(
-                        "length" ), ESTIMATE_EVALUATOR );
+        Dijkstra algo = new Dijkstra( TraversalFactory.expanderForAllTypes(),
+                new DoubleEvaluator( "length" ) );
 
         Iterator<Path> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
         for ( int i = 0; i < 2; i++ )
@@ -95,12 +89,12 @@ public class TestAStar extends Neo4jAlgoTestCase
     @Test
     public void canGetMultiplePathsInASmallRoadNetwork() throws Exception
     {
-        Node nodeA = graph.makeNode( "A", "x", 1d, "y", 1d );
-        Node nodeB = graph.makeNode( "B", "x", 2d, "y", 2d );
-        Node nodeC = graph.makeNode( "C", "x", 0d, "y", 3d );
-        Node nodeD = graph.makeNode( "D", "x", 1d, "y", 4d );
-        Node nodeE = graph.makeNode( "E", "x", 1d, "y", 4d );
-        Node nodeF = graph.makeNode( "F", "x", 1d, "y", 4d );
+        Node nodeA = graph.makeNode( "A" );
+        Node nodeB = graph.makeNode( "B" );
+        Node nodeC = graph.makeNode( "C" );
+        Node nodeD = graph.makeNode( "D" );
+        Node nodeE = graph.makeNode( "E" );
+        Node nodeF = graph.makeNode( "F" );
         graph.makeEdge( "A", "B", "length", 2d );
         graph.makeEdge( "A", "C", "length", 2.5d );
         graph.makeEdge( "C", "D", "length", 7.3d );
@@ -111,9 +105,8 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "C", "F", "length", 12d );
         graph.makeEdge( "A", "F", "length", 25d );
 
-        AStar algo = new AStar( graphDb,
-                TraversalFactory.expanderForAllTypes(), new DoubleEvaluator(
-                        "length" ), ESTIMATE_EVALUATOR );
+        Dijkstra algo = new Dijkstra( TraversalFactory.expanderForAllTypes(),
+                new DoubleEvaluator( "length" ) );
 
         // Try the search in both directions.
         for ( Node[] nodes : new Node[][] { { nodeA, nodeF }, { nodeF, nodeA } } )

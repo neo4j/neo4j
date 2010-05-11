@@ -22,7 +22,9 @@ import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -92,6 +94,23 @@ public abstract class Neo4jAlgoTestCase
             assertEquals( nodes[i++], node );
         }
         assertEquals( nodes.length, i );
+    }
+
+    protected <E> void assertContains( Iterable<E> actual, E... expected )
+    {
+        Set<E> expectation = new HashSet<E>( Arrays.asList( expected ) );
+        for ( E element : actual )
+        {
+            if ( !expectation.remove( element ) )
+            {
+                fail( "unexpected element <" + element + ">" );
+            }
+        }
+        if ( !expectation.isEmpty() )
+        {
+            fail( "the expected elements <" + expectation
+                  + "> were not contained" );
+        }
     }
 
     private String getPathDef( Path path )
