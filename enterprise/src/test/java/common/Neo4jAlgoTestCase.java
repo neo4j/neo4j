@@ -17,6 +17,12 @@
 package common;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -86,5 +92,38 @@ public abstract class Neo4jAlgoTestCase
             assertEquals( nodes[i++], node );
         }
         assertEquals( nodes.length, i );
+    }
+
+    private String getPathDef( Path path )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( Node node : path.nodes() )
+        {
+            if ( builder.length() > 0 )
+            {
+                builder.append( "," );
+            }
+            builder.append( node.getProperty( SimpleGraphBuilder.KEY_ID ) );
+        }
+        return builder.toString();
+    }
+    
+    public void assertPaths( Iterable<Path> paths, String... pathDefinitions )
+    {
+        List<String> pathDefs = new ArrayList<String>( Arrays.asList( pathDefinitions ) );
+        for ( Path path : paths )
+        {
+            String pathDef = getPathDef( path );
+            int index = pathDefs.indexOf( pathDef );
+            if ( index != -1 )
+            {
+                pathDefs.remove( index );
+            }
+            else
+            {
+                fail( "Unexpected path " + pathDef );
+            }
+        }
+        assertTrue( "Should be empty: " + pathDefs.toString(), pathDefs.isEmpty() );
     }
 }

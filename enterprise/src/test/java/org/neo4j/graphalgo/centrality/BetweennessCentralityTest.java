@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
-import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
 import org.neo4j.graphalgo.shortestpath.Util;
@@ -47,8 +47,8 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
                 {
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(),
+            }, new org.neo4j.graphalgo.util.DoubleAdder(),
+            new org.neo4j.graphalgo.util.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1, MyRelTypes.R2, MyRelTypes.R3 );
     }
 

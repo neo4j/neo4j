@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 
 import org.junit.Test;
-import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.FloydWarshall;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -48,9 +48,9 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         graph.makeEdge( "e", "b", "cost", (double) 1 );
         FloydWarshall<Double> floydWarshall = new FloydWarshall<Double>( 0.0,
             Double.MAX_VALUE, Direction.OUTGOING,
-            new org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator( "cost" ),
-            new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(), graph
+            new org.neo4j.graphalgo.util.DoubleEvaluator( "cost" ),
+            new org.neo4j.graphalgo.util.DoubleAdder(),
+            new org.neo4j.graphalgo.util.DoubleComparator(), graph
                 .getAllNodes(), graph.getAllEdges() );
         assertTrue( floydWarshall.getCost( graph.getNode( "a" ), graph
             .getNode( "a" ) ) == 0.0 );
@@ -73,9 +73,9 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         graph.makeEdge( "e", "f", "cost", (double) 1 );
         FloydWarshall<Double> floydWarshall = new FloydWarshall<Double>( 0.0,
             Double.MAX_VALUE, Direction.OUTGOING,
-            new org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator( "cost" ),
-            new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(), graph
+            new org.neo4j.graphalgo.util.DoubleEvaluator( "cost" ),
+            new org.neo4j.graphalgo.util.DoubleAdder(),
+            new org.neo4j.graphalgo.util.DoubleComparator(), graph
                 .getAllNodes(), graph.getAllEdges() );
         List<Node> path = floydWarshall.getPath( graph.getNode( "a" ), graph
             .getNode( "f" ) );
@@ -108,8 +108,8 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
                     assertFalse( backwards );
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(), graph
+            }, new org.neo4j.graphalgo.util.DoubleAdder(),
+            new org.neo4j.graphalgo.util.DoubleComparator(), graph
                 .getAllNodes(), graph.getAllEdges() ).calculate();
         new FloydWarshall<Double>( 0.0, Double.MAX_VALUE, Direction.INCOMING,
             new CostEvaluator<Double>()
@@ -120,8 +120,8 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
                     assertTrue( backwards );
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(), graph
+            }, new org.neo4j.graphalgo.util.DoubleAdder(),
+            new org.neo4j.graphalgo.util.DoubleComparator(), graph
                 .getAllNodes(), graph.getAllEdges() ).calculate();
     }
 }

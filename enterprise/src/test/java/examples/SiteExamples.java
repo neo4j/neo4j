@@ -10,18 +10,18 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphalgo.EstimateEvaluator;
+import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.centrality.BetweennessCentrality;
-import org.neo4j.graphalgo.shortestpath.AStar;
+import org.neo4j.graphalgo.path.AStar;
+import org.neo4j.graphalgo.path.ShortestPath;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
-import org.neo4j.graphalgo.shortestpath.EstimateEvaluator;
-import org.neo4j.graphalgo.shortestpath.PathFinder;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
 import org.neo4j.graphalgo.shortestpath.SingleSourceSingleSinkShortestPath;
-import org.neo4j.graphalgo.shortestpath.SingleStepShortestPathsFinder;
-import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
-import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
-import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
+import org.neo4j.graphalgo.util.DoubleAdder;
+import org.neo4j.graphalgo.util.DoubleComparator;
+import org.neo4j.graphalgo.util.DoubleEvaluator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -83,9 +83,9 @@ public class SiteExamples
         
         // Will find the shortest path between startNode and endNode via
         // "MY_TYPE" relationships (irregardless of their directions)
-        PathFinder shortestPathFinder = new SingleStepShortestPathsFinder( graphDb, 15,
+        PathFinder finder = new ShortestPath( graphDb, 15,
                 TraversalFactory.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ) );
-        Iterable<Path> paths = shortestPathFinder.findPaths( startNode, endNode );
+        Iterable<Path> paths = finder.findAllPaths( startNode, endNode );
     }
     // END SNIPPET: shortestPathUsage
     

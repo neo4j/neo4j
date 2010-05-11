@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.shortestpath;
+package org.neo4j.graphalgo;
 
 import org.neo4j.graphdb.Node;
 

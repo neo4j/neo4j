@@ -19,7 +19,6 @@ package org.neo4j.graphalgo.shortestpath;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
 
 import common.Neo4jAlgoTestCase;
@@ -32,9 +31,9 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     {
         return new Dijkstra<Double>( startCost, graph.getNode( startNode ),
             graph.getNode( endNode ),
-            new org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator( "cost" ),
-            new org.neo4j.graphalgo.shortestpath.std.DoubleAdder(),
-            new org.neo4j.graphalgo.shortestpath.std.DoubleComparator(),
+            new org.neo4j.graphalgo.util.DoubleEvaluator( "cost" ),
+            new org.neo4j.graphalgo.util.DoubleAdder(),
+            new org.neo4j.graphalgo.util.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }
 

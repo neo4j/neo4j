@@ -16,7 +16,7 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
 import org.neo4j.graphdb.Direction;
@@ -38,8 +38,8 @@ public class SingleSourceShortestPathDijkstraTest extends
                 {
                     return 1;
                 }
-            }, new org.neo4j.graphalgo.shortestpath.std.IntegerAdder(),
-            new org.neo4j.graphalgo.shortestpath.std.IntegerComparator(),
+            }, new org.neo4j.graphalgo.util.IntegerAdder(),
+            new org.neo4j.graphalgo.util.IntegerComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }
 
@@ -54,8 +54,8 @@ public class SingleSourceShortestPathDijkstraTest extends
                 {
                     return 1;
                 }
-            }, new org.neo4j.graphalgo.shortestpath.std.IntegerAdder(),
-            new org.neo4j.graphalgo.shortestpath.std.IntegerComparator(), direction,
+            }, new org.neo4j.graphalgo.util.IntegerAdder(),
+            new org.neo4j.graphalgo.util.IntegerComparator(), direction,
             relTypes );
     }
 }
