@@ -1,6 +1,4 @@
-package org.neo4j.graphalgo.shortestpath;
-
-import java.util.Collection;
+package org.neo4j.graphalgo;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -29,5 +27,5 @@ public interface PathFinder
      * @param end the end {@link Node} which defines the end of the path.
      * @return all {@link Path}s between {@code start} and {@code end}.
      */
-    Collection<Path> findPaths( Node start, Node end );
+    Iterable<Path> findAllPaths( Node start, Node end );
 }

@@ -1,7 +1,9 @@
-package org.neo4j.graphalgo.shortestpath;
+package org.neo4j.graphalgo.path;
 
 import org.junit.Test;
-import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
+import org.neo4j.graphalgo.EstimateEvaluator;
+import org.neo4j.graphalgo.path.AStar;
+import org.neo4j.graphalgo.util.DoubleEvaluator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;

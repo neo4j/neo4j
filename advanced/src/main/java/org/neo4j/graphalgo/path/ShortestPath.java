@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.shortestpath;
+package org.neo4j.graphalgo.path;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,8 +15,9 @@ import org.neo4j.commons.iterator.CollectionWrapper;
 import org.neo4j.commons.iterator.IteratorUtil;
 import org.neo4j.commons.iterator.NestingIterator;
 import org.neo4j.commons.iterator.PrefetchingIterator;
-import org.neo4j.graphalgo.PathImpl;
-import org.neo4j.graphalgo.PathImpl.Builder;
+import org.neo4j.graphalgo.PathFinder;
+import org.neo4j.graphalgo.util.PathImpl;
+import org.neo4j.graphalgo.util.PathImpl.Builder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -36,13 +37,13 @@ import org.neo4j.graphdb.Transaction;
  * but in the reverse direction ( {@link Direction#reverse()} ) from the
  * end node. This doesn't affect {@link Direction#BOTH}.
  */
-public class SingleStepShortestPathsFinder implements PathFinder
+public class ShortestPath implements PathFinder
 {
     private final GraphDatabaseService graphDb;
     private final int maxDepth;
     private final RelationshipExpander relExpander;
     
-    public SingleStepShortestPathsFinder( GraphDatabaseService graphDb,
+    public ShortestPath( GraphDatabaseService graphDb,
             int maxDepth, RelationshipExpander relExpander )
     {
         this.graphDb = graphDb;
@@ -50,7 +51,7 @@ public class SingleStepShortestPathsFinder implements PathFinder
         this.relExpander = relExpander;
     }
     
-    public Collection<Path> findPaths( Node start, Node end )
+    public Iterable<Path> findAllPaths( Node start, Node end )
     {
         return internalPaths( start, end, false );
     }

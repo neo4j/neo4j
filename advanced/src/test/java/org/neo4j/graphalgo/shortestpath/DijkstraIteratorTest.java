@@ -23,10 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.junit.Test;
-import org.neo4j.graphalgo.shortestpath.Dijkstra;
-import org.neo4j.graphalgo.shortestpath.std.DoubleAdder;
-import org.neo4j.graphalgo.shortestpath.std.DoubleComparator;
-import org.neo4j.graphalgo.shortestpath.std.DoubleEvaluator;
+import org.neo4j.graphalgo.util.DoubleAdder;
+import org.neo4j.graphalgo.util.DoubleComparator;
+import org.neo4j.graphalgo.util.DoubleEvaluator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;

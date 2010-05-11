@@ -22,10 +22,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.graphalgo.MatrixUtil;
-import org.neo4j.graphalgo.MatrixUtil.DoubleMatrix;
-import org.neo4j.graphalgo.MatrixUtil.DoubleVector;
-import org.neo4j.graphalgo.shortestpath.CostEvaluator;
+import org.neo4j.graphalgo.CostEvaluator;
+import org.neo4j.graphalgo.util.MatrixUtil;
+import org.neo4j.graphalgo.util.MatrixUtil.DoubleMatrix;
+import org.neo4j.graphalgo.util.MatrixUtil.DoubleVector;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;

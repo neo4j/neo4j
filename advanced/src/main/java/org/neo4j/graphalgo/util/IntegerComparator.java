@@ -14,14 +14,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.shortestpath.std;
+package org.neo4j.graphalgo.util;
 
 import java.util.Comparator;
 
-public class DoubleComparator implements Comparator<Double>
+public class IntegerComparator implements Comparator<Integer>
 {
-        public int compare(Double o1, Double o2) {
-                Double d = o1 - o2;
-                return d > 0 ? 1 : (d < 0 ? -1 : 0);
-        }
+    public int compare(Integer o1, Integer o2) {
+        return o1 - o2;
+    }
 }

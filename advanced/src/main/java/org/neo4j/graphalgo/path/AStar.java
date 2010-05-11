@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.shortestpath;
+package org.neo4j.graphalgo.path;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,7 +12,10 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.neo4j.commons.iterator.PrefetchingIterator;
-import org.neo4j.graphalgo.PathImpl;
+import org.neo4j.graphalgo.CostEvaluator;
+import org.neo4j.graphalgo.EstimateEvaluator;
+import org.neo4j.graphalgo.PathFinder;
+import org.neo4j.graphalgo.util.PathImpl;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -60,7 +63,7 @@ public class AStar implements PathFinder
         return null;
     }
     
-    public Collection<Path> findPaths( Node node, Node end )
+    public Iterable<Path> findAllPaths( Node node, Node end )
     {
         Path path = findSinglePath( node, end );
         return path != null ? Arrays.asList( path ) : Collections.<Path>emptyList();

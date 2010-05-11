@@ -1,4 +1,4 @@
-package org.neo4j.graphalgo.shortestpath;
+package org.neo4j.graphalgo;
 
 /**
  * Evaluator for determining if the maximum path cost has been exceeded.

@@ -18,7 +18,7 @@ package org.neo4j.graphalgo.centrality;
 
 import java.util.Set;
 
-import org.neo4j.graphalgo.shortestpath.CostAccumulator;
+import org.neo4j.graphalgo.CostAccumulator;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphdb.Node;
 

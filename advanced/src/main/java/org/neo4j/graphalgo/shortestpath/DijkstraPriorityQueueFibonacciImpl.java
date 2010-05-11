@@ -20,7 +20,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphalgo.FibonacciHeap;
+import org.neo4j.graphalgo.util.FibonacciHeap;
 import org.neo4j.graphdb.Node;
 
 /**
