@@ -47,9 +47,7 @@ public interface ExpansionSource
      * Returns the next expansion source from the expanded relationships
      * from the current node.
      * 
-     * @param rules the {@link TraversalRules} which should be followed,
-     * fules specified by the originating {@link TraversalDescription}.
      * @return the next expansion source from this expansion source.
      */
-    ExpansionSource next( TraversalRules rules );
+    ExpansionSource next();
 }
