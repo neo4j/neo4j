@@ -40,7 +40,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         Dijkstra algo = new Dijkstra( TraversalFactory.expanderForAllTypes(),
                 new DoubleEvaluator( "length" ) );
 
-        Iterator<Path> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
+        Iterator<WeightedPath> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
         assertTrue( "expected at least one path", paths.hasNext() );
         assertPath( paths.next(), nodeA, nodeB, nodeC );
         assertFalse( "expected at most one path", paths.hasNext() );
@@ -64,7 +64,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         Dijkstra algo = new Dijkstra( TraversalFactory.expanderForAllTypes(),
                 new DoubleEvaluator( "length" ) );
 
-        Iterator<Path> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
+        Iterator<WeightedPath> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
         for ( int i = 0; i < 2; i++ )
         {
             assertTrue( "expected more paths", paths.hasNext() );
@@ -112,7 +112,8 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         for ( Node[] nodes : new Node[][] { { nodeA, nodeF }, { nodeF, nodeA } } )
         {
             int found = 0;
-            Iterator<Path> paths = algo.findAllPaths( nodes[0], nodes[1] ).iterator();
+            Iterator<WeightedPath> paths = algo.findAllPaths( nodes[0],
+                    nodes[1] ).iterator();
             for ( int i = 0; i < 2; i++ )
             {
                 assertTrue( "expected more paths", paths.hasNext() );
