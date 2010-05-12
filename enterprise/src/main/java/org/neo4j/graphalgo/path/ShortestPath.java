@@ -176,10 +176,10 @@ public class ShortestPath implements PathFinder
         ValueHolder<Integer> sharedCurrentDepth = new ValueHolder<Integer>( 0 );
         final DirectionData startData = new DirectionData( start,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
-                sharedCurrentDepth, stopAsap, false );
+                sharedCurrentDepth, stopAsap, relExpander );
         final DirectionData endData = new DirectionData( end,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
-                sharedCurrentDepth, stopAsap, true );
+                sharedCurrentDepth, stopAsap, relExpander.reversed() );
         
         while ( startData.hasNext() || endData.hasNext() )
         {
@@ -405,11 +405,12 @@ public class ShortestPath implements PathFinder
         private boolean haveFoundSomething;
         private boolean stop;
         private final boolean stopAsap;
-        private final boolean reversed;
+        private final RelationshipExpander expander;
         
         DirectionData( Node startNode, Collection<Long> sharedVisitedRels,
                 ValueHolder<Integer> sharedFrozenDepth, ValueHolder<Boolean> sharedStop,
-                ValueHolder<Integer> sharedCurrentDepth, boolean stopAsap, boolean reversed )
+                ValueHolder<Integer> sharedCurrentDepth, boolean stopAsap,
+                RelationshipExpander expander )
         {
             this.visitedNodes.put( startNode, new LevelData( null, 0 ) );
             this.nextNodes.add( startNode );
@@ -417,7 +418,7 @@ public class ShortestPath implements PathFinder
             this.sharedStop = sharedStop;
             this.sharedCurrentDepth = sharedCurrentDepth;
             this.stopAsap = stopAsap;
-            this.reversed = reversed;
+            this.expander = expander;
             prepareNextLevel();
         }
         
@@ -433,7 +434,7 @@ public class ShortestPath implements PathFinder
                 protected Iterator<Relationship> createNestedIterator( Node node )
                 {
                     lastParentTraverserNode = node;
-                    return relExpander.expand( node, reversed ).iterator();
+                    return expander.expand( node ).iterator();
                 }
             };
             this.currentDepth++;
