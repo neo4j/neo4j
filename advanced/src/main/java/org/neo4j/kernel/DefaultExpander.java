@@ -154,4 +154,20 @@ public class DefaultExpander implements RelationshipExpander
     {
         return new DefaultExpander( types, directions );
     }
+
+    public RelationshipExpander reversed()
+    {
+        return newExpander( types, reverseDirections( directions ) );
+    }
+
+    private static Map<String, Direction> reverseDirections(
+            Map<String, Direction> directions )
+    {
+        Map<String, Direction> result = new HashMap<String, Direction>();
+        for ( Map.Entry<String, Direction> entry : directions.entrySet() )
+        {
+            result.put( entry.getKey(), entry.getValue().reverse() );
+        }
+        return result;
+    }
 }
