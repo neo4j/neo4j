@@ -8,7 +8,7 @@ import org.neo4j.graphdb.Relationship;
 class WeightedPathImpl implements WeightedPath
 {
     private final Path path;
-    private double weight;
+    private final double weight;
 
     WeightedPathImpl( CostEvaluator<Double> costEvaluator, Path path )
     {
@@ -19,6 +19,12 @@ class WeightedPathImpl implements WeightedPath
             cost += costEvaluator.getCost( relationship, false );
         }
         this.weight = cost;
+    }
+    
+    WeightedPathImpl( double weight, Path path )
+    {
+        this.path = path;
+        this.weight = weight;
     }
 
     public double weight()

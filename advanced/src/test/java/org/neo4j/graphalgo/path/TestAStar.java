@@ -49,7 +49,8 @@ public class TestAStar extends Neo4jAlgoTestCase
                 TraversalFactory.expanderForAllTypes(), new DoubleEvaluator(
                         "length" ), ESTIMATE_EVALUATOR );
 
-        Path path = astar.findSinglePath( nodeA, nodeC );
+        WeightedPath path = astar.findSinglePath( nodeA, nodeC );
+        assertEquals( (Double)5d, (Double)path.weight() );
         assertPath( path, nodeA, nodeB, nodeC );
     }
 
@@ -70,7 +71,7 @@ public class TestAStar extends Neo4jAlgoTestCase
                 TraversalFactory.expanderForAllTypes(), new DoubleEvaluator(
                         "length" ), ESTIMATE_EVALUATOR );
 
-        Iterator<Path> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
+        Iterator<WeightedPath> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
         for ( int i = 0; i < 2; i++ )
         {
             assertTrue( "expected more paths", paths.hasNext() );
@@ -119,7 +120,7 @@ public class TestAStar extends Neo4jAlgoTestCase
         for ( Node[] nodes : new Node[][] { { nodeA, nodeF }, { nodeF, nodeA } } )
         {
             int found = 0;
-            Iterator<Path> paths = algo.findAllPaths( nodes[0], nodes[1] ).iterator();
+            Iterator<WeightedPath> paths = algo.findAllPaths( nodes[0], nodes[1] ).iterator();
             for ( int i = 0; i < 2; i++ )
             {
                 assertTrue( "expected more paths", paths.hasNext() );
