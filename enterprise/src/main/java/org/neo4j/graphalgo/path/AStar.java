@@ -22,7 +22,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 
-public class AStar implements PathFinder
+public class AStar implements PathFinder<WeightedPath>
 {
     private final GraphDatabaseService graphDb;
     private final RelationshipExpander expander;
@@ -38,7 +38,7 @@ public class AStar implements PathFinder
         this.estimateEvaluator = estimateEvaluator;
     }
     
-    public Path findSinglePath( Node start, Node end )
+    public WeightedPath findSinglePath( Node start, Node end )
     {
         Doer doer = new Doer( start, end );
         while ( doer.hasNext() )
@@ -47,6 +47,7 @@ public class AStar implements PathFinder
             if ( node.equals( end ) )
             {
                 // Hit, return path
+                double weight = doer.score.get( node.getId() ).wayLength;
                 LinkedList<Relationship> rels = new LinkedList<Relationship>();
                 Relationship rel = graphDb.getRelationshipById( doer.cameFrom.get( node.getId() ) );
                 while ( rel != null )
@@ -57,16 +58,16 @@ public class AStar implements PathFinder
                     rel = nextRelId == null ? null : graphDb.getRelationshipById( nextRelId );
                 }
                 Path path = toPath( start, rels );
-                return path;
+                return new WeightedPathImpl( weight, path );
             }
         }
         return null;
     }
     
-    public Iterable<Path> findAllPaths( Node node, Node end )
+    public Iterable<WeightedPath> findAllPaths( Node node, Node end )
     {
-        Path path = findSinglePath( node, end );
-        return path != null ? Arrays.asList( path ) : Collections.<Path>emptyList();
+        WeightedPath path = findSinglePath( node, end );
+        return path != null ? Arrays.asList( path ) : Collections.<WeightedPath>emptyList();
     }
     
     private Path toPath( Node start, LinkedList<Relationship> rels )
