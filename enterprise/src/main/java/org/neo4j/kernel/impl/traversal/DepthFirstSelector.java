@@ -2,7 +2,6 @@ package org.neo4j.kernel.impl.traversal;
 
 import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.SourceSelector;
-import org.neo4j.graphdb.traversal.TraversalRules;
 
 class DepthFirstSelector implements SourceSelector
 {
@@ -13,7 +12,7 @@ class DepthFirstSelector implements SourceSelector
         this.current = startSource;
     }
     
-    public ExpansionSource nextPosition( TraversalRules rules )
+    public ExpansionSource nextPosition()
     {
         ExpansionSource result = null;
         while ( result == null )
@@ -22,7 +21,7 @@ class DepthFirstSelector implements SourceSelector
             {
                 return null;
             }
-            ExpansionSource next = current.next( rules );
+            ExpansionSource next = current.next();
             if ( next == null )
             {
                 current = current.parent();
@@ -34,10 +33,7 @@ class DepthFirstSelector implements SourceSelector
             }
             if ( current != null )
             {
-                if ( rules.okToReturn( current ) )
-                {
-                    result = current;
-                }
+                result = current;
             }
         }
         return result;

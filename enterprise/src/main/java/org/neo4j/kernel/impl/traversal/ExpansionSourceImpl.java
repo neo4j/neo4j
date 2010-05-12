@@ -8,7 +8,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.Position;
-import org.neo4j.graphdb.traversal.TraversalRules;
 
 class ExpansionSourceImpl implements ExpansionSource
 {
@@ -19,10 +18,12 @@ class ExpansionSourceImpl implements ExpansionSource
     private final Relationship howIGotHere;
     private Position position;
     private final int depth;
+    private final TraverserImpl traverser;
 
-    ExpansionSourceImpl( TraversalRules rules, ExpansionSource parent, Node source,
+    ExpansionSourceImpl( TraverserImpl traverser, ExpansionSource parent, Node source,
             RelationshipExpander expander, Relationship toHere )
     {
+        this.traverser = traverser;
         this.parent = parent;
         this.source = source;
         this.expander = expander;
@@ -35,27 +36,27 @@ class ExpansionSourceImpl implements ExpansionSource
         else
         {
             depth = parent.depth() + 1;
-            expandRelationships( rules, true );
+            expandRelationships( true );
         }
     }
 
-    private void expandRelationships( TraversalRules rules, boolean doChecks )
+    private void expandRelationships( boolean doChecks )
     {
-        boolean okToExpand = !doChecks || rules.shouldExpandBeyond( this );
+        boolean okToExpand = !doChecks || traverser.shouldExpandBeyond( this );
         relationships = okToExpand ?
                 expander.expand( source ).iterator() :
                 Collections.<Relationship>emptyList().iterator();
     }
 
-    public ExpansionSource next( TraversalRules rules )
+    public ExpansionSource next()
     {
         if ( relationships == null ) // This code will only be executed at the
                                      // start node
         {
-            if ( ((TraversalRulesImpl) rules).uniquness.type == PrimitiveTypeFetcher.RELATIONSHIP
-                 || rules.okToProceed( this ) )
+            if ( traverser.uniquness.type == PrimitiveTypeFetcher.RELATIONSHIP
+                 || traverser.okToProceed( this ) )
             {
-                expandRelationships( rules, false );
+                expandRelationships( false );
                 return this;
             }
             else
@@ -71,9 +72,9 @@ class ExpansionSourceImpl implements ExpansionSource
                 continue;
             }
             Node node = relationship.getOtherNode( source );
-            ExpansionSource next = new ExpansionSourceImpl( rules, this, node,
+            ExpansionSource next = new ExpansionSourceImpl( traverser, this, node,
                     expander, relationship );
-            if ( rules.okToProceed( next ) )
+            if ( traverser.okToProceed( next ) )
             {
                 return next;
             }
