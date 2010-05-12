@@ -37,7 +37,7 @@ import org.neo4j.graphdb.Transaction;
  * but in the reverse direction ( {@link Direction#reverse()} ) from the
  * end node. This doesn't affect {@link Direction#BOTH}.
  */
-public class ShortestPath implements PathFinder
+public class ShortestPath implements PathFinder<Path>
 {
     private final GraphDatabaseService graphDb;
     private final int maxDepth;

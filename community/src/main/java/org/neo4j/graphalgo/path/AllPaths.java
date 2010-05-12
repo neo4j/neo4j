@@ -11,7 +11,7 @@ import org.neo4j.graphdb.traversal.ReturnFilter;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.kernel.TraversalFactory;
 
-public class AllPaths implements PathFinder
+public class AllPaths implements PathFinder<Path>
 {
     private final RelationshipExpander expander;
     private final int maxDepth;
