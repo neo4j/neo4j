@@ -1,14 +1,18 @@
 package org.neo4j.kernel;
 
 import java.lang.reflect.Array;
+import java.util.Iterator;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.impl.traversal.FinalExpansionSource;
 import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
 
 /**
@@ -122,6 +126,49 @@ public class TraversalFactory
             throw new IllegalArgumentException( cast );
         }
         return type.cast( target );
+    }
+
+    /**
+     * Combines two {@link ExpansionSource}s with a common
+     * {@link ExpansionSource#node() head node} in order to obtain an
+     * {@link ExpansionSource} representing a path from the start node of the
+     * <code>source</code> {@link ExpansionSource} to the start node of the
+     * <code>target</code> {@link ExpansionSource}. The resulting
+     * {@link ExpansionSource} will not {@link ExpansionSource#next() expand
+     * further}, and does not provide a {@link ExpansionSource#parent() parent}
+     * {@link ExpansionSource}.
+     *
+     * @param source the {@link ExpansionSource} where the resulting path starts
+     * @param target the {@link ExpansionSource} where the resulting path ends
+     * @throws IllegalArgumentException if the {@link ExpansionSource#node()
+     *             head nodes} of the supplied {@link ExpansionSource}s does not
+     *             match
+     * @return an {@link ExpansionSource} that represents the path from the
+     *         start node of the <code>source</code> {@link ExpansionSource} to
+     *         the start node of the <code>target</code> {@link ExpansionSource}
+     */
+    public static ExpansionSource combineSourcePaths( ExpansionSource source,
+            ExpansionSource target )
+    {
+        if ( !source.node().equals( target.node() ) )
+        {
+            throw new IllegalArgumentException(
+                    "The nodes of the head and tail must match" );
+        }
+        Path headPath = source.position().path(), tailPath = target.position().path();
+        Relationship[] relationships = new Relationship[headPath.length()
+                                                        + tailPath.length()];
+        Iterator<Relationship> iter = headPath.relationships().iterator();
+        for ( int i = 0; iter.hasNext(); i++ )
+        {
+            relationships[i] = iter.next();
+        }
+        iter = tailPath.relationships().iterator();
+        for ( int i = relationships.length - 1; iter.hasNext(); i-- )
+        {
+            relationships[i] = iter.next();
+        }
+        return new FinalExpansionSource( tailPath.getStartNode(), relationships );
     }
 
     /**
