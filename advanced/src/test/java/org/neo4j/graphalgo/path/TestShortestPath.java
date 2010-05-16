@@ -12,9 +12,8 @@ public class TestShortestPath extends Neo4jAlgoTestCase
 {
     protected PathFinder<Path> instantiatePathFinder( int maxDepth )
     {
-//        return new ShortestPath( graphDb, maxDepth,
-//                TraversalFactory.expanderForTypes( MyRelTypes.R1, Direction.BOTH ) );
-        return new TraversalShortestPath( TraversalFactory.expanderForAllTypes() );
+        return new ShortestPath( graphDb, maxDepth,
+                TraversalFactory.expanderForTypes( MyRelTypes.R1, Direction.BOTH ) );
     }
     
     @Test
