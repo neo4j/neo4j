@@ -11,7 +11,6 @@ class StartNodeExpansionSource extends ExpansionSourceImpl
             RelationshipExpander expander )
     {
         super( traverser, source, expander );
-        System.out.println( "START" );
     }
 
     @Override
