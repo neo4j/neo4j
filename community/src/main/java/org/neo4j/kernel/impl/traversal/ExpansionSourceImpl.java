@@ -4,66 +4,69 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.Position;
+import org.neo4j.kernel.impl.traversal.TraverserImpl.TraverserIterator;
 
-class ExpansionSourceImpl implements ExpansionSource
+class ExpansionSourceImpl implements ExpansionSource, Position
 {
     private final ExpansionSource parent;
     private final Node source;
     private final RelationshipExpander expander;
     private Iterator<Relationship> relationships;
     private final Relationship howIGotHere;
-    private Position position;
     private final int depth;
-    private final TraverserImpl traverser;
+    final TraverserIterator traverser;
+    private Path path;
 
-    ExpansionSourceImpl( TraverserImpl traverser, ExpansionSource parent, Node source,
-            RelationshipExpander expander, Relationship toHere )
+    /*
+     * For expansion sources for all nodes except the start node
+     */
+    ExpansionSourceImpl( TraverserIterator traverser, ExpansionSource parent, int depth,
+            Node source, RelationshipExpander expander, Relationship toHere )
     {
+        System.out.println( "THEN" );
         this.traverser = traverser;
         this.parent = parent;
         this.source = source;
         this.expander = expander;
         this.howIGotHere = toHere;
-        if ( parent == null )
-        {
-            // We're at the start node
-            depth = 0;
-        }
-        else
-        {
-            depth = parent.depth() + 1;
-            expandRelationships( true );
-        }
+        this.depth = depth;
+        expandRelationships( true );
+    }
+    
+    /*
+     * For the start node expansion source
+     */
+    ExpansionSourceImpl( TraverserIterator  traverser, Node source,
+            RelationshipExpander expander )
+    {
+        this.traverser = traverser;
+        this.parent = null;
+        this.source = source;
+        this.expander = expander;
+        this.howIGotHere = null;
+        this.depth = 0;
     }
 
-    private void expandRelationships( boolean doChecks )
+    protected void expandRelationships( boolean doChecks )
     {
         boolean okToExpand = !doChecks || traverser.shouldExpandBeyond( this );
         relationships = okToExpand ?
                 expander.expand( source ).iterator() :
                 Collections.<Relationship>emptyList().iterator();
     }
+    
+    protected boolean hasExpandedRelationships()
+    {
+        return relationships != null;
+    }
 
     public ExpansionSource next()
     {
-        if ( relationships == null ) // This code will only be executed at the
-                                     // start node
-        {
-            if ( traverser.uniquness.type == PrimitiveTypeFetcher.RELATIONSHIP
-                 || traverser.okToProceed( this ) )
-            {
-                expandRelationships( false );
-                return this;
-            }
-            else
-            {
-                return null;
-            }
-        }
         while ( relationships.hasNext() )
         {
             Relationship relationship = relationships.next();
@@ -72,7 +75,7 @@ class ExpansionSourceImpl implements ExpansionSource
                 continue;
             }
             Node node = relationship.getOtherNode( source );
-            ExpansionSource next = new ExpansionSourceImpl( traverser, this, node,
+            ExpansionSource next = new ExpansionSourceImpl( traverser, this, depth + 1, node,
                     expander, relationship );
             if ( traverser.okToProceed( next ) )
             {
@@ -84,11 +87,7 @@ class ExpansionSourceImpl implements ExpansionSource
 
     public Position position()
     {
-        if ( this.position == null )
-        {
-            this.position = new PositionImpl( this );
-        }
-        return this.position;
+        return this;
     }
 
     public int depth()
@@ -109,5 +108,24 @@ class ExpansionSourceImpl implements ExpansionSource
     public ExpansionSource parent()
     {
         return this.parent;
+    }
+
+    public boolean atStartNode()
+    {
+        return this.depth == 0;
+    }
+
+    public Relationship lastRelationship()
+    {
+        return this.howIGotHere;
+    }
+
+    public Path path()
+    {
+        if ( this.path == null )
+        {
+            this.path = new TraversalPath( this );
+        }
+        return this.path;
     }
 }
