@@ -8,12 +8,13 @@ import org.neo4j.kernel.TraversalFactory;
 
 import common.Neo4jAlgoTestCase;
 
-public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
+public class TestShortestPath extends Neo4jAlgoTestCase
 {
-    protected PathFinder instantiatePathFinder( int maxDepth )
+    protected PathFinder<Path> instantiatePathFinder( int maxDepth )
     {
-        return new ShortestPath( graphDb, maxDepth,
-                TraversalFactory.expanderForTypes( MyRelTypes.R1, Direction.BOTH ) );
+//        return new ShortestPath( graphDb, maxDepth,
+//                TraversalFactory.expanderForTypes( MyRelTypes.R1, Direction.BOTH ) );
+        return new TraversalShortestPath( TraversalFactory.expanderForAllTypes() );
     }
     
     @Test
@@ -27,7 +28,7 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "s", "t" );
         graph.makeEdge( "s", "t" );
 
-        PathFinder finder = instantiatePathFinder( 1 );
+        PathFinder<Path> finder = instantiatePathFinder( 1 );
         Iterable<Path> paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
         assertPaths( paths, "s,t", "s,t" );
     }
@@ -50,7 +51,7 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "n", "o" );
         graph.makeEdge( "o", "t" );
 
-        PathFinder finder = instantiatePathFinder( 6 );
+        PathFinder<Path> finder = instantiatePathFinder( 6 );
         Iterable<Path> paths =
                 finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
         assertPaths( paths, "s,m,o,t", "s,n,o,t" );
@@ -77,12 +78,12 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "2", "t" );
         graph.makeEdge( "4", "t" );
         
-        PathFinder singleStepFinder = instantiatePathFinder( 3 );
+        PathFinder<Path> singleStepFinder = instantiatePathFinder( 3 );
         Iterable<Path> paths = singleStepFinder.findAllPaths( graph.getNode( "s" ),
                 graph.getNode( "t" ) );
         assertPaths( paths, "s,1,2,t", "s,1,4,t", "s,3,2,t", "s,3,4,t" );
 
-        PathFinder finder = instantiatePathFinder( 3 );
+        PathFinder<Path> finder = instantiatePathFinder( 3 );
         paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
         assertPaths( paths, "s,1,2,t", "s,1,4,t", "s,3,2,t", "s,3,4,t" );
     }
@@ -99,7 +100,7 @@ public class TestSingleStepShortestPath extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,b,c,d,e,f,m" );
         graph.makeEdgeChain( "a,g,h,i,j,k,l,m" );
         
-        PathFinder finder = new ShortestPath( graphDb, 4,
+        PathFinder<Path> finder = new ShortestPath( graphDb, 4,
                 TraversalFactory.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ) );
         assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "j" ) ),
                 "a,g,h,i,j" );
