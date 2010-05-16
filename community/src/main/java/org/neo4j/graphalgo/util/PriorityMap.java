@@ -79,7 +79,7 @@ class PriorityMap<E, K, P>
     public static <E, K, P extends Comparable<P>> PriorityMap<E, K, P> withNaturalOrder(
             Converter<K, E> key )
     {
-        return withNaturalOrder( key, false );
+        return PriorityMap.<E, K, P>withNaturalOrder( key, false );
     }
     public static <E, K, P extends Comparable<P>> PriorityMap<E, K, P> withNaturalOrder(
             Converter<K, E> key, boolean reversed )
@@ -90,7 +90,7 @@ class PriorityMap<E, K, P>
 
     public static <K, P extends Comparable<P>> PriorityMap<K, K, P> withSelfKeyNaturalOrder()
     {
-        return withSelfKeyNaturalOrder( false );
+        return PriorityMap.<K, P>withSelfKeyNaturalOrder( false );
     }
     @SuppressWarnings( "unchecked" )
     public static <K, P extends Comparable<P>> PriorityMap<K, K, P> withSelfKeyNaturalOrder(
