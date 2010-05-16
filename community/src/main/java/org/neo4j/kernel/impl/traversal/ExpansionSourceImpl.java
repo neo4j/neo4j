@@ -28,7 +28,6 @@ class ExpansionSourceImpl implements ExpansionSource, Position
     ExpansionSourceImpl( TraverserIterator traverser, ExpansionSource parent, int depth,
             Node source, RelationshipExpander expander, Relationship toHere )
     {
-        System.out.println( "THEN" );
         this.traverser = traverser;
         this.parent = parent;
         this.source = source;
