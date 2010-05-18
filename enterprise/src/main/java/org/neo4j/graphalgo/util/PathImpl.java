@@ -8,6 +8,7 @@ import java.util.NoSuchElementException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.TraversalFactory;
 
 public final class PathImpl implements Path
 {
@@ -247,25 +248,6 @@ public final class PathImpl implements Path
     @Override
     public String toString()
     {
-        Node current = start;
-        StringBuilder result = new StringBuilder();
-        for ( Relationship rel : path )
-        {
-            result.append( current );
-            String prefix = "--", suffix = "--";
-            if ( current.equals( rel.getEndNode() ) )
-                prefix = "<--";
-            else
-                suffix = "-->";
-            result.append( prefix );
-            result.append( rel.getType() );
-            result.append( ".[" );
-            result.append( rel.getId() );
-            result.append( "]" );
-            result.append( suffix );
-            current = rel.getOtherNode( current );
-        }
-        result.append( current );
-        return result.toString();
+        return TraversalFactory.defaultPathToString( this );
     }
 }
