@@ -74,21 +74,41 @@ public interface TraversalDescription
     
     /**
      * A convenience method for {@link #sourceSelector(SourceSelectorFactory)}
-     * where a "depth first" selector is used. A depth first selector always
-     * tries to select positions (from the current position) which are deeper
-     * than the current position.
+     * where a "preorder depth first" selector is used. A depth first selector
+     * always tries to select positions (from the current position) which are
+     * deeper than the current position.
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription depthFirst();
     
     /**
      * A convenience method for {@link #sourceSelector(SourceSelectorFactory)}
-     * where a "breadth first" selector is used. A breadth first selector
-     * always selects all positions on the current depth before advancing to
-     * the next depth.
+     * where a "postorder depth first" selector is used. A depth first selector
+     * always tries to select positions (from the current position) which are
+     * deeper than the current position, where the deeper position are returned
+     * before the shallower ones.
+     * @return a new traversal description with the new modifications.
+     */
+    TraversalDescription postorderDepthFirst();
+    
+    /**
+     * A convenience method for {@link #sourceSelector(SourceSelectorFactory)}
+     * where a "preorder breadth first" selector is used. A breadth first
+     * selector always selects all positions on the current depth before
+     * advancing to the next depth.
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription breadthFirst();
+    
+    /**
+     * A convenience method for {@link #sourceSelector(SourceSelectorFactory)}
+     * where a "postorder breadth first" selector is used. A breadth first
+     * selector always selects all positions on the current depth before
+     * advancing to the next depth. The children are returned before their
+     * parent.
+     * @return a new traversal description with the new modifications.
+     */
+    TraversalDescription postorderBreadthFirst();
 
     /**
      * Adds {@code type} to the list of relationship types to traverse.

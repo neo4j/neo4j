@@ -25,12 +25,28 @@ public final class TraversalDescriptionImpl implements TraversalDescription
                     return new DepthFirstSelector( startSource );
                 }
             };
+    public static final SourceSelectorFactory POSTORDER_DEPTH_FIRST_SELECTOR =
+            new SourceSelectorFactory()
+            {
+                public SourceSelector create( ExpansionSource startSource )
+                {
+                    return new PostorderDepthFirstSelector( startSource );
+                }
+            };
     public static final SourceSelectorFactory BREADTH_FIRST_SELECTOR =
             new SourceSelectorFactory()
             {
                 public SourceSelector create( ExpansionSource startSource )
                 {
                     return new BreadthFirstSelector( startSource );
+                }
+            };
+    public static final SourceSelectorFactory POSTORDER_BREADTH_FIRST_SELECTOR =
+            new SourceSelectorFactory()
+            {
+                public SourceSelector create( ExpansionSource startSource )
+                {
+                    return new PostorderBreadthFirstSelector( startSource );
                 }
             };
     
@@ -199,9 +215,19 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         return sourceSelector( DEPTH_FIRST_SELECTOR );
     }
 
+    public TraversalDescription postorderDepthFirst()
+    {
+        return sourceSelector( POSTORDER_DEPTH_FIRST_SELECTOR );
+    }
+    
     public TraversalDescription breadthFirst()
     {
         return sourceSelector( BREADTH_FIRST_SELECTOR );
+    }
+    
+    public TraversalDescription postorderBreadthFirst()
+    {
+        return sourceSelector( POSTORDER_BREADTH_FIRST_SELECTOR );
     }
     
     /* (non-Javadoc)
