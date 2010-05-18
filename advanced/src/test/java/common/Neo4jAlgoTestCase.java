@@ -113,7 +113,7 @@ public abstract class Neo4jAlgoTestCase
         }
     }
 
-    private String getPathDef( Path path )
+    public String getPathDef( Path path )
     {
         StringBuilder builder = new StringBuilder();
         for ( Node node : path.nodes() )
@@ -127,7 +127,7 @@ public abstract class Neo4jAlgoTestCase
         return builder.toString();
     }
     
-    public void assertPaths( Iterable<Path> paths, String... pathDefinitions )
+    public void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
     {
         List<String> pathDefs = new ArrayList<String>( Arrays.asList( pathDefinitions ) );
         for ( Path path : paths )

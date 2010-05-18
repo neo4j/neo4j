@@ -2,13 +2,13 @@ package org.neo4j.graphalgo.path;
 
 import java.util.Iterator;
 
-import org.neo4j.commons.iterator.IterableWrapper;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.util.BestFirstSelectorFactory;
+import org.neo4j.graphalgo.util.StopAfterWeightIterator;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.ReturnFilter;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -17,14 +17,15 @@ import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.kernel.TraversalFactory;
 
 /**
- *
  * @author Tobias Ivarsson
  * @author Martin Neumann
+ * @author Mattias Persson
  */
 public class Dijkstra implements PathFinder<WeightedPath>
 {
-    private static final TraversalDescription TRAVERSAL = TraversalFactory.createTraversalDescription().uniqueness(
-            Uniqueness.RELATIONSHIP_GLOBAL );
+    private static final TraversalDescription TRAVERSAL =
+            TraversalFactory.createTraversalDescription().uniqueness(
+                    Uniqueness.RELATIONSHIP_GLOBAL );
 
     private final RelationshipExpander expander;
     private final CostEvaluator<Double> costEvaluator;
@@ -35,17 +36,24 @@ public class Dijkstra implements PathFinder<WeightedPath>
         this.costEvaluator = costEvaluator;
     }
 
-    public Iterable<WeightedPath> findAllPaths( Node start, Node end )
+    public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
-        Traverser traverser = TRAVERSAL.expand( expander ).sourceSelector(
-                new SelectorFactory( costEvaluator ) ).filter(
-                new StopCondition( end ) ).traverse( start );
-        return new IterableWrapper<WeightedPath, Path>( traverser.paths() )
+        ReturnFilter filter = new ReturnFilter()
         {
-            @Override
-            protected WeightedPath underlyingObjectToObject( Path path )
+            public boolean shouldReturn( Position position )
             {
-                return new WeightedPathImpl( costEvaluator, path );
+                return position.node().equals( end );
+            }
+        };
+        
+        final Traverser traverser = TRAVERSAL.expand( expander ).sourceSelector(
+                new SelectorFactory( costEvaluator ) ).filter( filter ).traverse( start );
+        return new Iterable<WeightedPath>()
+        {
+            public Iterator<WeightedPath> iterator()
+            {
+                return new StopAfterWeightIterator( traverser.paths().iterator(),
+                        costEvaluator );
             }
         };
     }
@@ -53,29 +61,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
     public WeightedPath findSinglePath( Node start, Node end )
     {
         Iterator<WeightedPath> result = findAllPaths( start, end ).iterator();
-        if ( result.hasNext() )
-        {
-            return result.next();
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    private static class StopCondition implements ReturnFilter
-    {
-        private final Node stop;
-
-        StopCondition( Node end )
-        {
-            this.stop = end;
-        }
-
-        public boolean shouldReturn( Position position )
-        {
-            return position.node().equals( stop );
-        }
+        return result.hasNext() ? result.next() : null;
     }
 
     private static class SelectorFactory extends BestFirstSelectorFactory
@@ -85,6 +71,12 @@ public class Dijkstra implements PathFinder<WeightedPath>
         SelectorFactory( CostEvaluator<Double> evaluator )
         {
             this.evaluator = evaluator;
+        }
+        
+        @Override
+        protected double calculateValue( ExpansionSource next )
+        {
+            return next.depth() == 0 ? 0d : evaluator.getCost( next.relationship(), false );
         }
     }
 }

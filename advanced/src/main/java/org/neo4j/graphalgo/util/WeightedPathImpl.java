@@ -1,16 +1,17 @@
-package org.neo4j.graphalgo.path;
+package org.neo4j.graphalgo.util;
 
 import org.neo4j.graphalgo.CostEvaluator;
+import org.neo4j.graphalgo.path.WeightedPath;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
-class WeightedPathImpl implements WeightedPath
+public class WeightedPathImpl implements WeightedPath
 {
     private final Path path;
     private final double weight;
 
-    WeightedPathImpl( CostEvaluator<Double> costEvaluator, Path path )
+    public WeightedPathImpl( CostEvaluator<Double> costEvaluator, Path path )
     {
         this.path = path;
         double cost = 0;
@@ -21,7 +22,7 @@ class WeightedPathImpl implements WeightedPath
         this.weight = cost;
     }
     
-    WeightedPathImpl( double weight, Path path )
+    public WeightedPathImpl( double weight, Path path )
     {
         this.path = path;
         this.weight = weight;
@@ -55,5 +56,11 @@ class WeightedPathImpl implements WeightedPath
     public Iterable<Relationship> relationships()
     {
         return path.relationships();
+    }
+    
+    @Override
+    public String toString()
+    {
+        return path.toString() + " weight:" + this.weight;
     }
 }
