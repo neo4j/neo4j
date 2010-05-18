@@ -4,8 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
@@ -19,6 +21,14 @@ import org.neo4j.graphdb.traversal.Traverser;
 
 public class TreeGraphTest extends AbstractTestBase
 {
+    /*
+     *                     (1)
+     *               ------ | ------
+     *             /        |        \
+     *           (2)       (3)       (4)
+     *          / | \     / | \     / | \
+     *        (5)(6)(7) (8)(9)(A) (B)(C)(D)
+     */
     private static final String[] THE_WORLD_AS_WE_KNOWS_IT = new String[] {
             "1 TO 2", "1 TO 3", "1 TO 4", "2 TO 5", "2 TO 6", "2 TO 7",
             "3 TO 8", "3 TO 9", "3 TO A", "4 TO B", "4 TO C", "4 TO D", };
@@ -82,21 +92,7 @@ public class TreeGraphTest extends AbstractTestBase
                 "9", "A", "B", "C", "D" ) ) );
         levels.push( new HashSet<String>( Arrays.asList( "2", "3", "4" ) ) );
         levels.push( new HashSet<String>( Arrays.asList( "1" ) ) );
-        Set<String> current = levels.pop();
-        for ( Position position : traverser )
-        {
-            String nodeName = (String) position.node().getProperty( "name" );
-            if ( current.isEmpty() )
-            {
-                current = levels.pop();
-            }
-            assertTrue( "Should not contain node (" + nodeName
-                        + ") at level " + ( 3 - levels.size() ),
-                    current.remove( nodeName ) );
-        }
-
-        assertTrue( "Should have no more levels", levels.isEmpty() );
-        assertTrue( "Should be empty", current.isEmpty() );
+        assertLevels( traverser, levels );
     }
 
     @Test
@@ -111,6 +107,47 @@ public class TreeGraphTest extends AbstractTestBase
             assertEquals( expectedDepth( i++ ), pos.depth() );
         }
         assertEquals( 13, i );
+    }
+    
+    @Test
+    public void testPostorderDepthFirstReturnsDeeperNodesFirst()
+    {
+        Traverser traverser = new TraversalDescriptionImpl().postorderDepthFirst().traverse(
+                referenceNode() );
+        int i = 0;
+        List<String> encounteredNodes = new ArrayList<String>();
+        for ( Position pos : traverser )
+        {
+            encounteredNodes.add( (String) pos.node().getProperty( "name" ) );
+            assertEquals( expectedDepth( (12-i++) ), pos.depth() );
+        }
+        assertEquals( 13, i );
+        
+        assertTrue( encounteredNodes.indexOf( "5" ) < encounteredNodes.indexOf( "2" ) );
+        assertTrue( encounteredNodes.indexOf( "6" ) < encounteredNodes.indexOf( "2" ) );
+        assertTrue( encounteredNodes.indexOf( "7" ) < encounteredNodes.indexOf( "2" ) );
+        assertTrue( encounteredNodes.indexOf( "8" ) < encounteredNodes.indexOf( "3" ) );
+        assertTrue( encounteredNodes.indexOf( "9" ) < encounteredNodes.indexOf( "3" ) );
+        assertTrue( encounteredNodes.indexOf( "A" ) < encounteredNodes.indexOf( "3" ) );
+        assertTrue( encounteredNodes.indexOf( "B" ) < encounteredNodes.indexOf( "4" ) );
+        assertTrue( encounteredNodes.indexOf( "C" ) < encounteredNodes.indexOf( "4" ) );
+        assertTrue( encounteredNodes.indexOf( "D" ) < encounteredNodes.indexOf( "4" ) );
+        assertTrue( encounteredNodes.indexOf( "2" ) < encounteredNodes.indexOf( "1" ) );
+        assertTrue( encounteredNodes.indexOf( "3" ) < encounteredNodes.indexOf( "1" ) );
+        assertTrue( encounteredNodes.indexOf( "4" ) < encounteredNodes.indexOf( "1" ) );
+    }
+    
+    @Test
+    public void testPostorderBreadthFirstReturnsDeeperNodesFirst()
+    {
+        Traverser traverser = new TraversalDescriptionImpl().postorderBreadthFirst().traverse(
+                referenceNode() );
+        Stack<Set<String>> levels = new Stack<Set<String>>();
+        levels.push( new HashSet<String>( Arrays.asList( "1" ) ) );
+        levels.push( new HashSet<String>( Arrays.asList( "2", "3", "4" ) ) );
+        levels.push( new HashSet<String>( Arrays.asList( "5", "6", "7", "8",
+                "9", "A", "B", "C", "D" ) ) );
+        assertLevels( traverser, levels );
     }
 
     private int expectedDepth( int i )

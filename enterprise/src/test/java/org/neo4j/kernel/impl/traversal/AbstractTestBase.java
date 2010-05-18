@@ -7,6 +7,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Stack;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -16,6 +17,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
@@ -110,6 +112,25 @@ public abstract class AbstractTestBase
             }
         }
         return null;
+    }
+
+    protected void assertLevels( Traverser traverser, Stack<Set<String>> levels )
+    {
+        Set<String> current = levels.pop();
+        for ( Position position : traverser )
+        {
+            String nodeName = (String) position.node().getProperty( "name" );
+            if ( current.isEmpty() )
+            {
+                current = levels.pop();
+            }
+            assertTrue( "Should not contain node (" + nodeName
+                        + ") at level " + ( 3 - levels.size() ),
+                    current.remove( nodeName ) );
+        }
+    
+        assertTrue( "Should have no more levels", levels.isEmpty() );
+        assertTrue( "Should be empty", current.isEmpty() );
     }
 
     private static void deleteFileOrDirectory( File file )
