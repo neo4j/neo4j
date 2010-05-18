@@ -4,15 +4,14 @@ import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.SourceSelector;
 
 /**
- * Selects {@link ExpansionSource}s according to preorder depth first pattern,
- * the most natural ordering in a depth first search, see
- * http://en.wikipedia.org/wiki/Depth-first_search
+ * Selects {@link ExpansionSource}s according to postorder depth first pattern,
+ * see http://en.wikipedia.org/wiki/Depth-first_search
  */
-class DepthFirstSelector implements SourceSelector
+class PostorderDepthFirstSelector implements SourceSelector
 {
     private ExpansionSource current;
     
-    DepthFirstSelector( ExpansionSource startSource )
+    PostorderDepthFirstSelector( ExpansionSource startSource )
     {
         this.current = startSource;
     }
@@ -26,19 +25,16 @@ class DepthFirstSelector implements SourceSelector
             {
                 return null;
             }
+            
             ExpansionSource next = current.next();
-            if ( next == null )
-            {
-                current = current.parent();
-                continue;
-            }
-            else
+            if ( next != null )
             {
                 current = next;
             }
-            if ( current != null )
+            else
             {
                 result = current;
+                current = current.parent();
             }
         }
         return result;
