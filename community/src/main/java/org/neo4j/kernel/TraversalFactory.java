@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
@@ -186,5 +187,105 @@ public class TraversalFactory
                 return position.depth() >= depth;
             }
         };
+    }
+    
+    public static interface PathDescriptor<T extends Path>
+    {
+        String before( T path );
+        
+        String nodeRepresentation( T path, Node node );
+        
+        String relationshipRepresentation( T path, Node from,
+                Relationship relationship );
+        
+        String after( T path );
+    }
+    
+    public static class DefaultPathDescriptor<T extends Path> implements PathDescriptor<T>
+    {
+        public String after( Path path )
+        {
+            return "";
+        }
+
+        public String before( Path path )
+        {
+            return "";
+        }
+
+        public String nodeRepresentation( Path path, Node node )
+        {
+            return "(" + node.getId() + ")";
+        }
+
+        public String relationshipRepresentation( Path path,
+                Node from, Relationship relationship )
+        {
+            String prefix = "--", suffix = "--";
+            if ( from.equals( relationship.getEndNode() ) )
+            {
+                prefix = "<--";
+            }
+            else
+            {
+                suffix = "-->";
+            }
+            return prefix + "<" + relationship.getType().name() + "," +
+                    relationship.getId() + "]" + suffix;
+        }
+    }
+    
+    public static <T extends Path> String pathToString( T path, PathDescriptor<T> builder )
+    {
+        Node current = path.getStartNode();
+        StringBuilder result = new StringBuilder( builder.before( path ) );
+        for ( Relationship rel : path.relationships() )
+        {
+            result.append( builder.nodeRepresentation( path, current ) );
+            result.append( builder.relationshipRepresentation( path, current, rel ) );
+            current = rel.getOtherNode( current );
+        }
+        result.append( builder.nodeRepresentation( path, current ) );
+        result.append( builder.after( path ) );
+        return result.toString();
+    }
+    
+    public static String defaultPathToString( Path path )
+    {
+        return pathToString( path, new DefaultPathDescriptor<Path>() );
+    }
+    
+    public static String simplePathToString( Path path )
+    {
+        return pathToString( path, new DefaultPathDescriptor<Path>()
+        {
+            public String nodeRepresentation( Path path, Node node )
+            {
+                return "(" + node.getId() + ")";
+            }
+            
+            public String relationshipRepresentation( Path path, Node from,
+                    Relationship relationship )
+            {
+                return relationship.getStartNode().equals( from ) ? "-->" : "<--";
+            }
+        } );
+    }
+
+    public static String simplePathToString( Path path, final String nodePropertyKey )
+    {
+        return pathToString( path, new DefaultPathDescriptor<Path>()
+        {
+            public String nodeRepresentation( Path path, Node node )
+            {
+                return "(" + node.getProperty( nodePropertyKey, node.getId() ) + ")";
+            }
+
+            public String relationshipRepresentation( Path path, Node from,
+                    Relationship relationship )
+            {
+                return relationship.getStartNode().equals( from ) ? "-->" : "<--";
+            }
+        } );
     }
 }
