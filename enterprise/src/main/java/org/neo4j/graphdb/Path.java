@@ -57,5 +57,5 @@ public interface Path
      * @return A string representation of the path.
      */
     @Override
-    public String toString();
+    String toString();
 }
