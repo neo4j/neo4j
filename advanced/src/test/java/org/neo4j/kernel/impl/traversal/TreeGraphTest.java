@@ -18,6 +18,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.kernel.TraversalFactory;
 
 public class TreeGraphTest extends AbstractTestBase
 {
@@ -112,8 +113,9 @@ public class TreeGraphTest extends AbstractTestBase
     @Test
     public void testPostorderDepthFirstReturnsDeeperNodesFirst()
     {
-        Traverser traverser = new TraversalDescriptionImpl().postorderDepthFirst().traverse(
-                referenceNode() );
+        Traverser traverser = new TraversalDescriptionImpl().sourceSelector(
+                TraversalFactory.postorderDepthFirstSelector() ).traverse(
+                        referenceNode() );
         int i = 0;
         List<String> encounteredNodes = new ArrayList<String>();
         for ( Position pos : traverser )
@@ -140,8 +142,9 @@ public class TreeGraphTest extends AbstractTestBase
     @Test
     public void testPostorderBreadthFirstReturnsDeeperNodesFirst()
     {
-        Traverser traverser = new TraversalDescriptionImpl().postorderBreadthFirst().traverse(
-                referenceNode() );
+        Traverser traverser = new TraversalDescriptionImpl().sourceSelector(
+                TraversalFactory.postorderBreadthFirstSelector() ).traverse(
+                        referenceNode() );
         Stack<Set<String>> levels = new Stack<Set<String>>();
         levels.push( new HashSet<String>( Arrays.asList( "1" ) ) );
         levels.push( new HashSet<String>( Arrays.asList( "2", "3", "4" ) ) );
