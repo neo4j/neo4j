@@ -16,6 +16,7 @@ import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.util.PathImpl;
+import org.neo4j.graphalgo.util.WeightedPathImpl;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;

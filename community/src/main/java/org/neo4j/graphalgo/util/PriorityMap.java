@@ -161,6 +161,20 @@ class PriorityMap<E, K, P>
             node = queue.poll();
             map.remove( keyFunction.convert( node.head.entity ) );
         }
+        else
+        {
+            node.head = node.head.next;
+        }
+        return new Entry<E, P>( node );
+    }
+    
+    public Entry<E, P> peek()
+    {
+        Node<E, P> node = queue.peek();
+        if ( node == null )
+        {
+            return null;
+        }
         return new Entry<E, P>( node );
     }
 
