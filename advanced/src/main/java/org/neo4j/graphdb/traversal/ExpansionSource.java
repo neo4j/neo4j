@@ -6,8 +6,8 @@ import org.neo4j.graphdb.RelationshipExpander;
 
 /**
  * Represents a {@link Position} and a {@link RelationshipExpander} with a
- * traversal context, f.ex. parent and an iterator of relationships to go next.
- * It's a base to write a {@link SourceSelector} on top of.
+ * traversal context, for example parent and an iterator of relationships to go
+ * next. It's a base to write a {@link SourceSelector} on top of.
  */
 public interface ExpansionSource
 {
