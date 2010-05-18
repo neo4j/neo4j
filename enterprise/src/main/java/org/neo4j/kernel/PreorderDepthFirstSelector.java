@@ -1,4 +1,4 @@
-package org.neo4j.kernel.impl.traversal;
+package org.neo4j.kernel;
 
 import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.SourceSelector;
@@ -8,11 +8,11 @@ import org.neo4j.graphdb.traversal.SourceSelector;
  * the most natural ordering in a depth first search, see
  * http://en.wikipedia.org/wiki/Depth-first_search
  */
-class DepthFirstSelector implements SourceSelector
+class PreorderDepthFirstSelector implements SourceSelector
 {
     private ExpansionSource current;
     
-    DepthFirstSelector( ExpansionSource startSource )
+    PreorderDepthFirstSelector( ExpansionSource startSource )
     {
         this.current = startSource;
     }

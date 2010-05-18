@@ -1,4 +1,4 @@
-package org.neo4j.kernel.impl.traversal;
+package org.neo4j.kernel;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -7,6 +7,12 @@ import java.util.List;
 import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.SourceSelector;
 
+/**
+ * Selects {@link ExpansionSource}s according to postorder breadth first
+ * pattern which basically is a reverse to preorder breadth first in that
+ * deepest levels are returned first, see
+ * http://en.wikipedia.org/wiki/Breadth-first_search
+ */
 class PostorderBreadthFirstSelector implements SourceSelector
 {
     private Iterator<ExpansionSource> sourceIterator;
