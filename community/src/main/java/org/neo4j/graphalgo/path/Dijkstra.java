@@ -64,7 +64,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
         return result.hasNext() ? result.next() : null;
     }
 
-    private static class SelectorFactory extends BestFirstSelectorFactory
+    private static class SelectorFactory extends BestFirstSelectorFactory<Double, Double>
     {
         private final CostEvaluator<Double> evaluator;
 
@@ -74,9 +74,27 @@ public class Dijkstra implements PathFinder<WeightedPath>
         }
         
         @Override
-        protected double calculateValue( ExpansionSource next )
+        protected Double calculateValue( ExpansionSource next )
         {
             return next.depth() == 0 ? 0d : evaluator.getCost( next.relationship(), false );
+        }
+
+        @Override
+        protected Double addPriority( ExpansionSource source,
+                Double currentAggregatedValue, Double value )
+        {
+            return withDefault( currentAggregatedValue, 0d ) + withDefault( value, 0d );
+        }
+
+        private <T> T withDefault( T valueOrNull, T valueIfNull )
+        {
+            return valueOrNull != null ? valueOrNull : valueIfNull;
+        }
+
+        @Override
+        protected Double getStartData()
+        {
+            return 0d;
         }
     }
 }
