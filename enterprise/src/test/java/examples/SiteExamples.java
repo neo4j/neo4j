@@ -15,6 +15,7 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.centrality.BetweennessCentrality;
 import org.neo4j.graphalgo.path.AStar;
 import org.neo4j.graphalgo.path.ShortestPath;
+import org.neo4j.graphalgo.path.WeightedPath;
 import org.neo4j.graphalgo.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
@@ -166,7 +167,7 @@ public class SiteExamples
                 return result;
             }
         };
-        AStar astar = new AStar( graphDb, TraversalFactory.expanderForAllTypes(),
+        PathFinder<WeightedPath> astar = new AStar( graphDb, TraversalFactory.expanderForAllTypes(),
                 new DoubleEvaluator( "length" ), estimateEvaluator );
         Path path = astar.findSinglePath( nodeA, nodeC );
     }

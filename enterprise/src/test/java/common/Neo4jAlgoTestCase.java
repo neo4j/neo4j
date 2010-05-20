@@ -91,7 +91,8 @@ public abstract class Neo4jAlgoTestCase
         int i = 0;
         for ( Node node : path.nodes() )
         {
-            assertEquals( nodes[i++], node );
+            assertEquals( "Wrong node " + i + " in " + getPathDef( path ),
+                    nodes[i++], node );
         }
         assertEquals( nodes.length, i );
     }
