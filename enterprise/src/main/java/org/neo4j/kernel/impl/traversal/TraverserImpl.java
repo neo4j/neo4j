@@ -9,8 +9,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.Position;
-import org.neo4j.graphdb.traversal.PruneEvaluator;
-import org.neo4j.graphdb.traversal.ReturnFilter;
 import org.neo4j.graphdb.traversal.SourceSelector;
 import org.neo4j.graphdb.traversal.Traverser;
 
@@ -77,13 +75,14 @@ class TraverserImpl implements Traverser
     class TraverserIterator extends PrefetchingIterator<Position>
     {
         final UniquenessFilter uniquness;
-        private final PruneEvaluator pruning;
-        private final ReturnFilter filter;
         private final SourceSelector sourceSelector;
+        final TraversalDescriptionImpl description;
+        final Node startNode;
         
         TraverserIterator()
         {
             PrimitiveTypeFetcher type = PrimitiveTypeFetcher.NODE;
+            this.description = TraverserImpl.this.description;
             switch ( description.uniqueness )
             {
             case RELATIONSHIP_GLOBAL:
@@ -109,8 +108,7 @@ class TraverserImpl implements Traverser
                 throw new IllegalArgumentException( "Unknown Uniquness "
                                                     + description.uniqueness );
             }
-            this.pruning = description.pruning;
-            this.filter = description.filter;
+            this.startNode = TraverserImpl.this.startNode;
             this.sourceSelector = description.sourceSelector.create(
                     new StartNodeExpansionSource( this, startNode,
                             description.expander ) );
@@ -124,12 +122,12 @@ class TraverserImpl implements Traverser
         boolean shouldExpandBeyond( ExpansionSource source )
         {
             return this.uniquness.check( source, false ) &&
-                    !this.pruning.pruneAfter( source.position() );
+                    !description.pruning.pruneAfter( source.position() );
         }
 
         boolean okToReturn( ExpansionSource source )
         {
-            return filter.shouldReturn( source.position() );
+            return description.filter.shouldReturn( source.position() );
         }
         
         @Override
