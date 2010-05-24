@@ -25,7 +25,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
 {
     private static final TraversalDescription TRAVERSAL =
             TraversalFactory.createTraversalDescription().uniqueness(
-                    Uniqueness.RELATIONSHIP_GLOBAL );
+                    Uniqueness.NONE );
 
     private final RelationshipExpander expander;
     private final CostEvaluator<Double> costEvaluator;

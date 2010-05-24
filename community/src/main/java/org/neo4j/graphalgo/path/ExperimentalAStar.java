@@ -28,7 +28,7 @@ public class ExperimentalAStar implements PathFinder<WeightedPath>
             EstimateEvaluator<Double> estimateEvaluator )
     {
         this.traversalDescription = TraversalFactory.createTraversalDescription().uniqueness(
-                Uniqueness.RELATIONSHIP_GLOBAL ).expand( expander );
+                Uniqueness.NONE ).expand( expander );
         this.costEvaluator = costEvaluator;
         this.estimateEvaluator = estimateEvaluator;
     }

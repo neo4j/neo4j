@@ -110,25 +110,50 @@ class PriorityMap<E, K, P>
     }
 
     /**
-     * Add an entity to the priority map.
+     * Add an entity to the priority map. If the key for the {@code entity}
+     * was already found in the priority map and the priority is the same
+     * the entity will be added. If the priority is lower the existing entities
+     * for that key will be discarded.
      *
      * @param entity the entity to add.
      * @param priority the priority of the entity.
+     * @return whether or not the entity (with its priority) was added to the
+     * priority map. Will return {@code false} iff the key for the entity
+     * already exist and its priority is better than the given
+     * {@code priority}.
      */
-    public void put( E entity, P priority )
+    public boolean put( E entity, P priority )
     {
         K key = keyFunction.convert( entity );
         Node<E, P> node = map.get( key );
-        if ( node != null && priority.equals( node.priority ) )
+        boolean result = false;
+        if ( node != null )
         {
-            node.head = new Link<E>( entity, node.head );
+            if ( priority.equals( node.priority ) )
+            {
+                node.head = new Link<E>( entity, node.head );
+                result = true;
+            }
+            else if ( order.compare( priority, node.priority ) < 0 )
+            {
+                queue.remove( node );
+                put( entity, priority, key );
+                result = true;
+            }
         }
         else
         {
-            node = new Node<E, P>( entity, priority );
-            map.put( key, node );
-            queue.add( node );
+            put( entity, priority, key );
+            result = true;
         }
+        return result;
+    }
+    
+    private void put( E entity, P priority, K key )
+    {
+        Node<E, P> node = new Node<E, P>( entity, priority );
+        map.put( key, node );
+        queue.add( node );
     }
 
     /**
@@ -152,6 +177,7 @@ class PriorityMap<E, K, P>
     public Entry<E, P> pop()
     {
         Node<E, P> node = queue.peek();
+        Entry<E, P> result = null;
         if ( node == null )
         {
             return null;
@@ -160,12 +186,14 @@ class PriorityMap<E, K, P>
         {
             node = queue.poll();
             map.remove( keyFunction.convert( node.head.entity ) );
+            result = new Entry<E, P>( node );
         }
         else
         {
+            result = new Entry<E, P>( node );
             node.head = node.head.next;
         }
-        return new Entry<E, P>( node );
+        return result;
     }
     
     public Entry<E, P> peek()
