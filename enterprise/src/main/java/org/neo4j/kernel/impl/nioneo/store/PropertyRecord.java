@@ -34,6 +34,7 @@ public class PropertyRecord extends AbstractRecord
     private boolean isLight = false;
     private int nodeRelId = -1;
     private boolean nodeIdSet = false;
+    private boolean isChanged = false;
 
     public PropertyRecord( int id )
     {
@@ -157,5 +158,15 @@ public class PropertyRecord extends AbstractRecord
         }
         buf.append( "]]" );
         return buf.toString();
+    }
+    
+    public boolean isChanged()
+    {
+        return isChanged;
+    }
+    
+    public void setChanged()
+    {
+        isChanged = true;
     }
 }

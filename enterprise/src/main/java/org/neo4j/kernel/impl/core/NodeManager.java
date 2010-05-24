@@ -775,11 +775,11 @@ public class NodeManager
         return relTypeHolder.getRelationshipTypes();
     }
 
-    void deleteNode( NodeImpl node )
+    ArrayMap<Integer,PropertyData> deleteNode( NodeImpl node )
     {
         int nodeId = (int) node.getId();
         deletePrimitive( node );
-        persistenceManager.nodeDelete( nodeId );
+        return persistenceManager.nodeDelete( nodeId );
         // remove from node cache done via event
     }
 
@@ -801,11 +801,11 @@ public class NodeManager
         persistenceManager.nodeRemoveProperty( nodeId, propertyId );
     }
 
-    void deleteRelationship( RelationshipImpl rel )
+    ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel )
     {
         int relId = (int) rel.getId();
         deletePrimitive( rel );
-        persistenceManager.relDelete( relId );
+        return persistenceManager.relDelete( relId );
         // remove in rel cache done via event
     }
 

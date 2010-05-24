@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.transaction.HeuristicMixedException;
@@ -342,8 +343,8 @@ class TransactionImpl implements Transaction
                 }
                 catch ( Throwable t )
                 {
-                    log.warning( "Caught exception from tx syncronization[" + s
-                        + "] beforeCompletion()" );
+                    log.log( Level.WARNING, "Caught exception from tx syncronization[" + s
+                        + "] beforeCompletion()", t );
                 }
             }
             // execute any hooks added since we entered doBeforeCompletion
@@ -374,8 +375,8 @@ class TransactionImpl implements Transaction
             }
             catch ( Throwable t )
             {
-                log.warning( "Caught exception from tx syncronization[" + s
-                    + "] afterCompletion()" );
+                log.log( Level.WARNING, "Caught exception from tx syncronization[" + s
+                    + "] afterCompletion()", t );
             }
         }
         syncHooks = null; // help gc

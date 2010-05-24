@@ -159,7 +159,18 @@ class RelationshipImpl extends Primitive implements Relationship,
             // no need to load full relationship, all properties will be
             // deleted when relationship is deleted
 
-            nodeManager.deleteRelationship( this );
+            ArrayMap<Integer,PropertyData> skipMap = 
+                nodeManager.getCowPropertyRemoveMap( this, true );
+            ArrayMap<Integer,PropertyData> removedProps = 
+                nodeManager.deleteRelationship( this );
+            if ( removedProps.size() > 0 )
+            {
+                for ( int index : removedProps.keySet() )
+                {
+                    skipMap.put( index, removedProps.get( index ) );
+                }
+            }
+            success = true;
             if ( startNode != null )
             {
                 startNode.removeRelationship( type, id );

@@ -49,7 +49,7 @@ public interface NodeEventConsumer
      * @throws IOException
      *             If
      */
-    public void deleteNode( int nodeId );
+    public ArrayMap<Integer,PropertyData> deleteNode( int nodeId );
 
     /**
      * Checks if a node exists. If the record <CODE>nodeId</CODE> is in use
