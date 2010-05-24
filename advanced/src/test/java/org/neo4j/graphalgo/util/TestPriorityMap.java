@@ -12,7 +12,7 @@ public class TestPriorityMap
     public void testIt()
     {
         PriorityMap<Integer, Integer, Double> map =
-                PriorityMap.withSelfKeyNaturalOrder();
+            PriorityMap.<Integer, Double>withSelfKeyNaturalOrder();
 //        map.put( 0, 5d );
 //        map.put( 1, 4d );
 //        map.put( 1, 4d );
@@ -20,7 +20,7 @@ public class TestPriorityMap
 //        assertEntry( map.pop(), 1, 3d );
 //        assertEntry( map.pop(), 0, 5d );
 //        assertNull( map.pop() );
-        
+
         int start = 0, a = 1, b = 2, c = 3, d = 4, e = 6, f = 7, y = 8, x = 9;
         map.put( start, 0d );
         map.put( a, 1d );
@@ -44,7 +44,7 @@ public class TestPriorityMap
         // get x
         map.put( y, 8d );
         // get x
-//        map.put( 
+//        map.put(
     }
 
     private void assertEntry( Entry<Integer, Double> entry, Integer entity,
