@@ -1,11 +1,16 @@
 package org.neo4j.graphalgo.util;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.graphalgo.util.PriorityMap.Converter;
 import org.neo4j.graphalgo.util.PriorityMap.Entry;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.SourceSelector;
 import org.neo4j.graphdb.traversal.SourceSelectorFactory;
+
+import common.SimpleGraphBuilder;
 
 public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
         implements SourceSelectorFactory
@@ -23,6 +28,7 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
                 PriorityMap.withNaturalOrder( CONVERTER );
         private ExpansionSource current;
         private P currentAggregatedValue;
+        private final Set<Long> visitedNodes = new HashSet<Long>();
 
         public BestFirstSelector( ExpansionSource source, P startData )
         {
@@ -38,9 +44,14 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
                 ExpansionSource next = current.next();
                 if ( next != null )
                 {
-                    P newPriority = addPriority( next, currentAggregatedValue,
-                            calculateValue( next ) );
-                    queue.put( next, newPriority );
+                    if ( !visitedNodes.contains( next.node().getId() ) )
+                    {
+                        P newPriority = addPriority( next, currentAggregatedValue,
+                                calculateValue( next ) );
+                        queue.put( next, newPriority );
+                        System.out.println( ">" + newPriority + " " + next.node().getProperty(
+                                SimpleGraphBuilder.KEY_ID ) );
+                    }
                 }
                 else
                 {
@@ -54,11 +65,13 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
             {
                 current = entry.getEntity();
                 currentAggregatedValue = entry.getPriority();
+                visitedNodes.add( current.node().getId() );
+                System.out.println( "<" + currentAggregatedValue + " " + current.node().getProperty(
+                        SimpleGraphBuilder.KEY_ID ) );
                 return current;
             }
             return null;
         }
-
     }
 
     protected abstract P addPriority( ExpansionSource source,
