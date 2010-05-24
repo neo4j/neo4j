@@ -10,8 +10,6 @@ import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.SourceSelector;
 import org.neo4j.graphdb.traversal.SourceSelectorFactory;
 
-import common.SimpleGraphBuilder;
-
 public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
         implements SourceSelectorFactory
 {
@@ -49,8 +47,6 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
                         P newPriority = addPriority( next, currentAggregatedValue,
                                 calculateValue( next ) );
                         queue.put( next, newPriority );
-                        System.out.println( ">" + newPriority + " " + next.node().getProperty(
-                                SimpleGraphBuilder.KEY_ID ) );
                     }
                 }
                 else
@@ -66,8 +62,6 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
                 current = entry.getEntity();
                 currentAggregatedValue = entry.getPriority();
                 visitedNodes.add( current.node().getId() );
-                System.out.println( "<" + currentAggregatedValue + " " + current.node().getProperty(
-                        SimpleGraphBuilder.KEY_ID ) );
                 return current;
             }
             return null;
