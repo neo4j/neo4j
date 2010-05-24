@@ -760,33 +760,30 @@ public class LockReleaser
                 {
                     continue;
                 }
-                List<PropertyEventData> props = 
-                    relImpl.getAllCommittedProperties();
-                for ( PropertyEventData data : props )
+                // note: this is done in node populate data
+                // result.deleted( rel );
+            }
+            if ( relElement.propertyAddMap != null && !relElement.deleted )
+            {
+                for ( PropertyData data : relElement.propertyAddMap.values() )
                 {
-                    result.removedProperty( rel, data.getKey(), data.getValue() );
+                    String key = nodeManager.getKeyForProperty( data.getId() );
+                    Object oldValue = relImpl.getCommittedPropertyValue( key );
+                    Object newValue = data.getValue();
+                    result.assignedProperty( rel, key, newValue, oldValue );
                 }
             }
-            else
+            if ( relElement.propertyRemoveMap != null )
             {
-                if ( relElement.propertyAddMap != null )
+                for ( PropertyData data : relElement.propertyRemoveMap.values() )
                 {
-                    for ( PropertyData data : relElement.propertyAddMap.values() )
+                    String key = nodeManager.getKeyForProperty( data.getId() );
+                    Object oldValue = data.getValue();
+                    if ( oldValue != null && !relElement.deleted ) 
                     {
-                        String key = nodeManager.getKeyForProperty( data.getId() );
-                        Object oldValue = relImpl.getCommittedPropertyValue( key );
-                        Object newValue = data.getValue();
-                        result.assignedProperty( rel, key, newValue, oldValue );
+                        relImpl.getCommittedPropertyValue( key );
                     }
-                }
-                if ( relElement.propertyRemoveMap != null )
-                {
-                    for ( PropertyData data : relElement.propertyRemoveMap.values() )
-                    {
-                        String key = nodeManager.getKeyForProperty( data.getId() );
-                        Object oldValue = relImpl.getCommittedPropertyValue( key );
-                        result.removedProperty( rel, key, oldValue );
-                    }
+                    result.removedProperty( rel, key, oldValue );
                 }
             }
         }
@@ -800,7 +797,15 @@ public class LockReleaser
             CowNodeElement nodeElement = element.nodes.get( nodeId );
             NodeProxy node = new NodeProxy( nodeId, nodeManager );
             NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId );
-            if ( nodeElement.relationshipAddMap != null )
+            if ( nodeElement.deleted )
+            {
+                if ( nodeManager.nodeCreated( nodeId ) )
+                {
+                    continue;
+                }
+                result.deleted( node );
+            }
+            if ( nodeElement.relationshipAddMap != null && !nodeElement.deleted )
             {
                 for ( String type : nodeElement.relationshipAddMap.keySet() )
                 {
@@ -844,41 +849,27 @@ public class LockReleaser
                     }
                 }
             }
-            if ( nodeElement.deleted )
+            if ( nodeElement.propertyAddMap != null && !nodeElement.deleted )
             {
-                if ( nodeManager.nodeCreated( nodeId ) )
+                for ( PropertyData data : nodeElement.propertyAddMap.values() )
                 {
-                    continue;
-                }
-                result.deleted( node );
-                List<PropertyEventData> props = 
-                    nodeImpl.getAllCommittedProperties();
-                for ( PropertyEventData data : props )
-                {
-                    result.removedProperty( node, data.getKey(), 
-                            data.getValue() );
+                    String key = nodeManager.getKeyForProperty( data.getId() );
+                    Object oldValue = nodeImpl.getCommittedPropertyValue( key );
+                    Object newValue = data.getValue();
+                    result.assignedProperty( node, key, newValue, oldValue );
                 }
             }
-            else
+            if ( nodeElement.propertyRemoveMap != null )
             {
-                if ( nodeElement.propertyAddMap != null )
+                for ( PropertyData data : nodeElement.propertyRemoveMap.values() )
                 {
-                    for ( PropertyData data : nodeElement.propertyAddMap.values() )
+                    String key = nodeManager.getKeyForProperty( data.getId() );
+                    Object oldValue = data.getValue();
+                    if ( oldValue == null && !nodeElement.deleted ) 
                     {
-                        String key = nodeManager.getKeyForProperty( data.getId() );
-                        Object oldValue = nodeImpl.getCommittedPropertyValue( key );
-                        Object newValue = data.getValue();
-                        result.assignedProperty( node, key, newValue, oldValue );
+                        nodeImpl.getCommittedPropertyValue( key );
                     }
-                }
-                if ( nodeElement.propertyRemoveMap != null )
-                {
-                    for ( PropertyData data : nodeElement.propertyRemoveMap.values() )
-                    {
-                        String key = nodeManager.getKeyForProperty( data.getId() );
-                        Object oldValue = nodeImpl.getCommittedPropertyValue( key );
-                        result.removedProperty( node, key, oldValue );
-                    }
+                    result.removedProperty( node, key, oldValue );
                 }
             }
         }

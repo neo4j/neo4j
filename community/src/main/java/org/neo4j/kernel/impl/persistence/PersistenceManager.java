@@ -116,9 +116,9 @@ public class PersistenceManager
         return getReadOnlyResource().loadRelationshipTypes();
     }
 
-    public void nodeDelete( int nodeId )
+    public ArrayMap<Integer,PropertyData> nodeDelete( int nodeId )
     {
-        getResource().nodeDelete( nodeId );
+        return getResource().nodeDelete( nodeId );
     }
 
     public int nodeAddProperty( int nodeId, PropertyIndex index, Object value )
@@ -147,9 +147,9 @@ public class PersistenceManager
         getResource().relationshipCreate( id, typeId, startNodeId, endNodeId );
     }
 
-    public void relDelete( int relId )
+    public ArrayMap<Integer,PropertyData> relDelete( int relId )
     {
-        getResource().relDelete( relId );
+        return getResource().relDelete( relId );
     }
 
     public int relAddProperty( int relId, PropertyIndex index, Object value )

@@ -47,7 +47,7 @@ public interface ResourceConnection
 
     public void destroy();
 
-    public void nodeDelete( int nodeId );
+    public ArrayMap<Integer,PropertyData> nodeDelete( int nodeId );
 
     public int nodeAddProperty( int nodeId, PropertyIndex index, Object value );
 
@@ -60,7 +60,7 @@ public interface ResourceConnection
     public void relationshipCreate( int id, int typeId, int startNodeId,
         int endNodeId );
 
-    public void relDelete( int relId );
+    public ArrayMap<Integer,PropertyData> relDelete( int relId );
 
     public int relAddProperty( int relId, PropertyIndex index, Object value );
 

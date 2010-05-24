@@ -208,7 +208,17 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         boolean success = false;
         try
         {
-            nodeManager.deleteNode( this );
+            ArrayMap<Integer,PropertyData> skipMap = 
+                nodeManager.getCowPropertyRemoveMap( this, true );
+            ArrayMap<Integer,PropertyData> removedProps = 
+                nodeManager.deleteNode( this );
+            if ( removedProps.size() > 0 )
+            {
+                for ( int index : removedProps.keySet() )
+                {
+                    skipMap.put( index, removedProps.get( index ) );
+                }
+            }
             success = true;
         }
         finally

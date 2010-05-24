@@ -193,9 +193,9 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             xaCon.getWriteTransaction().nodeCreate( nodeId );
         }
 
-        public void deleteNode( int nodeId )
+        public ArrayMap<Integer,PropertyData> deleteNode( int nodeId )
         {
-            xaCon.getWriteTransaction().nodeDelete( nodeId );
+            return xaCon.getWriteTransaction().nodeDelete( nodeId );
         }
 
         // checks for created in tx else get from store
@@ -257,9 +257,9 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
                 secondNode, type );
         }
 
-        public void deleteRelationship( int id )
+        public ArrayMap<Integer,PropertyData> deleteRelationship( int id )
         {
-            xaCon.getWriteTransaction().relDelete( id );
+            return xaCon.getWriteTransaction().relDelete( id );
         }
 
         public void addProperty( int relId, int propertyId,
