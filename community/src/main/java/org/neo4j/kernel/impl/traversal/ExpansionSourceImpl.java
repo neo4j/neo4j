@@ -15,7 +15,6 @@ class ExpansionSourceImpl implements ExpansionSource, Position
 {
     private final ExpansionSource parent;
     private final Node source;
-    private final RelationshipExpander expander;
     private Iterator<Relationship> relationships;
     private final Relationship howIGotHere;
     private final int depth;
@@ -31,7 +30,6 @@ class ExpansionSourceImpl implements ExpansionSource, Position
         this.traverser = traverser;
         this.parent = parent;
         this.source = source;
-        this.expander = expander;
         this.howIGotHere = toHere;
         this.depth = depth;
         expandRelationships( true );
@@ -46,7 +44,6 @@ class ExpansionSourceImpl implements ExpansionSource, Position
         this.traverser = traverser;
         this.parent = null;
         this.source = source;
-        this.expander = expander;
         this.howIGotHere = null;
         this.depth = 0;
     }
@@ -55,7 +52,7 @@ class ExpansionSourceImpl implements ExpansionSource, Position
     {
         boolean okToExpand = !doChecks || traverser.shouldExpandBeyond( this );
         relationships = okToExpand ?
-                expander.expand( source ).iterator() :
+                traverser.description.expander.expand( source ).iterator() :
                 Collections.<Relationship>emptyList().iterator();
     }
     
@@ -75,7 +72,7 @@ class ExpansionSourceImpl implements ExpansionSource, Position
             }
             Node node = relationship.getOtherNode( source );
             ExpansionSource next = new ExpansionSourceImpl( traverser, this, depth + 1, node,
-                    expander, relationship );
+                    traverser.description.expander, relationship );
             if ( traverser.okToProceed( next ) )
             {
                 return next;
