@@ -589,7 +589,7 @@ class WriteTransaction extends XaTransaction
         return null;
     }
 
-    void nodeDelete( int nodeId )
+    ArrayMap<Integer,PropertyData> nodeDelete( int nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord == null )
@@ -603,6 +603,8 @@ class WriteTransaction extends XaTransaction
             "] since it has already been deleted." );
         }
         nodeRecord.setInUse( false );
+        ArrayMap<Integer,PropertyData> propertyMap = 
+            new ArrayMap<Integer,PropertyData>( 9, false, true );
         int nextProp = nodeRecord.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
@@ -616,7 +618,24 @@ class WriteTransaction extends XaTransaction
             {
                 getPropertyStore().makeHeavy( propRecord );
             }
-
+            if ( !propRecord.isCreated() )
+            {
+                if ( !propRecord.isChanged() )
+                {
+                    propertyMap.put( propRecord.getKeyIndexId(), new PropertyData( 
+                        propRecord.getId(), propertyGetValueOrNull( propRecord ) ) );
+                }
+                else
+                {
+                    // we have to re-read committed value since property has 
+                    // changed and old value is erased in memory
+                    PropertyRecord diskValue = getPropertyStore().getRecord( propRecord.getId() );
+                    getPropertyStore().makeHeavy( diskValue );
+                    propertyMap.put( diskValue.getKeyIndexId(), new PropertyData( 
+                            diskValue.getId(), propertyGetValueOrNull( diskValue ) ) );
+                }
+            }
+            
             nextProp = propRecord.getNextProp();
             propRecord.setInUse( false );
             // TODO: update count on property index record
@@ -625,9 +644,10 @@ class WriteTransaction extends XaTransaction
                 valueRecord.setInUse( false );
             }
         }
+        return propertyMap;
     }
 
-    void relDelete( int id )
+    ArrayMap<Integer,PropertyData> relDelete( int id )
     {
         RelationshipRecord record = getRelationshipRecord( id );
         if ( record == null )
@@ -640,6 +660,8 @@ class WriteTransaction extends XaTransaction
             throw new IllegalStateException( "Unable to delete relationship[" + 
                 id + "] since it is already deleted." );
         }
+        ArrayMap<Integer,PropertyData> propertyMap = 
+            new ArrayMap<Integer,PropertyData>( 9, false, true );
         int nextProp = record.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
@@ -653,6 +675,24 @@ class WriteTransaction extends XaTransaction
             {
                 getPropertyStore().makeHeavy( propRecord );
             }
+            if ( !propRecord.isCreated() )
+            {
+                if ( !propRecord.isChanged() )
+                {
+                    propertyMap.put( propRecord.getKeyIndexId(), 
+                            new PropertyData( propRecord.getId(), 
+                                    propertyGetValueOrNull( propRecord ) ) ); 
+                }
+                else
+                {
+                    // we have to re-read committed value since property has 
+                    // changed and old value is erased in memory
+                    PropertyRecord diskValue = getPropertyStore().getRecord( propRecord.getId() );
+                    getPropertyStore().makeHeavy( diskValue );
+                    propertyMap.put( diskValue.getKeyIndexId(), new PropertyData( 
+                            diskValue.getId(), propertyGetValueOrNull( diskValue ) ) );
+                }
+            }
             nextProp = propRecord.getNextProp();
             propRecord.setInUse( false );
             // TODO: update count on property index record
@@ -664,6 +704,7 @@ class WriteTransaction extends XaTransaction
         disconnectRelationship( record );
         updateNodes( record );
         record.setInUse( false );
+        return propertyMap;
     }
 
     private void disconnectRelationship( RelationshipRecord rel )
@@ -1040,7 +1081,11 @@ class WriteTransaction extends XaTransaction
         }
         if ( type == PropertyType.STRING )
         {
-            return null;
+            if ( propertyRecord.isLight() )
+            {
+                return null;
+            }
+            return getPropertyStore().getStringFor( propertyRecord );
         }
         if ( type == PropertyType.BOOL )
         {
@@ -1074,7 +1119,11 @@ class WriteTransaction extends XaTransaction
         }
         if ( type == PropertyType.ARRAY )
         {
-            return null;
+            if ( propertyRecord.isLight() )
+            {
+                return null;
+            }
+            return getPropertyStore().getArrayFor( propertyRecord );
         }
         if ( type == PropertyType.SHORT )
         {
@@ -1244,6 +1293,7 @@ class WriteTransaction extends XaTransaction
         {
             getPropertyStore().makeHeavy( propertyRecord );
         }
+        propertyRecord.setChanged();
         if ( propertyRecord.getType() == PropertyType.STRING )
         {
             for ( DynamicRecord record : propertyRecord.getValueRecords() )
@@ -1296,6 +1346,7 @@ class WriteTransaction extends XaTransaction
         {
             getPropertyStore().makeHeavy( propertyRecord );
         }
+        propertyRecord.setChanged();
         if ( propertyRecord.getType() == PropertyType.STRING )
         {
             for ( DynamicRecord record : propertyRecord.getValueRecords() )

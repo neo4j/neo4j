@@ -328,4 +328,11 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         }
         // else we skip test, takes too long
     }
+    
+    @Test
+    public void testMultipleShutdown()
+    {
+        getGraphDb().shutdown();
+        getGraphDb().shutdown();
+    }
 }

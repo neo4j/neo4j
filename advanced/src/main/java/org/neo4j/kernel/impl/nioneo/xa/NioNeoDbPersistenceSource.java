@@ -129,7 +129,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
                 "this method should never be invoked" );
         }
 
-        public void nodeDelete( int nodeId )
+        public ArrayMap<Integer,PropertyData> nodeDelete( int nodeId )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
@@ -173,7 +173,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
                 "this method should never be invoked" );
         }
 
-        public void relDelete( int relId )
+        public ArrayMap<Integer,PropertyData> relDelete( int relId )
         {
             throw new IllegalStateException( 
                 "This is a read only transaction, " + 
@@ -336,9 +336,9 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             propIndexConsumer = null;
         }
 
-        public void nodeDelete( int nodeId )
+        public ArrayMap<Integer,PropertyData> nodeDelete( int nodeId )
         {
-            nodeConsumer.deleteNode( nodeId );
+            return nodeConsumer.deleteNode( nodeId );
         }
 
         public int nodeAddProperty( int nodeId, PropertyIndex index,
@@ -370,9 +370,9 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
             relConsumer.createRelationship( id, startNodeId, endNodeId, typeId );
         }
 
-        public void relDelete( int relId )
+        public ArrayMap<Integer,PropertyData> relDelete( int relId )
         {
-            relConsumer.deleteRelationship( relId );
+            return relConsumer.deleteRelationship( relId );
         }
 
         public int relAddProperty( int relId, PropertyIndex index, Object value )

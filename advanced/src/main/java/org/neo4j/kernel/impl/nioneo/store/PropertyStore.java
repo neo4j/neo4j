@@ -20,10 +20,11 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -548,36 +549,33 @@ public class PropertyStore extends AbstractStore implements Store
     public Object getStringFor( PropertyRecord propRecord )
     {
         int recordToFind = (int) propRecord.getPropBlock();
-        Iterator<DynamicRecord> records = 
-            propRecord.getValueRecords().iterator();
+        Map<Integer,DynamicRecord> recordsMap = new HashMap<Integer,DynamicRecord>();
+        for ( DynamicRecord record : propRecord.getValueRecords() )
+        {
+            recordsMap.put( record.getId(), record );
+        }
         List<char[]> charList = new LinkedList<char[]>();
         int totalSize = 0;
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
-            records.hasNext() )
+        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() )
         {
-            DynamicRecord record = records.next();
-            if ( record.getId() == recordToFind )
+            DynamicRecord record = recordsMap.get( recordToFind );
+            if ( record.isLight() )
             {
-                if ( record.isLight() )
-                {
-                    stringPropertyStore.makeHeavy( record );
-                }
-                if ( !record.isCharData() )
-                {
-                    ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-                    char[] chars = new char[record.getData().length / 2];
-                    totalSize += chars.length;
-                    buf.asCharBuffer().get( chars );
-                    charList.add( chars );
-                }
-                else
-                {
-                    charList.add( record.getDataAsChar() );
-                }
-                recordToFind = record.getNextBlock();
-                // TODO: make opti here, high chance next is right one
-                records = propRecord.getValueRecords().iterator();
+                stringPropertyStore.makeHeavy( record );
             }
+            if ( !record.isCharData() )
+            {
+                ByteBuffer buf = ByteBuffer.wrap( record.getData() );
+                char[] chars = new char[record.getData().length / 2];
+                totalSize += chars.length;
+                buf.asCharBuffer().get( chars );
+                charList.add( chars );
+            }
+            else
+            {
+                charList.add( record.getDataAsChar() );
+            }
+            recordToFind = record.getNextBlock();
         }
         StringBuffer buf = new StringBuffer();
         for ( char[] str : charList )
@@ -590,37 +588,34 @@ public class PropertyStore extends AbstractStore implements Store
     public Object getArrayFor( PropertyRecord propertyRecord )
     {
         int recordToFind = (int) propertyRecord.getPropBlock();
-        Iterator<DynamicRecord> records = 
-            propertyRecord.getValueRecords().iterator();
+        Map<Integer,DynamicRecord> recordsMap = new HashMap<Integer,DynamicRecord>();
+        for ( DynamicRecord record : propertyRecord.getValueRecords() )
+        {
+            recordsMap.put( record.getId(), record );
+        }
         List<byte[]> byteList = new LinkedList<byte[]>();
         int totalSize = 0;
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
-            records.hasNext() )
+        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() )
         {
-            DynamicRecord record = records.next();
-            if ( record.getId() == recordToFind )
+            DynamicRecord record = recordsMap.get( recordToFind );
+            if ( record.isLight() )
             {
-                if ( record.isLight() )
-                {
-                    arrayPropertyStore.makeHeavy( record );
-                }
-                if ( !record.isCharData() )
-                {
-                    ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-                    byte[] bytes = new byte[record.getData().length];
-                    totalSize += bytes.length;
-                    buf.get( bytes );
-                    byteList.add( bytes );
-                }
-                else
-                {
-                    throw new InvalidRecordException( 
-                        "Expected byte data on record " + record );
-                }
-                recordToFind = record.getNextBlock();
-                // TODO: make opti here, high chance next is right one
-                records = propertyRecord.getValueRecords().iterator();
+                arrayPropertyStore.makeHeavy( record );
             }
+            if ( !record.isCharData() )
+            {
+                ByteBuffer buf = ByteBuffer.wrap( record.getData() );
+                byte[] bytes = new byte[record.getData().length];
+                totalSize += bytes.length;
+                buf.get( bytes );
+                byteList.add( bytes );
+            }
+            else
+            {
+                throw new InvalidRecordException( 
+                    "Expected byte data on record " + record );
+            }
+            recordToFind = record.getNextBlock();
         }
         byte[] bArray = new byte[totalSize];
         int offset = 0;
