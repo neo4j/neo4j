@@ -1,6 +1,4 @@
-#-----------------------------------------------------------------
-# Use this file to add customized Bnd instructions for the bundle
-#-----------------------------------------------------------------
+Export-Package: !${bundle.namespace}.graphdb.impl.*,${bundle.namespace}.graphdb.*;version="${pom.version}",${bundle.namespace}.kernel.impl.*,${bundle.namespace}.kernel.*;version="${pom.version}",!${bundle.namespace}.commons.impl.*,${bundle.namespace}.commons.*;version="${pom.version}"
 
 Import-Package: javax.transaction;version="1.1",*
 
