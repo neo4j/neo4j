@@ -31,6 +31,8 @@ import java.util.Map.Entry;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.AutoConfigurator;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -70,7 +72,13 @@ public class BatchInserterImpl implements BatchInserter
         Map<String,String> stringParams )
     {
         Map<Object,Object> params = getDefaultParams();
-        params.put( "use_memory_mapped_buffers", "false" );
+        params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+        boolean dump = false;
+        if ( "true".equals( stringParams.get( Config.DUMP_CONFIGURATION ) ) )
+        {
+            dump = true;
+        }
+        new AutoConfigurator( storeDir, false, dump ).configure( params );
         for ( Map.Entry<String,String> entry : stringParams.entrySet() )
         {
             params.put( entry.getKey(), entry.getValue() );
@@ -78,9 +86,21 @@ public class BatchInserterImpl implements BatchInserter
         this.storeDir = storeDir;
         String store = fixPath( storeDir ); 
         params.put( "neo_store", store );
-
+        if ( "true".equals( params.get( Config.DUMP_CONFIGURATION ) ) )
+        {
+            for ( Object key : params.keySet() )
+            {
+                if ( key instanceof String )
+                {
+                    Object value = params.get( key );
+                    if ( value instanceof String )
+                    {
+                        System.out.println( key + "=" + value );
+                    }
+                }
+            }
+        }
         // TODO: check if clean shutdown
-        
         neoStore = new NeoStore( params );
         neoStore.makeStoreOk();
         PropertyIndexData[] indexes = 
