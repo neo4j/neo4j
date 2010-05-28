@@ -34,6 +34,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -119,7 +120,7 @@ public class XaLogicalLog
     {
         if ( config != null )
         {
-            String value = (String) config.get( "use_memory_mapped_buffers" );
+            String value = (String) config.get( Config.USE_MEMORY_MAPPED_BUFFERS );
             if ( value != null && value.toLowerCase().equals( "false" ) )
             {
                 return false;
