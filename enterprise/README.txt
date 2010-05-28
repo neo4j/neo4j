@@ -29,4 +29,5 @@ and:
    http://components.neo4j.org
 
 Various licenses apply, please refer to the LICENSE and NOTICE files for more
-detailed information.
+detailed information. A full report regarding the licenses of all included
+dependencies is found in lib/report/dependencies.html.
