@@ -42,6 +42,24 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>license-report</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+              <dependencyDetailsEnabled>false</dependencyDetailsEnabled>
+              <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -51,13 +69,13 @@
             </goals>
             <configuration>
               <classifier>sources</classifier>
+              <copyPom>true</copyPom>
               <outputDirectory>${project.build.directory}/sources
               </outputDirectory>
               <includeGroupIds>org.neo4j</includeGroupIds>
               <!-- neo4j-apoc has no sources  -->
-              <!-- neo4j-commons isn't really a part of apoc yet  -->
               <!-- neo4j-shell isn't what users look for here  -->
-              <excludeArtifactIds>neo4j-apoc,neo4j-commons,neo4j-shell
+              <excludeArtifactIds>neo4j-apoc,neo4j-shell
               </excludeArtifactIds>
             </configuration>
           </execution>
@@ -87,12 +105,17 @@
               <groups>
                 <group>
                   <title>Kernel</title>
-                  <packages>org.neo4j.kernel:org.neo4j.graphdb
+                  <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*
                   </packages>
                 </group>
                 <group>
                   <title>Index</title>
                   <packages>org.neo4j.index:org.neo4j.index.*</packages>
+                </group>
+                <group>
+                  <title>Commons</title>
+                  <packages>org.neo4j.commons:org.neo4j.commons.*
+                  </packages>
                 </group>
                 <group>
                   <title>Remote</title>
