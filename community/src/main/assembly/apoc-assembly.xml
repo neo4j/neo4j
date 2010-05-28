@@ -19,6 +19,11 @@
             </includes>
             <useDefaultExcludes>true</useDefaultExcludes>
         </fileSet>
+        <!-- DEPENDENCY INFO -->
+        <fileSet>
+            <directory>target/dependencies</directory>
+            <outputDirectory>lib/report</outputDirectory>
+        </fileSet>
         <!-- DOCS -->
         <fileSet>
             <directory>target/appassembler/apidocs</directory>
