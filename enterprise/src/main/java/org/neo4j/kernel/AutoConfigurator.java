@@ -25,14 +25,14 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.util.Map;
 
-class AutoConfigurator
+public class AutoConfigurator
 {
     private final int totalPhysicalMemMb;
     private final int maxVmUsageMb;
     private final String dbPath;
     private final boolean useMemoryMapped;
     
-    AutoConfigurator( String dbPath, boolean useMemoryMapped )
+    public AutoConfigurator( String dbPath, boolean useMemoryMapped, boolean dump )
     {
         this.dbPath = dbPath;
         this.useMemoryMapped = useMemoryMapped;
@@ -59,9 +59,14 @@ class AutoConfigurator
         }
         mem = Runtime.getRuntime().maxMemory();
         maxVmUsageMb = (int) ( mem / 1024 / 1024 );
+        if ( dump )
+        {
+            System.out.println( "Physical mem: " + totalPhysicalMemMb + "MB" );
+            System.out.println( "Heap size: " + maxVmUsageMb + "MB" );
+        }
     }
     
-    void configure( Map<Object,Object> config )
+    public void configure( Map<Object,Object> config )
     {
         if ( totalPhysicalMemMb > 0 )
         {
@@ -69,7 +74,7 @@ class AutoConfigurator
             {
                 int availableMem = (totalPhysicalMemMb - maxVmUsageMb );
                 // leave 15% for OS and other progs
-                availableMem -= (int) ( availableMem * 0.15f ); 
+                availableMem -= (int) ( availableMem * 0.15f );
                 assignMemory( config, availableMem );
             }
             else
