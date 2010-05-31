@@ -25,7 +25,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.index.IndexHits;
 import org.neo4j.index.IndexService;
-import org.neo4j.index.Isolation;
 
 /**
  * An implementation of {@link IndexService} for the client side of
@@ -139,18 +138,5 @@ public final class RemoteIndexService implements IndexService
     public void removeIndex( String key )
     {
         engine().current().removeIndexNode( id, key );
-    }
-    
-    /**
-     * This operation is not supported by the {@link RemoteIndexService}.
-     * 
-     * @param level
-     *            the {@link Isolation} level to set.
-     * @see IndexService#setIsolation(Isolation)
-     */
-    public void setIsolation( Isolation level )
-    {
-        throw new UnsupportedOperationException(
-            "Configuring the isolation not supported by remote client." );
     }
 }
