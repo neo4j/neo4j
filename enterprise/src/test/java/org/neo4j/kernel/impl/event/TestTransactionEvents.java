@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -257,6 +258,29 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             {
                 getGraphDb().unregisterTransactionEventHandler( handler );
             }
+        }
+    }
+    
+    @Ignore
+    @Test
+    public void makeSureHandlerIsntCalledWhenTxRolledBack()
+    {
+        commit();
+        DummyTransactionEventHandler<Integer> handler =
+            new DummyTransactionEventHandler<Integer>( 10 );
+        getGraphDb().registerTransactionEventHandler( handler );
+        try
+        {
+            newTransaction();
+            Node node = getGraphDb().createNode();
+            rollback();
+            assertNull( handler.beforeCommit );
+            assertNull( handler.afterCommit );
+            assertNull( handler.afterRollback );
+        }
+        finally
+        {
+            getGraphDb().unregisterTransactionEventHandler( handler );
         }
     }
 
