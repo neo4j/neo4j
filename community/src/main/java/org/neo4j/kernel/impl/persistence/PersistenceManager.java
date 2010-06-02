@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.persistence;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -31,6 +32,8 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
+import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
@@ -50,12 +53,15 @@ public class PersistenceManager
     
     private final ArrayMap<Transaction,ResourceConnection> txConnectionMap = 
         new ArrayMap<Transaction,ResourceConnection>( 5, true, true );
-    
+
+    private final TxEventSyncHookFactory syncHookFactory;
+
     public PersistenceManager( TransactionManager transactionManager, 
-        PersistenceSource persistenceSource )
+        PersistenceSource persistenceSource, TxEventSyncHookFactory syncHookFactory )
     {
         this.transactionManager = transactionManager;
         this.persistenceSource = persistenceSource;
+        this.syncHookFactory = syncHookFactory;
     }
     
     public PersistenceSource getPersistenceSource()
@@ -183,6 +189,9 @@ public class PersistenceManager
         ResourceConnection con = txConnectionMap.get( tx );
         if ( con == null )
         {
+            // con is put in map on write operation, see getResoure()
+            // createReadOnlyResourceConnection just return a single final 
+            // resource and does not create a new object
             return ((NioNeoDbPersistenceSource) 
                 persistenceSource ).createReadOnlyResourceConnection();
         }
@@ -210,7 +219,9 @@ public class PersistenceManager
                         "Unable to enlist '" + con.getXAResource() + "' in "
                             + "transaction" );
                 }
+                
                 tx.registerSynchronization( new TxCommitHook( tx ) );
+                registerTransactionEventHookIfNeeded();
                 txConnectionMap.put( tx, con );
             }
             catch ( javax.transaction.RollbackException re )
@@ -225,6 +236,17 @@ public class PersistenceManager
             }
         }
         return con;
+    }
+    
+    private void registerTransactionEventHookIfNeeded()
+            throws SystemException, RollbackException
+    {
+        TransactionEventsSyncHook hook = syncHookFactory.create();
+        if ( hook != null )
+        {
+            this.transactionManager.getTransaction().registerSynchronization(
+                    hook );
+        }
     }
     
     private Transaction getCurrentTransaction()

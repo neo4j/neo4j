@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -55,6 +54,7 @@ import org.neo4j.kernel.ShellService.ShellNotAvailableException;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
+import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.manage.Neo4jJmx;
 
@@ -83,24 +83,6 @@ class EmbeddedGraphDbImpl
     private final Runnable jmxShutdownHook;
 
     /**
-     * Creates an embedded {@link GraphDatabaseService} with a store located in
-     * <code>storeDir</code>, which will be created if it doesn't already exist.
-     *
-     * @param storeDir the store directory for the Neo4j db files
-     */
-    public EmbeddedGraphDbImpl( String storeDir, GraphDatabaseService graphDbService )
-    {
-        this.storeDir = storeDir;
-        graphDbInstance = new GraphDbInstance( storeDir, true );
-        Map<Object, Object> params = graphDbInstance.start( graphDbService,
-                kernelPanicEventGenerator );
-        nodeManager =
-            graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
-        this.graphDbService = graphDbService;
-        jmxShutdownHook = initJMX( params );
-    }
-
-    /**
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
      * with a set of configuration parameters. Will most likely be removed in
      * future releases.
@@ -114,7 +96,7 @@ class EmbeddedGraphDbImpl
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
         Map<Object, Object> params = graphDbInstance.start( graphDbService,
-                config, kernelPanicEventGenerator );
+                config, kernelPanicEventGenerator, new SyncHookFactory() );
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
@@ -303,7 +285,6 @@ class EmbeddedGraphDbImpl
         {
             txManager.begin();
             result = new TransactionImpl( txManager );
-            registerTransactionEventHookIfNeeded( txManager, result );
         }
         catch ( Exception e )
         {
@@ -311,19 +292,6 @@ class EmbeddedGraphDbImpl
                 "Unable to begin transaction", e );
         }
         return result;
-    }
-
-    @SuppressWarnings("unchecked")
-    private void registerTransactionEventHookIfNeeded(
-            TransactionManager txManager, Transaction transaction )
-            throws SystemException, RollbackException
-    {
-        if ( !this.transactionEventHandlers.isEmpty() )
-        {
-            txManager.getTransaction().registerSynchronization(
-                    new TransactionEventsSyncHook( this.nodeManager, transaction,
-                            this.transactionEventHandlers ) );
-        }
     }
 
     private static class PlaceboTransaction implements Transaction
@@ -367,75 +335,6 @@ class EmbeddedGraphDbImpl
     public Config getConfig()
     {
         return graphDbInstance.getConfig();
-    }
-
-    private static class TransactionImpl implements Transaction
-    {
-        private boolean success = false;
-
-        private final TransactionManager transactionManager;
-
-        TransactionImpl( TransactionManager transactionManager )
-        {
-            this.transactionManager = transactionManager;
-        }
-
-        public void failure()
-        {
-            this.success = false;
-            try
-            {
-                transactionManager.getTransaction().setRollbackOnly();
-            }
-            catch ( Exception e )
-            {
-                throw new TransactionFailureException(
-                    "Failed to mark transaction as rollback only.", e );
-            }
-        }
-
-        public void success()
-        {
-            success = true;
-        }
-
-        public void finish()
-        {
-            try
-            {
-                if ( success )
-                {
-                    if ( transactionManager.getTransaction() != null )
-                    {
-                        transactionManager.getTransaction().commit();
-                    }
-                }
-                else
-                {
-                    if ( transactionManager.getTransaction() != null )
-                    {
-                        transactionManager.getTransaction().rollback();
-                    }
-                }
-            }
-            catch ( RollbackException e )
-            {
-                throw new TransactionFailureException( "Unable to commit transaction", e );
-            }
-            catch ( Exception e )
-            {
-                if ( success )
-                {
-                    throw new TransactionFailureException(
-                        "Unable to commit transaction", e );
-                }
-                else
-                {
-                    throw new TransactionFailureException(
-                        "Unable to rollback transaction", e );
-                }
-            }
-        }
     }
 
     @Override
@@ -565,5 +464,84 @@ class EmbeddedGraphDbImpl
             throw new IllegalStateException( handler + " isn't registered" );
         }
         return handler;
+    }
+
+    private class SyncHookFactory implements TxEventSyncHookFactory
+    {
+        public TransactionEventsSyncHook create()
+        {
+            return transactionEventHandlers.isEmpty() ? null :
+                    new TransactionEventsSyncHook(
+                            nodeManager, transactionEventHandlers,
+                            getConfig().getTxModule().getTxManager() );
+        }
+    }
+
+    private class TransactionImpl implements Transaction
+    {
+        private boolean success = false;
+        private final TransactionManager transactionManager;
+
+        private TransactionImpl( TransactionManager transactionManager )
+        {
+            this.transactionManager = transactionManager;
+        }
+
+        public void failure()
+        {
+            this.success = false;
+            try
+            {
+                transactionManager.getTransaction().setRollbackOnly();
+            }
+            catch ( Exception e )
+            {
+                throw new TransactionFailureException(
+                    "Failed to mark transaction as rollback only.", e );
+            }
+        }
+
+        public void success()
+        {
+            success = true;
+        }
+
+        public void finish()
+        {
+            try
+            {
+                if ( success )
+                {
+                    if ( transactionManager.getTransaction() != null )
+                    {
+                        transactionManager.getTransaction().commit();
+                    }
+                }
+                else
+                {
+                    if ( transactionManager.getTransaction() != null )
+                    {
+                        transactionManager.getTransaction().rollback();
+                    }
+                }
+            }
+            catch ( RollbackException e )
+            {
+                throw new TransactionFailureException( "Unable to commit transaction", e );
+            }
+            catch ( Exception e )
+            {
+                if ( success )
+                {
+                    throw new TransactionFailureException(
+                        "Unable to commit transaction", e );
+                }
+                else
+                {
+                    throw new TransactionFailureException(
+                        "Unable to rollback transaction", e );
+                }
+            }
+        }
     }
 }
