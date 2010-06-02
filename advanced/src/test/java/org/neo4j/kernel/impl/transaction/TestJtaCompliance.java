@@ -675,7 +675,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         assertEquals( true, txHook.gotAfter );
         assertTrue( tx == txHook.txBefore );
         assertTrue( tx == txHook.txAfter );
-        assertEquals( Status.STATUS_ACTIVE, txHook.statusBefore );
+        assertEquals( Status.STATUS_MARKED_ROLLBACK, txHook.statusBefore );
         assertEquals( Status.STATUS_ROLLEDBACK, txHook.statusAfter );
     }
 
