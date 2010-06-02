@@ -1,5 +1,6 @@
 package org.neo4j.commons.iterator;
 
+import java.util.Collection;
 import java.util.Iterator;
 
 /**
@@ -28,5 +29,45 @@ public class IteratorUtil
                 "' and the second value is '" + iterator.next() + "'" );
         }
         return value;
+    }
+    
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param <T> the type of items in the collection and iterator.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<T>,T> C addToCollection( Iterator<T> iterator,
+            C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            collection.add( iterator.next() );
+        }
+        return collection;
+    }
+    
+    /**
+     * Exposes {@code iterator} as an {@link Iterable}. It breaks the contract
+     * of {@link Iterable} in that it returns the supplied iterator instance
+     * for each call to {@code iterable()} on the returned {@link Iterable}
+     * instance. This method mostly exists to make it easy to use an
+     * {@link Iterator} in a for-loop.
+     * @param <T> the type of items in the iterator.
+     * @param iterator the iterator to expose as an {@link Iterable}.
+     * @return the supplied iterator posing as an {@link Iterable}.
+     */
+    public static <T> Iterable<T> asIterable( final Iterator<T> iterator )
+    {
+        return new Iterable<T>()
+        {
+            public Iterator<T> iterator()
+            {
+                return iterator;
+            }
+        };
     }
 }
