@@ -31,6 +31,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
@@ -56,12 +57,6 @@ class GraphDbInstance
     public Config getConfig()
     {
         return config;
-    }
-
-    public Map<Object, Object> start( GraphDatabaseService graphDb,
-            KernelPanicEventGenerator kpe )
-    {
-        return start( graphDb, new HashMap<String, String>(), kpe );
     }
 
     private Map<Object, Object> getDefaultParams()
@@ -95,7 +90,8 @@ class GraphDbInstance
      */
     public synchronized Map<Object, Object> start(
             GraphDatabaseService graphDb,
-            Map<String, String> stringParams, KernelPanicEventGenerator kpe )
+            Map<String, String> stringParams, KernelPanicEventGenerator kpe,
+            TxEventSyncHookFactory syncHookFactory )
     {
         if ( started )
         {
@@ -172,7 +168,8 @@ class GraphDbInstance
 
         config.getTxModule().start();
         config.getPersistenceModule().start(
-                config.getTxModule().getTxManager(), persistenceSource );
+                config.getTxModule().getTxManager(), persistenceSource,
+                syncHookFactory );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
         config.getGraphDbModule().start( config.getLockReleaser(),

@@ -741,6 +741,7 @@ public class TxManager implements TransactionManager
             tx.getStatus() == Status.STATUS_MARKED_ROLLBACK || 
             tx.getStatus() == Status.STATUS_PREPARING )
         {
+            tx.setStatus( Status.STATUS_MARKED_ROLLBACK );
             tx.doBeforeCompletion();
             // delist resources?
             try

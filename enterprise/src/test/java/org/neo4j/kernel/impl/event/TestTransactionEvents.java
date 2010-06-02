@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -73,6 +72,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
 
         getGraphDb().registerTransactionEventHandler( handler1 );
         newTransaction();
+        getGraphDb().createNode().delete();
         commit();
         assertNotNull( handler1.beforeCommit );
         assertNotNull( handler1.afterCommit );
@@ -91,6 +91,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         getGraphDb().registerTransactionEventHandler( handler );
         getGraphDb().registerTransactionEventHandler( handler );
         newTransaction();
+        getGraphDb().createNode().delete();
         commit();
 
         assertEquals( Integer.valueOf( 0 ), handler.beforeCommit );
@@ -103,6 +104,8 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
     @Test
     public void shouldGetCorrectTransactionDataUponCommit()
     {
+        makeSureRelationshipTypeIsCreated( RelTypes.TXEVENT );
+        
         // Create new data, nothing modified, just added/created
         ExpectedTransactionData expectedData = new ExpectedTransactionData();
         VerifyingTransactionEventHandler handler = new VerifyingTransactionEventHandler(
@@ -209,6 +212,15 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         }
     }
 
+    private void makeSureRelationshipTypeIsCreated( RelationshipType type )
+    {
+        Node dummy1 = getGraphDb().createNode();
+        Node dummy2 = getGraphDb().createNode();
+        dummy1.createRelationshipTo( dummy2, type ).delete();
+        dummy1.delete();
+        dummy2.delete();
+    }
+
     @Test
     public void makeSureBeforeAfterAreCalledCorrectly()
     {
@@ -232,6 +244,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         try
         {
             newTransaction();
+            getGraphDb().createNode().delete();
             try
             {
                 commit();
@@ -249,6 +262,7 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
                 ((DummyTransactionEventHandler<Object>) ((FailingEventHandler<Object>)handler).source).reset();
             }
             newTransaction();
+            getGraphDb().createNode().delete();
             commit();
             verifyHandlerCalls( handlers, true );
         }
@@ -261,29 +275,6 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         }
     }
     
-    @Ignore
-    @Test
-    public void makeSureHandlerIsntCalledWhenTxRolledBack()
-    {
-        commit();
-        DummyTransactionEventHandler<Integer> handler =
-            new DummyTransactionEventHandler<Integer>( 10 );
-        getGraphDb().registerTransactionEventHandler( handler );
-        try
-        {
-            newTransaction();
-            Node node = getGraphDb().createNode();
-            rollback();
-            assertNull( handler.beforeCommit );
-            assertNull( handler.afterCommit );
-            assertNull( handler.afterRollback );
-        }
-        finally
-        {
-            getGraphDb().unregisterTransactionEventHandler( handler );
-        }
-    }
-
     @Test
     public void deleteNodeRelTriggerPropertyRemoveEvents()
     {
@@ -456,6 +447,28 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             beforeCommit = null;
             afterCommit = null;
             afterRollback = null;
+        }
+    }
+
+    @Test
+    public void makeSureHandlerIsntCalledWhenTxRolledBack()
+    {
+        commit();
+        DummyTransactionEventHandler<Integer> handler =
+            new DummyTransactionEventHandler<Integer>( 10 );
+        getGraphDb().registerTransactionEventHandler( handler );
+        try
+        {
+            newTransaction();
+            getGraphDb().createNode().delete();
+            rollback();
+            assertNull( handler.beforeCommit );
+            assertNull( handler.afterCommit );
+            assertNull( handler.afterRollback );
+        }
+        finally
+        {
+            getGraphDb().unregisterTransactionEventHandler( handler );
         }
     }
 }
