@@ -6,7 +6,7 @@ import java.util.Iterator;
 /**
  * Contains common functionality regarding {@link Iterator}s.
  */
-public class IteratorUtil
+public abstract class IteratorUtil
 {
     /**
      * Returns the given iterator's only value or {@code null} if there was no
