@@ -216,7 +216,10 @@ public class NeoStoreXaDataSource extends XaDataSource
 
     public void close()
     {
-        neoStore.flushAll();
+        if ( !readOnly )
+        {
+            neoStore.flushAll();
+        }
         xaContainer.close();
         if ( logApplied )
         {
