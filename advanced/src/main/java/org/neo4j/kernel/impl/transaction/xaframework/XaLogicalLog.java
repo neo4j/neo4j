@@ -242,11 +242,14 @@ public class XaLogicalLog
     private void fixCleanKill( String fileName ) throws IOException
     {
         File file = new File( fileName );
-        if ( !keepLogs && !file.delete() )
+        if ( !keepLogs )
         {
-            throw new IllegalStateException( 
-                "Active marked as clean and unable to delete log " + 
-                fileName );
+            if ( !file.delete() )
+            {
+                throw new IllegalStateException( 
+                    "Active marked as clean and unable to delete log " + 
+                    fileName );
+            }
         }
         else
         {
