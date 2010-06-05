@@ -90,6 +90,12 @@ public class TransactionEventsSyncHook implements Synchronization
         }
         else if ( status == Status.STATUS_ROLLEDBACK )
         {
+            if ( this.states == null )
+            {
+                // This means that the transaction was never successful
+                return;
+            }
+            
             for ( HandlerAndState state : this.states )
             {
                 state.handler.afterRollback( this.transactionData, state.state );
