@@ -760,6 +760,25 @@ public class XaLogicalLog
         }
         // make sure we overwrite any broken records
         fileChannel.position( lastEntryPos );
+        // zero out the slow way since windows don't support truncate very well
+        buffer.clear();
+        while ( buffer.hasRemaining() )
+        {
+            buffer.put( (byte)0 );
+        }
+        buffer.flip();
+        long endPosition = fileChannel.size();
+        do
+        {
+            long bytesLeft = fileChannel.size() - fileChannel.position();
+            if ( bytesLeft < buffer.capacity() )
+            {
+                buffer.limit( (int) bytesLeft );
+            }
+            fileChannel.write( buffer );
+            buffer.flip();
+        } while ( fileChannel.position() < endPosition );
+        fileChannel.position( lastEntryPos );
         scanIsComplete = true;
         log.fine( "Internal recovery completed, scanned " + logEntriesFound
             + " log entries." );
