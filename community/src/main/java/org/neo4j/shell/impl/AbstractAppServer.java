@@ -20,8 +20,10 @@
 package org.neo4j.shell.impl;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -33,6 +35,8 @@ import org.neo4j.shell.AppShellServer;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.TabCompletion;
+import org.neo4j.shell.TextUtil;
 import org.neo4j.shell.apps.Alias;
 
 /**
@@ -147,4 +151,31 @@ public abstract class AbstractAppServer extends AbstractServer
 	{
 		return apps.keySet().toArray( new String[apps.size()] );
 	}
+    
+    public TabCompletion tabComplete( String partOfLine, Session session )
+            throws ShellException, RemoteException
+    {
+        // TODO We can't assume it's an AppShellServer, can we?
+        AppCommandParser parser = new AppCommandParser( this, partOfLine );
+        App app = parser.app();
+        List<String> appCandidates = app.completionCandidates( partOfLine, session );
+        appCandidates = quote( appCandidates );
+        if ( appCandidates.size() == 1 )
+        {
+            appCandidates.set( 0, appCandidates.get( 0 ) + " " );
+        }
+        int cursor = partOfLine.length() - TextUtil.lastWordOrQuoteOf( partOfLine, true ).length();
+        return new TabCompletion( appCandidates, cursor );
+    }
+
+    private static List<String> quote( List<String> candidates )
+    {
+        List<String> result = new ArrayList<String>();
+        for ( String candidate : candidates )
+        {
+            candidate = candidate.replaceAll( " ", "\\\\ " );
+            result.add( candidate );
+        }
+        return result;
+    }
 }

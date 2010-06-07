@@ -107,4 +107,16 @@ public interface ShellServer extends Remote
 	 * @throws RemoteException RMI error.
 	 */
 	String[] getAllAvailableCommands() throws RemoteException;
+	
+	/**
+	 * Tries to complete a half-entered line and returns possible candidates,
+	 * in the form of a {@link TabCompletion}.
+	 * @param partOfLine the half-entered line to try to complete.
+	 * @param session the client {@link Session}.
+	 * @return a {@link TabCompletion} containing the possible candidates for completion.
+     * @throws ShellException if some error should occur.
+     * @throws RemoteException RMI error.
+	 */
+	TabCompletion tabComplete( String partOfLine, Session session )
+	        throws ShellException, RemoteException;
 }

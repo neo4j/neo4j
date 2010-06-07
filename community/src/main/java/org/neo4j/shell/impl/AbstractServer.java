@@ -23,12 +23,14 @@ import java.io.Serializable;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
+import org.neo4j.shell.TabCompletion;
 
 /**
  * A common implementation of a {@link ShellServer}.
@@ -111,5 +113,11 @@ public abstract class AbstractServer extends UnicastRemoteObject
 	public String[] getAllAvailableCommands()
 	{
 		return new String[0];
+	}
+	
+	public TabCompletion tabComplete( String partOfLine, Session session )
+	        throws ShellException, RemoteException
+	{
+	    return new TabCompletion( Collections.<String>emptyList(), 0 );
 	}
 }

@@ -56,9 +56,13 @@ public class TextUtil
             List<String> list = lengthMap.get( lengthKey );
             for ( String key : list )
             {
-                String replacement = data.get( key ).toString();
-                String regExpMatchString = variablePrefix + key;
-                result = result.replaceAll( regExpMatchString, replacement );
+                Object value = data.get( key );
+                if ( value != null )
+                {
+                    String replacement = data.get( key ).toString();
+                    String regExpMatchString = variablePrefix + key;
+                    result = result.replaceAll( regExpMatchString, replacement );
+                }
             }
         }
         

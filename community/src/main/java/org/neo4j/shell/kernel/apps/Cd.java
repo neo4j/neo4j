@@ -27,7 +27,6 @@ import java.util.TreeSet;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -78,7 +77,6 @@ public class Cd extends GraphDatabaseApp
         {
             return super.completionCandidates( partOfLine, session );
         }
-        Transaction tx = getServer().getDb().beginTx();
         try
         {
             TreeSet<String> result = new TreeSet<String>();
@@ -111,17 +109,12 @@ public class Cd extends GraphDatabaseApp
                 maybeAddCompletionCandidate( result, "" + rel.getStartNode().getId(), lastWord );
                 maybeAddCompletionCandidate( result, "" + rel.getEndNode().getId(), lastWord );
             }
-            tx.success();
             return new ArrayList<String>( result );
         }
         catch ( ShellException e )
         {
             e.printStackTrace();
             return super.completionCandidates( partOfLine, session );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
     

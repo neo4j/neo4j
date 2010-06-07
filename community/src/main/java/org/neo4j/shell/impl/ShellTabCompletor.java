@@ -1,18 +1,14 @@
 package org.neo4j.shell.impl;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.List;
 
 import jline.Completor;
 import jline.SimpleCompletor;
 
-import org.neo4j.shell.App;
-import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.AppShellServer;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.TextUtil;
+import org.neo4j.shell.TabCompletion;
 
 class ShellTabCompletor implements Completor
 {
@@ -36,19 +32,10 @@ class ShellTabCompletor implements Completor
         {
             if ( buffer.contains( " " ) )
             {
-                // Complete the argument to app
-                // TODO We can't assume it's an AppShellServer, can we?
-                AppCommandParser parser = new AppCommandParser(
-                        (AppShellServer) client.getServer(), buffer.toString() );
-                App app = parser.app();
-                List<String> appCandidates = app.completionCandidates( buffer, client.session() );
-                appCandidates = quote( appCandidates );
-                if ( appCandidates.size() == 1 )
-                {
-                    appCandidates.set( 0, appCandidates.get( 0 ) + " " );
-                }
-                candidates.addAll( appCandidates );
-                return buffer.length() - TextUtil.lastWordOrQuoteOf( buffer, true ).length();
+                TabCompletion completion = client.getServer().tabComplete( buffer.trim(),
+                        client.session() );
+                cursor = completion.getCursor();
+                candidates.addAll( completion.getCandidates() );
             }
             else
             {
@@ -56,22 +43,16 @@ class ShellTabCompletor implements Completor
                 return this.appNameCompletor.complete( buffer, cursor, candidates );
             }
         }
+        catch ( RemoteException e )
+        {
+            // TODO Throw something?
+            e.printStackTrace();
+        }
         catch ( ShellException e )
         {
             // TODO Throw something?
             e.printStackTrace();
         }
         return cursor;
-    }
-
-    private List<String> quote( List<String> candidates )
-    {
-        List<String> result = new ArrayList<String>();
-        for ( String candidate : candidates )
-        {
-            candidate = candidate.replaceAll( " ", "\\\\ " );
-            result.add( candidate );
-        }
-        return result;
     }
 }
