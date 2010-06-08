@@ -8,5 +8,10 @@ import org.neo4j.graphmatching.PatternNode;
  */
 public interface FilterValueGetter
 {
+    /**
+     * Returns an array of values.
+     * @param label the {@link PatternNode} label.
+     * @return an array of values.
+     */
     Object[] getValues( String label );
 }

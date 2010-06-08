@@ -2,6 +2,8 @@ package org.neo4j.graphmatching.filter;
 
 import java.util.regex.Pattern;
 
+import org.neo4j.graphmatching.PatternNode;
+
 /**
  * A regex pattern with or without options, f.ex. "i" means case-insensitive.
  */
@@ -9,6 +11,14 @@ public class RegexPattern extends AbstractFilterExpression
 {
     private final Pattern pattern;
     
+    /**
+     * Constructs a new regex pattern for filtering.
+     * 
+     * @param label the {@link PatternNode} label.
+     * @param property the property key to filter in.
+     * @param pattern the pattern which the value should match.
+     * @param options options for regex matching.
+     */
     public RegexPattern( String label, String property, String pattern,
         String options )
     {

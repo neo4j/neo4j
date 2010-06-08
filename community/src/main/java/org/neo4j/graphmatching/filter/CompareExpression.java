@@ -1,10 +1,23 @@
 package org.neo4j.graphmatching.filter;
 
+import org.neo4j.graphmatching.PatternNode;
+
+/**
+ * An implementation which can compare commons expressions, f.ex:
+ * less than (<), greater than or equal to (>=) a.s.o.
+ */
 public class CompareExpression extends AbstractFilterExpression
 {
     private final String operator;
     private final Object compareValue;
     
+    /**
+     * Constructs a new comparison expression.
+     * @param label the {@link PatternNode} label.
+     * @param property property key.
+     * @param operator operator, f.ex. >= or < or =
+     * @param value value to compare against.
+     */
     public CompareExpression( String label, String property, String operator,
         Object value )
     {
