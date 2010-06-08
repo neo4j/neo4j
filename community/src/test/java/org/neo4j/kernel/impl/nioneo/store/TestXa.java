@@ -132,7 +132,7 @@ public class TestXa extends AbstractNeo4jTestCase
         log = Logger
             .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
-        NeoStore.createStore( file( "neo" ) );
+        NeoStore.createStore( file( "neo" ), Collections.EMPTY_MAP );
         lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
         lockReleaser = getEmbeddedGraphDb().getConfig().getLockReleaser();
         ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),

@@ -83,7 +83,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     @Before
     public void setUpNeoStore() throws Exception
     {
-        NeoStore.createStore( file( "neo" ) );
+        NeoStore.createStore( file( "neo" ), Collections.EMPTY_MAP );
     }
 
     private static class MyPropertyIndex extends
@@ -233,7 +233,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         }
         return itr.next();
     }
-
+    
     @Test
     public void testCreateNeoStore() throws Exception
     {
@@ -1014,6 +1014,20 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         nStore.removeProperty( nodeId, propertyId );
         nStore.deleteNode( nodeId );
         commitTx();
+        ds.close();
+    }
+
+    @Test
+    public void testSetBlockSize() throws Exception
+    {
+        tearDownNeoStore();
+        Map<String,String> config = new HashMap<String, String>();
+        config.put( "string_block_size", "62" );
+        config.put( "array_block_size", "302" );
+        NeoStore.createStore( file( "neo" ), config );
+        initializeStores();
+        assertEquals( 62 + 13, pStore.getStringBlockSize() );
+        assertEquals( 302 + 13, pStore.getArrayBlockSize() );
         ds.close();
     }
 }
