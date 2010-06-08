@@ -115,7 +115,7 @@ public class NeoStoreXaDataSource extends XaDataSource
         if ( !readOnly && !file.exists() && "true".equals( create ) )
         {
             autoCreatePath( store );
-            NeoStore.createStore( store );
+            NeoStore.createStore( store, config );
         }
 
         neoStore = new NeoStore( config );

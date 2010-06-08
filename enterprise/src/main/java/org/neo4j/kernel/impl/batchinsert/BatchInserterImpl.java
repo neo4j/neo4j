@@ -84,7 +84,7 @@ public class BatchInserterImpl implements BatchInserter
             params.put( entry.getKey(), entry.getValue() );
         }
         this.storeDir = storeDir;
-        String store = fixPath( storeDir ); 
+        String store = fixPath( storeDir, stringParams ); 
         params.put( "neo_store", store );
         if ( "true".equals( params.get( Config.DUMP_CONFIGURATION ) ) )
         {
@@ -548,7 +548,7 @@ public class BatchInserterImpl implements BatchInserter
         return getRelationshipStore().getRecord( (int) (id & 0xFFFFFFFF) );
     }
 
-    private String fixPath( String dir )
+    private String fixPath( String dir, Map<String,String> config )
     {
         File directories = new File( dir );
         if ( !directories.exists() )
@@ -565,7 +565,7 @@ public class BatchInserterImpl implements BatchInserter
         String store = dir + fileSeparator + "neostore";
         if ( !new File( store ).exists() )
         {
-            NeoStore.createStore( store );
+            NeoStore.createStore( store, config );
         }
         return store;
     }
