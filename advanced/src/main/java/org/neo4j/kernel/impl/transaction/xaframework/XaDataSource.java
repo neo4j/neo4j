@@ -129,16 +129,16 @@ public abstract class XaDataSource
     {
         throw new UnsupportedOperationException();
     }
-    
+
     /**
-     * Returns a random identifier that gets generated when the data source is 
-     * created. Note with "created" we mean first time data source is created 
-     * and not object creatoin.
+     * Returns a random identifier that gets generated when the data source is
+     * created. Note with "created" we mean first time data source is created
+     * and not object creation.
      * <p>
-     * Creation time together with random identifier can be used to uniqley 
-     * identify a data source (since it is possible to have multiple sources 
-     * of same type).
-     *  
+     * Creation time together with the random identifier can be used to uniquely
+     * identify a data source (since it is possible to have multiple sources of
+     * the same type).
+     * 
      * @return random identifier for this data source
      */
     public long getRandomIdentifier()
