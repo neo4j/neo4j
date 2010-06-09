@@ -109,7 +109,10 @@ public class NeoStoreXaDataSource extends XaDataSource
         this.lockReleaser = (LockReleaser) config.get( LockReleaser.class );
         storeDir = (String) config.get( "store_dir" );
         String store = (String) config.get( "neo_store" );
-        config.put( "rebuild_idgenerators_fast", "true" );
+        if ( !config.containsKey( "rebuild_idgenerators_fast" ) )
+        {
+            config.put( "rebuild_idgenerators_fast", "true" );
+        }
         File file = new File( store );
         String create = "" + config.get( "create" );
         if ( !readOnly && !file.exists() && "true".equals( create ) )
@@ -145,8 +148,16 @@ public class NeoStoreXaDataSource extends XaDataSource
             neoStore.getPropertyStore() );
         this.idGenerators.put( PropertyIndex.class, 
             neoStore.getPropertyStore().getIndexStore() );
+        String keepLogs = (String) config.get( "keep_logical_logs" );
+        if ( keepLogs != null )
+        {
+            if ( shouldKeepLog( keepLogs, "nioneodb" ) )
+            {
+                xaContainer.getLogicalLog().setKeepLogs( true );
+            }
+        }
     }
-
+    
     private void autoCreatePath( String store ) throws IOException
     {
         String fileSeparator = System.getProperty( "file.separator" );
@@ -355,6 +366,12 @@ public class NeoStoreXaDataSource extends XaDataSource
     public void keepLogicalLogs( boolean keep )
     {
         xaContainer.getLogicalLog().setKeepLogs( keep );
+    }
+    
+    @Override
+    public boolean isLogicalLogKept()
+    {
+        return xaContainer.getLogicalLog().isLogsKept();
     }
     
     @Override

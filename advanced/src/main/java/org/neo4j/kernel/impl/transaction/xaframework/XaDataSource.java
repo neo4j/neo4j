@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 /**
  * <CODE>XaDataSource</CODE> is as a factory for creating
@@ -238,6 +239,11 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException();
     }
     
+    public boolean isLogicalLogKept()
+    {
+        throw new UnsupportedOperationException();
+    }
+    
     /**
      * Used by the container to assign a name to this resource. 
      * 
@@ -290,5 +296,23 @@ public abstract class XaDataSource
     public void setLogicalLogTargetSize( long size )
     {
         throw new UnsupportedOperationException();
+    }
+
+    protected boolean shouldKeepLog( String config, String resourceName )
+    {
+        if ( config != null )
+        {
+            StringTokenizer tok = new StringTokenizer( config, "," );
+            while ( tok.hasMoreTokens() )
+            {
+                String element = tok.nextToken().trim();
+                if ( element.startsWith( resourceName ) && 
+                        element.endsWith( "=true" ) )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
