@@ -124,6 +124,11 @@ class EmbeddedGraphDbImpl
         } );
     }
 
+    <T> T getManagementBean( Class<T> beanClass )
+    {
+        return Neo4jJmx.getBean( instanceId, beanClass );
+    }
+
     /**
      * A non-standard Convenience method that loads a standard property file and
      * converts it into a generic <Code>Map<String,String></CODE>. Will most
