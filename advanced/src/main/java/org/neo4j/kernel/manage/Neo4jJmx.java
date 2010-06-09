@@ -2,6 +2,8 @@ package org.neo4j.kernel.manage;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +11,7 @@ import java.util.logging.Logger;
 
 import javax.management.DynamicMBean;
 import javax.management.MBeanServer;
+import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
@@ -20,22 +23,33 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 public abstract class Neo4jJmx
 {
     private static final Logger log = Logger.getLogger( Neo4jJmx.class.getName() );
-    /*
-    public static <BEAN> Iterable<BEAN> getBeans( Class<BEAN> beanType )
-    {
-        if ( !beanType.getPackage().equals( Neo4jJmx.class.getPackage() ) )
-        {
-            throw new IllegalArgumentException( "Not a Neo4j JMX Bean." );
-        }
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-    */
+
     public static Runnable initJMX( Neo4jJmx.Creator creator )
     {
         Factory jmx = new Factory( getPlatformMBeanServer(), creator.id );
         creator.create( jmx );
         jmx.createKernelMBean( creator.kernelVersion, creator.datasource );
         return new JmxShutdown( jmx.beans );
+    }
+
+    public static <T> T getBean( int instanceId, Class<T> beanType )
+    {
+        if ( beanType.isInterface() && beanType.getName().endsWith( "Bean" )
+             && beanType.getPackage().equals( Neo4jJmx.class.getPackage() ) )
+        {
+            if ( PROXY_MAKER == null )
+            {
+                throw new UnsupportedOperationException(
+                        "Creating Management Bean proxies requires Java 1.6" );
+            }
+            else
+            {
+                ObjectName name = getObjectName( instanceId, beanType, null );
+                return PROXY_MAKER.makeProxy( name, beanType );
+            }
+        }
+        throw new IllegalArgumentException( "Not a Neo4j management bean: "
+                                            + beanType );
     }
 
     public static abstract class Creator
@@ -96,10 +110,10 @@ public abstract class Neo4jJmx
                 failedToRegister( "ConfigurationMBean" );
         }
 
-        public void createMemoryMappingMBean( XaDataSourceManager datasourceMananger )
+        public void createMemoryMappingMBean(
+                XaDataSourceManager datasourceMananger )
         {
-            NeoStoreXaDataSource datasource = (NeoStoreXaDataSource)
-                    datasourceMananger.getXaDataSource( "nioneodb" );
+            NeoStoreXaDataSource datasource = (NeoStoreXaDataSource) datasourceMananger.getXaDataSource( "nioneodb" );
             if ( !register( new MemoryMappingMonitor.MXBeanImplementation(
                     instanceId, datasource ) ) )
             {
@@ -143,6 +157,89 @@ public abstract class Neo4jJmx
             }
             return false;
         }
+    }
+
+    private static final ProxyMaker PROXY_MAKER;
+
+    private static class ProxyMaker
+    {
+        private final Method isMXBeanInterface;
+        private final Method newMBeanProxy;
+        private final Method newMXBeanProxy;
+
+        ProxyMaker() throws Exception
+        {
+            Class<?> JMX = Class.forName( "javax.management.JMX" );
+            this.isMXBeanInterface = JMX.getMethod( "isMXBeanInterface",
+                    Class.class );
+            this.newMBeanProxy = JMX.getMethod( "newMBeanProxy",
+                    MBeanServerConnection.class, ObjectName.class, Class.class );
+            this.newMXBeanProxy = JMX.getMethod( "newMXBeanProxy",
+                    MBeanServerConnection.class, ObjectName.class, Class.class );
+        }
+
+        <T> T makeProxy( ObjectName name, Class<T> beanType )
+        {
+            try {
+                final Method factoryMethod;
+                if ( isMXBeanInterface( beanType ) )
+                {
+                    factoryMethod = newMXBeanProxy;
+                }
+                else
+                {
+                    factoryMethod = newMBeanProxy;
+                }
+                return beanType.cast( factoryMethod.invoke( null,
+                        getPlatformMBeanServer(), name, beanType ) );
+            }
+            catch ( InvocationTargetException exception )
+            {
+                throw launderRuntimeException( exception.getTargetException() );
+            }
+            catch ( Exception exception )
+            {
+                throw new UnsupportedOperationException(
+                        "Creating Management Bean proxies requires Java 1.6",
+                        exception );
+            }
+        }
+
+        private boolean isMXBeanInterface( Class<?> interfaceClass )
+                throws Exception
+        {
+            return (Boolean) isMXBeanInterface.invoke( null, interfaceClass );
+        }
+
+        static RuntimeException launderRuntimeException( Throwable exception )
+        {
+            if ( exception instanceof RuntimeException )
+            {
+                return (RuntimeException) exception;
+            }
+            else if ( exception instanceof Error )
+            {
+                throw (Error) exception;
+            }
+            else
+            {
+                throw new RuntimeException( "Unexpected Exception!", exception );
+            }
+        }
+    }
+
+    static
+    {
+        ProxyMaker proxyMaker;
+        try
+        {
+            proxyMaker = new ProxyMaker();
+        }
+        catch ( Throwable t )
+        {
+            proxyMaker = null;
+        }
+        PROXY_MAKER = proxyMaker;
     }
 
     private static Neo4jJmx registerBean( MBeanServer mbs, Neo4jJmx bean )
@@ -199,38 +296,49 @@ public abstract class Neo4jJmx
 
     Neo4jJmx( int instanceId )
     {
+        ObjectName name = null;
+        for ( Class<?> beanType : getClass().getInterfaces() )
+        {
+            name = getObjectName( instanceId, beanType, getClass() );
+        }
+        if ( name == null )
+        {
+            throw new IllegalArgumentException( "" );
+        }
+        objectName = name;
+    }
+
+    private static ObjectName getObjectName( int instanceId, Class<?> iface,
+            Class<?> clazz )
+    {
+        final String name;
+        if ( iface == DynamicMBean.class )
+        {
+            name = clazz.getSimpleName();
+        }
+        else
+        {
+            try
+            {
+                name = (String) iface.getField( "NAME" ).get( null );
+            }
+            catch ( Exception e )
+            {
+                return null;
+            }
+        }
         StringBuilder identifier = new StringBuilder( "org.neo4j:" );
         identifier.append( "instance=kernel#" );
         identifier.append( instanceId );
         identifier.append( ",name=" );
-        identifier.append( getName( getClass() ) );
+        identifier.append( name );
         try
         {
-            objectName = new ObjectName( identifier.toString() );
+            return new ObjectName( identifier.toString() );
         }
         catch ( MalformedObjectNameException e )
         {
-            throw new IllegalArgumentException( e );
+            return null;
         }
-    }
-
-    private static Object getName( Class<? extends Neo4jJmx> clazz )
-    {
-        for ( Class<?> iface : clazz.getInterfaces() )
-        {
-            if ( iface == DynamicMBean.class )
-            {
-                return clazz.getSimpleName();
-            }
-            try
-            {
-                return iface.getField( "NAME" ).get( null );
-            }
-            catch ( Exception e )
-            {
-                // Had no NAME field
-            }
-        }
-        throw new IllegalStateException( "Invalid Neo4jMonitor implementation." );
     }
 }
