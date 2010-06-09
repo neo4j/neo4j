@@ -24,7 +24,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 import org.junit.Test;
@@ -38,6 +40,8 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class TestNeo4j extends AbstractNeo4jTestCase
 {
@@ -334,5 +338,25 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     {
         getGraphDb().shutdown();
         getGraphDb().shutdown();
+    }
+    
+    @Test
+    public void testKeepLogsConfig()
+    {
+        Map<String,String> config = new HashMap<String,String>();
+        config.put( "keep_logical_logs", "non-existing=false, nioneodb=true" );
+        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( 
+                "target/configdb", config );
+        XaDataSourceManager xaDsMgr = 
+            db.getConfig().getTxModule().getXaDataSourceManager();
+        XaDataSource xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        assertTrue( xaDs.isLogicalLogKept() );
+        db.shutdown();
+        config.put( "keep_logical_logs", "non-existing=false, nioneodb=false" );
+        db = new EmbeddedGraphDatabase( "target/configdb", config );
+        xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
+        xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        assertTrue( !xaDs.isLogicalLogKept() );
+        db.shutdown();
     }
 }
