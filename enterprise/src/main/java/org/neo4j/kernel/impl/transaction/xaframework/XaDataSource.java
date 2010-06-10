@@ -306,8 +306,7 @@ public abstract class XaDataSource
             while ( tok.hasMoreTokens() )
             {
                 String element = tok.nextToken().trim();
-                if ( element.startsWith( resourceName ) && 
-                        element.endsWith( "=true" ) )
+                if ( resourceName.equals( element ) )
                 {
                     return true;
                 }
