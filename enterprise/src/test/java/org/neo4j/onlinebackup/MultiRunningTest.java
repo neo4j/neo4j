@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2009-2010 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ * 
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.onlinebackup;
 
 import static org.junit.Assert.assertEquals;
@@ -17,7 +36,6 @@ import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneDataSource;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
@@ -49,16 +67,10 @@ public class MultiRunningTest
             .println( "setting up database and backup-copy including Lucene" );
 
         EmbeddedGraphDatabase graphDb = Util.startGraphDbInstance( STORE_LOCATION_DIR );
-        XaDataSource neoStoreXaDataSource = graphDb.getConfig()
-            .getPersistenceModule().getPersistenceManager()
-            .getPersistenceSource().getXaDataSource();
-        neoStoreXaDataSource.keepLogicalLogs( true );
 
         IndexService indexService = new LuceneIndexService( graphDb );
-        XaDataSourceManager xaDsm = graphDb.getConfig().getTxModule()
-            .getXaDataSourceManager();
-        XaDataSource ds = xaDsm.getXaDataSource( "lucene" );
-        ((LuceneDataSource) ds).keepLogicalLogs( true );
+
+        configureSourceDb( graphDb );
 
         Transaction tx = graphDb.beginTx();
         try
@@ -75,19 +87,23 @@ public class MultiRunningTest
         Util.copyDir( STORE_LOCATION_DIR, BACKUP_LOCATION_DIR );
     }
 
+    protected void configureSourceDb( final EmbeddedGraphDatabase graphDb )
+    {
+        XaDataSource neoStoreXaDataSource = graphDb.getConfig().getPersistenceModule().getPersistenceManager().getPersistenceSource().getXaDataSource();
+        neoStoreXaDataSource.keepLogicalLogs( true );
+        XaDataSourceManager xaDsm = graphDb.getConfig().getTxModule().getXaDataSourceManager();
+        XaDataSource ds = xaDsm.getXaDataSource( "lucene" );
+        ( (LuceneDataSource) ds ).keepLogicalLogs( true );
+    }
+
     @Test
     public void backup() throws IOException
     {
         System.out.println( "starting tests" );
         EmbeddedGraphDatabase graphDb = Util.startGraphDbInstance( STORE_LOCATION_DIR );
-        ((NeoStoreXaDataSource) graphDb.getConfig().getPersistenceModule()
-            .getPersistenceManager().getPersistenceSource()
-            .getXaDataSource()).keepLogicalLogs( true );
         IndexService indexService = new LuceneIndexService( graphDb );
-        XaDataSourceManager xaDsm = graphDb.getConfig().getTxModule()
-            .getXaDataSourceManager();
-        XaDataSource ds = xaDsm.getXaDataSource( "lucene" );
-        ((LuceneDataSource) ds).keepLogicalLogs( true );
+
+        configureSourceDb( graphDb );
 
         System.out.println( "backing up original db without any changes" );
         tryBackup( graphDb, BACKUP_LOCATION_DIR, 1 );

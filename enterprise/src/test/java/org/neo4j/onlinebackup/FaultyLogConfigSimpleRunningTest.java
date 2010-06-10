@@ -20,30 +20,28 @@
 package org.neo4j.onlinebackup;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
+
+import org.junit.Test;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.persistence.PersistenceSource;
 
 /**
- * Wrap a XA data source.
+ * Sets keep_logical_logs to false, so an exception is thrown.
  */
-public interface Resource
+public class FaultyLogConfigSimpleRunningTest extends SimpleRunningTest
 {
-    long getCreationTime();
+    @Override
+    protected void configureSourceDb( final EmbeddedGraphDatabase graphDb )
+    {
+        PersistenceSource persistenceSource = graphDb.getConfig().getPersistenceModule().getPersistenceManager().getPersistenceSource();
+        ( (NeoStoreXaDataSource) persistenceSource.getXaDataSource() ).keepLogicalLogs( false );
+    }
 
-    long getIdentifier();
-
-    String getName();
-
-    long getVersion();
-
-    boolean hasLogicalLog( long version );
-
-    ReadableByteChannel getLogicalLog( long version ) throws IOException;
-
-    void applyLog( ReadableByteChannel log ) throws IOException;
-
-    void rotateLog() throws IOException;
-
-    void makeBackupSlave();
-
-    void close();
+    @Override
+    @Test( expected = IllegalStateException.class )
+    public void backup() throws IOException
+    {
+        super.backup();
+    }
 }
