@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2009-2010 "Neo Technology,"
+ *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ * 
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.onlinebackup;
 
 import static org.junit.Assert.assertEquals;
@@ -15,6 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.persistence.PersistenceSource;
 
 /**
  * Try to backup Neo4j to another running Neo4j instance.
@@ -42,9 +62,7 @@ public class SimpleRunningTest
         System.out.println( "setting up simple database and backup-copy" );
 
         EmbeddedGraphDatabase graphDb = Util.startGraphDbInstance( STORE_LOCATION_DIR );
-        ((NeoStoreXaDataSource) graphDb.getConfig().getPersistenceModule()
-            .getPersistenceManager().getPersistenceSource()
-            .getXaDataSource()).keepLogicalLogs( true );
+        configureSourceDb( graphDb );
 
         Transaction tx = graphDb.beginTx();
         try
@@ -61,13 +79,18 @@ public class SimpleRunningTest
         Util.copyDir( STORE_LOCATION_DIR, BACKUP_LOCATION_DIR );
     }
 
+    protected void configureSourceDb( final EmbeddedGraphDatabase graphDb )
+    {
+        PersistenceSource persistenceSource = graphDb.getConfig().getPersistenceModule().getPersistenceManager().getPersistenceSource();
+        ( (NeoStoreXaDataSource) persistenceSource.getXaDataSource() ).keepLogicalLogs( true );
+    }
+
     @Test
     public void backup() throws IOException
     {
         EmbeddedGraphDatabase graphDb = Util.startGraphDbInstance( STORE_LOCATION_DIR );
-        ((NeoStoreXaDataSource) graphDb.getConfig().getPersistenceModule()
-            .getPersistenceManager().getPersistenceSource().getXaDataSource())
-            .keepLogicalLogs( true );
+        configureSourceDb( graphDb );
+
         System.out.println( "backing up original db without any changes" );
         tryBackup( graphDb, BACKUP_LOCATION_DIR, 1 );
 
@@ -114,13 +137,14 @@ public class SimpleRunningTest
         Util.stopGraphDb( graphDb );
     }
 
-    protected void tryBackup( EmbeddedGraphDatabase graphDb, String location, int relCount )
+    protected void tryBackup( EmbeddedGraphDatabase graphDb, String location,
+            int relCount )
         throws IOException
     {
         System.out.println( "backing up to running EmbeddedGraphDatabase instance" );
         EmbeddedGraphDatabase bDb = Util.startGraphDbInstance( location );
         Backup backupComp = new Neo4jBackup( graphDb, bDb );
-        backupComp.enableFileLogger();
+        configureBackup( backupComp );
         backupComp.doBackup();
         Util.stopGraphDb( bDb );
         bDb = Util.startGraphDbInstance( location );
@@ -140,6 +164,11 @@ public class SimpleRunningTest
             bTx.finish();
         }
         Util.stopGraphDb( bDb );
+    }
+
+    protected void configureBackup( Backup backupComp ) throws IOException
+    {
+        backupComp.enableFileLogger();
     }
 
     private void addNode( EmbeddedGraphDatabase graphDb )
