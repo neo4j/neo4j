@@ -30,6 +30,7 @@ import java.util.logging.Logger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -148,14 +149,8 @@ public class NeoStoreXaDataSource extends XaDataSource
             neoStore.getPropertyStore() );
         this.idGenerators.put( PropertyIndex.class, 
             neoStore.getPropertyStore().getIndexStore() );
-        String keepLogs = (String) config.get( "keep_logical_logs" );
-        if ( keepLogs != null )
-        {
-            if ( shouldKeepLog( keepLogs, "nioneodb" ) )
-            {
-                xaContainer.getLogicalLog().setKeepLogs( true );
-            }
-        }
+        xaContainer.getLogicalLog().setKeepLogs(
+                shouldKeepLog( (String) config.get( Config.KEEP_LOGICAL_LOGS ), "nioneodb" ) );
     }
     
     private void autoCreatePath( String store ) throws IOException

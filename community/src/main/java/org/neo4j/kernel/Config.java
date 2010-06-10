@@ -49,6 +49,7 @@ public class Config
     public static final String USE_MEMORY_MAPPED_BUFFERS = 
         "use_memory_mapped_buffers";
     public static final String DUMP_CONFIGURATION = "dump_configuration";
+    public static final String KEEP_LOGICAL_LOGS = "keep_logical_logs";
     
     private AdaptiveCacheManager cacheManager;
     private TxModule txModule;

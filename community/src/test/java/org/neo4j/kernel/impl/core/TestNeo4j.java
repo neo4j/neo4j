@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
@@ -344,15 +345,15 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     public void testKeepLogsConfig()
     {
         Map<String,String> config = new HashMap<String,String>();
-        config.put( "keep_logical_logs", "non-existing=false, nioneodb=true" );
+        config.put( Config.KEEP_LOGICAL_LOGS, "nioneodb" );
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( 
                 "target/configdb", config );
         XaDataSourceManager xaDsMgr = 
-            db.getConfig().getTxModule().getXaDataSourceManager();
+                db.getConfig().getTxModule().getXaDataSourceManager();
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
         assertTrue( xaDs.isLogicalLogKept() );
         db.shutdown();
-        config.put( "keep_logical_logs", "non-existing=false, nioneodb=false" );
+        config.remove( Config.KEEP_LOGICAL_LOGS );
         db = new EmbeddedGraphDatabase( "target/configdb", config );
         xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
         xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
