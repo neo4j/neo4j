@@ -25,8 +25,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
+import java.util.Map;
 
 import org.neo4j.index.IndexService;
+import org.neo4j.index.lucene.LuceneFulltextIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class Util
@@ -147,6 +149,13 @@ public class Util
         return new EmbeddedGraphDatabase( file.getAbsolutePath() );
     }
 
+    static EmbeddedGraphDatabase startGraphDbInstance( String location,
+            Map<String, String> configuration )
+    {
+        File file = new File( location );
+        return new EmbeddedGraphDatabase( file.getAbsolutePath(), configuration );
+    }
+
     static void stopGraphDb( EmbeddedGraphDatabase graphDb )
     {
         graphDb.shutdown();
@@ -156,5 +165,12 @@ public class Util
     {
         indexService.shutdown();
         stopGraphDb( graphDb );
+    }
+
+    static void stopGraphDb( EmbeddedGraphDatabase graphDb,
+            IndexService indexService, LuceneFulltextIndexService fulltextIndex )
+    {
+        fulltextIndex.shutdown();
+        stopGraphDb( graphDb, indexService );
     }
 }
