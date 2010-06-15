@@ -16,8 +16,8 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
+import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPathBFS;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;

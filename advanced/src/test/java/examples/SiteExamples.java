@@ -1,30 +1,16 @@
 package examples;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphalgo.EstimateEvaluator;
+import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphalgo.centrality.BetweennessCentrality;
-import org.neo4j.graphalgo.path.AStar;
-import org.neo4j.graphalgo.path.ShortestPath;
-import org.neo4j.graphalgo.path.WeightedPath;
-import org.neo4j.graphalgo.shortestpath.Dijkstra;
-import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathBFS;
-import org.neo4j.graphalgo.shortestpath.SingleSourceSingleSinkShortestPath;
-import org.neo4j.graphalgo.util.DoubleAdder;
-import org.neo4j.graphalgo.util.DoubleComparator;
-import org.neo4j.graphalgo.util.DoubleEvaluator;
+import org.neo4j.graphalgo.WeightedPath;
+import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -84,8 +70,8 @@ public class SiteExamples
         
         // Will find the shortest path between startNode and endNode via
         // "MY_TYPE" relationships (irregardless of their directions)
-        PathFinder finder = new ShortestPath( graphDb, 15,
-                TraversalFactory.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ) );
+        PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
+                TraversalFactory.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ), 15 );
         Iterable<Path> paths = finder.findAllPaths( startNode, endNode );
     }
     // END SNIPPET: shortestPathUsage
@@ -103,23 +89,23 @@ public class SiteExamples
     {
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
-        findShortestPathWithDijkstra( node1, node2 );
+        Relationship rel = node1.createRelationshipTo( node2, ExampleTypes.MY_TYPE );
+        rel.setProperty( "cost", 1d );
+        findCheapestPathWithDijkstra( node1, node2 );
     }
     
     // START SNIPPET: dijkstraUsage
-    public List<PropertyContainer> findShortestPathWithDijkstra( Node start, Node end )
+    public WeightedPath findCheapestPathWithDijkstra( Node start, Node end )
     {
-        // Set up Dijkstra
-        SingleSourceSingleSinkShortestPath<Double> sp;
-        sp = new Dijkstra<Double>( 0.0, start, end, new DoubleEvaluator(
-                "cost" ), new DoubleAdder(), new DoubleComparator(),
-                Direction.BOTH, DynamicRelationshipType.withName( "MY_TYPE" ) );
+        PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
+                TraversalFactory.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ),
+                new DoubleEvaluator( "cost" ) );
+        
+        WeightedPath path = finder.findSinglePath( start, end );
 
-        // Get the cost for the found path
-        sp.getCost();
-
-        // Get the path itself
-        return sp.getPath();
+        // Get the weight for the found path
+        path.weight();
+        return path;
     }
     // END SNIPPET: dijkstraUsage
     
@@ -167,35 +153,10 @@ public class SiteExamples
                 return result;
             }
         };
-        PathFinder<WeightedPath> astar = new AStar( graphDb, TraversalFactory.expanderForAllTypes(),
+        PathFinder<WeightedPath> astar = GraphAlgoFactory.aStar(
+                TraversalFactory.expanderForAllTypes(),
                 new DoubleEvaluator( "length" ), estimateEvaluator );
         Path path = astar.findSinglePath( nodeA, nodeC );
     }
     // END SNIPPET: astarUsage
-    
-    @Test
-    public void centralityUsage()
-    {
-        Node targetNode = graphDb.createNode();
-        getCentrality( targetNode, new HashSet<Node>( Arrays.asList( targetNode ) ) );
-    }
-    
-    // START SNIPPET: centralityUsage
-    public double getCentrality( Node targetNode, Set<Node> nodeSet )
-    {
-        // Set up shortest path algorithm.
-        // Observe that we don't need to specify a start node.
-        SingleSourceShortestPath<Integer> singleSourceShortestPath;
-        singleSourceShortestPath = new SingleSourceShortestPathBFS(
-            null, Direction.BOTH, ExampleTypes.MY_TYPE );
-                
-        // Set up betweenness centrality algorithm.
-        BetweennessCentrality<Integer> betweennessCentrality;
-        betweennessCentrality = new BetweennessCentrality<Integer>(
-            singleSourceShortestPath, nodeSet );
-
-        // Get centrality value for a node.
-        return betweennessCentrality.getCentrality( targetNode );
-    }
-    // END SNIPPET: centralityUsage
 }

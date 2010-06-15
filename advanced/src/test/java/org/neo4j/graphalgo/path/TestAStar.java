@@ -12,8 +12,10 @@ import java.util.Set;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphalgo.EstimateEvaluator;
+import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphalgo.util.DoubleEvaluator;
+import org.neo4j.graphalgo.WeightedPath;
+import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -38,9 +40,7 @@ public class TestAStar extends Neo4jAlgoTestCase
     
     private PathFinder<WeightedPath> newFinder()
     {
-        return new ExperimentalAStar(
-//                graphDb,
-                TraversalFactory.expanderForAllTypes(),
+        return GraphAlgoFactory.aStar( TraversalFactory.expanderForAllTypes(),
                 new DoubleEvaluator( "length" ), ESTIMATE_EVALUATOR );
     }
 

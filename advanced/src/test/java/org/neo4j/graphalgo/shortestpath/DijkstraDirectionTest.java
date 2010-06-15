@@ -23,6 +23,7 @@ import java.util.HashMap;
 
 import org.junit.Test;
 import org.neo4j.graphalgo.CostEvaluator;
+import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 
@@ -52,8 +53,8 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
                     assertFalse( backwards );
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.util.DoubleAdder(),
-            new org.neo4j.graphalgo.util.DoubleComparator(),
+            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.OUTGOING, MyRelTypes.R1 );
         dijkstra.getCost();
         dijkstra = new Dijkstra<Double>( (double) 0, graph.getNode( "s" ),
@@ -65,8 +66,8 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
                     assertTrue( backwards );
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.util.DoubleAdder(),
-            new org.neo4j.graphalgo.util.DoubleComparator(),
+            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.INCOMING, MyRelTypes.R1 );
         dijkstra.getCost();
     }
@@ -94,8 +95,8 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
                     assertFalse( backwards );
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.util.DoubleAdder(),
-            new org.neo4j.graphalgo.util.DoubleComparator(),
+            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.OUTGOING, MyRelTypes.R1 );
         dijkstra.getCost();
         dijkstra = new Dijkstra<Double>( (double) 0, graph.getNode( "s" ),
@@ -107,8 +108,8 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
                     assertTrue( backwards );
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.util.DoubleAdder(),
-            new org.neo4j.graphalgo.util.DoubleComparator(),
+            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.INCOMING, MyRelTypes.R1 );
         dijkstra.getCost();
     }
@@ -148,8 +149,8 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
         Dijkstra<Double> dijkstra = new Dijkstra<Double>( (double) 0, graph
             .getNode( "start" ), graph.getNode( "end" ),
             new directionSavingCostEvaluator( dirs ),
-            new org.neo4j.graphalgo.util.DoubleAdder(),
-            new org.neo4j.graphalgo.util.DoubleComparator(),
+            new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1 );
         dijkstra.getCost();
         assertFalse( dirs.get( r1 ) );

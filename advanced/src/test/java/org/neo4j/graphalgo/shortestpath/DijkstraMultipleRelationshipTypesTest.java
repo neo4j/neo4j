@@ -20,8 +20,9 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.neo4j.graphalgo.CostEvaluator;
-import org.neo4j.graphalgo.util.DoubleAdder;
-import org.neo4j.graphalgo.util.DoubleComparator;
+import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
+import org.neo4j.graphalgo.impl.util.DoubleAdder;
+import org.neo4j.graphalgo.impl.util.DoubleComparator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;

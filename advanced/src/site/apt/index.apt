@@ -1,52 +1,30 @@
 Neo4j graph-algo
 
-	Neo4j graph-algo is a component that contains implementations of
-	some common graph algorithms for Neo4j. This includes algorihms for
-	finding shortest paths, such as Breadth First Search and Dijkstra.
-	There are also algorithms for several graph measures such as
-	centrality measures. These include:
-	
-	* Shortest path
-	
-	* Dijkstra and A*
+	Neo4j graph-algo is a component that contains Neo4j implementations of
+	some common algorithms for graphs. This includes algorihms for
+	finding shortest paths, all paths, all simple paths, Dijkstra and A*.
 
-	* Eccentricity
+	Algorightms can be instantiated using the <<org.neo4j.graphalgo.GraphAlgoFactory>>
+	class. Here are some examples (see also {{{http://wiki.neo4j.org/content/Graph-algo}wiki pages}}):
 
-	* Network diameter
-
-	* Network radius
-
-	* Stress centrality
-
-	* Closeness centrality
-
-	* Betweenness centrality
-
-	* Eigenvector centrality
-
-	[]
-
-	Here a few parts of this component will be presented. For more details,
-	see the {{{http://wiki.neo4j.org/content/Graph-algo}wiki pages}}.
-
-Shortest path
+Path finding examples
 
 	Calculating the shortest path (least number of relationships) between node A and B
 	
 %{source-code|snippet=shortestPathUsage|file=src/test/java/examples/SiteExamples.java}
+
+	Using Dijkstra to calculate cheapest path between node A and B where each relationship
+	can have a weight (i.e. cost) and the path(s) with least cost are found.
+
+%{source-code|snippet=dijkstraUsage|file=src/test/java/examples/SiteExamples.java}
 
 	Using A* to calculate the cheapest path between node A and B, where cheapest is
 	f.ex. the path in a network of roads which has the shortest length between node A and B.
 
 %{source-code|snippet=astarUsage|file=src/test/java/examples/SiteExamples.java}
 
-~~Centrality package
-~~
-~~	The centrality package contains implementations of the centrality measures
-~~	mentioned earlier. Most centrality measures require an underlying shortest
-~~	path algorithm of the type SingleSourceShortestPath (i.e. from one node to
-~~	many others). The only other thing that is needed is a set of the nodes we
-~~	would like a centrality value computed for.
-~~	Example:
-~~
-~~%{source-code|snippet=centralityUsage|file=src/test/java/examples/SiteExamples.java}
+Other algos
+
+	There are other algorithms which can be used on smaller graphs, f.ex. calculating
+	centrality, betweeness, closeness, eccentrity and more... Those are in the
+	<<org.neo4j.graphalgo.impl.centrality>> package.
