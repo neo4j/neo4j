@@ -56,7 +56,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.manage.Neo4jJmx;
+import org.neo4j.kernel.management.Neo4jJmx;
 
 class EmbeddedGraphDbImpl
 {
@@ -115,6 +115,7 @@ class EmbeddedGraphDbImpl
             {
                 jmx.createDynamicConfigurationMBean( params );
                 jmx.createPrimitiveMBean( nodeManager );
+                jmx.createStoreFileMBean();
                 jmx.createCacheMBean( nodeManager );
                 jmx.createLockManagerMBean( getConfig().getLockManager() );
                 jmx.createTransactionManagerMBean( getConfig().getTxModule() );
