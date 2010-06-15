@@ -22,8 +22,9 @@ import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.graphalgo.CostEvaluator;
-import org.neo4j.graphalgo.util.DoubleAdder;
-import org.neo4j.graphalgo.util.DoubleComparator;
+import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
+import org.neo4j.graphalgo.impl.util.DoubleAdder;
+import org.neo4j.graphalgo.impl.util.DoubleComparator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -39,9 +40,9 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     {
         return new Dijkstra<Double>( startCost, graph.getNode( startNode ),
             graph.getNode( endNode ),
-            new org.neo4j.graphalgo.util.DoubleEvaluator( "cost" ),
-            new org.neo4j.graphalgo.util.DoubleAdder(),
-            new org.neo4j.graphalgo.util.DoubleComparator(),
+            new org.neo4j.graphalgo.impl.util.DoubleEvaluator( "cost" ),
+            new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }
 
@@ -205,9 +206,9 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
         graph.makeEdge( "b2", "c", "cost", (double) -2 );
         Dijkstra<Double> dijkstra = new Dijkstra<Double>( 0.0, graph
             .getNode( "a" ), graph.getNode( "z" ),
-            new org.neo4j.graphalgo.util.DoubleEvaluator( "cost" ),
-            new org.neo4j.graphalgo.util.DoubleAdder(),
-            new org.neo4j.graphalgo.util.DoubleComparator(),
+            new org.neo4j.graphalgo.impl.util.DoubleEvaluator( "cost" ),
+            new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.OUTGOING, MyRelTypes.R1 );
         List<List<Node>> paths = dijkstra.getPathsAsNodes();
         assertTrue( paths.size() == 2 );

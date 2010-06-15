@@ -20,9 +20,10 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.neo4j.graphalgo.CostEvaluator;
-import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPath;
-import org.neo4j.graphalgo.shortestpath.SingleSourceShortestPathDijkstra;
-import org.neo4j.graphalgo.util.DoubleComparator;
+import org.neo4j.graphalgo.impl.centrality.NetworkRadius;
+import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
+import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPathDijkstra;
+import org.neo4j.graphalgo.impl.util.DoubleComparator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 
@@ -40,8 +41,8 @@ public class NetworkRadiusTest extends Neo4jAlgoTestCase
                 {
                     return 1.0;
                 }
-            }, new org.neo4j.graphalgo.util.DoubleAdder(),
-            new org.neo4j.graphalgo.util.DoubleComparator(),
+            }, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
             Direction.BOTH, MyRelTypes.R1 );
     }
 

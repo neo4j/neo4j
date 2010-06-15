@@ -1,6 +1,7 @@
 package org.neo4j.graphalgo.path;
 
 import org.junit.Test;
+import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Path;
 import org.neo4j.kernel.TraversalFactory;
@@ -9,9 +10,9 @@ import common.Neo4jAlgoTestCase;
 
 public class TestAllSimplePaths extends Neo4jAlgoTestCase
 {
-    protected PathFinder instantiatePathFinder( int maxDepth )
+    protected PathFinder<Path> instantiatePathFinder( int maxDepth )
     {
-        return new AllSimplePaths( maxDepth, TraversalFactory.expanderForAllTypes() );
+        return GraphAlgoFactory.allSimplePaths( TraversalFactory.expanderForAllTypes(), maxDepth );
     }
 
     @Test
@@ -30,7 +31,7 @@ public class TestAllSimplePaths extends Neo4jAlgoTestCase
         graph.makeEdge( "c", "d" );
         graph.makeEdge( "c", "e" );
 
-        PathFinder finder = instantiatePathFinder( 10 );
+        PathFinder<Path> finder = instantiatePathFinder( 10 );
         Iterable<Path> paths = finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) );
         assertPaths( paths, "a,b,c,e", "a,b,c,e", "a,b,d,c,e" );
     }
@@ -48,7 +49,7 @@ public class TestAllSimplePaths extends Neo4jAlgoTestCase
         graph.makeEdge( "b", "c" );
         graph.makeEdge( "c", "d" );
         
-        PathFinder finder = instantiatePathFinder( 10 );
+        PathFinder<Path> finder = instantiatePathFinder( 10 );
         Iterable<Path> paths = finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) );
         assertPaths( paths, "a,b,c,d", "a,b,c,d", "a,b,c,d" );
     }
