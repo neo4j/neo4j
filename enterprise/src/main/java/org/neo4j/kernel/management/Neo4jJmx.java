@@ -1,7 +1,9 @@
-package org.neo4j.kernel.manage;
+package org.neo4j.kernel.management;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -26,9 +28,9 @@ public abstract class Neo4jJmx
 
     public static Runnable initJMX( Neo4jJmx.Creator creator )
     {
-        Factory jmx = new Factory( getPlatformMBeanServer(), creator.id );
+        Factory jmx = new Factory( getPlatformMBeanServer(), creator );
         creator.create( jmx );
-        jmx.createKernelMBean( creator.kernelVersion, creator.datasource );
+        jmx.createKernelMBean( creator.kernelVersion );
         return new JmxShutdown( jmx.beans );
     }
 
@@ -76,37 +78,37 @@ public abstract class Neo4jJmx
     public static final class Factory
     {
         private final MBeanServer mbs;
-        private final int instanceId;
+        private final Creator instance;
         private final List<Neo4jJmx> beans = new ArrayList<Neo4jJmx>();
 
-        private Factory( MBeanServer mbs, int instanceId )
+        private Factory( MBeanServer mbs, Creator creator )
         {
             this.mbs = mbs;
-            this.instanceId = instanceId;
+            this.instance = creator;
         }
 
-        private void createKernelMBean( String kernelVersion,
-                NeoStoreXaDataSource datasource )
+        private void createKernelMBean( String kernelVersion )
         {
-            if ( !register( new Kernel( instanceId, kernelVersion, datasource ) ) )
+            if ( !register( new Kernel( instance.id, kernelVersion,
+                    instance.datasource ) ) )
                 failedToRegister( "KernelMBean" );
         }
 
         public void createPrimitiveMBean( NodeManager nodeManager )
         {
-            if ( !register( new Primitive( instanceId, nodeManager ) ) )
-                failedToRegister( "KernelMBean" );
+            if ( !register( new Primitive( instance.id, nodeManager ) ) )
+                failedToRegister( "PrimitiveMBean" );
         }
 
         public void createCacheMBean( NodeManager nodeManager )
         {
-            if ( !register( new Cache( instanceId, nodeManager ) ) )
+            if ( !register( new Cache( instance.id, nodeManager ) ) )
                 failedToRegister( "CacheMBean" );
         }
 
         public void createDynamicConfigurationMBean( Map<Object, Object> params )
         {
-            if ( !register( new Configuration( instanceId, params ) ) )
+            if ( !register( new Configuration( instance.id, params ) ) )
                 failedToRegister( "ConfigurationMBean" );
         }
 
@@ -115,20 +117,20 @@ public abstract class Neo4jJmx
         {
             NeoStoreXaDataSource datasource = (NeoStoreXaDataSource) datasourceMananger.getXaDataSource( "nioneodb" );
             if ( !register( new MemoryMappingMonitor.MXBeanImplementation(
-                    instanceId, datasource ) ) )
+                    instance.id, datasource ) ) )
             {
                 if ( !register( new MemoryMappingMonitor.MemoryMapping(
-                        instanceId, datasource ) ) )
+                        instance.id, datasource ) ) )
                     failedToRegister( "MemoryMappingMBean" );
             }
         }
 
         public void createXaManagerMBean( XaDataSourceManager datasourceMananger )
         {
-            if ( !register( new XaMonitor.MXBeanImplementation( instanceId,
+            if ( !register( new XaMonitor.MXBeanImplementation( instance.id,
                     datasourceMananger ) ) )
             {
-                if ( !register( new XaMonitor.XaManager( instanceId,
+                if ( !register( new XaMonitor.XaManager( instance.id,
                         datasourceMananger ) ) )
                     failedToRegister( "XaManagerMBean" );
             }
@@ -136,15 +138,30 @@ public abstract class Neo4jJmx
 
         public void createTransactionManagerMBean( TxModule txModule )
         {
-            if ( !register( new TransactionManager( instanceId, txModule ) ) )
+            if ( !register( new TransactionManager( instance.id, txModule ) ) )
                 failedToRegister( "TransactionManagerMBean" );
         }
 
         public void createLockManagerMBean(
                 org.neo4j.kernel.impl.transaction.LockManager lockManager )
         {
-            if ( !register( new LockManager( instanceId, lockManager ) ) )
+            if ( !register( new LockManager( instance.id, lockManager ) ) )
                 failedToRegister( "LockManagerMBean" );
+        }
+
+        public void createStoreFileMBean()
+        {
+            File storePath;
+            try
+            {
+                storePath = new File( instance.datasource.getStoreDir() ).getCanonicalFile().getAbsoluteFile();
+            }
+            catch ( IOException e )
+            {
+                storePath = new File( instance.datasource.getStoreDir() ).getAbsoluteFile();
+            }
+            if ( !register( new StoreFile( instance.id, storePath ) ) )
+                failedToRegister( "StoreFileMBean" );
         }
 
         private boolean register( Neo4jJmx bean )
