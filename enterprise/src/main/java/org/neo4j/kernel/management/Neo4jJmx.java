@@ -116,22 +116,18 @@ public abstract class Neo4jJmx
                 XaDataSourceManager datasourceMananger )
         {
             NeoStoreXaDataSource datasource = (NeoStoreXaDataSource) datasourceMananger.getXaDataSource( "nioneodb" );
-            if ( !register( new MemoryMappingMonitor.MXBeanImplementation(
-                    instance.id, datasource ) ) )
+            if ( !register( new MemoryMapping.AsMxBean( instance.id, datasource ) ) )
             {
-                if ( !register( new MemoryMappingMonitor.MemoryMapping(
-                        instance.id, datasource ) ) )
+                if ( !register( new MemoryMapping( instance.id, datasource ) ) )
                     failedToRegister( "MemoryMappingMBean" );
             }
         }
 
         public void createXaManagerMBean( XaDataSourceManager datasourceMananger )
         {
-            if ( !register( new XaMonitor.MXBeanImplementation( instance.id,
-                    datasourceMananger ) ) )
+            if ( !register( new XaManager.AsMXBean( instance.id, datasourceMananger ) ) )
             {
-                if ( !register( new XaMonitor.XaManager( instance.id,
-                        datasourceMananger ) ) )
+                if ( !register( new XaManager( instance.id, datasourceMananger ) ) )
                     failedToRegister( "XaManagerMBean" );
             }
         }
