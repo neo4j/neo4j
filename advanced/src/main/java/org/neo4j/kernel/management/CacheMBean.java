@@ -1,4 +1,4 @@
-package org.neo4j.kernel.manage;
+package org.neo4j.kernel.management;
 
 public interface CacheMBean
 {
