@@ -1,16 +1,16 @@
 /*
  * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -152,13 +152,15 @@ public class FloydWarshall<CostType>
                 || relationDirection.equals( Direction.OUTGOING ) )
             {
                 costMatrix[i1][i2] = costEvaluator
-                    .getCost( relationship, false );
+.getCost( relationship,
+                        Direction.OUTGOING );
                 predecessors[i1][i2] = i1;
             }
             if ( relationDirection.equals( Direction.BOTH )
                 || relationDirection.equals( Direction.INCOMING ) )
             {
-                costMatrix[i2][i1] = costEvaluator.getCost( relationship, true );
+                costMatrix[i2][i1] = costEvaluator.getCost( relationship,
+                        Direction.INCOMING );
                 predecessors[i2][i1] = i2;
             }
         }

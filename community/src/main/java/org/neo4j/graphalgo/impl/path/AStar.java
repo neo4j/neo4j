@@ -18,6 +18,7 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphalgo.impl.util.WeightedPathImpl;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -186,7 +187,7 @@ public class AStar implements PathFinder<WeightedPath>
                 
                 Data lastNodeData = this.score.get( this.lastNode.getId() );
                 double tentativeGScore = lastNodeData.wayLength +
-                        lengthEvaluator.getCost( rel, false );
+                        lengthEvaluator.getCost( rel, Direction.OUTGOING );
                 boolean isBetter = false;
                 double estimate = estimateEvaluator.getCost( node, this.end );
                 if ( !this.nextNodesSet.contains( node ) )

@@ -34,7 +34,7 @@ public class SingleSourceShortestPathDijkstraTest extends
             new CostEvaluator<Integer>()
             {
                 public Integer getCost( Relationship relationship,
-                    boolean backwards )
+                    Direction direction )
                 {
                     return 1;
                 }
@@ -50,7 +50,7 @@ public class SingleSourceShortestPathDijkstraTest extends
             new CostEvaluator<Integer>()
             {
                 public Integer getCost( Relationship relationship,
-                    boolean backwards )
+                    Direction direction )
                 {
                     return 1;
                 }
