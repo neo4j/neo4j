@@ -8,6 +8,7 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory;
 import org.neo4j.graphalgo.impl.util.StopAfterWeightIterator;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.ExpansionSource;
@@ -111,7 +112,7 @@ public class ExperimentalAStar implements PathFinder<WeightedPath>
         protected Double calculateValue( ExpansionSource next )
         {
             return next.depth() == 0 ? 0d :
-                costEvaluator.getCost( next.relationship(), false );
+                costEvaluator.getCost( next.relationship(), Direction.OUTGOING );
         }
 
         @Override

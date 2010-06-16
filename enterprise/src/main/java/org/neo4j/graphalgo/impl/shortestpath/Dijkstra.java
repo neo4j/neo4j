@@ -1,16 +1,16 @@
 /*
  * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -42,7 +42,7 @@ import org.neo4j.graphdb.RelationshipType;
  * redone. In order to avoid this double computation when all paths are desired,
  * be sure to call getPaths (or calculateMultiple) before any call to getPath or
  * getCost (or calculate) is made.
- * 
+ *
  * @complexity The {@link CostEvaluator}, the {@link CostAccumulator} and the
  *             cost comparator will all be called once for every relationship
  *             traversed. Assuming they run in constant time, the time
@@ -157,7 +157,7 @@ public class Dijkstra<CostType> implements
     /**
      * A DijkstraIterator computes the distances to nodes from a specified
      * starting node, one at a time, following the dijkstra algorithm.
-     * 
+     *
      * @author Patrik Larsson
      */
     protected class DijstraIterator implements Iterator<Node>
@@ -245,7 +245,7 @@ public class Dijkstra<CostType> implements
          * as well. In that case a path has been found. In that case, the total
          * cost for the path is calculated and compared to previously found
          * paths.
-         * 
+         *
          * @param currentNode The node to be examined.
          * @param currentCost The cost from the start node to this node.
          * @param otherSideDistances Map over distances from other side. A path
@@ -329,7 +329,9 @@ public class Dijkstra<CostType> implements
                                                 ^ backwards;
                         CostType newCost = costAccumulator.addCosts(
                                 currentCost, costEvaluator.getCost(
-                                        relationship, backwardsEdge ) );
+                                        relationship,
+                                        backwardsEdge ? Direction.INCOMING
+                                                : Direction.OUTGOING ) );
                         // Already done with target node?
                         if ( myDistances.containsKey( target ) )
                         {
@@ -437,7 +439,7 @@ public class Dijkstra<CostType> implements
      * Same as calculate(), but will set the flag to calculate all shortest
      * paths. It sets the flag and then calls calculate, so inheriting classes
      * only need to override calculate().
-     * 
+     *
      * @return
      */
     public boolean calculateMultiple()
@@ -453,7 +455,7 @@ public class Dijkstra<CostType> implements
     /**
      * Makes the main calculation If some limit is set, the shortest path(s)
      * that could be found within those limits will be calculated.
-     * 
+     *
      * @return True if a path was found.
      */
     public boolean calculate()
@@ -732,7 +734,7 @@ public class Dijkstra<CostType> implements
     /**
      * This sets the maximum depth in the form of a maximum number of
      * relationships to follow.
-     * 
+     *
      * @param maxRelationShipsToTraverse
      */
     public void limitMaxRelationShipsToTraverse( long maxRelationShipsToTraverse )
@@ -743,7 +745,7 @@ public class Dijkstra<CostType> implements
     /**
      * This sets the maximum depth in the form of a maximum number of nodes to
      * scan.
-     * 
+     *
      * @param maxRelationShipsToTraverse
      */
     public void limitMaxNodesToTraverse( long maxNodesToTraverse )
@@ -753,7 +755,7 @@ public class Dijkstra<CostType> implements
 
     /**
      * Set the end node. Will reset the calculation.
-     * 
+     *
      * @param endNode the endNode to set
      */
     public void setEndNode( Node endNode )
@@ -764,7 +766,7 @@ public class Dijkstra<CostType> implements
 
     /**
      * Set the start node. Will reset the calculation.
-     * 
+     *
      * @param startNode the startNode to set
      */
     public void setStartNode( Node startNode )
@@ -792,7 +794,7 @@ public class Dijkstra<CostType> implements
     /**
      * Set the evaluator for pruning the paths when the maximum cost is
      * exceeded.
-     * 
+     *
      * @param evaluator The evaluator for
      */
     public void limitMaxCostToTraverse( CostType maxCost )

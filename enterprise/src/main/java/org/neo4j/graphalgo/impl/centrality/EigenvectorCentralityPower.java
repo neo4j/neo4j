@@ -1,16 +1,16 @@
 /*
  * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -235,7 +235,9 @@ public class EigenvectorCentralityPower implements EigenvectorCentrality
         if ( values.get( startNode ) != null )
         {
             newValue += values.get( startNode )
-                * costEvaluator.getCost( relationship, backwards );
+                        * costEvaluator.getCost( relationship,
+                                backwards ? Direction.INCOMING
+                                        : Direction.OUTGOING );
         }
         newValues.put( endNode, newValue );
     }
@@ -282,7 +284,7 @@ public class EigenvectorCentralityPower implements EigenvectorCentrality
 
     /**
      * Limit the maximum number of iterations to run. Per default,
-     * the maximum iterations are set to Integer.MAX_VALUE, which should 
+     * the maximum iterations are set to Integer.MAX_VALUE, which should
      * be limited to 50-100 normally.
      * @param maxIterations
      *            the maxIterations to set

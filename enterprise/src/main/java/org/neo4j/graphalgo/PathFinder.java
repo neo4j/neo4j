@@ -3,6 +3,13 @@ package org.neo4j.graphalgo;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 
+/**
+ * Interface of algorithms that finds paths in between two nodes.
+ * 
+ * @author Tobias Ivarsson
+ *
+ * @param <P> the path type that the algorithm produces
+ */
 public interface PathFinder<P extends Path>
 {
     /**
