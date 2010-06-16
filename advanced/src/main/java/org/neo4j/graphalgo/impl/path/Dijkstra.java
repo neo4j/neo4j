@@ -7,6 +7,7 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory;
 import org.neo4j.graphalgo.impl.util.StopAfterWeightIterator;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.ExpansionSource;
@@ -46,7 +47,7 @@ public class Dijkstra implements PathFinder<WeightedPath>
                 return position.node().equals( end );
             }
         };
-        
+
         final Traverser traverser = TRAVERSAL.expand( expander ).sourceSelector(
                 new SelectorFactory( costEvaluator ) ).filter( filter ).traverse( start );
         return new Iterable<WeightedPath>()
@@ -73,11 +74,12 @@ public class Dijkstra implements PathFinder<WeightedPath>
         {
             this.evaluator = evaluator;
         }
-        
+
         @Override
         protected Double calculateValue( ExpansionSource next )
         {
-            return next.depth() == 0 ? 0d : evaluator.getCost( next.relationship(), false );
+            return next.depth() == 0 ? 0d : evaluator.getCost(
+                    next.relationship(), Direction.OUTGOING );
         }
 
         @Override

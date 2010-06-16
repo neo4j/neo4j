@@ -232,7 +232,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
             new CostEvaluator<Double>()
             {
                 public Double getCost( Relationship relationship,
-                    boolean backwards )
+                    Direction direction )
                 {
                     return 1.0;
                 }
@@ -323,7 +323,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
             new CostEvaluator<Double>()
             {
                 public Double getCost( Relationship relationship,
-                    boolean backwards )
+                    Direction direction )
                 {
                     return 1.0;
                 }
