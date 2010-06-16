@@ -1,11 +1,9 @@
 Neo4j graph-algo
 
 	Neo4j graph-algo is a component that contains Neo4j implementations of
-	some common algorithms for graphs. This includes algorihms for
-	finding shortest paths, all paths, all simple paths, Dijkstra and A*.
-
-	Algorightms can be instantiated using the <<org.neo4j.graphalgo.GraphAlgoFactory>>
-	class. Here are some examples (see also {{{http://wiki.neo4j.org/content/Graph-algo}wiki pages}}):
+	some common algorithms for graphs. Algorithms considered production quality
+	can be found in <<org.neo4j.graphalgo.GraphAlgoFactory>> factory. There you can
+	find algos for shortest paths, all paths, all simple paths, Dijkstra and A* etc.
 
 Path finding examples
 
@@ -26,5 +24,6 @@ Path finding examples
 Other algos
 
 	There are other algorithms which can be used on smaller graphs, f.ex. calculating
-	centrality, betweeness, closeness, eccentrity and more... Those are in the
+	centrality, betweeness, closeness, eccentrity and more. Those algos aren't designed
+	to scale to very big graphs, but can still be useful in some scenarios. They reside in the
 	<<org.neo4j.graphalgo.impl.centrality>> package.
