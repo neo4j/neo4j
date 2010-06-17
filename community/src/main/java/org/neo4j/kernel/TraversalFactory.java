@@ -58,7 +58,7 @@ public class TraversalFactory
             return new PostorderBreadthFirstSelector( startSource );
         }
     };
-        
+
     /**
      * Creates a new {@link TraversalDescription} with default value for
      * everything so that it's OK to call
@@ -146,8 +146,8 @@ public class TraversalFactory
         {
             throw new IllegalArgumentException();
         }
-        Object[] target = (Object[]) Array.newInstance( type,
-                ( more.length / 2 ) + 2 );
+        Object[] target = (Object[]) Array.newInstance(
+                type.getComponentType(), ( more.length / 2 ) + 2 );
         try
         {
             target[0] = obj1;
@@ -223,7 +223,7 @@ public class TraversalFactory
             }
         };
     }
-    
+
     /**
      * Returns a "preorder depth first" selector factory . A depth first selector
      * always tries to select positions (from the current position) which are
@@ -235,7 +235,7 @@ public class TraversalFactory
     {
         return PREORDER_DEPTH_FIRST_SELECTOR;
     }
-    
+
     /**
      * Returns a "postorder depth first" selector factory. A depth first
      * selector always tries to select positions (from the current position)
@@ -248,7 +248,7 @@ public class TraversalFactory
     {
         return POSTORDER_DEPTH_FIRST_SELECTOR;
     }
-    
+
     /**
      * Returns a "preorder breadth first" selector factory. A breadth first
      * selector always selects all positions on the current depth before
@@ -260,7 +260,7 @@ public class TraversalFactory
     {
         return PREORDER_BREADTH_FIRST_SELECTOR;
     }
-    
+
     /**
      * Returns a "postorder breadth first" selector factory. A breadth first
      * selector always selects all positions on the current depth before
@@ -273,7 +273,7 @@ public class TraversalFactory
     {
         return POSTORDER_BREADTH_FIRST_SELECTOR;
     }
-    
+
     /**
      * Provides hooks to help build a string representation of a {@link Path}.
      * @param <T> the type of {@link Path}.
@@ -288,7 +288,7 @@ public class TraversalFactory
          * @return a string representation of a {@link Node}.
          */
         String nodeRepresentation( T path, Node node );
-        
+
         /**
          * Returns a string representation of a {@link Relationship}.
          * @param path the {@link Path} we're building a string representation
@@ -301,7 +301,7 @@ public class TraversalFactory
         String relationshipRepresentation( T path, Node from,
                 Relationship relationship );
     }
-    
+
     /**
      * The default {@link PathDescriptor} used in common toString()
      * representations in classes implementing {@link Path}.
@@ -330,7 +330,7 @@ public class TraversalFactory
                     relationship.getId() + "]" + suffix;
         }
     }
-    
+
     /**
      * Method for building a string representation of a {@link Path}, using
      * the given {@code builder}.
@@ -353,7 +353,7 @@ public class TraversalFactory
         result.append( builder.nodeRepresentation( path, current ) );
         return result.toString();
     }
-    
+
     /**
      * Returns the default string representation of a {@link Path}. It uses
      * the {@link DefaultPathDescriptor} to get representations.
@@ -364,7 +364,7 @@ public class TraversalFactory
     {
         return pathToString( path, new DefaultPathDescriptor<Path>() );
     }
-    
+
     /**
      * Returns a quite simple string representation of a {@link Path}. It
      * doesn't print relationship types or ids, just directions.
@@ -375,6 +375,7 @@ public class TraversalFactory
     {
         return pathToString( path, new DefaultPathDescriptor<Path>()
         {
+            @Override
             public String relationshipRepresentation( Path path, Node from,
                     Relationship relationship )
             {
@@ -396,11 +397,13 @@ public class TraversalFactory
     {
         return pathToString( path, new DefaultPathDescriptor<Path>()
         {
+            @Override
             public String nodeRepresentation( Path path, Node node )
             {
                 return "(" + node.getProperty( nodePropertyKey, node.getId() ) + ")";
             }
 
+            @Override
             public String relationshipRepresentation( Path path, Node from,
                     Relationship relationship )
             {
