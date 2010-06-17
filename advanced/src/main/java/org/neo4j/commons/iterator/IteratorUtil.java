@@ -70,4 +70,22 @@ public abstract class IteratorUtil
             }
         };
     }
+    
+    /**
+     * Counts the number of items in the {@code iterator} by looping
+     * through it.
+     * @param <T> the type of items in the iterator.
+     * @param iterator the {@link Iterator} to count items in.
+     * @return the number of found in {@code iterator}.
+     */
+    public static <T> int count( Iterator<T> iterator )
+    {
+        int result = 0;
+        while ( iterator.hasNext() )
+        {
+            iterator.next();
+            result++;
+        }
+        return result;
+    }
 }
