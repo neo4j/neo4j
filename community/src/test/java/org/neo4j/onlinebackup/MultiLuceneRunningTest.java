@@ -200,14 +200,7 @@ public class MultiLuceneRunningTest
         LuceneFulltextIndexService bFulltextIndex = new LuceneFulltextIndexService(
                 bDb );
 
-        Backup backupComp = new Neo4jBackup( graphDb, bDb, new ArrayList<String>()
-                {
-                    {
-                        add( "nioneodb" );
-                        add( "lucene" );
-                        add( "lucene-fulltext" );
-                    }
-                } );
+        Backup backupComp = Neo4jBackup.allDataSources( graphDb, bDb );
         backupComp.enableFileLogger();
         backupComp.doBackup();
         Util.stopGraphDb( bDb, bIndexService, bFulltextIndex );

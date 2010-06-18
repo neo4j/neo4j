@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Before;
@@ -186,13 +187,8 @@ public class MultiRunningTest
     {
         EmbeddedGraphDatabase bDb = Util.startGraphDbInstance( location );
         IndexService bIndexService = new LuceneIndexService( bDb );
-        Backup backupComp = new Neo4jBackup( graphDb, bDb, new ArrayList<String>()
-        {
-            {
-                add( "nioneodb" );
-                add( "lucene" );
-            }
-        } );
+        Backup backupComp = Neo4jBackup.customDataSources( graphDb, bDb, 
+                Arrays.asList( "nioneodb", "lucene" ) );
         backupComp.enableFileLogger();
         backupComp.doBackup();
         Util.stopGraphDb( bDb, bIndexService );
