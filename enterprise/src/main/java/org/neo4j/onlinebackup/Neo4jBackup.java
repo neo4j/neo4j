@@ -19,9 +19,9 @@
  */
 package org.neo4j.onlinebackup;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
@@ -43,11 +43,6 @@ public class Neo4jBackup implements Backup
     private static final Level LOG_LEVEL_NORMAL = Level.INFO;
     private static final Level LOG_LEVEL_DEBUG = Level.ALL;
     private static final Level LOG_LEVEL_OFF = Level.OFF;
-    private static final List<String> DEFAULT_DATASOURCES = new ArrayList<String>();
-    static
-    {
-        DEFAULT_DATASOURCES.add( Config.DEFAULT_DATA_SOURCE_NAME );
-    }
 
     private static Logger logger = Logger.getLogger( Neo4jBackup.class.getName() );
     private static ConsoleHandler consoleHandler = new ConsoleHandler();
@@ -61,137 +56,158 @@ public class Neo4jBackup implements Backup
     }
 
     private final EmbeddedGraphDatabase onlineGraphDb;
-    private String destDir;
-    private List<String> xaNames = null;
-    private EmbeddedGraphDatabase backupGraphDb = null;
-
+    private final ResourceFetcher destinationResourceFetcher;
+    private final List<String> xaNames;
+    
     /**
-     * Backup from a running {@link EmbeddedGraphDatabase} to a destination
-     * directory.
+     * Backup from a running {@link EmbeddedGraphDatabase} to another running
+     * {@link EmbeddedGraphDatabase}. Only the data source representing Neo4j
+     * database will be used and if it isn't set to keep logical logs an
+     * {@link IllegalStateException} will be thrown.
      * 
      * @param sourceGraphDb running database as backup source
      * @param destDir location of backup destination
      */
-    public Neo4jBackup( final EmbeddedGraphDatabase sourceGraphDb,
-            final String destDir )
+    public static Backup neo4jDataSource( EmbeddedGraphDatabase source,
+            String destinationDir )
     {
-        if ( sourceGraphDb == null )
-        {
-            throw new IllegalArgumentException(
-                    "The graph database instance is null." );
-        }
-
-        checkLogicalLogConfig( sourceGraphDb, DEFAULT_DATASOURCES );
-
-        if ( destDir == null )
-        {
-            throw new IllegalArgumentException( "Destination dir is null." );
-        }
-        if ( !new File( destDir ).exists() )
-        {
-            throw new RuntimeException(
-                    "Unable to locate local onlineGraphDb store in[" + destDir
-                            + "]" );
-        }
-        this.onlineGraphDb = sourceGraphDb;
-        this.destDir = destDir;
+        return new Neo4jBackup( source, new DestinationDirResourceFetcher( destinationDir ),
+                Collections.singletonList( Config.DEFAULT_DATA_SOURCE_NAME ) );
     }
-
+    
     /**
      * Backup from a running {@link EmbeddedGraphDatabase} to another running
-     * {@link EmbeddedGraphDatabase}.
+     * {@link EmbeddedGraphDatabase}. Only the data source representing Neo4j
+     * database will be used and if it isn't set to keep logical logs an
+     * {@link IllegalStateException} will be thrown.
      * 
      * @param sourceGraphDb running database as backup source
      * @param destGraphDb running database as backup destination
      */
-    public Neo4jBackup( final EmbeddedGraphDatabase sourceGraphDb,
-            final EmbeddedGraphDatabase destGraphDb )
+    public static Backup neo4jDataSource( EmbeddedGraphDatabase source,
+            EmbeddedGraphDatabase destination )
     {
-        if ( sourceGraphDb == null )
-        {
-            throw new IllegalArgumentException(
-                    "The source graph db instance is null." );
-        }
-
-        checkLogicalLogConfig( sourceGraphDb, DEFAULT_DATASOURCES );
-
-        if ( destGraphDb == null )
-        {
-            throw new IllegalArgumentException(
-                    "The backup destination graph db instance is null." );
-        }
-        this.onlineGraphDb = sourceGraphDb;
-        this.backupGraphDb = destGraphDb;
+        return new Neo4jBackup( source, new GraphDbResourceFetcher( destination ),
+                Collections.singletonList( Config.DEFAULT_DATA_SOURCE_NAME ) );
     }
-
+    
     /**
      * Backup from a running {@link EmbeddedGraphDatabase} to a destination
-     * directory including other data sources. NOTE: For now it assumes there is
-     * only a LuceneIndexService running besides Neo4j. Common data source names
-     * are "nioneodb" and "lucene".
+     * directory. All registered XA data sources will be used and all those
+     * data sources will have to be set to keep their logical logs, otherwise
+     * an {@link IllegalStateException} will be thrown.
      * 
      * @param sourceGraphDb running database as backup source
      * @param destDir location of backup destination
-     * @param xaDataSourceNames names of data sources to backup
      */
-    public Neo4jBackup( final EmbeddedGraphDatabase sourceGraphDb,
-            final String destDir, final List<String> xaDataSourceNames )
+    public static Backup allDataSources( EmbeddedGraphDatabase source,
+            String destinationDir )
     {
-        this( sourceGraphDb, destDir );
-        checkLogicalLogConfig( sourceGraphDb, xaDataSourceNames );
-        this.xaNames = xaDataSourceNames;
+        return new Neo4jBackup( source, new DestinationDirResourceFetcher( destinationDir ),
+                allDataSources( source ) );
     }
-
+    
+    /**
+     * Backup from a running {@link EmbeddedGraphDatabase} to a destination
+     * directory. All registered XA data sources will be used and all those
+     * data sources will have to be set to keep their logical logs, otherwise
+     * an {@link IllegalStateException} will be thrown.
+     * 
+     * @param sourceGraphDb running database as backup source
+     * @param destGraphDb running database as backup destination
+     */
+    public static Backup allDataSources( EmbeddedGraphDatabase source,
+            EmbeddedGraphDatabase destination )
+    {
+        return new Neo4jBackup( source, new GraphDbResourceFetcher( destination ),
+                allDataSources( source ) );
+    }
+    
     /**
      * Backup from a running {@link EmbeddedGraphDatabase} to another running
-     * {@link EmbeddedGraphDatabase} including other data sources. Common data
-     * source names are "nioneodb" and "lucene".
+     * {@link EmbeddedGraphDatabase}. Which XA data sources to include in the
+     * backup can here be explicitly specified. This is considered to be more
+     * of an "expert-mode". If any of the specified data sources isn't set to
+     * keep its logical logs an {@link IllegalStateException} will be thrown.
      * 
      * @param sourceGraphDb running database as backup source
      * @param destGraphDb running database as backup destination
      * @param xaDataSourceNames names of data sources to backup
      */
-    public Neo4jBackup( final EmbeddedGraphDatabase sourceGraphDb,
-            final EmbeddedGraphDatabase destGraphDb,
-            final List<String> xaDataSourceNames )
+    public static Backup customDataSources( EmbeddedGraphDatabase source,
+            String destinationDir, List<String> xaDataSourceNames )
     {
-        this( sourceGraphDb, destGraphDb );
-        checkLogicalLogConfig( sourceGraphDb, xaDataSourceNames );
-        this.xaNames = xaDataSourceNames;
+        return new Neo4jBackup( source, new DestinationDirResourceFetcher( destinationDir ),
+                new ArrayList<String>( xaDataSourceNames ) );
+    }
+    
+    /**
+     * Backup from a running {@link EmbeddedGraphDatabase} to another running
+     * {@link EmbeddedGraphDatabase}. Which XA data sources to include in the
+     * backup can here be explicitly specified. This is considered to be more
+     * of an "expert-mode". If any of the specified data sources isn't set to
+     * keep its logical logs an {@link IllegalStateException} will be thrown.
+     * 
+     * @param sourceGraphDb running database as backup source
+     * @param destGraphDb running database as backup destination
+     * @param xaDataSourceNames names of data sources to backup
+     */
+    public static Backup customDataSources( EmbeddedGraphDatabase source,
+            EmbeddedGraphDatabase destination, List<String> xaDataSourceNames )
+    {
+        return new Neo4jBackup( source, new GraphDbResourceFetcher( destination ),
+                new ArrayList<String>( xaDataSourceNames ) );
+    }
+    
+    private Neo4jBackup( EmbeddedGraphDatabase source,
+            ResourceFetcher destination, List<String> xaDataSources )
+    {
+        if ( source == null )
+        {
+            throw new IllegalArgumentException( "The source graph db instance is null." );
+        }
+        if ( xaDataSources == null )
+        {
+            throw new IllegalArgumentException( "XA data source name list is null" );
+        }
+        this.onlineGraphDb = source;
+        this.destinationResourceFetcher = destination;
+        this.xaNames = xaDataSources;
+        assertLogicalLogsAreKept();
+    }
+    
+    private static List<String> allDataSources( EmbeddedGraphDatabase db )
+    {
+        List<String> result = new ArrayList<String>();
+        for ( XaDataSource dataSource : db.getConfig().getTxModule()
+                .getXaDataSourceManager().getAllRegisteredDataSources() )
+        {
+            result.add( dataSource.getName() );
+        }
+        return result;
     }
 
     /**
      * Check if logical logs are kept for a data source.
-     * 
-     * @param sourceGraphDb
-     * @param xaDataSourceNames
      * @throws IllegalStateException if logical logs are not kept
      */
-    private void checkLogicalLogConfig(
-            final EmbeddedGraphDatabase sourceGraphDb,
-            final List<String> xaDataSourceNames )
+    private void assertLogicalLogsAreKept()
     {
-        if ( xaDataSourceNames == null )
+        if ( xaNames.size() < 1 )
         {
-            throw new IllegalArgumentException( "xaDataSourceNames is null." );
-        }
-        if ( xaDataSourceNames.size() < 1 )
-        {
-            throw new IllegalArgumentException(
-                    "xaDataSourceNames list is empty." );
+            throw new IllegalArgumentException( "No XA data source names in list" );
         }
 
-        XaDataSourceManager xaDataSourceManager = sourceGraphDb.getConfig().getTxModule().getXaDataSourceManager();
+        XaDataSourceManager xaDataSourceManager =
+            onlineGraphDb.getConfig().getTxModule().getXaDataSourceManager();
 
-        for ( String xaDataSourceName : xaDataSourceNames )
+        for ( String xaDataSourceName : xaNames )
         {
             XaDataSource xaDataSource = xaDataSourceManager.getXaDataSource( xaDataSourceName );
             if ( !xaDataSource.isLogicalLogKept() )
             {
-                throw new IllegalStateException(
-                        "Backup cannot be run, as the data source ["
-                                + xaDataSourceName
-                                + "] is not configured to keep logical logs." );
+                throw new IllegalStateException( "Backup cannot be run, as the data source ["
+                        + xaDataSourceName + "," + xaDataSource + "] is not configured to keep logical logs." );
             }
         }
     }
@@ -199,39 +215,17 @@ public class Neo4jBackup implements Backup
     public void doBackup() throws IOException
     {
         logger.info( "Initializing backup." );
-        Neo4jResource srcResource = new EmbeddedGraphDatabaseResource(
-                onlineGraphDb );
-        if ( xaNames == null )
+        Neo4jResource srcResource = new EmbeddedGraphDatabaseResource( onlineGraphDb );
+        Neo4jResource dstResource = this.destinationResourceFetcher.fetch();
+        if ( xaNames.size() == 1 )
         {
-            if ( backupGraphDb == null )
-            {
-                Neo4jResource dstResource = LocalGraphDatabaseResource.getInstance( destDir );
-                runSimpleBackup( srcResource, dstResource );
-                dstResource.close();
-            }
-            else
-            {
-                Neo4jResource dstResource = new EmbeddedGraphDatabaseResource(
-                        backupGraphDb );
-                runSimpleBackup( srcResource, dstResource );
-            }
+            runSimpleBackup( srcResource, dstResource );
         }
         else
         {
-            if ( backupGraphDb == null )
-            {
-                // TODO this is a temporary fix until we can restore services
-                Neo4jResource dstResource = LocalLuceneIndexResource.getInstance( destDir );
-                runMultiBackup( srcResource, dstResource );
-                dstResource.close();
-            }
-            else
-            {
-                Neo4jResource dstResource = new EmbeddedGraphDatabaseResource(
-                        backupGraphDb );
-                runMultiBackup( srcResource, dstResource );
-            }
+            runMultiBackup( srcResource, dstResource );
         }
+        this.destinationResourceFetcher.close( dstResource );
     }
 
     /**
@@ -248,8 +242,7 @@ public class Neo4jBackup implements Backup
                 srcResource.getDataSource(), dstResource.getDataSource() );
         task.prepare();
         task.run();
-        logger.info( "Completed backup of [" + srcResource.getName()
-                     + "] data source." );
+        logger.info( "Completed backup of [" + srcResource.getName() + "] data source." );
     }
 
     /**
@@ -263,16 +256,14 @@ public class Neo4jBackup implements Backup
             final Neo4jResource dstResource ) throws IOException
     {
         List<Neo4jBackupTask> tasks = new ArrayList<Neo4jBackupTask>();
-        logger.info( "Checking and preparing " + xaNames.toString()
-                     + " data sources." );
+        logger.info( "Checking and preparing " + xaNames + " data sources." );
         for ( String xaName : xaNames )
         {
             // check source
             XaDataSourceResource srcDataSource = srcResource.getDataSource( xaName );
             if ( srcDataSource == null )
             {
-                String message = "XaDataSource not found in backup source: ["
-                                 + xaName + "]";
+                String message = "XaDataSource not found in backup source: [" + xaName + "]";
                 logger.severe( message );
                 throw new RuntimeException( message );
             }
@@ -289,8 +280,7 @@ public class Neo4jBackup implements Backup
                 }
                 else
                 {
-                    Neo4jBackupTask task = new Neo4jBackupTask( srcDataSource,
-                            dstDataSource );
+                    Neo4jBackupTask task = new Neo4jBackupTask( srcDataSource, dstDataSource );
                     task.prepare();
                     tasks.add( task );
                 }
@@ -510,5 +500,63 @@ public class Neo4jBackup implements Backup
     public void setLogLevelOff()
     {
         logger.setLevel( LOG_LEVEL_OFF );
+    }
+    
+    private static abstract class ResourceFetcher
+    {
+        abstract Neo4jResource fetch();
+        abstract void close( Neo4jResource resource );
+    }
+    
+    private static class GraphDbResourceFetcher extends ResourceFetcher
+    {
+        private final EmbeddedGraphDatabase db;
+
+        GraphDbResourceFetcher( EmbeddedGraphDatabase db )
+        {
+            if ( db == null )
+            {
+                throw new IllegalArgumentException( "Destination graph database is null" );
+            }
+            this.db = db;
+        }
+        
+        @Override
+        void close( Neo4jResource resource )
+        {
+            // Do nothing
+        }
+
+        @Override
+        Neo4jResource fetch()
+        {
+            return new EmbeddedGraphDatabaseResource( db );
+        }
+    }
+    
+    private static class DestinationDirResourceFetcher extends ResourceFetcher
+    {
+        private final String destDir;
+
+        DestinationDirResourceFetcher( String destDir )
+        {
+            if ( destDir == null )
+            {
+                throw new IllegalArgumentException( "Destination dir is null" );
+            }
+            this.destDir = destDir;
+        }
+        
+        @Override
+        void close( Neo4jResource resource )
+        {
+            resource.close();
+        }
+
+        @Override
+        Neo4jResource fetch()
+        {
+            return LocalGraphDatabaseResource.getInstance( destDir );
+        }
     }
 }

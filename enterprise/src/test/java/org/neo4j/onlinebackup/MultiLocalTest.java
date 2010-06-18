@@ -20,7 +20,7 @@
 package org.neo4j.onlinebackup;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
@@ -34,14 +34,8 @@ public class MultiLocalTest extends MultiRunningTest
     protected void setupBackup( EmbeddedGraphDatabase graphDb, String location )
         throws IOException
     {
-        Backup backupComp = new Neo4jBackup( graphDb, location,
-            new ArrayList<String>()
-            {
-                {
-                    add( "nioneodb" );
-                    add( "lucene" );
-                }
-            } );
+        Backup backupComp = Neo4jBackup.customDataSources( graphDb, location,
+                Arrays.asList( "nioneodb", "lucene" ) );
         backupComp.doBackup();
     }
 }
