@@ -438,7 +438,7 @@ public class ShortestPath implements PathFinder<Path>
                 }
             };
             this.currentDepth++;
-            this.sharedCurrentDepth.value++;
+            this.sharedCurrentDepth.value = this.sharedCurrentDepth.value + 1;
         }
         
         @Override
