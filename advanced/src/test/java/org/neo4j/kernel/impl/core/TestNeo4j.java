@@ -353,11 +353,18 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
         assertTrue( xaDs.isLogicalLogKept() );
         db.shutdown();
+        
         config.remove( Config.KEEP_LOGICAL_LOGS );
         db = new EmbeddedGraphDatabase( "target/configdb", config );
         xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
         xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
         assertTrue( !xaDs.isLogicalLogKept() );
         db.shutdown();
+
+        config.put( Config.KEEP_LOGICAL_LOGS, "true" );
+        db = new EmbeddedGraphDatabase( "target/configdb", config );
+        xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
+        xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        assertTrue( xaDs.isLogicalLogKept() );
     }
 }
