@@ -39,7 +39,7 @@ public class SimpleLocalTest extends SimpleRunningTest
             String location, int relCount ) throws IOException
     {
         System.out.println( "backing up to backup location" );
-        Backup backupComp = new Neo4jBackup( graphDb, location );
+        Backup backupComp = Neo4jBackup.neo4jDataSource( graphDb, location );
         backupComp.doBackup();
         EmbeddedGraphDatabase bDb = Util.startGraphDbInstance( location );
         Transaction bTx = bDb.beginTx();
