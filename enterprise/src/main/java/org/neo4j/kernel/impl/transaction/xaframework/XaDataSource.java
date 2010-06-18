@@ -298,10 +298,31 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * If the config says that logical logs should be kept for the given
+     * {@code resourceName} this method will return {@code true}, otherwise
+     * {@code false}. The format of the configuration value is either:
+     * <ul>
+     *   <li><b>=</b> : no data sources will keep its logs</li>
+     *   <li><b>=nioneodb,lucene</b> : the specified data sources will keep its logs</li>
+     *   <li><b>=true</b> : all data sources will keep their logical logs</li>
+     * </ul>
+     * The first and last are recommended, since the data source names are really
+     * an implementation detail.
+     * 
+     * @param config the configuration value specified by user configuration.
+     * @param resourceName the name of the xa data source to check.
+     * @return whether or not logical logs should be kept for the data source
+     * by the name {@code resourceName} or not.
+     */
     protected boolean shouldKeepLog( String config, String resourceName )
     {
         if ( config != null )
         {
+            if ( config.equals( Boolean.TRUE.toString() ) )
+            {
+                return true;
+            }
             StringTokenizer tok = new StringTokenizer( config, "," );
             while ( tok.hasMoreTokens() )
             {
