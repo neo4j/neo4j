@@ -3,27 +3,29 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
@@ -46,7 +48,7 @@ class NodeProxy implements Node
     {
         return nodeId;
     }
-    
+
     public GraphDatabaseService getGraphDatabase()
     {
         return nm.getGraphDbService();
@@ -158,6 +160,7 @@ class NodeProxy implements Node
         }
     }
 
+    @Override
     public boolean equals( Object o )
     {
         if ( !(o instanceof Node) )
@@ -167,11 +170,13 @@ class NodeProxy implements Node
         return this.getId() == ((Node) o).getId();
     }
 
+    @Override
     public int hashCode()
     {
         return nodeId;
     }
 
+    @Override
     public String toString()
     {
         return "Node[" + this.getId() + "]";
@@ -182,6 +187,27 @@ class NodeProxy implements Node
     {
         return nm.getNodeForProxy( nodeId ).createRelationshipTo( otherNode,
             type );
+    }
+
+    public Expansion<Relationship> expandAll()
+    {
+        return nm.getNodeForProxy( nodeId ).expandAll();
+    }
+
+    public Expansion<Relationship> expand( RelationshipType type )
+    {
+        return nm.getNodeForProxy( nodeId ).expand( type );
+    }
+
+    public Expansion<Relationship> expand( RelationshipType type,
+            Direction direction )
+    {
+        return nm.getNodeForProxy( nodeId ).expand( type, direction );
+    }
+
+    public Expansion<Relationship> expand( RelationshipExpander expander )
+    {
+        return nm.getNodeForProxy( nodeId ).expand( expander );
     }
 
     public Traverser traverse( Order traversalOrder,
