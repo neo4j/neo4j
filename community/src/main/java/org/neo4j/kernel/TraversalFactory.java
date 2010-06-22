@@ -87,6 +87,11 @@ public class TraversalFactory
         return StandardExpander.create( type, dir );
     }
 
+    public static Expander emptyExpander()
+    {
+        return StandardExpander.DEFAULT; // TODO: should this be a PROPER empty?
+    }
+
     /**
      * Creates a new {@link RelationshipExpander} which is set to expand
      * relationships with two different types and directions.
