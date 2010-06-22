@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -29,10 +29,11 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.DefaultExpander;
+import org.neo4j.kernel.TraversalFactory;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -128,7 +129,7 @@ public class Ls extends GraphDatabaseApp
         }
         return null;
     }
-    
+
     private Iterable<String> sortKeys( Iterable<String> source )
     {
         List<String> list = new ArrayList<String>();
@@ -145,7 +146,7 @@ public class Ls extends GraphDatabaseApp
         } );
         return list;
     }
-    
+
     private Map<String, Collection<Relationship>> readAllRelationships(
             Iterable<Relationship> source )
     {
@@ -197,7 +198,7 @@ public class Ls extends GraphDatabaseApp
             {
                 continue;
             }
-            
+
             count++;
             if ( !brief )
             {
@@ -216,7 +217,7 @@ public class Ls extends GraphDatabaseApp
             out.println( "Property count: " + count );
         }
     }
-    
+
     private void displayRelationships( AppCommandParser parser,
         NodeOrRelationship thing, Session session, Output out, boolean verbose,
         Map<String, Object> filterMap, boolean caseInsensitiveFilters,
@@ -238,7 +239,7 @@ public class Ls extends GraphDatabaseApp
                 caseInsensitiveFilters, looseFilters, brief );
         }
     }
-    
+
     private void displayRelationships( NodeOrRelationship thing,
         Session session, Output out, boolean verbose, Direction direction,
         String prefixString, String postfixString,
@@ -280,7 +281,7 @@ public class Ls extends GraphDatabaseApp
             Map<String, Object> filterMap, boolean caseInsensitiveFilters,
             boolean looseFilters )
     {
-        DefaultExpander expander = new DefaultExpander();
+        Expander expander = TraversalFactory.emptyExpander();
         for ( RelationshipType type : getServer().getDb().getRelationshipTypes() )
         {
             boolean matches = false;
@@ -300,7 +301,7 @@ public class Ls extends GraphDatabaseApp
                     }
                 }
             }
-            
+
             if ( matches )
             {
                 expander = expander.add( type, direction );
