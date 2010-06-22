@@ -57,29 +57,23 @@ public class Trav extends GraphDatabaseApp
             "The traversal order [BREADTH_FIRST/DEPTH_FIRST/breadth/depth]" ) );
         this.addOptionDefinition( "r", new OptionDefinition( OptionValueType.MUST,
             "The relationship type(s) expressed as a JSON string " +
-            "(supports regex\n" +
-            "matching of the types) f.ex. " +
-            "\"MY_REL_TYPE:out,.*_HAS_.*:both\".\n" +
-            "Matching is case-insensitive." ) );
+            "(supports regex matching of the types) f.ex. " +
+            "\"MY_REL_TYPE:out,.*_HAS_.*:both\". Matching is case-insensitive." ) );
         this.addOptionDefinition( "f", new OptionDefinition( OptionValueType.MUST,
             "Filters node property keys/values. Supplied either as a single " +
-            "value\n" +
-            "or as a JSON string where both keys and values can " +
-            "contain regex.\n" +
-            "Starting/ending {} brackets are optional. Examples:\n" +
+            "value or as a JSON string where both keys and values can " +
+            "contain regex. Starting/ending {} brackets are optional. Examples:\n" +
             "\"username\"\n" +
             "   nodes which has property 'username' gets listed\n" +
             "\".*name: ma.*, age: ''\"\n" +
             "   nodes which has any key matching '.*name' where the " +
             "property value\n" +
-            "   for that key matches 'ma.*' AND has the 'age' property " +
-            "gets listed" ) );
+            "   for that key matches 'ma.*' AND has the 'age' property gets listed" ) );
         this.addOptionDefinition( "i", new OptionDefinition( OptionValueType.NONE,
             "Filters are case-insensitive (case-sensitive by default)" ) );
         this.addOptionDefinition( "l", new OptionDefinition( OptionValueType.NONE,
             "Filters matches more loosely, i.e. it's considered a match if " +
-            "just\n" +
-            "a part of a value matches the pattern, not necessarily " +
+            "just a part of a value matches the pattern, not necessarily " +
             "the whole value" ) );
         this.addOptionDefinition( "c", OPTION_DEF_FOR_C );
     }
@@ -88,10 +82,8 @@ public class Trav extends GraphDatabaseApp
     public String getDescription()
     {
     	return "Traverses the node space from your current position (pwd). " +
-    		"It's a reflection\n" +
-    		"of the neo4j traverser API with some options for filtering " +
-    		"which nodes\n" +
-    		"will be returned.";
+    		"It's a reflection of the neo4j traverser API with some options for filtering " +
+    		"which nodes will be returned.";
     }
     
     @Override

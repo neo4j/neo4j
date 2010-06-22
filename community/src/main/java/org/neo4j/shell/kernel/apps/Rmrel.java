@@ -49,7 +49,7 @@ public class Rmrel extends GraphDatabaseApp
     public Rmrel()
     {
         this.addOptionDefinition( "d", new OptionDefinition( OptionValueType.NONE,
-            "Must be supplied if the affected other node gets decoupled\n" +
+            "Must be supplied if the affected other node gets decoupled " +
             "after this operation so that it gets deleted." ) );
     }
 

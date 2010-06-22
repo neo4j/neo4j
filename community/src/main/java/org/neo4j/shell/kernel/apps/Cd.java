@@ -55,18 +55,16 @@ public class Cd extends GraphDatabaseApp
     public Cd()
     {
         this.addOptionDefinition( "a", new OptionDefinition( OptionValueType.NONE,
-            "Absolute id, new primitive doesn't need to be connected to " +
-            "the\ncurrent one" ) );
+            "Absolute id, new primitive doesn't need to be connected to the current one" ) );
         this.addOptionDefinition( "r", new OptionDefinition( OptionValueType.NONE,
-            "Makes the supplied id represent a relationship instead of " +
-            "a node" ) );
+            "Makes the supplied id represent a relationship instead of a node" ) );
     }
 
     @Override
     public String getDescription()
     {
         return "Changes the current node or relationship, i.e. traverses " +
-       		"one step to another\nnode or relationship. Usage: cd <id>";
+       		"one step to another node or relationship. Usage: cd <id>";
     }
     
     @Override

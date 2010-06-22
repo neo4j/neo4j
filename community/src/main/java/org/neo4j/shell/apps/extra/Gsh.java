@@ -57,7 +57,7 @@ public class Gsh extends AbstractApp
 			"Example: gsh --doSomething arg1 \"arg 2\" " +
 			"--doSomethingElse arg1\n\n" +
 			"Groovy scripts doSomething.groovy and " +
-			"doSomethingElse.groovy must exist\n" +
+			"doSomethingElse.groovy must exist " +
 			"in one of environment variable " + anExecutor.getPathKey() +
 			" paths (default is " + anExecutor.getDefaultPaths() + ")";
 	}

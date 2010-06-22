@@ -23,7 +23,7 @@ public class Script extends AbstractApp
     @Override
     public String getDescription()
     {
-        return "Executes a script of shell commands, supply a file name" +
+        return "Executes a script of shell commands, supply a file name " +
         		"containing the script";
     }
     

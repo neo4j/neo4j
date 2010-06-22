@@ -22,7 +22,7 @@ package org.neo4j.shell.apps;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.regex.Pattern;
+import java.util.List;
 
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -40,6 +40,8 @@ import org.neo4j.shell.impl.ClassLister;
  */
 public class Man extends AbstractApp
 {
+    public static final int CONSOLE_WIDTH = 80;
+    
     private static Collection<String> availableCommands;
 
     public String execute( AppCommandParser parser, Session session,
@@ -55,17 +57,18 @@ public class Man extends AbstractApp
 
             App app = this.getApp( parser );
             out.println( "" );
-            out.println( this.fixDesciption( app.getDescription() ) );
+            for ( String line : splitDescription( fixDesciption( app.getDescription() ),
+                    CONSOLE_WIDTH ) )
+            {
+                out.println( line );
+            }
             println( out, "" );
             boolean hasOptions = false;
             for ( String option : app.getAvailableOptions() )
             {
                 hasOptions = true;
-                String description = this.fixDesciption(
-                    app.getDescription( option ) );
-                String[] descriptionLines = description.split(
-                    Pattern.quote( "\n" ) );
-//                OptionValueType type = app.getOptionValueType( option );
+                String description = fixDesciption( app.getDescription( option ) );
+                String[] descriptionLines = splitDescription( description, CONSOLE_WIDTH );
                 for ( int i = 0; i < descriptionLines.length; i++ )
                 {
                     String line = "";
@@ -76,11 +79,6 @@ public class Man extends AbstractApp
                     }
                     line += "\t ";
                     line += descriptionLines[ i ];
-                    if ( i == descriptionLines.length - 1 )
-                    {
-                        // line += type.getDescription();
-                    }
-
                     println( out, line );
                 }
             }
@@ -94,6 +92,44 @@ public class Man extends AbstractApp
             throw new ShellException( e );
         }
         return null;
+    }
+
+    private static String[] splitDescription( String description, int maxLength )
+    {
+        List<String> lines = new ArrayList<String>();
+        while ( description.length() > 0 )
+        {
+            String line = description.substring( 0, Math.min( maxLength, description.length() ) );
+            int position = line.indexOf( "\n" );
+            if ( position > -1 )
+            {
+                line = description.substring( 0, position );
+                lines.add( line );
+                description = description.substring( position );
+                if ( description.length() > 0 )
+                {
+                    description = description.substring( 1 );
+                }
+            }
+            else
+            {
+                position = description.length() > maxLength ?
+                        findSpaceBefore( description, maxLength ) : description.length();
+                line = description.substring( 0, position );
+                lines.add( line );
+                description = description.substring( position );
+            }
+        }
+        return lines.toArray( new String[lines.size()] );
+    }
+    
+    private static int findSpaceBefore( String description, int position )
+    {
+        while ( !Character.isWhitespace( description.charAt( position ) ) )
+        {
+            position--;
+        }
+        return position + 1;
     }
 
     private static String getShortUsageString()

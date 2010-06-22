@@ -54,11 +54,8 @@ public abstract class GraphDatabaseApp extends AbstractApp
     private static final String CURRENT_KEY = "CURRENT_DIR";
     static final OptionDefinition OPTION_DEF_FOR_C = new OptionDefinition(
             OptionValueType.MUST,
-            "Command to run for each returned node. Use $n as a node-id " +
-            "replacement.\n" +
-            "Example: -c \"ls -f name $n\". Multiple commands " +
-            "can be supplied with\n" +
-            "&& in between" );
+            "Command to run for each returned node. Use $n for node-id, example:\n" +
+            "-c \"ls -f name $n\". Multiple commands can be supplied with && in between" );
     
     /**
      * @param server the {@link GraphDatabaseShellServer} to get the current
@@ -136,8 +133,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     protected Direction getDirection( String direction,
         Direction defaultDirection ) throws ShellException
     {
-        return ( Direction ) parseEnum(
-            Direction.class, direction, defaultDirection ); 
+        return ( Direction ) parseEnum( Direction.class, direction, defaultDirection ); 
     }
     
     protected static NodeOrRelationship getThingById(

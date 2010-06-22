@@ -133,10 +133,9 @@ public class Set extends GraphDatabaseApp
     {
         super();
         this.addOptionDefinition( "t", new OptionDefinition( OptionValueType.MUST,
-            "Value type, f.ex: String, String[], int, long[], byte a.s.o.\n" +
+            "Value type, f.ex: String, String[], int, long[], byte a.s.o. " +
             "If an array type is supplied the value(s) are given in a " +
-            "JSON-style\n" +
-            "array format, f.ex:\n" +
+            "JSON-style array format, f.ex:\n" +
             "[321,45324] for an int[] or\n" +
             "\"['The first string','The second string here']\" for a " +
             "String[]" ) );

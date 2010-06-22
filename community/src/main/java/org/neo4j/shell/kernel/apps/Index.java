@@ -28,25 +28,25 @@ public class Index extends GraphDatabaseApp
         addOptionDefinition( "g", new OptionDefinition( OptionValueType.NONE,
                 "Get nodes for the given key and value" ) );
         addOptionDefinition( "i", new OptionDefinition( OptionValueType.NONE,
-                "Index the current node with a key and (optionally) value.\n" +
+                "Index the current node with a key and (optionally) value. " +
                 "If no value is given the property value for the key is " +
                 "used" ) );
         addOptionDefinition( "r", new OptionDefinition( OptionValueType.NONE,
-                "Removes a key-value pair for the current node from the index.\n" +
+                "Removes a key-value pair for the current node from the index. " +
                 "If no value is given the property value for the key is used" ) );
         addOptionDefinition( "c", OPTION_DEF_FOR_C );
         addOptionDefinition( "cd", new OptionDefinition( OptionValueType.NONE,
-                "Does a 'cd' command to the returned node.\n" +
+                "Does a 'cd' command to the returned node. " +
                 "Could also be done using the -c option. (Implies -g)" ) );
         addOptionDefinition( "ls", new OptionDefinition( OptionValueType.NONE,
-                "Does a 'ls' command on the returned nodes.\n" +
+                "Does a 'ls' command on the returned nodes. " +
                 "Could also be done using the -c option. (Implies -g)" ) );
     }
     
     @Override
     public String getDescription()
     {
-        return "Access the IndexService capabilities for your Neo4j graph database.\n" +
+        return "Access the IndexService capabilities for your Neo4j graph database. " +
         		"Use -g for getting nodes, -i and -r to manipulate. Examples:\n" +
         		"index -i name  (will index property 'name' with its value for current node)\n" +
         		"index -g name \"Thomas A. Anderson\"  (will get nodes matching that name)\n" +
