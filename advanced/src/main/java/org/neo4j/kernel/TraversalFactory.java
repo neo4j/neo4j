@@ -1,9 +1,9 @@
 package org.neo4j.kernel;
 
-import java.lang.reflect.Array;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -81,10 +81,10 @@ public class TraversalFactory
      * @param dir the {@link Direction} to expand.
      * @return a new {@link RelationshipExpander}.
      */
-    public static RelationshipExpander expanderForTypes( RelationshipType type,
+    public static Expander expanderForTypes( RelationshipType type,
             Direction dir )
     {
-        return new DefaultExpander().add( type, dir );
+        return StandardExpander.create( type, dir );
     }
 
     /**
@@ -97,10 +97,10 @@ public class TraversalFactory
      * @param dir2 another {@link Direction} to expand.
      * @return a new {@link RelationshipExpander}.
      */
-    public static RelationshipExpander expanderForTypes( RelationshipType type1,
+    public static Expander expanderForTypes( RelationshipType type1,
             Direction dir1, RelationshipType type2, Direction dir2 )
     {
-        return new DefaultExpander().add( type1, dir1 ).add( type2, dir2 );
+        return StandardExpander.create( type1, dir1, type2, dir2 );
     }
 
     /**
@@ -114,19 +114,11 @@ public class TraversalFactory
      * @param more additional pairs or type/direction to expand.
      * @return a new {@link RelationshipExpander}.
      */
-    public static RelationshipExpander expanderForTypes( RelationshipType type1,
+    public static Expander expanderForTypes( RelationshipType type1,
             Direction dir1, RelationshipType type2, Direction dir2,
             Object... more )
     {
-        RelationshipType[] types = extract(
-                RelationshipType[].class, type1, type2, more, false );
-        Direction[] directions = extract( Direction[].class, dir1, dir2, more, true );
-        DefaultExpander expander = new DefaultExpander();
-        for ( int i = 0; i < types.length; i++ )
-        {
-            expander = expander.add( types[i], directions[i] );
-        }
-        return expander;
+        return StandardExpander.create( type1, dir1, type2, dir2, more );
     }
 
     /**
@@ -134,34 +126,18 @@ public class TraversalFactory
      * of all types and directions.
      * @return a relationship expander which expands all relationships.
      */
-    public static RelationshipExpander expanderForAllTypes()
+    public static Expander expanderForAllTypes()
     {
-        return DefaultExpander.ALL;
+        return StandardExpander.ALL;
     }
 
-    private static <T> T[] extract( Class<T[]> type, T obj1, T obj2,
-            Object[] more, boolean odd )
+    public static Expander expander( RelationshipExpander expander )
     {
-        if ( more.length % 2 != 0 )
+        if ( expander instanceof Expander )
         {
-            throw new IllegalArgumentException();
+            return (Expander) expander;
         }
-        Object[] target = (Object[]) Array.newInstance(
-                type.getComponentType(), ( more.length / 2 ) + 2 );
-        try
-        {
-            target[0] = obj1;
-            target[1] = obj2;
-            for ( int i = 2; i < target.length; i++ )
-            {
-                target[i] = more[( i - 2 ) * 2 + ( odd ? 1 : 0 )];
-            }
-        }
-        catch ( ArrayStoreException cast )
-        {
-            throw new IllegalArgumentException( cast );
-        }
-        return type.cast( target );
+        return StandardExpander.wrap( expander );
     }
 
     /**
