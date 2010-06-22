@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,15 +25,18 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.kernel.TraversalFactory;
 
 final class RemoteNode extends RemotePropertyContainer implements Node
 {
@@ -157,6 +160,28 @@ final class RemoteNode extends RemotePropertyContainer implements Node
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
         return getRelationships( type, dir ).iterator().hasNext();
+    }
+
+    public Expansion<Relationship> expandAll()
+    {
+        return TraversalFactory.expanderForAllTypes().expand( this );
+    }
+
+    public Expansion<Relationship> expand( RelationshipType type )
+    {
+        return expand( type, Direction.BOTH );
+    }
+
+    public Expansion<Relationship> expand( RelationshipType type,
+            Direction direction )
+    {
+        return TraversalFactory.expanderForTypes( type, direction ).expand(
+                this );
+    }
+
+    public Expansion<Relationship> expand( RelationshipExpander expander )
+    {
+        return TraversalFactory.expander( expander ).expand( this );
     }
 
     /*
