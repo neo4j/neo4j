@@ -1,6 +1,7 @@
 package org.neo4j.kernel.impl.traversal;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
@@ -10,26 +11,26 @@ import org.neo4j.graphdb.traversal.SourceSelectorFactory;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
-import org.neo4j.kernel.DefaultExpander;
+import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.TraversalFactory;
 
 public final class TraversalDescriptionImpl implements TraversalDescription
 {
     public TraversalDescriptionImpl()
     {
-        this( TraversalFactory.expanderForAllTypes(), Uniqueness.NODE_GLOBAL, null,
+        this( StandardExpander.DEFAULT, Uniqueness.NODE_GLOBAL, null,
                 PruneEvaluator.NONE, ReturnFilter.ALL,
                 TraversalFactory.preorderDepthFirstSelector() );
     }
 
-    final RelationshipExpander expander;
+    final Expander expander;
     final Uniqueness uniqueness;
     final Object uniquenessParameter;
     final PruneEvaluator pruning;
     final ReturnFilter filter;
     final SourceSelectorFactory sourceSelector;
 
-    private TraversalDescriptionImpl( RelationshipExpander expander,
+    private TraversalDescriptionImpl( Expander expander,
             Uniqueness uniqueness, Object uniquenessParameter,
             PruneEvaluator pruning, ReturnFilter filter,
             SourceSelectorFactory sourceSelector )
@@ -204,7 +205,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     public TraversalDescription relationships( RelationshipType type,
             Direction direction )
     {
-        return expand( ((DefaultExpander) expander).add( type, direction ) );
+        return expand( expander.add( type, direction ) );
     }
 
     /* (non-Javadoc)
@@ -216,7 +217,8 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         {
             return this;
         }
-        return new TraversalDescriptionImpl( expander, uniqueness,
+        return new TraversalDescriptionImpl(
+                TraversalFactory.expander( expander ), uniqueness,
                 uniquenessParameter, pruning, filter, sourceSelector );
     }
 }
