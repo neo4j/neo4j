@@ -179,6 +179,11 @@ final class RemoteNode extends RemotePropertyContainer implements Node
                 this );
     }
 
+    public Expansion<Relationship> expand( Direction direction )
+    {
+        return TraversalFactory.expanderForAllTypes( direction ).expand( this );
+    }
+
     public Expansion<Relationship> expand( RelationshipExpander expander )
     {
         return TraversalFactory.expander( expander ).expand( this );
