@@ -395,6 +395,11 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
                 this );
     }
 
+    public Expansion<Relationship> expand( Direction direction )
+    {
+        return TraversalFactory.expanderForAllTypes( direction ).expand( this );
+    }
+
     public Expansion<Relationship> expand( RelationshipExpander expander )
     {
         return TraversalFactory.expander( expander ).expand( this );

@@ -263,6 +263,8 @@ public interface Node extends PropertyContainer
 
     Expansion<Relationship> expand( RelationshipType type, Direction direction );
 
+    Expansion<Relationship> expand( Direction direction );
+
     Expansion<Relationship> expand( RelationshipExpander expander );
 
     // Traversal

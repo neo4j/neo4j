@@ -1,8 +1,9 @@
 package org.neo4j.graphdb;
 
+import org.neo4j.commons.Pair;
 import org.neo4j.commons.Predicate;
 
-public interface Expansion<T extends PropertyContainer> extends Iterable<T>
+public interface Expansion<T> extends Iterable<T>
 {
     Expander expander();
 
@@ -10,11 +11,13 @@ public interface Expansion<T extends PropertyContainer> extends Iterable<T>
 
     Expansion<Relationship> relationships();
 
-    Expansion<T> add( RelationshipType type );
+    Expansion<Pair<Relationship, Node>> pairs();
 
-    Expansion<T> add( RelationshipType type, Direction direction );
+    Expansion<T> including( RelationshipType type );
 
-    Expansion<T> exclude( RelationshipType type );
+    Expansion<T> including( RelationshipType type, Direction direction );
+
+    Expansion<T> excluding( RelationshipType type );
 
     Expansion<T> filterNodes( Predicate<? super Node> filter );
 
