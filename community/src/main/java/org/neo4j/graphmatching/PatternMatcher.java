@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.commons.Predicate;
 import org.neo4j.commons.iterator.FilteringIterable;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphmatching.filter.AbstractFilterExpression;
@@ -262,37 +263,34 @@ public class PatternMatcher
 	private static class FilteredPatternFinder
 	    extends FilteringIterable<PatternMatch>
 	{
-	    private final Map<String, PatternNode> objectVariables;
-
         public FilteredPatternFinder( Iterable<PatternMatch> source,
-            Map<String, PatternNode> objectVariables )
+            final Map<String, PatternNode> objectVariables )
         {
-            super( source );
-            this.objectVariables = objectVariables;
-        }
-
-        @Override
-        protected boolean passes( PatternMatch item )
-        {
-            Set<PatternGroup> calculatedGroups = new HashSet<PatternGroup>();
-            for ( PatternElement element : item.getElements() )
+            super( source, new Predicate<PatternMatch>()
             {
-                PatternNode node = element.getPatternNode();
-                PatternGroup group = node.getGroup();
-                if ( calculatedGroups.add( group ) )
+                public boolean accept( PatternMatch item )
                 {
-                    FilterValueGetter valueGetter = new SimpleRegexValueGetter(
-                        objectVariables, item, group.getFilters() );
-                    for ( FilterExpression expression : group.getFilters() )
+                    Set<PatternGroup> calculatedGroups = new HashSet<PatternGroup>();
+                    for ( PatternElement element : item.getElements() )
                     {
-                        if ( !expression.matches( valueGetter ) )
+                        PatternNode node = element.getPatternNode();
+                        PatternGroup group = node.getGroup();
+                        if ( calculatedGroups.add( group ) )
                         {
-                            return false;
+                            FilterValueGetter valueGetter = new SimpleRegexValueGetter(
+                                objectVariables, item, group.getFilters() );
+                            for ( FilterExpression expression : group.getFilters() )
+                            {
+                                if ( !expression.matches( valueGetter ) )
+                                {
+                                    return false;
+                                }
+                            }
                         }
                     }
+                    return true;
                 }
-            }
-            return true;
+            } );
         }
 	}
 }
