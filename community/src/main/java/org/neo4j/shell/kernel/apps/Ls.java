@@ -124,10 +124,26 @@ public class Ls extends GraphDatabaseApp
         }
         if ( displayRelationships )
         {
-            displayRelationships( parser, thing, session, out, verbose, filterMap,
-                    caseInsensitiveFilters, looseFilters, brief );
+            if ( thing.isNode() )
+            {
+                displayRelationships( parser, thing, session, out, verbose, filterMap,
+                        caseInsensitiveFilters, looseFilters, brief );
+            }
+            else
+            {
+                displayNodes( parser, thing, session, out );
+            }
         }
         return null;
+    }
+    
+    private void displayNodes( AppCommandParser parser, NodeOrRelationship thing,
+            Session session, Output out ) throws RemoteException, ShellException
+    {
+        Relationship rel = thing.asRelationship();
+        out.println( getDisplayName( getServer(), session, rel.getStartNode(), false ) +
+                " --" + getDisplayName( getServer(), session, rel, true, false ) + "-> " +
+                getDisplayName( getServer(), session, rel.getEndNode(), false ) );
     }
 
     private Iterable<String> sortKeys( Iterable<String> source )
