@@ -83,9 +83,8 @@ public class Cd extends GraphDatabaseApp
             {
                 // TODO Check if -r is supplied
                 Node node = current.asNode();
-                for ( Relationship rel : node.getRelationships() )
+                for ( Node otherNode : node.expandAll().nodes() )
                 {
-                    Node otherNode = rel.getOtherNode( node );
                     long otherNodeId = otherNode.getId();
                     String title = findTitle( getServer(), session, otherNode );
                     if ( title != null )
@@ -208,9 +207,8 @@ public class Cd extends GraphDatabaseApp
         }
         
         String titleMatch = (String) matchParts[0];
-        for ( Relationship rel : node.getRelationships() )
+        for ( Node otherNode : node.expandAll().nodes() )
         {
-            Node otherNode = rel.getOtherNode( node );
             String title = findTitle( getServer(), session, otherNode );
             if ( titleMatch.equals( title ) )
             {

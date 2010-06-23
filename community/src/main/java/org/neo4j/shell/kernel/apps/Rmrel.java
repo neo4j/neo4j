@@ -116,12 +116,10 @@ public class Rmrel extends GraphDatabaseApp
     private Relationship findRel( Node currentNode, long relId )
         throws ShellException
     {
-        for ( Relationship rel : currentNode.getRelationships() )
+        Relationship rel = getServer().getDb().getRelationshipById( relId );
+        if ( rel.getStartNode().equals( currentNode ) || rel.getEndNode().equals( currentNode ) )
         {
-            if ( rel.getId() == relId )
-            {
-                return rel;
-            }
+            return rel;
         }
         throw new ShellException( "No relationship " + relId +
             " connected to " + currentNode );
