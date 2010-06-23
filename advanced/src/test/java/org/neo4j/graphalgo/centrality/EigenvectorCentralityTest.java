@@ -23,10 +23,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
+import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.centrality.EigenvectorCentrality;
 import org.neo4j.graphalgo.impl.centrality.EigenvectorCentralityPower;
-import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -123,7 +123,7 @@ public abstract class EigenvectorCentralityTest extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "c,b", "cost", 0.1 );
         graph.makeEdgeChain( "c,a", "cost", 0.1 );
         EigenvectorCentrality eigenvectorCentrality = getEigenvectorCentrality(
-            Direction.OUTGOING, new DoubleEvaluator( "cost" ), graph
+            Direction.OUTGOING, CommonEvaluators.doubleCostEvaluator( "cost" ), graph
                 .getAllNodes(), graph.getAllEdges(), 0.01 );
         // eigenvectorCentrality.setMaxIterations( 100 );
         assertApproximateCentrality( eigenvectorCentrality, "a", 0.0851, 0.01 );
