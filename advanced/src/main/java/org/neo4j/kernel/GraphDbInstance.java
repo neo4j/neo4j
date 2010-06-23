@@ -144,9 +144,16 @@ class GraphDbInstance
                 registerLuceneDataSource( "lucene", clazz.getName(),
                         config.getTxModule(), storeDir + "/lucene",
                         config.getLockManager(), luceneId, params );
-                clazz = Class.forName( Config.LUCENE_FULLTEXT_DS_CLASS );
+            }
+            catch ( ClassNotFoundException e )
+            { // ok index util not on class path
+            }
+            
+            try
+            {
+                Class clazz = Class.forName( Config.LUCENE_FULLTEXT_DS_CLASS );
                 cleanWriteLocksInLuceneDirectory( storeDir + "/lucene-fulltext" );
-                luceneId = "262374".getBytes();
+                byte[] luceneId = "262374".getBytes();
                 registerLuceneDataSource( "lucene-fulltext",
                         clazz.getName(), config.getTxModule(),
                         storeDir + "/lucene-fulltext", config.getLockManager(),
