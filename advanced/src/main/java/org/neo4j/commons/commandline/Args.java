@@ -99,7 +99,10 @@ public class Args
                 {
                     String key = arg.substring( 0, equalIndex );
                     String value = arg.substring( equalIndex + 1 );
-                    map.put( key, value );
+                    if ( value.length() > 0 )
+                    {
+                        map.put( key, value );
+                    }
                 }
                 else
                 {
