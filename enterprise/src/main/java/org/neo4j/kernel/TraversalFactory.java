@@ -133,7 +133,12 @@ public class TraversalFactory
      */
     public static Expander expanderForAllTypes()
     {
-        return StandardExpander.ALL;
+        return expanderForAllTypes( Direction.BOTH );
+    }
+
+    public static Expander expanderForAllTypes( Direction direction )
+    {
+        return StandardExpander.create( direction );
     }
 
     public static Expander expander( RelationshipExpander expander )
