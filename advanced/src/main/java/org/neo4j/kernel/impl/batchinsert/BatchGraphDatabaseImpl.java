@@ -334,6 +334,12 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
                     this );
         }
 
+        public Expansion<Relationship> expand( Direction direction )
+        {
+            return TraversalFactory.expanderForAllTypes( direction ).expand(
+                    this );
+        }
+
         public Expansion<Relationship> expand( RelationshipExpander expander )
         {
             return TraversalFactory.expander( expander ).expand( this );

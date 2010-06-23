@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.commons.Pair;
 import org.neo4j.commons.Predicate;
 import org.neo4j.commons.iterator.FilteringIterator;
 import org.neo4j.commons.iterator.IteratorWrapper;
@@ -13,7 +14,6 @@ import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
@@ -24,8 +24,7 @@ public abstract class StandardExpander implements Expander
     {
     }
 
-    static abstract class StandardExpansion<T extends PropertyContainer>
-            implements Expansion<T>
+    static abstract class StandardExpansion<T> implements Expansion<T>
     {
         final StandardExpander expander;
         final Node start;
@@ -42,35 +41,36 @@ public abstract class StandardExpander implements Expander
                    + nodesORrelationships + "()]";
         }
 
-        abstract Expansion<T> createNew(
+        abstract StandardExpansion<T> createNew(
                 @SuppressWarnings( "hiding" ) StandardExpander expander );
 
-        public Expansion<T> add( RelationshipType type )
+        public StandardExpansion<T> including( RelationshipType type )
         {
             return createNew( expander.add( type ) );
         }
 
-        public Expansion<T> add( RelationshipType type, Direction direction )
+        public StandardExpansion<T> including( RelationshipType type,
+                Direction direction )
         {
             return createNew( expander.add( type, direction ) );
         }
 
-        public Expansion<T> exclude( RelationshipType type )
+        public StandardExpansion<T> excluding( RelationshipType type )
         {
             return createNew( expander.remove( type ) );
         }
 
-        public Expander expander()
+        public StandardExpander expander()
         {
             return expander;
         }
 
-        public Expansion<T> filterNodes( Predicate<? super Node> filter )
+        public StandardExpansion<T> filterNodes( Predicate<? super Node> filter )
         {
             return createNew( expander.addNodeFilter( filter ) );
         }
 
-        public Expansion<T> filterRelationships(
+        public StandardExpansion<T> filterRelationships(
                 Predicate<? super Relationship> filter )
         {
             return createNew( expander.addRelationsipFilter( filter ) );
@@ -96,6 +96,21 @@ public abstract class StandardExpander implements Expander
         {
             return !expander.doExpand( start ).hasNext();
         }
+
+        public StandardExpansion<Node> nodes()
+        {
+            return new NodeExpansion( expander, start );
+        }
+
+        public StandardExpansion<Relationship> relationships()
+        {
+            return new RelationsipExpansion( expander, start );
+        }
+
+        public StandardExpansion<Pair<Relationship, Node>> pairs()
+        {
+            return new PairExpansion( expander, start );
+        }
     }
 
     private static final class RelationsipExpansion extends
@@ -113,18 +128,14 @@ public abstract class StandardExpander implements Expander
         }
 
         @Override
-        Expansion<Relationship> createNew(
+        StandardExpansion<Relationship> createNew(
                 @SuppressWarnings( "hiding" ) StandardExpander expander )
         {
             return new RelationsipExpansion( expander, start );
         }
 
-        public Expansion<Node> nodes()
-        {
-            return new NodeExpansion( expander, start );
-        }
-
-        public Expansion<Relationship> relationships()
+        @Override
+        public StandardExpansion<Relationship> relationships()
         {
             return this;
         }
@@ -149,20 +160,16 @@ public abstract class StandardExpander implements Expander
         }
 
         @Override
-        Expansion<Node> createNew(
+        StandardExpansion<Node> createNew(
                 @SuppressWarnings( "hiding" ) StandardExpander expander )
         {
             return new NodeExpansion( expander, start );
         }
 
-        public Expansion<Node> nodes()
+        @Override
+        public StandardExpansion<Node> nodes()
         {
             return this;
-        }
-
-        public Expansion<Relationship> relationships()
-        {
-            return new RelationsipExpansion( expander, start );
         }
 
         public Iterator<Node> iterator()
@@ -179,22 +186,84 @@ public abstract class StandardExpander implements Expander
         }
     }
 
+    private static final class PairExpansion extends
+            StandardExpansion<Pair<Relationship, Node>>
+    {
+        PairExpansion( StandardExpander expander, Node start )
+        {
+            super( expander, start );
+        }
+
+        @Override
+        public String toString()
+        {
+            return stringRepresentation( "pairs" );
+        }
+
+        @Override
+        StandardExpansion<Pair<Relationship, Node>> createNew(
+                @SuppressWarnings( "hiding" ) StandardExpander expander )
+        {
+            return new PairExpansion( expander, start );
+        }
+
+        @Override
+        public StandardExpansion<Pair<Relationship, Node>> pairs()
+        {
+            return this;
+        }
+
+        public Iterator<Pair<Relationship, Node>> iterator()
+        {
+            return new IteratorWrapper<Pair<Relationship, Node>, Relationship>(
+                    expander.doExpand( start ) )
+            {
+                @Override
+                protected Pair<Relationship, Node> underlyingObjectToObject(
+                        Relationship rel )
+                {
+                    return new Pair<Relationship, Node>( rel,
+                            rel.getOtherNode( start ) );
+                }
+            };
+        }
+    }
+
     private static class AllExpander extends StandardExpander
     {
+        private final Direction direction;
+
+        AllExpander( Direction direction )
+        {
+            this.direction = direction;
+        }
+
         @Override
         void buildString( StringBuilder result )
         {
+            if ( direction != Direction.BOTH )
+            {
+                result.append( direction );
+                result.append( ":" );
+            }
             result.append( "*" );
         }
 
         @Override
         Iterator<Relationship> doExpand( Node start )
         {
-            return start.getRelationships().iterator();
+            if ( direction == Direction.BOTH )
+            {
+                return start.getRelationships().iterator();
+            }
+            else
+            {
+                return start.getRelationships( direction ).iterator();
+            }
         }
 
         @Override
-        public StandardExpander add( RelationshipType type, Direction direction )
+        public StandardExpander add( RelationshipType type, Direction dir )
         {
             return this;
         }
@@ -202,9 +271,10 @@ public abstract class StandardExpander implements Expander
         @Override
         public StandardExpander remove( RelationshipType type )
         {
-            Map<String, Direction> exclude = new HashMap<String, Direction>();
-            exclude.put( type.name(), Direction.BOTH );
-            return new TypeLimitingExpander( exclude );
+            Map<String, Exclusion> exclude = new HashMap<String, Exclusion>();
+            exclude.put( type.name(), Exclusion.ALL );
+            return new ExcludingExpander( Exclusion.include( direction ),
+                    exclude );
         }
 
         @Override
@@ -214,8 +284,195 @@ public abstract class StandardExpander implements Expander
         }
     }
 
-    static final StandardExpander ALL = new AllExpander();
-    public static final StandardExpander DEFAULT = new AllExpander()
+    private enum Exclusion
+    {
+        ALL( null, "!" )
+        {
+            @Override
+            public boolean accept( Node start, Relationship rel )
+            {
+                return false;
+            }
+        },
+        INCOMING( Direction.OUTGOING )
+        {
+            @Override
+            Exclusion reversed()
+            {
+                return OUTGOING;
+            }
+        },
+        OUTGOING( Direction.INCOMING )
+        {
+            @Override
+            Exclusion reversed()
+            {
+                return INCOMING;
+            }
+        },
+        NONE( Direction.BOTH, "" )
+        {
+            @Override
+            boolean includes( Direction direction )
+            {
+                return true;
+            }
+        };
+        private final String string;
+        private final Direction direction;
+
+        private Exclusion( Direction direction, String string )
+        {
+            this.direction = direction;
+            this.string = string;
+        }
+
+        private Exclusion( Direction direction )
+        {
+            this.direction = direction;
+            this.string = "!" + name() + ":";
+        }
+
+        @Override
+        public final String toString()
+        {
+            return string;
+        }
+
+        boolean accept( Node start, Relationship rel )
+        {
+            return matchDirection( direction, start, rel );
+        }
+
+        Exclusion reversed()
+        {
+            return this;
+        }
+
+        boolean includes( Direction dir )
+        {
+            return this.direction == dir;
+        }
+
+        static Exclusion include( Direction direction )
+        {
+            switch ( direction )
+            {
+            case INCOMING:
+                return OUTGOING;
+            case OUTGOING:
+                return INCOMING;
+            default:
+                return NONE;
+            }
+        }
+    }
+
+    private static final class ExcludingExpander extends StandardExpander
+    {
+        private final Exclusion defaultExclusion;
+        private final Map<String, Exclusion> exclusion;
+
+        ExcludingExpander( Exclusion defaultExclusion,
+                Map<String, Exclusion> exclusion )
+        {
+            this.defaultExclusion = defaultExclusion;
+            this.exclusion = exclusion;
+        }
+
+        @Override
+        void buildString( StringBuilder result )
+        {
+            // FIXME: not really correct
+            result.append( defaultExclusion );
+            result.append( "*" );
+            for ( Map.Entry<String, Exclusion> entry : exclusion.entrySet() )
+            {
+                result.append( "," );
+                result.append( entry.getValue() );
+                result.append( entry.getKey() );
+            }
+        }
+
+        @Override
+        Iterator<Relationship> doExpand( final Node start )
+        {
+            return new FilteringIterator<Relationship>(
+                    start.getRelationships().iterator(),
+                    new Predicate<Relationship>()
+                    {
+                        public boolean accept( Relationship rel )
+                        {
+                            Exclusion exclude = exclusion.get( rel.getType().name() );
+                            exclude = ( exclude == null ) ? defaultExclusion
+                                    : exclude;
+                            return exclude.accept( start, rel );
+                        }
+                    } );
+        }
+
+        @Override
+        public StandardExpander add( RelationshipType type, Direction direction )
+        {
+            Exclusion excluded = exclusion.get( type.name() );
+            final Map<String, Exclusion> newExclusion;
+            if ( ( ( excluded == null ) ? defaultExclusion : excluded ).includes( direction ) )
+            {
+                return this;
+            }
+            else
+            {
+                excluded = Exclusion.include( direction );
+                if ( excluded == defaultExclusion )
+                {
+                    if ( exclusion.size() == 1 )
+                    {
+                        return new AllExpander( defaultExclusion.direction );
+                    }
+                    else
+                    {
+                        newExclusion = new HashMap<String, Exclusion>(
+                                exclusion );
+                        newExclusion.remove( type.name() );
+                    }
+                }
+                else
+                {
+                    newExclusion = new HashMap<String, Exclusion>( exclusion );
+                    newExclusion.put( type.name(), excluded );
+                }
+            }
+            return new ExcludingExpander( defaultExclusion, newExclusion );
+        }
+
+        @Override
+        public StandardExpander remove( RelationshipType type )
+        {
+            Exclusion excluded = exclusion.get( type.name() );
+            if ( excluded == Exclusion.ALL )
+            {
+                return this;
+            }
+            Map<String, Exclusion> newExclusion = new HashMap<String, Exclusion>(
+                    exclusion );
+            newExclusion.put( type.name(), Exclusion.ALL );
+            return new ExcludingExpander( defaultExclusion, newExclusion );
+        }
+
+        @Override
+        public StandardExpander reversed()
+        {
+            Map<String, Exclusion> newExclusion = new HashMap<String, Exclusion>();
+            for ( Map.Entry<String, Exclusion> entry : exclusion.entrySet() )
+            {
+                newExclusion.put( entry.getKey(), entry.getValue().reversed() );
+            }
+            return new ExcludingExpander( defaultExclusion.reversed(), newExclusion );
+        }
+    }
+
+    public static final StandardExpander DEFAULT = new AllExpander(
+            Direction.BOTH )
     {
         @Override
         public StandardExpander add( RelationshipType type, Direction direction )
@@ -269,10 +526,11 @@ public abstract class StandardExpander implements Expander
                             public boolean accept( Relationship rel )
                             {
                                 Direction dir = directions.get( rel.getType().name() );
-                                return matchDirection( dir == null ? Direction.BOTH
-                                        : dir, start, rel );
+                                return matchDirection(
+                                        dir == null ? Direction.BOTH : dir,
+                                        start, rel );
                             }
-                        });
+                        } );
             }
         }
 
@@ -370,11 +628,12 @@ public abstract class StandardExpander implements Expander
                         {
                             for ( Filter filter : filters )
                             {
-                                if ( filter.exclude( start, item ) ) return false;
+                                if ( filter.exclude( start, item ) )
+                                    return false;
                             }
                             return true;
                         }
-                    });
+                    } );
         }
 
         @Override
@@ -414,10 +673,13 @@ public abstract class StandardExpander implements Expander
 
     private static final class TypeLimitingExpander extends StandardExpander
     {
+        private final StandardExpander expander;
         private final Map<String, Direction> exclusion;
 
-        TypeLimitingExpander( Map<String, Direction> exclusion )
+        TypeLimitingExpander( StandardExpander expander,
+                Map<String, Direction> exclusion )
         {
+            this.expander = expander;
             this.exclusion = exclusion;
         }
 
@@ -450,7 +712,7 @@ public abstract class StandardExpander implements Expander
             {
                 if ( exclusion.size() == 1 )
                 {
-                    return ALL;
+                    return expander;
                 }
                 else
                 {
@@ -463,16 +725,17 @@ public abstract class StandardExpander implements Expander
                 newExclusion = new HashMap<String, Direction>( exclusion );
                 newExclusion.put( type.name(), direction.reverse() );
             }
-            return new TypeLimitingExpander( newExclusion );
+            return new TypeLimitingExpander( expander, newExclusion );
         }
 
         @Override
         Iterator<Relationship> doExpand( final Node start )
         {
             return new FilteringIterator<Relationship>(
-                    start.getRelationships().iterator(), new Predicate<Relationship>()
+                    start.getRelationships().iterator(),
+                    new Predicate<Relationship>()
                     {
-                        public boolean accept(Relationship item)
+                        public boolean accept( Relationship item )
                         {
                             Direction dir = exclusion.get( item.getType().name() );
                             return !matchDirection( dir, start, item );
@@ -491,7 +754,7 @@ public abstract class StandardExpander implements Expander
             Map<String, Direction> newExclusion = new HashMap<String, Direction>(
                     exclusion );
             newExclusion.put( type.name(), Direction.BOTH );
-            return new TypeLimitingExpander( newExclusion );
+            return new TypeLimitingExpander( expander, newExclusion );
         }
 
         @Override
@@ -502,7 +765,7 @@ public abstract class StandardExpander implements Expander
             {
                 newExclusion.put( entry.getKey(), entry.getValue().reverse() );
             }
-            return new TypeLimitingExpander( newExclusion );
+            return new TypeLimitingExpander( expander, newExclusion );
         }
     }
 
@@ -686,6 +949,11 @@ public abstract class StandardExpander implements Expander
     static StandardExpander wrap( RelationshipExpander expander )
     {
         return new WrappingExpander( expander );
+    }
+
+    static Expander create( Direction direction )
+    {
+        return new AllExpander( direction );
     }
 
     static StandardExpander create( RelationshipType type, Direction dir )

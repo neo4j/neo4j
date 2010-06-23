@@ -205,6 +205,11 @@ class NodeProxy implements Node
         return nm.getNodeForProxy( nodeId ).expand( type, direction );
     }
 
+    public Expansion<Relationship> expand( Direction direction )
+    {
+        return nm.getNodeForProxy( nodeId ).expand( direction );
+    }
+
     public Expansion<Relationship> expand( RelationshipExpander expander )
     {
         return nm.getNodeForProxy( nodeId ).expand( expander );
