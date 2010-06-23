@@ -264,16 +264,15 @@ public abstract class StandardExpander implements Expander
             else
             {
                 return new FilteringIterator<Relationship>(
-                        relationships.iterator() )
-                {
-                    @Override
-                    protected boolean passes( Relationship rel )
-                    {
-                        Direction dir = directions.get( rel.getType().name() );
-                        return matchDirection( dir == null ? Direction.BOTH
-                                : dir, start, rel );
-                    }
-                };
+                        relationships.iterator(), new Predicate<Relationship>()
+                        {
+                            public boolean accept( Relationship rel )
+                            {
+                                Direction dir = directions.get( rel.getType().name() );
+                                return matchDirection( dir == null ? Direction.BOTH
+                                        : dir, start, rel );
+                            }
+                        });
             }
         }
 
@@ -365,18 +364,17 @@ public abstract class StandardExpander implements Expander
         Iterator<Relationship> doExpand( final Node start )
         {
             return new FilteringIterator<Relationship>(
-                    expander.doExpand( start ) )
-            {
-                @Override
-                protected boolean passes( Relationship item )
-                {
-                    for ( Filter filter : filters )
+                    expander.doExpand( start ), new Predicate<Relationship>()
                     {
-                        if ( filter.exclude( start, item ) ) return false;
-                    }
-                    return true;
-                }
-            };
+                        public boolean accept( Relationship item )
+                        {
+                            for ( Filter filter : filters )
+                            {
+                                if ( filter.exclude( start, item ) ) return false;
+                            }
+                            return true;
+                        }
+                    });
         }
 
         @Override
@@ -472,15 +470,14 @@ public abstract class StandardExpander implements Expander
         Iterator<Relationship> doExpand( final Node start )
         {
             return new FilteringIterator<Relationship>(
-                    start.getRelationships().iterator() )
-            {
-                @Override
-                protected boolean passes( Relationship item )
-                {
-                    Direction dir = exclusion.get( item.getType().name() );
-                    return !matchDirection( dir, start, item );
-                }
-            };
+                    start.getRelationships().iterator(), new Predicate<Relationship>()
+                    {
+                        public boolean accept(Relationship item)
+                        {
+                            Direction dir = exclusion.get( item.getType().name() );
+                            return !matchDirection( dir, start, item );
+                        }
+                    } );
         }
 
         @Override
