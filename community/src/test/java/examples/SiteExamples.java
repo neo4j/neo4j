@@ -5,11 +5,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
-import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -99,7 +99,7 @@ public class SiteExamples
     {
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
                 TraversalFactory.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ),
-                new DoubleEvaluator( "cost" ) );
+                CommonEvaluators.doubleCostEvaluator( "cost" ) );
         
         WeightedPath path = finder.findSinglePath( start, end );
 
@@ -155,7 +155,7 @@ public class SiteExamples
         };
         PathFinder<WeightedPath> astar = GraphAlgoFactory.aStar(
                 TraversalFactory.expanderForAllTypes(),
-                new DoubleEvaluator( "length" ), estimateEvaluator );
+                CommonEvaluators.doubleCostEvaluator( "length" ), estimateEvaluator );
         Path path = astar.findSinglePath( nodeA, nodeC );
     }
     // END SNIPPET: astarUsage

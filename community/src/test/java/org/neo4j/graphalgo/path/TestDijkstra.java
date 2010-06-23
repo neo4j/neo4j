@@ -3,10 +3,10 @@ package org.neo4j.graphalgo.path;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
+import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
-import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.TraversalFactory;
@@ -45,7 +45,7 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
                 TraversalFactory.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ),
-                new DoubleEvaluator( "cost" ) );
+                CommonEvaluators.doubleCostEvaluator( "cost" ) );
         
         // Assert that there are two matching paths
         assertPaths( finder.findAllPaths( graph.getNode( "start" ), graph.getNode( "x" ) ),

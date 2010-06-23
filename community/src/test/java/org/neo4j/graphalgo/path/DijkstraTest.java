@@ -11,9 +11,9 @@ import java.util.Set;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.path.Dijkstra;
-import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -40,7 +40,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "A", "C", "length", 10d );
 
         Dijkstra algo = new Dijkstra( TraversalFactory.expanderForAllTypes(),
-                new DoubleEvaluator( "length" ) );
+                CommonEvaluators.doubleCostEvaluator( "length" ) );
 
         Iterator<WeightedPath> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
         assertTrue( "expected at least one path", paths.hasNext() );
@@ -64,7 +64,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "A", "C", "length", 5d );
 
         Dijkstra algo = new Dijkstra( TraversalFactory.expanderForAllTypes(),
-                new DoubleEvaluator( "length" ) );
+                CommonEvaluators.doubleCostEvaluator( "length" ) );
 
         Iterator<WeightedPath> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
         for ( int i = 0; i < 2; i++ )
@@ -108,7 +108,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "A", "F", "length", 25d );
 
         Dijkstra algo = new Dijkstra( TraversalFactory.expanderForAllTypes(),
-                new DoubleEvaluator( "length" ) );
+                CommonEvaluators.doubleCostEvaluator( "length" ) );
 
         // Try the search in both directions.
         for ( Node[] nodes : new Node[][] { { nodeA, nodeF }, { nodeF, nodeA } } )
