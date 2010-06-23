@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 
 import org.junit.Test;
+import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.shortestpath.FloydWarshall;
 import org.neo4j.graphdb.Direction;
@@ -48,7 +49,7 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         graph.makeEdge( "e", "b", "cost", (double) 1 );
         FloydWarshall<Double> floydWarshall = new FloydWarshall<Double>( 0.0,
             Double.MAX_VALUE, Direction.OUTGOING,
-            new org.neo4j.graphalgo.impl.util.DoubleEvaluator( "cost" ),
+            CommonEvaluators.doubleCostEvaluator( "cost" ),
             new org.neo4j.graphalgo.impl.util.DoubleAdder(),
             new org.neo4j.graphalgo.impl.util.DoubleComparator(), graph
                 .getAllNodes(), graph.getAllEdges() );
@@ -73,7 +74,7 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
         graph.makeEdge( "e", "f", "cost", (double) 1 );
         FloydWarshall<Double> floydWarshall = new FloydWarshall<Double>( 0.0,
             Double.MAX_VALUE, Direction.OUTGOING,
-            new org.neo4j.graphalgo.impl.util.DoubleEvaluator( "cost" ),
+            CommonEvaluators.doubleCostEvaluator( "cost" ),
             new org.neo4j.graphalgo.impl.util.DoubleAdder(),
             new org.neo4j.graphalgo.impl.util.DoubleComparator(), graph
                 .getAllNodes(), graph.getAllEdges() );
