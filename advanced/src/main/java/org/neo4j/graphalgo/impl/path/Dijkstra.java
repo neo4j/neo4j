@@ -2,6 +2,7 @@ package org.neo4j.graphalgo.impl.path;
 
 import java.util.Iterator;
 
+import org.neo4j.commons.Predicate;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
@@ -12,7 +13,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.Position;
-import org.neo4j.graphdb.traversal.ReturnFilter;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
@@ -40,9 +40,9 @@ public class Dijkstra implements PathFinder<WeightedPath>
 
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
-        ReturnFilter filter = new ReturnFilter()
+        Predicate<Position> filter = new Predicate<Position>()
         {
-            public boolean shouldReturn( Position position )
+            public boolean accept( Position position )
             {
                 return position.node().equals( end );
             }
