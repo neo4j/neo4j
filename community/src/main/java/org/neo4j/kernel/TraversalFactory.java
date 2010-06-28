@@ -2,6 +2,7 @@ package org.neo4j.kernel;
 
 import java.util.Iterator;
 
+import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
@@ -56,6 +57,20 @@ public class TraversalFactory
         public SourceSelector create( ExpansionSource startSource )
         {
             return new PostorderBreadthFirstSelector( startSource );
+        }
+    };
+    private static final Predicate<Position> RETURN_ALL = new Predicate<Position>()
+    {
+        public boolean accept( Position item )
+        {
+            return true;
+        }
+    };
+    private static final Predicate<Position> RETURN_ALL_BUT_START_NODE = new Predicate<Position>()
+    {
+        public boolean accept( Position item )
+        {
+            return !item.atStartNode();
         }
     };
 
@@ -208,6 +223,16 @@ public class TraversalFactory
                 return position.depth() >= depth;
             }
         };
+    }
+    
+    public static Predicate<Position> returnAll()
+    {
+        return RETURN_ALL;
+    }
+    
+    public static Predicate<Position> returnAllButStartNode()
+    {
+        return RETURN_ALL_BUT_START_NODE;
     }
 
     /**

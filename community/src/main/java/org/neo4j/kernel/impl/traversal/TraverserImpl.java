@@ -127,7 +127,7 @@ class TraverserImpl implements Traverser
 
         boolean okToReturn( ExpansionSource source )
         {
-            return description.filter.shouldReturn( source.position() );
+            return description.filter.accept( source.position() );
         }
         
         @Override
