@@ -11,8 +11,8 @@ import java.util.Set;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.traversal.Position;
-import org.neo4j.graphdb.traversal.ReturnFilter;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
@@ -278,9 +278,9 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     {
         Traverser traverser = description.uniqueness(
                 Uniqueness.NONE ).prune( TraversalFactory.pruneAfterDepth( 2 ) ).filter(
-                new ReturnFilter()
+                new Predicate<Position>()
                 {
-                    public boolean shouldReturn( Position position )
+                    public boolean accept( Position position )
                     {
                         return position.depth() == 2;
                     }

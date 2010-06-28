@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Stack;
 
+import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -17,7 +18,6 @@ import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
-import org.neo4j.graphdb.traversal.ReturnFilter;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.kernel.OrderedByTypeExpander;
@@ -237,7 +237,7 @@ public class OldTraverserWrapper
         }
     }
 
-    private static class Filter implements ReturnFilter
+    private static class Filter implements Predicate<Position>
     {
         private final TraverserImpl traverser;
         private final ReturnableEvaluator evaluator;
@@ -248,7 +248,7 @@ public class OldTraverserWrapper
             this.evaluator = returnableEvaluator;
         }
 
-        public boolean shouldReturn( Position position )
+        public boolean accept( Position position )
         {
             return evaluator.isReturnableNode( new PositionImpl( traverser,
                     position ) );

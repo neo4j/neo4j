@@ -1,12 +1,13 @@
 package org.neo4j.kernel.impl.traversal;
 
+import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
-import org.neo4j.graphdb.traversal.ReturnFilter;
 import org.neo4j.graphdb.traversal.SourceSelectorFactory;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
@@ -19,7 +20,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     public TraversalDescriptionImpl()
     {
         this( StandardExpander.DEFAULT, Uniqueness.NODE_GLOBAL, null,
-                PruneEvaluator.NONE, ReturnFilter.ALL,
+                PruneEvaluator.NONE, TraversalFactory.returnAll(),
                 TraversalFactory.preorderDepthFirstSelector() );
     }
 
@@ -27,12 +28,12 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     final Uniqueness uniqueness;
     final Object uniquenessParameter;
     final PruneEvaluator pruning;
-    final ReturnFilter filter;
+    final Predicate<Position> filter;
     final SourceSelectorFactory sourceSelector;
 
     private TraversalDescriptionImpl( Expander expander,
             Uniqueness uniqueness, Object uniquenessParameter,
-            PruneEvaluator pruning, ReturnFilter filter,
+            PruneEvaluator pruning, Predicate<Position> filter,
             SourceSelectorFactory sourceSelector )
     {
         this.expander = expander;
@@ -143,14 +144,18 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     /* (non-Javadoc)
      * @see org.neo4j.graphdb.traversal.TraversalDescription#filter(org.neo4j.graphdb.traversal.ReturnFilter)
      */
-    public TraversalDescription filter( ReturnFilter filter )
+    public TraversalDescription filter( Predicate<Position> filter )
     {
         if ( this.filter == filter )
         {
             return this;
         }
 
-        nullCheck( filter, ReturnFilter.class, "ALL" );
+        if ( filter == null )
+        {
+            throw new IllegalArgumentException( "Return filter may not be null, " +
+            		"use " + TraversalFactory.class.getSimpleName() + ".returnAll() instead." );
+        }
         return new TraversalDescriptionImpl( expander, uniqueness,
                 uniquenessParameter, pruning, filter, sourceSelector );
     }
