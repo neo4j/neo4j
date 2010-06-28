@@ -38,7 +38,7 @@ public class FilteringIterable<T> implements Iterable<T>
         return new FilteringIterable<T>( source, FilteringIterable.<T>noDuplicatesPredicate() );
     }
     
-    static <T> Predicate<T> noDuplicatesPredicate()
+    public static <T> Predicate<T> noDuplicatesPredicate()
     {
         return new Predicate<T>()
         {
@@ -52,7 +52,7 @@ public class FilteringIterable<T> implements Iterable<T>
     }
 
     @SuppressWarnings("unchecked")
-    static <T> Predicate<T> notNullPredicate()
+    public static <T> Predicate<T> notNullPredicate()
     {
         return (Predicate<T>) NOT_NULL_PREDICATE;
     }
