@@ -86,6 +86,17 @@ public abstract class Neo4jAlgoTestCase
         tx = graphDb.beginTx();
     }
 
+    protected void assertPathDef( Path path, String... names )
+    {
+        int i = 0;
+        for ( Node node : path.nodes() )
+        {
+            assertEquals( "Wrong node " + i + " in " + getPathDef( path ),
+                    names[i++], node.getProperty( SimpleGraphBuilder.KEY_ID ) );
+        }
+        assertEquals( names.length, i );
+    }
+    
     protected void assertPath( Path path, Node... nodes )
     {
         int i = 0;
