@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.neo4j.graphdb.traversal.ReturnFilter;
+import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.TraversalFactory;
 
@@ -55,7 +55,7 @@ import org.neo4j.kernel.TraversalFactory;
  * @deprecated because of the introduction of a new traversal framework,
  * see more information at {@link TraversalDescription} and
  * {@link TraversalFactory} and the new traversal framework's equivalent
- * {@link ReturnFilter}.
+ * {@link Predicate}.
  */
 @Deprecated
 public interface ReturnableEvaluator

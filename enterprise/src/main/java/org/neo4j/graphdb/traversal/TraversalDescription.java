@@ -1,5 +1,6 @@
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
@@ -51,13 +52,12 @@ public interface TraversalDescription
     TraversalDescription prune( PruneEvaluator pruning );
 
     /**
-     * Sets the {@link ReturnFilter} to use, i.e. which positions are OK to
-     * return.
+     * Sets the return filter to use, i.e. which positions are OK to return.
      * 
-     * @param filter the return filter to use.
+     * @param filter the {@link Predicate} to use as filter.
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription filter( ReturnFilter filter );
+    TraversalDescription filter( Predicate<Position> filter );
     
     /**
      * Sets the {@link SourceSelectorFactory} to use. A {@link SourceSelector}
