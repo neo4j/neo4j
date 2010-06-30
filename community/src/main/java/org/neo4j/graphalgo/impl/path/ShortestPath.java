@@ -56,7 +56,7 @@ public class ShortestPath implements PathFinder<Path>
     public Path findSinglePath( Node start, Node end )
     {
         Collection<Path> paths = internalPaths( start, end, true );
-        return IteratorUtil.singleValueOrNull( paths.iterator() );
+        return paths.isEmpty() ? null : paths.iterator().next();
     }
     
     public Collection<Path> findPathsFromScetch( Node... someNodesAlongTheWay )
