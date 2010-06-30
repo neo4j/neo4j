@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Map;
 
-import org.apache.lucene.AllDocs;
+import org.apache.lucene.Hits;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -168,7 +168,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     {
         try
         {
-            AllDocs hits = new AllDocs( searcher(), query, null );
+            Hits hits = new Hits( searcher(), query, null );
             SearchResult result = new SearchResult( new HitsIterator( hits ), hits.length() );
             DocToIdIterator itr = new DocToIdIterator( result, null, null );
             return new SimpleIndexHits<Long>( FilteringIterator.noDuplicates( itr ), result.size );

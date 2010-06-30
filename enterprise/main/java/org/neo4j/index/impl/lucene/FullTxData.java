@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.AllDocs;
+import org.apache.lucene.Hits;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
@@ -132,7 +132,7 @@ class FullTxData extends TxData
         
         try
         {
-            AllDocs hits = new AllDocs( searcher(), query, null );
+            Hits hits = new Hits( searcher(), query, null );
             HashSet<Long> result = new HashSet<Long>();
             for ( int i = 0; i < hits.length(); i++ )
             {
