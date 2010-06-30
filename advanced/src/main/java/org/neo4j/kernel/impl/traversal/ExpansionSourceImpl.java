@@ -20,6 +20,7 @@ class ExpansionSourceImpl implements ExpansionSource, Position
     private final int depth;
     final TraverserIterator traverser;
     private Path path;
+    private int expandedCount;
 
     /*
      * For expansion sources for all nodes except the start node
@@ -70,6 +71,7 @@ class ExpansionSourceImpl implements ExpansionSource, Position
             {
                 continue;
             }
+            expandedCount++;
             Node node = relationship.getOtherNode( source );
             ExpansionSource next = new ExpansionSourceImpl( traverser, this, depth + 1, node,
                     traverser.description.expander, relationship );
@@ -123,5 +125,10 @@ class ExpansionSourceImpl implements ExpansionSource, Position
             this.path = new TraversalPath( this );
         }
         return this.path;
+    }
+    
+    public int expanded()
+    {
+        return expandedCount;
     }
 }

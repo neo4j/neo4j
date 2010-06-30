@@ -50,4 +50,14 @@ public interface ExpansionSource
      * @return the next expansion source from this expansion source.
      */
     ExpansionSource next();
+    
+    /**
+     * Returns the number of relationships this expansion source has expanded.
+     * In this count isn't included the relationship which led to coming here
+     * (since that could also be traversed, although skipped, when expanding
+     * this source).
+     * 
+     * @return the number of relationships this expansion source has expanded.
+     */
+    int expanded();
 }
