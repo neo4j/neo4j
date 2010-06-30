@@ -1,30 +1,14 @@
 package org.neo4j.kernel.management;
 
-import org.neo4j.kernel.impl.core.NodeManager;
-
-class Cache extends Neo4jJmx implements CacheMBean
+public interface Cache
 {
-    private final NodeManager nodeManager;
+    final String NAME = "Cache";
 
-    Cache( int instanceId, NodeManager nodeManager )
-    {
-        super( instanceId );
-        this.nodeManager = nodeManager;
-    }
+    String getCacheType();
 
-    public String getCacheType()
-    {
-        return nodeManager.isUsingSoftReferenceCache() ? "soft reference cache"
-                : "lru cache";
-    }
+    int getNodeCacheSize();
 
-    public int getNodeCacheSize()
-    {
-        return nodeManager.getNodeCacheSize();
-    }
+    int getRelationshipCacheSize();
 
-    public int getRelationshipCacheSize()
-    {
-        return nodeManager.getRelationshipCacheSize();
-    }
+    void clear();
 }

@@ -1,18 +1,21 @@
-package org.neo4j.kernel.management;
+package org.neo4j.kernel.impl.management;
+
+import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.management.Primitives;
 
-class Primitive extends Neo4jJmx implements PrimitiveMBean
+class PrimitivesBean extends Neo4jMBean implements Primitives
 {
     private final NodeManager nodeManager;
 
-    Primitive( int instanceId, NodeManager nodeManager )
+    PrimitivesBean( int instanceId, NodeManager nodeManager ) throws NotCompliantMBeanException
     {
-        super( instanceId );
+        super( instanceId, Primitives.class );
         this.nodeManager = nodeManager;
     }
 

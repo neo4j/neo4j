@@ -1,6 +1,6 @@
 package org.neo4j.kernel.management;
 
-public interface PrimitiveMBean
+public interface Primitives
 {
     final String NAME = "Primitive count";
 
