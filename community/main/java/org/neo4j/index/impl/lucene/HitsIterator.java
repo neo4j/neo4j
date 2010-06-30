@@ -2,17 +2,17 @@ package org.neo4j.index.impl.lucene;
 
 import java.io.IOException;
 
-import org.apache.lucene.AllDocs;
+import org.apache.lucene.Hits;
 import org.apache.lucene.document.Document;
 import org.neo4j.commons.iterator.PrefetchingIterator;
 
 public class HitsIterator extends PrefetchingIterator<Document>
 {
-    private final AllDocs hits;
+    private final Hits hits;
     private final int size;
     private int index;
     
-    public HitsIterator( AllDocs hits )
+    public HitsIterator( Hits hits )
     {
         this.hits = hits;
         this.size = hits.length();
