@@ -141,9 +141,6 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#filter(org.neo4j.graphdb.traversal.ReturnFilter)
-     */
     public TraversalDescription filter( Predicate<Position> filter )
     {
         if ( this.filter == filter )
