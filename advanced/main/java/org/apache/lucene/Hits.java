@@ -63,7 +63,7 @@ import org.apache.lucene.search.Weight;
 // NOTE: This is the Hits class from lucene 2.x, it was removed in 3.x and was
 // used for iterating over all the hits from a query result, not just the N
 // top docs.
-public final class AllDocs {
+public final class Hits {
   private Weight weight;
   private Searcher searcher;
   private Filter filter = null;
@@ -83,7 +83,7 @@ public final class AllDocs {
 
   boolean debugCheckedForDeletions = false; // for test purposes.
 
-  public AllDocs(Searcher s, Query q, Filter f) throws IOException {
+  public Hits(Searcher s, Query q, Filter f) throws IOException {
     weight = q.weight(s);
     searcher = s;
     filter = f;
@@ -92,7 +92,7 @@ public final class AllDocs {
     lengthAtStart = length;
   }
 
-  public AllDocs(Searcher s, Query q, Filter f, Sort o) throws IOException {
+  public Hits(Searcher s, Query q, Filter f, Sort o) throws IOException {
     weight = q.weight(s);
     searcher = s;
     filter = f;

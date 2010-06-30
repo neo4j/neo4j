@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.AllDocs;
+import org.apache.lucene.Hits;
 import org.apache.lucene.search.Query;
 import org.neo4j.commons.iterator.CombiningIterator;
 import org.neo4j.commons.iterator.FilteringIterator;
@@ -257,7 +257,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         try
         {
             searcher.incRef();
-            AllDocs hits = new AllDocs( searcher.getSearcher(), query, null );
+            Hits hits = new Hits( searcher.getSearcher(), query, null );
             return new SearchResult( new HitsIterator( hits ), hits.length() );
 //            TopDocs hits = searcher.getSearcher().search( query, 50 );
 //            TopDocsIterator itr = new TopDocsIterator( hits, searcher );
