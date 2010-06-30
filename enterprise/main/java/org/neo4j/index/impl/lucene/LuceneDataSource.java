@@ -65,7 +65,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
  */
 public class LuceneDataSource extends LogBackedXaDataSource
 {
-    public static final String DEFAULT_NAME = "lucene";
+    public static final String DEFAULT_NAME = "lucene-index";
     public static final byte[] DEFAULT_BRANCH_ID = "162374".getBytes();
     
     /**
