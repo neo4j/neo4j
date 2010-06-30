@@ -76,6 +76,7 @@ public abstract class Neo4jAlgoTestCase
     public void tearDownTransactionAndGraph()
     {
         graph.clear();
+        tx.success();
         tx.finish();
     }
     
