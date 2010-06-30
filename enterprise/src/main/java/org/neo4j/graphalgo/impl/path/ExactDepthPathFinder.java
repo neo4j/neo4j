@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.commons.collection.MapUtil;
+import org.neo4j.commons.Predicate;
 import org.neo4j.commons.iterator.PrefetchingIterator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.util.LiteDepthFirstSelector;
@@ -27,10 +27,10 @@ import org.neo4j.kernel.TraversalFactory;
  * length of found paths must be of a certain length. It also detects
  * "super nodes", i.e. nodes which have many relationships and only iterates
  * over such super nodes' relationships up to a supplied threshold. When that
- * threshold is reached such nodes are considered super nodes and are put
- * on a queue for later traversal. This makes it possible to find paths w/o
- * having to traverse heavy super nodes.
- * 
+ * threshold is reached such nodes are considered super nodes and are put on a
+ * queue for later traversal. This makes it possible to find paths w/o having to
+ * traverse heavy super nodes.
+ *
  * @author Mattias Persson
  * @author Tobias Ivarsson
  */
@@ -40,13 +40,14 @@ public class ExactDepthPathFinder implements PathFinder<Path>
     private final int onDepth;
     private final int startThreshold;
 
-    public ExactDepthPathFinder( RelationshipExpander expander, int onDepth, int startThreshold )
+    public ExactDepthPathFinder( RelationshipExpander expander, int onDepth,
+            int startThreshold )
     {
         this.expander = expander;
         this.onDepth = onDepth;
         this.startThreshold = startThreshold;
     }
-    
+
     public Iterable<Path> findAllPaths( final Node start, final Node end )
     {
         return new Iterable<Path>()
@@ -63,37 +64,52 @@ public class ExactDepthPathFinder implements PathFinder<Path>
         Iterator<Path> paths = paths( start, end );
         return paths.hasNext() ? paths.next() : null;
     }
-    
+
     private Iterator<Path> paths( final Node start, final Node end )
     {
-        TraversalDescription base = TraversalFactory.createTraversalDescription()
-                .uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ).sourceSelector(
-                        new SourceSelectorFactory()
-                        {
-                            public SourceSelector create( ExpansionSource startSource )
-                            {
-                                return new LiteDepthFirstSelector( startSource, startThreshold );
-                            }
-                        } );
-        int firstHalf = onDepth / 2;
-        Traverser startTraverser = base.prune( TraversalFactory.pruneAfterDepth( firstHalf ) )
-                .expand( expander ).traverse( start );
-        Traverser endTraverser = base.prune( TraversalFactory.pruneAfterDepth( onDepth-firstHalf ) )
-                .expand( expander.reversed() ).traverse( end );
+        TraversalDescription base = TraversalFactory.createTraversalDescription().uniqueness(
+                Uniqueness.RELATIONSHIP_PATH ).sourceSelector(
+                new SourceSelectorFactory()
+                {
+                    public SourceSelector create( ExpansionSource startSource )
+                    {
+                        return new LiteDepthFirstSelector( startSource,
+                                startThreshold );
+                    }
+                } );
+        final int firstHalf = onDepth / 2;
+        Traverser startTraverser = base.prune(
+                TraversalFactory.pruneAfterDepth( firstHalf ) ).expand(
+                expander ).filter( new Predicate<Position>()
+        {
+            public boolean accept( Position item )
+            {
+                return item.depth() == firstHalf;
+            }
+        } ).traverse( start );
+        final int secondHalf = onDepth - firstHalf;
+        Traverser endTraverser = base.prune(
+                TraversalFactory.pruneAfterDepth( secondHalf ) ).expand(
+                expander.reversed() ).filter( new Predicate<Position>()
+        {
+            public boolean accept( Position item )
+            {
+                return item.depth() == secondHalf;
+            }
+        } ).traverse( end );
+
         final Iterator<Position> startIterator = startTraverser.iterator();
         final Iterator<Position> endIterator = endTraverser.iterator();
-        final Map<Node, Map<Integer, Visit>> visits = new HashMap<Node, Map<Integer,Visit>>();
-        visits.put( start, MapUtil.<Integer, Visit>genericMap( 0,
-                new Visit( startIterator.next(), startIterator) ) );
-        visits.put( end, MapUtil.<Integer, Visit>genericMap( 0,
-                new Visit( endIterator.next(), endIterator) ) );
+
+        final Map<Node, Visit> visits = new HashMap<Node, Visit>();
         return new PrefetchingIterator<Path>()
         {
             @Override
             protected Path fetchNextOrNull()
             {
                 Position[] found = null;
-                while ( found == null && (startIterator.hasNext() || endIterator.hasNext()) )
+                while ( found == null
+                        && ( startIterator.hasNext() || endIterator.hasNext() ) )
                 {
                     found = goOneStep( start, startIterator, visits );
                     if ( found == null )
@@ -105,7 +121,7 @@ public class ExactDepthPathFinder implements PathFinder<Path>
             }
         };
     }
-    
+
     private Path toPath( Position[] found, Node start )
     {
         Path startPath = found[0].path();
@@ -130,20 +146,14 @@ public class ExactDepthPathFinder implements PathFinder<Path>
     }
 
     private Position[] goOneStep( Node node, Iterator<Position> visitor,
-            Map<Node, Map<Integer, Visit>> visits )
+            Map<Node, Visit> visits )
     {
         if ( !visitor.hasNext() )
         {
             return null;
         }
         Position position = visitor.next();
-        Map<Integer, Visit> depthMap = visits.get( position.node() );
-        if ( depthMap == null )
-        {
-            depthMap = new HashMap<Integer, Visit>();
-            visits.put( position.node(), depthMap );
-        }
-        Visit visit = depthMap.get( onDepth - position.depth() );
+        Visit visit = visits.get( position.node() );
         if ( visit != null )
         {
             if ( visitor != visit.visitor )
@@ -153,7 +163,7 @@ public class ExactDepthPathFinder implements PathFinder<Path>
         }
         else
         {
-            depthMap.put( position.depth(), new Visit( position, visitor ) );
+            visits.put( position.node(), new Visit( position, visitor ) );
         }
         return null;
     }
@@ -162,7 +172,7 @@ public class ExactDepthPathFinder implements PathFinder<Path>
     {
         private final Position position;
         private final Iterator<Position> visitor;
-        
+
         Visit( Position position, Iterator<Position> visitor )
         {
             this.position = position;
