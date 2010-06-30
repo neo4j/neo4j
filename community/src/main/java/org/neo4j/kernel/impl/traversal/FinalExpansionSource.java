@@ -54,4 +54,9 @@ public final class FinalExpansionSource implements ExpansionSource
         // TODO Auto-generated method stub
         return null;
     }
+    
+    public int expanded()
+    {
+        return 0;
+    }
 }
