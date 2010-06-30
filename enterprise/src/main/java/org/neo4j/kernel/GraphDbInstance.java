@@ -162,6 +162,16 @@ class GraphDbInstance
             catch ( ClassNotFoundException e )
             { // ok index util not on class path
             }
+            
+            try
+            {
+                Class<?> cls = Class.forName( "org.neo4j.index.impl.lucene.LuceneDataSource" );
+                config.getTxModule().registerDataSource( "lucene-index", cls.getName(),
+                        "162374".getBytes(), config.getParams() );
+            }
+            catch ( ClassNotFoundException e )
+            { // ok new lucene index not on classpath
+            }
         }
         persistenceSource = new NioNeoDbPersistenceSource();
         config.setPersistenceSource( Config.DEFAULT_DATA_SOURCE_NAME, create );
@@ -195,6 +205,12 @@ class GraphDbInstance
                 }
             }
         }
+        
+        if ( config.getTxModule().getXaDataSourceManager().hasDataSource( "lucene-index" ) )
+        {
+            config.getTxModule().getXaDataSourceManager().unregisterDataSource( "lucene-index" );
+        }
+        
         started = true;
         return Collections.unmodifiableMap( params );
     }
