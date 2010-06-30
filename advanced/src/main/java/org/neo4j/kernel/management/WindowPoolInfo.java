@@ -2,8 +2,6 @@ package org.neo4j.kernel.management;
 
 import java.io.Serializable;
 
-import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
-
 public final class WindowPoolInfo implements Serializable
 {
     private static final long serialVersionUID = 1L;
@@ -33,13 +31,6 @@ public final class WindowPoolInfo implements Serializable
         this.hitCount = hitCount;
         this.missCount = missCount;
         this.oomCount = oomCount;
-    }
-
-    WindowPoolInfo( WindowPoolStats stats )
-    {
-        this( stats.getName(), stats.getMemAvail(), stats.getMemUsed(),
-                stats.getWindowCount(), stats.getWindowSize(),
-                stats.getHitCount(), stats.getMissCount(), stats.getOomCount() );
     }
 
     public String getWindowPoolName()

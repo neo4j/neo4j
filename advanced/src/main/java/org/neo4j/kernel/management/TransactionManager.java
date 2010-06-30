@@ -1,39 +1,16 @@
 package org.neo4j.kernel.management;
 
-import org.neo4j.kernel.impl.transaction.TxModule;
-
-class TransactionManager extends Neo4jJmx implements TransactionManagerMBean
+public interface TransactionManager
 {
-    private final TxModule txModule;
+    final String NAME = "Transactions";
 
-    TransactionManager( int instanceId, TxModule txModule )
-    {
-        super( instanceId );
-        this.txModule = txModule;
-    }
+    int getNumberOfOpenTransactions();
 
-    public int getNumberOfOpenTransactions()
-    {
-        return txModule.getActiveTxCount();
-    }
+    int getPeakNumberOfConcurrentTransactions();
 
-    public int getPeakNumberOfConcurrentTransactions()
-    {
-        return txModule.getPeakConcurrentTxCount();
-    }
+    int getNumberOfOpenedTransactions();
 
-    public int getNumberOfOpenedTransactions()
-    {
-        return txModule.getStartedTxCount();
-    }
+    long getNumberOfCommittedTransactions();
 
-    public long getNumberOfCommittedTransactions()
-    {
-        return txModule.getCommittedTxCount();
-    }
-
-    public long getNumberOfRollbackedTransactions()
-    {
-        return txModule.getRolledbackTxCount();
-    }
+    long getNumberOfRollbackedTransactions();
 }
