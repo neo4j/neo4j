@@ -1,18 +1,8 @@
 package org.neo4j.kernel.management;
 
-class LockManager extends Neo4jJmx implements LockManagerMBean
+public interface LockManager
 {
-    private final org.neo4j.kernel.impl.transaction.LockManager lockManager;
+    final String NAME = "Locking";
 
-    LockManager( int instanceId,
-            org.neo4j.kernel.impl.transaction.LockManager lockManager )
-    {
-        super( instanceId );
-        this.lockManager = lockManager;
-    }
-
-    public long getNumberOfAdvertedDeadlocks()
-    {
-        return lockManager.getDetectedDeadlockCount();
-    }
+    long getNumberOfAdvertedDeadlocks();
 }

@@ -55,8 +55,8 @@ import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
+import org.neo4j.kernel.impl.management.Neo4jMBean;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.management.Neo4jJmx;
 
 class EmbeddedGraphDbImpl
 {
@@ -105,13 +105,13 @@ class EmbeddedGraphDbImpl
 
     private Runnable initJMX( final Map<Object, Object> params )
     {
-        return Neo4jJmx.initJMX( new Neo4jJmx.Creator(
+        return Neo4jMBean.initMBeans( new Neo4jMBean.Creator(
                 instanceId, KERNEL_VERSION,
                 (NeoStoreXaDataSource) graphDbInstance.getConfig().getTxModule()
-                .getXaDataSourceManager().getXaDataSource( "nioneodb" ) )
+                    .getXaDataSourceManager().getXaDataSource( "nioneodb" ) )
         {
             @Override
-            protected void create( Neo4jJmx.Factory jmx )
+            protected void create( Neo4jMBean.Factory jmx )
             {
                 jmx.createDynamicConfigurationMBean( params );
                 jmx.createPrimitiveMBean( nodeManager );
@@ -127,7 +127,7 @@ class EmbeddedGraphDbImpl
 
     <T> T getManagementBean( Class<T> beanClass )
     {
-        return Neo4jJmx.getBean( instanceId, beanClass );
+        return Neo4jMBean.getBean( instanceId, beanClass );
     }
 
     /**
