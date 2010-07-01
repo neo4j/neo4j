@@ -25,6 +25,7 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
@@ -220,19 +221,19 @@ abstract class LuceneCommand extends XaCommand
         int keyCharLength = buffer.getInt();
         int valueCharLength = buffer.getInt();
 
-        String indexName = NioUtils.readString( channel, buffer, indexNameLength );
+        String indexName = PrimitiveUtils.readString( channel, buffer, indexNameLength );
         if ( indexName == null )
         {
             return null;
         }
         
-        String key = NioUtils.readString( channel, buffer, keyCharLength );
+        String key = PrimitiveUtils.readString( channel, buffer, keyCharLength );
         if ( key == null )
         {
             return null;
         }
 
-        String value = NioUtils.readString( channel, buffer, valueCharLength );
+        String value = PrimitiveUtils.readString( channel, buffer, valueCharLength );
         if ( value == null )
         {
             return null;

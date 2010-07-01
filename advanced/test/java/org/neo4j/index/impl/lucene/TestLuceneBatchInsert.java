@@ -23,7 +23,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 
-public class TestNewLuceneBatchInsert
+public class TestLuceneBatchInsert
 {
     private static final String PATH = "target/var/batch";
     
