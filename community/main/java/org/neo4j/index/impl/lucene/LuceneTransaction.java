@@ -271,7 +271,7 @@ class LuceneTransaction extends XaTransaction
                         documents.clear();
                         dataSource.closeWriter( writer );
                         writer = null;
-                        dataSource.closeIndexSearcher( identifier );
+                        dataSource.deleteIndex( identifier );
                         dataSource.invalidateCache( identifier );
                     }
                     else

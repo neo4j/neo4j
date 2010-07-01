@@ -1,7 +1,6 @@
 package org.neo4j.index.impl.lucene;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.Map;
 
 import org.apache.lucene.Hits;
@@ -14,6 +13,7 @@ import org.apache.lucene.search.Query;
 import org.neo4j.commons.iterator.FilteringIterator;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.index.impl.SimpleIndexHits;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
@@ -39,23 +39,13 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     
     public void add( long entityId, Map<String, Object> properties )
     {
-        put( type.newDocument( entityId ), properties );
-    }
-    
-    public void updateOrAdd( long entityId, Map<String, Object> properties )
-    {
-        Document document = LuceneDataSource.findDocument( type, searcher(), entityId );
-        put( document != null ? document : type.newDocument( entityId ), properties );
-    }
-    
-    private void put( Document document, Map<String, Object> properties )
-    {
         try
         {
+            Document document = type.newDocument( entityId );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 String key = entry.getKey();
-                for ( Object value : asArray( entry.getValue() ) )
+                for ( Object value : PrimitiveUtils.asArray( entry.getValue() ) )
                 {
                     type.addToDocument( document, key, value );
                 }
@@ -68,24 +58,19 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
     }
     
-    private static Object[] asArray( Object propertyValue )
+    public void updateOrAdd( long entityId, Map<String, Object> properties )
     {
-        if ( propertyValue.getClass().isArray() )
+        try
         {
-            int length = Array.getLength( propertyValue );
-            Object[] result = new Object[ length ];
-            for ( int i = 0; i < length; i++ )
-            {
-                result[ i ] = Array.get( propertyValue, i );
-            }
-            return result;
+            writer().deleteDocuments( type.idTermQuery( entityId ) );
+            add( entityId, properties );
         }
-        else
+        catch ( IOException e )
         {
-            return new Object[] { propertyValue };
+            throw new RuntimeException( e );
         }
     }
-
+    
     private IndexWriter writer()
     {
         if ( this.writer != null )

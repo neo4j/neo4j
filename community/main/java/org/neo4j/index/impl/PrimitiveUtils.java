@@ -1,11 +1,12 @@
-package org.neo4j.index.impl.lucene;
+package org.neo4j.index.impl;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
-public abstract class NioUtils
+public abstract class PrimitiveUtils
 {
     public static String readLengthAndString( ReadableByteChannel channel,
             ByteBuffer buffer ) throws IOException
@@ -104,11 +105,30 @@ public abstract class NioUtils
         } while ( position < chars.length );
     }
     
-    static void writeInt( FileChannel channel, ByteBuffer buffer, int value ) throws IOException
+    public static void writeInt( FileChannel channel, ByteBuffer buffer, int value )
+            throws IOException
     {
         buffer.clear();
         buffer.putInt( value );
         buffer.flip();
         channel.write( buffer );
+    }
+
+    public static Object[] asArray( Object propertyValue )
+    {
+        if ( propertyValue.getClass().isArray() )
+        {
+            int length = Array.getLength( propertyValue );
+            Object[] result = new Object[ length ];
+            for ( int i = 0; i < length; i++ )
+            {
+                result[ i ] = Array.get( propertyValue, i );
+            }
+            return result;
+        }
+        else
+        {
+            return new Object[] { propertyValue };
+        }
     }
 }

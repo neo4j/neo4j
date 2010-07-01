@@ -102,12 +102,12 @@ public class IndexStore
 
     private Integer readNextInt(FileChannel channel) throws IOException
     {
-        return NioUtils.readInt( channel, buffer( 4 ) );
+        return PrimitiveUtils.readInt( channel, buffer( 4 ) );
     }
 
     private String readNextString(FileChannel channel) throws IOException
     {
-        return NioUtils.readLengthAndString( channel, buffer( 100 ) );
+        return PrimitiveUtils.readLengthAndString( channel, buffer( 100 ) );
     }
 
     public synchronized Map<String, String> get( String indexName )
@@ -175,12 +175,12 @@ public class IndexStore
 
     private void writeInt( FileChannel channel, int value ) throws IOException
     {
-        NioUtils.writeInt( channel, buffer( 4 ), value );
+        PrimitiveUtils.writeInt( channel, buffer( 4 ), value );
     }
     
     private void writeString( FileChannel channel, String value ) throws IOException
     {
-        NioUtils.writeLengthAndString( channel, buffer( 200 ), value );
+        PrimitiveUtils.writeLengthAndString( channel, buffer( 200 ), value );
     }
     
     public Map<String, String> getIndexConfig( String indexName,
