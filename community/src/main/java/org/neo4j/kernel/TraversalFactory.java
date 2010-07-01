@@ -5,6 +5,7 @@ import java.util.Iterator;
 import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -102,6 +103,13 @@ public class TraversalFactory
         return StandardExpander.create( type, dir );
     }
 
+    /**
+     * Returns an empty {@link Expander} which, if not modified, will expand
+     * all relationships when asked to expand a {@link Node}. Criterias
+     * can be added to narrow the {@link Expansion}.
+     * @return an empty {@link Expander} which, if not modified, will expand
+     * all relationship for {@link Node}s.
+     */
     public static Expander emptyExpander()
     {
         return StandardExpander.DEFAULT; // TODO: should this be a PROPER empty?
@@ -151,11 +159,22 @@ public class TraversalFactory
         return expanderForAllTypes( Direction.BOTH );
     }
 
+    /**
+     * Returns a {@link RelationshipExpander} which expands relationships
+     * of all types in the given {@code direction}.
+     * @return a relationship expander which expands all relationships in
+     * the given {@code direction}.
+     */
     public static Expander expanderForAllTypes( Direction direction )
     {
         return StandardExpander.create( direction );
     }
 
+    /**
+     * Returns a {@link RelationshipExpander} wrapped as an {@link Expander}.
+     * @param expander {@link RelationshipExpander} to wrap.
+     * @return a {@link RelationshipExpander} wrapped as an {@link Expander}.
+     */
     public static Expander expander( RelationshipExpander expander )
     {
         if ( expander instanceof Expander )
@@ -225,11 +244,21 @@ public class TraversalFactory
         };
     }
     
+    /**
+     * A traversal return filter which returns all {@link Position}s it
+     * encounters.
+     * @return a return filter which returns everything.
+     */
     public static Predicate<Position> returnAll()
     {
         return RETURN_ALL;
     }
     
+    /**
+     * A traversal return filter which returns all {@link Position}s except
+     * the position of the start node.
+     * @return a return filter which returns everything except the start node.
+     */
     public static Predicate<Position> returnAllButStartNode()
     {
         return RETURN_ALL_BUT_START_NODE;
