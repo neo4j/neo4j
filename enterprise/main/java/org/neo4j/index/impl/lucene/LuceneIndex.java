@@ -20,6 +20,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.impl.IdToEntityIterator;
+import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.index.impl.SimpleIndexHits;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
@@ -72,7 +73,10 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
      */
     public void add( T entity, String key, Object value )
     {
-        getConnection().add( this, entity, key, value );
+        for ( Object oneValue : PrimitiveUtils.asArray( value ) )
+        {
+            getConnection().add( this, entity, key, oneValue );
+        }
     }
 
     /**
@@ -93,7 +97,10 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
      */
     public void remove( T entity, String key, Object value )
     {
-        getConnection().remove( this, entity, key, value );
+        for ( Object oneValue : PrimitiveUtils.asArray( value ) )
+        {
+            getConnection().remove( this, entity, key, oneValue );
+        }
     }
     
     public void clear()
