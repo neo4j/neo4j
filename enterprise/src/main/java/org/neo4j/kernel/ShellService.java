@@ -90,8 +90,7 @@ class ShellService
         {
             try
             {
-                result =
-                    (Serializable) Class.forName(
+                result = (Serializable) Class.forName(
                         "org.neo4j.shell.impl.AbstractServer" )
                         .getDeclaredField( defaultVariableName ).get( null );
             }
