@@ -126,7 +126,20 @@ public interface GraphDatabaseService
      *         <code>false</code> otherwise (<code>false</code> usually
      *         indicates that the <code>shell</code> jar dependency is not on
      *         the classpath)
+     *         
+     * @deprecated in favor of a configuration parameter 'enable_remote_shell'
+     * Simply put:
+     * <pre>
+     * enable_remote_shell = true
+     * </pre>
+     * In your configuration and it will be started with default port and
+     * RMI name. If you'd like to control the port and RMI name of the shell
+     * instead put:
+     * <pre>
+     * enable_remote_shell = port=1337,name=shell
+     * </pre>
      */
+    @Deprecated
     public boolean enableRemoteShell();
 
     /**
@@ -160,7 +173,18 @@ public interface GraphDatabaseService
      *             more) of the configuration properties have an unexpected type
      * @throws IllegalStateException if the shell library is available, but the
      *             remote shell can't be enabled anyway
+     * @deprecated in favor of a configuration parameter 'enable_remote_shell'
+     * Put:
+     * <pre>
+     * enable_remote_shell = port=1337,name=shell
+     * </pre>
+     * In your configuration and it will be started with the supplied port and
+     * RMI name. If you instead would like to use default parameters, put:
+     * <pre>
+     * enable_remote_shell = true
+     * </pre>
      */
+    @Deprecated
     public boolean enableRemoteShell(
             Map<String, Serializable> initialProperties );
 
