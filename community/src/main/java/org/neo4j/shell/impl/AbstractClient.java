@@ -92,10 +92,10 @@ public abstract class AbstractClient implements ShellClient
             }
             catch ( Exception e )
             {
-//                if ( this.shouldPrintStackTraces() )
-//                {
+                if ( this.shouldPrintStackTraces() )
+                {
                     e.printStackTrace();
-//                }
+                }
                 this.console.format( getShortExceptionMessage( e ) + "\n" );
             }
         }
