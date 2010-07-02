@@ -101,6 +101,46 @@ class EmbeddedGraphDbImpl
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
         jmxShutdownHook = initJMX( params );
+        enableRemoteShellIfConfigSaysSo( params );
+    }
+
+    private void enableRemoteShellIfConfigSaysSo( Map<Object, Object> params )
+    {
+        String shellConfig = (String) params.get( "enable_remote_shell" );
+        if ( shellConfig != null )
+        {
+            if ( shellConfig.contains( "=" ) )
+            {
+                enableRemoteShell( parseShellConfigParameter( shellConfig ) );
+            }
+            else if ( Boolean.parseBoolean( shellConfig ) )
+            {
+                enableRemoteShell();
+            }
+        }
+    }
+
+    private Map<String, Serializable> parseShellConfigParameter( String shellConfig )
+    {
+        Map<String, Serializable> map = new HashMap<String, Serializable>();
+        for ( String keyValue : shellConfig.split( "," ) )
+        {
+            String[] splitted = keyValue.split( "=" );
+            if ( splitted.length != 2 )
+            {
+                throw new RuntimeException( "Invalid shell configuration '" + shellConfig +
+                        "' should be '<key1>=<value1>,<key2>=<value2>...' where key can" +
+                        " be any of [port, name]" );
+            }
+            String key = splitted[0];
+            Serializable value = splitted[1];
+            if ( key.equals( "port" ) )
+            {
+                value = Integer.parseInt( splitted[1] );
+            }
+            map.put( key, value );
+        }
+        return map;
     }
 
     private Runnable initJMX( final Map<Object, Object> params )
@@ -241,11 +281,8 @@ class EmbeddedGraphDbImpl
             throw new IllegalStateException( "Shell already enabled" );
         }
 
-        Map<String,Serializable> properties = initialProperties;
-        if ( properties == null )
-        {
-            properties = Collections.emptyMap();
-        }
+        Map<String,Serializable> properties = initialProperties != null ? initialProperties :
+                Collections.<String, Serializable>emptyMap();
         try
         {
             shellService = new ShellService( this.graphDbService, properties );
