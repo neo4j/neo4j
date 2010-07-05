@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 /**
  * <CODE>XaDataSource</CODE> is as a factory for creating
@@ -129,16 +130,16 @@ public abstract class XaDataSource
     {
         throw new UnsupportedOperationException();
     }
-    
+
     /**
-     * Returns a random identifier that gets generated when the data source is 
-     * created. Note with "created" we mean first time data source is created 
-     * and not object creatoin.
+     * Returns a random identifier that gets generated when the data source is
+     * created. Note with "created" we mean first time data source is created
+     * and not object creation.
      * <p>
-     * Creation time together with random identifier can be used to uniqley 
-     * identify a data source (since it is possible to have multiple sources 
-     * of same type).
-     *  
+     * Creation time together with the random identifier can be used to uniquely
+     * identify a data source (since it is possible to have multiple sources of
+     * the same type).
+     * 
      * @return random identifier for this data source
      */
     public long getRandomIdentifier()
@@ -238,6 +239,11 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException();
     }
     
+    public boolean isLogicalLogKept()
+    {
+        throw new UnsupportedOperationException();
+    }
+    
     /**
      * Used by the container to assign a name to this resource. 
      * 
@@ -290,5 +296,43 @@ public abstract class XaDataSource
     public void setLogicalLogTargetSize( long size )
     {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * If the config says that logical logs should be kept for the given
+     * {@code resourceName} this method will return {@code true}, otherwise
+     * {@code false}. The format of the configuration value is either:
+     * <ul>
+     *   <li><b>=</b> : no data sources will keep its logs</li>
+     *   <li><b>=nioneodb,lucene</b> : the specified data sources will keep its logs</li>
+     *   <li><b>=true</b> : all data sources will keep their logical logs</li>
+     * </ul>
+     * The first and last are recommended, since the data source names are really
+     * an implementation detail.
+     * 
+     * @param config the configuration value specified by user configuration.
+     * @param resourceName the name of the xa data source to check.
+     * @return whether or not logical logs should be kept for the data source
+     * by the name {@code resourceName} or not.
+     */
+    protected boolean shouldKeepLog( String config, String resourceName )
+    {
+        if ( config != null )
+        {
+            if ( config.equals( Boolean.TRUE.toString() ) )
+            {
+                return true;
+            }
+            StringTokenizer tok = new StringTokenizer( config, "," );
+            while ( tok.hasMoreTokens() )
+            {
+                String element = tok.nextToken().trim();
+                if ( resourceName.equals( element ) )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

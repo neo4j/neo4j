@@ -1,7 +1,7 @@
 package org.neo4j.graphdb.traversal;
 
 /**
- * Represents the type of uniqueness to expect from a traversal, f.ex. the
+ * Represents the type of uniqueness to expect from a traversal, for example the
  * uniqueness of nodes or relationships to visit during a traversal.
  */
 public enum Uniqueness

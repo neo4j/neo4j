@@ -36,6 +36,8 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -108,7 +110,7 @@ public class XaLogicalLog
     {
         if ( config != null )
         {
-            String value = (String) config.get( "use_memory_mapped_buffers" );
+            String value = (String) config.get( Config.USE_MEMORY_MAPPED_BUFFERS );
             if ( value != null && value.toLowerCase().equals( "false" ) )
             {
                 return false;
@@ -230,11 +232,14 @@ public class XaLogicalLog
     private void fixCleanKill( String fileName ) throws IOException
     {
         File file = new File( fileName );
-        if ( !keepLogs && !file.delete() )
+        if ( !keepLogs )
         {
-            throw new IllegalStateException( 
-                "Active marked as clean and unable to delete log " + 
-                fileName );
+            if ( !file.delete() )
+            {
+                throw new IllegalStateException( 
+                    "Active marked as clean and unable to delete log " + 
+                    fileName );
+            }
         }
         else
         {
@@ -716,6 +721,25 @@ public class XaLogicalLog
             lastEntryPos = fileChannel.position();
         }
         // make sure we overwrite any broken records
+        fileChannel.position( lastEntryPos );
+        // zero out the slow way since windows don't support truncate very well
+        buffer.clear();
+        while ( buffer.hasRemaining() )
+        {
+            buffer.put( (byte)0 );
+        }
+        buffer.flip();
+        long endPosition = fileChannel.size();
+        do
+        {
+            long bytesLeft = fileChannel.size() - fileChannel.position();
+            if ( bytesLeft < buffer.capacity() )
+            {
+                buffer.limit( (int) bytesLeft );
+            }
+            fileChannel.write( buffer );
+            buffer.flip();
+        } while ( fileChannel.position() < endPosition );
         fileChannel.position( lastEntryPos );
         scanIsComplete = true;
         log.fine( "Internal recovery completed, scanned " + logEntriesFound

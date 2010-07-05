@@ -16,10 +16,8 @@ public interface SourceSelector
      * {@link ExpansionSource#position()}, decisions
      * can be based on the current expansion source and the given rules.
      * 
-     * @param rules the rules to aid in the decision making of where to
-     * go next.
      * @return the next position based on the current position and the
      * {@code rules} of the traversal.
      */
-    ExpansionSource nextPosition( TraversalRules rules );
+    ExpansionSource nextPosition();
 }

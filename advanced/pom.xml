@@ -11,12 +11,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-kernel-ha</artifactId>
-  <version>0.6-SNAPSHOT</version>
+  <version>1.1-SNAPSHOT</version>
   <name>Neo4j - Graph Database Kernel</name>
   <description>
-Neo4j kernel is a lightweight, embedded Java database designed to store data structured
-as graphs rather than tables. For more information, see http://neo4j.org.
-    </description>
+ Neo4j kernel is a lightweight, embedded Java database designed to
+ store data structured as graphs rather than tables. For more
+ information, see http://neo4j.org.
+  </description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
   <properties>
@@ -97,32 +98,32 @@ as graphs rather than tables. For more information, see http://neo4j.org.
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skip>false</skip>
+          <argLine>-Xmx300m</argLine>
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <descriptors>
-            <descriptor>src/main/assembly/binary-release.xml</descriptor>
-            <descriptor>src/main/assembly/source-release.xml</descriptor>
-          </descriptors>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
+        <groupId>com.google.code.maven-svn-revision-number-plugin</groupId>
+        <artifactId>maven-svn-revision-number-plugin</artifactId>
+        <version>1.4</version>
         <executions>
           <execution>
             <goals>
-              <goal>jar</goal>
+              <goal>revision</goal>
             </goals>
-            <configuration>
-              <excludes>
-                <exclude>**/README*.txt</exclude>
-                <exclude>**/CHANGES.txt</exclude>
-              </excludes>
-            </configuration>
           </execution>
         </executions>
+        <configuration>
+          <entries>
+            <entry>
+              <path>${project.basedir}</path>
+              <prefix>vcs</prefix>
+              <depth>infinity</depth>
+              <reportUnversioned>true</reportUnversioned>
+              <reportIgnored>false</reportIgnored>
+              <reportOutOfDate>false</reportOutOfDate>
+            </entry>
+          </entries>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

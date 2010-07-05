@@ -30,6 +30,7 @@ import java.util.logging.Logger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -109,13 +110,16 @@ public class NeoStoreXaDataSource extends XaDataSource
         this.lockReleaser = (LockReleaser) config.get( LockReleaser.class );
         storeDir = (String) config.get( "store_dir" );
         String store = (String) config.get( "neo_store" );
-        config.put( "rebuild_idgenerators_fast", "true" );
+        if ( !config.containsKey( "rebuild_idgenerators_fast" ) )
+        {
+            config.put( "rebuild_idgenerators_fast", "true" );
+        }
         File file = new File( store );
         String create = "" + config.get( "create" );
         if ( !readOnly && !file.exists() && "true".equals( create ) )
         {
             autoCreatePath( store );
-            NeoStore.createStore( store );
+            NeoStore.createStore( store, config );
         }
 
         neoStore = new NeoStore( config );
@@ -145,8 +149,10 @@ public class NeoStoreXaDataSource extends XaDataSource
             neoStore.getPropertyStore() );
         this.idGenerators.put( PropertyIndex.class, 
             neoStore.getPropertyStore().getIndexStore() );
+        xaContainer.getLogicalLog().setKeepLogs(
+                shouldKeepLog( (String) config.get( Config.KEEP_LOGICAL_LOGS ), "nioneodb" ) );
     }
-
+    
     private void autoCreatePath( String store ) throws IOException
     {
         String fileSeparator = System.getProperty( "file.separator" );
@@ -216,7 +222,10 @@ public class NeoStoreXaDataSource extends XaDataSource
 
     public void close()
     {
-        neoStore.flushAll();
+        if ( !readOnly )
+        {
+            neoStore.flushAll();
+        }
         xaContainer.close();
         if ( logApplied )
         {
@@ -364,6 +373,12 @@ public class NeoStoreXaDataSource extends XaDataSource
     public void keepLogicalLogs( boolean keep )
     {
         xaContainer.getLogicalLog().setKeepLogs( keep );
+    }
+    
+    @Override
+    public boolean isLogicalLogKept()
+    {
+        return xaContainer.getLogicalLog().isLogsKept();
     }
     
     @Override

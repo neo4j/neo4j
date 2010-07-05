@@ -6,8 +6,8 @@ import org.neo4j.graphdb.RelationshipExpander;
 
 /**
  * Represents a {@link Position} and a {@link RelationshipExpander} with a
- * traversal context, f.ex. parent and an iterator of relationships to go next.
- * It's a base to write a {@link SourceSelector} on top of.
+ * traversal context, for example parent and an iterator of relationships to go
+ * next. It's a base to write a {@link SourceSelector} on top of.
  */
 public interface ExpansionSource
 {
@@ -47,9 +47,17 @@ public interface ExpansionSource
      * Returns the next expansion source from the expanded relationships
      * from the current node.
      * 
-     * @param rules the {@link TraversalRules} which should be followed,
-     * fules specified by the originating {@link TraversalDescription}.
      * @return the next expansion source from this expansion source.
      */
-    ExpansionSource next( TraversalRules rules );
+    ExpansionSource next();
+    
+    /**
+     * Returns the number of relationships this expansion source has expanded.
+     * In this count isn't included the relationship which led to coming here
+     * (since that could also be traversed, although skipped, when expanding
+     * this source).
+     * 
+     * @return the number of relationships this expansion source has expanded.
+     */
+    int expanded();
 }

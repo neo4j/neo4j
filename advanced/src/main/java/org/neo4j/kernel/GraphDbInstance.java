@@ -31,6 +31,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
@@ -39,15 +40,6 @@ import org.neo4j.kernel.impl.util.FileUtils;
 
 class GraphDbInstance
 {
-    private static final String NIO_NEO_DB_CLASS =
-        "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
-    private static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
-
-    private static final String LUCENE_DS_CLASS =
-        "org.neo4j.index.lucene.LuceneDataSource";
-    private static final String LUCENE_FULLTEXT_DS_CLASS =
-        "org.neo4j.index.lucene.LuceneFulltextDataSource";
-
     private boolean started = false;
     private boolean create;
     private String storeDir;
@@ -67,12 +59,6 @@ class GraphDbInstance
         return config;
     }
 
-    public Map<Object, Object> start( GraphDatabaseService graphDb,
-            KernelPanicEventGenerator kpe )
-    {
-        return start( graphDb, new HashMap<String, String>(), kpe );
-    }
-
     private Map<Object, Object> getDefaultParams()
     {
         Map<Object, Object> params = new HashMap<Object, Object>();
@@ -87,7 +73,7 @@ class GraphDbInstance
         String nameOs = System.getProperty( "os.name" );
         if ( nameOs.startsWith( "Windows" ) )
         {
-            params.put( "use_memory_mapped_buffers", "false" );
+            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
         }
         return params;
     }
@@ -104,7 +90,8 @@ class GraphDbInstance
      */
     public synchronized Map<Object, Object> start(
             GraphDatabaseService graphDb,
-            Map<String, String> stringParams, KernelPanicEventGenerator kpe )
+            Map<String, String> stringParams, KernelPanicEventGenerator kpe,
+            TxEventSyncHookFactory syncHookFactory )
     {
         if ( started )
         {
@@ -112,12 +99,22 @@ class GraphDbInstance
         }
         Map<Object, Object> params = getDefaultParams();
         boolean useMemoryMapped = true;
-        if ( "false".equals( params.get( "use_memory_mapped_buffers" ) ) )
+        if ( stringParams.containsKey( Config.USE_MEMORY_MAPPED_BUFFERS ) )
+        {
+            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, 
+                    stringParams.get( Config.USE_MEMORY_MAPPED_BUFFERS ) );
+        }
+        if ( "false".equals( params.get( Config.USE_MEMORY_MAPPED_BUFFERS ) ) )
         {
             useMemoryMapped = false;
         }
+        boolean dump = false;
+        if ( "true".equals( stringParams.get( Config.DUMP_CONFIGURATION ) ) )
+        {
+            dump = true;
+        }
         storeDir = FileUtils.fixSeparatorsInPath( storeDir );
-        new AutoConfigurator( storeDir, useMemoryMapped ).configure( params );
+        new AutoConfigurator( storeDir, useMemoryMapped, dump ).configure( params );
         for ( Map.Entry<String, String> entry : stringParams.entrySet() )
         {
             params.put( entry.getKey(), entry.getValue() );
@@ -134,64 +131,67 @@ class GraphDbInstance
         byte resourceId[] = "414141".getBytes();
         params.put( LockManager.class, config.getLockManager() );
         params.put( LockReleaser.class, config.getLockReleaser() );
-        config.getTxModule().registerDataSource( DEFAULT_DATA_SOURCE_NAME,
-                NIO_NEO_DB_CLASS, resourceId, params );
+        config.getTxModule().registerDataSource( Config.DEFAULT_DATA_SOURCE_NAME,
+                Config.NIO_NEO_DB_CLASS, resourceId, params );
         // hack for lucene index recovery if in path
         if ( !config.isReadOnly() || config.isBackupSlave() )
         {
             try
             {
-                Class clazz = Class.forName( LUCENE_DS_CLASS );
+                Class clazz = Class.forName( Config.LUCENE_DS_CLASS );
                 cleanWriteLocksInLuceneDirectory( storeDir + "/lucene" );
                 byte luceneId[] = "162373".getBytes();
                 registerLuceneDataSource( "lucene", clazz.getName(),
                         config.getTxModule(), storeDir + "/lucene",
-                        config.getLockManager(), luceneId );
-                clazz = Class.forName( LUCENE_FULLTEXT_DS_CLASS );
-                cleanWriteLocksInLuceneDirectory( storeDir + "/lucene-fulltext" );
-                luceneId = "262374".getBytes();
-                registerLuceneDataSource( "lucene-fulltext",
-                        clazz.getName(), config.getTxModule(),
-                        storeDir + "/lucene-fulltext", config.getLockManager(),
-                        luceneId );
+                        config.getLockManager(), luceneId, params );
             }
             catch ( ClassNotFoundException e )
             { // ok index util not on class path
             }
+            
+            try
+            {
+                Class clazz = Class.forName( Config.LUCENE_FULLTEXT_DS_CLASS );
+                cleanWriteLocksInLuceneDirectory( storeDir + "/lucene-fulltext" );
+                byte[] luceneId = "262374".getBytes();
+                registerLuceneDataSource( "lucene-fulltext",
+                        clazz.getName(), config.getTxModule(),
+                        storeDir + "/lucene-fulltext", config.getLockManager(),
+                        luceneId, params );
+            }
+            catch ( ClassNotFoundException e )
+            { // ok index util not on class path
+            }
+            
+            try
+            {
+                Class<?> cls = Class.forName( "org.neo4j.index.impl.lucene.LuceneDataSource" );
+                config.getTxModule().registerDataSource( "lucene-index", cls.getName(),
+                        "162374".getBytes(), config.getParams() );
+            }
+            catch ( ClassNotFoundException e )
+            { // ok new lucene index not on classpath
+            }
         }
-        // System.setProperty( "neo.tx_log_directory", storeDir );
         persistenceSource = new NioNeoDbPersistenceSource();
-        config.setPersistenceSource( DEFAULT_DATA_SOURCE_NAME, create );
+        config.setPersistenceSource( Config.DEFAULT_DATA_SOURCE_NAME, create );
         config.getIdGeneratorModule().setPersistenceSourceInstance(
                 persistenceSource );
-//        config.getEventModule().init();
         config.getTxModule().init();
         config.getPersistenceModule().init();
         persistenceSource.init();
         config.getIdGeneratorModule().init();
         config.getGraphDbModule().init();
 
-//        config.getEventModule().start();
         config.getTxModule().start();
         config.getPersistenceModule().start(
-                config.getTxModule().getTxManager(), persistenceSource );
+                config.getTxModule().getTxManager(), persistenceSource,
+                syncHookFactory );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
         config.getGraphDbModule().start( config.getLockReleaser(),
                 config.getPersistenceModule().getPersistenceManager(), params );
-//        if ( lucene != null )
-//        {
-//            config.getTxModule().getXaDataSourceManager().unregisterDataSource(
-//                    "lucene" );
-//            lucene = null;
-//        }
-//        if ( luceneFulltext != null )
-//        {
-//            config.getTxModule().getXaDataSourceManager().unregisterDataSource(
-//                    "lucene-fulltext" );
-//            luceneFulltext = null;
-//        }
-        if ( "true".equals( params.get( "dump_configuration" ) ) )
+        if ( "true".equals( params.get( Config.DUMP_CONFIGURATION ) ) )
         {
             for ( Object key : params.keySet() )
             {
@@ -205,6 +205,12 @@ class GraphDbInstance
                 }
             }
         }
+        
+        if ( config.getTxModule().getXaDataSourceManager().hasDataSource( "lucene-index" ) )
+        {
+            config.getTxModule().getXaDataSourceManager().unregisterDataSource( "lucene-index" );
+        }
+        
         started = true;
         return Collections.unmodifiableMap( params );
     }
@@ -232,9 +238,9 @@ class GraphDbInstance
 
     private XaDataSource registerLuceneDataSource( String name,
             String className, TxModule txModule, String luceneDirectory,
-            LockManager lockManager, byte[] resourceId )
+            LockManager lockManager, byte[] resourceId, 
+            Map<Object,Object> params )
     {
-        Map<Object, Object> params = new HashMap<Object, Object>();
         params.put( "dir", luceneDirectory );
         params.put( LockManager.class, lockManager );
         return txModule.registerDataSource( name, className, resourceId,
@@ -263,13 +269,11 @@ class GraphDbInstance
             persistenceSource.stop();
             config.getPersistenceModule().stop();
             config.getTxModule().stop();
-//            config.getEventModule().stop();
             config.getGraphDbModule().destroy();
             config.getIdGeneratorModule().destroy();
             persistenceSource.destroy();
             config.getPersistenceModule().destroy();
             config.getTxModule().destroy();
-//            config.getEventModule().destroy();
         }
         started = false;
     }

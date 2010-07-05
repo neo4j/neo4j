@@ -152,12 +152,12 @@ public class NeoStore extends AbstractStore
      * @throws IOException
      *             If unable to create stores or name null
      */
-    public static void createStore( String fileName )
+    public static void createStore( String fileName, Map<?,?> config )
     {
         createEmptyStore( fileName, VERSION );
         NodeStore.createStore( fileName + ".nodestore.db" );
         RelationshipStore.createStore( fileName + ".relationshipstore.db" );
-        PropertyStore.createStore( fileName + ".propertystore.db" );
+        PropertyStore.createStore( fileName + ".propertystore.db", config );
         RelationshipTypeStore.createStore( fileName
             + ".relationshiptypestore.db" );
         NeoStore neoStore = new NeoStore( fileName );

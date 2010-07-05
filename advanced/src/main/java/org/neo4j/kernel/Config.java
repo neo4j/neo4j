@@ -36,7 +36,21 @@ import org.neo4j.kernel.impl.transaction.TxModule;
  */
 public class Config
 {
-//    private EventModule eventModule;
+    
+    static final String NIO_NEO_DB_CLASS =
+        "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
+    public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
+
+    static final String LUCENE_DS_CLASS =
+        "org.neo4j.index.lucene.LuceneDataSource";
+    static final String LUCENE_FULLTEXT_DS_CLASS =
+        "org.neo4j.index.lucene.LuceneFulltextDataSource";
+
+    public static final String USE_MEMORY_MAPPED_BUFFERS = 
+        "use_memory_mapped_buffers";
+    public static final String DUMP_CONFIGURATION = "dump_configuration";
+    public static final String KEEP_LOGICAL_LOGS = "keep_logical_logs";
+    
     private AdaptiveCacheManager cacheManager;
     private TxModule txModule;
     private LockManager lockManager;
@@ -80,7 +94,6 @@ public class Config
             backupSlave = false;
         }
         params.put( "read_only", readOnly );
-//        eventModule = new EventModule();
         cacheManager = new AdaptiveCacheManager();
         if ( !readOnly )
         {
@@ -114,11 +127,6 @@ public class Config
     {
         return create;
     }
-
-//    public EventModule getEventModule()
-//    {
-//        return eventModule;
-//    }
 
     public TxModule getTxModule()
     {

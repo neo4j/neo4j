@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -66,7 +66,7 @@ public interface Node extends PropertyContainer
      * so they are only guaranteed to be unique during a specific time span: if
      * the node is deleted, it's likely that a new node at some point will get
      * the old id. <b>Note</b>: this makes node ids brittle as public APIs.
-     * 
+     *
      * @return the id of this node
      */
     public long getId();
@@ -77,7 +77,7 @@ public interface Node extends PropertyContainer
      * unchecked exception will be raised when the transaction is committed.
      * Invoking any methods on this node after <code>delete()</code> has
      * returned is invalid and will lead to unspecified behavior.
-     * 
+     *
      * @throws RuntimeException if this node has relationships attached to it
      */
     public void delete();
@@ -87,7 +87,7 @@ public interface Node extends PropertyContainer
     /**
      * Returns all the relationships attached to this node. If no relationships
      * are attached to this node, an empty iterable will be returned.
-     * 
+     *
      * @return all relationships attached to this node
      */
     public Iterable<Relationship> getRelationships();
@@ -95,7 +95,7 @@ public interface Node extends PropertyContainer
     /**
      * Returns <code>true</code> if there are any relationships attached to this
      * node, <code>false</code> otherwise.
-     * 
+     *
      * @return <code>true</code> if there are any relationships attached to this
      *         node, <code>false</code> otherwise
      */
@@ -106,7 +106,7 @@ public interface Node extends PropertyContainer
      * that are attached to this node, regardless of direction. If no
      * relationships of the given types are attached to this node, an empty
      * iterable will be returned.
-     * 
+     *
      * @param types the given relationship type(s)
      * @return all relationships of the given type(s) that are attached to this
      *         node
@@ -117,7 +117,7 @@ public interface Node extends PropertyContainer
      * Returns <code>true</code> if there are any relationships of any of the
      * types in <code>types</code> attached to this node (regardless of
      * direction), <code>false</code> otherwise.
-     * 
+     *
      * @param types the given relationship type(s)
      * @return <code>true</code> if there are any relationships of any of the
      *         types in <code>types</code> attached to this node,
@@ -132,7 +132,7 @@ public interface Node extends PropertyContainer
      * node, an empty iterable will be returned. If {@link Direction#BOTH BOTH}
      * is passed in as a direction, relationships of both directions are
      * returned (effectively turning this into <code>getRelationships()</code>).
-     * 
+     *
      * @param dir the given direction, where <code>Direction.OUTGOING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getStartNode() start node} and <code>
@@ -150,7 +150,7 @@ public interface Node extends PropertyContainer
      * {@link Direction#BOTH BOTH} is passed in as a direction, relationships of
      * both directions are matched (effectively turning this into
      * <code>hasRelationships()</code>).
-     * 
+     *
      * @param dir the given direction, where <code>Direction.OUTGOING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getStartNode() start node} and <code>
@@ -166,7 +166,7 @@ public interface Node extends PropertyContainer
      * Returns all relationships with the given type and direction that are
      * attached to this node. If there are no matching relationships, an empty
      * iterable will be returned.
-     * 
+     *
      * @param type the given type
      * @param dir the given direction, where <code>Direction.OUTGOING</code>
      *            means all relationships that have this node as
@@ -184,7 +184,7 @@ public interface Node extends PropertyContainer
      * Returns <code>true</code> if there are any relationships of the given
      * relationship type and direction attached to this node, <code>false</code>
      * otherwise.
-     * 
+     *
      * @param type the given type
      * @param dir the given direction, where <code>Direction.OUTGOING</code>
      *            means all relationships that have this node as
@@ -219,7 +219,7 @@ public interface Node extends PropertyContainer
      * described above. In those situations, a "state-checking" method (e.g.
      * <code>hasSingleRelationship(...)</code>) is not required, because this
      * method behaves correctly "out of the box."
-     * 
+     *
      * @param type the type of the wanted relationship
      * @param dir the direction of the wanted relationship (where
      *            <code>Direction.OUTGOING</code> means a relationship that has
@@ -249,13 +249,23 @@ public interface Node extends PropertyContainer
      * A relationship is equally well traversed in both directions so there's no
      * need to create another relationship in the opposite direction (in regards
      * to traversal or performance).
-     * 
+     *
      * @param otherNode the end node of the new relationship
      * @param type the type of the new relationship
      * @return the newly created relationship
      */
     public Relationship createRelationshipTo( Node otherNode,
             RelationshipType type );
+
+    Expansion<Relationship> expandAll();
+
+    Expansion<Relationship> expand( RelationshipType type );
+
+    Expansion<Relationship> expand( RelationshipType type, Direction direction );
+
+    Expansion<Relationship> expand( Direction direction );
+
+    Expansion<Relationship> expand( RelationshipExpander expander );
 
     // Traversal
     /**
@@ -268,7 +278,7 @@ public interface Node extends PropertyContainer
      * tree formed by the given relationship types (with direction) exactly
      * once. For more information about traversal, see the {@link Traverser}
      * documentation.
-     * 
+     *
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
      *            when to stop traversing, either a predefined evaluator such as
@@ -284,7 +294,7 @@ public interface Node extends PropertyContainer
      * @param direction the direction in which the relationships of type
      *            <code>relationshipType</code> will be traversed
      * @return a new traverser, configured as above
-     * 
+     *
      * @deprecated because of an unnatural and too tight coupling with
      * {@link Node}. Also because of the introduction of a new traversal
      * framework. The new way of doing traversals is by creating a
@@ -310,7 +320,7 @@ public interface Node extends PropertyContainer
      * each node that can be reached from this node by the spanning tree formed
      * by the given relationship types (with direction) exactly once. For more
      * information about traversal, see the {@link Traverser} documentation.
-     * 
+     *
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
      *            when to stop traversing, either a predefined evaluator such as
@@ -330,7 +340,7 @@ public interface Node extends PropertyContainer
      * @param secondDirection the direction that the second relationship type
      *            will be traversed
      * @return a new traverser, configured as above
-     * 
+     *
      * @deprecated because of an unnatural and too tight coupling with
      * {@link Node}. Also because of the introduction of a new traversal
      * framework. The new way of doing traversals is by creating a
@@ -368,7 +378,7 @@ public interface Node extends PropertyContainer
      * from this node by the spanning tree formed by the given relationship
      * types (with direction) exactly once. For more information about
      * traversal, see the {@link Traverser} documentation.
-     * 
+     *
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
      *            when to stop traversing, either a predefined evaluator such as
@@ -387,7 +397,7 @@ public interface Node extends PropertyContainer
      * @return a new traverser, configured as above
      * @throws RuntimeException if the variable-length relationship type /
      *             direction list is not as described above
-     *             
+     *
      * @deprecated because of an unnatural and too tight coupling with
      * {@link Node}. Also because of the introduction of a new traversal
      * framework. The new way of doing traversals is by creating a
