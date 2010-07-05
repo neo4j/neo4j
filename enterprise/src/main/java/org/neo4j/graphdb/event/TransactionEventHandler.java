@@ -7,8 +7,11 @@ import org.neo4j.graphdb.TransactionFailureException;
 /**
  * The interface of an event handler for Neo4j Transaction events.
  * Once it has been registered at a {@link GraphDatabaseService} instance
- * it will receive events about what happens in each transaction which is
- * about to be committed.
+ * it will receive events about what has happened in each transaction which is
+ * about to be committed. Handlers won't get notified about transactions which
+ * hasn't performed any write operation or won't be committed (either if
+ * {@link Transaction#success()} hasn't been called or the transaction has been
+ * marked as failed, {@link Transaction#failure()}.
  * 
  * Right before a transaction is about to be committed
  * the {@link #beforeCommit(TransactionData)} method is called with the entire

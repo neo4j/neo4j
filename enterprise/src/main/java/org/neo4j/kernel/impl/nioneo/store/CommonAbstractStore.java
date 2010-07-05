@@ -28,6 +28,7 @@ import java.nio.channels.FileLock;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 /**
@@ -347,7 +348,7 @@ public abstract class CommonAbstractStore
         if ( getConfig() != null )
         {
             String useMemMapped = (String) getConfig().get( 
-                "use_memory_mapped_buffers" );
+                Config.USE_MEMORY_MAPPED_BUFFERS );
             if ( useMemMapped != null && 
                 useMemMapped.toLowerCase().equals( "false" ) )
             {

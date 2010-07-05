@@ -9,22 +9,18 @@ public interface RelationshipExpander
     /**
      * Returns relationships for a node in whatever way the implementation
      * likes.
-     * 
+     *
      * @param node the node to expand.
      * @return the relationships to return for the {@code node}.
      */
     Iterable<Relationship> expand( Node node );
 
     /**
-     * Returns relationships for a node in whatever way the implementation
-     * likes. The direction (in which relationships are found) can be reversed
-     * by setting {@code reversedDirection} to true.
-     * 
-     * @param node the node to expand.
-     * @param reversedDirection whether or not to use reversed directions
-     * when finding relationships.
-     * @return the relationships to return for the {@code node}.
+     * Returns a new instances with the exact same {@link RelationshipType}s,
+     * but with all directions reversed (Direction{@link #reversed()}.
+     *
+     * @return a {@link RelationshipExpander} with the same types, but with
+     *         reversed directions.
      */
-    Iterable<Relationship> expand( Node node,
-            boolean reversedDirection );
+    RelationshipExpander reversed();
 }

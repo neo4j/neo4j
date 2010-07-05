@@ -7,6 +7,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.ExpansionSource;
+import org.neo4j.kernel.TraversalFactory;
 
 public class TraversalPath implements Path
 {
@@ -55,36 +56,7 @@ public class TraversalPath implements Path
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder();
-        Iterator<Node> nodeIterator = this.nodes.iterator();
-        Iterator<Relationship> relIterator = this.relationships.iterator();
-        Node currentNode = nodeIterator.next();
-        builder.append( nodeRepresentation( currentNode ) );
-        while ( relIterator.hasNext() )
-        {
-            builder.append( relationshipRepresentation( relIterator.next(),
-                    currentNode ) );
-            currentNode = nodeIterator.next();
-            builder.append( nodeRepresentation( currentNode ) );
-        }
-        return builder.toString();
-    }
-
-    private String relationshipRepresentation( Relationship relationship,
-            Node fromNode )
-    {
-        boolean outgoing = relationship.getStartNode().equals( fromNode );
-        StringBuilder builder = new StringBuilder();
-        builder.append( outgoing ? "--" : "<--" );
-        builder.append( "<" + relationship.getId() + ","
-                        + relationship.getType().name() + ">" );
-        builder.append( outgoing ? "-->" : "--" );
-        return builder.toString();
-    }
-
-    private String nodeRepresentation( Node node )
-    {
-        return "(" + node.getId() + ")";
+        return TraversalFactory.defaultPathToString( this );
     }
 
     @Override

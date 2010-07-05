@@ -1,6 +1,9 @@
 package org.neo4j.commons.iterator;
 
-public class ArrayIterator<T> extends PrefetchingIterator<T>
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+public class ArrayIterator<T> implements Iterator<T>
 {
     private final T[] array;
     private int index;
@@ -9,17 +12,20 @@ public class ArrayIterator<T> extends PrefetchingIterator<T>
     {
         this.array = array;
     }
-    
-    @Override
-    protected T fetchNextOrNull()
+
+    public boolean hasNext()
     {
-        try
-        {
-            return index < array.length ? array[index] : null;
-        }
-        finally
-        {
-            index++;
-        }
+        return index < array.length;
+    }
+
+    public T next()
+    {
+        if ( !hasNext() ) throw new NoSuchElementException();
+        return array[index++];
+    }
+
+    public void remove()
+    {
+        throw new UnsupportedOperationException();
     }
 }

@@ -13,7 +13,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
-import org.neo4j.graphdb.traversal.ReturnFilter;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.TraversalFactory;
 
@@ -33,7 +32,7 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
     @Test
     public void testMaxDepthAndCustomPruneEvaluatorCombined()
     {
-        TraversalDescription description = new TraversalDescriptionImpl().filter( ReturnFilter.ALL )
+        TraversalDescription description = new TraversalDescriptionImpl().filter( TraversalFactory.returnAll() )
                 .prune( TraversalFactory.pruneAfterDepth( 1 ) ).prune( new PruneEvaluator()
                 {
                     public boolean pruneAfter( Position position )

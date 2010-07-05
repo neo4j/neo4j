@@ -1,55 +1,39 @@
 package org.neo4j.kernel.impl.traversal;
 
+import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.traversal.ExpansionSource;
+import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
-import org.neo4j.graphdb.traversal.ReturnFilter;
-import org.neo4j.graphdb.traversal.SourceSelector;
 import org.neo4j.graphdb.traversal.SourceSelectorFactory;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
-import org.neo4j.kernel.DefaultExpander;
+import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.TraversalFactory;
 
 public final class TraversalDescriptionImpl implements TraversalDescription
 {
-    public static final SourceSelectorFactory DEPTH_FIRST_SELECTOR =
-            new SourceSelectorFactory()
-            {
-                public SourceSelector create( ExpansionSource startSource )
-                {
-                    return new DepthFirstSelector( startSource );
-                }
-            };
-    public static final SourceSelectorFactory BREADTH_FIRST_SELECTOR =
-            new SourceSelectorFactory()
-            {
-                public SourceSelector create( ExpansionSource startSource )
-                {
-                    return new BreadthFirstSelector( startSource );
-                }
-            };
-    
     public TraversalDescriptionImpl()
     {
-        this( TraversalFactory.expanderForAllTypes(), Uniqueness.NODE_GLOBAL, null,
-                PruneEvaluator.NONE, ReturnFilter.ALL, DEPTH_FIRST_SELECTOR );
+        this( StandardExpander.DEFAULT, Uniqueness.NODE_GLOBAL, null,
+                PruneEvaluator.NONE, TraversalFactory.returnAll(),
+                TraversalFactory.preorderDepthFirstSelector() );
     }
 
-    final RelationshipExpander expander;
+    final Expander expander;
     final Uniqueness uniqueness;
     final Object uniquenessParameter;
-    PruneEvaluator pruning;
-    final ReturnFilter filter;
+    final PruneEvaluator pruning;
+    final Predicate<Position> filter;
     final SourceSelectorFactory sourceSelector;
 
-    private TraversalDescriptionImpl( RelationshipExpander expander,
+    private TraversalDescriptionImpl( Expander expander,
             Uniqueness uniqueness, Object uniquenessParameter,
-            PruneEvaluator pruning, ReturnFilter filter,
+            PruneEvaluator pruning, Predicate<Position> filter,
             SourceSelectorFactory sourceSelector )
     {
         this.expander = expander;
@@ -85,21 +69,25 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     {
         if ( this.uniqueness == uniqueness )
         {
-            return this;
+            if ( uniquenessParameter == null ? parameter == null
+                    : uniquenessParameter.equals( parameter ) )
+            {
+                return this;
+            }
         }
-        
+
         switch ( uniqueness )
         {
         case NODE_RECENT:
         case RELATIONSHIP_RECENT:
             acceptIntegerNumber( uniqueness, parameter );
             break;
-            
+
         default:
             throw new IllegalArgumentException(
                     uniqueness.name() + " doesn't accept any parameters" );
         }
-        
+
         return new TraversalDescriptionImpl( expander, uniqueness, parameter,
                 pruning, filter, sourceSelector );
     }
@@ -126,13 +114,13 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         {
             return this;
         }
-        
+
         nullCheck( pruning, PruneEvaluator.class, "NO_PRUNING" );
         return new TraversalDescriptionImpl( expander, uniqueness,
                 uniquenessParameter, addPruneEvaluator( pruning ),
                 filter, sourceSelector );
     }
-    
+
     private PruneEvaluator addPruneEvaluator( PruneEvaluator pruning )
     {
         if ( this.pruning instanceof MultiPruneEvaluator )
@@ -153,17 +141,18 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#filter(org.neo4j.graphdb.traversal.ReturnFilter)
-     */
-    public TraversalDescription filter( ReturnFilter filter )
+    public TraversalDescription filter( Predicate<Position> filter )
     {
         if ( this.filter == filter )
         {
             return this;
         }
-        
-        nullCheck( filter, ReturnFilter.class, "ALL" );
+
+        if ( filter == null )
+        {
+            throw new IllegalArgumentException( "Return filter may not be null, " +
+            		"use " + TraversalFactory.class.getSimpleName() + ".returnAll() instead." );
+        }
         return new TraversalDescriptionImpl( expander, uniqueness,
                 uniquenessParameter, pruning, filter, sourceSelector );
     }
@@ -180,7 +169,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
                                                 + " instead." );
         }
     }
-    
+
     /* (non-Javadoc)
      * @see org.neo4j.graphdb.traversal.TraversalDescription#order(org.neo4j.graphdb.traversal.Order)
      */
@@ -193,17 +182,17 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         return new TraversalDescriptionImpl( expander, uniqueness,
                 uniquenessParameter, pruning, filter, selector );
     }
-    
+
     public TraversalDescription depthFirst()
     {
-        return sourceSelector( DEPTH_FIRST_SELECTOR );
+        return sourceSelector( TraversalFactory.preorderDepthFirstSelector() );
     }
 
     public TraversalDescription breadthFirst()
     {
-        return sourceSelector( BREADTH_FIRST_SELECTOR );
+        return sourceSelector( TraversalFactory.preorderBreadthFirstSelector() );
     }
-    
+
     /* (non-Javadoc)
      * @see org.neo4j.graphdb.traversal.TraversalDescription#relationships(org.neo4j.graphdb.RelationshipType)
      */
@@ -218,9 +207,9 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     public TraversalDescription relationships( RelationshipType type,
             Direction direction )
     {
-        return expand( ((DefaultExpander) expander).add( type, direction ) );
+        return expand( expander.add( type, direction ) );
     }
-    
+
     /* (non-Javadoc)
      * @see org.neo4j.graphdb.traversal.TraversalDescription#expand(org.neo4j.graphdb.RelationshipExpander)
      */
@@ -230,7 +219,8 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         {
             return this;
         }
-        return new TraversalDescriptionImpl( expander, uniqueness,
+        return new TraversalDescriptionImpl(
+                TraversalFactory.expander( expander ), uniqueness,
                 uniquenessParameter, pruning, filter, sourceSelector );
     }
 }
