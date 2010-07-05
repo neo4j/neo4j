@@ -2,6 +2,10 @@ package org.neo4j.kernel.impl.ha;
 
 import org.neo4j.graphdb.PropertyContainer;
 
+/**
+ * Represents the master-side of the HA communication between master and slave.
+ * A master will receive calls to these methods from slaves when they do stuff.
+ */
 public interface Master
 {
     Response<IdRange> allocateNodeIds( SlaveContext context );
@@ -18,7 +22,7 @@ public interface Master
     Response<LockStatus> acquireReadLock( SlaveContext context, int localTxId,
             PropertyContainer... entities );
 
-    Response<TransactionStatus> commitTransaction( SlaveContext context,
+    Response<TransactionResult> commitTransaction( SlaveContext context,
             int localTxId, TransactionStream transaction );
 
     Response<TransactionStatus> rollbackTransaction( SlaveContext context,
