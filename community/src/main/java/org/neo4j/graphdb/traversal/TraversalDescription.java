@@ -1,5 +1,6 @@
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
@@ -51,13 +52,12 @@ public interface TraversalDescription
     TraversalDescription prune( PruneEvaluator pruning );
 
     /**
-     * Sets the {@link ReturnFilter} to use, i.e. which positions are OK to
-     * return.
+     * Sets the return filter to use, i.e. which positions are OK to return.
      * 
-     * @param filter the return filter to use.
+     * @param filter the {@link Predicate} to use as filter.
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription filter( ReturnFilter filter );
+    TraversalDescription filter( Predicate<Position> filter );
     
     /**
      * Sets the {@link SourceSelectorFactory} to use. A {@link SourceSelector}
@@ -74,22 +74,21 @@ public interface TraversalDescription
     
     /**
      * A convenience method for {@link #sourceSelector(SourceSelectorFactory)}
-     * where a "depth first" selector is used. A depth first selector always
-     * tries to select positions (from the current position) which are deeper
-     * than the current position.
+     * where a "preorder depth first" selector is used. Positions which are
+     * deeper than the current position will be returned before positions on
+     * the same depth.
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription depthFirst();
     
     /**
      * A convenience method for {@link #sourceSelector(SourceSelectorFactory)}
-     * where a "breadth first" selector is used. A breadth first selector
-     * always selects all positions on the current depth before advancing to
-     * the next depth.
+     * where a "preorder breadth first" selector is used. All positions with
+     * the same depth will be returned before advancing to the next depth.
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription breadthFirst();
-
+    
     /**
      * Adds {@code type} to the list of relationship types to traverse.
      * There's no priority or order in which types to traverse.

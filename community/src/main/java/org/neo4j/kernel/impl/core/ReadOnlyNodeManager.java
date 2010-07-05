@@ -26,9 +26,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.persistence.IdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.util.ArrayMap;
 
 class ReadOnlyNodeManager extends NodeManager
 {
@@ -63,7 +65,7 @@ class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    void deleteNode( NodeImpl node )
+    ArrayMap<Integer,PropertyData> deleteNode( NodeImpl node )
     {
         throw new ReadOnlyDbException();
     }
@@ -87,7 +89,7 @@ class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    void deleteRelationship( RelationshipImpl rel )
+    ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel )
     {
         throw new ReadOnlyDbException();
     }

@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -24,14 +24,17 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.kernel.TraversalFactory;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
@@ -45,8 +48,8 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
     private ArrayMap<String,IntArray> relationshipMap = null;
     // private RelationshipGrabber relationshipGrabber = null;
     private RelationshipChainPosition relChainPosition = null;
-    
-    
+
+
     NodeImpl( int id, NodeManager nodeManager )
     {
         super( id, nodeManager );
@@ -59,37 +62,41 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         if ( newNode )
         {
             relationshipMap = new ArrayMap<String,IntArray>();
-            relChainPosition = new RelationshipChainPosition( 
+            relChainPosition = new RelationshipChainPosition(
                 Record.NO_NEXT_RELATIONSHIP.intValue() );
         }
     }
 
+    @Override
     protected void changeProperty( int propertyId, Object value )
     {
         nodeManager.nodeChangeProperty( this, propertyId, value );
     }
 
+    @Override
     protected int addProperty( PropertyIndex index, Object value )
     {
         return nodeManager.nodeAddProperty( this, index, value );
     }
 
+    @Override
     protected void removeProperty( int propertyId )
     {
         nodeManager.nodeRemoveProperty( this, propertyId );
     }
 
+    @Override
     protected ArrayMap<Integer,PropertyData> loadProperties( boolean light )
     {
         return nodeManager.loadProperties( this, light );
     }
-    
+
     List<RelTypeElementIterator> getAllRelationships()
     {
         ensureFullRelationships();
-        List<RelTypeElementIterator> relTypeList = 
+        List<RelTypeElementIterator> relTypeList =
             new LinkedList<RelTypeElementIterator>();
-        ArrayMap<String,IntArray> addMap = 
+        ArrayMap<String,IntArray> addMap =
             nodeManager.getCowRelationshipAddMap( this );
         for ( String type : relationshipMap.keySet() )
         {
@@ -103,7 +110,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
             }
             if ( src != null || add != null )
             {
-                relTypeList.add( RelTypeElement.create( type, this, src, add, 
+                relTypeList.add( RelTypeElement.create( type, this, src, add,
                     remove ) );
             }
         }
@@ -116,36 +123,36 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
                     IntArray remove = nodeManager.getCowRelationshipRemoveMap(
                         this, type );
                     IntArray add = addMap.get( type );
-                    relTypeList.add( RelTypeElement.create( type, this, null, 
+                    relTypeList.add( RelTypeElement.create( type, this, null,
                         add, remove ) );
                 }
             }
         }
         return relTypeList;
     }
-    
-    List<RelTypeElementIterator> getAllRelationshipsOfType( 
+
+    List<RelTypeElementIterator> getAllRelationshipsOfType(
         RelationshipType... types)
     {
         ensureFullRelationships();
-        List<RelTypeElementIterator> relTypeList = 
+        List<RelTypeElementIterator> relTypeList =
             new LinkedList<RelTypeElementIterator>();
         for ( RelationshipType type : types )
         {
             IntArray src = relationshipMap.get( type.name() );
             IntArray remove = nodeManager.getCowRelationshipRemoveMap(
                 this, type.name() );
-            IntArray add = nodeManager.getCowRelationshipAddMap( this, 
+            IntArray add = nodeManager.getCowRelationshipAddMap( this,
                 type.name() );
             if ( src != null || add != null )
             {
-                relTypeList.add( RelTypeElement.create( type.name(), this, src, 
+                relTypeList.add( RelTypeElement.create( type.name(), this, src,
                     add, remove ) );
             }
         }
         return relTypeList;
     }
-    
+
     public Iterable<Relationship> getRelationships()
     {
         return new IntArrayIterator( getAllRelationships(), this,
@@ -161,15 +168,15 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
     public Iterable<Relationship> getRelationships( RelationshipType type )
     {
         RelationshipType types[] = new RelationshipType[] { type };
-        return new IntArrayIterator( 
-            getAllRelationshipsOfType( types ), 
+        return new IntArrayIterator(
+            getAllRelationshipsOfType( types ),
             this, Direction.BOTH, nodeManager, types );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
-        return new IntArrayIterator( 
-            getAllRelationshipsOfType(types ), 
+        return new IntArrayIterator(
+            getAllRelationshipsOfType(types ),
             this, Direction.BOTH, nodeManager, types );
     }
 
@@ -177,8 +184,8 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         Direction dir )
     {
         RelationshipType types[] = new RelationshipType[] { type };
-        Iterator<Relationship> rels = new IntArrayIterator( 
-            getAllRelationshipsOfType( types ), 
+        Iterator<Relationship> rels = new IntArrayIterator(
+            getAllRelationshipsOfType( types ),
             this, dir, nodeManager, types );
         if ( !rels.hasNext() )
         {
@@ -197,18 +204,28 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         Direction dir )
     {
         RelationshipType types[] = new RelationshipType[] { type };
-        return new IntArrayIterator(  
-            getAllRelationshipsOfType( types ), 
+        return new IntArrayIterator(
+            getAllRelationshipsOfType( types ),
             this, dir, nodeManager, types );
     }
-    
+
     public void delete()
     {
         nodeManager.acquireLock( this, LockType.WRITE );
         boolean success = false;
         try
         {
-            nodeManager.deleteNode( this );
+            ArrayMap<Integer,PropertyData> skipMap =
+                nodeManager.getCowPropertyRemoveMap( this, true );
+            ArrayMap<Integer,PropertyData> removedProps =
+                nodeManager.deleteNode( this );
+            if ( removedProps.size() > 0 )
+            {
+                for ( int index : removedProps.keySet() )
+                {
+                    skipMap.put( index, removedProps.get( index ) );
+                }
+            }
             success = true;
         }
         finally
@@ -227,7 +244,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
      * node id is greater and -1 else.
      * <p>
      * If <CODE>node</CODE> isn't a node a ClassCastException will be thrown.
-     * 
+     *
      * @param node
      *            the node to compare this node with
      * @return 0 if equal id, 1 if this id is greater else -1
@@ -253,11 +270,12 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
     /**
      * Returns true if object <CODE>o</CODE> is a node with the same id as
      * <CODE>this</CODE>.
-     * 
+     *
      * @param o
      *            the object to compare
      * @return true if equal, else false
      */
+    @Override
     public boolean equals( Object o )
     {
         // verify type and not null, should use Node inteface
@@ -276,6 +294,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
 
     }
 
+    @Override
     public int hashCode()
     {
         return id;
@@ -283,9 +302,10 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
 
     /**
      * Returns this node's string representation.
-     * 
+     *
      * @return the string representation of this node
      */
+    @Override
     public String toString()
     {
         return "NodeImpl#" + this.getId();
@@ -315,7 +335,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
     {
         if ( relationshipMap == null )
         {
-            this.relChainPosition = 
+            this.relChainPosition =
                 nodeManager.getRelationshipChainPosition( this );
             this.relationshipMap = new ArrayMap<String,IntArray>();
             getMoreRelationships();
@@ -323,15 +343,15 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         }
         return false;
     }
-    
+
     synchronized boolean getMoreRelationships()
     {
         if ( !relChainPosition.hasMore() )
         {
             return false;
         }
-        ArrayMap<String,IntArray> addMap = nodeManager.getMoreRelationships( 
-            this );  
+        ArrayMap<String,IntArray> addMap = nodeManager.getMoreRelationships(
+            this );
         if ( addMap.size() == 0 )
         {
             return false;
@@ -350,7 +370,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
             }
         }
         return true;
-    }    
+    }
 
     public Relationship createRelationshipTo( Node otherNode,
         RelationshipType type )
@@ -358,11 +378,38 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         return nodeManager.createRelationship( this, otherNode, type );
     }
 
+    public Expansion<Relationship> expandAll()
+    {
+        return TraversalFactory.expanderForAllTypes().expand( this );
+    }
+
+    public Expansion<Relationship> expand( RelationshipType type )
+    {
+        return expand( type, Direction.BOTH );
+    }
+
+    public Expansion<Relationship> expand( RelationshipType type,
+            Direction direction )
+    {
+        return TraversalFactory.expanderForTypes( type, direction ).expand(
+                this );
+    }
+
+    public Expansion<Relationship> expand( Direction direction )
+    {
+        return TraversalFactory.expanderForAllTypes( direction ).expand( this );
+    }
+
+    public Expansion<Relationship> expand( RelationshipExpander expander )
+    {
+        return TraversalFactory.expander( expander ).expand( this );
+    }
+
     public Traverser traverse( Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType relationshipType, Direction direction )
     {
-        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ), 
+        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ),
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipType, direction );
     }
@@ -372,7 +419,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         RelationshipType firstRelationshipType, Direction firstDirection,
         RelationshipType secondRelationshipType, Direction secondDirection )
     {
-        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ), 
+        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ),
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, firstRelationshipType, firstDirection,
                 secondRelationshipType, secondDirection );
@@ -382,7 +429,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         Object... relationshipTypesAndDirections )
     {
-        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ), 
+        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ),
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipTypesAndDirections );
     }
@@ -407,8 +454,8 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         return getRelationships( type, dir ).iterator().hasNext();
     }
 
-    protected void commitRelationshipMaps( 
-        ArrayMap<String,IntArray> cowRelationshipAddMap, 
+    protected void commitRelationshipMaps(
+        ArrayMap<String,IntArray> cowRelationshipAddMap,
         ArrayMap<String,IntArray> cowRelationshipRemoveMap )
     {
         if ( relationshipMap == null )
@@ -421,13 +468,13 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
             for ( String type : cowRelationshipAddMap.keySet() )
             {
                 IntArray add = cowRelationshipAddMap.get( type );
-                IntArray remove = null; 
-                if ( cowRelationshipRemoveMap != null ) 
+                IntArray remove = null;
+                if ( cowRelationshipRemoveMap != null )
                 {
                     remove = cowRelationshipRemoveMap.get( type );
                 }
                 IntArray src = relationshipMap.get( type );
-                relationshipMap.put( type, IntArray.composeNew( 
+                relationshipMap.put( type, IntArray.composeNew(
                     src, add, remove ) );
             }
         }
@@ -435,14 +482,14 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         {
             for ( String type : cowRelationshipRemoveMap.keySet() )
             {
-                if ( cowRelationshipAddMap != null && 
-                    cowRelationshipAddMap.get( type ) != null ) 
+                if ( cowRelationshipAddMap != null &&
+                    cowRelationshipAddMap.get( type ) != null )
                 {
                     continue;
                 }
                 IntArray src = relationshipMap.get( type );
-                IntArray remove = cowRelationshipRemoveMap.get( type ); 
-                relationshipMap.put( type, IntArray.composeNew( src, null, 
+                IntArray remove = cowRelationshipRemoveMap.get( type );
+                relationshipMap.put( type, IntArray.composeNew( src, null,
                      remove ) );
             }
         }

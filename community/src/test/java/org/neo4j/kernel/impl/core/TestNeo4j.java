@@ -24,7 +24,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 import org.junit.Test;
@@ -33,11 +35,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class TestNeo4j extends AbstractNeo4jTestCase
 {
@@ -327,5 +332,39 @@ public class TestNeo4j extends AbstractNeo4jTestCase
             assertEquals( count, oldCount );
         }
         // else we skip test, takes too long
+    }
+    
+    @Test
+    public void testMultipleShutdown()
+    {
+        getGraphDb().shutdown();
+        getGraphDb().shutdown();
+    }
+    
+    @Test
+    public void testKeepLogsConfig()
+    {
+        Map<String,String> config = new HashMap<String,String>();
+        config.put( Config.KEEP_LOGICAL_LOGS, "nioneodb" );
+        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( 
+                "target/configdb", config );
+        XaDataSourceManager xaDsMgr = 
+                db.getConfig().getTxModule().getXaDataSourceManager();
+        XaDataSource xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        assertTrue( xaDs.isLogicalLogKept() );
+        db.shutdown();
+        
+        config.remove( Config.KEEP_LOGICAL_LOGS );
+        db = new EmbeddedGraphDatabase( "target/configdb", config );
+        xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
+        xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        assertTrue( !xaDs.isLogicalLogKept() );
+        db.shutdown();
+
+        config.put( Config.KEEP_LOGICAL_LOGS, "true" );
+        db = new EmbeddedGraphDatabase( "target/configdb", config );
+        xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
+        xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        assertTrue( xaDs.isLogicalLogKept() );
     }
 }

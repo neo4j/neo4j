@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +41,6 @@ public class PropertyStore extends AbstractStore implements Store
     // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
     // prev_prop_id(int)+next_prop_id(int)
     private static final int RECORD_SIZE = 25;
-
-    private static final int STRING_STORE_BLOCK_SIZE = 120;
 
     private DynamicStringStore stringPropertyStore;
     private PropertyIndexStore propertyIndexStore;
@@ -71,13 +69,6 @@ public class PropertyStore extends AbstractStore implements Store
             + ".strings", getConfig() );
         propertyIndexStore = new PropertyIndexStore( getStorageFileName()
             + ".index", getConfig() );
-        File arrayStoreFile = new File( getStorageFileName() + ".arrays" );
-        // old store, create array store
-        if ( !arrayStoreFile.exists() )
-        {
-            DynamicArrayStore.createStore( getStorageFileName() + ".arrays",
-                STRING_STORE_BLOCK_SIZE );
-        }
         arrayPropertyStore = new DynamicArrayStore( getStorageFileName()
             + ".arrays", getConfig() );
     }
@@ -140,14 +131,42 @@ public class PropertyStore extends AbstractStore implements Store
      * @throws IOException
      *             If unable to create property store or name null
      */
-    public static void createStore( String fileName )
+    public static void createStore( String fileName, Map<?,?> config )
     {
         createEmptyStore( fileName, VERSION );
+        int stringStoreBlockSize = 120;
+        int arrayStoreBlockSize = 120;
+        try
+        {
+            String stringBlockSize = (String) config.get( "string_block_size" );
+            String arrayBlockSize = (String) config.get( "array_block_size" );
+            if ( stringBlockSize != null )
+            {
+                int value = Integer.parseInt( stringBlockSize );
+                if ( value > 0 )
+                {
+                    stringStoreBlockSize = value;
+                }
+            }
+            if ( arrayBlockSize != null )
+            {
+                int value = Integer.parseInt( arrayBlockSize );
+                if ( value > 0 )
+                {
+                    arrayStoreBlockSize = value;
+                }
+            }
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
+
         DynamicStringStore.createStore( fileName + ".strings",
-            STRING_STORE_BLOCK_SIZE );
+            stringStoreBlockSize );
         PropertyIndexStore.createStore( fileName + ".index" );
         DynamicArrayStore.createStore( fileName + ".arrays",
-            STRING_STORE_BLOCK_SIZE );
+            arrayStoreBlockSize );
     }
 
     private int nextStringBlockId()
@@ -548,36 +567,33 @@ public class PropertyStore extends AbstractStore implements Store
     public Object getStringFor( PropertyRecord propRecord )
     {
         int recordToFind = (int) propRecord.getPropBlock();
-        Iterator<DynamicRecord> records = 
-            propRecord.getValueRecords().iterator();
+        Map<Integer,DynamicRecord> recordsMap = new HashMap<Integer,DynamicRecord>();
+        for ( DynamicRecord record : propRecord.getValueRecords() )
+        {
+            recordsMap.put( record.getId(), record );
+        }
         List<char[]> charList = new LinkedList<char[]>();
         int totalSize = 0;
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
-            records.hasNext() )
+        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() )
         {
-            DynamicRecord record = records.next();
-            if ( record.getId() == recordToFind )
+            DynamicRecord record = recordsMap.get( recordToFind );
+            if ( record.isLight() )
             {
-                if ( record.isLight() )
-                {
-                    stringPropertyStore.makeHeavy( record );
-                }
-                if ( !record.isCharData() )
-                {
-                    ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-                    char[] chars = new char[record.getData().length / 2];
-                    totalSize += chars.length;
-                    buf.asCharBuffer().get( chars );
-                    charList.add( chars );
-                }
-                else
-                {
-                    charList.add( record.getDataAsChar() );
-                }
-                recordToFind = record.getNextBlock();
-                // TODO: make opti here, high chance next is right one
-                records = propRecord.getValueRecords().iterator();
+                stringPropertyStore.makeHeavy( record );
             }
+            if ( !record.isCharData() )
+            {
+                ByteBuffer buf = ByteBuffer.wrap( record.getData() );
+                char[] chars = new char[record.getData().length / 2];
+                totalSize += chars.length;
+                buf.asCharBuffer().get( chars );
+                charList.add( chars );
+            }
+            else
+            {
+                charList.add( record.getDataAsChar() );
+            }
+            recordToFind = record.getNextBlock();
         }
         StringBuffer buf = new StringBuffer();
         for ( char[] str : charList )
@@ -590,37 +606,34 @@ public class PropertyStore extends AbstractStore implements Store
     public Object getArrayFor( PropertyRecord propertyRecord )
     {
         int recordToFind = (int) propertyRecord.getPropBlock();
-        Iterator<DynamicRecord> records = 
-            propertyRecord.getValueRecords().iterator();
+        Map<Integer,DynamicRecord> recordsMap = new HashMap<Integer,DynamicRecord>();
+        for ( DynamicRecord record : propertyRecord.getValueRecords() )
+        {
+            recordsMap.put( record.getId(), record );
+        }
         List<byte[]> byteList = new LinkedList<byte[]>();
         int totalSize = 0;
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
-            records.hasNext() )
+        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() )
         {
-            DynamicRecord record = records.next();
-            if ( record.getId() == recordToFind )
+            DynamicRecord record = recordsMap.get( recordToFind );
+            if ( record.isLight() )
             {
-                if ( record.isLight() )
-                {
-                    arrayPropertyStore.makeHeavy( record );
-                }
-                if ( !record.isCharData() )
-                {
-                    ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-                    byte[] bytes = new byte[record.getData().length];
-                    totalSize += bytes.length;
-                    buf.get( bytes );
-                    byteList.add( bytes );
-                }
-                else
-                {
-                    throw new InvalidRecordException( 
-                        "Expected byte data on record " + record );
-                }
-                recordToFind = record.getNextBlock();
-                // TODO: make opti here, high chance next is right one
-                records = propertyRecord.getValueRecords().iterator();
+                arrayPropertyStore.makeHeavy( record );
             }
+            if ( !record.isCharData() )
+            {
+                ByteBuffer buf = ByteBuffer.wrap( record.getData() );
+                byte[] bytes = new byte[record.getData().length];
+                totalSize += bytes.length;
+                buf.get( bytes );
+                byteList.add( bytes );
+            }
+            else
+            {
+                throw new InvalidRecordException( 
+                    "Expected byte data on record " + record );
+            }
+            recordToFind = record.getNextBlock();
         }
         byte[] bArray = new byte[totalSize];
         int offset = 0;
@@ -660,5 +673,15 @@ public class PropertyStore extends AbstractStore implements Store
         list.add( arrayPropertyStore.getWindowPoolStats() );
         list.add( getWindowPoolStats() );
         return list;
+    }
+    
+    public int getStringBlockSize()
+    {
+        return stringPropertyStore.getBlockSize();
+    }
+    
+    public int getArrayBlockSize()
+    {
+        return arrayPropertyStore.getBlockSize();
     }
 }

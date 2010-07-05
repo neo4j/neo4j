@@ -57,7 +57,7 @@ public interface RelationshipEventConsumer
      * @throws IOException
      *             If unable to delete the relationship
      */
-    public void deleteRelationship( int id );
+    public ArrayMap<Integer,PropertyData> deleteRelationship( int id );
 
     /**
      * Adds a property to the relationship.
