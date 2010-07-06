@@ -38,7 +38,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-import javax.transaction.RollbackException;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -342,7 +341,7 @@ class EmbeddedGraphDbImpl
         try
         {
             txManager.begin();
-            result = new TransactionImpl( txManager );
+            result = new TopLevelTransaction( txManager );
         }
         catch ( Exception e )
         {
@@ -532,74 +531,6 @@ class EmbeddedGraphDbImpl
                     new TransactionEventsSyncHook(
                             nodeManager, transactionEventHandlers,
                             getConfig().getTxModule().getTxManager() );
-        }
-    }
-
-    private class TransactionImpl implements Transaction
-    {
-        private boolean success = false;
-        private final TransactionManager transactionManager;
-
-        private TransactionImpl( TransactionManager transactionManager )
-        {
-            this.transactionManager = transactionManager;
-        }
-
-        public void failure()
-        {
-            this.success = false;
-            try
-            {
-                transactionManager.getTransaction().setRollbackOnly();
-            }
-            catch ( Exception e )
-            {
-                throw new TransactionFailureException(
-                    "Failed to mark transaction as rollback only.", e );
-            }
-        }
-
-        public void success()
-        {
-            success = true;
-        }
-
-        public void finish()
-        {
-            try
-            {
-                if ( success )
-                {
-                    if ( transactionManager.getTransaction() != null )
-                    {
-                        transactionManager.getTransaction().commit();
-                    }
-                }
-                else
-                {
-                    if ( transactionManager.getTransaction() != null )
-                    {
-                        transactionManager.getTransaction().rollback();
-                    }
-                }
-            }
-            catch ( RollbackException e )
-            {
-                throw new TransactionFailureException( "Unable to commit transaction", e );
-            }
-            catch ( Exception e )
-            {
-                if ( success )
-                {
-                    throw new TransactionFailureException(
-                        "Unable to commit transaction", e );
-                }
-                else
-                {
-                    throw new TransactionFailureException(
-                        "Unable to rollback transaction", e );
-                }
-            }
         }
     }
 }

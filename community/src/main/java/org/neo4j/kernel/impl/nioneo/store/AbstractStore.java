@@ -48,6 +48,19 @@ public abstract class AbstractStore extends CommonAbstractStore
      * @return The record size
      */
     public abstract int getRecordSize();
+    
+    @Override
+    protected long figureOutHighestIdInUse()
+    {
+        try
+        {
+            return getFileChannel().size()/getRecordSize();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
 
     /**
      * Creates a new empty store. The factory method returning an implementation

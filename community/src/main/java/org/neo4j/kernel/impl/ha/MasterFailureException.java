@@ -1,6 +1,6 @@
 package org.neo4j.kernel.impl.ha;
 
-public class MasterFailureException extends Exception
+public class MasterFailureException extends RuntimeException
 {
     public MasterFailureException()
     {

@@ -7,7 +7,8 @@ public interface IdGeneratorFactory
 {
     public static final IdGeneratorFactory DEFAULT = new IdGeneratorFactory()
     {
-        public IdGenerator open( String fileName, int grabSize, IdType idType )
+        public IdGenerator open( String fileName, int grabSize, IdType idType,
+                long highestIdInUse )
         {
             return new IdGeneratorImpl( fileName, grabSize );
         }
@@ -18,7 +19,7 @@ public interface IdGeneratorFactory
         }
     };
     
-    IdGenerator open( String fileName, int grabSize, IdType idType );
+    IdGenerator open( String fileName, int grabSize, IdType idType, long highestIdInUse );
     
     void create( String fileName );
 }
