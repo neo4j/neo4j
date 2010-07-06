@@ -11,12 +11,12 @@ public final class Response<T>
         this.transactions = transactions;
     }
 
-    public T response()
+    T response() throws MasterFailureException
     {
         return response;
     }
 
-    public TransactionStream transactions()
+    TransactionStream transactions()
     {
         return transactions;
     }

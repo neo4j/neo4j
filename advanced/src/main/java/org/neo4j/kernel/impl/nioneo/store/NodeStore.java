@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+
 /**
  * Implementation of the node store.
  */
@@ -71,9 +74,9 @@ public class NodeStore extends AbstractStore implements Store
      * @throws IOException
      *             If unable to create node store or name null
      */
-    public static void createStore( String fileName )
+    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
     {
-        createEmptyStore( fileName, VERSION );
+        createEmptyStore( fileName, VERSION, idGeneratorFactory );
         NodeStore store = new NodeStore( fileName );
         NodeRecord nodeRecord = new NodeRecord( store.nextId() );
         nodeRecord.setInUse( true );
@@ -220,5 +223,11 @@ public class NodeStore extends AbstractStore implements Store
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
         list.add( getWindowPoolStats() );
         return list;
+    }
+    
+    @Override
+    protected IdType getIdType()
+    {
+        return IdType.NODE;
     }
 }

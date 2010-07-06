@@ -4,6 +4,5 @@ public enum LockStatus
 {
     OK_LOCKED,
     NOT_LOCKED,
-    DEADLOCK,
-    FAILED;
+    DEAD_LOCKED,
 }

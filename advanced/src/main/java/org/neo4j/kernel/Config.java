@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
+import org.neo4j.kernel.impl.persistence.IdGenerator;
 import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
 import org.neo4j.kernel.impl.persistence.PersistenceModule;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -76,7 +76,7 @@ public class Config
 
     Config( GraphDatabaseService graphDb, String storeDir, Map<String, String> inputParams,
             KernelPanicEventGenerator kpe, TxModule txModule, LockManager lockManager,
-            LockReleaser lockReleaser, EntityIdGenerator idGenerator,
+            LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
             TxEventSyncHookFactory txSyncHookFactory )
     {
         this.kpe = kpe;
@@ -86,7 +86,7 @@ public class Config
         this.txModule = txModule;
         this.lockManager = lockManager;
         this.lockReleaser = lockReleaser;
-        this.idGeneratorModule = new IdGeneratorModule( idGenerator );
+        this.idGeneratorModule = new IdGeneratorModule( new IdGenerator() );
         this.readOnly = Boolean.parseBoolean( (String) params.get( READ_ONLY ) );
         this.backupSlave = Boolean.parseBoolean( (String) params.get( READ_ONLY ) );
         this.syncHookFactory = txSyncHookFactory;
@@ -95,6 +95,8 @@ public class Config
         graphDbModule = new GraphDbModule( graphDb, cacheManager, lockManager,
                 txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
                 Boolean.parseBoolean( (String) params.get( READ_ONLY ) ) );
+        
+        params.put( IdGeneratorFactory.class, idGeneratorFactory );
     }
 
     private static Map<Object, Object> getDefaultParams()
@@ -200,5 +202,11 @@ public class Config
                 }
             }
         }
+    }
+    
+    public static Object getFromConfig( Map<?, ?> config, Object key, Object defaultValue )
+    {
+        Object result = config != null ? config.get( key ) : defaultValue;
+        return result != null ? result : defaultValue;
     }
 }

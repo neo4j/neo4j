@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.management.Neo4jMBean;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
 
@@ -86,14 +85,6 @@ class EmbeddedGraphDbImpl
 
     private final Runnable jmxShutdownHook;
 
-    static final LockManagerFactory DEFAULT_LOCK_MANAGER_FACTORY = new LockManagerFactory()
-    {
-        public LockManager create( TxModule txModule )
-        {
-            return new LockManager( txModule.getTxManager() );
-        }
-    };
-
     /**
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
      * with a set of configuration parameters. Will most likely be removed in
@@ -104,14 +95,14 @@ class EmbeddedGraphDbImpl
      */
     public EmbeddedGraphDbImpl( String storeDir, Map<String, String> inputParams,
             GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
-            EntityIdGenerator idGenerator )
+            IdGeneratorFactory idGeneratorFactory )
     {
         this.storeDir = storeDir;
         TxModule txModule = newTxModule( inputParams );
         LockManager lockManager = lockManagerFactory.create( txModule );
         LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         Config config = new Config( graphDbService, storeDir, inputParams,
-                kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGenerator,
+                kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGeneratorFactory,
                 new SyncHookFactory() );
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
         Map<Object, Object> params = graphDbInstance.start( graphDbService );
