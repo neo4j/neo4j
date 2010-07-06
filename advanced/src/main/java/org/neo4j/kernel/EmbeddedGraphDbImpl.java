@@ -115,8 +115,7 @@ class EmbeddedGraphDbImpl
                 new SyncHookFactory() );
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
         Map<Object, Object> params = graphDbInstance.start( graphDbService );
-        nodeManager =
- config.getGraphDbModule().getNodeManager();
+        nodeManager = config.getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
         jmxShutdownHook = initJMX( params );
         enableRemoteShellIfConfigSaysSo( params );

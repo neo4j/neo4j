@@ -73,11 +73,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         Map<Object,Object> params = getDefaultParams();
         params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
-        boolean dump = false;
-        if ( "true".equals( stringParams.get( Config.DUMP_CONFIGURATION ) ) )
-        {
-            dump = true;
-        }
+        boolean dump = Boolean.parseBoolean( stringParams.get( Config.DUMP_CONFIGURATION ) );
         new AutoConfigurator( storeDir, false, dump ).configure( params );
         for ( Map.Entry<String,String> entry : stringParams.entrySet() )
         {
@@ -86,19 +82,9 @@ public class BatchInserterImpl implements BatchInserter
         this.storeDir = storeDir;
         String store = fixPath( storeDir, stringParams ); 
         params.put( "neo_store", store );
-        if ( "true".equals( params.get( Config.DUMP_CONFIGURATION ) ) )
+        if ( dump )
         {
-            for ( Object key : params.keySet() )
-            {
-                if ( key instanceof String )
-                {
-                    Object value = params.get( key );
-                    if ( value instanceof String )
-                    {
-                        System.out.println( key + "=" + value );
-                    }
-                }
-            }
+            Config.dumpConfiguration( params );
         }
         // TODO: check if clean shutdown
         neoStore = new NeoStore( params );

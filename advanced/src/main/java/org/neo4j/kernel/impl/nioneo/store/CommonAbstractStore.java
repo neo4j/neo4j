@@ -345,17 +345,9 @@ public abstract class CommonAbstractStore
 
     protected boolean getIfMemoryMapped()
     {
-        if ( getConfig() != null )
-        {
-            String useMemMapped = (String) getConfig().get(
-                Config.USE_MEMORY_MAPPED_BUFFERS );
-            if ( useMemMapped != null &&
-                useMemMapped.toLowerCase().equals( "false" ) )
-            {
-                return false;
-            }
-        }
-        return true;
+        String configValue = getConfig() != null ?
+                (String) getConfig().get( Config.USE_MEMORY_MAPPED_BUFFERS ) : null;
+        return configValue != null ? Boolean.parseBoolean( configValue ) : true;
     }
 
     /**

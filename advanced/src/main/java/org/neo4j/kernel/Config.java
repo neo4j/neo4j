@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.transaction.TxModule;
  */
 public class Config
 {
-
     static final String NIO_NEO_DB_CLASS =
         "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
@@ -77,7 +76,7 @@ public class Config
 
     Config( GraphDatabaseService graphDb, String storeDir, Map<String, String> inputParams,
             KernelPanicEventGenerator kpe, TxModule txModule, LockManager lockManager,
- LockReleaser lockReleaser, IdGenerator idGenerator,
+            LockReleaser lockReleaser, IdGenerator idGenerator,
             TxEventSyncHookFactory txSyncHookFactory )
     {
         this.kpe = kpe;
@@ -186,5 +185,20 @@ public class Config
     TxEventSyncHookFactory getSyncHookFactory()
     {
         return syncHookFactory;
+    }
+
+    public static void dumpConfiguration( Map<?, ?> config )
+    {
+        for ( Object key : config.keySet() )
+        {
+            if ( key instanceof String )
+            {
+                Object value = config.get( key );
+                if ( value instanceof String )
+                {
+                    System.out.println( key + "=" + value );
+                }
+            }
+        }
     }
 }
