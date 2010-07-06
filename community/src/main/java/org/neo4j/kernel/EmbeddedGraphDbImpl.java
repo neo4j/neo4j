@@ -52,11 +52,15 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.ShellService.ShellNotAvailableException;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.management.Neo4jMBean;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.persistence.IdGenerator;
+import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.TxModule;
 
 class EmbeddedGraphDbImpl
 {
@@ -82,6 +86,14 @@ class EmbeddedGraphDbImpl
 
     private final Runnable jmxShutdownHook;
 
+    static final LockManagerFactory DEFAULT_LOCK_MANAGER_FACTORY = new LockManagerFactory()
+    {
+        public LockManager create( TxModule txModule )
+        {
+            return new LockManager( txModule.getTxManager() );
+        }
+    };
+
     /**
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
      * with a set of configuration parameters. Will most likely be removed in
@@ -90,18 +102,31 @@ class EmbeddedGraphDbImpl
      * @param storeDir the store directory for the db files
      * @param config configuration parameters
      */
-    public EmbeddedGraphDbImpl( String storeDir, Map<String, String> config,
-        GraphDatabaseService graphDbService )
+    public EmbeddedGraphDbImpl( String storeDir, Map<String, String> inputParams,
+            GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
+            IdGenerator idGenerator )
     {
         this.storeDir = storeDir;
-        graphDbInstance = new GraphDbInstance( storeDir, true );
-        Map<Object, Object> params = graphDbInstance.start( graphDbService,
-                config, kernelPanicEventGenerator, new SyncHookFactory() );
+        TxModule txModule = newTxModule( inputParams );
+        LockManager lockManager = lockManagerFactory.create( txModule );
+        LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
+        Config config = new Config( graphDbService, storeDir, inputParams,
+                kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGenerator,
+                new SyncHookFactory() );
+        graphDbInstance = new GraphDbInstance( storeDir, true, config );
+        Map<Object, Object> params = graphDbInstance.start( graphDbService );
         nodeManager =
-            graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
+ config.getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
         jmxShutdownHook = initJMX( params );
         enableRemoteShellIfConfigSaysSo( params );
+    }
+
+    private TxModule newTxModule( Map<String, String> inputParams )
+    {
+        return Boolean.parseBoolean( inputParams.get( Config.READ_ONLY ) ) ? new TxModule( true,
+                kernelPanicEventGenerator ) : new TxModule( this.storeDir,
+                kernelPanicEventGenerator );
     }
 
     private void enableRemoteShellIfConfigSaysSo( Map<Object, Object> params )
