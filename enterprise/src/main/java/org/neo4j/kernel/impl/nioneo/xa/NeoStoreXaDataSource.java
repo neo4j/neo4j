@@ -60,6 +60,8 @@ import org.neo4j.kernel.impl.util.ArrayMap;
  */
 public class NeoStoreXaDataSource extends XaDataSource
 {
+    private static final String REBUILD_IDGENERATORS_FAST = "rebuild_idgenerators_fast";
+
     private static Logger logger = Logger.getLogger(
         NeoStoreXaDataSource.class.getName() );
 
@@ -99,18 +101,15 @@ public class NeoStoreXaDataSource extends XaDataSource
         InstantiationException
     {
         super( config );
-        readOnly = Boolean.parseBoolean( (String) Config.READ_ONLY );
-        if ( "true".equals( config.get( "backup_slave" ) ) )
-        {
-            backupSlave = true;
-        }
+        readOnly = Boolean.parseBoolean( (String) config.get( Config.READ_ONLY ) );
+        backupSlave = Boolean.parseBoolean( (String) config.get( Config.BACKUP_SLAVE ) );
         this.lockManager = (LockManager) config.get( LockManager.class );
         this.lockReleaser = (LockReleaser) config.get( LockReleaser.class );
         storeDir = (String) config.get( "store_dir" );
         String store = (String) config.get( "neo_store" );
-        if ( !config.containsKey( "rebuild_idgenerators_fast" ) )
+        if ( !config.containsKey( REBUILD_IDGENERATORS_FAST ) )
         {
-            config.put( "rebuild_idgenerators_fast", "true" );
+            config.put( REBUILD_IDGENERATORS_FAST, "true" );
         }
         File file = new File( store );
         String create = "" + config.get( "create" );
