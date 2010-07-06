@@ -1,4 +1,4 @@
-package org.neo4j.kernel.ha;
+package org.neo4j.kernel;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -10,24 +10,17 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
-import org.neo4j.kernel.impl.ha.Broker;
+import org.neo4j.kernel.ha.PulledOutHooksFromEmbeddedGraphDb;
 
-public class EmbeddedHaGraphDatabase implements GraphDatabaseService
+public class HighlyAvailableGraphDatabase implements GraphDatabaseService
 {
-    private final Broker broker;
+    private final PulledOutHooksFromEmbeddedGraphDb hooks;
+    private final EmbeddedGraphDbImpl localGraph;
 
-    // Switch this when a slave becomes master or master becomes slave
-    private MasterOrSlaveEmbeddedGraphDb graphDbImpl;
-
-    public EmbeddedHaGraphDatabase( String storeDir, int machineId,
-            String zooKeeperServiceDefinition, Map<String, String> configuration )
+    public HighlyAvailableGraphDatabase()
     {
-        this.broker = new ZooKeeperBroker(/* TODO: Connect to zoo keeper */);
-        // Get the master, if I am the master instantiate a MasterEmbeddedGraphDbImpl, else a Slave...Impl
-        // TODO (later) register event listeners that will get events (kerel panics or something)
-        //               so that it can then ask zoo keeper what has happened and again instantiate
-        //               master/slave depending on if I am the master.
+        this.hooks = null;
+        this.localGraph = null;
     }
 
     public Transaction beginTx()
@@ -48,7 +41,7 @@ public class EmbeddedHaGraphDatabase implements GraphDatabaseService
         return false;
     }
 
-    public boolean enableRemoteShell( Map<String, Serializable> arg0 )
+    public boolean enableRemoteShell( Map<String, Serializable> initialProperties )
     {
         // TODO Auto-generated method stub
         return false;
@@ -60,7 +53,7 @@ public class EmbeddedHaGraphDatabase implements GraphDatabaseService
         return null;
     }
 
-    public Node getNodeById( long arg0 )
+    public Node getNodeById( long id )
     {
         // TODO Auto-generated method stub
         return null;
@@ -72,7 +65,7 @@ public class EmbeddedHaGraphDatabase implements GraphDatabaseService
         return null;
     }
 
-    public Relationship getRelationshipById( long arg0 )
+    public Relationship getRelationshipById( long id )
     {
         // TODO Auto-generated method stub
         return null;
@@ -84,15 +77,14 @@ public class EmbeddedHaGraphDatabase implements GraphDatabaseService
         return null;
     }
 
-    public KernelEventHandler registerKernelEventHandler(
-            KernelEventHandler arg0 )
+    public KernelEventHandler registerKernelEventHandler( KernelEventHandler handler )
     {
         // TODO Auto-generated method stub
         return null;
     }
 
     public <T> TransactionEventHandler<T> registerTransactionEventHandler(
-            TransactionEventHandler<T> arg0 )
+            TransactionEventHandler<T> handler )
     {
         // TODO Auto-generated method stub
         return null;
@@ -104,15 +96,14 @@ public class EmbeddedHaGraphDatabase implements GraphDatabaseService
 
     }
 
-    public KernelEventHandler unregisterKernelEventHandler(
-            KernelEventHandler arg0 )
+    public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
     {
         // TODO Auto-generated method stub
         return null;
     }
 
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
-            TransactionEventHandler<T> arg0 )
+            TransactionEventHandler<T> handler )
     {
         // TODO Auto-generated method stub
         return null;
