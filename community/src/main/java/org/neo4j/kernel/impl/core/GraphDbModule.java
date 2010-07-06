@@ -37,7 +37,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
-import org.neo4j.kernel.impl.persistence.IdGenerator;
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
@@ -53,7 +53,7 @@ public class GraphDbModule
     private final TransactionManager transactionManager;
     private final AdaptiveCacheManager cacheManager;
     private final LockManager lockManager;
-    private final IdGenerator idGenerator;
+    private final EntityIdGenerator idGenerator;
     
     private NodeManager nodeManager;
     
@@ -61,7 +61,7 @@ public class GraphDbModule
 
     public GraphDbModule( GraphDatabaseService graphDb,
             AdaptiveCacheManager cacheManager, LockManager lockManager,
-            TransactionManager transactionManager, IdGenerator idGenerator,
+            TransactionManager transactionManager, EntityIdGenerator idGenerator,
             boolean readOnly )
     {
         this.graphDbService = graphDb;

@@ -58,7 +58,7 @@ import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.management.Neo4jMBean;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.persistence.IdGenerator;
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
 
@@ -104,7 +104,7 @@ class EmbeddedGraphDbImpl
      */
     public EmbeddedGraphDbImpl( String storeDir, Map<String, String> inputParams,
             GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
-            IdGenerator idGenerator )
+            EntityIdGenerator idGenerator )
     {
         this.storeDir = storeDir;
         TxModule txModule = newTxModule( inputParams );

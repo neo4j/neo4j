@@ -37,14 +37,14 @@ public class IdGeneratorModule
     private static final String MODULE_NAME = "IdGeneratorModule";
 
     private PersistenceSource persistenceSource = null;
-    private final IdGenerator idGenerator;
+    private final EntityIdGenerator idGenerator;
 
-    public IdGeneratorModule( IdGenerator idGenerator )
+    public IdGeneratorModule( EntityIdGenerator idGenerator )
     {
         this.idGenerator = idGenerator;
     }
 
-    public IdGenerator getIdGenerator()
+    public EntityIdGenerator getIdGenerator()
     {
         return idGenerator;
     }

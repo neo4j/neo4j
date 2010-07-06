@@ -7,4 +7,6 @@ public interface EntityIdGenerator
     long getHighestPossibleIdInUse( Class<?> clazz );
 
     long getNumberOfIdsInUse( Class<?> clazz );
+
+    void configure( PersistenceSource source );
 }
