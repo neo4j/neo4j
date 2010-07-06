@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -42,7 +42,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Returns the type and version that identifies this store.
-     * 
+     *
      * @return This store's implementation type and version identifier
      */
     public abstract String getTypeAndVersionDescriptor();
@@ -54,7 +54,7 @@ public abstract class CommonAbstractStore
      * are needed by overriding this implementation.
      * <p>
      * This default implementation does nothing.
-     * 
+     *
      * @throws IOException
      *             If unable to initialize
      */
@@ -74,7 +74,7 @@ public abstract class CommonAbstractStore
      * {@link #initStorage()} method.
      * <p>
      * This default implementation does nothing.
-     * 
+     *
      * @throws IOException
      *             If unable to close
      */
@@ -85,7 +85,7 @@ public abstract class CommonAbstractStore
     /**
      * Should do first validation on store validating stuff like version and id
      * generator. This method is called by constructors.
-     * 
+     *
      * @throws IOException
      *             If unable to load store
      */
@@ -93,7 +93,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Should rebuild the id generator from scratch.
-     * 
+     *
      * @throws IOException
      *             If unable to rebuild id generator.
      */
@@ -109,12 +109,12 @@ public abstract class CommonAbstractStore
     private boolean storeOk = true;
     private FileLock fileLock;
     private boolean grabFileLock = true;
-    
+
     private Map<?,?> config = null;
-    
+
     private boolean readOnly = false;
     private boolean backupSlave = false;
-    
+
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
      * loading any configuration defined in <CODE>config</CODE>. After
@@ -124,10 +124,10 @@ public abstract class CommonAbstractStore
      * and the {@link #validate()} method will not throw exception when invoked.
      * If a problem was found when opening the store the {@link #makeStoreOk()}
      * must be invoked else {@link #validate()} will throw exception.
-     * 
-     * throws IOException if the unable to open the storage or if the 
+     *
+     * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
-     * 
+     *
      * @param fileName
      *            The name of the store
      * @param config
@@ -151,12 +151,12 @@ public abstract class CommonAbstractStore
         loadStorage();
         initStorage();
     }
-    
+
     boolean isReadOnly()
     {
         return readOnly;
     }
-    
+
     boolean isBackupSlave()
     {
         return backupSlave;
@@ -170,10 +170,10 @@ public abstract class CommonAbstractStore
      * and the {@link #validate()} method will not throw exception when invoked.
      * If a problem was found when opening the store the {@link #makeStoreOk()}
      * must be invoked else {@link #validate()} will throw exception.
-     * 
-     * throws IOException if the unable to open the storage or if the 
+     *
+     * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
-     * 
+     *
      * @param fileName
      *            The name of the store
      * @throws IOException
@@ -191,7 +191,7 @@ public abstract class CommonAbstractStore
     {
         if ( config != null )
         {
-            Boolean isReadOnly = (Boolean) config.get( "read_only" );
+            Boolean isReadOnly = Boolean.parseBoolean( (String) config.get( Config.READ_ONLY ) );
             if ( isReadOnly != null )
             {
                 readOnly = isReadOnly;
@@ -251,13 +251,13 @@ public abstract class CommonAbstractStore
 
     /**
      * Marks this store as "not ok".
-     * 
+     *
      */
     protected void setStoreNotOk()
     {
         if ( readOnly && !isBackupSlave() )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Cannot start up on non clean store as read only" );
         }
         storeOk = false;
@@ -265,7 +265,7 @@ public abstract class CommonAbstractStore
 
     /**
      * If store is "not ok" <CODE>false</CODE> is returned.
-     * 
+     *
      * @return True if this store is ok
      */
     protected boolean getStoreOk()
@@ -280,7 +280,7 @@ public abstract class CommonAbstractStore
      * {@link #acquireWindow(int, OperationType)}
      * {@link #releaseWindow(PersistenceWindow)} {@link #flush(int)}
      * {@link #forget(int)} {@link #close()} methods are invoked.
-     * 
+     *
      * @param pool
      *            The window pool this store should use
      */
@@ -291,7 +291,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Returns the next id for this store's {@link IdGenerator}.
-     * 
+     *
      * @return The next free id
      * @throws IOException
      *             If unable to get next free id
@@ -303,7 +303,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Frees an id for this store's {@link IdGenerator}.
-     * 
+     *
      * @param id
      *            The id to free
      * @throws IOException
@@ -313,15 +313,15 @@ public abstract class CommonAbstractStore
     {
         idGenerator.freeId( makeUnsignedInt( id ) );
     }
-    
+
     private long makeUnsignedInt( int signedInteger )
     {
         return signedInteger & 0xFFFFFFFFL;
     }
-    
+
     /**
      * Return the highest id in use.
-     * 
+     *
      * @return The highest id in use.
      */
     protected long getHighId()
@@ -331,7 +331,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Sets the highest id in use (use this when rebuilding id generator).
-     * 
+     *
      * @param highId
      *            The high id to set.
      */
@@ -342,14 +342,14 @@ public abstract class CommonAbstractStore
             idGenerator.setHighId( highId );
         }
     }
-    
+
     protected boolean getIfMemoryMapped()
     {
         if ( getConfig() != null )
         {
-            String useMemMapped = (String) getConfig().get( 
+            String useMemMapped = (String) getConfig().get(
                 Config.USE_MEMORY_MAPPED_BUFFERS );
-            if ( useMemMapped != null && 
+            if ( useMemMapped != null &&
                 useMemMapped.toLowerCase().equals( "false" ) )
             {
                 return false;
@@ -363,7 +363,7 @@ public abstract class CommonAbstractStore
      * {@link MappedPersistenceWindow memory mapped windows} in bytes. The
      * configuration map passed in one constructor is checked for an entry with
      * this stores name.
-     * 
+     *
      * @return The number of bytes memory mapped windows this store has
      */
     protected long getMappedMem()
@@ -407,10 +407,10 @@ public abstract class CommonAbstractStore
     }
 
     /**
-     * If store is not ok a call to this method will rebuild the {@link 
-     * IdGenerator} used by this store and if successful mark it as 
+     * If store is not ok a call to this method will rebuild the {@link
+     * IdGenerator} used by this store and if successful mark it as
      * <CODE>ok</CODE>.
-     * 
+     *
      * @throws IOException
      *             If unable to rebuild id generator
      */
@@ -435,10 +435,10 @@ public abstract class CommonAbstractStore
         }
         rebuildIdGenerator();
     }
-    
+
     /**
      * Returns the configuration map if set in constructor.
-     * 
+     *
      * @return A map containing configuration or <CODE>null<CODE> if no
      *         configuration map set.
      */
@@ -451,7 +451,7 @@ public abstract class CommonAbstractStore
      * Acquires a {@link PersistenceWindow} for <CODE>position</CODE> and
      * operation <CODE>type</CODE>. Window must be released after operation
      * has been performed via {@link #releaseWindow(PersistenceWindow)}.
-     * 
+     *
      * @param position
      *            The record position
      * @param type
@@ -475,9 +475,9 @@ public abstract class CommonAbstractStore
     }
 
     /**
-     * Releases the window and writes the data (async) if the 
+     * Releases the window and writes the data (async) if the
      * <CODE>window</CODE> was a {@link PersistenceRow}.
-     * 
+     *
      * @param window
      *            The window to be released
      * @throws IOException
@@ -488,7 +488,7 @@ public abstract class CommonAbstractStore
     {
         windowPool.release( window );
     }
-    
+
     public void flushAll()
     {
         windowPool.flushAll();
@@ -513,7 +513,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Returns the name of this store.
-     * 
+     *
      * @return The name of this store
      */
     public String getStorageFileName()
@@ -523,7 +523,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Opens the {@link IdGenerator} used by this store.
-     * 
+     *
      * @throws IOException
      *             If unable to open the id generator
      */
@@ -532,12 +532,12 @@ public abstract class CommonAbstractStore
         idGenerator = new IdGeneratorImpl( storageFileName + ".id",
             DEFAULT_ID_GRAB_SIZE );
     }
-    
+
     protected void openReadOnlyIdGenerator( int recordSize )
     {
         try
         {
-            idGenerator = new ReadOnlyIdGenerator( storageFileName + ".id", 
+            idGenerator = new ReadOnlyIdGenerator( storageFileName + ".id",
                 fileChannel.size() / recordSize );
         }
         catch ( IOException e )
@@ -548,7 +548,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Closed the {@link IdGenerator} used by this store
-     * 
+     *
      * @throws IOException
      *             If unable to close this store
      */
@@ -568,7 +568,7 @@ public abstract class CommonAbstractStore
      * This method will start by invoking the {@link #closeStorage} method
      * giving the implementing store way to do anything that it needs to do
      * before the fileChannel is closed.
-     * 
+     *
      * @throws IOException
      *             If problem when invoking {@link #closeStorage()}
      */
@@ -617,7 +617,7 @@ public abstract class CommonAbstractStore
                 try
                 {
                     fileChannel.position( highId * recordSize );
-                    ByteBuffer buffer = ByteBuffer.wrap( 
+                    ByteBuffer buffer = ByteBuffer.wrap(
                         getTypeAndVersionDescriptor().getBytes() );
                     fileChannel.write( buffer );
                     fileChannel.truncate( fileChannel.position() );
@@ -654,10 +654,10 @@ public abstract class CommonAbstractStore
     }
 
     /**
-     * Returns a <CODE>FileChannel</CODE> to this storage's file. If 
-     * <CODE>close()</CODE> method has been invoked <CODE>null</CODE> will be 
+     * Returns a <CODE>FileChannel</CODE> to this storage's file. If
+     * <CODE>close()</CODE> method has been invoked <CODE>null</CODE> will be
      * returned.
-     * 
+     *
      * @return A file channel to this storage
      */
     protected final FileChannel getFileChannel()
@@ -681,7 +681,7 @@ public abstract class CommonAbstractStore
         return idGenerator.getNumberOfIdsInUse();
     }
 
-    
+
     public WindowPoolStats getWindowPoolStats()
     {
         return windowPool.getStats();
