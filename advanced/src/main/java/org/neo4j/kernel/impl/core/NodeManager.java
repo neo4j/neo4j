@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
-import org.neo4j.kernel.impl.persistence.IdGenerator;
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -65,7 +65,7 @@ public class NodeManager
     private final PropertyIndexManager propertyIndexManager;
     private final RelationshipTypeHolder relTypeHolder;
     private final PersistenceManager persistenceManager;
-    private final IdGenerator idGenerator;
+    private final EntityIdGenerator idGenerator;
 
     private boolean useAdaptiveCache = true;
     private float adaptiveCacheHeapRatio = 0.77f;
@@ -81,7 +81,7 @@ public class NodeManager
     NodeManager( GraphDatabaseService graphDb,
             AdaptiveCacheManager cacheManager, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
-            PersistenceManager persistenceManager, IdGenerator idGenerator,
+            PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
             boolean useNewCaches )
     {
         this.graphDbService = graphDb;
