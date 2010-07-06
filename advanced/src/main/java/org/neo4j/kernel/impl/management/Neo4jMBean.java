@@ -45,8 +45,8 @@ public class Neo4jMBean extends StandardMBean
     public static <T> T getBean( int instanceId, Class<T> beanType )
     {
         if ( beanType.isInterface()
-             && beanType.getPackage().getName().equals(
-                     "org.neo4j.kernel.management" ) )
+             && ( beanType.getPackage().getName().equals( "org.neo4j.kernel.management" )
+                     || beanType == DynamicMBean.class ) )
         {
             if ( PROXY_MAKER == null )
             {
@@ -55,7 +55,7 @@ public class Neo4jMBean extends StandardMBean
             }
             else
             {
-                ObjectName name = getObjectName( instanceId, beanType, null );
+                ObjectName name = getObjectName( instanceId, beanType, Configuration.class );
                 return PROXY_MAKER.makeProxy( name, beanType );
             }
         }
