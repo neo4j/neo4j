@@ -117,7 +117,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 + fileName, e );
         }
         idGeneratorFactory.create( fileName + ".id" );
-        IdGenerator idGenerator = idGeneratorFactory.open( fileName + ".id", 1, idType );
+        // TODO highestIdInUse = 0 works now, but not when slave can create store files.
+        IdGenerator idGenerator = idGeneratorFactory.open( fileName + ".id", 1, idType, 0 );
         idGenerator.nextId(); // reserv first for blockSize
         idGenerator.close();
     }
@@ -702,6 +703,19 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
+        }
+    }
+    
+    @Override
+    protected long figureOutHighestIdInUse()
+    {
+        try
+        {
+            return getFileChannel().size()/getBlockSize();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 }
