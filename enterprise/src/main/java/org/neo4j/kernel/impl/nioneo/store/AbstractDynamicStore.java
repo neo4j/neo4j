@@ -31,6 +31,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+
 /**
  * An abstract representation of a dynamic store. The difference between a
  * normal {@link AbstractStore} and a <CODE>AbstractDynamicStore</CODE> is
@@ -73,7 +76,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
      *             If fileName is null or if file exists or illegal block size
      */
     protected static void createEmptyStore( String fileName, int baseBlockSize,
-        String typeAndVersionDescriptor )
+        String typeAndVersionDescriptor, IdGeneratorFactory idGeneratorFactory, IdType idType )
     {
         int blockSize = baseBlockSize;
         // sanity checks
@@ -113,8 +116,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             throw new UnderlyingStorageException( "Unable to create store "
                 + fileName, e );
         }
-        IdGeneratorImpl.createGenerator( fileName + ".id" );
-        IdGenerator idGenerator = new IdGeneratorImpl( fileName + ".id", 1 );
+        idGeneratorFactory.create( fileName + ".id" );
+        IdGenerator idGenerator = idGeneratorFactory.open( fileName + ".id", 1, idType );
         idGenerator.nextId(); // reserv first for blockSize
         idGenerator.close();
     }
@@ -629,7 +632,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             boolean success = file.delete();
             assert success;
         }
-        IdGeneratorImpl.createGenerator( getStorageFileName() + ".id" );
+        createIdGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
         nextBlockId(); // reserved first block containing blockSize
         FileChannel fileChannel = getFileChannel();
@@ -688,7 +691,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         closeIdGenerator();
         openIdGenerator();
     }
-
 
     protected void updateHighId()
     {

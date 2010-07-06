@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 /**
@@ -65,7 +66,7 @@ public abstract class AbstractStore extends CommonAbstractStore
      *             If fileName is null or if file exists
      */
     protected static void createEmptyStore( String fileName,
-        String typeAndVersionDescriptor )
+        String typeAndVersionDescriptor, IdGeneratorFactory idGeneratorFactory )
     {
         // sanity checks
         if ( fileName == null )
@@ -95,7 +96,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             throw new UnderlyingStorageException( "Unable to create store "
                 + fileName, e );
         }
-        IdGeneratorImpl.createGenerator( fileName + ".id" );
+        idGeneratorFactory.create( fileName + ".id" );
     }
 
     public AbstractStore( String fileName, Map<?,?> config )
@@ -250,7 +251,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             boolean success = file.delete();
             assert success;
         }
-        IdGeneratorImpl.createGenerator( getStorageFileName() + ".id" );
+        createIdGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
         FileChannel fileChannel = getFileChannel();
         long highId = 1;

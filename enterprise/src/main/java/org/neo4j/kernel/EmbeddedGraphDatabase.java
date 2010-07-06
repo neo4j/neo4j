@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.kernel.impl.persistence.IdGenerator;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
@@ -78,7 +77,7 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
     public EmbeddedGraphDatabase( String storeDir, Map<String,String> params )
     {
         this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this,
-                EmbeddedGraphDbImpl.DEFAULT_LOCK_MANAGER_FACTORY, new IdGenerator() );
+                LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT );
     }
 
     /**
