@@ -44,7 +44,9 @@ public class Neo4jMBean extends StandardMBean
 
     public static <T> T getBean( int instanceId, Class<T> beanType )
     {
-        if ( beanType.isInterface() && beanType.getPackage().equals( "org.neo4j.kernel.management" ) )
+        if ( beanType.isInterface()
+             && beanType.getPackage().getName().equals(
+                     "org.neo4j.kernel.management" ) )
         {
             if ( PROXY_MAKER == null )
             {
