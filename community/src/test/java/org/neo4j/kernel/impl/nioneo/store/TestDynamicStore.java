@@ -31,6 +31,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Test;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestDynamicStore
@@ -281,13 +283,20 @@ public class TestDynamicStore
 
         public static ByteStore createStore( String fileName, int blockSize )
         {
-            createEmptyStore( fileName, blockSize, VERSION );
+            createEmptyStore( fileName, blockSize, VERSION, IdGeneratorFactory.DEFAULT,
+                    IdType.ARRAY_BLOCK );
             return new ByteStore( fileName );
         }
 
         public byte[] getBytes( int blockId )
         {
             return get( blockId );
+        }
+        
+        @Override
+        protected IdType getIdType()
+        {
+            return IdType.ARRAY_BLOCK;
         }
 
         // public char[] getChars( int blockId ) throws IOException

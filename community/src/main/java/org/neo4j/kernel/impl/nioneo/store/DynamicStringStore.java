@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 
 /**
@@ -46,9 +48,10 @@ public class DynamicStringStore extends AbstractDynamicStore
         return VERSION;
     }
 
-    public static void createStore( String fileName, int blockSize )
+    public static void createStore( String fileName, int blockSize,
+            IdGeneratorFactory idGeneratorFactory, IdType idType )
     {
-        createEmptyStore( fileName, blockSize, VERSION );
+        createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, idType );
     }
     
     public void setHighId( long highId )
@@ -79,5 +82,11 @@ public class DynamicStringStore extends AbstractDynamicStore
             "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
+    }
+    
+    @Override
+    protected IdType getIdType()
+    {
+        return IdType.STRING_BLOCK;
     }
 }

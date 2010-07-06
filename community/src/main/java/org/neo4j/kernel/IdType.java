@@ -1,0 +1,15 @@
+package org.neo4j.kernel;
+
+public enum IdType
+{
+    NODE,
+    RELATIONSHIP,
+    PROPERTY,
+    STRING_BLOCK,
+    ARRAY_BLOCK,
+    PROPERTY_INDEX,
+    PROPERTY_INDEX_BLOCK,
+    RELATIONSHIP_TYPE,
+    RELATIONSHIP_TYPE_BLOCK,
+    NEOSTORE_BLOCK
+}

@@ -27,6 +27,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+
 
 /**
  * Implementation of the node store.
@@ -121,11 +124,11 @@ public class PropertyIndexStore extends AbstractStore implements Store
         super.flushAll();
     }
 
-    public static void createStore( String fileName )
+    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
     {
-        createEmptyStore( fileName, VERSION );
+        createEmptyStore( fileName, VERSION, idGeneratorFactory );
         DynamicStringStore.createStore( fileName + ".keys",
-            KEY_STORE_BLOCK_SIZE );
+            KEY_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.PROPERTY_INDEX_BLOCK );
     }
 
     public PropertyIndexData[] getPropertyIndexes( int count )
@@ -375,5 +378,11 @@ public class PropertyIndexStore extends AbstractStore implements Store
         list.add( keyPropertyStore.getWindowPoolStats() );
         list.add( getWindowPoolStats() );
         return list;
+    }
+    
+    @Override
+    protected IdType getIdType()
+    {
+        return IdType.PROPERTY_INDEX;
     }
 }

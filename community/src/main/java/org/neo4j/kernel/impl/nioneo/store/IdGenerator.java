@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-
 public interface IdGenerator
 {
     long nextId();

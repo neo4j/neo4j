@@ -28,6 +28,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+
 /**
  * Implementation of the property store. This implementation has two dynamic
  * stores. One used to store keys and another for string property values.
@@ -133,7 +137,10 @@ public class PropertyStore extends AbstractStore implements Store
      */
     public static void createStore( String fileName, Map<?,?> config )
     {
-        createEmptyStore( fileName, VERSION );
+        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) Config.getFromConfig( config,
+                IdGeneratorFactory.class, IdGeneratorFactory.DEFAULT );
+                
+        createEmptyStore( fileName, VERSION, idGeneratorFactory );
         int stringStoreBlockSize = 120;
         int arrayStoreBlockSize = 120;
         try
@@ -163,10 +170,10 @@ public class PropertyStore extends AbstractStore implements Store
         }
 
         DynamicStringStore.createStore( fileName + ".strings",
-            stringStoreBlockSize );
-        PropertyIndexStore.createStore( fileName + ".index" );
+            stringStoreBlockSize, idGeneratorFactory, IdType.STRING_BLOCK );
+        PropertyIndexStore.createStore( fileName + ".index", idGeneratorFactory );
         DynamicArrayStore.createStore( fileName + ".arrays",
-            arrayStoreBlockSize );
+            arrayStoreBlockSize, idGeneratorFactory );
     }
 
     private int nextStringBlockId()
@@ -683,5 +690,11 @@ public class PropertyStore extends AbstractStore implements Store
     public int getArrayBlockSize()
     {
         return arrayPropertyStore.getBlockSize();
+    }
+    
+    @Override
+    protected IdType getIdType()
+    {
+        return IdType.PROPERTY;
     }
 }

@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 /**
@@ -103,6 +105,7 @@ public abstract class CommonAbstractStore
     protected static final int DEFAULT_ID_GRAB_SIZE = 1024;
 
     private final String storageFileName;
+    private final IdGeneratorFactory idGeneratorFactory;
     private IdGenerator idGenerator = null;
     private FileChannel fileChannel = null;
     private PersistenceWindowPool windowPool;
@@ -147,6 +150,9 @@ public abstract class CommonAbstractStore
                 grabFileLock = false;
             }
         }
+        this.idGeneratorFactory = (IdGeneratorFactory) Config.getFromConfig( config,
+                IdGeneratorFactory.class, IdGeneratorFactory.DEFAULT );
+        
         checkStorage();
         loadStorage();
         initStorage();
@@ -182,6 +188,7 @@ public abstract class CommonAbstractStore
     public CommonAbstractStore( String fileName )
     {
         this.storageFileName = fileName;
+        idGeneratorFactory = IdGeneratorFactory.DEFAULT;
         checkStorage();
         loadStorage();
         initStorage();
@@ -521,10 +528,22 @@ public abstract class CommonAbstractStore
      */
     protected void openIdGenerator()
     {
-        idGenerator = new IdGeneratorImpl( storageFileName + ".id",
+        idGenerator = newIdGenerator( storageFileName + ".id",
             DEFAULT_ID_GRAB_SIZE );
     }
+    
+    protected abstract IdType getIdType();
+    
+    protected IdGenerator newIdGenerator( String fileName, int grabSize )
+    {
+        return idGeneratorFactory.open( fileName, grabSize, getIdType() );
+    }
 
+    protected void createIdGenerator( String fileName )
+    {
+        idGeneratorFactory.create( fileName );
+    }
+    
     protected void openReadOnlyIdGenerator( int recordSize )
     {
         try

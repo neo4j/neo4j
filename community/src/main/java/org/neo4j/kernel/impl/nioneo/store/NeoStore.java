@@ -26,6 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
  * PropertyStore and RelationshipTypeStore". NeoStore doesn't actually "store"
@@ -154,12 +158,15 @@ public class NeoStore extends AbstractStore
      */
     public static void createStore( String fileName, Map<?,?> config )
     {
-        createEmptyStore( fileName, VERSION );
-        NodeStore.createStore( fileName + ".nodestore.db" );
-        RelationshipStore.createStore( fileName + ".relationshipstore.db" );
+        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) Config.getFromConfig( config,
+                IdGeneratorFactory.class, IdGeneratorFactory.DEFAULT );
+                
+        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        NodeStore.createStore( fileName + ".nodestore.db", idGeneratorFactory );
+        RelationshipStore.createStore( fileName + ".relationshipstore.db", idGeneratorFactory );
         PropertyStore.createStore( fileName + ".propertystore.db", config );
         RelationshipTypeStore.createStore( fileName
-            + ".relationshiptypestore.db" );
+            + ".relationshiptypestore.db", idGeneratorFactory );
         NeoStore neoStore = new NeoStore( fileName );
         // created time | random long | backup version
         neoStore.nextId(); neoStore.nextId(); neoStore.nextId();
@@ -388,5 +395,11 @@ public class NeoStore extends AbstractStore
         list.addAll( relStore.getAllWindowPoolStats() );
         list.addAll( relTypeStore.getAllWindowPoolStats() );
         return list;
+    }
+    
+    @Override
+    protected IdType getIdType()
+    {
+        return IdType.NEOSTORE_BLOCK;
     }
 }
