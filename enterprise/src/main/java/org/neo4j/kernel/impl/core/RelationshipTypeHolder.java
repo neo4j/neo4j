@@ -30,7 +30,7 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
-import org.neo4j.kernel.impl.persistence.IdGenerator;
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
@@ -43,10 +43,10 @@ class RelationshipTypeHolder
 
     private final TransactionManager transactionManager;
     private final PersistenceManager persistenceManager;
-    private final IdGenerator idGenerator;
+    private final EntityIdGenerator idGenerator;
 
     RelationshipTypeHolder( TransactionManager transactionManager,
-        PersistenceManager persistenceManager, IdGenerator idGenerator )
+        PersistenceManager persistenceManager, EntityIdGenerator idGenerator )
     {
         this.transactionManager = transactionManager;
         this.persistenceManager = persistenceManager;

@@ -59,7 +59,7 @@ public class IdGenerator implements EntityIdGenerator
      * @param source
      *            the persistence source used for id generation
      */
-    void configure( PersistenceSource source )
+    public void configure( PersistenceSource source )
     {
         // Save connectivity
         this.persistenceSource = source;

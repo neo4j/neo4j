@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
-import org.neo4j.kernel.impl.persistence.IdGenerator;
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
 import org.neo4j.kernel.impl.persistence.PersistenceModule;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -76,7 +76,7 @@ public class Config
 
     Config( GraphDatabaseService graphDb, String storeDir, Map<String, String> inputParams,
             KernelPanicEventGenerator kpe, TxModule txModule, LockManager lockManager,
-            LockReleaser lockReleaser, IdGenerator idGenerator,
+            LockReleaser lockReleaser, EntityIdGenerator idGenerator,
             TxEventSyncHookFactory txSyncHookFactory )
     {
         this.kpe = kpe;
