@@ -68,8 +68,7 @@ class GraphDbInstance
      * @param configuration parameters
      * @throws StartupFailedException if unable to start
      */
-    public synchronized Map<Object, Object> start(
- GraphDatabaseService graphDb )
+    public synchronized Map<Object, Object> start( GraphDatabaseService graphDb )
     {
         if ( started )
         {
@@ -78,12 +77,6 @@ class GraphDbInstance
         Map<Object, Object> params = config.getParams();
         boolean useMemoryMapped = Boolean.parseBoolean( (String) config.getInputParams().get(
                 Config.USE_MEMORY_MAPPED_BUFFERS ) );
-        if ( useMemoryMapped )
-        {
-            params.put( Config.USE_MEMORY_MAPPED_BUFFERS,
- config.getInputParams().get(
-                    Config.USE_MEMORY_MAPPED_BUFFERS ) );
-        }
         boolean dump = Boolean.parseBoolean( (String) config.getInputParams().get(
                 Config.DUMP_CONFIGURATION ) );
         storeDir = FileUtils.fixSeparatorsInPath( storeDir );
@@ -154,26 +147,15 @@ class GraphDbInstance
         config.getGraphDbModule().init();
 
         config.getTxModule().start();
-        config.getPersistenceModule().start(
-                config.getTxModule().getTxManager(), persistenceSource,
- config.getSyncHookFactory() );
+        config.getPersistenceModule().start( config.getTxModule().getTxManager(),
+                persistenceSource, config.getSyncHookFactory() );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
         config.getGraphDbModule().start( config.getLockReleaser(),
                 config.getPersistenceModule().getPersistenceManager(), params );
-        if ( "true".equals( params.get( Config.DUMP_CONFIGURATION ) ) )
+        if ( dump )
         {
-            for ( Object key : params.keySet() )
-            {
-                if ( key instanceof String )
-                {
-                    Object value = params.get( key );
-                    if ( value instanceof String )
-                    {
-                        System.out.println( key + "=" + value );
-                    }
-                }
-            }
+            Config.dumpConfiguration( params );
         }
 
         if ( config.getTxModule().getXaDataSourceManager().hasDataSource( "lucene-index" ) )

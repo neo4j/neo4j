@@ -37,7 +37,6 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -108,15 +107,9 @@ public class XaLogicalLog
     
     private boolean getMemoryMapped( Map<Object,Object> config )
     {
-        if ( config != null )
-        {
-            String value = (String) config.get( Config.USE_MEMORY_MAPPED_BUFFERS );
-            if ( value != null && value.toLowerCase().equals( "false" ) )
-            {
-                return false;
-            }
-        }
-        return true;
+        String configValue = config != null ?
+                (String) config.get( Config.USE_MEMORY_MAPPED_BUFFERS ) : null;
+        return configValue != null ? Boolean.parseBoolean( configValue ) : true;
     }
     
     synchronized void open() throws IOException
