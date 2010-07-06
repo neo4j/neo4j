@@ -1,7 +1,10 @@
 package org.neo4j.kernel;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
+
+import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -10,17 +13,67 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.kernel.ha.PulledOutHooksFromEmbeddedGraphDb;
+import org.neo4j.kernel.ha.SlaveIdGenerator;
+import org.neo4j.kernel.ha.SlaveLockManager;
+import org.neo4j.kernel.impl.ha.Broker;
+import org.neo4j.kernel.impl.ha.ResponseReceiver;
+import org.neo4j.kernel.impl.ha.TransactionStream;
+import org.neo4j.kernel.impl.transaction.TxManager;
 
 public class HighlyAvailableGraphDatabase implements GraphDatabaseService
 {
-    private final PulledOutHooksFromEmbeddedGraphDb hooks;
-    private final EmbeddedGraphDbImpl localGraph;
-
-    public HighlyAvailableGraphDatabase()
+    private final MasterFailureReactor<Node> createNodeMethod =
+        new MasterFailureReactor<Node>( this )
     {
-        this.hooks = null;
-        this.localGraph = null;
+        @Override
+        public Node doOperation()
+        {
+            return localGraph.createNode();
+        }
+    };
+    
+    private final Broker broker;
+    private EmbeddedGraphDbImpl localGraph;
+
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
+    {
+        this.broker = instantiateBroker( config );
+        evaluateMyself();
+    }
+
+    private Broker instantiateBroker( Map<String, String> config )
+    {
+        String cls = config.get( "ha_broker" );
+        try
+        {
+            return Class.forName( cls ).asSubclass( Broker.class ).getConstructor(
+                    Map.class ).newInstance( config );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    protected void evaluateMyself()
+    {
+        if ( iAmMaster() )
+        {
+            
+        }
+        else
+        {
+            ResponseReceiver receiver = null;
+            this.localGraph = new EmbeddedGraphDbImpl( "storeDir", new HashMap<String, String>(),
+                    this, new SlaveLockManager.SlaveLockManagerFactory( broker, receiver ),
+                    new SlaveIdGenerator.SlaveIdGeneratorFactory( broker, receiver ) );
+        }
+    }
+
+    private boolean iAmMaster()
+    {
+        // TODO Auto-generated method stub
+        return false;
     }
 
     public Transaction beginTx()
@@ -31,8 +84,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
 
     public Node createNode()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return createNodeMethod.doOperation();
     }
 
     public boolean enableRemoteShell()
@@ -108,5 +160,51 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
         // TODO Auto-generated method stub
         return null;
     }
+    
+    private class SlaveTransaction extends TopLevelTransaction
+    {
+        SlaveTransaction( TransactionManager tm )
+        {
+            super( tm );
+        }
+        
+        public void finish()
+        {
+            boolean successfulFinish = false;
+            try
+            {
+                int localTxId = ((TxManager) getTransactionManager()).getEventIdentifier(); 
+                if ( isMarkedAsSuccessful() )
+                {
+                    broker.getMaster().commitTransaction( broker.getSlaveContext(),
+                            localTxId, transactionAsStream() );
+                }
+                else
+                {
+                    broker.getMaster().rollbackTransaction( broker.getSlaveContext(),
+                            localTxId );
+                }
+                successfulFinish = true;
+            }
+            finally
+            {
+                try
+                {
+                    if ( !successfulFinish )
+                    {
+                        failure();
+                    }
+                }
+                finally
+                {
+                    super.finish();
+                }
+            }
+        }
 
+        private TransactionStream transactionAsStream()
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
 }
