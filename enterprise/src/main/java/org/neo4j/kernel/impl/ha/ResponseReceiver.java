@@ -5,16 +5,19 @@ public abstract class ResponseReceiver
     public final <T> T receive( Response<T> response )
     {
         applyTransactions( response.transactions() );
-        try
-        {
+//        try
+//        {
             return response.response();
-        }
-        catch ( MasterFailureException e )
-        {
-            // TODO: create better handling of this
-            throw new RuntimeException( "TODO: Master failure", e );
-        }
+//        }
+//        catch ( MasterFailureException e )
+//        {
+//            // TODO: create better handling of this
+//            throw new RuntimeException( "TODO: Master failure", e );
+//        }
     }
 
-    protected abstract void applyTransactions( TransactionStream transactions );
+    protected void applyTransactions( TransactionStream transactions )
+    {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -528,16 +528,19 @@ public abstract class CommonAbstractStore
      */
     protected void openIdGenerator()
     {
-        idGenerator = newIdGenerator( storageFileName + ".id",
+        idGenerator = openIdGenerator( storageFileName + ".id",
             DEFAULT_ID_GRAB_SIZE );
     }
     
     protected abstract IdType getIdType();
     
-    protected IdGenerator newIdGenerator( String fileName, int grabSize )
+    protected IdGenerator openIdGenerator( String fileName, int grabSize )
     {
-        return idGeneratorFactory.open( fileName, grabSize, getIdType() );
+        return idGeneratorFactory.open( fileName, grabSize, getIdType(),
+                figureOutHighestIdInUse() );
     }
+    
+    protected abstract long figureOutHighestIdInUse();
 
     protected void createIdGenerator( String fileName )
     {

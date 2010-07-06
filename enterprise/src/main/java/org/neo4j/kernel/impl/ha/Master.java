@@ -1,6 +1,7 @@
 package org.neo4j.kernel.impl.ha;
 
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.kernel.IdType;
 
 /**
  * Represents the master-side of the HA communication between master and slave.
@@ -8,7 +9,7 @@ import org.neo4j.graphdb.PropertyContainer;
  */
 public interface Master
 {
-    Response<IdAllocation> allocateIds( SlaveContext context, Class<?> cls );
+    Response<IdAllocation> allocateIds( SlaveContext context, IdType idType );
 
     Response<Integer> createRelationshipType( SlaveContext context, String name );
 

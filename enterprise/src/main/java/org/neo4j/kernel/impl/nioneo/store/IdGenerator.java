@@ -26,6 +26,5 @@ public interface IdGenerator
     long getHighId();
     void freeId( long id );
     void close();
-    String getFileName();
     long getNumberOfIdsInUse();
 }
