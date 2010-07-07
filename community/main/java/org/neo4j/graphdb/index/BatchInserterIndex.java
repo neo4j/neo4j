@@ -42,12 +42,13 @@ public interface BatchInserterIndex
     void add( long entityId, Map<String, Object> properties );
     
     /**
-     * Adds key/value pairs for {@code entity} to the index. If there's a
-     * previous index for {@code entity} it will be overwritten. This
-     * method can be considerably slower than {@link #add(long, Map)} because
-     * it must check if there are properties already indexed for
-     * {@code entity}. So if you know that there's no previous indexing for
-     * {@code entity} use {@link #add(long, Map)} instead.
+     * Adds key/value pairs for {@code entity} to the index. If there's any
+     * previous index for {@code entity} all such indexed key/value pairs
+     * will be deleted first. This method can be considerably slower than
+     * {@link #add(long, Map)} because it must check if there are properties
+     * already indexed for {@code entity}. So if you know that there's no
+     * previous indexing for {@code entity} use {@link #add(long, Map)}
+     * instead.
      * 
      * Entries added to the index aren't necessarily written to the index and
      * to disk until {@link BatchInserterIndexProvider#shutdown()} has been

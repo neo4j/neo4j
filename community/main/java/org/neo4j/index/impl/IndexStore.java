@@ -1,6 +1,5 @@
 package org.neo4j.index.impl;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -9,7 +8,7 @@ import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.commons.collection.MapUtil;
+import org.neo4j.helpers.collection.MapUtil;
 
 public class IndexStore
 {

@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.search.Query;
-import org.neo4j.commons.Pair;
+import org.neo4j.helpers.Pair;
 
 public class ExactTxData extends TxData
 {
