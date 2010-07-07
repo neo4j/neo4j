@@ -2,10 +2,10 @@ package org.neo4j.graphdb.index;
 
 import java.util.Map;
 
-import org.neo4j.commons.Service;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.Service;
 
 /**
  * A provider which can create and instantiate {@link Index}s.

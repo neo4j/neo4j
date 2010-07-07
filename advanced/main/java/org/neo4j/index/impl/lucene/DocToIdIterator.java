@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
-import org.neo4j.commons.iterator.PrefetchingIterator;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 class DocToIdIterator extends PrefetchingIterator<Long>
 {

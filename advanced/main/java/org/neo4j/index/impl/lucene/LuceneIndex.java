@@ -11,14 +11,14 @@ import java.util.Set;
 
 import org.apache.lucene.Hits;
 import org.apache.lucene.search.Query;
-import org.neo4j.commons.iterator.CombiningIterator;
-import org.neo4j.commons.iterator.FilteringIterator;
-import org.neo4j.commons.iterator.IteratorUtil;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.helpers.collection.CombiningIterator;
+import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.impl.IdToEntityIterator;
 import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.index.impl.SimpleIndexHits;
