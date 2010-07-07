@@ -5,7 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-import org.neo4j.commons.iterator.PrefetchingIterator;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 public class CsvFileReader extends PrefetchingIterator<String[]>
 {

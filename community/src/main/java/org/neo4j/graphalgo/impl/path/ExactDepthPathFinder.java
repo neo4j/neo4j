@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.commons.Predicate;
-import org.neo4j.commons.iterator.PrefetchingIterator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.util.LiteDepthFirstSelector;
 import org.neo4j.graphalgo.impl.util.PathImpl.Builder;
@@ -20,6 +18,8 @@ import org.neo4j.graphdb.traversal.SourceSelectorFactory;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.TraversalFactory;
 
 /**

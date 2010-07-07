@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.neo4j.commons.iterator.PrefetchingIterator;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.PathFinder;
@@ -24,6 +23,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 public class AStar implements PathFinder<WeightedPath>
 {
