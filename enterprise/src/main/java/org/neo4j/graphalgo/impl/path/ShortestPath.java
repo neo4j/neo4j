@@ -10,9 +10,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 
-import org.neo4j.commons.iterator.IterableWrapper;
-import org.neo4j.commons.iterator.NestingIterator;
-import org.neo4j.commons.iterator.PrefetchingIterator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphalgo.impl.util.PathImpl.Builder;
@@ -22,6 +19,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.NestingIterator;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 /**
  * Find (all or one) simple shortest path(s) between two nodes. It starts
