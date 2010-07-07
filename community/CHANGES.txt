@@ -1,5 +1,16 @@
+1.1 (2010-06)
+----------------
+
+o Ability to write command lines including $SOME_VARIABLE and it will be
+  expanded with its associated value (if it had any).
+o History is stored if using jLine.
+o Some more TAB-completion in "cd" command, where you now can "cd" to
+  node by writing its title and it can be TAB-completed as well.
+o Some minor changes of command options.
+
 1.0 (2010-02-16)
 ----------------
+
 o Built-in support for --long-options
 o New "alias" app which works like the one in Bash.
 o New "script" app which allows you to execute a file with
