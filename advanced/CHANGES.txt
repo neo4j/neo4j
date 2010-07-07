@@ -1,0 +1,20 @@
+0.6 (2010-06)
+-------------
+
+o Added a new shortest path algorithm which is very memory efficient and is
+  as close to depth-first search as possible.
+o Added an implementation of the A* algorithm for efficient finding of cheapest
+  paths between two nodes.
+o Added a new implementation of the Dijkstra algorithm which uses the new
+  traversal framework.
+o Added a PathFinder interface which all algorithms which finds path(s) between
+  two nodes implements.
+o Recommended and functional algorithms can be reached from the
+  GraphAlgoFactory class. It also makes it easier to switch implementations
+  when such come along w/o having to update code using graph algo component.
+o Added a WeightedPath interface (extends Path) which includes a weight of
+  the path. Used for such algorithms as A* and Dijkstra.
+o Added a factory for common evaluators (used in f.ex A* and Dijkstra).
+o Moved all algorithm implementations to .impl.* package(s) to notify users
+  that they are up for change. The prefered way to get hold of algorithms is
+  via GraphAlgoFactory.
