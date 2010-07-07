@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.commons.Service;
+import org.neo4j.helpers.Service;
 
 final class ProtocolService
 {
