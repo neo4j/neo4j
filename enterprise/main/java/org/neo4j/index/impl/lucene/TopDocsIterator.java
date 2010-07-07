@@ -6,8 +6,8 @@ import java.util.Iterator;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.neo4j.commons.iterator.ArrayIterator;
-import org.neo4j.commons.iterator.PrefetchingIterator;
+import org.neo4j.helpers.collection.ArrayIterator;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 class TopDocsIterator extends PrefetchingIterator<Document>
 {

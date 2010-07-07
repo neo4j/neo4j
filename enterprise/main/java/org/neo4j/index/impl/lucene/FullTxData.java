@@ -15,7 +15,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.neo4j.commons.Pair;
+import org.neo4j.helpers.Pair;
 
 class FullTxData extends TxData
 {

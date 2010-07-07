@@ -23,12 +23,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.commons.collection.MapUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
