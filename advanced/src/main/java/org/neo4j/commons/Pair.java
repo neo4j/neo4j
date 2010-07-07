@@ -1,5 +1,8 @@
 package org.neo4j.commons;
 
+/**
+ * Utility to handle pairs of objects.
+ */
 public final class Pair<T1, T2>
 {
     private final T1 first;
