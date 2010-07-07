@@ -6,22 +6,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Parses a String[] arguments from a main-method. It expects values to be
- * either key/value pairs or just "orphan" values (w/o a key associated)
+ * Parses a String[] argument from a main-method. It expects values to be either
+ * key/value pairs or just "orphan" values (w/o a key associated).
+ * <p>
+ * A key is defined with one or more dashes in the beginning, for example:
  * 
- * A key is defined with one or more dashes in the beginning, f.ex:
- * 
+ * <pre>
  *   '-path'
  *   '--path'
+ * </pre>
  * 
- * A key/value pair can be either one single String from the array where
- * there's a '=' delimiter between the key and value, like so:
+ * A key/value pair can be either one single String from the array where there's
+ * a '=' delimiter between the key and value, like so:
  * 
+ * <pre>
  *   '--path=/my/path/to/something'
- *   
+ * </pre>
  * ...or consist of two (consecutive) strings from the array, like so:
- * 
+ * <pre>
  *   '-path' '/my/path/to/something'
+ * </pre>
  */
 public class Args
 {
