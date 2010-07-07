@@ -11,11 +11,11 @@ import java.util.Set;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.TraversalFactory;
 
 public class DepthPitfallGraphTest extends AbstractTestBase

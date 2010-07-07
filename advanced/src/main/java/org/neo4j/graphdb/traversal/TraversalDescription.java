@@ -1,10 +1,10 @@
 package org.neo4j.graphdb.traversal;
 
-import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Predicate;
 
 /**
  * Represents a description of a traversal. Here the rules and behaviour of

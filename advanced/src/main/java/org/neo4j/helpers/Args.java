@@ -1,4 +1,4 @@
-package org.neo4j.commons.commandline;
+package org.neo4j.helpers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
