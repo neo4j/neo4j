@@ -108,6 +108,11 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-online-backup</artifactId>
+      <version>0.6-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>jline</groupId>
       <artifactId>jline</artifactId>
       <version>${jline.version}</version>
