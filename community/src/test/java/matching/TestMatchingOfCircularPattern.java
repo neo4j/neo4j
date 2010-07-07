@@ -14,7 +14,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.commons.iterator.IteratorWrapper;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -27,6 +26,7 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
+import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class TestMatchingOfCircularPattern

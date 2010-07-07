@@ -26,13 +26,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.commons.Predicate;
-import org.neo4j.commons.iterator.FilteringIterable;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphmatching.filter.AbstractFilterExpression;
 import org.neo4j.graphmatching.filter.FilterBinaryNode;
 import org.neo4j.graphmatching.filter.FilterExpression;
 import org.neo4j.graphmatching.filter.FilterValueGetter;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.FilteringIterable;
 
 /**
  * The PatternMatcher is the engine that performs the matching of a graph

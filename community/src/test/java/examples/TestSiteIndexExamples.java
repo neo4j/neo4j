@@ -14,7 +14,6 @@ import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.commons.iterator.IterableWrapper;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -27,6 +26,7 @@ import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
 import org.neo4j.graphmatching.ValueMatcher;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
