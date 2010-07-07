@@ -19,9 +19,9 @@
  */
 
 /**
- * Common Java utilities. A collection of useful utilities which you very
- * often find yourself needing, but you can't (as of yet) find in the core
- * Java SDK.
+ * Collections utilities - Iterator/Iterable utilities and creating
+ * {@link Map}s.
  */
-package org.neo4j.commons;
+package org.neo4j.helpers.collection;
+
 

@@ -1,4 +1,4 @@
-package org.neo4j.commons;
+package org.neo4j.helpers;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.neo4j.commons.iterator.FilteringIterable;
-import org.neo4j.commons.iterator.IterableWrapper;
-import org.neo4j.commons.iterator.NestingIterable;
-import org.neo4j.commons.iterator.PrefetchingIterator;
+import org.neo4j.helpers.collection.FilteringIterable;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.NestingIterable;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 /**
  * A utility for locating services. This implements the same functionality as <a

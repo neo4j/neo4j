@@ -1,4 +1,4 @@
-package org.neo4j.commons;
+package org.neo4j.helpers;
 
 /**
  * Utility to handle pairs of objects.
