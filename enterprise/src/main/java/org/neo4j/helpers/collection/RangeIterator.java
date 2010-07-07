@@ -1,4 +1,4 @@
-package org.neo4j.commons.iterator;
+package org.neo4j.helpers.collection;
 
 /**
  * Iterates over a range, where the start value is inclusive, but the

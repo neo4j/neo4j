@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Stack;
 
-import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -20,6 +19,7 @@ import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.OrderedByTypeExpander;
 import org.neo4j.kernel.TraversalFactory;
 

@@ -1,10 +1,10 @@
-package org.neo4j.commons.iterator;
+package org.neo4j.helpers.collection;
 
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.commons.Predicate;
+import org.neo4j.helpers.Predicate;
 
 /**
  * An iterable which filters another iterable, only letting items with certain

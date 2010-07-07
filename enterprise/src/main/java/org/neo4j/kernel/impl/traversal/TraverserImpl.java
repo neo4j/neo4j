@@ -2,8 +2,6 @@ package org.neo4j.kernel.impl.traversal;
 
 import java.util.Iterator;
 
-import org.neo4j.commons.iterator.IterableWrapper;
-import org.neo4j.commons.iterator.PrefetchingIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -11,6 +9,8 @@ import org.neo4j.graphdb.traversal.ExpansionSource;
 import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.SourceSelector;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 class TraverserImpl implements Traverser
 {

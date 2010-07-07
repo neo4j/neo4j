@@ -2,7 +2,6 @@ package org.neo4j.kernel;
 
 import java.util.Iterator;
 
-import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Expansion;
@@ -17,6 +16,7 @@ import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.SourceSelector;
 import org.neo4j.graphdb.traversal.SourceSelectorFactory;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.traversal.FinalExpansionSource;
 import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
 

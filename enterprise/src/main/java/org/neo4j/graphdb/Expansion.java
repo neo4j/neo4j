@@ -1,7 +1,7 @@
 package org.neo4j.graphdb;
 
-import org.neo4j.commons.Pair;
-import org.neo4j.commons.Predicate;
+import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
 
 public interface Expansion<T> extends Iterable<T>
 {

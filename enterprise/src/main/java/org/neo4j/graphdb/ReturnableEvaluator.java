@@ -19,8 +19,8 @@
  */
 package org.neo4j.graphdb;
 
-import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.TraversalFactory;
 
 /**

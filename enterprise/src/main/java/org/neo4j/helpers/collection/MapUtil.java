@@ -1,4 +1,4 @@
-package org.neo4j.commons.collection;
+package org.neo4j.helpers.collection;
 
 import java.util.HashMap;
 import java.util.Map;

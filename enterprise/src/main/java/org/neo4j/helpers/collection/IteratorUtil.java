@@ -1,4 +1,4 @@
-package org.neo4j.commons.iterator;
+package org.neo4j.helpers.collection;
 
 import java.util.Collection;
 import java.util.Iterator;

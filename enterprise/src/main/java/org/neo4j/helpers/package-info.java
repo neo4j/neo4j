@@ -19,7 +19,9 @@
  */
 
 /**
- * Iterator utilities - collection wrapping/filtering.
+ * Common Java utilities. A collection of useful utilities which you very
+ * often find yourself needing, but you can't (as of yet) find in the core
+ * Java SDK.
  */
-package org.neo4j.commons.iterator;
+package org.neo4j.helpers;
 
