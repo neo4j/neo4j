@@ -2,10 +2,10 @@ package org.neo4j.graphalgo.impl.util;
 
 import java.util.Iterator;
 
-import org.neo4j.commons.iterator.PrefetchingIterator;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Path;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 
 public class StopAfterWeightIterator extends PrefetchingIterator<WeightedPath>
 {
