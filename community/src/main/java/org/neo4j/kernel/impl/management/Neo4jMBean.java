@@ -100,7 +100,8 @@ public class Neo4jMBean extends StandardMBean
             {
                 public KernelBean call() throws Exception
                 {
-                    return new KernelBean( instance.id, kernelVersion, instance.datasource );
+                    return new KernelBean( instance.id, kernelVersion, instance.datasource,
+                            getObjectName( instance.id, null, null ) );
                 }
             } ) ) failedToRegister( "KernelBean" );
         }
@@ -420,7 +421,11 @@ public class Neo4jMBean extends StandardMBean
     private static ObjectName getObjectName( int instanceId, Class<?> iface, Class<?> clazz )
     {
         final String name;
-        if ( iface == DynamicMBean.class )
+        if ( iface == null )
+        {
+            name = "*";
+        }
+        else if ( iface == DynamicMBean.class )
         {
             name = clazz.getSimpleName();
         }

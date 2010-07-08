@@ -7,10 +7,11 @@ import java.lang.annotation.Target;
 
 import javax.management.MBeanOperationInfo;
 
-@Target( { ElementType.METHOD, ElementType.TYPE } )
+@Target( { ElementType.METHOD, ElementType.TYPE, ElementType.FIELD } )
 @Retention( RetentionPolicy.RUNTIME )
-@interface Description
+public @interface Description
 {
+    // TODO: refactor for localization
     String value();
 
     int impact() default MBeanOperationInfo.UNKNOWN;
