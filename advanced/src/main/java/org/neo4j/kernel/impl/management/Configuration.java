@@ -1,5 +1,7 @@
 package org.neo4j.kernel.impl.management;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,6 +16,8 @@ import javax.management.MBeanInfo;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ReflectionException;
 
+import org.neo4j.kernel.Config;
+
 @Description( "The configuration parameters used to configure Neo4j" )
 class Configuration extends Neo4jMBean
 {
@@ -21,8 +25,24 @@ class Configuration extends Neo4jMBean
     static
     {
         final Map<String, String> descriptions = new HashMap<String, String>();
-        descriptions.put( "store_dir",
-                "Relative path for where the Neo4j storage directory is located." );
+        for ( final Field field : Config.class.getFields() )
+        {
+            if ( Modifier.isStatic( field.getModifiers() )
+                 && Modifier.isFinal( field.getModifiers() ) )
+            {
+                final Description descr = field.getAnnotation( Description.class );
+                if ( descr == null || field.getType() != String.class ) continue;
+                try
+                {
+                    if ( !field.isAccessible() ) field.setAccessible( true );
+                    descriptions.put( (String) field.get( null ), descr.value() );
+                }
+                catch ( Exception e )
+                {
+                    continue;
+                }
+            }
+        }
         parameterDescriptions = Collections.unmodifiableMap( descriptions );
     }
     private final Map<Object, Object> config;
