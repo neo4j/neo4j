@@ -108,7 +108,7 @@ public abstract class AbstractTestBase
             tx.finish();
         }
     }
-    
+
     protected Node getNodeWithName( String name )
     {
         for ( Node node : graphdb.getAllNodes() )
@@ -273,7 +273,7 @@ public abstract class AbstractTestBase
 
     protected static void expectPaths( Traverser traverser, Set<String> expected )
     {
-        expect( traverser.paths(), new NodePathRepresentation(
+        expect( traverser, new NodePathRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), expected );
     }
 

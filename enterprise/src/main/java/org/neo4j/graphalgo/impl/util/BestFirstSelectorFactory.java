@@ -6,40 +6,40 @@ import java.util.Set;
 import org.neo4j.graphalgo.impl.util.PriorityMap.Converter;
 import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.graphdb.traversal.SourceSelector;
-import org.neo4j.graphdb.traversal.SourceSelectorFactory;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 
 public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
-        implements SourceSelectorFactory
+        implements BranchOrderingPolicy
 {
-    public SourceSelector create( ExpansionSource startSource )
+    public BranchSelector create( TraversalBranch startSource )
     {
         return new BestFirstSelector( startSource, getStartData() );
     }
     
     protected abstract P getStartData();
 
-    public final class BestFirstSelector implements SourceSelector
+    public final class BestFirstSelector implements BranchSelector
     {
-        private PriorityMap<ExpansionSource, Node, P> queue =
+        private PriorityMap<TraversalBranch, Node, P> queue =
                 PriorityMap.withNaturalOrder( CONVERTER );
-        private ExpansionSource current;
+        private TraversalBranch current;
         private P currentAggregatedValue;
         private final Set<Long> visitedNodes = new HashSet<Long>();
 
-        public BestFirstSelector( ExpansionSource source, P startData )
+        public BestFirstSelector( TraversalBranch source, P startData )
         {
             this.current = source;
             this.currentAggregatedValue = startData;
         }
 
-        public ExpansionSource nextPosition()
+        public TraversalBranch next()
         {
             // Exhaust current if not already exhausted
             while ( true )
             {
-                ExpansionSource next = current.next();
+                TraversalBranch next = current.next();
                 if ( next != null )
                 {
                     if ( !visitedNodes.contains( next.node().getId() ) )
@@ -56,7 +56,7 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
             }
             
             // Pop the top from priorityMap
-            Entry<ExpansionSource, P> entry = queue.pop();
+            Entry<TraversalBranch, P> entry = queue.pop();
             if ( entry != null )
             {
                 current = entry.getEntity();
@@ -68,15 +68,15 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
         }
     }
 
-    protected abstract P addPriority( ExpansionSource source,
+    protected abstract P addPriority( TraversalBranch source,
             P currentAggregatedValue, D value );
     
-    protected abstract D calculateValue( ExpansionSource next );
+    protected abstract D calculateValue( TraversalBranch next );
     
-    public static final Converter<Node, ExpansionSource> CONVERTER =
-            new Converter<Node, ExpansionSource>()
+    public static final Converter<Node, TraversalBranch> CONVERTER =
+            new Converter<Node, TraversalBranch>()
     {
-        public Node convert( ExpansionSource source )
+        public Node convert( TraversalBranch source )
         {
             return source.node();
         }

@@ -10,14 +10,14 @@ import org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory;
 import org.neo4j.graphalgo.impl.util.StopAfterWeightIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.graphdb.traversal.Position;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 public class ExperimentalAStar implements PathFinder<WeightedPath>
 {
@@ -29,29 +29,29 @@ public class ExperimentalAStar implements PathFinder<WeightedPath>
     public ExperimentalAStar( RelationshipExpander expander, CostEvaluator<Double> costEvaluator,
             EstimateEvaluator<Double> estimateEvaluator )
     {
-        this.traversalDescription = TraversalFactory.createTraversalDescription().uniqueness(
+        this.traversalDescription = Traversal.description().uniqueness(
                 Uniqueness.NONE ).expand( expander );
         this.costEvaluator = costEvaluator;
         this.estimateEvaluator = estimateEvaluator;
     }
-    
+
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
-        Predicate<Position> filter = new Predicate<Position>()
+        Predicate<Path> filter = new Predicate<Path>()
         {
-            public boolean accept( Position position )
+            public boolean accept( Path position )
             {
-                return position.node().equals( end );
+                return position.endNode().equals( end );
             }
         };
-        
-        final Traverser traverser = traversalDescription.sourceSelector(
+
+        final Traverser traverser = traversalDescription.order(
                 new SelectorFactory( end ) ).filter( filter ).traverse( start );
         return new Iterable<WeightedPath>()
         {
             public Iterator<WeightedPath> iterator()
             {
-                return new StopAfterWeightIterator( traverser.paths().iterator(),
+                return new StopAfterWeightIterator( traverser.iterator(),
                         costEvaluator );
             }
         };
@@ -62,18 +62,18 @@ public class ExperimentalAStar implements PathFinder<WeightedPath>
         Iterator<WeightedPath> paths = findAllPaths( start, end ).iterator();
         return paths.hasNext() ? paths.next() : null;
     }
-    
+
     private static class PositionData implements Comparable<PositionData>
     {
         private final double wayLengthG;
         private final double estimateH;
-        
+
         public PositionData( double wayLengthG, double estimateH )
         {
             this.wayLengthG = wayLengthG;
             this.estimateH = estimateH;
         }
-        
+
         Double f()
         {
             return this.estimateH + this.wayLengthG;
@@ -83,14 +83,14 @@ public class ExperimentalAStar implements PathFinder<WeightedPath>
         {
             return f().compareTo( o.f() );
         }
-        
+
         @Override
         public String toString()
         {
             return "g:" + wayLengthG + ", h:" + estimateH;
         }
     }
-    
+
     private class SelectorFactory extends BestFirstSelectorFactory<PositionData, Double>
     {
         private final Node end;
@@ -99,9 +99,9 @@ public class ExperimentalAStar implements PathFinder<WeightedPath>
         {
             this.end = end;
         }
-        
+
         @Override
-        protected PositionData addPriority( ExpansionSource source,
+        protected PositionData addPriority( TraversalBranch source,
                 PositionData currentAggregatedValue, Double value )
         {
             return new PositionData( currentAggregatedValue.wayLengthG + value,
@@ -109,7 +109,7 @@ public class ExperimentalAStar implements PathFinder<WeightedPath>
         }
 
         @Override
-        protected Double calculateValue( ExpansionSource next )
+        protected Double calculateValue( TraversalBranch next )
         {
             return next.depth() == 0 ? 0d :
                 costEvaluator.getCost( next.relationship(), Direction.OUTGOING );

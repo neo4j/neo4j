@@ -11,16 +11,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.graphdb.traversal.Position;
-import org.neo4j.graphdb.traversal.SourceSelector;
-import org.neo4j.graphdb.traversal.SourceSelectorFactory;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 /**
  * Tries to find paths in a graph from a start node to an end node where the
@@ -67,11 +66,11 @@ public class ExactDepthPathFinder implements PathFinder<Path>
 
     private Iterator<Path> paths( final Node start, final Node end )
     {
-        TraversalDescription base = TraversalFactory.createTraversalDescription().uniqueness(
-                Uniqueness.RELATIONSHIP_PATH ).sourceSelector(
-                new SourceSelectorFactory()
+        TraversalDescription base = Traversal.description().uniqueness(
+                Uniqueness.RELATIONSHIP_PATH ).order(
+                new BranchOrderingPolicy()
                 {
-                    public SourceSelector create( ExpansionSource startSource )
+                    public BranchSelector create( TraversalBranch startSource )
                     {
                         return new LiteDepthFirstSelector( startSource,
                                 startThreshold );
@@ -79,27 +78,27 @@ public class ExactDepthPathFinder implements PathFinder<Path>
                 } );
         final int firstHalf = onDepth / 2;
         Traverser startTraverser = base.prune(
-                TraversalFactory.pruneAfterDepth( firstHalf ) ).expand(
-                expander ).filter( new Predicate<Position>()
+                Traversal.pruneAfterDepth( firstHalf ) ).expand(
+                expander ).filter( new Predicate<Path>()
         {
-            public boolean accept( Position item )
+            public boolean accept( Path item )
             {
-                return item.depth() == firstHalf;
+                return item.length() == firstHalf;
             }
         } ).traverse( start );
         final int secondHalf = onDepth - firstHalf;
         Traverser endTraverser = base.prune(
-                TraversalFactory.pruneAfterDepth( secondHalf ) ).expand(
-                expander.reversed() ).filter( new Predicate<Position>()
+                Traversal.pruneAfterDepth( secondHalf ) ).expand(
+                expander.reversed() ).filter( new Predicate<Path>()
         {
-            public boolean accept( Position item )
+            public boolean accept( Path item )
             {
-                return item.depth() == secondHalf;
+                return item.length() == secondHalf;
             }
         } ).traverse( end );
 
-        final Iterator<Position> startIterator = startTraverser.iterator();
-        final Iterator<Position> endIterator = endTraverser.iterator();
+        final Iterator<Path> startIterator = startTraverser.iterator();
+        final Iterator<Path> endIterator = endTraverser.iterator();
 
         final Map<Node, Visit> visits = new HashMap<Node, Visit>();
         return new PrefetchingIterator<Path>()
@@ -107,7 +106,7 @@ public class ExactDepthPathFinder implements PathFinder<Path>
             @Override
             protected Path fetchNextOrNull()
             {
-                Position[] found = null;
+                Path[] found = null;
                 while ( found == null
                         && ( startIterator.hasNext() || endIterator.hasNext() ) )
                 {
@@ -122,11 +121,11 @@ public class ExactDepthPathFinder implements PathFinder<Path>
         };
     }
 
-    private Path toPath( Position[] found, Node start )
+    private Path toPath( Path[] found, Node start )
     {
-        Path startPath = found[0].path();
-        Path endPath = found[1].path();
-        if ( !startPath.getStartNode().equals( start ) )
+        Path startPath = found[0];
+        Path endPath = found[1];
+        if ( !startPath.startNode().equals( start ) )
         {
             Path tmpPath = startPath;
             startPath = endPath;
@@ -137,7 +136,7 @@ public class ExactDepthPathFinder implements PathFinder<Path>
 
     private Builder toBuilder( Path path )
     {
-        Builder builder = new Builder( path.getStartNode() );
+        Builder builder = new Builder( path.startNode() );
         for ( Relationship rel : path.relationships() )
         {
             builder = builder.push( rel );
@@ -145,35 +144,35 @@ public class ExactDepthPathFinder implements PathFinder<Path>
         return builder;
     }
 
-    private Position[] goOneStep( Node node, Iterator<Position> visitor,
+    private Path[] goOneStep( Node node, Iterator<Path> visitor,
             Map<Node, Visit> visits )
     {
         if ( !visitor.hasNext() )
         {
             return null;
         }
-        Position position = visitor.next();
-        Visit visit = visits.get( position.node() );
+        Path position = visitor.next();
+        Visit visit = visits.get( position.endNode() );
         if ( visit != null )
         {
             if ( visitor != visit.visitor )
             {
-                return new Position[] { visit.position, position };
+                return new Path[] { visit.position, position };
             }
         }
         else
         {
-            visits.put( position.node(), new Visit( position, visitor ) );
+            visits.put( position.endNode(), new Visit( position, visitor ) );
         }
         return null;
     }
 
     private static class Visit
     {
-        private final Position position;
-        private final Iterator<Position> visitor;
+        private final Path position;
+        private final Iterator<Path> visitor;
 
-        Visit( Position position, Iterator<Position> visitor )
+        Visit( Path position, Iterator<Path> visitor )
         {
             this.position = position;
             this.visitor = visitor;

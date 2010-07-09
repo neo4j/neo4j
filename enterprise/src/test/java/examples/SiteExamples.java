@@ -19,7 +19,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 public class SiteExamples
 {
@@ -71,7 +71,7 @@ public class SiteExamples
         // Will find the shortest path between startNode and endNode via
         // "MY_TYPE" relationships (irregardless of their directions)
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
-                TraversalFactory.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ), 15 );
+                Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ), 15 );
         Iterable<Path> paths = finder.findAllPaths( startNode, endNode );
     }
     // END SNIPPET: shortestPathUsage
@@ -98,7 +98,7 @@ public class SiteExamples
     public WeightedPath findCheapestPathWithDijkstra( Node start, Node end )
     {
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
-                TraversalFactory.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ),
+                Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ),
                 CommonEvaluators.doubleCostEvaluator( "cost" ) );
         
         WeightedPath path = finder.findSinglePath( start, end );
@@ -154,7 +154,7 @@ public class SiteExamples
             }
         };
         PathFinder<WeightedPath> astar = GraphAlgoFactory.aStar(
-                TraversalFactory.expanderForAllTypes(),
+                Traversal.expanderForAllTypes(),
                 CommonEvaluators.doubleCostEvaluator( "length" ), estimateEvaluator );
         Path path = astar.findSinglePath( nodeA, nodeC );
     }

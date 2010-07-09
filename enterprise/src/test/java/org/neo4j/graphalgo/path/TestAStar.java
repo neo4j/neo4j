@@ -19,7 +19,7 @@ import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
 
@@ -40,7 +40,7 @@ public class TestAStar extends Neo4jAlgoTestCase
     
     private PathFinder<WeightedPath> newFinder()
     {
-        return GraphAlgoFactory.aStar( TraversalFactory.expanderForAllTypes(),
+        return GraphAlgoFactory.aStar( Traversal.expanderForAllTypes(),
                 CommonEvaluators.doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR );
     }
 
