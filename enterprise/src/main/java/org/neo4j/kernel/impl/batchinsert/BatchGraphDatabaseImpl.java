@@ -26,13 +26,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
@@ -41,7 +39,6 @@ import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.kernel.TraversalFactory;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 
@@ -317,9 +314,10 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             return relItr.hasNext();
         }
 
+        /* Tentative expansion API
         public Expansion<Relationship> expandAll()
         {
-            return TraversalFactory.expanderForAllTypes().expand( this );
+            return Traversal.expanderForAllTypes().expand( this );
         }
 
         public Expansion<Relationship> expand( RelationshipType type )
@@ -330,20 +328,21 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         public Expansion<Relationship> expand( RelationshipType type,
                 Direction direction )
         {
-            return TraversalFactory.expanderForTypes( type, direction ).expand(
+            return Traversal.expanderForTypes( type, direction ).expand(
                     this );
         }
 
         public Expansion<Relationship> expand( Direction direction )
         {
-            return TraversalFactory.expanderForAllTypes( direction ).expand(
+            return Traversal.expanderForAllTypes( direction ).expand(
                     this );
         }
 
         public Expansion<Relationship> expand( RelationshipExpander expander )
         {
-            return TraversalFactory.expander( expander ).expand( this );
+            return Traversal.expander( expander ).expand( this );
         }
+        */
 
         public Traverser traverse( Order traversalOrder,
             StopEvaluator stopEvaluator,

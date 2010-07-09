@@ -1,24 +1,24 @@
 package org.neo4j.kernel;
 
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.graphdb.traversal.SourceSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.BranchSelector;
 
 /**
- * Selects {@link ExpansionSource}s according to postorder depth first pattern,
+ * Selects {@link TraversalBranch}s according to postorder depth first pattern,
  * see http://en.wikipedia.org/wiki/Depth-first_search
  */
-class PostorderDepthFirstSelector implements SourceSelector
+class PostorderDepthFirstSelector implements BranchSelector
 {
-    private ExpansionSource current;
+    private TraversalBranch current;
     
-    PostorderDepthFirstSelector( ExpansionSource startSource )
+    PostorderDepthFirstSelector( TraversalBranch startSource )
     {
         this.current = startSource;
     }
     
-    public ExpansionSource nextPosition()
+    public TraversalBranch next()
     {
-        ExpansionSource result = null;
+        TraversalBranch result = null;
         while ( result == null )
         {
             if ( current == null )
@@ -26,7 +26,7 @@ class PostorderDepthFirstSelector implements SourceSelector
                 return null;
             }
             
-            ExpansionSource next = current.next();
+            TraversalBranch next = current.next();
             if ( next != null )
             {
                 current = next;

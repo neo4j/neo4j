@@ -4,17 +4,15 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
-import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.graphdb.traversal.Position;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
-import org.neo4j.graphdb.traversal.SourceSelector;
-import org.neo4j.graphdb.traversal.SourceSelectorFactory;
+import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.traversal.FinalExpansionSource;
@@ -22,56 +20,56 @@ import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
 
 /**
  * A factory for objects regarding traversal of the graph. F.ex. it has a
- * method {@link #createTraversalDescription()} for creating a new
+ * method {@link #description()} for creating a new
  * {@link TraversalDescription}, methods for creating new
- * {@link ExpansionSource} instances and more.
+ * {@link TraversalBranch} instances and more.
  */
-public class TraversalFactory
+public class Traversal
 {
-    private static final SourceSelectorFactory PREORDER_DEPTH_FIRST_SELECTOR =
-            new SourceSelectorFactory()
+    private static final BranchOrderingPolicy PREORDER_DEPTH_FIRST_SELECTOR =
+            new BranchOrderingPolicy()
     {
-        public SourceSelector create( ExpansionSource startSource )
+        public BranchSelector create( TraversalBranch startSource )
         {
             return new PreorderDepthFirstSelector( startSource );
         }
     };
-    private static final SourceSelectorFactory POSTORDER_DEPTH_FIRST_SELECTOR =
-            new SourceSelectorFactory()
+    private static final BranchOrderingPolicy POSTORDER_DEPTH_FIRST_SELECTOR =
+            new BranchOrderingPolicy()
     {
-        public SourceSelector create( ExpansionSource startSource )
+        public BranchSelector create( TraversalBranch startSource )
         {
             return new PostorderDepthFirstSelector( startSource );
         }
     };
-    private static final SourceSelectorFactory PREORDER_BREADTH_FIRST_SELECTOR =
-            new SourceSelectorFactory()
+    private static final BranchOrderingPolicy PREORDER_BREADTH_FIRST_SELECTOR =
+            new BranchOrderingPolicy()
     {
-        public SourceSelector create( ExpansionSource startSource )
+        public BranchSelector create( TraversalBranch startSource )
         {
             return new PreorderBreadthFirstSelector( startSource );
         }
     };
-    private static final SourceSelectorFactory POSTORDER_BREADTH_FIRST_SELECTOR =
-            new SourceSelectorFactory()
+    private static final BranchOrderingPolicy POSTORDER_BREADTH_FIRST_SELECTOR =
+            new BranchOrderingPolicy()
     {
-        public SourceSelector create( ExpansionSource startSource )
+        public BranchSelector create( TraversalBranch startSource )
         {
             return new PostorderBreadthFirstSelector( startSource );
         }
     };
-    private static final Predicate<Position> RETURN_ALL = new Predicate<Position>()
+    private static final Predicate<Path> RETURN_ALL = new Predicate<Path>()
     {
-        public boolean accept( Position item )
+        public boolean accept( Path item )
         {
             return true;
         }
     };
-    private static final Predicate<Position> RETURN_ALL_BUT_START_NODE = new Predicate<Position>()
+    private static final Predicate<Path> RETURN_ALL_BUT_START_NODE = new Predicate<Path>()
     {
-        public boolean accept( Position item )
+        public boolean accept( Path item )
         {
-            return !item.atStartNode();
+            return item.length() > 0;
         }
     };
 
@@ -84,7 +82,7 @@ public class TraversalFactory
      *
      * @return a new {@link TraversalDescription} with default values.
      */
-    public static TraversalDescription createTraversalDescription()
+    public static TraversalDescription description()
     {
         return new TraversalDescriptionImpl();
     }
@@ -185,33 +183,33 @@ public class TraversalFactory
     }
 
     /**
-     * Combines two {@link ExpansionSource}s with a common
-     * {@link ExpansionSource#node() head node} in order to obtain an
-     * {@link ExpansionSource} representing a path from the start node of the
-     * <code>source</code> {@link ExpansionSource} to the start node of the
-     * <code>target</code> {@link ExpansionSource}. The resulting
-     * {@link ExpansionSource} will not {@link ExpansionSource#next() expand
-     * further}, and does not provide a {@link ExpansionSource#parent() parent}
-     * {@link ExpansionSource}.
+     * Combines two {@link TraversalBranch}s with a common
+     * {@link TraversalBranch#node() head node} in order to obtain an
+     * {@link TraversalBranch} representing a path from the start node of the
+     * <code>source</code> {@link TraversalBranch} to the start node of the
+     * <code>target</code> {@link TraversalBranch}. The resulting
+     * {@link TraversalBranch} will not {@link TraversalBranch#next() expand
+     * further}, and does not provide a {@link TraversalBranch#parent() parent}
+     * {@link TraversalBranch}.
      *
-     * @param source the {@link ExpansionSource} where the resulting path starts
-     * @param target the {@link ExpansionSource} where the resulting path ends
-     * @throws IllegalArgumentException if the {@link ExpansionSource#node()
-     *             head nodes} of the supplied {@link ExpansionSource}s does not
+     * @param source the {@link TraversalBranch} where the resulting path starts
+     * @param target the {@link TraversalBranch} where the resulting path ends
+     * @throws IllegalArgumentException if the {@link TraversalBranch#node()
+     *             head nodes} of the supplied {@link TraversalBranch}s does not
      *             match
-     * @return an {@link ExpansionSource} that represents the path from the
-     *         start node of the <code>source</code> {@link ExpansionSource} to
-     *         the start node of the <code>target</code> {@link ExpansionSource}
+     * @return an {@link TraversalBranch} that represents the path from the
+     *         start node of the <code>source</code> {@link TraversalBranch} to
+     *         the start node of the <code>target</code> {@link TraversalBranch}
      */
-    public static ExpansionSource combineSourcePaths( ExpansionSource source,
-            ExpansionSource target )
+    public static TraversalBranch combineSourcePaths( TraversalBranch source,
+            TraversalBranch target )
     {
         if ( !source.node().equals( target.node() ) )
         {
             throw new IllegalArgumentException(
                     "The nodes of the head and tail must match" );
         }
-        Path headPath = source.position().path(), tailPath = target.position().path();
+        Path headPath = source.position(), tailPath = target.position();
         Relationship[] relationships = new Relationship[headPath.length()
                                                         + tailPath.length()];
         Iterator<Relationship> iter = headPath.relationships().iterator();
@@ -224,7 +222,7 @@ public class TraversalFactory
         {
             relationships[i] = iter.next();
         }
-        return new FinalExpansionSource( tailPath.getStartNode(), relationships );
+        return new FinalExpansionSource( tailPath.startNode(), relationships );
     }
 
     /**
@@ -237,29 +235,30 @@ public class TraversalFactory
     {
         return new PruneEvaluator()
         {
-            public boolean pruneAfter( Position position )
+            public boolean pruneAfter( Path position )
             {
-                return position.depth() >= depth;
+                return position.length() >= depth;
             }
         };
     }
-    
+
     /**
-     * A traversal return filter which returns all {@link Position}s it
-     * encounters.
+     * A traversal return filter which returns all {@link Path}s it encounters.
+     *
      * @return a return filter which returns everything.
      */
-    public static Predicate<Position> returnAll()
+    public static Predicate<Path> returnAll()
     {
         return RETURN_ALL;
     }
-    
+
     /**
-     * A traversal return filter which returns all {@link Position}s except
-     * the position of the start node.
+     * A traversal return filter which returns all {@link Path}s except the
+     * position of the start node.
+     * 
      * @return a return filter which returns everything except the start node.
      */
-    public static Predicate<Position> returnAllButStartNode()
+    public static Predicate<Path> returnAllButStartNode()
     {
         return RETURN_ALL_BUT_START_NODE;
     }
@@ -268,10 +267,10 @@ public class TraversalFactory
      * Returns a "preorder depth first" selector factory . A depth first selector
      * always tries to select positions (from the current position) which are
      * deeper than the current position.
-     * @return a {@link SourceSelectorFactory} for a preorder depth first
+     * @return a {@link BranchOrderingPolicy} for a preorder depth first
      * selector.
      */
-    public static SourceSelectorFactory preorderDepthFirstSelector()
+    public static BranchOrderingPolicy preorderDepthFirstSelector()
     {
         return PREORDER_DEPTH_FIRST_SELECTOR;
     }
@@ -281,10 +280,10 @@ public class TraversalFactory
      * selector always tries to select positions (from the current position)
      * which are deeper than the current position. A postorder depth first
      * selector selects deeper position before the shallower ones.
-     * @return a {@link SourceSelectorFactory} for a postorder depth first
+     * @return a {@link BranchOrderingPolicy} for a postorder depth first
      * selector.
      */
-    public static SourceSelectorFactory postorderDepthFirstSelector()
+    public static BranchOrderingPolicy postorderDepthFirstSelector()
     {
         return POSTORDER_DEPTH_FIRST_SELECTOR;
     }
@@ -293,10 +292,10 @@ public class TraversalFactory
      * Returns a "preorder breadth first" selector factory. A breadth first
      * selector always selects all positions on the current depth before
      * advancing to the next depth.
-     * @return a {@link SourceSelectorFactory} for a preorder breadth first
+     * @return a {@link BranchOrderingPolicy} for a preorder breadth first
      * selector.
      */
-    public static SourceSelectorFactory preorderBreadthFirstSelector()
+    public static BranchOrderingPolicy preorderBreadthFirstSelector()
     {
         return PREORDER_BREADTH_FIRST_SELECTOR;
     }
@@ -306,10 +305,10 @@ public class TraversalFactory
      * selector always selects all positions on the current depth before
      * advancing to the next depth. A postorder breadth first selector selects
      * the levels in the reversed order, starting with the deepest.
-     * @return a {@link SourceSelectorFactory} for a postorder breadth first
+     * @return a {@link BranchOrderingPolicy} for a postorder breadth first
      * selector.
      */
-    public static SourceSelectorFactory postorderBreadthFirstSelector()
+    public static BranchOrderingPolicy postorderBreadthFirstSelector()
     {
         return POSTORDER_BREADTH_FIRST_SELECTOR;
     }
@@ -382,7 +381,7 @@ public class TraversalFactory
      */
     public static <T extends Path> String pathToString( T path, PathDescriptor<T> builder )
     {
-        Node current = path.getStartNode();
+        Node current = path.startNode();
         StringBuilder result = new StringBuilder();
         for ( Relationship rel : path.relationships() )
         {

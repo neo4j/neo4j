@@ -3,7 +3,7 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 public class DepthOneTraversalTest extends AbstractTestBase
 {
@@ -16,8 +16,8 @@ public class DepthOneTraversalTest extends AbstractTestBase
     
     private void shouldGetBothNodesOnDepthOne( TraversalDescription description )
     {
-        description = description.filter( TraversalFactory.returnAllButStartNode() ).prune(
-                TraversalFactory.pruneAfterDepth( 1 ) );
+        description = description.filter( Traversal.returnAllButStartNode() ).prune(
+                Traversal.pruneAfterDepth( 1 ) );
         expectNodes( description.traverse( getNodeWithName( "3" ) ), "1", "2" );
     }
     

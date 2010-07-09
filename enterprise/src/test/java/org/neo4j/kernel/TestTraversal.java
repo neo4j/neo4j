@@ -9,7 +9,7 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import org.junit.Test;
 import org.neo4j.graphdb.RelationshipType;
 
-public class TestTraversalFactory
+public class TestTraversal
 {
     private static RelationshipType T1 = withName( "T1" ),
             T2 = withName( "T2" ), T3 = withName( "T3" );
@@ -17,7 +17,7 @@ public class TestTraversalFactory
     @Test
     public void canCreateExpanderWithMultipleTypesAndDirections()
     {
-        assertNotNull( TraversalFactory.expanderForTypes( T1, INCOMING, T2,
+        assertNotNull( Traversal.expanderForTypes( T1, INCOMING, T2,
                 OUTGOING, T3, BOTH ) );
     }
 }

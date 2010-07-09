@@ -24,17 +24,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.kernel.TraversalFactory;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
@@ -378,9 +375,10 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         return nodeManager.createRelationship( this, otherNode, type );
     }
 
+    /* Tentative expansion API
     public Expansion<Relationship> expandAll()
     {
-        return TraversalFactory.expanderForAllTypes().expand( this );
+        return Traversal.expanderForAllTypes().expand( this );
     }
 
     public Expansion<Relationship> expand( RelationshipType type )
@@ -391,19 +389,20 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
     public Expansion<Relationship> expand( RelationshipType type,
             Direction direction )
     {
-        return TraversalFactory.expanderForTypes( type, direction ).expand(
+        return Traversal.expanderForTypes( type, direction ).expand(
                 this );
     }
 
     public Expansion<Relationship> expand( Direction direction )
     {
-        return TraversalFactory.expanderForAllTypes( direction ).expand( this );
+        return Traversal.expanderForAllTypes( direction ).expand( this );
     }
 
     public Expansion<Relationship> expand( RelationshipExpander expander )
     {
-        return TraversalFactory.expander( expander ).expand( this );
+        return Traversal.expander( expander ).expand( this );
     }
+    */
 
     public Traverser traverse( Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
