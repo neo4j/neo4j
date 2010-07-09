@@ -7,8 +7,9 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 public final class PathImpl implements Path
 {
@@ -103,7 +104,7 @@ public final class PathImpl implements Path
             assert right.relationship == null : "right Path.Builder size error";
             endNode = right.start;
         }
-        
+
         for ( int i = left.size - 1; i >= 0; i-- )
         {
             path[i] = left.relationship;
@@ -119,18 +120,18 @@ public final class PathImpl implements Path
         return new Builder( start ).build();
     }
 
-    public Node getStartNode()
+    public Node startNode()
     {
         return start;
     }
-    
-    public Node getEndNode()
+
+    public Node endNode()
     {
         if ( end != null )
         {
             return end;
         }
-        
+
         // TODO We could really figure this out in the constructor
         Node stepNode = null;
         for ( Node node : nodes() )
@@ -138,6 +139,11 @@ public final class PathImpl implements Path
             stepNode = node;
         }
         return stepNode;
+    }
+
+    public Relationship lastRelationship()
+    {
+        return path != null && path.length > 0 ? path[path.length - 1] : null;
     }
 
     public Iterable<Node> nodes()
@@ -192,6 +198,39 @@ public final class PathImpl implements Path
         return Collections.unmodifiableCollection( Arrays.asList( path ) );
     }
 
+    public Iterator<PropertyContainer> iterator()
+    {
+        return new Iterator<PropertyContainer>()
+        {
+            Iterator<? extends PropertyContainer> current = relationships().iterator();
+            Iterator<? extends PropertyContainer> next = nodes().iterator();
+
+            public boolean hasNext()
+            {
+                return current.hasNext();
+            }
+
+            public PropertyContainer next()
+            {
+                try
+                {
+                    return current.next();
+                }
+                finally
+                {
+                    Iterator<? extends PropertyContainer> temp = current;
+                    current = next;
+                    next = temp;
+                }
+            }
+
+            public void remove()
+            {
+                next.remove();
+            }
+        };
+    }
+
     public int length()
     {
         return path.length;
@@ -220,11 +259,11 @@ public final class PathImpl implements Path
         else if ( obj instanceof Path )
         {
             Path other = (Path) obj;
-            if ( !start.equals( other.getStartNode() ) )
+            if ( !start.equals( other.startNode() ) )
             {
                 return false;
             }
-            
+
             Iterator<Relationship> thisPathIterator =
                     this.relationships().iterator();
             Iterator<Relationship> thatPathIterator =
@@ -248,6 +287,6 @@ public final class PathImpl implements Path
     @Override
     public String toString()
     {
-        return TraversalFactory.defaultPathToString( this );
+        return Traversal.defaultPathToString( this );
     }
 }
