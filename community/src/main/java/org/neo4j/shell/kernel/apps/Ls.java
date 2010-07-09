@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -297,7 +297,7 @@ public class Ls extends GraphDatabaseApp
             Map<String, Object> filterMap, boolean caseInsensitiveFilters,
             boolean looseFilters )
     {
-        Expander expander = TraversalFactory.emptyExpander();
+        Expander expander = Traversal.emptyExpander();
         for ( RelationshipType type : getServer().getDb().getRelationshipTypes() )
         {
             boolean matches = false;
