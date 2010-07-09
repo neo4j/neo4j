@@ -25,18 +25,15 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.kernel.TraversalFactory;
 
 final class RemoteNode extends RemotePropertyContainer implements Node
 {
@@ -162,9 +159,10 @@ final class RemoteNode extends RemotePropertyContainer implements Node
         return getRelationships( type, dir ).iterator().hasNext();
     }
 
+    /* Tentative expansion API
     public Expansion<Relationship> expandAll()
     {
-        return TraversalFactory.expanderForAllTypes().expand( this );
+        return Traversal.expanderForAllTypes().expand( this );
     }
 
     public Expansion<Relationship> expand( RelationshipType type )
@@ -175,19 +173,20 @@ final class RemoteNode extends RemotePropertyContainer implements Node
     public Expansion<Relationship> expand( RelationshipType type,
             Direction direction )
     {
-        return TraversalFactory.expanderForTypes( type, direction ).expand(
+        return Traversal.expanderForTypes( type, direction ).expand(
                 this );
     }
 
     public Expansion<Relationship> expand( Direction direction )
     {
-        return TraversalFactory.expanderForAllTypes( direction ).expand( this );
+        return Traversal.expanderForAllTypes( direction ).expand( this );
     }
 
     public Expansion<Relationship> expand( RelationshipExpander expander )
     {
-        return TraversalFactory.expander( expander ).expand( this );
+        return Traversal.expander( expander ).expand( this );
     }
+    */
 
     /*
      * NOTE: traversers are harder to build up remotely. Maybe traversal should

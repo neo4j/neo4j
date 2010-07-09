@@ -148,7 +148,7 @@ public final class BasicApiTest extends AbstractTestBase
                 }
                 catch ( Exception e )
                 {
-                    fail( "failed to create entity" );
+                    fail( "failed to create entity (" + e + ")" );
                 }
                 assignProperties( entity.get() );
                 verifyProperties( entity.get() );
