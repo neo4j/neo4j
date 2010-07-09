@@ -6,7 +6,7 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
 
@@ -14,7 +14,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
 {
     protected PathFinder<Path> instantiatePathFinder( int maxDepth )
     {
-        return instantiatePathFinder( TraversalFactory.expanderForTypes( MyRelTypes.R1,
+        return instantiatePathFinder( Traversal.expanderForTypes( MyRelTypes.R1,
                 Direction.BOTH ), maxDepth );
     }
     
@@ -108,7 +108,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,g,h,i,j,k,l,m" );
         
         PathFinder<Path> finder = instantiatePathFinder(
-                TraversalFactory.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ), 4 );
+                Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ), 4 );
         assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "j" ) ),
                 "a,g,h,i,j" );
     }

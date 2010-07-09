@@ -9,7 +9,7 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
 
@@ -44,7 +44,7 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         graph.makeEdge( "x", "y", "cost", (double) 2 );
         
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
-                TraversalFactory.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ),
+                Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ),
                 CommonEvaluators.doubleCostEvaluator( "cost" ) );
         
         // Assert that there are two matching paths

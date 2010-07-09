@@ -3,8 +3,8 @@ package org.neo4j.graphalgo.impl.util;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.graphdb.traversal.SourceSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.BranchSelector;
 
 /**
  * A preorder depth first selector which detects "super nodes", i.e. nodes
@@ -14,21 +14,21 @@ import org.neo4j.graphdb.traversal.SourceSelector;
  * @author Mattias Persson
  * @author Tobias Ivarsson
  */
-public class LiteDepthFirstSelector implements SourceSelector
+public class LiteDepthFirstSelector implements BranchSelector
 {
-    private final Queue<ExpansionSource> superNodes = new LinkedList<ExpansionSource>();
-    private ExpansionSource current;
+    private final Queue<TraversalBranch> superNodes = new LinkedList<TraversalBranch>();
+    private TraversalBranch current;
     private final int threshold;
     
-    public LiteDepthFirstSelector( ExpansionSource startSource, int startThreshold )
+    public LiteDepthFirstSelector( TraversalBranch startSource, int startThreshold )
     {
         this.current = startSource;
         this.threshold = startThreshold;
     }
     
-    public ExpansionSource nextPosition()
+    public TraversalBranch next()
     {
-        ExpansionSource result = null;
+        TraversalBranch result = null;
         while ( result == null )
         {
             if ( current == null )
@@ -46,7 +46,7 @@ public class LiteDepthFirstSelector implements SourceSelector
                 continue;
             }
             
-            ExpansionSource next = current.next();
+            TraversalBranch next = current.next();
             if ( next == null )
             {
                 current = current.parent();
