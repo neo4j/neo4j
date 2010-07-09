@@ -10,11 +10,11 @@ import java.util.Set;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 public class TestMultiPruneEvaluators extends AbstractTestBase
 {
@@ -28,17 +28,17 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
                 "e to m", "e to n",
                 "k to o", "k to p", "k to q", "k to r" );
     }
-    
+
     @Test
     public void testMaxDepthAndCustomPruneEvaluatorCombined()
     {
-        TraversalDescription description = new TraversalDescriptionImpl().filter( TraversalFactory.returnAll() )
-                .prune( TraversalFactory.pruneAfterDepth( 1 ) ).prune( new PruneEvaluator()
+        TraversalDescription description = new TraversalDescriptionImpl().filter( Traversal.returnAll() )
+                .prune( Traversal.pruneAfterDepth( 1 ) ).prune( new PruneEvaluator()
                 {
-                    public boolean pruneAfter( Position position )
+                    public boolean pruneAfter( Path position )
                     {
                         int counter = 0;
-                        for ( Iterator<Relationship> rels = position.node().getRelationships(
+                        for ( Iterator<Relationship> rels = position.endNode().getRelationships(
                                 Direction.OUTGOING ).iterator(); rels.hasNext(); )
                         {
                             counter++;
@@ -49,9 +49,9 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
                 } );
         Set<String> expectedNodes = new HashSet<String>(
                 Arrays.asList( "a", "b", "c", "d", "e" ) );
-        for ( Position position : description.traverse( referenceNode() ) )
+        for ( Path position : description.traverse( referenceNode() ) )
         {
-            String name = (String) position.node().getProperty( "name" );
+            String name = (String) position.endNode().getProperty( "name" );
             assertTrue( name + " shouldn't have been returned", expectedNodes.remove( name ) );
         }
         assertTrue( expectedNodes.isEmpty() );

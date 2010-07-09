@@ -12,7 +12,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.OrderedByTypeExpander;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 public class TestOrderByTypeExpander extends AbstractTestBase
 {
@@ -33,12 +33,12 @@ public class TestOrderByTypeExpander extends AbstractTestBase
         RelationshipType comment = DynamicRelationshipType.withName( "COMMENT" );
         RelationshipExpander expander =
             new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
-        Iterator<Node> itr = TraversalFactory.createTraversalDescription().depthFirst().expand(
+        Iterator<Node> itr = Traversal.description().depthFirst().expand(
                 expander ).traverse( referenceNode() ).nodes().iterator();
         assertOrder( itr, "A1", "C1", "C2", "C3", "A2", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
 
         expander = new OrderedByTypeExpander().add( next ).add( firstComment ).add( comment );
-        itr = TraversalFactory.createTraversalDescription().depthFirst().expand(
+        itr = Traversal.description().depthFirst().expand(
                 expander ).traverse( referenceNode() ).nodes().iterator();
         assertOrder( itr, "A1", "A2", "A3", "C7", "C8", "C9", "C4", "C5", "C6", "C1", "C2", "C3" );
     }

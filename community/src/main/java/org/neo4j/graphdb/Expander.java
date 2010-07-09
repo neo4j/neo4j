@@ -4,7 +4,7 @@ import org.neo4j.helpers.Predicate;
 
 public interface Expander extends RelationshipExpander
 {
-    Expansion<Relationship> expand( Node start );
+    // Expansion<Relationship> expand( Node start );
 
     Expander reversed();
 

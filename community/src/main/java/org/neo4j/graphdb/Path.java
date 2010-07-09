@@ -1,18 +1,20 @@
 package org.neo4j.graphdb;
 
+import java.util.Iterator;
+
 /**
  * Represents a path in the graph. A path starts with a node followed by
  * pairs of {@link Relationship} and {@link Node} objects. The shortest path
  * is of length 0. Such a path contains only one node and no relationships.
  */
-public interface Path
+public interface Path extends Iterable<PropertyContainer>
 {
     /**
      * Returns the start node of this path. It's also the first node returned
      * from the {@link #nodes()} iterable.
      * @return the start node.
      */
-    Node getStartNode();
+    Node startNode();
 
     /**
      * Returns the end node of this path. It's also the last node returned
@@ -20,7 +22,15 @@ public interface Path
      * is 0 the end node returned by this method is the same as the start node.
      * @return the end node.
      */
-    Node getEndNode();
+    Node endNode();
+
+    /**
+     * Returns the last {@link Relationship} in this path.
+     * 
+     * @return the last {@link Relationship} in this path, or <code>null</code>
+     *         if this path contains no {@link Relationship}s.
+     */
+    Relationship lastRelationship();
 
     /**
      * Returns all the relationships in between the nodes which this path
@@ -31,8 +41,8 @@ public interface Path
 
     /**
      * Returns all the nodes in this path. The first node is the same as
-     * {@link #getStartNode()} and the last node is the same as
-     * {@link #getEndNode()}. In between those nodes can be an arbitrary
+     * {@link #startNode()} and the last node is the same as
+     * {@link #endNode()}. In between those nodes can be an arbitrary
      * number of nodes. The shortest path possible is just one node,
      * where also the the start node is the same as the end node.
      * @return the nodes in this path.
@@ -43,19 +53,29 @@ public interface Path
      * Returns the length of this path, i.e. the number of relationships
      * (which is the same as the number of nodes minus one). The shortest path
      * possible is of length 0.
-     * 
+     *
      * @return the length (i.e. the number of relationships) in the path.
      */
     int length();
 
     /**
      * Returns a natural string representation of this path.
-     * 
+     *
      * The string representation shows the nodes with relationships
      * (and their directions) in between them.
-     * 
+     *
      * @return A string representation of the path.
      */
     @Override
     String toString();
+
+    /**
+     * Iterates through both the {@link Node}s and {@link Relationship}s of this
+     * path in order. Interleaving {@link Node}s with {@link Relationship}s,
+     * starting and ending with a {@link Node} (the {@link #startNode()} and
+     * {@link #endNode()} respectively).
+     *
+     * @see Iterable#iterator()
+     */
+    Iterator<PropertyContainer> iterator();
 }

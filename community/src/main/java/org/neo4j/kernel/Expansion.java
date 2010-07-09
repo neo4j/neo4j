@@ -1,9 +1,15 @@
-package org.neo4j.graphdb;
+package org.neo4j.kernel;
 
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 
-public interface Expansion<T> extends Iterable<T>
+// Tentative Expansion API
+interface Expansion<T> extends Iterable<T>
 {
     Expander expander();
 

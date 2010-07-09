@@ -5,16 +5,17 @@ import java.util.LinkedList;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.kernel.Traversal;
 
 public class TraversalPath implements Path
 {
     private final LinkedList<Node> nodes = new LinkedList<Node>();
     private final LinkedList<Relationship> relationships = new LinkedList<Relationship>();
 
-    TraversalPath( ExpansionSource source )
+    TraversalPath( TraversalBranch source )
     {
         while ( source != null )
         {
@@ -28,14 +29,19 @@ public class TraversalPath implements Path
         }
     }
 
-    public Node getStartNode()
+    public Node startNode()
     {
         return nodes.getFirst();
     }
 
-    public Node getEndNode()
+    public Node endNode()
     {
         return nodes.getLast();
+    }
+
+    public Relationship lastRelationship()
+    {
+        return relationships.isEmpty() ? null : relationships.getLast();
     }
 
     public Iterable<Node> nodes()
@@ -48,6 +54,39 @@ public class TraversalPath implements Path
         return relationships;
     }
 
+    public Iterator<PropertyContainer> iterator()
+    {
+        return new Iterator<PropertyContainer>()
+        {
+            Iterator<? extends PropertyContainer> current = relationships().iterator();
+            Iterator<? extends PropertyContainer> next = nodes().iterator();
+
+            public boolean hasNext()
+            {
+                return current.hasNext();
+            }
+
+            public PropertyContainer next()
+            {
+                try
+                {
+                    return current.next();
+                }
+                finally
+                {
+                    Iterator<? extends PropertyContainer> temp = current;
+                    current = next;
+                    next = temp;
+                }
+            }
+
+            public void remove()
+            {
+                next.remove();
+            }
+        };
+    }
+
     public int length()
     {
         return relationships.size();
@@ -56,7 +95,7 @@ public class TraversalPath implements Path
     @Override
     public String toString()
     {
-        return TraversalFactory.defaultPathToString( this );
+        return Traversal.defaultPathToString( this );
     }
 
     @Override
@@ -64,7 +103,7 @@ public class TraversalPath implements Path
     {
         if ( relationships.isEmpty() )
         {
-            return getStartNode().hashCode();
+            return startNode().hashCode();
         }
         else
         {
@@ -82,13 +121,13 @@ public class TraversalPath implements Path
         else if ( obj instanceof TraversalPath )
         {
             TraversalPath other = (TraversalPath) obj;
-            return getStartNode().equals( other.getStartNode() )
+            return startNode().equals( other.startNode() )
                    && relationships.equals( other.relationships );
         }
         else if ( obj instanceof Path )
         {
             Path other = (Path) obj;
-            if ( getStartNode().equals( other.getStartNode() ) )
+            if ( startNode().equals( other.startNode() ) )
             {
                 Iterator<Relationship> these = relationships().iterator();
                 Iterator<Relationship> those = other.relationships().iterator();

@@ -5,9 +5,8 @@ import java.util.Iterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.graphdb.traversal.Position;
-import org.neo4j.graphdb.traversal.SourceSelector;
+import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -23,26 +22,26 @@ class TraverserImpl implements Traverser
         this.startNode = startNode;
     }
 
-    public Iterator<Position> iterator()
+    public Iterator<Path> iterator()
     {
         return new TraverserIterator();
     }
 
     public Iterable<Node> nodes()
     {
-        return new IterableWrapper<Node, Position>( this )
+        return new IterableWrapper<Node, Path>( this )
         {
             @Override
-            protected Node underlyingObjectToObject( Position position )
+            protected Node underlyingObjectToObject( Path position )
             {
-                return position.node();
+                return position.endNode();
             }
         };
     }
 
     public Iterable<Relationship> relationships()
     {
-        return new IterableWrapper<Relationship, Position>( this )
+        return new IterableWrapper<Relationship, Path>( this )
         {
             @Override
             public Iterator<Relationship> iterator()
@@ -53,32 +52,20 @@ class TraverserImpl implements Traverser
             }
 
             @Override
-            protected Relationship underlyingObjectToObject( Position position )
+            protected Relationship underlyingObjectToObject( Path position )
             {
                 return position.lastRelationship();
             }
         };
     }
 
-    public Iterable<Path> paths()
-    {
-        return new IterableWrapper<Path, Position>( this )
-        {
-            @Override
-            protected Path underlyingObjectToObject( Position position )
-            {
-                return position.path();
-            }
-        };
-    }
-    
-    class TraverserIterator extends PrefetchingIterator<Position>
+    class TraverserIterator extends PrefetchingIterator<Path>
     {
         final UniquenessFilter uniquness;
-        private final SourceSelector sourceSelector;
+        private final BranchSelector sourceSelector;
         final TraversalDescriptionImpl description;
         final Node startNode;
-        
+
         TraverserIterator()
         {
             PrimitiveTypeFetcher type = PrimitiveTypeFetcher.NODE;
@@ -109,34 +96,34 @@ class TraverserImpl implements Traverser
                                                     + description.uniqueness );
             }
             this.startNode = TraverserImpl.this.startNode;
-            this.sourceSelector = description.sourceSelector.create(
+            this.sourceSelector = description.branchSelector.create(
                     new StartNodeExpansionSource( this, startNode,
                             description.expander ) );
         }
-        
-        boolean okToProceed( ExpansionSource source )
+
+        boolean okToProceed( TraversalBranch source )
         {
             return this.uniquness.check( source, true );
         }
-        
-        boolean shouldExpandBeyond( ExpansionSource source )
+
+        boolean shouldExpandBeyond( TraversalBranch source )
         {
             return this.uniquness.check( source, false ) &&
                     !description.pruning.pruneAfter( source.position() );
         }
 
-        boolean okToReturn( ExpansionSource source )
+        boolean okToReturn( TraversalBranch source )
         {
             return description.filter.accept( source.position() );
         }
-        
+
         @Override
-        protected Position fetchNextOrNull()
+        protected Path fetchNextOrNull()
         {
-            ExpansionSource result = null;
+            TraversalBranch result = null;
             while ( true )
             {
-                result = sourceSelector.nextPosition();
+                result = sourceSelector.next();
                 if ( result == null )
                 {
                     break;
