@@ -14,7 +14,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 public class CalculateShortestPath
 {
@@ -58,10 +58,10 @@ public class CalculateShortestPath
         Node neo = getOrCreateNode( "Neo" );
         Node agentSmith = getOrCreateNode( "Agent Smith" );
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
-                TraversalFactory.expanderForTypes( KNOWS, Direction.BOTH ), 4 );
+                Traversal.expanderForTypes( KNOWS, Direction.BOTH ), 4 );
         Path foundPath = finder.findSinglePath( neo, agentSmith );
         System.out.println( "Path from Neo to Agent Smith: " +
-                TraversalFactory.simplePathToString( foundPath, NAME_KEY ) );
+                Traversal.simplePathToString( foundPath, NAME_KEY ) );
         
         System.out.println( "Shutting down database ..." );
         indexService.shutdown();
