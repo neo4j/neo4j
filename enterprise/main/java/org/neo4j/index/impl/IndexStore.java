@@ -222,7 +222,7 @@ public class IndexStore
             // 4. Default to lucene
             if ( provider == null )
             {
-                provider = "org.neo4j.index.lucene.LuceneIndexProvider";
+                provider = "lucene";
             }
             configToUse = defaultsFiller.fill( MapUtil.stringMap( "provider", provider ) );
         }
