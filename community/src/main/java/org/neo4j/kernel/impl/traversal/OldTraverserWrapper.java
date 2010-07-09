@@ -93,7 +93,7 @@ public class OldTraverserWrapper
 
         public boolean isStartNode()
         {
-            return position.length() > 0;
+            return position.length() == 0;
         }
 
         public boolean notStartNode()
