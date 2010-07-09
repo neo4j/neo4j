@@ -12,50 +12,70 @@ import org.neo4j.kernel.Traversal;
 
 public class TraversalPath implements Path
 {
-    private final LinkedList<Node> nodes = new LinkedList<Node>();
-    private final LinkedList<Relationship> relationships = new LinkedList<Relationship>();
+    private final TraversalBranch branch;
+    private LinkedList<Node> nodes;
+    private LinkedList<Relationship> relationships;
 
-    TraversalPath( TraversalBranch source )
+    TraversalPath( TraversalBranch branch )
     {
-        while ( source != null )
+        this.branch = branch;
+    }
+    
+    private void ensureEntitiesAreGathered()
+    {
+        if ( nodes == null )
         {
-            nodes.addFirst( source.node() );
-            Relationship relationship = source.relationship();
-            if (relationship != null)
+            // We don't synchronize on nodes/relationship... and that's fine
+            // because even if there would be a situation where two (or more)
+            // threads comes here at the same time everything would still
+            // work as expected (in here as well as outside).
+            nodes = new LinkedList<Node>();
+            relationships = new LinkedList<Relationship>();
+            TraversalBranch stepper = branch;
+            while ( stepper != null )
             {
-                relationships.addFirst( relationship );
+                nodes.addFirst( stepper.node() );
+                Relationship relationship = stepper.relationship();
+                if (relationship != null)
+                {
+                    relationships.addFirst( relationship );
+                }
+                stepper = stepper.parent();
             }
-            source = source.parent();
         }
     }
 
     public Node startNode()
     {
+        ensureEntitiesAreGathered();
         return nodes.getFirst();
     }
 
     public Node endNode()
     {
-        return nodes.getLast();
+        return branch.node();
     }
 
     public Relationship lastRelationship()
     {
-        return relationships.isEmpty() ? null : relationships.getLast();
+        return branch.relationship();
     }
 
     public Iterable<Node> nodes()
     {
+        ensureEntitiesAreGathered();
         return nodes;
     }
 
     public Iterable<Relationship> relationships()
     {
+        ensureEntitiesAreGathered();
         return relationships;
     }
 
     public Iterator<PropertyContainer> iterator()
     {
+        ensureEntitiesAreGathered();
         return new Iterator<PropertyContainer>()
         {
             Iterator<? extends PropertyContainer> current = nodes().iterator();
@@ -89,7 +109,7 @@ public class TraversalPath implements Path
 
     public int length()
     {
-        return relationships.size();
+        return branch.depth();
     }
 
     @Override
@@ -101,6 +121,7 @@ public class TraversalPath implements Path
     @Override
     public int hashCode()
     {
+        ensureEntitiesAreGathered();
         if ( relationships.isEmpty() )
         {
             return startNode().hashCode();
@@ -114,6 +135,7 @@ public class TraversalPath implements Path
     @Override
     public boolean equals( Object obj )
     {
+        ensureEntitiesAreGathered();
         if ( this == obj )
         {
             return true;
