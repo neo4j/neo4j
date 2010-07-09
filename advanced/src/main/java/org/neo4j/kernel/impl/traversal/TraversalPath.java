@@ -58,8 +58,8 @@ public class TraversalPath implements Path
     {
         return new Iterator<PropertyContainer>()
         {
-            Iterator<? extends PropertyContainer> current = relationships().iterator();
-            Iterator<? extends PropertyContainer> next = nodes().iterator();
+            Iterator<? extends PropertyContainer> current = nodes().iterator();
+            Iterator<? extends PropertyContainer> next = relationships().iterator();
 
             public boolean hasNext()
             {
