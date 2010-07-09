@@ -1,20 +1,20 @@
 package org.neo4j.kernel.impl.traversal;
 
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.traversal.ExpansionSource;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 
 enum PrimitiveTypeFetcher
 {
     NODE
     {
         @Override
-        long getId( ExpansionSource source )
+        long getId( TraversalBranch source )
         {
             return source.node().getId();
         }
 
         @Override
-        boolean idEquals( ExpansionSource source, long idToCompare )
+        boolean idEquals( TraversalBranch source, long idToCompare )
         {
             return getId( source ) == idToCompare;
         }
@@ -22,19 +22,19 @@ enum PrimitiveTypeFetcher
     RELATIONSHIP
     {
         @Override
-        long getId( ExpansionSource source )
+        long getId( TraversalBranch source )
         {
             return source.relationship().getId();
         }
 
         @Override
-        boolean idEquals( ExpansionSource source, long idToCompare )
+        boolean idEquals( TraversalBranch source, long idToCompare )
         {
             Relationship relationship = source.relationship();
             return relationship != null && relationship.getId() == idToCompare;
         }
     };
-    abstract long getId( ExpansionSource source );
+    abstract long getId( TraversalBranch source );
 
-    abstract boolean idEquals( ExpansionSource source, long idToCompare );
+    abstract boolean idEquals( TraversalBranch source, long idToCompare );
 }

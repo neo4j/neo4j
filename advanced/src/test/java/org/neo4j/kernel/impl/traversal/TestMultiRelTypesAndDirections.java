@@ -6,8 +6,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
 public class TestMultiRelTypesAndDirections extends AbstractTestBase
@@ -25,7 +25,7 @@ public class TestMultiRelTypesAndDirections extends AbstractTestBase
     {
         testCIsReturnedOnDepthTwo( new TraversalDescriptionImpl().depthFirst() );
     }
-    
+
     @Test
     public void testCIsReturnedOnDepthTwoBreadthFirst()
     {
@@ -36,9 +36,9 @@ public class TestMultiRelTypesAndDirections extends AbstractTestBase
     {
         description = description.relationships(ONE, Direction.OUTGOING);
         int i = 0;
-        for ( Position position : description.traverse( referenceNode() ) )
+        for ( Path position : description.traverse( referenceNode() ) )
         {
-            assertEquals( i++, position.depth() );
+            assertEquals( i++, position.length() );
         }
     }
 }

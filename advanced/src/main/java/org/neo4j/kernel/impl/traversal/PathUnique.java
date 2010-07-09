@@ -1,6 +1,6 @@
 package org.neo4j.kernel.impl.traversal;
 
-import org.neo4j.graphdb.traversal.ExpansionSource;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 
 class PathUnique extends UniquenessFilter
 {
@@ -10,7 +10,7 @@ class PathUnique extends UniquenessFilter
     }
     
     @Override
-    boolean check( ExpansionSource source, boolean remember )
+    boolean check( TraversalBranch source, boolean remember )
     {
         long idToCompare = type.getId( source );
         while ( (source = source.parent()) != null )

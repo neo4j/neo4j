@@ -4,26 +4,26 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.graphdb.traversal.SourceSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.BranchSelector;
 
 /**
- * Selects {@link ExpansionSource}s according to postorder breadth first
+ * Selects {@link TraversalBranch}s according to postorder breadth first
  * pattern which basically is a reverse to preorder breadth first in that
  * deepest levels are returned first, see
  * http://en.wikipedia.org/wiki/Breadth-first_search
  */
-class PostorderBreadthFirstSelector implements SourceSelector
+class PostorderBreadthFirstSelector implements BranchSelector
 {
-    private Iterator<ExpansionSource> sourceIterator;
-    private ExpansionSource current;
+    private Iterator<TraversalBranch> sourceIterator;
+    private TraversalBranch current;
     
-    PostorderBreadthFirstSelector( ExpansionSource startSource )
+    PostorderBreadthFirstSelector( TraversalBranch startSource )
     {
         this.current = startSource;
     }
 
-    public ExpansionSource nextPosition()
+    public TraversalBranch next()
     {
         if ( sourceIterator == null )
         {
@@ -32,13 +32,13 @@ class PostorderBreadthFirstSelector implements SourceSelector
         return sourceIterator.hasNext() ? sourceIterator.next() : null;
     }
 
-    private Iterator<ExpansionSource> gatherSourceIterator()
+    private Iterator<TraversalBranch> gatherSourceIterator()
     {
-        LinkedList<ExpansionSource> queue = new LinkedList<ExpansionSource>();
+        LinkedList<TraversalBranch> queue = new LinkedList<TraversalBranch>();
         queue.add( current.next() );
         while ( true )
         {
-            List<ExpansionSource> level = gatherOneLevel( queue );
+            List<TraversalBranch> level = gatherOneLevel( queue );
             if ( level.isEmpty() )
             {
                 break;
@@ -48,12 +48,12 @@ class PostorderBreadthFirstSelector implements SourceSelector
         return queue.iterator();
     }
 
-    private List<ExpansionSource> gatherOneLevel(
-            List<ExpansionSource> queue )
+    private List<TraversalBranch> gatherOneLevel(
+            List<TraversalBranch> queue )
     {
-        List<ExpansionSource> level = new LinkedList<ExpansionSource>();
+        List<TraversalBranch> level = new LinkedList<TraversalBranch>();
         Integer depth = null;
-        for ( ExpansionSource source : queue )
+        for ( TraversalBranch source : queue )
         {
             if ( depth == null )
             {
@@ -66,7 +66,7 @@ class PostorderBreadthFirstSelector implements SourceSelector
             
             while ( true )
             {
-                ExpansionSource next = source.next();
+                TraversalBranch next = source.next();
                 if ( next == null )
                 {
                     break;
