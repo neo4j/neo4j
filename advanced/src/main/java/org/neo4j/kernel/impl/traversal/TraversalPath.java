@@ -29,19 +29,21 @@ public class TraversalPath implements Path
             // because even if there would be a situation where two (or more)
             // threads comes here at the same time everything would still
             // work as expected (in here as well as outside).
-            nodes = new LinkedList<Node>();
-            relationships = new LinkedList<Relationship>();
+            LinkedList<Node> nodesList = new LinkedList<Node>();
+            LinkedList<Relationship> relationshipsList = new LinkedList<Relationship>();
             TraversalBranch stepper = branch;
             while ( stepper != null )
             {
-                nodes.addFirst( stepper.node() );
+                nodesList.addFirst( stepper.node() );
                 Relationship relationship = stepper.relationship();
                 if (relationship != null)
                 {
-                    relationships.addFirst( relationship );
+                    relationshipsList.addFirst( relationship );
                 }
                 stepper = stepper.parent();
             }
+            nodes = nodesList;
+            relationships = relationshipsList;
         }
     }
 
