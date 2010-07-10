@@ -72,9 +72,9 @@ public class ShortestPath implements PathFinder<Path>
 
         Hits hits = new Hits();
         Collection<Long> sharedVisitedRels = new HashSet<Long>();
-        ValueHolder<Integer> sharedFrozenDepth = new ValueHolder<Integer>( null );
-        ValueHolder<Boolean> sharedStop = new ValueHolder<Boolean>( false );
-        ValueHolder<Integer> sharedCurrentDepth = new ValueHolder<Integer>( 0 );
+        MutableInteger sharedFrozenDepth = new MutableInteger( MutableInteger.NULL );
+        MutableBoolean sharedStop = new MutableBoolean();
+        MutableInteger sharedCurrentDepth = new MutableInteger( 0 );
         final DirectionData startData = new DirectionData( start,
                 sharedVisitedRels, sharedFrozenDepth, sharedStop,
                 sharedCurrentDepth, stopAsap, relExpander );
@@ -134,7 +134,7 @@ public class ShortestPath implements PathFinder<Path>
         {
             // This is a hit
             int depth = directionData.currentDepth + otherSideHit.depth;
-            if ( directionData.sharedFrozenDepth.value == null )
+            if ( directionData.sharedFrozenDepth.value == MutableInteger.NULL )
             {
                 directionData.sharedFrozenDepth.value = depth;
             }
@@ -174,17 +174,17 @@ public class ShortestPath implements PathFinder<Path>
         private final Collection<Node> nextNodes = new ArrayList<Node>();
         private Map<Node, LevelData> visitedNodes = new HashMap<Node, LevelData>();
         private Node lastParentTraverserNode;
-        private final ValueHolder<Integer> sharedFrozenDepth;
-        private final ValueHolder<Boolean> sharedStop;
-        private final ValueHolder<Integer> sharedCurrentDepth;
+        private final MutableInteger sharedFrozenDepth;
+        private final MutableBoolean sharedStop;
+        private final MutableInteger sharedCurrentDepth;
         private boolean haveFoundSomething;
         private boolean stop;
         private final boolean stopAsap;
         private final RelationshipExpander expander;
         
         DirectionData( Node startNode, Collection<Long> sharedVisitedRels,
-                ValueHolder<Integer> sharedFrozenDepth, ValueHolder<Boolean> sharedStop,
-                ValueHolder<Integer> sharedCurrentDepth, boolean stopAsap,
+                MutableInteger sharedFrozenDepth, MutableBoolean sharedStop,
+                MutableInteger sharedCurrentDepth, boolean stopAsap,
                 RelationshipExpander expander )
         {
             this.startNode = startNode;
@@ -262,13 +262,14 @@ public class ShortestPath implements PathFinder<Path>
         
         private boolean canGoDeeper()
         {
-            return this.sharedFrozenDepth.value == null && this.sharedCurrentDepth.value < maxDepth;
+            return this.sharedFrozenDepth.value == MutableInteger.NULL &&
+                    this.sharedCurrentDepth.value < maxDepth;
         }
         
         private Relationship fetchNextRelOrNull()
         {
             boolean stopped = this.stop || this.sharedStop.value;
-            boolean hasComeTooFarEmptyHanded = this.sharedFrozenDepth.value != null
+            boolean hasComeTooFarEmptyHanded = this.sharedFrozenDepth.value != MutableInteger.NULL
                     && this.sharedCurrentDepth.value > this.sharedFrozenDepth.value
                     && !this.haveFoundSomething;
             if ( stopped || hasComeTooFarEmptyHanded )
@@ -293,20 +294,28 @@ public class ShortestPath implements PathFinder<Path>
     }
     
     // Few long-lived instances
-    private static class ValueHolder<T>
+    private static class MutableInteger
     {
-        private T value;
+        private static final int NULL = -1;
         
-        ValueHolder( T initialValue )
+        private int value;
+        
+        MutableInteger( int initialValue )
         {
             this.value = initialValue;
         }
     }
     
+    // Few long-lived instances
+    private static class MutableBoolean
+    {
+        private boolean value;
+    }
+    
     // Many long-lived instances
     private static class LevelData
     {
-        private Long[] relsToHere;
+        private long[] relsToHere;
         private int depth;
         
         LevelData( Relationship relToHere, int depth )
@@ -320,14 +329,14 @@ public class ShortestPath implements PathFinder<Path>
         
         void addRel( Relationship rel )
         {
-            Long[] newRels = null;
+            long[] newRels = null;
             if ( relsToHere == null )
             {
-                newRels = new Long[1];
+                newRels = new long[1];
             }
             else
             {
-                newRels = new Long[relsToHere.length+1];
+                newRels = new long[relsToHere.length+1];
                 System.arraycopy( relsToHere, 0, newRels, 0, relsToHere.length );
             }
             newRels[newRels.length-1] = rel.getId();
@@ -412,7 +421,7 @@ public class ShortestPath implements PathFinder<Path>
         
         Collection<PathData> set = new ArrayList<PathData>();
         GraphDatabaseService graphDb = data.startNode.getGraphDatabase();
-        for ( Long rel : levelData.relsToHere )
+        for ( long rel : levelData.relsToHere )
         {
             set.add( new PathData( hit.connectingNode, new LinkedList<Relationship>(
                     Arrays.asList( graphDb.getRelationshipById( rel ) ) ) ) );
@@ -427,7 +436,7 @@ public class ShortestPath implements PathFinder<Path>
                 int counter = 0;
                 Node otherNode = entry.rels.getFirst().getOtherNode( entry.node );
                 LevelData otherLevelData = data.visitedNodes.get( otherNode );
-                for ( Long rel : otherLevelData.relsToHere )
+                for ( long rel : otherLevelData.relsToHere )
                 {
                     // ...may split into several paths
                     LinkedList<Relationship> rels = counter++ == 0 ? entry.rels : 
