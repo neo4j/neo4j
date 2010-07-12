@@ -54,6 +54,9 @@ public interface TraversalDescription
 
     /**
      * Sets the return filter to use, i.e. which positions are OK to return.
+     * Each position is represented by a {@link Path} from the start node
+     * of the traversal to the current node. The current node is the
+     * {@link Path#endNode()} of the path.
      *
      * @param filter the {@link Predicate} to use as filter.
      * @return a new traversal description with the new modifications.
