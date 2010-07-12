@@ -6,6 +6,10 @@ import java.util.Iterator;
  * Represents a path in the graph. A path starts with a node followed by
  * pairs of {@link Relationship} and {@link Node} objects. The shortest path
  * is of length 0. Such a path contains only one node and no relationships.
+ * 
+ * During a traversal {@link Path} instances are emitted where the current
+ * position of the traverser is represented by each such path. The current
+ * node in such a traversal is reached via {@link Path#endNode()}.
  */
 public interface Path extends Iterable<PropertyContainer>
 {
@@ -20,6 +24,10 @@ public interface Path extends Iterable<PropertyContainer>
      * Returns the end node of this path. It's also the last node returned
      * from {@link #nodes()} iterable. If the {@link #length()} of this path
      * is 0 the end node returned by this method is the same as the start node.
+     * 
+     * If a path is emitted from a traverser the end node is the current node
+     * where the traverser is at the moment.
+     * 
      * @return the end node.
      */
     Node endNode();
