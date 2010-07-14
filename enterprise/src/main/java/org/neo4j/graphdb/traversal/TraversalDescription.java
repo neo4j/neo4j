@@ -80,7 +80,7 @@ public interface TraversalDescription
      * A convenience method for {@link #order(BranchOrderingPolicy)}
      * where a "preorder depth first" selector is used. Positions which are
      * deeper than the current position will be returned before positions on
-     * the same depth.
+     * the same depth. See http://en.wikipedia.org/wiki/Depth-first_search
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription depthFirst();
@@ -89,6 +89,7 @@ public interface TraversalDescription
      * A convenience method for {@link #order(BranchOrderingPolicy)}
      * where a "preorder breadth first" selector is used. All positions with
      * the same depth will be returned before advancing to the next depth.
+     * See http://en.wikipedia.org/wiki/Breadth-first_search
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription breadthFirst();
