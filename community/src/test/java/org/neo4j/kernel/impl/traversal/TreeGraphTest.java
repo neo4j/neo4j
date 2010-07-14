@@ -113,7 +113,7 @@ public class TreeGraphTest extends AbstractTestBase
     public void testPostorderDepthFirstReturnsDeeperNodesFirst()
     {
         Traverser traverser = new TraversalDescriptionImpl().order(
-                Traversal.postorderDepthFirstSelector() ).traverse(
+                Traversal.postorderDepthFirst() ).traverse(
                         referenceNode() );
         int i = 0;
         List<String> encounteredNodes = new ArrayList<String>();
@@ -142,7 +142,7 @@ public class TreeGraphTest extends AbstractTestBase
     public void testPostorderBreadthFirstReturnsDeeperNodesFirst()
     {
         Traverser traverser = new TraversalDescriptionImpl().order(
-                Traversal.postorderBreadthFirstSelector() ).traverse(
+                Traversal.postorderBreadthFirst() ).traverse(
                         referenceNode() );
         Stack<Set<String>> levels = new Stack<Set<String>>();
         levels.push( new HashSet<String>( Arrays.asList( "1" ) ) );

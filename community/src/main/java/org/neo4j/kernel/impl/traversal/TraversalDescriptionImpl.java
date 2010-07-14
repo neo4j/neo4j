@@ -6,8 +6,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
+import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
@@ -21,7 +21,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     {
         this( StandardExpander.DEFAULT, Uniqueness.NODE_GLOBAL, null,
                 PruneEvaluator.NONE, Traversal.returnAll(),
-                Traversal.preorderDepthFirstSelector() );
+                Traversal.preorderDepthFirst() );
     }
 
     final Expander expander;
@@ -185,12 +185,12 @@ public final class TraversalDescriptionImpl implements TraversalDescription
 
     public TraversalDescription depthFirst()
     {
-        return order( Traversal.preorderDepthFirstSelector() );
+        return order( Traversal.preorderDepthFirst() );
     }
 
     public TraversalDescription breadthFirst()
     {
-        return order( Traversal.preorderBreadthFirstSelector() );
+        return order( Traversal.preorderBreadthFirst() );
     }
 
     /* (non-Javadoc)
