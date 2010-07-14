@@ -9,10 +9,10 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.graphdb.traversal.PruneEvaluator;
-import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
+import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.PruneEvaluator;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.traversal.FinalExpansionSource;
@@ -255,7 +255,7 @@ public class Traversal
     /**
      * A traversal return filter which returns all {@link Path}s except the
      * position of the start node.
-     * 
+     *
      * @return a return filter which returns everything except the start node.
      */
     public static Predicate<Path> returnAllButStartNode()
@@ -264,51 +264,55 @@ public class Traversal
     }
 
     /**
-     * Returns a "preorder depth first" selector factory . A depth first selector
+     * Returns a "preorder depth first" ordering policy. A depth first selector
      * always tries to select positions (from the current position) which are
      * deeper than the current position.
+     * 
      * @return a {@link BranchOrderingPolicy} for a preorder depth first
-     * selector.
+     *         selector.
      */
-    public static BranchOrderingPolicy preorderDepthFirstSelector()
+    public static BranchOrderingPolicy preorderDepthFirst()
     {
         return PREORDER_DEPTH_FIRST_SELECTOR;
     }
 
     /**
-     * Returns a "postorder depth first" selector factory. A depth first
-     * selector always tries to select positions (from the current position)
-     * which are deeper than the current position. A postorder depth first
-     * selector selects deeper position before the shallower ones.
+     * Returns a "postorder depth first" ordering policy. A depth first selector
+     * always tries to select positions (from the current position) which are
+     * deeper than the current position. A postorder depth first selector
+     * selects deeper position before the shallower ones.
+     * 
      * @return a {@link BranchOrderingPolicy} for a postorder depth first
-     * selector.
+     *         selector.
      */
-    public static BranchOrderingPolicy postorderDepthFirstSelector()
+    public static BranchOrderingPolicy postorderDepthFirst()
     {
         return POSTORDER_DEPTH_FIRST_SELECTOR;
     }
 
     /**
-     * Returns a "preorder breadth first" selector factory. A breadth first
+     * Returns a "preorder breadth first" ordering policy. A breadth first
      * selector always selects all positions on the current depth before
      * advancing to the next depth.
+     * 
      * @return a {@link BranchOrderingPolicy} for a preorder breadth first
-     * selector.
+     *         selector.
      */
-    public static BranchOrderingPolicy preorderBreadthFirstSelector()
+    public static BranchOrderingPolicy preorderBreadthFirst()
     {
         return PREORDER_BREADTH_FIRST_SELECTOR;
     }
 
     /**
-     * Returns a "postorder breadth first" selector factory. A breadth first
+     * Returns a "postorder breadth first" ordering policy. A breadth first
      * selector always selects all positions on the current depth before
      * advancing to the next depth. A postorder breadth first selector selects
      * the levels in the reversed order, starting with the deepest.
+     * 
      * @return a {@link BranchOrderingPolicy} for a postorder breadth first
-     * selector.
+     *         selector.
      */
-    public static BranchOrderingPolicy postorderBreadthFirstSelector()
+    public static BranchOrderingPolicy postorderBreadthFirst()
     {
         return POSTORDER_BREADTH_FIRST_SELECTOR;
     }
