@@ -11,6 +11,8 @@ Included in this release of Apoc is:
    neo4j-index:          indexing and data structures
    neo4j-remote-graphdb: thin layer to enable remote access to a neo4j instance
    neo4j-shell:          text command shell for browsing the graph
+   neo4j-online-backup:  create backups of a running neo4j graph database
+   neo4j-graph-algo:     graph algorithms (such as shortest path algorithm)
    
 You can run the examples from the Unix and Windows start scripts in the bin/
 directory.
