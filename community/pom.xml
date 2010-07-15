@@ -157,6 +157,12 @@
               </mainClass>
               <name>neo4j-shell</name>
             </program>
+            <program>
+              <mainClass>
+                org.neo4j.examples.socnet.Main
+              </mainClass>
+              <name>social-network-application</name>
+            </program>
           </programs>
         </configuration>
         <executions>
