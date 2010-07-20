@@ -49,7 +49,7 @@ public class Main
             }
             while ( person1.equals( person2 ) );
 
-            System.out.println( "\n" + person1 + " connected to " + person2
+            System.out.println( "\n" + person1 + " is connected to " + person2
                                 + " by path: " );
             int personCount = 0;
             for ( Person personInPath : person1.getPersonsFromMeTo( person2, 4 ) )
@@ -69,7 +69,7 @@ public class Main
                         " and " + person2 );
                 person1.addFriend( person2 );
             }
-            System.out.println( "\nAnd now " + person1 + " connected to "
+            System.out.println( "\nAnd now " + person1 + " is connected to "
                                 + person2 + " by path: " );
             for ( Person personInPath : person1.getPersonsFromMeTo( person2, 4 ) )
             {

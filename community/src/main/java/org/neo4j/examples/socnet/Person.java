@@ -37,11 +37,13 @@ public class Person
         return (String) underlyingNode.getProperty( NAME );
     }
 
+    @Override
     public int hashCode()
     {
         return underlyingNode.hashCode();
     }
 
+    @Override
     public boolean equals( Object o )
     {
         if ( o instanceof Person )
@@ -51,6 +53,7 @@ public class Person
         return false;
     }
 
+    @Override
     public String toString()
     {
         return "Person[" + getName() + "]";
