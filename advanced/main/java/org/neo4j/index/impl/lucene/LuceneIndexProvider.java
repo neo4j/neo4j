@@ -23,11 +23,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -55,8 +59,10 @@ public class LuceneIndexProvider extends IndexProvider
     final LuceneDataSource dataSource;
     final int lazynessThreshold = DEFAULT_LAZY_THRESHOLD;
     final GraphDatabaseService graphDb;
+    final EntityType relationshipEntityType;
+    final EntityType nodeEntityType;
     
-    public LuceneIndexProvider( GraphDatabaseService graphDb )
+    public LuceneIndexProvider( final GraphDatabaseService graphDb )
     {
         super( SERVICE_NAME );
         this.graphDb = graphDb;
@@ -75,6 +81,36 @@ public class LuceneIndexProvider extends IndexProvider
         broker = isReadOnly ?
                 new ReadOnlyConnectionBroker( txModule.getTxManager(), dataSource ) :
                 new ConnectionBroker( txModule.getTxManager(), dataSource );
+        nodeEntityType = new EntityType()
+        {
+            public Document newDocument( long entityId )
+            {
+                return IndexType.newBaseDocument( entityId );
+            }
+            
+            public Class<?> getType()
+            {
+                return Node.class;
+            }
+        };
+        relationshipEntityType = new EntityType()
+        {
+            public Document newDocument( long entityId )
+            {
+                Document doc = IndexType.newBaseDocument( entityId );
+                Relationship rel = graphDb.getRelationshipById( entityId );
+                doc.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + rel.getStartNode().getId(),
+                        Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
+                doc.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + rel.getEndNode().getId(),
+                        Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
+                return doc;
+            }
+
+            public Class<?> getType()
+            {
+                return Relationship.class;
+            }
+        };
     }
     
     private static boolean isReadOnly( GraphDatabaseService graphDb )
@@ -92,7 +128,7 @@ public class LuceneIndexProvider extends IndexProvider
     public Index<Node> nodeIndex( String indexName, Map<String, String> config )
     {
         return new LuceneIndex.NodeIndex( this, new IndexIdentifier(
-                Node.class, indexName, config( indexName, config ) ) );
+                nodeEntityType, indexName, config( indexName, config ) ) );
     }
     
     private Map<String, String> config( String indexName, Map<String, String> config )
@@ -101,9 +137,9 @@ public class LuceneIndexProvider extends IndexProvider
                 config, null, LuceneConfigDefaultsFiller.INSTANCE );
     }
 
-    public Index<Relationship> relationshipIndex( String indexName, Map<String, String> config )
+    public RelationshipIndex relationshipIndex( String indexName, Map<String, String> config )
     {
         return new LuceneIndex.RelationshipIndex( this, new IndexIdentifier(
-                Relationship.class, indexName, config( indexName, config ) ) );
+                relationshipEntityType, indexName, config( indexName, config ) ) );
     }
 }
