@@ -41,7 +41,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     {
         try
         {
-            Document document = type.newDocument( entityId );
+            Document document = identifier.entityType.newDocument( entityId );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 String key = entry.getKey();

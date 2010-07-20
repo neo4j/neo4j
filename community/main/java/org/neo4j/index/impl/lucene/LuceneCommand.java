@@ -31,11 +31,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 abstract class LuceneCommand extends XaCommand
 {
-    private final IndexIdentifier indexId;
-    private final long entityId;
-    private final String key;
-    private final String value;
-    
     private static final byte ADD_COMMAND = (byte) 1;
     private static final byte REMOVE_COMMAND = (byte) 2;
     private static final byte CLEAR_COMMAND = (byte) 3;
@@ -43,40 +38,19 @@ abstract class LuceneCommand extends XaCommand
     private static final byte NODE = (byte) 1;
     private static final byte RELATIONSHIP = (byte) 2;
     
-    LuceneCommand( IndexIdentifier indexId, long entityId, String key, String value )
+    final IndexIdentifier indexId;
+    final long entityId;
+    final String key;
+    final String value;
+    final byte type;
+    
+    LuceneCommand( IndexIdentifier indexId, long entityId, String key, String value, byte type )
     {
         this.indexId = indexId;
         this.entityId = entityId;
         this.key = key;
         this.value = value;
-    }
-    
-    LuceneCommand( CommandData data )
-    {
-        this.indexId = data.indexId;
-        this.entityId = data.nodeId;
-        this.key = data.key;
-        this.value = data.value;
-    }
-    
-    public IndexIdentifier getIndexIdentifier()
-    {
-        return indexId;
-    }
-    
-    public long getEntityId()
-    {
-        return entityId;
-    }
-    
-    public String getKey()
-    {
-        return key;
-    }
-    
-    public String getValue()
-    {
-        return value;
+        this.type = type;
     }
     
     @Override
@@ -87,21 +61,21 @@ abstract class LuceneCommand extends XaCommand
     
     private byte indexClass()
     {
-        if ( indexId.itemsClass.equals( Node.class ) )
+        if ( indexId.entityType.getType().equals( Node.class ) )
         {
             return NODE;
         }
-        else if ( indexId.itemsClass.equals( Relationship.class ) )
+        else if ( indexId.entityType.getType().equals( Relationship.class ) )
         {
             return RELATIONSHIP;
         }
-        throw new RuntimeException( indexId.itemsClass.getName() );
+        throw new RuntimeException( indexId.entityType.getType().getName() );
     }
 
     @Override
     public void writeToFile( LogBuffer buffer ) throws IOException
     {
-        buffer.put( getCommandValue() );
+        buffer.put( type );
         buffer.put( indexClass() );
         char[] indexName = indexId.indexName.toCharArray();
         buffer.putInt( indexName.length );
@@ -116,24 +90,33 @@ abstract class LuceneCommand extends XaCommand
         buffer.put( value );
     }
     
-    protected abstract byte getCommandValue();
-    
     static class AddCommand extends LuceneCommand
     {
         AddCommand( IndexIdentifier indexId, long entityId, String key, String value )
         {
-            super( indexId, entityId, key, value );
+            super( indexId, entityId, key, value, ADD_COMMAND );
+        }
+    }
+    
+    static class AddRelationshipCommand extends LuceneCommand
+    {
+        private final long startNodeId;
+        private final long endNodeId;
+
+        AddRelationshipCommand( IndexIdentifier indexId, long entityId, String key,
+                String value, long startNodeId, long endNodeId )
+        {
+            super( indexId, entityId, key, value, ADD_COMMAND );
+            this.startNodeId = startNodeId;
+            this.endNodeId = endNodeId;
         }
         
-        AddCommand( CommandData data )
-        {
-            super( data );
-        }
-
         @Override
-        protected byte getCommandValue()
+        public void writeToFile( LogBuffer buffer ) throws IOException
         {
-            return ADD_COMMAND;
+            super.writeToFile( buffer );
+            buffer.putLong( startNodeId );
+            buffer.putLong( endNodeId );
         }
     }
     
@@ -141,18 +124,7 @@ abstract class LuceneCommand extends XaCommand
     {
         RemoveCommand( IndexIdentifier indexId, long nodeId, String key, String value )
         {
-            super( indexId, nodeId, key, value );
-        }
-        
-        RemoveCommand( CommandData data )
-        {
-            super( data );
-        }
-
-        @Override
-        protected byte getCommandValue()
-        {
-            return REMOVE_COMMAND;
+            super( indexId, nodeId, key, value, REMOVE_COMMAND );
         }
     }
 
@@ -160,40 +132,23 @@ abstract class LuceneCommand extends XaCommand
     {
         ClearCommand( IndexIdentifier indexId )
         {
-            super( indexId, -1L, "", "" );
-        }
-        
-        ClearCommand( CommandData data )
-        {
-            super( data );
-        }
-
-        @Override
-        protected byte getCommandValue()
-        {
-            return CLEAR_COMMAND;
+            super( indexId, -1L, "", "", CLEAR_COMMAND );
         }
     }
     
-    private static class CommandData
-    {
-        private final IndexIdentifier indexId;
-        private final long nodeId;
-        private final String key;
-        private final String value;
-        
-        CommandData( IndexIdentifier indexId, long nodeId, String key, String value )
-        {
-            this.indexId = indexId;
-            this.nodeId = nodeId;
-            this.key = key;
-            this.value = value;
-        }
-    }
-    
-    static CommandData readCommandData( ReadableByteChannel channel, 
+    static XaCommand readCommand( ReadableByteChannel channel, 
         ByteBuffer buffer, LuceneDataSource dataSource ) throws IOException
     {
+        // Read what type of command it is
+        buffer.clear(); buffer.limit( 1 );
+        if ( channel.read( buffer ) != buffer.limit() )
+        {
+            return null;
+        }
+        buffer.flip();
+        byte commandType = buffer.get();
+        
+        // Read the command data
         buffer.clear(); buffer.limit( 21 );
         if ( channel.read( buffer ) != buffer.limit() )
         {
@@ -238,31 +193,31 @@ abstract class LuceneCommand extends XaCommand
         {
             return null;
         }
-        IndexIdentifier identifier = new IndexIdentifier( itemsClass, indexName,
+        
+        Long startNodeId = null;
+        Long endNodeId = null;
+        if ( commandType == ADD_COMMAND && cls == RELATIONSHIP )
+        {
+            startNodeId = PrimitiveUtils.readLong( channel, buffer );
+            endNodeId = PrimitiveUtils.readLong( channel, buffer );
+            if ( startNodeId == null || endNodeId == null )
+            {
+                return null;
+            }
+        }
+        
+        // TODO
+        IndexIdentifier identifier = new IndexIdentifier( null, indexName,
                 dataSource.indexStore.get( indexName ) );
-        return new CommandData( identifier, entityId, key, value );
-    }
-    
-    static XaCommand readCommand( ReadableByteChannel channel, 
-        ByteBuffer buffer, LuceneDataSource dataSource ) throws IOException
-    {
-        buffer.clear(); buffer.limit( 1 );
-        if ( channel.read( buffer ) != buffer.limit() )
-        {
-            return null;
-        }
-        buffer.flip();
-        byte commandType = buffer.get();
-        CommandData data = readCommandData( channel, buffer, dataSource );
-        if ( data == null )
-        {
-            return null;
-        }
+        
         switch ( commandType )
         {
-            case ADD_COMMAND: return new AddCommand( data ); 
-            case REMOVE_COMMAND: return new RemoveCommand( data );
-            case CLEAR_COMMAND: return new ClearCommand( data );
+            case ADD_COMMAND: return cls == NODE ?
+                    new AddCommand( identifier, entityId, key, value ) :
+                    new AddRelationshipCommand( identifier, entityId, key, value,
+                            startNodeId, endNodeId );
+            case REMOVE_COMMAND: return new RemoveCommand( identifier, entityId, key, value );
+            case CLEAR_COMMAND: return new ClearCommand( identifier );
             default:
                 throw new IOException( "Unknown command type[" + 
                     commandType + "]" );

@@ -10,7 +10,12 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.Hits;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -28,6 +33,8 @@ import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
 {
     static final String KEY_DOC_ID = "_id_";
+    static final String KEY_START_NODE_ID = "_start_node_id_";
+    static final String KEY_END_NODE_ID = "_end_node_id_";
     
     final LuceneIndexProvider service;
     final IndexIdentifier identifier;
@@ -110,21 +117,38 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     
     public IndexHits<T> get( String key, Object value )
     {
-        return query( type.get( key, value ), key, value );
+        return query( type.get( key, value ), key, value, null );
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * {@code queryOrQueryObject} can be a {@link String} containing the query
+     * in Lucene syntax format, http://lucene.apache.org/java/3_0_2/queryparsersyntax.html.
+     * Or it can be a {@link Query} object. If can even be a {@link QueryContext}
+     * object which can contain a query ({@link String} or {@link Query}) and
+     * additional parameters, such as {@link Sort}.
+     */
     public IndexHits<T> query( String key, Object queryOrQueryObject )
     {
-        return query( type.query( key, queryOrQueryObject ), null, null );
+        QueryContext context = queryOrQueryObject instanceof QueryContext ?
+                (QueryContext) queryOrQueryObject : null;
+        return query( type.query( key, context != null ?
+                context.queryOrQueryObject : queryOrQueryObject ), null, null, context );
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * @see #query(String, Object)
+     */
     public IndexHits<T> query( Object queryOrQueryObject )
     {
-        return query( type.query( null, queryOrQueryObject ), null, null );
+        return query( null, queryOrQueryObject );
     }
     
-    private IndexHits<T> query( Query query, String keyForDirectLookup,
-            Object valueForDirectLookup )
+    protected IndexHits<T> query( Query query, String keyForDirectLookup,
+            Object valueForDirectLookup, QueryContext additionalParametersOrNull )
     {
         List<Long> ids = new ArrayList<Long>();
         LuceneXaConnection con = getReadOnlyConnection();
@@ -151,7 +175,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         }
         service.dataSource.getReadLock();
         Iterator<Long> idIterator = null;
-        Integer idIteratorSize = null;
+        int idIteratorSize = -1;
         IndexSearcherRef searcher = null;
         boolean isLazy = false;
         try
@@ -162,7 +186,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
                 if ( excludeQuery != null )
                 {
                     removedIds = removedIds.isEmpty() ? new HashSet<Long>() : removedIds;
-                    readNodesFromHits( new DocToIdIterator( search( searcher, excludeQuery ),
+                    readNodesFromHits( new DocToIdIterator( search( searcher, excludeQuery, null ),
                             null, searcher ), removedIds );
                 }
                 
@@ -179,7 +203,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
                 if ( !foundInCache )
                 {
                     DocToIdIterator searchedNodeIds = new DocToIdIterator( search( searcher,
-                            query ), removedIds, searcher );
+                            query, additionalParametersOrNull ), removedIds, searcher );
                     if ( searchedNodeIds.size() >= service.lazynessThreshold )
                     {
                         // Instantiate a lazy iterator
@@ -259,16 +283,16 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         return found;
     }
     
-    private SearchResult search( IndexSearcherRef searcher, Query query )
+    private SearchResult search( IndexSearcherRef searcher, Query query,
+            QueryContext additionalParametersOrNull )
     {
         try
         {
             searcher.incRef();
-            Hits hits = new Hits( searcher.getSearcher(), query, null );
+            Sort sorting = additionalParametersOrNull != null ?
+                    additionalParametersOrNull.sorting : null;
+            Hits hits = new Hits( searcher.getSearcher(), query, null, sorting );
             return new SearchResult( new HitsIterator( hits ), hits.length() );
-//            TopDocs hits = searcher.getSearcher().search( query, 50 );
-//            TopDocsIterator itr = new TopDocsIterator( hits, searcher );
-//            return new SearchResult( itr, hits.totalHits );
         }
         catch ( IOException e )
         {
@@ -304,6 +328,9 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     
     protected abstract long getEntityId( T entity );
     
+    protected abstract LuceneCommand newAddCommand( PropertyContainer entity,
+            String key, String value );
+    
     static class NodeIndex extends LuceneIndex<Node>
     {
         NodeIndex( LuceneIndexProvider service,
@@ -323,9 +350,16 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         {
             return entity.getId();
         }
+
+        @Override
+        protected LuceneCommand newAddCommand( PropertyContainer entity, String key, String value )
+        {
+            return new LuceneCommand.AddCommand( identifier, ((Node) entity).getId(), key, value );
+        }
     }
     
     static class RelationshipIndex extends LuceneIndex<Relationship>
+            implements org.neo4j.graphdb.index.RelationshipIndex
     {
         RelationshipIndex( LuceneIndexProvider service,
                 IndexIdentifier identifier )
@@ -343,6 +377,54 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         protected long getEntityId( Relationship entity )
         {
             return entity.getId();
+        }
+
+        public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull,
+                Node endNodeOrNull )
+        {
+            return query( (Query) null, (String) null, null, null );
+        }
+
+        public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull,
+                Node startNodeOrNull, Node endNodeOrNull )
+        {
+            QueryContext context = queryOrQueryObjectOrNull != null &&
+                    queryOrQueryObjectOrNull instanceof QueryContext ?
+                            (QueryContext) queryOrQueryObjectOrNull : null;
+                    
+            BooleanQuery query = new BooleanQuery();
+            if ( (context != null && context.queryOrQueryObject != null) ||
+                    (context == null && queryOrQueryObjectOrNull != null ) )
+            {
+                query.add( type.query( key, context != null ?
+                        context.queryOrQueryObject : queryOrQueryObjectOrNull ), Occur.MUST );
+            }
+            addIfNotNull( query, startNodeOrNull, KEY_START_NODE_ID );
+            addIfNotNull( query, endNodeOrNull, KEY_END_NODE_ID );
+            return query( query, (String) null, null, context );
+        }
+        
+        private static void addIfNotNull( BooleanQuery query, Node nodeOrNull, String field )
+        {
+            if ( nodeOrNull != null )
+            {
+                query.add( new TermQuery( new Term( field, "" + nodeOrNull.getId() ) ),
+                        Occur.MUST );
+            }
+        }
+
+        public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull,
+                Node startNodeOrNull, Node endNodeOrNull )
+        {
+            return query( null, queryOrQueryObjectOrNull, startNodeOrNull, endNodeOrNull );
+        }
+
+        @Override
+        protected LuceneCommand newAddCommand( PropertyContainer entity, String key, String value )
+        {
+            Relationship rel = (Relationship) entity;
+            return new LuceneCommand.AddRelationshipCommand( identifier, rel.getId(),
+                    key, value, rel.getStartNode().getId(), rel.getEndNode().getId() );
         }
     }
 }

@@ -48,8 +48,10 @@ public abstract class IndexProvider extends Service
      * @param config a {@link Map} of configuration parameters to use with the
      * index. Parameters can be anything and are implementation-specific.
      * @return the {@link Index} corresponding to the {@code indexName} and
-     * {@code config}.
+     * {@code config}. The return index is a {@link RelationshipIndex} with
+     * additional query methods for efficiently filtering hits with respect to
+     * start/end node of the relationships.
      */
-    public abstract Index<Relationship> relationshipIndex( String indexName,
+    public abstract RelationshipIndex relationshipIndex( String indexName,
             Map<String, String> config );
 }

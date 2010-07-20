@@ -1,12 +1,14 @@
 package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.index.Neo4jTestCase.assertCollection;
 
 import java.io.File;
 import java.util.Random;
 
+import org.apache.lucene.search.Sort;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -18,14 +20,16 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class TestLuceneIndex
 {
-    private static Random random;
     private static GraphDatabaseService graphDb;
     private static LuceneIndexProvider provider;
     private Transaction tx;
@@ -76,6 +80,8 @@ public class TestLuceneIndex
         T create();
     }
     
+    private static final RelationshipType TEST_TYPE =
+            DynamicRelationshipType.withName( "TEST_TYPE" );
     private static final EntityCreator<Node> NODE_CREATOR = new EntityCreator<Node>()
     {
         public Node create()
@@ -88,10 +94,23 @@ public class TestLuceneIndex
     {
         public Relationship create()
         {
-            return graphDb.createNode().createRelationshipTo( graphDb.createNode(),
-                    DynamicRelationshipType.withName( "TEST_TYPE" ) );
+            return graphDb.createNode().createRelationshipTo( graphDb.createNode(), TEST_TYPE );
         }
     };
+    static class FastRelationshipCreator implements EntityCreator<Relationship>
+    {
+        private Node node, otherNode;
+
+        public Relationship create()
+        {
+            if ( node == null )
+            {
+                node = graphDb.createNode();
+                otherNode = graphDb.createNode();
+            }
+            return node.createRelationshipTo( otherNode, TEST_TYPE );
+        }
+    }
     
     @Test
     public void testClear()
@@ -480,20 +499,79 @@ public class TestLuceneIndex
                 LuceneIndexProvider.FULLTEXT_CONFIG ), RELATIONSHIP_CREATOR );
     }
     
-    @Ignore
     @Test
-    public void testInsertionSpeed()
+    public void testNodeLocalRelationshipIndex()
     {
-        Index<Node> index = provider.nodeIndex( "yeah", LuceneIndexProvider.EXACT_CONFIG );
+        RelationshipIndex index = provider.relationshipIndex( "locality",
+                LuceneIndexProvider.EXACT_CONFIG );
+        
+        RelationshipType type = DynamicRelationshipType.withName( "YO" );
+        Node startNode = graphDb.createNode();
+        Node endNode1 = graphDb.createNode();
+        Node endNode2 = graphDb.createNode();
+        Relationship rel1 = startNode.createRelationshipTo( endNode1, type );
+        Relationship rel2 = startNode.createRelationshipTo( endNode2, type );
+        index.add( rel1, "name", "something" );
+        index.add( rel2, "name", "something" );
+        restartTx();
+        assertCollection( index.query( "name:something" ), rel1, rel2 );
+        assertCollection( index.query( "name:something", null, endNode1 ), rel1 );
+        assertCollection( index.query( "name:something", startNode, endNode2 ), rel2 );
+        rel2.delete();
+        rel1.delete();
+        startNode.delete();
+        endNode1.delete();
+        endNode2.delete();
+        index.clear();
+    }
+    
+    @Test
+    public void testSortByRelevance()
+    {
+        Index<Node> index = provider.nodeIndex( "relevance", LuceneIndexProvider.EXACT_CONFIG );
+        
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        Node node3 = graphDb.createNode();
+        index.add( node1, "name", "something" );
+        index.add( node2, "name", "something" );
+        index.add( node2, "foo", "yes" );
+        index.add( node3, "name", "something" );
+        index.add( node3, "foo", "yes" );
+        index.add( node3, "bar", "yes" );
+        restartTx();
+        
+        IndexHits<Node> hits = index.query(
+                new QueryContext( "+name:something foo:yes bar:yes" ).sort( Sort.INDEXORDER ) );
+        assertEquals( node1, hits.next() );
+        assertEquals( node2, hits.next() );
+        assertEquals( node3, hits.next() );
+        assertFalse( hits.hasNext() );
+        
+        hits = index.query(
+                new QueryContext( "+name:something foo:yes bar:yes" ).sort( Sort.RELEVANCE ) );
+        assertEquals( node3, hits.next() );
+        assertEquals( node2, hits.next() );
+        assertEquals( node1, hits.next() );
+        assertFalse( hits.hasNext() );
+        index.clear();
+        node1.delete();
+        node2.delete();
+        node3.delete();
+    }
+    
+    private <T extends PropertyContainer> void testInsertionSpeed( Index<T> index,
+            EntityCreator<T> creator )
+    {
+        Random random = new Random();
         long t = System.currentTimeMillis();
-        for ( int i = 0; i < 100000; i++ )
+        for ( int i = 0; i < 500000; i++ )
         {
-            Node node = graphDb.createNode();
-            index.add( node, "name", "The name " + i );
-            index.add( node, "title", random.nextInt() );
-            index.add( node, "something", random.nextInt() );
-            index.add( node, "else", random.nextInt() );
-            index.add( node, i + " whatever " + i, random.nextInt() );
+            T entity = creator.create();
+            index.add( entity, "name", "The name " + i );
+            index.add( entity, "title", random.nextInt() );
+            index.add( entity, "something", random.nextInt() );
+            index.add( entity, "else", random.nextInt() );
             if ( i%50000 == 0 )
             {
                 restartTx();
@@ -506,10 +584,26 @@ public class TestLuceneIndex
         int count = 100;
         for ( int i = 0; i < count; i++ )
         {
-            for ( Node n : index.get( "name", "The name " + i ) )
+            for ( T entity : index.get( "name", "The name " + i ) )
             {
             }
         }
         System.out.println( "get:" + (double)(System.currentTimeMillis() - t)/(double)count );
+    }
+    
+    @Ignore
+    @Test
+    public void testNodeInsertionSpeed()
+    {
+        testInsertionSpeed( provider.nodeIndex( "insertion-speed",
+                LuceneIndexProvider.EXACT_CONFIG ), NODE_CREATOR );
+    }
+    
+    @Ignore
+    @Test
+    public void testRelationshipInsertionSpeed()
+    {
+        testInsertionSpeed( provider.relationshipIndex( "insertion-speed",
+                LuceneIndexProvider.EXACT_CONFIG ), new FastRelationshipCreator() );
     }
 }

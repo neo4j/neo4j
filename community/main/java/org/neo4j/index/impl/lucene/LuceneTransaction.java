@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.index.impl.lucene.LuceneCommand.AddCommand;
+import org.neo4j.index.impl.lucene.LuceneCommand.AddRelationshipCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.ClearCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.RemoveCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -62,8 +63,7 @@ class LuceneTransaction extends XaTransaction
     {
         TxDataBoth data = getTxData( index, true );
         insert( index, entity, key, value, data.added( true ), data.removed( false ) );
-        queueCommand( new AddCommand( index.identifier,
-                getEntityId( entity ), key, value.toString() ) ).addCount++;
+        queueCommand( index.newAddCommand( entity, key, value.toString() ) ).addCount++;
     }
     
     private long getEntityId( PropertyContainer entity )
@@ -113,7 +113,7 @@ class LuceneTransaction extends XaTransaction
     
     private CommandList queueCommand( LuceneCommand command )
     {
-        IndexIdentifier indexId = command.getIndexIdentifier();
+        IndexIdentifier indexId = command.indexId;
         CommandList commands = commandMap.get( indexId );
         if ( commands == null )
         {
@@ -244,19 +244,30 @@ class LuceneTransaction extends XaTransaction
                         writer.setMaxBufferedDeleteTerms( commandList.removeCount + 100 );
                         searcher = dataSource.getIndexSearcher( identifier ).getSearcher();
                     }
-                    long entityId = command.getEntityId();
+                    if ( command instanceof ClearCommand )
+                    {
+                        documents.clear();
+                        dataSource.closeWriter( writer );
+                        writer = null;
+                        dataSource.deleteIndex( identifier );
+                        dataSource.invalidateCache( identifier );
+                        continue;
+                    }
+                    
+                    long entityId = command.entityId;
                     DocumentContext context = documents.get( entityId );
                     if ( context == null )
                     {
                         Document document = LuceneDataSource.findDocument( type, searcher, entityId );
                         context = document == null ?
-                                new DocumentContext( type.newDocument( entityId ), false, entityId ) :
+                                new DocumentContext( identifier.entityType.newDocument( entityId ) /*type.newDocument( entityId )*/, false, entityId ) :
                                 new DocumentContext( document, true, entityId );
                         documents.put( entityId, context );
                     }
-                    String key = command.getKey();
-                    String value = command.getValue();
-                    if ( command instanceof AddCommand )
+                    String key = command.key;
+                    String value = command.value;
+                    if ( command instanceof AddCommand ||
+                            command instanceof AddRelationshipCommand )
                     {
                         type.addToDocument( context.document, key, value );
                         dataSource.invalidateCache( identifier, key, value );
@@ -265,14 +276,6 @@ class LuceneTransaction extends XaTransaction
                     {
                         type.removeFromDocument( context.document, key, value );
                         dataSource.invalidateCache( identifier, key, value );
-                    }
-                    else if ( command instanceof ClearCommand )
-                    {
-                        documents.clear();
-                        dataSource.closeWriter( writer );
-                        writer = null;
-                        dataSource.deleteIndex( identifier );
-                        dataSource.invalidateCache( identifier );
                     }
                     else
                     {

@@ -66,10 +66,22 @@ public abstract class PrimitiveUtils
             return null;
         }
         buffer.flip();
-        int result = buffer.getInt();
-        return result;
+        return buffer.getInt();
     }
 
+    public static Long readLong( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        buffer.clear();
+        buffer.limit( 8 );
+        int read = channel.read( buffer );
+        if ( read < 8 )
+        {
+            return null;
+        }
+        buffer.flip();
+        return buffer.getLong();
+    }
+    
     public static void writeLengthAndString( FileChannel channel, ByteBuffer buffer, String value )
             throws IOException
     {
