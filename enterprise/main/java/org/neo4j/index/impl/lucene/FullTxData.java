@@ -42,7 +42,7 @@ class FullTxData extends TxData
             }
             else
             {
-                document = index.type.newDocument( entityId );
+                document = index.identifier.entityType.newDocument( entityId );
                 index.type.addToDocument( document, key, value );
                 writer.addDocument( document );
             }

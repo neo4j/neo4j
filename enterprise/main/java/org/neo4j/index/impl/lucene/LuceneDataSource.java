@@ -347,17 +347,17 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         File path = new File( storeDir, "lucene" );
         String extra = null;
-        if ( identifier.itemsClass.equals( Node.class ) )
+        if ( identifier.entityType.getType().equals( Node.class ) )
         {
             extra = "node";
         }
-        else if ( identifier.itemsClass.equals( Relationship.class ) )
+        else if ( identifier.entityType.getType().equals( Relationship.class ) )
         {
             extra = "relationship";
         }
         else
         {
-            throw new RuntimeException( identifier.itemsClass.getName() );
+            throw new RuntimeException( identifier.entityType.getType().getName() );
         }
         return new File( path, extra );
     }

@@ -4,14 +4,14 @@ import java.util.Map;
 
 class IndexIdentifier
 {
-    final Class<?> itemsClass;
     final String indexName;
     final Map<String, String> config;
+    final EntityType entityType;
     
-    public IndexIdentifier( Class<?> itemsClass, String indexName,
+    public IndexIdentifier( EntityType entityType, String indexName,
             Map<String, String> customConfig )
     {
-        this.itemsClass = itemsClass;
+        this.entityType = entityType;
         this.indexName = indexName;
         this.config = customConfig;
     }
@@ -24,7 +24,7 @@ class IndexIdentifier
             return false;
         }
         IndexIdentifier i = (IndexIdentifier) o;
-        return itemsClass.equals( i.itemsClass ) &&
+        return entityType.getType().equals( i.entityType.getType() ) &&
                 indexName.equals( i.indexName );
     }
     
@@ -32,7 +32,7 @@ class IndexIdentifier
     public int hashCode()
     {
         int code = 17;
-        code += 7*itemsClass.hashCode();
+        code += 7*entityType.getType().hashCode();
         code += 7*indexName.hashCode();
         return code;
     }

@@ -220,7 +220,7 @@ abstract class IndexType
     
     abstract void removeFromDocument( Document document, String key, Object value );
     
-    Document newDocument( long entityId )
+    static Document newBaseDocument( long entityId )
     {
         Document doc = new Document();
         doc.add( new Field( LuceneIndex.KEY_DOC_ID, "" + entityId, Store.YES,
@@ -236,17 +236,5 @@ abstract class IndexType
     Query idTermQuery( long entityId )
     {
         return new TermQuery( idTerm( entityId ) );
-    }
-    
-    Query combine( long entityId, Object queryOrQueryObjectOrNull )
-    {
-        BooleanQuery queries = new BooleanQuery();
-        queries.add( idTermQuery( entityId ), Occur.MUST );
-        if ( queryOrQueryObjectOrNull != null )
-        {
-            queries.add( query( null, queryOrQueryObjectOrNull ),
-                    Occur.MUST );
-        }
-        return queries;
     }
 }
