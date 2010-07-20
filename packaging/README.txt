@@ -1,7 +1,7 @@
 Neo4j Apoc 1.0 - Basic Neo4j examples
 
 This is Apoc -- A Package Of Components for Neo4j. The purpose of this package
-is to provide an easy-to-get-going distribution of Neo4j graph database and a
+is to provide an easy-to-get-going distribution of the Neo4j graph database and a
 handful of commonly used components. It includes the binary jar files for these
 components as well as example code that shows basic usage.
 
@@ -15,20 +15,16 @@ Included in this release of Apoc is:
    neo4j-graph-algo:     graph algorithms (such as shortest path algorithm)
    
 You can run the examples from the Unix and Windows start scripts in the bin/
-directory.
+directory. The shell-client script starts an neo4j-shell instance.
 
 You'll find the source code to the examples in the examples/ directory.
 
 The components are found in the lib/ directory, and the javadocs for the
 Apoc components in the docs/ directory.
 
-For documentation, see:
-
-   http://api.neo4j.org/current
-
-and:
-
-   http://components.neo4j.org
+For documentation, see also:
+http://components.neo4j.org/
+http://wiki.neo4j.org
 
 Various licenses apply, please refer to the LICENSE and NOTICE files for more
 detailed information. A full report regarding the licenses of all included

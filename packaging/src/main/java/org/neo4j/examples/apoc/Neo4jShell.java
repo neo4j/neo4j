@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -14,6 +15,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -33,8 +35,6 @@ public class Neo4jShell
     public static void main( final String[] args ) throws Exception
     {
         registerShutdownHookForNeo();
-        startGraphDb();
-        createExampleNodeSpace();
         boolean trueForLocal = waitForUserInput(
             "Would you like to start a "
                 + "local shell instance or enable neo4j to accept remote "
@@ -55,8 +55,15 @@ public class Neo4jShell
         graphDb = new EmbeddedGraphDatabase( DB_PATH );
     }
 
+    private static void startGraphDb( Map<String, String> settings )
+    {
+        graphDb = new EmbeddedGraphDatabase( DB_PATH, settings );
+    }
+
     private static void startLocalShell() throws Exception
     {
+        startGraphDb();
+        createExampleNodeSpace();
         ShellServer shellServer = new GraphDatabaseShellServer( graphDb );
         new SameJvmClient( shellServer ).grabPrompt();
         shellServer.shutdown();
@@ -64,11 +71,13 @@ public class Neo4jShell
 
     private static void startRemoteShellAndWait() throws Exception
     {
-        graphDb.enableRemoteShell();
-        waitForUserInput( "Remote shell enabled, connect to it by running:\n"
-            + "java -jar lib/shell-<version>.jar\n"
-            + "\nWhen you're done playing around, just press any key "
-            + "in this terminal " );
+        startGraphDb( MapUtil.stringMap( "enable_remote_shell", "true" ) );
+        createExampleNodeSpace();
+        waitForUserInput( "Remote shell enabled, connect to it by executing\n"
+                          + "the shell-client script in a separate terminal."
+                          + "The script is located in the bin directory.\n"
+                          + "\nWhen you're done playing around, just press [Enter] "
+                          + "in this terminal " );
     }
 
     private static String waitForUserInput( final String textToSystemOut )
