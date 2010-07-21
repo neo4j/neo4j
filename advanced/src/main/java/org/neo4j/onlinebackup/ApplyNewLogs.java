@@ -26,13 +26,25 @@ import java.util.Map;
 
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
+/**
+ * Command line tool to apply new logical logs.
+ */
 public class ApplyNewLogs
 {
+    private ApplyNewLogs()
+    {
+        // no instances
+    }
+
+    /**
+     * Apply new logs.
+     * 
+     * @param args destination database path
+     */
     public static void main( String args[] )
     {
         if ( args.length != 1 )
@@ -93,11 +105,11 @@ public class ApplyNewLogs
     {
         TxModule txModule = graphDb.getConfig().getTxModule();
         XaDataSourceManager xaDsMgr = txModule.getXaDataSourceManager();
-        LockManager lockManager = graphDb.getConfig().getLockManager();
+        // LockManager lockManager = graphDb.getConfig().getLockManager();
         try
         {
             // hack since kernel 1.0 unregisters datasources after recovery
-            Class clazz = Class.forName( LUCENE_FULLTEXT_DS_CLASS );
+            Class<?> clazz = Class.forName( LUCENE_FULLTEXT_DS_CLASS );
             if ( xaDsMgr.getXaDataSource( "lucene-fulltext" ) == null )
             {
                 Map<Object, Object> params = new HashMap<Object, Object>();

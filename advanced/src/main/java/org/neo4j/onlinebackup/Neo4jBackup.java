@@ -21,6 +21,7 @@ package org.neo4j.onlinebackup;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.ConsoleHandler;
@@ -33,6 +34,10 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.onlinebackup.impl.EmbeddedGraphDatabaseResource;
+import org.neo4j.onlinebackup.impl.LocalGraphDatabaseResource;
+import org.neo4j.onlinebackup.impl.Neo4jResource;
+import org.neo4j.onlinebackup.impl.XaDataSourceResource;
 
 /**
  * Online backup implementation for Neo4j.
@@ -58,15 +63,16 @@ public class Neo4jBackup implements Backup
     private final EmbeddedGraphDatabase onlineGraphDb;
     private final ResourceFetcher destinationResourceFetcher;
     private final List<String> xaNames;
-    
+
     /**
-     * Backup from a running {@link EmbeddedGraphDatabase} to another running
-     * {@link EmbeddedGraphDatabase}. Only the data source representing Neo4j
-     * database will be used and if it isn't set to keep logical logs an
+     * Backup from a running {@link EmbeddedGraphDatabase} to a destination
+     * directory. Only the data source representing the Neo4j database will be
+     * used and if it isn't set to keep logical logs an
      * {@link IllegalStateException} will be thrown.
      * 
-     * @param sourceGraphDb running database as backup source
-     * @param destDir location of backup destination
+     * @param source running database as backup source
+     * @param destinationDir location of backup destination
+     * @return instance for creating backup
      */
     public static Backup neo4jDataSource( EmbeddedGraphDatabase source,
             String destinationDir )
@@ -74,15 +80,16 @@ public class Neo4jBackup implements Backup
         return new Neo4jBackup( source, new DestinationDirResourceFetcher( destinationDir ),
                 Collections.singletonList( Config.DEFAULT_DATA_SOURCE_NAME ) );
     }
-    
+
     /**
      * Backup from a running {@link EmbeddedGraphDatabase} to another running
-     * {@link EmbeddedGraphDatabase}. Only the data source representing Neo4j
-     * database will be used and if it isn't set to keep logical logs an
+     * {@link EmbeddedGraphDatabase}. Only the data source representing the
+     * Neo4j database will be used and if it isn't set to keep logical logs an
      * {@link IllegalStateException} will be thrown.
      * 
-     * @param sourceGraphDb running database as backup source
-     * @param destGraphDb running database as backup destination
+     * @param source running database as backup source
+     * @param destination running database as backup destination
+     * @return instance for creating backup
      */
     public static Backup neo4jDataSource( EmbeddedGraphDatabase source,
             EmbeddedGraphDatabase destination )
@@ -90,15 +97,16 @@ public class Neo4jBackup implements Backup
         return new Neo4jBackup( source, new GraphDbResourceFetcher( destination ),
                 Collections.singletonList( Config.DEFAULT_DATA_SOURCE_NAME ) );
     }
-    
+
     /**
      * Backup from a running {@link EmbeddedGraphDatabase} to a destination
-     * directory. All registered XA data sources will be used and all those
-     * data sources will have to be set to keep their logical logs, otherwise
-     * an {@link IllegalStateException} will be thrown.
+     * directory. All registered XA data sources will be used and all those data
+     * sources will have to be set to keep their logical logs, otherwise an
+     * {@link IllegalStateException} will be thrown.
      * 
-     * @param sourceGraphDb running database as backup source
-     * @param destDir location of backup destination
+     * @param source running database as backup source
+     * @param destinationDir location of backup destination
+     * @return instance for creating backup
      */
     public static Backup allDataSources( EmbeddedGraphDatabase source,
             String destinationDir )
@@ -106,15 +114,16 @@ public class Neo4jBackup implements Backup
         return new Neo4jBackup( source, new DestinationDirResourceFetcher( destinationDir ),
                 allDataSources( source ) );
     }
-    
+
     /**
-     * Backup from a running {@link EmbeddedGraphDatabase} to a destination
-     * directory. All registered XA data sources will be used and all those
-     * data sources will have to be set to keep their logical logs, otherwise
-     * an {@link IllegalStateException} will be thrown.
+     * Backup from a running {@link EmbeddedGraphDatabase} to another running
+     * {@link EmbeddedGraphDatabase}. All registered XA data sources will be
+     * used and all those data sources will have to be set to keep their logical
+     * logs, otherwise an {@link IllegalStateException} will be thrown.
      * 
-     * @param sourceGraphDb running database as backup source
-     * @param destGraphDb running database as backup destination
+     * @param source running database as backup source
+     * @param destination running database as backup destination
+     * @return instance for creating backup
      */
     public static Backup allDataSources( EmbeddedGraphDatabase source,
             EmbeddedGraphDatabase destination )
@@ -122,41 +131,45 @@ public class Neo4jBackup implements Backup
         return new Neo4jBackup( source, new GraphDbResourceFetcher( destination ),
                 allDataSources( source ) );
     }
-    
+
     /**
-     * Backup from a running {@link EmbeddedGraphDatabase} to another running
-     * {@link EmbeddedGraphDatabase}. Which XA data sources to include in the
-     * backup can here be explicitly specified. This is considered to be more
-     * of an "expert-mode". If any of the specified data sources isn't set to
-     * keep its logical logs an {@link IllegalStateException} will be thrown.
+     * Backup from a running {@link EmbeddedGraphDatabase} to a destination
+     * directory. Which XA data sources to include in the backup can here be
+     * explicitly specified. This is considered to be more of an "expert-mode".
+     * If any of the specified data sources isn't set to keep its logical logs
+     * an {@link IllegalStateException} will be thrown.
      * 
-     * @param sourceGraphDb running database as backup source
-     * @param destGraphDb running database as backup destination
+     * @param source running database as backup source
+     * @param destinationDir location of backup destination
      * @param xaDataSourceNames names of data sources to backup
+     * @return instance for creating backup
      */
     public static Backup customDataSources( EmbeddedGraphDatabase source,
-            String destinationDir, List<String> xaDataSourceNames )
+            String destinationDir, String... xaDataSourceNames )
     {
-        return new Neo4jBackup( source, new DestinationDirResourceFetcher( destinationDir ),
-                new ArrayList<String>( xaDataSourceNames ) );
+        return new Neo4jBackup( source, new DestinationDirResourceFetcher(
+                destinationDir ), new ArrayList<String>(
+                Arrays.asList( xaDataSourceNames ) ) );
     }
-    
+
     /**
      * Backup from a running {@link EmbeddedGraphDatabase} to another running
      * {@link EmbeddedGraphDatabase}. Which XA data sources to include in the
-     * backup can here be explicitly specified. This is considered to be more
-     * of an "expert-mode". If any of the specified data sources isn't set to
-     * keep its logical logs an {@link IllegalStateException} will be thrown.
+     * backup can here be explicitly specified. This is considered to be more of
+     * an "expert-mode". If any of the specified data sources isn't set to keep
+     * its logical logs an {@link IllegalStateException} will be thrown.
      * 
-     * @param sourceGraphDb running database as backup source
-     * @param destGraphDb running database as backup destination
+     * @param source running database as backup source
+     * @param destination running database as backup destination
      * @param xaDataSourceNames names of data sources to backup
+     * @return instance for creating backup
      */
     public static Backup customDataSources( EmbeddedGraphDatabase source,
-            EmbeddedGraphDatabase destination, List<String> xaDataSourceNames )
+            EmbeddedGraphDatabase destination, String... xaDataSourceNames )
     {
         return new Neo4jBackup( source, new GraphDbResourceFetcher( destination ),
-                new ArrayList<String>( xaDataSourceNames ) );
+                new ArrayList<String>( new ArrayList<String>(
+                        Arrays.asList( xaDataSourceNames ) ) ) );
     }
     
     private Neo4jBackup( EmbeddedGraphDatabase source,
