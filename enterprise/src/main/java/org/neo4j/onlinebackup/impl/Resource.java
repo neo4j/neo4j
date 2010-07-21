@@ -17,23 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.onlinebackup;
+package org.neo4j.onlinebackup.impl;
 
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
 
 /**
- * Simple wrapper for XA data sources.
+ * Wrap a XA data source.
  */
-public class XaDataSourceResource extends AbstractResource implements Resource
+public interface Resource
 {
-    public XaDataSourceResource( final XaDataSource xaDs )
-    {
-        super( xaDs );
-    }
+    long getCreationTime();
 
-    @Override
-    public void close()
-    {
-        xaDs.close();
-    }
+    long getIdentifier();
+
+    String getName();
+
+    long getVersion();
+
+    boolean hasLogicalLog( long version );
+
+    ReadableByteChannel getLogicalLog( long version ) throws IOException;
+
+    void applyLog( ReadableByteChannel log ) throws IOException;
+
+    void rotateLog() throws IOException;
+
+    void makeBackupSlave();
+
+    void close();
 }

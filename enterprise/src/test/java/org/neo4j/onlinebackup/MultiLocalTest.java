@@ -20,9 +20,9 @@
 package org.neo4j.onlinebackup;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+
 
 /**
  * Try to backup Neo4j and a Lucene data source to a directory location.
@@ -30,12 +30,11 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 public class MultiLocalTest extends MultiRunningTest
 {
     @Override
-    @SuppressWarnings( "serial" )
     protected void setupBackup( EmbeddedGraphDatabase graphDb, String location )
         throws IOException
     {
         Backup backupComp = Neo4jBackup.customDataSources( graphDb, location,
-                Arrays.asList( "nioneodb", "lucene" ) );
+                "nioneodb", "lucene" );
         backupComp.doBackup();
     }
 }

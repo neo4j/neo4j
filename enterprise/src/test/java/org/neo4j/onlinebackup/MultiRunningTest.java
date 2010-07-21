@@ -24,7 +24,6 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Before;
@@ -181,14 +180,13 @@ public class MultiRunningTest
         Util.stopGraphDb( bDb, bIndexService );
     }
 
-    @SuppressWarnings( "serial" )
     protected void setupBackup( EmbeddedGraphDatabase graphDb, String location )
         throws IOException
     {
         EmbeddedGraphDatabase bDb = Util.startGraphDbInstance( location );
         IndexService bIndexService = new LuceneIndexService( bDb );
         Backup backupComp = Neo4jBackup.customDataSources( graphDb, bDb, 
-                Arrays.asList( "nioneodb", "lucene" ) );
+                "nioneodb", "lucene" );
         backupComp.enableFileLogger();
         backupComp.doBackup();
         Util.stopGraphDb( bDb, bIndexService );
