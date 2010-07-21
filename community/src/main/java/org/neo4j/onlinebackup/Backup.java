@@ -20,6 +20,7 @@
 package org.neo4j.onlinebackup;
 
 import java.io.IOException;
+import java.util.logging.FileHandler;
 
 /**
  * Online backup for Neo4j.
@@ -39,9 +40,18 @@ public interface Backup
 
     /**
      * Enable logging to the specified file.
+     * 
+     * @param filename file name of log file
      */
     void enableFileLogger( String filename ) throws SecurityException,
             IOException;
+
+    /**
+     * Enable a user-provided {@link FileHandler}
+     * 
+     * @param handler file handler for logging
+     */
+    void enableFileLogger( FileHandler handler );
 
     /**
      * Disable logging to file.

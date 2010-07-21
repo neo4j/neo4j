@@ -191,7 +191,6 @@ public class MultiLuceneRunningTest
         Util.stopGraphDb( bDb, bIndexService, bFulltextIndex );
     }
 
-    @SuppressWarnings( "serial" )
     protected void setupBackup( EmbeddedGraphDatabase graphDb, String location )
         throws IOException
     {
