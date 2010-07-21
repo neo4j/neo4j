@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-kernel</artifactId>
-  <version>1.1-rc3</version>
+  <version>1.1-SNAPSHOT</version>
   <name>Neo4j - Graph Database Kernel</name>
   <description>
  Neo4j kernel is a lightweight, embedded Java database designed to
@@ -26,8 +26,8 @@
   <packaging>bundle</packaging> 
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/kernel/tags/1.1-rc3</connection>
-    <url>scm:svn:https://svn.neo4j.org/components/kernel/tags/1.1-rc3</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/kernel/trunk/</connection>
+    <url>https://trac.neo4j.org/browser/components/kernel</url>
   </scm>
 
   <issueManagement>
