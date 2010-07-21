@@ -4,8 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>6</version>
-    <relativePath>../../parent/pom.xml</relativePath>
+    <version>7-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -28,11 +27,8 @@
   <packaging>bundle</packaging> 
 
   <scm>
-    <connection>
-            scm:svn:https://svn.neo4j.org/components/${short-name}/trunk/
-        </connection>
-    <url>https://trac.neo4j.org/browser/components/${short-name}
-        </url>
+    <connection>scm:svn:https://svn.neo4j.org/components/${short-name}/trunk/</connection>
+    <url>https://trac.neo4j.org/browser/components/${short-name}</url>
   </scm>
 
   <issueManagement>
@@ -104,7 +100,6 @@
       <plugin>
         <groupId>com.google.code.maven-svn-revision-number-plugin</groupId>
         <artifactId>maven-svn-revision-number-plugin</artifactId>
-        <version>1.4</version>
         <executions>
           <execution>
             <goals>
@@ -144,12 +139,6 @@
      <artifactId>geronimo-jta_1.1_spec</artifactId>
      <version>1.1.1</version>
    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.7</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <reporting>
@@ -161,7 +150,7 @@
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
-          <version>1.1-SNAPSHOT</version>
+          <version>${project.version}</version>
           <comparisonVersion>1.0</comparisonVersion>
         </configuration>
       </plugin>
