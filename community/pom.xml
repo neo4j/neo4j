@@ -130,6 +130,12 @@
           <comparisonVersion>1.0</comparisonVersion>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-release-plugin</artifactId>
+        <configuration>
+          <tagBase>https://svn.neo4j.org/components/${short-name}/tags</tagBase>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
