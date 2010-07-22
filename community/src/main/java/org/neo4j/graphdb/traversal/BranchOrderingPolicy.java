@@ -7,7 +7,7 @@ package org.neo4j.graphdb.traversal;
 public interface BranchOrderingPolicy
 {
     /**
-     * Instantiates a {@link BranchSelector} with {@code startSource} as the
+     * Instantiates a {@link BranchSelector} with {@code startBranch} as the
      * first branch to base a decision on "where to go next".
      *
      * @param startBranch the {@link TraversalBranch} to start from.

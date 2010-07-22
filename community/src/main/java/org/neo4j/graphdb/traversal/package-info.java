@@ -19,9 +19,6 @@
  */
 
 /**
- * Collections utilities - Iterator/Iterable utilities and creating
- * {@link java.util.Map}s.
+ * Traversal framework.
  */
-package org.neo4j.helpers.collection;
-
-
+package org.neo4j.graphdb.traversal;

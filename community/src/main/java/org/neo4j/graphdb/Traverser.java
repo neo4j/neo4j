@@ -30,7 +30,7 @@ import java.util.Iterator;
  * traverser is positioned at the start node, but it doesn't actually start
  * traversing until its {@link #iterator() iterator().next()} method is invoked
  * and will then traverse lazily one step each time {@code next} is called.
- *
+ * <p>
  * When a Traverser is created it is parameterized with two evaluators and the
  * relationship types to traverse, with the direction to traverse each type in.
  * The evaluators are used for determining for each node in the set of candidate
@@ -42,9 +42,9 @@ import java.util.Iterator;
  * some internal relationships between nodes in the traversal are not traversed
  * (and hence not visible {@link TraversalPosition#lastRelationshipTraversed()
  * in the evaluators}).
- *
+ * <p>
  * Typically a Traverser is used in a for-each loop as follows:
- *
+ * 
  * <pre>
  * <code>
  * Traverser friends = node.{@link Node#traverse(Traverser.Order, StopEvaluator, ReturnableEvaluator, RelationshipType, Direction) traverse}( {@link Order#BREADTH_FIRST Order.BREADTH_FIRST},
@@ -59,7 +59,7 @@ import java.util.Iterator;
  *
  * Relationships are equally well traversed regardless of their direction,
  * performance-wise.
- *
+ * <p>
  * For more usage examples please refer to the <a
  * href="http://wiki.neo4j.org/content/Traversal">wiki documentation</a>.
  *

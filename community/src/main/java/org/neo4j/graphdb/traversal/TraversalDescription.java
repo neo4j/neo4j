@@ -8,16 +8,16 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Predicate;
 
 /**
- * Represents a description of a traversal. Here the rules and behaviour of
- * a traversal is described. A traversal description is immutable and each
- * method which adds or modifies the behaviour returns a new instances which
+ * Represents a description of a traversal. This interface describes the rules
+ * and behavior of a traversal. A traversal description is immutable and each
+ * method which adds or modifies the behavior returns a new instances that
  * includes the new modification, leaving the instance which returns the new
  * instance intact.
- *
- * When all the rules and behaviours have been described the traversal is
- * started using {@link #traverse(Node)} where a starting node is supplied.
- * The returned {@link Traverser} is then used to step through the graph,
- * returning the positions matching the rules.
+ * <p>
+ * When all the rules and behaviors have been described the traversal is started
+ * by using {@link #traverse(Node)} where a starting node is supplied. The
+ * {@link Traverser} that is returned is then used to step through the graph,
+ * and return the positions that matches the rules.
  */
 public interface TraversalDescription
 {
@@ -53,9 +53,9 @@ public interface TraversalDescription
     TraversalDescription prune( PruneEvaluator pruning );
 
     /**
-     * Sets the return filter to use, i.e. which positions are OK to return.
-     * Each position is represented by a {@link Path} from the start node
-     * of the traversal to the current node. The current node is the
+     * Sets the return filter to use, that is which positions are OK to return.
+     * Each position is represented by a {@link Path} from the start node of the
+     * traversal to the current node. The current node is the
      * {@link Path#endNode()} of the path.
      *
      * @param filter the {@link Predicate} to use as filter.
@@ -131,12 +131,12 @@ public interface TraversalDescription
 
     /**
      * Starts traversing from {@code startNode} based on all the rules and
-     * behaviour in this description. A {@link Traverser} is returned which
-     * is used to step through the graph and getting results back.
+     * behavior in this description. A {@link Traverser} is returned which is
+     * used to step through the graph and getting results back.
      *
      * @param startNode the {@link Node} to start the traversal from.
-     * @return a {@link Traverser} used to step through the graph and to
-     * get results from.
+     * @return a {@link Traverser} used to step through the graph and to get
+     *         results from.
      */
     Traverser traverse( Node startNode );
 }
