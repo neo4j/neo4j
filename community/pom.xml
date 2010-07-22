@@ -104,7 +104,7 @@
               <excludePackageNames>*.impl.*:org.neo4j.shell:org.neo4j.remote.inspect</excludePackageNames>
               <groups>
                 <group>
-                  <title>GraphDB &amp; Kernel</title>
+                  <title>Graph database</title>
                   <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*
                   </packages>
                 </group>
