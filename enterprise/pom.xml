@@ -169,7 +169,7 @@
           <excludePackageNames>*.impl.*</excludePackageNames>
           <groups>
             <group>
-              <title>GraphDB</title>
+              <title>Graph database</title>
               <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*
                   </packages>
             </group>
