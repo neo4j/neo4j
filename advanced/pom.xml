@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
@@ -23,7 +24,7 @@
     <short-name>kernel</short-name>
   </properties>
 
-  <packaging>bundle</packaging> 
+  <packaging>bundle</packaging>
 
   <scm>
     <connection>scm:svn:https://svn.neo4j.org/components/kernel/trunk/</connection>
@@ -140,10 +141,10 @@
 
   <dependencies>
     <dependency>
-     <groupId>org.apache.geronimo.specs</groupId>
-     <artifactId>geronimo-jta_1.1_spec</artifactId>
-     <version>1.1.1</version>
-   </dependency>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-jta_1.1_spec</artifactId>
+      <version>1.1.1</version>
+    </dependency>
   </dependencies>
 
   <reporting>
@@ -157,6 +158,28 @@
           </includes>
           <version>${project.version}</version>
           <comparisonVersion>1.0</comparisonVersion>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <detectJavaApiLink>true</detectJavaApiLink>
+          <detectLinks>true</detectLinks>
+          <quiet>true</quiet>
+          <excludePackageNames>*.impl.*</excludePackageNames>
+          <groups>
+            <group>
+              <title>GraphDB</title>
+              <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*
+                  </packages>
+            </group>
+            <group>
+              <title>Helpers</title>
+              <packages>org.neo4j.helpers:org.neo4j.helpers.*
+                  </packages>
+            </group>
+          </groups>
         </configuration>
       </plugin>
     </plugins>

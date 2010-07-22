@@ -1,8 +1,8 @@
 package org.neo4j.graphdb;
 
 /**
- * An expander of relationships. It's a more flexible way of getting
- * relationships from a node.
+ * An expander of relationships. It's a flexible way of getting relationships
+ * from a node.
  */
 public interface RelationshipExpander
 {
@@ -16,9 +16,9 @@ public interface RelationshipExpander
     Iterable<Relationship> expand( Node node );
 
     /**
-     * Returns a new instances with the exact same {@link RelationshipType}s,
-     * but with all directions reversed (Direction{@link #reversed()}.
-     *
+     * Returns a new instance with the exact same {@link RelationshipType}s, but
+     * with all directions reversed (see {@link Direction#reverse()}).
+     * 
      * @return a {@link RelationshipExpander} with the same types, but with
      *         reversed directions.
      */

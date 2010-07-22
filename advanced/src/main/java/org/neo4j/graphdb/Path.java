@@ -49,16 +49,17 @@ public interface Path extends Iterable<PropertyContainer>
 
     /**
      * Returns all the nodes in this path. The first node is the same as
-     * {@link #startNode()} and the last node is the same as
-     * {@link #endNode()}. In between those nodes can be an arbitrary
-     * number of nodes. The shortest path possible is just one node,
-     * where also the the start node is the same as the end node.
+     * {@link #startNode()} and the last node is the same as {@link #endNode()}.
+     * In between those nodes there can be an arbitrary number of nodes. The
+     * shortest path possible is just one node, where also the the start node is
+     * the same as the end node.
+     * 
      * @return the nodes in this path.
      */
     Iterable<Node> nodes();
 
     /**
-     * Returns the length of this path, i.e. the number of relationships
+     * Returns the length of this path. That is the number of relationships
      * (which is the same as the number of nodes minus one). The shortest path
      * possible is of length 0.
      *

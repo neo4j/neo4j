@@ -12,6 +12,8 @@ public abstract class MapUtil
      * A short-hand method for creating a {@link Map} of key/value pairs.
      * 
      * @param objects alternating key and value.
+     * @param <K> type of keys
+     * @param <V> type of values
      * @return a Map with the entries supplied by {@code objects}.
      */
     @SuppressWarnings("unchecked")
@@ -30,7 +32,7 @@ public abstract class MapUtil
      * A short-hand method for creating a {@link Map} of key/value pairs where
      * both keys and values are {@link String}s.
      * 
-     * @param string alternating key and value.
+     * @param strings alternating key and value.
      * @return a Map with the entries supplied by {@code strings}.
      */
     public static Map<String, String> stringMap( String... strings )
