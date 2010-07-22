@@ -19,9 +19,6 @@
  */
 
 /**
- * Collections utilities - Iterator/Iterable utilities and creating
- * {@link java.util.Map}s.
+ * Management support using JMX.
  */
-package org.neo4j.helpers.collection;
-
-
+package org.neo4j.kernel.management;

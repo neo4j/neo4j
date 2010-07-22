@@ -34,14 +34,14 @@ package org.neo4j.graphdb;
  * @deprecated because of the introduction of a new traversal framework,
  * see more information at {@link TraversalDescription} and
  * {@link Traversal} and the new traversal framework's equivalent
- * {@link Position}.
+ * {@link Path}.
  */
 // @Deprecated
 public interface TraversalPosition
 {
     /**
-     * Return the current node.
-     *
+     * Returns the current node.
+     * 
      * @return The current node
      */
     public Node currentNode();
@@ -83,8 +83,8 @@ public interface TraversalPosition
     public int depth();
 
     /**
-     * Returns the number of nodes returned by traverser so far.
-     *
+     * Returns the number of nodes returned by the traverser so far.
+     * 
      * @return The number of returned nodes.
      */
     public int returnedNodesCount();
