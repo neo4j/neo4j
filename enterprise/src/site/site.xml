@@ -26,8 +26,8 @@
         <menu ref="reports" />
     </body>
     <skin>
-        <groupId>${siteGroupId}</groupId>
-        <artifactId>${siteArtifactId}</artifactId>
-        <version>${siteVersion}</version>
+        <groupId>${skinGroupId}</groupId>
+        <artifactId>${skinArtifactId}</artifactId>
+        <version>${skinVersion}</version>
     </skin>
 </project>
