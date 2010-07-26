@@ -4,8 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>6</version>
-    <relativePath>../../parent/pom.xml</relativePath>
+    <version>7-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -16,7 +15,7 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-graph-matching</artifactId>
   <version>0.8-SNAPSHOT</version>
-  <name>graph matching for Neo4j.</name>
+  <name>Graph matching for Neo4j</name>
   <description>A graph pattern matcher for Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
@@ -67,12 +66,6 @@
   </developers>
 
   <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.7</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
