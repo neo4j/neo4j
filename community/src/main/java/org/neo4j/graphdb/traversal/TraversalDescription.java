@@ -12,7 +12,18 @@ import org.neo4j.helpers.Predicate;
  * and behavior of a traversal. A traversal description is immutable and each
  * method which adds or modifies the behavior returns a new instances that
  * includes the new modification, leaving the instance which returns the new
- * instance intact.
+ * instance intact. For instance,
+ * 
+ * <pre>
+ * TraversalDescription td = new TraversalDescriptionImpl();
+ * td.depthFirst();
+ * </pre>
+ * 
+ * is not going to modify td. you will need to reassign td, like
+ * 
+ * <pre>
+ * td = td.depthFirst();
+ * </pre>
  * <p>
  * When all the rules and behaviors have been described the traversal is started
  * by using {@link #traverse(Node)} where a starting node is supplied. The
