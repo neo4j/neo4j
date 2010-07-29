@@ -40,8 +40,8 @@ class TransactionManagerBean extends Neo4jMBean implements TransactionManager
         return txModule.getCommittedTxCount();
     }
 
-    @Description( "The total number of rollbacked transactions" )
-    public long getNumberOfRollbackedTransactions()
+    @Description( "The total number of rolled back transactions" )
+    public long getNumberOfRolledBackTransactions()
     {
         return txModule.getRolledbackTxCount();
     }
