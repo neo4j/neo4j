@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
@@ -9,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-online-backup</artifactId>
-  <version>0.6-SNAPSHOT</version>
+  <version>0.6</version>
   <name>Onlinebackup</name>
   <description>Backup of resources using the XA framework</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
@@ -20,9 +19,9 @@
 
   <scm>
     <connection>
-            scm:svn:https://svn.neo4j.org/components/${short-name}/trunk/
+            scm:svn:https://svn.neo4j.org/components/online-backup/tags/0.6
         </connection>
-    <url>https://trac.neo4j.org/browser/components/${short-name}
+    <url>scm:svn:https://svn.neo4j.org/components/online-backup/tags/0.6
         </url>
   </scm>
   <licenses>
