@@ -1,5 +1,5 @@
-1.1 (2010-07-xx)
----------------
+1.1 (2010-07-29)
+----------------
 
 -New features
 o Auto configuration by looking at available RAM and heap.
