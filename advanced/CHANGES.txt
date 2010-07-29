@@ -1,5 +1,5 @@
-0.6 (2010-06)
--------------
+1.1 (2010-07-29)
+----------------
 
 o Added a new shortest path algorithm which is very memory efficient and is
   as close to depth-first search as possible.
