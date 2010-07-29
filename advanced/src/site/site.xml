@@ -26,8 +26,8 @@
         <menu ref="reports" />
     </body>
     <skin>
-        <groupId>org.neo4j.maven.skins</groupId>
-        <artifactId>default-skin</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <groupId>${skinGroupId}</groupId>
+        <artifactId>${skinArtifactId}</artifactId>
+        <version>${skinVersion}</version>
     </skin>
 </project>
