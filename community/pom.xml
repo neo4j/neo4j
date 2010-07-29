@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>7-SNAPSHOT</version>
+    <version>7</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -103,7 +103,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-online-backup</artifactId>
-      <version>0.6-SNAPSHOT</version>
+      <version>0.6</version>
     </dependency>
     <dependency>
       <groupId>jline</groupId>
