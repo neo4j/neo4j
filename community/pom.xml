@@ -9,7 +9,7 @@
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0</version>
   </parent>
 
   <dependencies>
