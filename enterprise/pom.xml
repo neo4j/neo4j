@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
@@ -10,9 +9,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-remote-graphdb</artifactId>
-  <version>0.7-SNAPSHOT</version>
+  <version>0.7</version>
   <name>Neo4j - Remote Graph Database</name>
-  <description></description>
+  <description />
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
   <properties>
@@ -24,8 +23,8 @@
   <packaging>bundle</packaging>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/${short-name}/trunk</connection>
-    <url>https://trac.neo4j.org/browser/components/${short-name}</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/remote-graphdb/tags/0.7</connection>
+    <url>scm:svn:https://svn.neo4j.org/components/remote-graphdb/tags/0.7</url>
   </scm>
 
   <issueManagement>
@@ -122,10 +121,10 @@
             <phase>generate-sources</phase>
             <configuration>
               <tasks>
-                <mkdir dir="target/generated-sources/protobuf"/>
+                <mkdir dir="target/generated-sources/protobuf" />
                 <exec executable="bin/protoc">
-                  <arg value="--java_out=target/generated-sources/protobuf"/>
-                  <arg value="src/main/protobuf/RemoteNeo.proto"/>
+                  <arg value="--java_out=target/generated-sources/protobuf" />
+                  <arg value="src/main/protobuf/RemoteNeo.proto" />
                 </exec>
               </tasks>
               <sourceRoot>target/generated-sources/protobuf</sourceRoot>
