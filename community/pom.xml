@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>7-SNAPSHOT</version>
+    <version>7</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
@@ -58,12 +58,12 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.1-SNAPSHOT</version>
+      <version>1.1</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-index</artifactId>
-      <version>1.1-SNAPSHOT</version>
+      <version>1.1</version>
     </dependency>
   </dependencies>
 </project>
