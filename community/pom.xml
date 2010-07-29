@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-shell</artifactId>
-  <version>1.1</version>
+  <version>1.2-SNAPSHOT</version>
   <name>Neo4j - Generic shell</name>
   <description>
 		A generic command shell with a client and server part
@@ -29,9 +29,9 @@
 
   <scm>
     <connection>
-			scm:svn:https://svn.neo4j.org/components/shell/tags/1.1
+			scm:svn:https://svn.neo4j.org/components/shell/trunk/
 		</connection>
-    <url>scm:svn:https://svn.neo4j.org/components/shell/tags/1.1
+    <url>https://trac.neo4j.org/browser/components/shell
 		</url>
   </scm>
 
