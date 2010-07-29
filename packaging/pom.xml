@@ -7,9 +7,9 @@
   <version>1.1-SNAPSHOT</version>
   <description>Basic Neo4j examples</description>
   <parent>
-    <groupId>org.neo4j</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>7-SNAPSHOT</version>
+    <groupId>org.neo4j.examples</groupId>
+    <artifactId>examples-pom</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <dependencies>
@@ -41,111 +41,10 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>license-report</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>dependencies</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
-              <dependencyDetailsEnabled>false</dependencyDetailsEnabled>
-              <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>get-javadoc-sources</id>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <classifier>sources</classifier>
-              <copyPom>true</copyPom>
-              <outputDirectory>${project.build.directory}/sources
-              </outputDirectory>
-              <includeGroupIds>org.neo4j</includeGroupIds>
-              <!-- neo4j-apoc has no sources -->
-              <!-- neo4j-shell isn't what users look for here -->
-              <excludeArtifactIds>neo4j-apoc,neo4j-shell
-              </excludeArtifactIds>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>create-javadocs</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>javadoc</goal>
-            </goals>
-            <configuration>
-              <sourcepath>${project.build.directory}/sources
-              </sourcepath>
-              <reportOutputDirectory>${project.build.directory}/appassembler/apidocs
-              </reportOutputDirectory>
-              <detectLinks>true</detectLinks>
-              <links>
-                <!-- the java api link won't be found automatically -->
-                <link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
-              </links>
-              <excludePackageNames>*.impl.*:org.neo4j.shell:org.neo4j.remote.inspect</excludePackageNames>
-              <groups>
-                <group>
-                  <title>Graph database</title>
-                  <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*
-                  </packages>
-                </group>
-                <group>
-                  <title>Index</title>
-                  <packages>org.neo4j.index:org.neo4j.index.*</packages>
-                </group>
-                <group>
-                  <title>Graph algorithms</title>
-                  <packages>org.neo4j.graphalgo:org.neo4j.graphalgo.*</packages>
-                </group>
-                <group>
-                  <title>Online backup</title>
-                  <packages>org.neo4j.onlinebackup:org.neo4j.onlinebackup.*</packages>
-                </group>
-                <group>
-                  <title>Remote</title>
-                  <packages>org.neo4j.remote:org.neo4j.remote.*</packages>
-                </group>
-                <group>
-                  <title>Helpers</title>
-                  <packages>org.neo4j.helpers:org.neo4j.helpers.*
-                  </packages>
-                </group>
-              </groups>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin
                 </artifactId>
         <configuration>
-          <repositoryLayout>flat</repositoryLayout>
-          <repositoryName>lib</repositoryName>
-          <includeConfigurationDirectoryInClasspath>false
-          </includeConfigurationDirectoryInClasspath>
-          <platforms>
-            <platform>windows</platform>
-            <platform>unix</platform>
-          </platforms>
           <programs>
             <program>
               <mainClass>org.neo4j.examples.apoc.EmbeddedNeo4j
@@ -207,12 +106,5 @@
       </plugin>
     </plugins>
   </build>
-  <distributionManagement>
-    <repository>
-      <id>neo4j-upload-repository</id>
-      <name>Developers-only Maven 2 upload repository for Neo4j</name>
-      <url>scpexe://m2.neo4j.org/home/neo/maven2</url>
-      <uniqueVersion>false</uniqueVersion>
-    </repository>
-  </distributionManagement>
+
 </project>
