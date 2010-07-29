@@ -1,4 +1,4 @@
-1.1 (2010-06)
+1.1 (2010-07-29)
 ----------------
 
 o Ability to write command lines including $SOME_VARIABLE and it will be
