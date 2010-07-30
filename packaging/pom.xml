@@ -37,6 +37,15 @@
     <system>Trac</system>
     <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=apoc</url>
   </issueManagement>
+  
+  <scm>
+    <connection>https://svn.neo4j.org/examples/${short-name}/trunk</connection>
+    <url>https://trac.neo4j.org/browser/examples/${short-name}</url>
+  </scm>
+  
+  <properties>
+    <short-name>apoc-examples</short-name>
+  </properties>
 
   <build>
     <plugins>
