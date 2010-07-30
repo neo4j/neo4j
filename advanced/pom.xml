@@ -1,10 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-apoc-examples</artifactId>
   <name>Neo4j Apoc</name>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1</version>
   <description>Basic Neo4j examples</description>
   <parent>
     <groupId>org.neo4j.examples</groupId>
@@ -107,4 +106,9 @@
     </plugins>
   </build>
 
+
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/examples/examples-pom/tags/1.1</connection>
+    <url>https://trac.neo4j.org/browser/examples/examples-pom/tags/1.1</url>
+  </scm>
 </project>
