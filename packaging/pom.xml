@@ -15,7 +15,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-apoc</artifactId>
-      <version>1.1</version>
+      <version>1.2-SNAPSHOT</version>
       <type>pom</type>
     </dependency>
   </dependencies>
