@@ -39,7 +39,7 @@
   </issueManagement>
   
   <scm>
-    <connection>https://svn.neo4j.org/examples/${short-name}/trunk</connection>
+    <connection>scm:svn:https://svn.neo4j.org/examples/${short-name}/trunk</connection>
     <url>https://trac.neo4j.org/browser/examples/${short-name}</url>
   </scm>
   
