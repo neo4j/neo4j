@@ -3,9 +3,9 @@ package slavetest;
 import java.util.Map;
 
 import org.junit.Test;
-import org.neo4j.commons.collection.MapUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 
 public class TestSlaveCreateNode
