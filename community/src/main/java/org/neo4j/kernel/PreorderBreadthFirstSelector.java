@@ -3,30 +3,30 @@ package org.neo4j.kernel;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.graphdb.traversal.SourceSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.BranchSelector;
 
 /**
- * Selects {@link ExpansionSource}s according to breadth first
+ * Selects {@link TraversalBranch}s according to breadth first
  * pattern, the most natural ordering in a breadth first search, see
  * http://en.wikipedia.org/wiki/Breadth-first_search
  */
-class PreorderBreadthFirstSelector implements SourceSelector
+class PreorderBreadthFirstSelector implements BranchSelector
 {
-    private final Queue<ExpansionSource> queue = new LinkedList<ExpansionSource>();
-    private ExpansionSource current;
+    private final Queue<TraversalBranch> queue = new LinkedList<TraversalBranch>();
+    private TraversalBranch current;
     
-    PreorderBreadthFirstSelector( ExpansionSource startSource )
+    PreorderBreadthFirstSelector( TraversalBranch startSource )
     {
         this.current = startSource;
     }
 
-    public ExpansionSource nextPosition()
+    public TraversalBranch next()
     {
-        ExpansionSource result = null;
+        TraversalBranch result = null;
         while ( result == null )
         {
-            ExpansionSource next = current.next();
+            TraversalBranch next = current.next();
             if ( next != null )
             {
                 queue.add( next );

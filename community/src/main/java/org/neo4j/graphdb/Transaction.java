@@ -20,13 +20,14 @@
 package org.neo4j.graphdb;
 
 /**
- * A programmatically handled transaction. <em>All operations that work with the
- * node space - even read operations - must be wrapped in a transaction.</em>
- * Transactions are thread confined. Transactions can either be handled
- * programmatically, through this interface, or by a container through the Java
- * Transaction API (JTA). The Transaction interface makes handling programmatic
- * transactions easier than using JTA programmatically. Here's the idiomatic use
- * of programmatic transactions in Neo4j:
+ * A programmatically handled transaction.
+ * <em>All modifying operations that work with the
+ * node space must be wrapped in a transaction.</em> Transactions are thread
+ * confined. Transactions can either be handled programmatically, through this
+ * interface, or by a container through the Java Transaction API (JTA). The
+ * Transaction interface makes handling programmatic transactions easier than
+ * using JTA programmatically. Here's the idiomatic use of programmatic
+ * transactions in Neo4j:
  * 
  * <pre>
  * <code>
@@ -59,6 +60,9 @@ package org.neo4j.graphdb;
  * unless {@link #success()} is invoked, the transaction will fail upon
  * {@link #finish()}. A transaction can be explicitly marked for rollback by
  * invoking the {@link #failure()} method.
+ * <p>
+ * Read operations inside of a transaction will also read uncommitted data from
+ * the same transaction.
  */
 public interface Transaction
 {

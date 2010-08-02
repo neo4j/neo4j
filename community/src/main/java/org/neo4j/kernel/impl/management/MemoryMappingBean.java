@@ -10,6 +10,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.management.MemoryMapping;
 import org.neo4j.kernel.management.WindowPoolInfo;
 
+@Description( "The status of Neo4j memory mapping" )
 class MemoryMappingBean extends Neo4jMBean implements MemoryMapping
 {
     static MemoryMappingBean create( final int instanceId, final NeoStoreXaDataSource datasource )
@@ -45,6 +46,8 @@ class MemoryMappingBean extends Neo4jMBean implements MemoryMapping
         this.datasource = datasource;
     }
 
+    @Description( "Get information about each pool of memory mapped regions from store files with "
+                  + "memory mapping enabled" )
     public WindowPoolInfo[] getMemoryPools()
     {
         return getMemoryPoolsImpl( datasource );

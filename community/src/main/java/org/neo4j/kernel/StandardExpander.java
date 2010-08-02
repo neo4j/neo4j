@@ -5,18 +5,17 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.commons.Pair;
-import org.neo4j.commons.Predicate;
-import org.neo4j.commons.iterator.FilteringIterator;
-import org.neo4j.commons.iterator.IteratorWrapper;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
-import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.helpers.collection.IteratorWrapper;
 
 public abstract class StandardExpander implements Expander
 {

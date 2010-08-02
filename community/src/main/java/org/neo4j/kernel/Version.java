@@ -18,6 +18,10 @@ enum Version
     @Override
     public String toString()
     {
+        if ( title == null )
+        {
+            return "Neo4j Kernel, unpackaged version " + getVersion();
+        }
         return title + " " + getVersion();
     }
 

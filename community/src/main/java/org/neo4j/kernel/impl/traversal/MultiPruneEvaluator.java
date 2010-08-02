@@ -1,18 +1,18 @@
 package org.neo4j.kernel.impl.traversal;
 
-import org.neo4j.graphdb.traversal.Position;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
 
 class MultiPruneEvaluator implements PruneEvaluator
 {
     private final PruneEvaluator[] prunings;
-    
+
     MultiPruneEvaluator( PruneEvaluator... prunings )
     {
         this.prunings = prunings;
     }
 
-    public boolean pruneAfter( Position position )
+    public boolean pruneAfter( Path position )
     {
         for ( PruneEvaluator pruner : this.prunings )
         {
@@ -23,7 +23,7 @@ class MultiPruneEvaluator implements PruneEvaluator
         }
         return false;
     }
-    
+
     public MultiPruneEvaluator add( PruneEvaluator pruner )
     {
         PruneEvaluator[] newPrunings = new PruneEvaluator[this.prunings.length+1];

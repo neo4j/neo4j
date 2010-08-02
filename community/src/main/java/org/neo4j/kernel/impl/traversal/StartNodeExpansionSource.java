@@ -2,7 +2,7 @@ package org.neo4j.kernel.impl.traversal;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipExpander;
-import org.neo4j.graphdb.traversal.ExpansionSource;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.kernel.impl.traversal.TraverserImpl.TraverserIterator;
 
 class StartNodeExpansionSource extends ExpansionSourceImpl
@@ -14,7 +14,7 @@ class StartNodeExpansionSource extends ExpansionSourceImpl
     }
 
     @Override
-    public ExpansionSource next()
+    public TraversalBranch next()
     {
         if ( !hasExpandedRelationships() )
         {
