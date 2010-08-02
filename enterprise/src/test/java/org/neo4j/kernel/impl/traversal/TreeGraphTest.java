@@ -16,9 +16,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 public class TreeGraphTest extends AbstractTestBase
 {
@@ -74,7 +73,7 @@ public class TreeGraphTest extends AbstractTestBase
     {
         Traverser traverser = new TraversalDescriptionImpl().traverse( referenceNode() );
         int count = 0;
-        for ( Path path : traverser.paths() )
+        for ( Path path : traverser )
         {
             assertNotNull( "returned paths should not be null. path #"
                            + count, path );
@@ -103,28 +102,28 @@ public class TreeGraphTest extends AbstractTestBase
         Traverser traverser = new TraversalDescriptionImpl().depthFirst().traverse(
                 referenceNode() );
         int i = 0;
-        for ( Position pos : traverser )
+        for ( Path pos : traverser )
         {
-            assertEquals( expectedDepth( i++ ), pos.depth() );
+            assertEquals( expectedDepth( i++ ), pos.length() );
         }
         assertEquals( 13, i );
     }
-    
+
     @Test
     public void testPostorderDepthFirstReturnsDeeperNodesFirst()
     {
-        Traverser traverser = new TraversalDescriptionImpl().sourceSelector(
-                TraversalFactory.postorderDepthFirstSelector() ).traverse(
+        Traverser traverser = new TraversalDescriptionImpl().order(
+                Traversal.postorderDepthFirst() ).traverse(
                         referenceNode() );
         int i = 0;
         List<String> encounteredNodes = new ArrayList<String>();
-        for ( Position pos : traverser )
+        for ( Path pos : traverser )
         {
-            encounteredNodes.add( (String) pos.node().getProperty( "name" ) );
-            assertEquals( expectedDepth( (12-i++) ), pos.depth() );
+            encounteredNodes.add( (String) pos.endNode().getProperty( "name" ) );
+            assertEquals( expectedDepth( ( 12 - i++ ) ), pos.length() );
         }
         assertEquals( 13, i );
-        
+
         assertTrue( encounteredNodes.indexOf( "5" ) < encounteredNodes.indexOf( "2" ) );
         assertTrue( encounteredNodes.indexOf( "6" ) < encounteredNodes.indexOf( "2" ) );
         assertTrue( encounteredNodes.indexOf( "7" ) < encounteredNodes.indexOf( "2" ) );
@@ -138,12 +137,12 @@ public class TreeGraphTest extends AbstractTestBase
         assertTrue( encounteredNodes.indexOf( "3" ) < encounteredNodes.indexOf( "1" ) );
         assertTrue( encounteredNodes.indexOf( "4" ) < encounteredNodes.indexOf( "1" ) );
     }
-    
+
     @Test
     public void testPostorderBreadthFirstReturnsDeeperNodesFirst()
     {
-        Traverser traverser = new TraversalDescriptionImpl().sourceSelector(
-                TraversalFactory.postorderBreadthFirstSelector() ).traverse(
+        Traverser traverser = new TraversalDescriptionImpl().order(
+                Traversal.postorderBreadthFirst() ).traverse(
                         referenceNode() );
         Stack<Set<String>> levels = new Stack<Set<String>>();
         levels.push( new HashSet<String>( Arrays.asList( "1" ) ) );

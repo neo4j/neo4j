@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -21,9 +21,6 @@ package org.neo4j.graphdb;
 
 import java.util.Collection;
 import java.util.Iterator;
-
-import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.TraversalFactory;
 
 /**
  * A traversal in the node space. A Traverser is an {@link Iterable} that
@@ -33,7 +30,7 @@ import org.neo4j.kernel.TraversalFactory;
  * traverser is positioned at the start node, but it doesn't actually start
  * traversing until its {@link #iterator() iterator().next()} method is invoked
  * and will then traverse lazily one step each time {@code next} is called.
- * 
+ * <p>
  * When a Traverser is created it is parameterized with two evaluators and the
  * relationship types to traverse, with the direction to traverse each type in.
  * The evaluators are used for determining for each node in the set of candidate
@@ -45,7 +42,7 @@ import org.neo4j.kernel.TraversalFactory;
  * some internal relationships between nodes in the traversal are not traversed
  * (and hence not visible {@link TraversalPosition#lastRelationshipTraversed()
  * in the evaluators}).
- * 
+ * <p>
  * Typically a Traverser is used in a for-each loop as follows:
  * 
  * <pre>
@@ -59,24 +56,25 @@ import org.neo4j.kernel.TraversalFactory;
  * }
  * </code>
  * </pre>
- * 
+ *
  * Relationships are equally well traversed regardless of their direction,
  * performance-wise.
- * 
+ * <p>
  * For more usage examples please refer to the <a
  * href="http://wiki.neo4j.org/content/Traversal">wiki documentation</a>.
- * 
+ *
  * @see Node#traverse
- * 
+ */
+/*
  * @deprecated because of an unnatural and too tight coupling with
  * {@link Node}. Also because of the introduction of a new traversal framework
  * and the usage of it. The new way of doing traversals is by creating a
  * new {@link TraversalDescription} from
- * {@link TraversalFactory#createTraversalDescription()}, add rules and
+ * {@link Traversal#description()}, add rules and
  * behaviours to it and then calling
  * {@link TraversalDescription#traverse(Node)}.
  */
-@Deprecated
+// @Deprecated
 public interface Traverser extends Iterable<Node>
 {
     /**
@@ -116,7 +114,7 @@ public interface Traverser extends Iterable<Node>
      * the last traversed relationship was (if any) and at which depth the
      * current position is (relative to the starting node). You can use it in
      * your traverser for-loop like this:
-     * 
+     *
      * <pre>
      * <code>
      * Traverser traverser = node.{@link Node#traverse traverse}( ... );
@@ -127,7 +125,7 @@ public interface Traverser extends Iterable<Node>
      * }
      * </code>
      * </pre>
-     * 
+     *
      * @return The current traversal position
      */
     public TraversalPosition currentPosition();
@@ -139,7 +137,7 @@ public interface Traverser extends Iterable<Node>
      * returned, this traverser will be at the end of its traversal, such that a
      * call to {@code hasNext()} for the {@link #iterator()} will return {@code
      * false}.
-     * 
+     *
      * @return A collection of all nodes for this this traversal.
      */
     public Collection<Node> getAllNodes();
@@ -149,9 +147,9 @@ public interface Traverser extends Iterable<Node>
      * Returns an {@link Iterator} representing the traversal of the graph. The
      * iteration is completely lazy in that it will only traverse one step (to
      * the next "hit") for every call to {@code hasNext()}/{@code next()}.
-     * 
+     *
      * Consecutive calls to this method will return the same instance.
-     * 
+     *
      * @return An iterator for this traverser
      */
     // TODO completely resolve issues regarding this (Iterable/Iterator ...)

@@ -27,15 +27,15 @@ import org.neo4j.graphdb.RelationshipType;
 /**
  * The batch inserter drops support for transactions and concurrency in favor 
  * of insertion speed. When done using the batch inserter {@link #shutdown()} 
- * must be invoked and complete succesfully for the Neo4j store to be in 
+ * must be invoked and complete successfully for the Neo4j store to be in 
  * consistent state.  
  * <p>
  * Only one thread at a time may work against the batch inserter, multiple 
- * threads peforming concurrent access has to be synchronized.
+ * threads performing concurrent access has to be synchronized.
  * <p>
  * Transactions are not supported so if your JVM/machine crash or you fail to 
  * invoke {@link #shutdown()} before JVM exits the Neo4j store can be considered 
- * beeing in non consistent state and the insertion has to be re-done from 
+ * being in non consistent state and the insertion has to be re-done from 
  * scratch.
  */
 public interface BatchInserter
@@ -44,7 +44,7 @@ public interface BatchInserter
      * Creates a node assigning next available id to id and also adds any 
      * properties supplied.
      * 
-     * @param properties a map containting properties or <code>null</code> if no 
+     * @param properties a map containing properties or <code>null</code> if no 
      * properties should be added.
      * 
      * @return The id of the created node.
@@ -78,7 +78,7 @@ public interface BatchInserter
      * 
      * @param nodeId the id of the node.
      * 
-     * @return map contining this node's properties.
+     * @return map containing this node's properties.
      */
     public Map<String,Object> getNodeProperties( long nodeId );
     
@@ -87,7 +87,7 @@ public interface BatchInserter
      * supplied id. 
      * 
      * @param nodeId the id of the node.
-     * @return and iterable over the relationship ids connected to the node.
+     * @return iterable over the relationship ids connected to the node.
      */
     public Iterable<Long> getRelationshipIds( long nodeId );
     
@@ -105,7 +105,7 @@ public interface BatchInserter
      * id exist a runtime exception will be thrown.
      *  
      * @param id the id of the node to create.
-     * @param properties map containting properties or <code>null</code> if no 
+     * @param properties map containing properties or <code>null</code> if no 
      * properties should be added.
      */
     public void createNode( long id, Map<String,Object> properties );
@@ -116,7 +116,7 @@ public interface BatchInserter
      * @param node1 the start node.
      * @param node2 the end node.
      * @param type relationship type. 
-     * @param properties map containting properties or <code>null</code> if no 
+     * @param properties map containing properties or <code>null</code> if no 
      * properties should be added.
      * @return the id of the created relationship.
      */
@@ -152,7 +152,7 @@ public interface BatchInserter
      * Returns a map containing all the properties of the relationships.
      * 
      * @param relId the id of the relationship.
-     * @return map contining the relationship's properties.
+     * @return map containing the relationship's properties.
      */
     public Map<String,Object> getRelationshipProperties( long relId );
 

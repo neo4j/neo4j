@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Test;
+import org.neo4j.helpers.collection.FilteringIterator;
 
 public class TestCommonIterators
 {

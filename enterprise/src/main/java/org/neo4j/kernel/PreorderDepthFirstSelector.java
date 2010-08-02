@@ -1,32 +1,32 @@
 package org.neo4j.kernel;
 
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.graphdb.traversal.SourceSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.BranchSelector;
 
 /**
- * Selects {@link ExpansionSource}s according to preorder depth first pattern,
+ * Selects {@link TraversalBranch}s according to preorder depth first pattern,
  * the most natural ordering in a depth first search, see
  * http://en.wikipedia.org/wiki/Depth-first_search
  */
-class PreorderDepthFirstSelector implements SourceSelector
+class PreorderDepthFirstSelector implements BranchSelector
 {
-    private ExpansionSource current;
+    private TraversalBranch current;
     
-    PreorderDepthFirstSelector( ExpansionSource startSource )
+    PreorderDepthFirstSelector( TraversalBranch startSource )
     {
         this.current = startSource;
     }
     
-    public ExpansionSource nextPosition()
+    public TraversalBranch next()
     {
-        ExpansionSource result = null;
+        TraversalBranch result = null;
         while ( result == null )
         {
             if ( current == null )
             {
                 return null;
             }
-            ExpansionSource next = current.next();
+            TraversalBranch next = current.next();
             if ( next == null )
             {
                 current = current.parent();

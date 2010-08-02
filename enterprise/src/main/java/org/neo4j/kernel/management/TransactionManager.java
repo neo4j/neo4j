@@ -12,5 +12,5 @@ public interface TransactionManager
 
     long getNumberOfCommittedTransactions();
 
-    long getNumberOfRollbackedTransactions();
+    long getNumberOfRolledBackTransactions();
 }

@@ -43,9 +43,9 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  * nodes given an id}, get the {@link #getReferenceNode() reference node} and
  * ultimately {@link #shutdown() shutdown Neo4j}.
  * <p>
- * Please note that all operations that read or write to the graph must be
- * invoked in a {@link Transaction transactional context}. Failure to do so will
- * result in a {@link NotInTransactionException} being thrown.
+ * Please note that all operations that write to the graph must be invoked in a
+ * {@link Transaction transactional context}. Failure to do so will result in a
+ * {@link NotInTransactionException} being thrown.
  */
 public interface GraphDatabaseService
 {

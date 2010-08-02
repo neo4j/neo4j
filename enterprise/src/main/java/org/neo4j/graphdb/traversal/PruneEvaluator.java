@@ -1,5 +1,7 @@
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.graphdb.Path;
+
 /**
  * An evaluator which can "cut off" relationships so that they will not be
  * traversed in the ongoing traversal. For any given position a prune evaluator
@@ -14,20 +16,20 @@ public interface PruneEvaluator
      */
     static final PruneEvaluator NONE = new PruneEvaluator()
     {
-        public boolean pruneAfter( Position position )
+        public boolean pruneAfter( Path position )
         {
             return false;
         }
     };
-    
+
     /**
      * Decides whether or not to prune after {@code position}. If {@code true}
-     * is returned the position won't be expanded and traversals won't be
-     * made beyond that position.
-     * 
-     * @param position the {@link Position} to decide whether or not to prune
-     * after.
-     * @return whether or not to prune after {@code position}. 
+     * is returned the position won't be expanded and traversals won't be made
+     * beyond that position.
+     *
+     * @param position the {@link Path position} to decide whether or not to
+     *            prune after.
+     * @return whether or not to prune after {@code position}.
      */
-    boolean pruneAfter( Position position );
+    boolean pruneAfter( Path position );
 }

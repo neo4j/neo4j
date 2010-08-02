@@ -5,66 +5,128 @@ import java.util.LinkedList;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.traversal.ExpansionSource;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.kernel.Traversal;
 
 public class TraversalPath implements Path
 {
-    private final LinkedList<Node> nodes = new LinkedList<Node>();
-    private final LinkedList<Relationship> relationships = new LinkedList<Relationship>();
+    private final TraversalBranch branch;
+    private LinkedList<Node> nodes;
+    private LinkedList<Relationship> relationships;
 
-    TraversalPath( ExpansionSource source )
+    TraversalPath( TraversalBranch branch )
     {
-        while ( source != null )
+        this.branch = branch;
+    }
+    
+    private void ensureEntitiesAreGathered()
+    {
+        if ( nodes == null )
         {
-            nodes.addFirst( source.node() );
-            Relationship relationship = source.relationship();
-            if (relationship != null)
+            // We don't synchronize on nodes/relationship... and that's fine
+            // because even if there would be a situation where two (or more)
+            // threads comes here at the same time everything would still
+            // work as expected (in here as well as outside).
+            LinkedList<Node> nodesList = new LinkedList<Node>();
+            LinkedList<Relationship> relationshipsList = new LinkedList<Relationship>();
+            TraversalBranch stepper = branch;
+            while ( stepper != null )
             {
-                relationships.addFirst( relationship );
+                nodesList.addFirst( stepper.node() );
+                Relationship relationship = stepper.relationship();
+                if (relationship != null)
+                {
+                    relationshipsList.addFirst( relationship );
+                }
+                stepper = stepper.parent();
             }
-            source = source.parent();
+            nodes = nodesList;
+            relationships = relationshipsList;
         }
     }
 
-    public Node getStartNode()
+    public Node startNode()
     {
+        ensureEntitiesAreGathered();
         return nodes.getFirst();
     }
 
-    public Node getEndNode()
+    public Node endNode()
     {
-        return nodes.getLast();
+        return branch.node();
+    }
+
+    public Relationship lastRelationship()
+    {
+        return branch.relationship();
     }
 
     public Iterable<Node> nodes()
     {
+        ensureEntitiesAreGathered();
         return nodes;
     }
 
     public Iterable<Relationship> relationships()
     {
+        ensureEntitiesAreGathered();
         return relationships;
+    }
+
+    public Iterator<PropertyContainer> iterator()
+    {
+        ensureEntitiesAreGathered();
+        return new Iterator<PropertyContainer>()
+        {
+            Iterator<? extends PropertyContainer> current = nodes().iterator();
+            Iterator<? extends PropertyContainer> next = relationships().iterator();
+
+            public boolean hasNext()
+            {
+                return current.hasNext();
+            }
+
+            public PropertyContainer next()
+            {
+                try
+                {
+                    return current.next();
+                }
+                finally
+                {
+                    Iterator<? extends PropertyContainer> temp = current;
+                    current = next;
+                    next = temp;
+                }
+            }
+
+            public void remove()
+            {
+                next.remove();
+            }
+        };
     }
 
     public int length()
     {
-        return relationships.size();
+        return branch.depth();
     }
 
     @Override
     public String toString()
     {
-        return TraversalFactory.defaultPathToString( this );
+        return Traversal.defaultPathToString( this );
     }
 
     @Override
     public int hashCode()
     {
+        ensureEntitiesAreGathered();
         if ( relationships.isEmpty() )
         {
-            return getStartNode().hashCode();
+            return startNode().hashCode();
         }
         else
         {
@@ -75,6 +137,7 @@ public class TraversalPath implements Path
     @Override
     public boolean equals( Object obj )
     {
+        ensureEntitiesAreGathered();
         if ( this == obj )
         {
             return true;
@@ -82,13 +145,13 @@ public class TraversalPath implements Path
         else if ( obj instanceof TraversalPath )
         {
             TraversalPath other = (TraversalPath) obj;
-            return getStartNode().equals( other.getStartNode() )
+            return startNode().equals( other.startNode() )
                    && relationships.equals( other.relationships );
         }
         else if ( obj instanceof Path )
         {
             Path other = (Path) obj;
-            if ( getStartNode().equals( other.getStartNode() ) )
+            if ( startNode().equals( other.startNode() ) )
             {
                 Iterator<Relationship> these = relationships().iterator();
                 Iterator<Relationship> those = other.relationships().iterator();

@@ -44,7 +44,9 @@ public class Neo4jMBean extends StandardMBean
 
     public static <T> T getBean( int instanceId, Class<T> beanType )
     {
-        if ( beanType.isInterface() && beanType.getPackage().equals( "org.neo4j.kernel.management" ) )
+        if ( beanType.isInterface()
+             && ( beanType.getPackage().getName().equals( "org.neo4j.kernel.management" )
+                     || beanType == DynamicMBean.class ) )
         {
             if ( PROXY_MAKER == null )
             {
@@ -53,7 +55,7 @@ public class Neo4jMBean extends StandardMBean
             }
             else
             {
-                ObjectName name = getObjectName( instanceId, beanType, null );
+                ObjectName name = getObjectName( instanceId, beanType, Configuration.class );
                 return PROXY_MAKER.makeProxy( name, beanType );
             }
         }
@@ -98,7 +100,8 @@ public class Neo4jMBean extends StandardMBean
             {
                 public KernelBean call() throws Exception
                 {
-                    return new KernelBean( instance.id, kernelVersion, instance.datasource );
+                    return new KernelBean( instance.id, kernelVersion, instance.datasource,
+                            getObjectName( instance.id, null, null ) );
                 }
             } ) ) failedToRegister( "KernelBean" );
         }
@@ -418,7 +421,11 @@ public class Neo4jMBean extends StandardMBean
     private static ObjectName getObjectName( int instanceId, Class<?> iface, Class<?> clazz )
     {
         final String name;
-        if ( iface == DynamicMBean.class )
+        if ( iface == null )
+        {
+            name = "*";
+        }
+        else if ( iface == DynamicMBean.class )
         {
             name = clazz.getSimpleName();
         }

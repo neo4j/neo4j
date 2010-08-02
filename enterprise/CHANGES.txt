@@ -1,3 +1,26 @@
+1.1 (2010-07-29)
+----------------
+
+-New features
+o Auto configuration by looking at available RAM and heap.
+o New event framework, see http://wiki.neo4j.org/content/Event_framework
+o JMX enabled kernel.
+o New traversal framework, see http://wiki.neo4j.org/content/Traversal_Framework
+o Block size for strings and arrays are now configurable when creating a new db.
+o Read only operations can now execute without a transaction.
+
+-API
+o Added a method to get the GraphDatabaseService on Node and Relationship.
+o Moved the commons component utilities into kernel component, 
+  see helpers package.
+
+-Bug fixes
+o Fixed issues with logical log and active log that could cause recovery 
+  to throw an exception.
+o Fixed buffer overflow for large string/array properties.
+o Fixed bug that could cause leak of NodeImpl.
+
+
 1.0 (2010-02-16)
 ----------------
 

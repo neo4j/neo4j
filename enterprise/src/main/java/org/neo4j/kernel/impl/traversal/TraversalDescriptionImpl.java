@@ -1,47 +1,47 @@
 package org.neo4j.kernel.impl.traversal;
 
-import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.traversal.Position;
+import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
-import org.neo4j.graphdb.traversal.SourceSelectorFactory;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.StandardExpander;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 public final class TraversalDescriptionImpl implements TraversalDescription
 {
     public TraversalDescriptionImpl()
     {
         this( StandardExpander.DEFAULT, Uniqueness.NODE_GLOBAL, null,
-                PruneEvaluator.NONE, TraversalFactory.returnAll(),
-                TraversalFactory.preorderDepthFirstSelector() );
+                PruneEvaluator.NONE, Traversal.returnAll(),
+                Traversal.preorderDepthFirst() );
     }
 
     final Expander expander;
     final Uniqueness uniqueness;
     final Object uniquenessParameter;
     final PruneEvaluator pruning;
-    final Predicate<Position> filter;
-    final SourceSelectorFactory sourceSelector;
+    final Predicate<Path> filter;
+    final BranchOrderingPolicy branchSelector;
 
     private TraversalDescriptionImpl( Expander expander,
             Uniqueness uniqueness, Object uniquenessParameter,
-            PruneEvaluator pruning, Predicate<Position> filter,
-            SourceSelectorFactory sourceSelector )
+            PruneEvaluator pruning, Predicate<Path> filter,
+            BranchOrderingPolicy branchSelector )
     {
         this.expander = expander;
         this.uniqueness = uniqueness;
         this.uniquenessParameter = uniquenessParameter;
         this.pruning = pruning;
         this.filter = filter;
-        this.sourceSelector = sourceSelector;
+        this.branchSelector = branchSelector;
     }
 
     /* (non-Javadoc)
@@ -58,7 +58,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     public TraversalDescription uniqueness( Uniqueness uniqueness )
     {
         return new TraversalDescriptionImpl( expander, uniqueness, null, pruning,
-                filter, sourceSelector );
+                filter, branchSelector );
     }
 
     /* (non-Javadoc)
@@ -89,7 +89,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         }
 
         return new TraversalDescriptionImpl( expander, uniqueness, parameter,
-                pruning, filter, sourceSelector );
+                pruning, filter, branchSelector );
     }
 
     private static void acceptIntegerNumber( Uniqueness uniqueness,
@@ -118,7 +118,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         nullCheck( pruning, PruneEvaluator.class, "NO_PRUNING" );
         return new TraversalDescriptionImpl( expander, uniqueness,
                 uniquenessParameter, addPruneEvaluator( pruning ),
-                filter, sourceSelector );
+                filter, branchSelector );
     }
 
     private PruneEvaluator addPruneEvaluator( PruneEvaluator pruning )
@@ -141,7 +141,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         }
     }
 
-    public TraversalDescription filter( Predicate<Position> filter )
+    public TraversalDescription filter( Predicate<Path> filter )
     {
         if ( this.filter == filter )
         {
@@ -151,10 +151,10 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         if ( filter == null )
         {
             throw new IllegalArgumentException( "Return filter may not be null, " +
-            		"use " + TraversalFactory.class.getSimpleName() + ".returnAll() instead." );
+            		"use " + Traversal.class.getSimpleName() + ".returnAll() instead." );
         }
         return new TraversalDescriptionImpl( expander, uniqueness,
-                uniquenessParameter, pruning, filter, sourceSelector );
+                uniquenessParameter, pruning, filter, branchSelector );
     }
 
     private static <T> void nullCheck( T parameter, Class<T> parameterType,
@@ -173,9 +173,9 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     /* (non-Javadoc)
      * @see org.neo4j.graphdb.traversal.TraversalDescription#order(org.neo4j.graphdb.traversal.Order)
      */
-    public TraversalDescription sourceSelector( SourceSelectorFactory selector )
+    public TraversalDescription order( BranchOrderingPolicy selector )
     {
-        if ( this.sourceSelector == selector )
+        if ( this.branchSelector == selector )
         {
             return this;
         }
@@ -185,12 +185,12 @@ public final class TraversalDescriptionImpl implements TraversalDescription
 
     public TraversalDescription depthFirst()
     {
-        return sourceSelector( TraversalFactory.preorderDepthFirstSelector() );
+        return order( Traversal.preorderDepthFirst() );
     }
 
     public TraversalDescription breadthFirst()
     {
-        return sourceSelector( TraversalFactory.preorderBreadthFirstSelector() );
+        return order( Traversal.preorderBreadthFirst() );
     }
 
     /* (non-Javadoc)
@@ -220,7 +220,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
             return this;
         }
         return new TraversalDescriptionImpl(
-                TraversalFactory.expander( expander ), uniqueness,
-                uniquenessParameter, pruning, filter, sourceSelector );
+                Traversal.expander( expander ), uniqueness,
+                uniquenessParameter, pruning, filter, branchSelector );
     }
 }

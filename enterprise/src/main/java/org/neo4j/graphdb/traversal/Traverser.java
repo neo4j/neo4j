@@ -7,44 +7,36 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
 /**
- * The interface which represents the traverser which is used to step through
- * the results of a traversal. Each step can be represented in different ways.
- * The default is as {@link Position} objects which all over representations
- * can be derived from, i.e {@link Node}, {@link Relationship}, {@link Path}.
- * Or each step can be represented in one of those representations directly.
+ * This interface represents the traverser which is used to step through the
+ * results of a traversal. Each step can be represented in different ways. The
+ * default is as {@link Path} objects which all other representations can be
+ * derived from, i.e {@link Node} or {@link Relationship}. Each step
+ * can also be represented in one of those representations directly.
  */
-public interface Traverser extends Iterable<Position>
+public interface Traverser extends Iterable<Path>
 {
     /**
      * Represents the traversal in the form of {@link Node}s. This is a
-     * convenient way of iterating over {@link Position}s and getting the
-     * {@link Position#node()} for each position.
+     * convenient way to iterate over {@link Path}s and get the
+     * {@link Path#endNode()} for each position.
      * 
      * @return the traversal in the form of {@link Node} objects.
      */
     Iterable<Node> nodes();
-    
+
     /**
      * Represents the traversal in the form of {@link Relationship}s. This is a
-     * convenient way of iterating over {@link Position}s and getting the
-     * {@link Position#lastRelationship()} for each position.
+     * convenient way to iterate over {@link Path}s and get the
+     * {@link Path#lastRelationship()} for each position.
      * 
      * @return the traversal in the form of {@link Relationship} objects.
      */
     Iterable<Relationship> relationships();
-    
+
     /**
-     * Represents the traversal in the form of {@link Path}s. This is a
-     * convenient way of iterating over {@link Position}s and getting the
-     * {@link Position#path()} for each position.
-     * 
+     * Represents the traversal in the form of {@link Path}s.
+     *
      * @return the traversal in the form of {@link Path} objects.
      */
-    Iterable<Path> paths();
-    
-    /**
-     * Represents the traversal in the default form, i.e {@link Position}s.
-     * @return the iterator of this traversal in the form of {@link Position}s.
-     */
-    Iterator<Position> iterator();
+    Iterator<Path> iterator();
 }
