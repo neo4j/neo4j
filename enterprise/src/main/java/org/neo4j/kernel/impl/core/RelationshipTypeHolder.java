@@ -28,13 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-class RelationshipTypeHolder
+public class RelationshipTypeHolder
 {
     private ArrayMap<String,Integer> relTypes = 
         new ArrayMap<String,Integer>( 5, true, true );
@@ -44,13 +43,16 @@ class RelationshipTypeHolder
     private final TransactionManager transactionManager;
     private final PersistenceManager persistenceManager;
     private final EntityIdGenerator idGenerator;
+    private final RelationshipTypeCreator relTypeCreator;
 
     RelationshipTypeHolder( TransactionManager transactionManager,
-        PersistenceManager persistenceManager, EntityIdGenerator idGenerator )
+        PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
+        RelationshipTypeCreator relTypeCreator )
     {
         this.transactionManager = transactionManager;
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
+        this.relTypeCreator = relTypeCreator;
     }
 
     void addRawRelationshipTypes( RelationshipTypeData[] types )
@@ -127,58 +129,6 @@ class RelationshipTypeHolder
         }
     }
 
-    // TODO: this should be fixed to run in same thread
-    private class RelTypeCreater extends Thread
-    {
-        private boolean success = false;
-        private String name;
-        private int id = -1;
-
-        RelTypeCreater( String name )
-        {
-            super();
-            this.name = name;
-        }
-
-        synchronized boolean succeded()
-        {
-            return success;
-        }
-
-        synchronized int getRelTypeId()
-        {
-            return id;
-        }
-
-        public synchronized void run()
-        {
-            try
-            {
-                transactionManager.begin();
-                id = idGenerator.nextId( RelationshipType.class );
-                persistenceManager.createRelationshipType( id, name );
-                transactionManager.commit();
-                success = true;
-            }
-            catch ( Throwable t )
-            {
-                t.printStackTrace();
-                try
-                {
-                    transactionManager.rollback();
-                }
-                catch ( Throwable tt )
-                {
-                    tt.printStackTrace();
-                }
-            }
-            finally
-            {
-                this.notify();
-            }
-        }
-    }
-
     private synchronized int createRelationshipType( String name )
     {
         Integer id = relTypes.get( name );
@@ -186,29 +136,9 @@ class RelationshipTypeHolder
         {
             return id;
         }
-        RelTypeCreater createrThread = new RelTypeCreater( name );
-        synchronized ( createrThread )
-        {
-            createrThread.start();
-            while ( createrThread.isAlive() )
-            {
-                try
-                {
-                    createrThread.wait( 50 );
-                }
-                catch ( InterruptedException e )
-                { 
-                    Thread.interrupted();
-                }
-            }
-        }
-        if ( createrThread.succeded() )
-        {
-            addRelType( name, createrThread.getRelTypeId() );
-            return createrThread.getRelTypeId();
-        }
-        throw new TransactionFailureException( 
-            "Unable to create relationship type " + name );
+        id = relTypeCreator.create( transactionManager, idGenerator, persistenceManager, name );
+        addRelType( name, id );
+        return id;
     }
 
     void addRelType( String name, Integer id )

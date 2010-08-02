@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.management.Description;
 import org.neo4j.kernel.impl.persistence.IdGenerator;
@@ -94,6 +95,7 @@ public class Config
     private final Map<Object, Object> params;
     private final Map inputParams;
     private final TxEventSyncHookFactory syncHookFactory;
+    private final RelationshipTypeCreator relTypeCreator;
 
     private final KernelPanicEventGenerator kpe;
 
@@ -104,11 +106,12 @@ public class Config
             Map<String, String> inputParams, KernelPanicEventGenerator kpe,
             TxModule txModule, LockManager lockManager,
             LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
-            TxEventSyncHookFactory txSyncHookFactory )
+            TxEventSyncHookFactory txSyncHookFactory, RelationshipTypeCreator relTypeCreator )
     {
         this.kpe = kpe;
         this.storeDir = storeDir;
         this.inputParams = inputParams;
+        this.relTypeCreator = relTypeCreator;
         this.params = getDefaultParams();
         this.txModule = txModule;
         this.lockManager = lockManager;
@@ -214,6 +217,11 @@ public class Config
     TxEventSyncHookFactory getSyncHookFactory()
     {
         return syncHookFactory;
+    }
+    
+    RelationshipTypeCreator getRelationshipTypeCreator()
+    {
+        return relTypeCreator;
     }
 
     public static void dumpConfiguration( Map<?, ?> config )

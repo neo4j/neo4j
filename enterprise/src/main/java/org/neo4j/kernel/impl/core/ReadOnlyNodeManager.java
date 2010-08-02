@@ -41,8 +41,7 @@ class ReadOnlyNodeManager extends NodeManager
             boolean useNewCaches )
     {
         super( graphDbService, cacheManager, lockManager, lockReleaser,
-                transactionManager, persistenceManager, idGenerator,
-                useNewCaches );
+                transactionManager, persistenceManager, idGenerator, null, useNewCaches );
     }
 
     @Override
