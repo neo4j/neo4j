@@ -152,7 +152,8 @@ class GraphDbInstance
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
         config.getGraphDbModule().start( config.getLockReleaser(),
-                config.getPersistenceModule().getPersistenceManager(), params );
+                config.getPersistenceModule().getPersistenceManager(),
+                config.getRelationshipTypeCreator(), params );
         if ( dump )
         {
             Config.dumpConfiguration( params );

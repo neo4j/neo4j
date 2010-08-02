@@ -82,7 +82,7 @@ public class NodeManager
             AdaptiveCacheManager cacheManager, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-            boolean useNewCaches )
+            RelationshipTypeCreator relTypeCreator, boolean useNewCaches )
     {
         this.graphDbService = graphDb;
         this.cacheManager = cacheManager;
@@ -96,7 +96,7 @@ public class NodeManager
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
-            persistenceManager, idGenerator );
+            persistenceManager, idGenerator, relTypeCreator );
         if ( useNewCaches )
         {
             nodeCache = new SoftLruCache<Integer,NodeImpl>(

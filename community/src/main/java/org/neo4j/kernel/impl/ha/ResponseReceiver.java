@@ -1,6 +1,6 @@
 package org.neo4j.kernel.impl.ha;
 
-public abstract class ResponseReceiver
+public class ResponseReceiver
 {
     public final <T> T receive( Response<T> response )
     {
