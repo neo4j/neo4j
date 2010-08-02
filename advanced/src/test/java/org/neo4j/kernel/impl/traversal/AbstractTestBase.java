@@ -17,7 +17,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
@@ -100,7 +99,7 @@ public abstract class AbstractTestBase
             tx.finish();
         }
     }
-    
+
     protected Node getNodeWithName( String name )
     {
         for ( Node node : graphdb.getAllNodes() )
@@ -117,9 +116,9 @@ public abstract class AbstractTestBase
     protected void assertLevels( Traverser traverser, Stack<Set<String>> levels )
     {
         Set<String> current = levels.pop();
-        for ( Position position : traverser )
+        for ( Path position : traverser )
         {
-            String nodeName = (String) position.node().getProperty( "name" );
+            String nodeName = (String) position.endNode().getProperty( "name" );
             if ( current.isEmpty() )
             {
                 current = levels.pop();
@@ -128,7 +127,7 @@ public abstract class AbstractTestBase
                         + ") at level " + ( 3 - levels.size() ),
                     current.remove( nodeName ) );
         }
-    
+
         assertTrue( "Should have no more levels", levels.isEmpty() );
         assertTrue( "Should be empty", current.isEmpty() );
     }
@@ -284,7 +283,7 @@ public abstract class AbstractTestBase
 
     protected static void expectPaths( Traverser traverser, Set<String> expected )
     {
-        expect( traverser.paths(), new NodePathRepresentation(
+        expect( traverser, new NodePathRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), expected );
     }
 

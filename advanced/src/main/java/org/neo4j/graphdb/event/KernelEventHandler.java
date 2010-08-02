@@ -3,18 +3,18 @@ package org.neo4j.graphdb.event;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 /**
- * The interface of an event handler for Neo4j Kernel life cycle events.
- *
+ * Event handler interface for Neo4j Kernel life cycle events.
+ * 
  * @author Tobias Ivarsson
  */
 public interface KernelEventHandler
 {
     /**
-     * This is invoked during the shutdown process of a Neo4j Graph Database. It
-     * is invoked while the {@link GraphDatabaseService} is still in an
-     * operating state, after the processing of this event has terminated the
-     * Neo4j Graph Database will terminate. This event can be used to shut down
-     * other services that depend on the {@link GraphDatabaseService}.
+     * This method is invoked during the shutdown process of a Neo4j Graph
+     * Database. It is invoked while the {@link GraphDatabaseService} is still
+     * in an operating state, after the processing of this event has terminated
+     * the Neo4j Graph Database will terminate. This event can be used to shut
+     * down other services that depend on the {@link GraphDatabaseService}.
      */
     void beforeShutdown();
 
@@ -54,11 +54,11 @@ public interface KernelEventHandler
     /**
      * Represents the order of execution between two event handlers, if one
      * handler should be executed {@link ExecutionOrder#BEFORE},
-     * {@link ExecutionOrder#AFTER} another handler, or it
+     * {@link ExecutionOrder#AFTER} another handler, or if it
      * {@link ExecutionOrder#DOESNT_MATTER}.
-     *
+     * 
      * @author mattias
-     *
+     * 
      */
     enum ExecutionOrder
     {

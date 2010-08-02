@@ -1,9 +1,7 @@
 package org.neo4j.kernel.impl.traversal;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -11,12 +9,12 @@ import java.util.Set;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.commons.Predicate;
-import org.neo4j.graphdb.traversal.Position;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.Traversal;
 
 public class DepthPitfallGraphTest extends AbstractTestBase
 {
@@ -81,22 +79,16 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     {
         Traverser traversal = new TraversalDescriptionImpl().traverse( referenceNode() );
         int count = 0;
-        for ( Position position : traversal )
+        for ( Path position : traversal )
         {
             count++;
             assertNotNull( position );
-            assertNotNull( position.node() );
-            if ( !position.atStartNode() )
+            assertNotNull( position.endNode() );
+            if ( position.length() > 0 )
             {
                 assertNotNull( position.lastRelationship() );
-                assertTrue( position.depth() > 0 );
             }
-            else
-            {
-                assertEquals( 0, position.depth() );
-            }
-            assertNotNull( position.path() );
-            assertEquals( position.depth(), position.path().length() );
+            assertNotNull( position.length() );
         }
         assertFalse( "empty traversal", count == 0 );
     }
@@ -184,7 +176,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
         testRelationshipsAreReturnedOnceWhenSufficientRecentlyUnique(
                 new TraversalDescriptionImpl().breadthFirst() );
     }
-    
+
     private void testRelationshipsAreReturnedOnceWhenSufficientRecentlyUnique(
             TraversalDescription description ) throws Exception
     {
@@ -206,7 +198,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     {
         testAllUniqueNodePathsAreReturned( new TraversalDescriptionImpl().breadthFirst() );
     }
-    
+
     private void testAllUniqueNodePathsAreReturned( TraversalDescription description )
             throws Exception
     {
@@ -215,7 +207,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
 
         expectPaths( traverser, NODE_UNIQUE_PATHS );
     }
-    
+
     @Test
     public void testAllUniqueRelationshipPathsAreReturnedDepthFirst() throws Exception
     {
@@ -227,7 +219,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     {
         testAllUniqueRelationshipPathsAreReturned( new TraversalDescriptionImpl().breadthFirst() );
     }
-    
+
     private void testAllUniqueRelationshipPathsAreReturned( TraversalDescription description )
             throws Exception
     {
@@ -240,7 +232,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
 
         expectPaths( traverser, expected );
     }
-    
+
     @Test
     public void canPruneTraversalAtSpecificDepthDepthFirst()
     {
@@ -252,16 +244,16 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     {
         canPruneTraversalAtSpecificDepth( new TraversalDescriptionImpl().breadthFirst() );
     }
-    
+
     private void canPruneTraversalAtSpecificDepth( TraversalDescription description )
     {
         Traverser traverser = description.uniqueness(
-                Uniqueness.NONE ).prune( TraversalFactory.pruneAfterDepth( 1 ) ).traverse(
+                Uniqueness.NONE ).prune( Traversal.pruneAfterDepth( 1 ) ).traverse(
                 referenceNode() );
 
         expectNodes( traverser, "1", "2", "3", "4", "5" );
     }
-    
+
     @Test
     public void canPreFilterNodesDepthFirst()
     {
@@ -273,16 +265,16 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     {
         canPreFilterNodes( new TraversalDescriptionImpl().breadthFirst() );
     }
-    
+
     private void canPreFilterNodes( TraversalDescription description )
     {
         Traverser traverser = description.uniqueness(
-                Uniqueness.NONE ).prune( TraversalFactory.pruneAfterDepth( 2 ) ).filter(
-                new Predicate<Position>()
+                Uniqueness.NONE ).prune( Traversal.pruneAfterDepth( 2 ) ).filter(
+ new Predicate<Path>()
                 {
-                    public boolean accept( Position position )
+            public boolean accept( Path position )
                     {
-                        return position.depth() == 2;
+                return position.length() == 2;
                     }
                 } ).traverse( referenceNode() );
 

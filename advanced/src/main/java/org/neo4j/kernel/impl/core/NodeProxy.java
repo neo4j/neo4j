@@ -20,12 +20,10 @@
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expansion;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
@@ -189,6 +187,7 @@ class NodeProxy implements Node
             type );
     }
 
+    /* Tentative expansion API
     public Expansion<Relationship> expandAll()
     {
         return nm.getNodeForProxy( nodeId ).expandAll();
@@ -214,6 +213,7 @@ class NodeProxy implements Node
     {
         return nm.getNodeForProxy( nodeId ).expand( expander );
     }
+    */
 
     public Traverser traverse( Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,

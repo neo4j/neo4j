@@ -1,6 +1,6 @@
 package org.neo4j.kernel.impl.traversal;
 
-import org.neo4j.graphdb.traversal.ExpansionSource;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 
 class NotUnique extends UniquenessFilter
 {
@@ -10,7 +10,7 @@ class NotUnique extends UniquenessFilter
     }
 
     @Override
-    boolean check( ExpansionSource source, boolean remember )
+    boolean check( TraversalBranch source, boolean remember )
     {
         return true;
     }

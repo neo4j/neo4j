@@ -4,7 +4,7 @@ import static org.junit.Assert.assertFalse;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.graphdb.traversal.Position;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
@@ -28,7 +28,7 @@ public class SmallestGraphEverTest extends AbstractTestBase
     {
         execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.NONE );
     }
-    
+
     @Test
     public void testNodeGlobalTraversalCanFinishDepthFirst() throws Exception
     {
@@ -40,7 +40,7 @@ public class SmallestGraphEverTest extends AbstractTestBase
     {
         execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.NODE_GLOBAL );
     }
-    
+
     @Test
     public void testRelationshipGlobalTraversalCanFinishDepthFirst() throws Exception
     {
@@ -52,7 +52,7 @@ public class SmallestGraphEverTest extends AbstractTestBase
     {
         execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.RELATIONSHIP_GLOBAL );
     }
-    
+
     @Test
     public void testNodePathTraversalCanFinishDepthFirst() throws Exception
     {
@@ -64,7 +64,7 @@ public class SmallestGraphEverTest extends AbstractTestBase
     {
         execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.NODE_PATH );
     }
-    
+
     @Test
     public void testRelationshipPathTraversalCanFinishDepthFirst() throws Exception
     {
@@ -76,7 +76,7 @@ public class SmallestGraphEverTest extends AbstractTestBase
     {
         execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.RELATIONSHIP_PATH );
     }
-    
+
     @Test
     public void testNodeRecentTraversalCanFinishDepthFirst() throws Exception
     {
@@ -88,7 +88,7 @@ public class SmallestGraphEverTest extends AbstractTestBase
     {
         execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.NODE_RECENT );
     }
-    
+
     @Test
     public void testRelationshipRecentTraversalCanFinishDepthFirst() throws Exception
     {
@@ -100,13 +100,13 @@ public class SmallestGraphEverTest extends AbstractTestBase
     {
         execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.RELATIONSHIP_RECENT );
     }
-    
+
     private void execute( TraversalDescription traversal, Uniqueness uniqueness )
     {
         Traverser traverser = traversal.uniqueness( uniqueness ).traverse(
                 referenceNode() );
         int count = 0;
-        for ( Position position : traverser )
+        for ( Path position : traverser )
         {
             count++;
         }

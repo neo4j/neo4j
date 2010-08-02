@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.TraversalFactory;
 
 /**
  * A node in the graph with properties and relationships to other entities.
@@ -257,6 +255,7 @@ public interface Node extends PropertyContainer
     public Relationship createRelationshipTo( Node otherNode,
             RelationshipType type );
 
+    /* Expansion, tentatively added - save this for a later refactoring
     Expansion<Relationship> expandAll();
 
     Expansion<Relationship> expand( RelationshipType type );
@@ -266,6 +265,7 @@ public interface Node extends PropertyContainer
     Expansion<Relationship> expand( Direction direction );
 
     Expansion<Relationship> expand( RelationshipExpander expander );
+    */
 
     // Traversal
     /**
@@ -278,7 +278,7 @@ public interface Node extends PropertyContainer
      * tree formed by the given relationship types (with direction) exactly
      * once. For more information about traversal, see the {@link Traverser}
      * documentation.
-     *
+     * 
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
      *            when to stop traversing, either a predefined evaluator such as
@@ -294,16 +294,17 @@ public interface Node extends PropertyContainer
      * @param direction the direction in which the relationships of type
      *            <code>relationshipType</code> will be traversed
      * @return a new traverser, configured as above
-     *
+     */
+    /*
      * @deprecated because of an unnatural and too tight coupling with
      * {@link Node}. Also because of the introduction of a new traversal
      * framework. The new way of doing traversals is by creating a
      * new {@link TraversalDescription} from
-     * {@link TraversalFactory#createTraversalDescription()}, add rules and
+     * {@link Traversal#description()}, add rules and
      * behaviours to it and then calling
      * {@link TraversalDescription#traverse(Node)}.
      */
-    @Deprecated
+    // @Deprecated
     public Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
@@ -320,7 +321,7 @@ public interface Node extends PropertyContainer
      * each node that can be reached from this node by the spanning tree formed
      * by the given relationship types (with direction) exactly once. For more
      * information about traversal, see the {@link Traverser} documentation.
-     *
+     * 
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
      *            when to stop traversing, either a predefined evaluator such as
@@ -340,16 +341,17 @@ public interface Node extends PropertyContainer
      * @param secondDirection the direction that the second relationship type
      *            will be traversed
      * @return a new traverser, configured as above
-     *
+     */
+    /*
      * @deprecated because of an unnatural and too tight coupling with
      * {@link Node}. Also because of the introduction of a new traversal
      * framework. The new way of doing traversals is by creating a
      * new {@link TraversalDescription} from
-     * {@link TraversalFactory#createTraversalDescription()}, add rules and
+     * {@link Traversal#description()}, add rules and
      * behaviours to it and then calling
      * {@link TraversalDescription#traverse(Node)}.
      */
-    @Deprecated
+    // @Deprecated
     // TODO: document the importance of reltype/dir order
     public Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
@@ -378,7 +380,7 @@ public interface Node extends PropertyContainer
      * from this node by the spanning tree formed by the given relationship
      * types (with direction) exactly once. For more information about
      * traversal, see the {@link Traverser} documentation.
-     *
+     * 
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
      *            when to stop traversing, either a predefined evaluator such as
@@ -397,16 +399,17 @@ public interface Node extends PropertyContainer
      * @return a new traverser, configured as above
      * @throws RuntimeException if the variable-length relationship type /
      *             direction list is not as described above
-     *
+     */
+    /*
      * @deprecated because of an unnatural and too tight coupling with
      * {@link Node}. Also because of the introduction of a new traversal
      * framework. The new way of doing traversals is by creating a
      * new {@link TraversalDescription} from
-     * {@link TraversalFactory#createTraversalDescription()}, add rules and
+     * {@link Traversal#description()}, add rules and
      * behaviours to it and then calling
      * {@link TraversalDescription#traverse(Node)}.
      */
-    @Deprecated
+    // @Deprecated
     public Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,

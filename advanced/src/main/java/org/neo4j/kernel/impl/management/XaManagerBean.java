@@ -10,6 +10,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.management.XaManager;
 import org.neo4j.kernel.management.XaResourceInfo;
 
+@Description( "Information about the XA transaction manager" )
 class XaManagerBean extends Neo4jMBean implements XaManager
 {
     static XaManagerBean create( final int instanceId, final XaDataSourceManager datasourceMananger )
@@ -45,6 +46,7 @@ class XaManagerBean extends Neo4jMBean implements XaManager
         this.datasourceMananger = datasourceMananger;
     }
 
+    @Description( "Information about all XA resources managed by the transaction manager" )
     public XaResourceInfo[] getXaResources()
     {
         return getXaResourcesImpl( datasourceMananger );

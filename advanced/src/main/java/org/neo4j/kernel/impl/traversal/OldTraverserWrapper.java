@@ -6,9 +6,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Stack;
 
-import org.neo4j.commons.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
@@ -16,12 +16,12 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.graphdb.traversal.Position;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.OrderedByTypeExpander;
-import org.neo4j.kernel.TraversalFactory;
+import org.neo4j.kernel.Traversal;
 
 public class OldTraverserWrapper
 {
@@ -29,7 +29,7 @@ public class OldTraverserWrapper
             Iterator<Node>
     {
         private TraversalPosition currentPos;
-        private Iterator<Position> iter;
+        private Iterator<Path> iter;
         private int count;
 
         public TraversalPosition currentPosition()
@@ -72,10 +72,10 @@ public class OldTraverserWrapper
 
     private static class PositionImpl implements TraversalPosition
     {
-        private final Position position;
+        private final Path position;
         private final int count;
 
-        PositionImpl( TraverserImpl traverser, Position position )
+        PositionImpl( TraverserImpl traverser, Path position )
         {
             this.position = position;
             this.count = traverser.count;
@@ -83,17 +83,17 @@ public class OldTraverserWrapper
 
         public Node currentNode()
         {
-            return position.node();
+            return position.endNode();
         }
 
         public int depth()
         {
-            return position.depth();
+            return position.length();
         }
 
         public boolean isStartNode()
         {
-            return position.atStartNode();
+            return position.length() == 0;
         }
 
         public boolean notStartNode()
@@ -108,7 +108,7 @@ public class OldTraverserWrapper
 
         public Node previousNode()
         {
-            return position.lastRelationship().getOtherNode( position.node() );
+            return position.lastRelationship().getOtherNode( position.endNode() );
         }
 
         public int returnedNodesCount()
@@ -117,7 +117,7 @@ public class OldTraverserWrapper
         }
 
     }
-    
+
     private static void assertNotNull( Object object, String message )
     {
         if ( object == null )
@@ -127,7 +127,7 @@ public class OldTraverserWrapper
     }
 
     private static final TraversalDescription BASE_DESCRIPTION =
-            TraversalFactory.createTraversalDescription().uniqueness( Uniqueness.NODE_GLOBAL );
+            Traversal.description().uniqueness( Uniqueness.NODE_GLOBAL );
 
     public static org.neo4j.graphdb.Traverser traverse( Node node, Order traversalOrder,
             StopEvaluator stopEvaluator,
@@ -137,7 +137,7 @@ public class OldTraverserWrapper
         assertNotNull( traversalOrder, "order" );
         assertNotNull( stopEvaluator, "stop evaluator" );
         assertNotNull( returnableEvaluator, "returnable evaluator" );
-        
+
         if ( relationshipTypesAndDirections.length % 2 != 0
              || relationshipTypesAndDirections.length == 0 )
         {
@@ -183,7 +183,7 @@ public class OldTraverserWrapper
             }
             entries.push( new Object[] { relType, direction } );
         }
-        
+
         OrderedByTypeExpander expander = new OrderedByTypeExpander();
         while ( !entries.isEmpty() )
         {
@@ -231,13 +231,13 @@ public class OldTraverserWrapper
             this.evaluator = stopEvaluator;
         }
 
-        public boolean pruneAfter( Position position )
+        public boolean pruneAfter( Path position )
         {
             return evaluator.isStopNode( new PositionImpl( traverser, position ) );
         }
     }
 
-    private static class Filter implements Predicate<Position>
+    private static class Filter implements Predicate<Path>
     {
         private final TraverserImpl traverser;
         private final ReturnableEvaluator evaluator;
@@ -248,7 +248,7 @@ public class OldTraverserWrapper
             this.evaluator = returnableEvaluator;
         }
 
-        public boolean accept( Position position )
+        public boolean accept( Path position )
         {
             return evaluator.isReturnableNode( new PositionImpl( traverser,
                     position ) );

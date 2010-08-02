@@ -4,12 +4,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.commons.iterator.ArrayIterator;
-import org.neo4j.commons.iterator.NestingIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.ArrayIterator;
+import org.neo4j.helpers.collection.NestingIterator;
 
 public final class OrderedByTypeExpander extends
         StandardExpander.RegularExpander

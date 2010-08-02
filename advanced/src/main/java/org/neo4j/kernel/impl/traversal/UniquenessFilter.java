@@ -1,6 +1,6 @@
 package org.neo4j.kernel.impl.traversal;
 
-import org.neo4j.graphdb.traversal.ExpansionSource;
+import org.neo4j.graphdb.traversal.TraversalBranch;
 
 abstract class UniquenessFilter
 {
@@ -11,7 +11,7 @@ abstract class UniquenessFilter
         this.type = type;
     }
 
-    boolean check( ExpansionSource source, boolean remember )
+    boolean check( TraversalBranch source, boolean remember )
     {
         return check( type.getId( source ), remember );
     }
