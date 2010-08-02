@@ -934,4 +934,9 @@ public class NodeManager
         int keyId = persistenceManager.getKeyIdForProperty( propertyId );
         return propertyIndexManager.getIndexFor( keyId ).getKey();
     }
+    
+    public RelationshipTypeHolder getRelationshipTypeHolder()
+    {
+        return this.relTypeHolder;
+    }
 }

@@ -496,4 +496,9 @@ public class IdGeneratorImpl implements IdGenerator
     {
         return nextFreeId - defraggedIdCount;
     }
+
+    public long getDefragCount()
+    {
+        return defraggedIdCount;
+    }
 }

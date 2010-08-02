@@ -75,6 +75,7 @@ class EmbeddedGraphDbImpl
     private final NodeManager nodeManager;
     private final String storeDir;
     private final int instanceId = INSTANCE_ID_COUNTER.getAndIncrement();
+    private final TopLevelTransactionFactory txFactory;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -95,9 +96,11 @@ class EmbeddedGraphDbImpl
      */
     public EmbeddedGraphDbImpl( String storeDir, Map<String, String> inputParams,
             GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
-            IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator )
+            IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator,
+            TopLevelTransactionFactory txFactory )
     {
         this.storeDir = storeDir;
+        this.txFactory = txFactory;
         TxModule txModule = newTxModule( inputParams );
         LockManager lockManager = lockManagerFactory.create( txModule );
         LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
@@ -331,9 +334,8 @@ class EmbeddedGraphDbImpl
         {
             if ( placeboTransaction == null )
             {
-                placeboTransaction =
-                    new PlaceboTransaction( graphDbInstance
-                        .getTransactionManager() );
+                placeboTransaction = txFactory.getPlaceboTx(
+                        graphDbInstance.getTransactionManager() );
             }
             return placeboTransaction;
         }
@@ -342,7 +344,7 @@ class EmbeddedGraphDbImpl
         try
         {
             txManager.begin();
-            result = new TopLevelTransaction( txManager );
+            result = txFactory.beginTx( txManager );
         }
         catch ( Exception e )
         {
@@ -350,38 +352,6 @@ class EmbeddedGraphDbImpl
                 "Unable to begin transaction", e );
         }
         return result;
-    }
-
-    private static class PlaceboTransaction implements Transaction
-    {
-        private final TransactionManager transactionManager;
-
-        PlaceboTransaction( TransactionManager transactionManager )
-        {
-            // we should override all so null is ok
-            this.transactionManager = transactionManager;
-        }
-
-        public void failure()
-        {
-            try
-            {
-                transactionManager.getTransaction().setRollbackOnly();
-            }
-            catch ( Exception e )
-            {
-                throw new TransactionFailureException(
-                    "Failed to mark transaction as rollback only.", e );
-            }
-        }
-
-        public void success()
-        {
-        }
-
-        public void finish()
-        {
-        }
     }
 
     /**

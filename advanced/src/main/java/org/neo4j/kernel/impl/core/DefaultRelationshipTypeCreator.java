@@ -15,7 +15,7 @@ public class DefaultRelationshipTypeCreator implements RelationshipTypeCreator
     {
     }
     
-    public int create( TransactionManager txManager, EntityIdGenerator idGenerator,
+    public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
             PersistenceManager persistence, String name )
     {
         RelTypeCreater createrThread = new RelTypeCreater( name, txManager, idGenerator,
