@@ -31,12 +31,18 @@ public class SlaveIdGenerator implements IdGenerator
         public void create( String fileName )
         {
         }
+
+        public IdGenerator get( IdType idType )
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
     };
     
     private final Broker broker;
     private final ResponseReceiver receiver;
     private volatile long highestIdInUse;
-    private volatile int defragCount;
+    private volatile long defragCount;
     private final Queue<Long> idQueue = new LinkedList<Long>();
     private final IdType idType;
 
@@ -99,5 +105,10 @@ public class SlaveIdGenerator implements IdGenerator
     public void setHighId( long id )
     {
         this.highestIdInUse = id;
+    }
+    
+    public long getDefragCount()
+    {
+        return this.defragCount;
     }
 }
