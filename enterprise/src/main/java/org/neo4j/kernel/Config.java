@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.management.Description;
 import org.neo4j.kernel.impl.persistence.IdGenerator;
@@ -101,6 +102,7 @@ public class Config
 
     private final boolean readOnly;
     private final boolean backupSlave;
+    private final IdGeneratorFactory idGeneratorFactory;
 
     Config( GraphDatabaseService graphDb, String storeDir,
             Map<String, String> inputParams, KernelPanicEventGenerator kpe,
@@ -111,6 +113,7 @@ public class Config
         this.kpe = kpe;
         this.storeDir = storeDir;
         this.inputParams = inputParams;
+        this.idGeneratorFactory = idGeneratorFactory;
         this.relTypeCreator = relTypeCreator;
         this.params = getDefaultParams();
         this.txModule = txModule;
@@ -179,7 +182,7 @@ public class Config
         return persistenceModule;
     }
 
-    IdGeneratorModule getIdGeneratorModule()
+    public IdGeneratorModule getIdGeneratorModule()
     {
         return idGeneratorModule;
     }
@@ -219,9 +222,19 @@ public class Config
         return syncHookFactory;
     }
     
-    RelationshipTypeCreator getRelationshipTypeCreator()
+    public RelationshipTypeCreator getRelationshipTypeCreator()
     {
         return relTypeCreator;
+    }
+    
+    public IdGeneratorFactory getIdGeneratorFactory()
+    {
+        return idGeneratorFactory;
+    }
+    
+    public RelationshipTypeHolder getRelationshipTypeHolder()
+    {
+        return graphDbModule.getNodeManager().getRelationshipTypeHolder();
     }
 
     public static void dumpConfiguration( Map<?, ?> config )

@@ -65,4 +65,9 @@ public class ReadOnlyIdGenerator implements IdGenerator
     {
         return highId;
     }
+    
+    public long getDefragCount()
+    {
+        return 0;
+    }
 }

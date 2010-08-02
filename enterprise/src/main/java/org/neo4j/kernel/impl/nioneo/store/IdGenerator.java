@@ -27,4 +27,5 @@ public interface IdGenerator
     void freeId( long id );
     void close();
     long getNumberOfIdsInUse();
+    long getDefragCount();
 }

@@ -136,7 +136,7 @@ public class RelationshipTypeHolder
         {
             return id;
         }
-        id = relTypeCreator.create( transactionManager, idGenerator, persistenceManager, name );
+        id = relTypeCreator.getOrCreate( transactionManager, idGenerator, persistenceManager, name );
         addRelType( name, id );
         return id;
     }
@@ -162,7 +162,12 @@ public class RelationshipTypeHolder
 
     int getIdFor( RelationshipType type )
     {
-        return relTypes.get( type.name() );
+        return getIdFor( type.name() );
+    }
+    
+    public Integer getIdFor( String name )
+    {
+        return relTypes.get( name );
     }
 
     RelationshipType getRelationshipType( int id )
