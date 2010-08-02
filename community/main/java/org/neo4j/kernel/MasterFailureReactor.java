@@ -20,7 +20,7 @@ public abstract class MasterFailureReactor<T>
         catch ( MasterFailureException e )
         {
             rollbackStuff();
-            db.evaluateMyself();
+            db.reevaluateMyself();
             throw e;
         }
     }
@@ -30,5 +30,5 @@ public abstract class MasterFailureReactor<T>
         // TODO
     }
 
-    public abstract T doOperation();
+    protected abstract T doOperation();
 }

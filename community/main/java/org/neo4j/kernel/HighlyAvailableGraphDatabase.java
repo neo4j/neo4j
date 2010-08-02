@@ -1,7 +1,6 @@
 package org.neo4j.kernel;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.transaction.TransactionManager;
@@ -26,24 +25,39 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
         new MasterFailureReactor<Node>( this )
     {
         @Override
-        public Node doOperation()
+        protected Node doOperation()
         {
             return localGraph.createNode();
         }
     };
     
+    private final MasterFailureReactor<Node> getReferenceNodeMethod =
+        new MasterFailureReactor<Node>( this )
+    {
+        @Override
+        protected Node doOperation()
+        {
+            return localGraph.getReferenceNode();
+        }
+    };
+    
+    private final String storeDir;
+    private final Map<String, String> config;
     private final Broker broker;
     private EmbeddedGraphDbImpl localGraph;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
     {
-        this.broker = instantiateBroker( config );
-        evaluateMyself();
+        this.storeDir = storeDir;
+        this.config = config;
+        this.broker = instantiateBroker();
+        reevaluateMyself();
     }
 
-    private Broker instantiateBroker( Map<String, String> config )
+    private Broker instantiateBroker()
     {
         String cls = config.get( "ha_broker" );
+        cls = cls != null ? cls : "some.default.Broker";
         try
         {
             return Class.forName( cls ).asSubclass( Broker.class ).getConstructor(
@@ -55,22 +69,24 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
         }
     }
 
-    protected void evaluateMyself()
+    protected void reevaluateMyself()
     {
-        if ( iAmMaster() )
+        shutdownIfNecessary();
+        if ( brokerSaysIAmMaster() )
         {
-            
+            this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
+                    LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT );
         }
         else
         {
-            ResponseReceiver receiver = null;
-            this.localGraph = new EmbeddedGraphDbImpl( "storeDir", new HashMap<String, String>(),
-                    this, new SlaveLockManager.SlaveLockManagerFactory( broker, receiver ),
+            ResponseReceiver receiver = new ResponseReceiver();
+            this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
+                    new SlaveLockManager.SlaveLockManagerFactory( broker, receiver ),
                     new SlaveIdGenerator.SlaveIdGeneratorFactory( broker, receiver ) );
         }
     }
 
-    private boolean iAmMaster()
+    private boolean brokerSaysIAmMaster()
     {
         // TODO Auto-generated method stub
         return false;
@@ -84,7 +100,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
 
     public Node createNode()
     {
-        return createNodeMethod.doOperation();
+        return createNodeMethod.execute();
     }
 
     public boolean enableRemoteShell()
@@ -113,8 +129,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
 
     public Node getReferenceNode()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return getReferenceNodeMethod.execute();
     }
 
     public Relationship getRelationshipById( long id )
@@ -144,8 +159,16 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
 
     public void shutdown()
     {
-        // TODO Auto-generated method stub
+        shutdownIfNecessary();
+    }
 
+    private void shutdownIfNecessary()
+    {
+        if ( this.localGraph != null )
+        {
+            this.localGraph.shutdown();
+            this.localGraph = null;
+        }
     }
 
     public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
