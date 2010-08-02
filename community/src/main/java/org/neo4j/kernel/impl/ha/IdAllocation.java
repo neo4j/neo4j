@@ -8,10 +8,9 @@ public final class IdAllocation implements Serializable
 
     private final long[] ids;
     private final long highestIdInUse;
+    private final long defragCount;
 
-    private final int defragCount;
-
-    public IdAllocation( long[] ids, long highestIdInUse, int defragCount )
+    public IdAllocation( long[] ids, long highestIdInUse, long defragCount )
     {
         this.ids = ids;
         this.highestIdInUse = highestIdInUse;
@@ -23,7 +22,7 @@ public final class IdAllocation implements Serializable
         return highestIdInUse;
     }
 
-    public int getDefragCount()
+    public long getDefragCount()
     {
         return defragCount;
     }

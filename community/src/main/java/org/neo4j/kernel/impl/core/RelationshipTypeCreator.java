@@ -7,6 +7,6 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 public interface RelationshipTypeCreator
 {
-    int create( TransactionManager txManager, EntityIdGenerator idGenerator,
+    int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
             PersistenceManager persistence, String name );
 }
