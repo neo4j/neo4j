@@ -2,7 +2,8 @@ package org.neo4j.kernel.ha;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.LockManagerFactory;
 import org.neo4j.kernel.impl.ha.Broker;
@@ -54,11 +55,25 @@ public class SlaveLockManager extends LockManager
     public void getReadLock( Object resource ) throws DeadlockDetectedException,
             IllegalResourceException
     {
+        Node node = resource instanceof Node ? (Node) resource : null;
+        Relationship relationship = resource instanceof Relationship ?
+                (Relationship) resource : null;
+        if ( node == null && relationship == null )
+        {
+            // This is a "fake" resource, only grab the lock locally
+            super.getReadLock( resource );
+            return;
+        }
+        
         LockResult result = null;
         do
         {
-            result = receiver.receive( broker.getMaster().acquireReadLock(
-                    broker.getSlaveContext(), getLocalTxId(), (PropertyContainer) resource ) );
+            result = node != null ?
+                    receiver.receive( broker.getMaster().acquireReadLock(
+                            broker.getSlaveContext(), getLocalTxId(), node ) ) :
+                    receiver.receive( broker.getMaster().acquireReadLock(
+                            broker.getSlaveContext(), getLocalTxId(), relationship ) );
+                        
             switch ( result.getStatus() )
             {
             case OK_LOCKED:
@@ -75,11 +90,26 @@ public class SlaveLockManager extends LockManager
     public void getWriteLock( Object resource ) throws DeadlockDetectedException,
             IllegalResourceException
     {
+        // Code copied from getReadLock. Fix!
+        Node node = resource instanceof Node ? (Node) resource : null;
+        Relationship relationship = resource instanceof Relationship ?
+                (Relationship) resource : null;
+        if ( node == null && relationship == null )
+        {
+            // This is a "fake" resource, only grab the lock locally
+            super.getWriteLock( resource );
+            return;
+        }
+        
         LockResult result = null;
         do
         {
-            result = receiver.receive( broker.getMaster().acquireWriteLock(
-                    broker.getSlaveContext(), getLocalTxId(), (PropertyContainer) resource ) );
+            result = node != null ?
+                    receiver.receive( broker.getMaster().acquireWriteLock(
+                            broker.getSlaveContext(), getLocalTxId(), node ) ) :
+                    receiver.receive( broker.getMaster().acquireWriteLock(
+                            broker.getSlaveContext(), getLocalTxId(), relationship ) );
+                    
             switch ( result.getStatus() )
             {
             case OK_LOCKED:
