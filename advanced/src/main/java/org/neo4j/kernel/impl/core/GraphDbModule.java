@@ -77,7 +77,8 @@ public class GraphDbModule
     }
 
     public void start( LockReleaser lockReleaser, 
-        PersistenceManager persistenceManager, Map<Object,Object> params )
+        PersistenceManager persistenceManager, RelationshipTypeCreator relTypeCreator,
+        Map<Object,Object> params )
     {
         if ( !startIsOk )
         {
@@ -93,7 +94,7 @@ public class GraphDbModule
         {
             nodeManager = new NodeManager( graphDbService, cacheManager,
                     lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, useNewCache );
+                    persistenceManager, idGenerator, relTypeCreator, useNewCache );
         }
         else
         {

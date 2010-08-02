@@ -1,6 +1,7 @@
 package org.neo4j.kernel.impl.ha;
 
-import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.IdType;
 
 /**
@@ -14,11 +15,17 @@ public interface Master
     Response<Integer> createRelationshipType( SlaveContext context, String name );
 
     Response<LockResult> acquireWriteLock( SlaveContext context, int localTxId,
-            PropertyContainer... entities );
+            Node... nodes );
 
     Response<LockResult> acquireReadLock( SlaveContext context, int localTxId,
-            PropertyContainer... entities );
+            Node... nodes );
 
+    Response<LockResult> acquireWriteLock( SlaveContext context, int localTxId,
+            Relationship... relationships );
+
+    Response<LockResult> acquireReadLock( SlaveContext context, int localTxId,
+            Relationship... relationships );
+    
     Response<Integer> commitTransaction( SlaveContext context,
             int localTxId, TransactionStream transaction );
 
