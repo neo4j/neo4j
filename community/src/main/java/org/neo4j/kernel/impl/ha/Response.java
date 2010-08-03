@@ -1,22 +1,22 @@
 package org.neo4j.kernel.impl.ha;
 
-public final class Response<T>
+public class Response<T>
 {
     private final T response;
-    private final TransactionStream transactions;
+    private final TransactionStreams transactions;
 
-    public Response( T response, TransactionStream transactions )
+    public Response( T response, TransactionStreams transactions )
     {
         this.response = response;
         this.transactions = transactions;
     }
 
-    T response() throws MasterFailureException
+    public T response() throws MasterFailureException
     {
         return response;
     }
 
-    TransactionStream transactions()
+    public TransactionStreams transactions()
     {
         return transactions;
     }

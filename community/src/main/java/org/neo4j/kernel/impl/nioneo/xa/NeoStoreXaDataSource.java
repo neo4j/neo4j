@@ -488,4 +488,10 @@ public class NeoStoreXaDataSource extends XaDataSource
     {
         return neoStore.getLastCommittedTx();
     }
+    
+    @Override
+    public XaContainer getXaContainer()
+    {
+        return xaContainer;
+    }
 }

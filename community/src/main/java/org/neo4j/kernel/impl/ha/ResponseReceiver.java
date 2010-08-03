@@ -1,23 +1,6 @@
 package org.neo4j.kernel.impl.ha;
 
-public class ResponseReceiver
+public interface ResponseReceiver
 {
-    public final <T> T receive( Response<T> response )
-    {
-        applyTransactions( response.transactions() );
-//        try
-//        {
-            return response.response();
-//        }
-//        catch ( MasterFailureException e )
-//        {
-//            // TODO: create better handling of this
-//            throw new RuntimeException( "TODO: Master failure", e );
-//        }
-    }
-
-    protected void applyTransactions( TransactionStream transactions )
-    {
-        throw new UnsupportedOperationException();
-    }
+    <T> T receive( Response<T> response );
 }
