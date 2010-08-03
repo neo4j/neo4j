@@ -606,6 +606,7 @@ public class TxManager implements TransactionManager
             }
             catch ( Throwable t )
             {
+                t.printStackTrace();
                 commitFailureCause = t;
             }
         }

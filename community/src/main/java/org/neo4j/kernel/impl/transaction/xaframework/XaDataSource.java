@@ -336,6 +336,11 @@ public abstract class XaDataSource
         return false;
     }
     
+    public ReadableByteChannel getCommittedTransaction( long txId ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+    
     public long getLastCommittedTxId()
     {
         throw new UnsupportedOperationException();

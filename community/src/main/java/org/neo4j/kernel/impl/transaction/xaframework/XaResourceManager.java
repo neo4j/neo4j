@@ -395,7 +395,7 @@ public class XaResourceManager
                     xaTransaction.prepare();
                     
                     // factory sets tx id on xaTransaction
-                    long txId = txIdFactory.generate( dataSource );
+//                    long txId = txIdFactory.generate( dataSource, xaTransaction.getIdentifier() );
                     
                     log.commitOnePhase( xaTransaction.getIdentifier(), 
                         xaTransaction.getCommitTxId() );
@@ -415,6 +415,7 @@ public class XaResourceManager
                 if ( !onePhase )
                 {
                     // factory sets tx id on xaTransaction
+//                    long txId = txIdFactory.generate( dataSource, xaTransaction.getIdentifier() );
                     log.commitTwoPhase( xaTransaction.getIdentifier(), 
                         xaTransaction.getCommitTxId() );
                 }
