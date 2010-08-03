@@ -25,6 +25,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -842,13 +843,11 @@ public class XaLogicalLog
         buffer.clear();
         buffer.limit( 16 );
         log.read( buffer );
-        List<LogEntry> logEntryList = null;
-        Map<Integer,List<LogEntry>> transactions = 
-            new HashMap<Integer,List<LogEntry>>();
+        List<LogEntry> logEntryList = new ArrayList<LogEntry>();
         buffer.clear();
         buffer.limit( 1 );
-        while ( logEntryList == null && 
-                log.read( buffer ) == buffer.limit() )
+        boolean done = false;
+        while ( !done && log.read( buffer ) == buffer.limit() )
         {
             buffer.flip();
             byte entry = buffer.get();
@@ -859,24 +858,17 @@ public class XaLogicalLog
                 logEntry = LogIoUtils.readTxStartEntry( buffer, log, -1 );
                 if ( logEntry.getIdentifier() == identifier )
                 {
-                    List<LogEntry> list = new LinkedList<LogEntry>();
-                    list.add( logEntry );
-                    transactions.put( logEntry.getIdentifier(), list );
+                    logEntryList.add( logEntry );
                 }
                 break;
             case LogEntry.TX_PREPARE:
                 logEntry = LogIoUtils.readTxPrepareEntry( buffer, log );
-                if ( logEntry.getIdentifier() == identifier )
-                {
-                    logEntryList = transactions.get( logEntry.getIdentifier() );
-                    logEntryList.add( logEntry );
-                }
                 break;
             case LogEntry.COMMAND:
                 logEntry = LogIoUtils.readTxCommand( buffer, log, cf );
                 if ( logEntry.getIdentifier() == identifier )
                 {
-                    transactions.get( logEntry.getIdentifier() ).add( logEntry );
+                    logEntryList.add( logEntry );
                 }
                 break;
             case LogEntry.TX_1P_COMMIT:
@@ -888,13 +880,16 @@ public class XaLogicalLog
             case LogEntry.DONE:
                 logEntry = LogIoUtils.readTxDoneEntry( buffer, log );
                 break;
+            case LogEntry.EMPTY:
+                done = true;
+                break;
             default:
                 throw new IOException( "Unknown log entry " + entry );
             }
             buffer.clear();
             buffer.limit( 1 );
         }
-        if ( logEntryList == null )
+        if ( logEntryList.isEmpty() )
         {
             throw new IOException( "Transaction for internal identifier[" + identifier + 
                     "] not found in current log" );
@@ -1041,6 +1036,7 @@ public class XaLogicalLog
         {
             LogIoUtils.writeLogEntry( entry, buf );
         }
+        buf.force();
         txLog.close();
         if ( !new File( tmpName ).renameTo( new File( name ) ) )
         {
