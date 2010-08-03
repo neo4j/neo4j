@@ -162,8 +162,8 @@ class LogIoUtils
         return new LogEntry.Command( identifier, command );
     }
     
-    static void writeLogEntry( LogEntry entry, LogBuffer buffer, 
-            XaCommandFactory cf ) throws IOException
+    static void writeLogEntry( LogEntry entry, LogBuffer buffer ) 
+        throws IOException
     {
         if ( entry instanceof LogEntry.Command )
         {
