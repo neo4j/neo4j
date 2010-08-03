@@ -178,7 +178,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                         .getXaDataSource( resourceName );
                 for ( ReadableByteChannel channel : streams.other().getChannels() )
                 {
-                    dataSource.applyLog( channel );
+                    dataSource.applyCommittedTransaction( channel );
                 }
             }
             return response.response();

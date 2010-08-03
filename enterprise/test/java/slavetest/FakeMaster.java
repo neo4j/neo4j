@@ -325,6 +325,7 @@ public class FakeMaster implements Master
         }
         catch ( IOException e )
         {
+            e.printStackTrace();
             return new FailedResponse<Long>();
         }
         finally
@@ -375,7 +376,7 @@ public class FakeMaster implements Master
                 }
                 streams.add( slaveEntry.getKey(), new TransactionStream( channels ) );
             }
-            return new Response<T>( response, new TransactionStreams() );
+            return new Response<T>( response, streams );
         }
         catch ( IOException e )
         {
