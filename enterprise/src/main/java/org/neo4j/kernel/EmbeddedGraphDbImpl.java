@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.management.Neo4jMBean;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdFactory;
 
 class EmbeddedGraphDbImpl
 {
@@ -97,7 +98,7 @@ class EmbeddedGraphDbImpl
     public EmbeddedGraphDbImpl( String storeDir, Map<String, String> inputParams,
             GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
             IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator,
-            TopLevelTransactionFactory txFactory )
+            TopLevelTransactionFactory txFactory, TxIdFactory txIdFactory )
     {
         this.storeDir = storeDir;
         this.txFactory = txFactory;
@@ -106,7 +107,7 @@ class EmbeddedGraphDbImpl
         LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         Config config = new Config( graphDbService, storeDir, inputParams,
                 kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGeneratorFactory,
-                new SyncHookFactory(), relTypeCreator );
+                new SyncHookFactory(), relTypeCreator, txIdFactory );
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
         Map<Object, Object> params = graphDbInstance.start( graphDbService );
         nodeManager = config.getGraphDbModule().getNodeManager();

@@ -182,7 +182,7 @@ public abstract class XaTransaction
     }
 
     /**
-     * If this transacgtion is created during a recovery scan of the logical log
+     * If this transaction is created during a recovery scan of the logical log
      * method will be called to mark the transaction "recovered".
      */
     protected void setRecovered()

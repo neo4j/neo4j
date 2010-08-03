@@ -37,10 +37,10 @@ import java.util.Map;
  */
 public class XaContainer
 {
-    private XaCommandFactory cf = null;
-    private XaLogicalLog log = null;
-    private XaResourceManager rm = null;
-    private XaTransactionFactory tf = null;
+    private XaCommandFactory cf;
+    private XaLogicalLog log;
+    private XaResourceManager rm;
+    private XaTransactionFactory tf;
 
     /**
      * Creates a XaContainer.
@@ -53,8 +53,8 @@ public class XaContainer
      *            The transaction factory implementation
      * @param config Configuration map or null if no config needed
      */
-    public static XaContainer create( String logicalLog, XaCommandFactory cf,
-        XaTransactionFactory tf, Map<Object,Object> config )
+    public static XaContainer create( XaDataSource dataSource, String logicalLog,
+            XaCommandFactory cf, XaTransactionFactory tf, Map<Object,Object> config )
     {
         if ( logicalLog == null || cf == null || tf == null )
         {
@@ -62,15 +62,16 @@ public class XaContainer
                 + "LogicalLog[" + logicalLog + "] CommandFactory[" + cf
                 + "TransactionFactory[" + tf + "]" );
         }
-        return new XaContainer( logicalLog, cf, tf, config );
+        return new XaContainer( dataSource, logicalLog, cf, tf, config );
     }
 
-    private XaContainer( String logicalLog, XaCommandFactory cf,
-        XaTransactionFactory tf, Map<Object,Object> config )
+    private XaContainer( XaDataSource dataSource, String logicalLog,
+            XaCommandFactory cf, XaTransactionFactory tf, Map<Object,Object> config )
     {
         this.cf = cf;
         this.tf = tf;
-        rm = new XaResourceManager( tf, logicalLog );
+        TxIdFactory txIdFactory = (TxIdFactory) config.get( TxIdFactory.class );
+        rm = new XaResourceManager( dataSource, tf, txIdFactory, logicalLog );
         log = new XaLogicalLog( logicalLog, rm, cf, tf, config );
         rm.setLogicalLog( log );
         tf.setLogicalLog( log );
