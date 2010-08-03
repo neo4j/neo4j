@@ -250,6 +250,12 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             // TODO Auto-generated method stub
 
         }
+        
+        @Override
+        public long getLastCommittedTxId()
+        {
+            return 0;
+        }
     }
 
     private static class DummyXaResource extends XaResourceHelpImpl

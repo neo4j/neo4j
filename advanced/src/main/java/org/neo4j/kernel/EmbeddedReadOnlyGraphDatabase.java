@@ -32,7 +32,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
@@ -80,7 +80,7 @@ public final class EmbeddedReadOnlyGraphDatabase implements
         this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this,
                 LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT,
                 DefaultRelationshipTypeCreator.INSTANCE, TopLevelTransactionFactory.DEFAULT,
-                TxIdFactory.DEFAULT );
+                TxIdGeneratorFactory.DEFAULT );
     }
 
     /**

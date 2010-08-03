@@ -32,7 +32,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
@@ -81,7 +81,7 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
         this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this,
                 LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT,
                 DefaultRelationshipTypeCreator.INSTANCE,
-                TopLevelTransactionFactory.DEFAULT, TxIdFactory.DEFAULT );
+                TopLevelTransactionFactory.DEFAULT, TxIdGeneratorFactory.DEFAULT );
     }
 
     /**

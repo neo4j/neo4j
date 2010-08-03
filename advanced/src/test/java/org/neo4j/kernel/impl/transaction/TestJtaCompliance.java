@@ -740,6 +740,12 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
             // TODO Auto-generated method stub
 
         }
+        
+        @Override
+        public long getLastCommittedTxId()
+        {
+            return 0;
+        }
     }
 
     private static class DummyXaConnection implements XaConnection
