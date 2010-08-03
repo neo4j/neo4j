@@ -898,8 +898,9 @@ public class XaLogicalLog
             long expectedVersion, ReadableByteChannel log ) throws IOException
     {
         buffer.clear();
-        buffer.limit( 8 );
+        buffer.limit( 16 );
         log.read( buffer );
+        buffer.flip();
         long versionInLog = buffer.getLong();
         assertExpectedVersion( expectedVersion, versionInLog );
         long prevTxId = buffer.getLong();
@@ -907,6 +908,7 @@ public class XaLogicalLog
         List<LogEntry> logEntryList = null;
         Map<Integer,List<LogEntry>> transactions = 
             new HashMap<Integer,List<LogEntry>>();
+        buffer.clear();
         while ( logEntryList == null && 
                 fileChannel.read( buffer ) != buffer.limit() )
         {
@@ -975,7 +977,7 @@ public class XaLogicalLog
 
     private void assertLogCanContainTx( long txId, long prevTxId ) throws IOException
     {
-        if ( prevTxId < txId )
+        if ( prevTxId >= txId )
         {
             throw new IOException( "Log says " + txId + 
                     " can not exist in this log (prev tx id=" + prevTxId + ")" );
@@ -1094,13 +1096,13 @@ public class XaLogicalLog
                         version );
             }
             buf.flip();
-            long readVersion = buffer.getLong();
+            long readVersion = buf.getLong();
             if ( readVersion != version )
             {
                 throw new IOException( "Got " + readVersion + 
                         " from log when expecting " + version );
             }
-            committedTx = buffer.getLong();
+            committedTx = buf.getLong();
             log.close();
             if ( committedTx <= txId )
             {
