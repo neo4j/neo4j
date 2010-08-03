@@ -325,12 +325,6 @@ public class NeoStoreXaDataSource extends XaDataSource
         {
             return neoStore.getLastCommittedTx();
         }
-
-        @Override
-        public void setLastCommittedTx( long txId )
-        {
-            neoStore.setLastCommittedTx( txId );
-        }
     }
 
     public int nextId( Class<?> clazz )
