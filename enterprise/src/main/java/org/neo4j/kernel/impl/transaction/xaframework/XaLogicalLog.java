@@ -836,6 +836,64 @@ public class XaLogicalLog
         return new RandomAccessFile( name, "r" ).getChannel();
     }
     
+    private List<LogEntry> extractPreparedTransactionFromLog( long identifier, 
+            ReadableByteChannel log ) throws IOException
+    {
+        buffer.clear();
+        buffer.limit( 8 );
+        log.read( buffer );
+        long versionInLog = buffer.getLong();
+        long prevTxId = buffer.getLong();
+        List<LogEntry> logEntryList = null;
+        Map<Integer,List<LogEntry>> transactions = 
+            new HashMap<Integer,List<LogEntry>>();
+        while ( logEntryList == null && 
+                fileChannel.read( buffer ) != buffer.limit() )
+        {
+            buffer.flip();
+            byte entry = buffer.get();
+            LogEntry logEntry;
+            switch ( entry )
+            {
+            case LogEntry.TX_START:
+                logEntry = LogIoUtils.readTxStartEntry( buffer, log, -1 );
+                if ( logEntry.getIdentifier() == identifier )
+                {
+                    List<LogEntry> list = new LinkedList<LogEntry>();
+                    list.add( logEntry );
+                    transactions.put( logEntry.getIdentifier(), list );
+                }
+                break;
+            case LogEntry.TX_PREPARE:
+                logEntry = LogIoUtils.readTxPrepareEntry( buffer, log );
+                if ( logEntry.getIdentifier() == identifier )
+                {
+                    logEntryList = transactions.get( logEntry.getIdentifier() );
+                    logEntryList.add( logEntry );
+                }
+                break;
+            case LogEntry.COMMAND:
+                logEntry = LogIoUtils.readTxCommand( buffer, log, cf );
+                if ( logEntry.getIdentifier() == identifier )
+                {
+                    transactions.get( logEntry.getIdentifier() ).add( logEntry );
+                }
+                break;
+            default:
+                throw new IOException( "Unable to locate transaction with internal identifier "
+                    + identifier );
+            }
+            buffer.clear();
+            buffer.limit( 1 );
+        }
+        if ( logEntryList == null )
+        {
+            throw new IOException( "Transaction for internal identifier[" + identifier + 
+                    "] not found in current log" );
+        }
+        return logEntryList;
+    }
+    
     private List<LogEntry> extractTransactionFromLog( long txId, 
             long expectedVersion, ReadableByteChannel log ) throws IOException
     {
@@ -843,17 +901,9 @@ public class XaLogicalLog
         buffer.limit( 8 );
         log.read( buffer );
         long versionInLog = buffer.getLong();
-        if ( versionInLog != expectedVersion )
-        {
-            throw new IOException( "Expected version " + expectedVersion + 
-                    " but got " + versionInLog );
-        }
+        assertExpectedVersion( expectedVersion, versionInLog );
         long prevTxId = buffer.getLong();
-        if ( prevTxId < txId )
-        {
-            throw new IOException( "Log says " + txId + 
-                    " can not exist in this log (prev tx id=" + prevTxId + ")" );
-        }
+        assertLogCanContainTx( txId, prevTxId );
         List<LogEntry> logEntryList = null;
         Map<Integer,List<LogEntry>> transactions = 
             new HashMap<Integer,List<LogEntry>>();
@@ -922,7 +972,72 @@ public class XaLogicalLog
         }
         return logEntryList;
     }
+
+    private void assertLogCanContainTx( long txId, long prevTxId ) throws IOException
+    {
+        if ( prevTxId < txId )
+        {
+            throw new IOException( "Log says " + txId + 
+                    " can not exist in this log (prev tx id=" + prevTxId + ")" );
+        }
+    }
+
+    private void assertExpectedVersion( long expectedVersion, long versionInLog )
+            throws IOException
+    {
+        if ( versionInLog != expectedVersion )
+        {
+            throw new IOException( "Expected version " + expectedVersion + 
+                    " but got " + versionInLog );
+        }
+    }
     
+    private String generateUniqueName( String baseName )
+    {
+        String tmpName = baseName + "-" + System.currentTimeMillis();
+        while ( new File( tmpName ).exists() )
+        {
+            tmpName = baseName + "-" + System.currentTimeMillis() + "_";
+        }
+        return tmpName;
+    }
+    
+    public synchronized ReadableByteChannel getPreparedTransaction( long identifier )
+            throws IOException
+    {
+        String name = fileName + ".ptx_" + identifier;
+        File txFile = new File( name );
+        if ( txFile.exists() )
+        {
+            return new RandomAccessFile( name, "r" ).getChannel();
+        }
+        
+        ReadableByteChannel log = getLogicalLogOrMyself( logVersion );
+        List<LogEntry> logEntryList = extractPreparedTransactionFromLog( identifier, log );
+        log.close();
+        
+        writeOutLogEntryList( logEntryList, name, "temporary-ptx-write-out-" + identifier );
+        return new RandomAccessFile( name, "r" ).getChannel();
+    }
+
+    private void writeOutLogEntryList( List<LogEntry> logEntryList, String name,
+            String tmpNameHint ) throws IOException
+    {
+        String tmpName = generateUniqueName( tmpNameHint );
+        FileChannel txLog = new RandomAccessFile( tmpName, "r" ).getChannel();
+        LogBuffer buf = new DirectMappedLogBuffer( txLog );
+        for ( LogEntry entry : logEntryList )
+        {
+            LogIoUtils.writeLogEntry( entry, buf );
+        }
+        txLog.close();
+        if ( !new File( tmpName ).renameTo( new File( name ) ) )
+        {
+            throw new IOException( "Failed to rename " + tmpName + " to " + 
+                name );
+        }
+    }
+
     public synchronized ReadableByteChannel getCommittedTransaction( long txId )
         throws IOException
     {
@@ -934,7 +1049,34 @@ public class XaLogicalLog
             return new RandomAccessFile( name, "r" ).getChannel();
         }
 
-        // find log that contains transaction
+        long version = findLogContainingTxId( txId );
+        
+        // extract transaction
+        ReadableByteChannel log = getLogicalLogOrMyself( version );
+        List<LogEntry> logEntryList = 
+            extractTransactionFromLog( txId, version, log );
+        log.close();
+        
+        writeOutLogEntryList( logEntryList, name, "temporary-tx-write-out-" + txId );
+        return new RandomAccessFile( name, "r" ).getChannel();
+    }
+
+    private ReadableByteChannel getLogicalLogOrMyself( long version ) throws IOException
+    {
+        if ( version < logVersion )
+        {
+            return getLogicalLog( version );
+        }
+        else
+        {
+            String currentLogName = 
+                fileName + (currentLog == LOG1 ? ".1" : ".2" );
+            return new RandomAccessFile( currentLogName, "r" ).getChannel();
+        }
+    }
+
+    private long findLogContainingTxId( long txId ) throws IOException
+    {
         long version = logVersion;
         long committedTx = previousLogLastCommittedTx;
         while ( committedTx <= txId )
@@ -957,43 +1099,7 @@ public class XaLogicalLog
             committedTx = buffer.getLong();
             log.close();
         }
-        
-        // extract transaction
-        ReadableByteChannel log;
-        if ( version < logVersion )
-        {
-            log = getLogicalLog( version );
-        }
-        else
-        {
-            String currentLogName = 
-                fileName + (currentLog == LOG1 ? ".1" : ".2" );
-            log = new RandomAccessFile( currentLogName, "r" ).getChannel();
-        }
-        List<LogEntry> logEntryList = 
-            extractTransactionFromLog( txId, version, log );
-        log.close();
-        // write out
-        String tmpName = "temporary-tx-write-out-" + txId + "-" + 
-            System.currentTimeMillis();
-        while ( new File( tmpName ).exists() )
-        {
-            tmpName = "temporary-tx-write-out-" + txId + "-" + 
-                System.currentTimeMillis() + "_";
-        }
-        FileChannel txLog = new RandomAccessFile( tmpName, "r" ).getChannel();
-        LogBuffer buf = new DirectMappedLogBuffer( txLog );
-        for ( LogEntry entry : logEntryList )
-        {
-            LogIoUtils.writeLogEntry( entry, buf );
-        }
-        txLog.close();
-        if ( !new File( tmpName ).renameTo( new File( name ) ) )
-        {
-            throw new IOException( "Failed to rename " + tmpName + " to " + 
-                name );
-        }
-        return new RandomAccessFile( name, "r" ).getChannel();
+        return version;
     }
     
     public long getLogicalLogLength( long version )
