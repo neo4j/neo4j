@@ -14,25 +14,25 @@ public interface Master
 
     Response<Integer> createRelationshipType( SlaveContext context, String name );
 
-    Response<LockResult> acquireWriteLock( SlaveContext context, int identifier,
+    Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
             Node... nodes );
 
-    Response<LockResult> acquireReadLock( SlaveContext context, int identifier,
+    Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
             Node... nodes );
 
-    Response<LockResult> acquireWriteLock( SlaveContext context, int identifier,
+    Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
             Relationship... relationships );
 
-    Response<LockResult> acquireReadLock( SlaveContext context, int identifier,
+    Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
             Relationship... relationships );
     
 //    Response<Collection<Pair<String, Integer>>> commitTransaction( SlaveContext context,
 //            int localTxId, Collection<Pair<String, TransactionStream>> transactionStreams );
     
     Response<Long> commitSingleResourceTransaction( SlaveContext context,
-            int identifier, String resource, TransactionStream transactionStream );
+            int eventIdentifier, String resource, TransactionStream transactionStream );
 
-    Response<Void> rollbackTransaction( SlaveContext context, int identifier );
+    Response<Void> rollbackTransaction( SlaveContext context, int eventIdentifier );
 
     Response<Void> pullUpdates( SlaveContext context );
 }
