@@ -47,15 +47,15 @@ public class XaResourceManager
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
     private final String name;
-    private final TxIdFactory txIdFactory;
+    private final TxIdGenerator txIdGenerator;
     private final XaDataSource dataSource;
 
     XaResourceManager( XaDataSource dataSource, XaTransactionFactory tf,
-            TxIdFactory txIdFactory, String name )
+            TxIdGenerator txIdGenerator, String name )
     {
         this.dataSource = dataSource;
         this.tf = tf;
-        this.txIdFactory = txIdFactory;
+        this.txIdGenerator = txIdGenerator;
         this.name = name;
     }
 
@@ -394,11 +394,11 @@ public class XaResourceManager
                 {
                     xaTransaction.prepare();
                     
-                    // factory sets tx id on xaTransaction
-//                    long txId = txIdFactory.generate( dataSource, xaTransaction.getIdentifier() );
-                    
+                    long txId = txIdGenerator.generate( dataSource,
+                            xaTransaction.getIdentifier() );
+                    xaTransaction.setCommitTxId( txId );
                     log.commitOnePhase( xaTransaction.getIdentifier(), 
-                        xaTransaction.getCommitTxId() );
+                            xaTransaction.getCommitTxId() );
                 }
             }
             txStatus.markAsPrepared();
@@ -414,10 +414,11 @@ public class XaResourceManager
             {
                 if ( !onePhase )
                 {
-                    // factory sets tx id on xaTransaction
-//                    long txId = txIdFactory.generate( dataSource, xaTransaction.getIdentifier() );
-                    log.commitTwoPhase( xaTransaction.getIdentifier(), 
-                        xaTransaction.getCommitTxId() );
+                    long txId = txIdGenerator.generate( dataSource,
+                            xaTransaction.getIdentifier() );
+                    xaTransaction.setCommitTxId( txId );
+                    log.commitTwoPhase( xaTransaction.getIdentifier(),
+                            xaTransaction.getCommitTxId() );
                 }
             }
             txStatus.markCommitStarted();

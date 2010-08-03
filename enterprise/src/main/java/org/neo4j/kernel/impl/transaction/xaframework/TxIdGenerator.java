@@ -1,8 +1,8 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-public interface TxIdFactory
+public interface TxIdGenerator
 {
-    public static final TxIdFactory DEFAULT = new TxIdFactory()
+    public static final TxIdGenerator DEFAULT = new TxIdGenerator()
     {
         public long generate( XaDataSource dataSource, int identifier )
         {

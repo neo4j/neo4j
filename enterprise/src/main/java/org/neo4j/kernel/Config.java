@@ -22,6 +22,8 @@ package org.neo4j.kernel;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.transaction.TransactionManager;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.GraphDbModule;
@@ -36,7 +38,7 @@ import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
 import org.neo4j.kernel.impl.persistence.PersistenceModule;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
 /**
  * A non-standard configuration object.
@@ -104,21 +106,21 @@ public class Config
     private final boolean readOnly;
     private final boolean backupSlave;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final TxIdFactory txIdFactory;
+    private final TxIdGenerator txIdGenerator;
 
     Config( GraphDatabaseService graphDb, String storeDir,
             Map<String, String> inputParams, KernelPanicEventGenerator kpe,
             TxModule txModule, LockManager lockManager,
             LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
             TxEventSyncHookFactory txSyncHookFactory,
-            RelationshipTypeCreator relTypeCreator, TxIdFactory txIdFactory )
+            RelationshipTypeCreator relTypeCreator, TxIdGenerator txIdGenerator )
     {
         this.kpe = kpe;
         this.storeDir = storeDir;
         this.inputParams = inputParams;
         this.idGeneratorFactory = idGeneratorFactory;
         this.relTypeCreator = relTypeCreator;
-        this.txIdFactory = txIdFactory;
+        this.txIdGenerator = txIdGenerator;
         this.params = getDefaultParams();
         this.txModule = txModule;
         this.lockManager = lockManager;
@@ -134,7 +136,8 @@ public class Config
                 readOnly );
 
         params.put( IdGeneratorFactory.class, idGeneratorFactory );
-        params.put( TxIdFactory.class, txIdFactory );
+        params.put( TxIdGenerator.class, txIdGenerator );
+        params.put( TransactionManager.class, txModule.getTxManager() );
     }
 
     private static Map<Object, Object> getDefaultParams()

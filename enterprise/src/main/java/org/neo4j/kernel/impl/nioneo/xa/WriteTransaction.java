@@ -201,7 +201,6 @@ class WriteTransaction extends XaTransaction
             propCommands.add( command );
             addCommand( command );
         }
-        setCommitTxId( neoStore.getNextCommitId() );
     }
 
     @Override
