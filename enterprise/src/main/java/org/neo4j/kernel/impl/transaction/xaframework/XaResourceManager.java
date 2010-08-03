@@ -374,6 +374,7 @@ public class XaResourceManager
     synchronized XaTransaction commit( Xid xid, boolean onePhase )
         throws XAException
     {
+        // TODO: if slave throw exception if onePhase == true
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
