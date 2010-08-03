@@ -1,6 +1,5 @@
 package slavetest;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,7 +11,6 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -271,8 +269,8 @@ public class FakeMaster implements Master
                 generator.getDefragCount() ), new TransactionStream() );
     }
 
-    public Response<Collection<Pair<String, Integer>>> commitTransaction( SlaveContext context,
-            int localTxId, Collection<Pair<String, TransactionStream>> transactionStreams )
+    public Response<Long> commitSingleResourceTransaction( SlaveContext context,
+            int localTxId, String resource, TransactionStream transactionStream )
     {
         throw new UnsupportedOperationException();
     }

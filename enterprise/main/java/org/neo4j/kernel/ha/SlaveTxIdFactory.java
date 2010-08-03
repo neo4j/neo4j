@@ -1,7 +1,11 @@
 package org.neo4j.kernel.ha;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.ha.Broker;
+import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
+import org.neo4j.kernel.impl.ha.TransactionStream;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
@@ -16,8 +20,18 @@ public class SlaveTxIdFactory implements TxIdFactory
         this.receiver = receiver;
     }
 
-    public long generate( XaDataSource dataSource )
+    public long generate( XaDataSource dataSource, int identifier )
     {
-        return 0;
+        try
+        {
+            Response<Long> response = broker.getMaster().commitSingleResourceTransaction(
+                    broker.getSlaveContext(), identifier, dataSource.getName(),
+                    new TransactionStream( dataSource.getCommittedTransaction( identifier ) ) );
+            return receiver.receive( response );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

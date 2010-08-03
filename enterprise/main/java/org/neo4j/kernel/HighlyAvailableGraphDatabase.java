@@ -14,6 +14,7 @@ import org.neo4j.kernel.ha.SlaveIdGenerator;
 import org.neo4j.kernel.ha.SlaveLockManager;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTopLevelTransactionFactory;
+import org.neo4j.kernel.ha.SlaveTxIdFactory;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
