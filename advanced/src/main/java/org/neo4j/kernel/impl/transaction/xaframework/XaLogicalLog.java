@@ -985,7 +985,7 @@ public class XaLogicalLog
         LogBuffer buf = new DirectMappedLogBuffer( txLog );
         for ( LogEntry entry : logEntryList )
         {
-            LogIoUtils.writeLogEntry( entry, buf, cf );
+            LogIoUtils.writeLogEntry( entry, buf );
         }
         txLog.close();
         if ( !new File( tmpName ).renameTo( new File( name ) ) )
@@ -1033,28 +1033,30 @@ public class XaLogicalLog
         backupSlave = true;
     }
     
-    private static class LogApplier
+    private class LogApplier
     {
         private final ReadableByteChannel byteChannel;
-        private final ByteBuffer buffer;
-        private final XaTransactionFactory xaTf;
-        private final XaResourceManager xaRm;
-        private final XaCommandFactory xaCf;
-        private final ArrayMap<Integer,LogEntry.Start> xidIdentMap;
-        private final Map<Integer,XaTransaction> recoveredTxMap;
+//        private final ByteBuffer buffer;
+//        private final XaTransactionFactory xaTf;
+//        private final XaResourceManager xaRm;
+//        private final XaCommandFactory xaCf;
+//        private final ArrayMap<Integer,LogEntry.Start> xidIdentMap;
+//        private final Map<Integer,XaTransaction> recoveredTxMap;
         
-        LogApplier( ReadableByteChannel byteChannel, ByteBuffer buffer, 
+        private LogEntry.Start startEntry;
+        
+        LogApplier( ReadableByteChannel byteChannel ) /*, ByteBuffer buffer, 
             XaTransactionFactory xaTf, XaResourceManager xaRm, 
             XaCommandFactory xaCf, ArrayMap<Integer,LogEntry.Start> xidIdentMap, 
-            Map<Integer,XaTransaction> recoveredTxMap )
+            Map<Integer,XaTransaction> recoveredTxMap )*/
         {
             this.byteChannel = byteChannel;
-            this.buffer = buffer;
-            this.xaTf = xaTf;
-            this.xaRm = xaRm;
-            this.xaCf = xaCf;
-            this.xidIdentMap = xidIdentMap;
-            this.recoveredTxMap = recoveredTxMap;
+//            this.buffer = buffer;
+//            this.xaTf = xaTf;
+//            this.xaRm = xaRm;
+//            this.xaCf = xaCf;
+//            this.xidIdentMap = xidIdentMap;
+//            this.recoveredTxMap = recoveredTxMap;
         }
         
         boolean readAndApplyEntry() throws IOException
@@ -1096,7 +1098,54 @@ public class XaLogicalLog
             }
         }
 
-        private void readTxStartEntry() throws IOException
+        boolean readAndApplyAndWriteEntry() throws IOException
+        {
+            buffer.clear();
+            buffer.limit( 1 );
+            if ( byteChannel.read( buffer ) != buffer.limit() )
+            {
+                // ok no more entries we're done
+                return false;
+            }
+            buffer.flip();
+            byte entry = buffer.get();
+            LogEntry logEntry = null;
+            switch ( entry )
+            {
+                case LogEntry.TX_START:
+                    logEntry = readTxStartEntry();
+                    startEntry = (LogEntry.Start) logEntry;
+                    break;
+                case LogEntry.TX_PREPARE:
+                    logEntry = readTxPrepareEntry();
+                    break;
+                case LogEntry.TX_1P_COMMIT:
+                    logEntry = readAndApplyTxOnePhaseCommit();
+                    break;
+                case LogEntry.TX_2P_COMMIT:
+                    logEntry = readAndApplyTxTwoPhaseCommit();
+                    break;
+                case LogEntry.COMMAND:
+                    logEntry = readCommandEntry();
+                    break;
+                case LogEntry.DONE:
+                    logEntry = readDoneEntry();
+                    break;
+                case LogEntry.EMPTY:
+                    break;
+                default:
+                    throw new IOException( "Internal recovery failed, "
+                        + "unknown log entry[" + entry + "]" );
+            }
+            if ( logEntry != null )
+            {
+                LogIoUtils.writeLogEntry( logEntry, writeBuffer );
+                return true;
+            }
+            return false;
+        }
+        
+        private LogEntry readTxStartEntry() throws IOException
         {
             // get the global id
             LogEntry.Start entry = LogIoUtils.readTxStartEntry( buffer, 
@@ -1113,9 +1162,10 @@ public class XaLogicalLog
             xaTx.setRecovered();
             recoveredTxMap.put( identifier, xaTx );
             xaRm.injectStart( xid, xaTx );
+            return entry;
         }
     
-        private void readTxPrepareEntry() throws IOException
+        private LogEntry readTxPrepareEntry() throws IOException
         {
             // get the tx identifier
             LogEntry.Prepare prepareEntry = 
@@ -1137,9 +1187,10 @@ public class XaLogicalLog
                 xidIdentMap.remove( identifier );
                 recoveredTxMap.remove( identifier );
             }
+            return prepareEntry;
         }
 
-        private void readAndApplyTxOnePhaseCommit() throws IOException
+        private LogEntry readAndApplyTxOnePhaseCommit() throws IOException
         {
             // get the tx identifier
             LogEntry.OnePhaseCommit commit = 
@@ -1167,9 +1218,10 @@ public class XaLogicalLog
                 e.printStackTrace();
                 throw new IOException( e.getMessage() );
             }
+            return commit;
         }
 
-        private void readAndApplyTxTwoPhaseCommit() throws IOException
+        private LogEntry readAndApplyTxTwoPhaseCommit() throws IOException
         {
             LogEntry.TwoPhaseCommit commit = 
                 LogIoUtils.readTxTwoPhaseCommit( buffer, byteChannel );
@@ -1196,12 +1248,13 @@ public class XaLogicalLog
                 e.printStackTrace();
                 throw new IOException( e.getMessage() );
             }
+            return commit;
         }
 
-        private void readCommandEntry() throws IOException
+        private LogEntry readCommandEntry() throws IOException
         {
             LogEntry.Command entry = 
-                LogIoUtils.readTxCommand( buffer, byteChannel, xaCf );
+                LogIoUtils.readTxCommand( buffer, byteChannel, cf );
             if ( entry == null )
             {
                 throw new IOException( "Unable to read tx command entry" );
@@ -1211,16 +1264,17 @@ public class XaLogicalLog
             command.setRecovered();
             XaTransaction xaTx = recoveredTxMap.get( identifier );
             xaTx.injectCommand( command );
+            return entry;
         }
 
-        private boolean readDoneEntry() throws IOException
+        private LogEntry readDoneEntry() throws IOException
         {
             LogEntry.Done done = 
                 LogIoUtils.readTxDoneEntry( buffer, byteChannel );
             if ( done == null )
             {
                 // not throw exception?
-                return false;
+                return null;
             }
             int identifier = done.getIdentifier();
             LogEntry.Start entry = xidIdentMap.get( identifier );
@@ -1232,7 +1286,7 @@ public class XaLogicalLog
             xaRm.pruneXidIfExist( xid );
             xidIdentMap.remove( identifier );
             recoveredTxMap.remove( identifier );
-            return true;
+            return done;
         }
     }
     
@@ -1265,8 +1319,8 @@ public class XaLogicalLog
         log.fine( "Logical log version: " + logVersion + 
             "(previous committed tx=" + previousCommittedTx + ")" );
         long logEntriesFound = 0;
-        LogApplier logApplier = new LogApplier( byteChannel, buffer, xaTf, xaRm,
-            cf, xidIdentMap, recoveredTxMap );
+        LogApplier logApplier = new LogApplier( byteChannel ); // , buffer, xaTf, xaRm,
+            // cf, xidIdentMap, recoveredTxMap );
         while ( logApplier.readAndApplyEntry() )
         {
             logEntriesFound++;
@@ -1277,6 +1331,52 @@ public class XaLogicalLog
         xaRm.reset();
         log.info( "Log[" + fileName + "] version " + logVersion + 
                 " applied successfully." );
+    }
+
+    public synchronized void applyTransactionWithoutTxId( ReadableByteChannel byteChannel, 
+            int nextTxId ) throws IOException
+    {
+        if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
+        {
+            throw new IllegalStateException( "Tried to apply tx " + 
+                nextTxId + " but expected transaction " + 
+                (xaTf.getCurrentVersion() + 1) );
+        }
+        log.fine( "Logical log version: " + logVersion + 
+            ", committing tx=" + nextTxId + ")" );
+        long logEntriesFound = 0;
+        LogApplier logApplier = new LogApplier( byteChannel ); // , buffer, xaTf, xaRm,
+            // cf, xidIdentMap, recoveredTxMap );
+        while ( logApplier.readAndApplyAndWriteEntry() )
+        {
+            logEntriesFound++;
+        }
+        byteChannel.close();
+        LogEntry.Start entry = logApplier.startEntry;
+        if ( entry == null )
+        {
+            throw new IOException( "Unable to find start entry" );
+        }
+        LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit( 
+                entry.getIdentifier(), nextTxId );
+        LogIoUtils.writeLogEntry( commit, writeBuffer );
+        Xid xid = entry.getXid();
+        try
+        {
+            XaTransaction xaTx = xaRm.getXaTransaction( xid );
+            xaTx.setCommitTxId( nextTxId );
+            xaRm.commit( xid, true );
+        }
+        catch ( XAException e )
+        {
+            e.printStackTrace();
+            throw new IOException( e.getMessage() );
+        }
+        LogEntry.Done done = new LogEntry.Done( entry.getIdentifier() );
+        LogIoUtils.writeLogEntry( done, writeBuffer );
+        xaTf.setLastCommittedTx( nextTxId );
+        xaRm.reset();
+        log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
     }
     
     public synchronized void applyTransaction( ReadableByteChannel byteChannel )
@@ -1303,8 +1403,8 @@ public class XaLogicalLog
         log.fine( "Logical log version: " + logVersion + 
             ", committing tx=" + txId + ")" );
         long logEntriesFound = 0;
-        LogApplier logApplier = new LogApplier( byteChannel, buffer, xaTf, xaRm,
-            cf, xidIdentMap, recoveredTxMap );
+        LogApplier logApplier = new LogApplier( byteChannel ); //, buffer, xaTf, xaRm,
+            // cf, xidIdentMap, recoveredTxMap );
         while ( logApplier.readAndApplyEntry() )
         {
             logEntriesFound++;
