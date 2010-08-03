@@ -1204,7 +1204,7 @@ public class XaLogicalLog
             }
         }
 
-        boolean readAndApplyAndWriteEntry() throws IOException
+        boolean readAndApplyAndWriteEntry( int newXidIdentifier ) throws IOException
         {
             buffer.clear();
             buffer.limit( 1 );
@@ -1245,6 +1245,7 @@ public class XaLogicalLog
             }
             if ( logEntry != null )
             {
+                logEntry.setIdentifier( newXidIdentifier );
                 LogIoUtils.writeLogEntry( logEntry, writeBuffer );
                 return true;
             }
@@ -1425,8 +1426,7 @@ public class XaLogicalLog
         log.fine( "Logical log version: " + logVersion + 
             "(previous committed tx=" + previousCommittedTx + ")" );
         long logEntriesFound = 0;
-        LogApplier logApplier = new LogApplier( byteChannel ); // , buffer, xaTf, xaRm,
-            // cf, xidIdentMap, recoveredTxMap );
+        LogApplier logApplier = new LogApplier( byteChannel );
         while ( logApplier.readAndApplyEntry() )
         {
             logEntriesFound++;
@@ -1451,9 +1451,9 @@ public class XaLogicalLog
         log.fine( "Logical log version: " + logVersion + 
             ", committing tx=" + nextTxId + ")" );
         long logEntriesFound = 0;
-        LogApplier logApplier = new LogApplier( byteChannel ); // , buffer, xaTf, xaRm,
-            // cf, xidIdentMap, recoveredTxMap );
-        while ( logApplier.readAndApplyAndWriteEntry() )
+        LogApplier logApplier = new LogApplier( byteChannel );
+        int xidIdent = getNextIdentifier();
+        while ( logApplier.readAndApplyAndWriteEntry( xidIdent ) )
         {
             logEntriesFound++;
         }
@@ -1480,47 +1480,21 @@ public class XaLogicalLog
         }
         LogEntry.Done done = new LogEntry.Done( entry.getIdentifier() );
         LogIoUtils.writeLogEntry( done, writeBuffer );
-        xaTf.setLastCommittedTx( nextTxId );
-        xaRm.reset();
+        // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
         log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
     }
     
     public synchronized void applyTransaction( ReadableByteChannel byteChannel )
         throws IOException
     {
-        if ( !slave )
-        {
-            throw new IllegalStateException( "This is not a slave" );
-        }
-        buffer.clear();
-        buffer.limit( 8 );
-        if ( byteChannel.read( buffer ) != 16 )
-        {
-            throw new IOException( "Unable to read log version" );
-        }
-        buffer.flip();
-        long txId = buffer.getLong();
-        if ( txId != (xaTf.getLastCommittedTx() + 1) )
-        {
-            throw new IllegalStateException( "Tried to apply tx " + 
-                txId + " but expected transaction " + 
-                (xaTf.getCurrentVersion() + 1) );
-        }
-        log.fine( "Logical log version: " + logVersion + 
-            ", committing tx=" + txId + ")" );
         long logEntriesFound = 0;
-        LogApplier logApplier = new LogApplier( byteChannel ); //, buffer, xaTf, xaRm,
-            // cf, xidIdentMap, recoveredTxMap );
-        while ( logApplier.readAndApplyEntry() )
+        LogApplier logApplier = new LogApplier( byteChannel );
+        int xidIdent = getNextIdentifier();
+        while ( logApplier.readAndApplyAndWriteEntry( xidIdent ) )
         {
             logEntriesFound++;
         }
         byteChannel.close();
-        // TODO: optimize this and write to local logical log instead of flush?
-        xaTf.flushAll();
-        xaTf.setLastCommittedTx( txId );
-        xaRm.reset();
-        log.info( "Tx[" + txId + "] " + " applied successfully." );
     }
     
     public synchronized void rotate() throws IOException

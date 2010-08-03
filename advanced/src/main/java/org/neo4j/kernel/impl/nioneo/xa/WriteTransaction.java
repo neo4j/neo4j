@@ -412,6 +412,11 @@ class WriteTransaction extends XaTransaction
             commitRecovered();
             return;
         }
+        if ( getCommitTxId() != neoStore.getLastCommittedTx() + 1 )
+        {
+            throw new RuntimeException( "Tx id: " + getCommitTxId() + 
+                    " not next transaction (" + neoStore.getLastCommittedTx() + ")" );
+        }
         try
         {
             committed = true;
