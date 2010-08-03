@@ -76,7 +76,6 @@ class EmbeddedGraphDbImpl
     private final NodeManager nodeManager;
     private final String storeDir;
     private final int instanceId = INSTANCE_ID_COUNTER.getAndIncrement();
-    private final TopLevelTransactionFactory txFactory;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -98,10 +97,9 @@ class EmbeddedGraphDbImpl
     public EmbeddedGraphDbImpl( String storeDir, Map<String, String> inputParams,
             GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
             IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator,
-            TopLevelTransactionFactory txFactory, TxIdGeneratorFactory txIdFactory )
+            TxIdGeneratorFactory txIdFactory )
     {
         this.storeDir = storeDir;
-        this.txFactory = txFactory;
         TxModule txModule = newTxModule( inputParams );
         LockManager lockManager = lockManagerFactory.create( txModule );
         LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
@@ -335,7 +333,7 @@ class EmbeddedGraphDbImpl
         {
             if ( placeboTransaction == null )
             {
-                placeboTransaction = txFactory.getPlaceboTx(
+                placeboTransaction = new PlaceboTransaction(
                         graphDbInstance.getTransactionManager() );
             }
             return placeboTransaction;
@@ -345,7 +343,7 @@ class EmbeddedGraphDbImpl
         try
         {
             txManager.begin();
-            result = txFactory.beginTx( txManager );
+            result = new TopLevelTransaction( txManager );
         }
         catch ( Exception e )
         {

@@ -79,8 +79,7 @@ public final class EmbeddedReadOnlyGraphDatabase implements
         params.put( Config.READ_ONLY, "true" );
         this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this,
                 LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT,
-                DefaultRelationshipTypeCreator.INSTANCE, TopLevelTransactionFactory.DEFAULT,
-                TxIdGeneratorFactory.DEFAULT );
+                DefaultRelationshipTypeCreator.INSTANCE, TxIdGeneratorFactory.DEFAULT );
     }
 
     /**
