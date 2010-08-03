@@ -840,15 +840,15 @@ public class XaLogicalLog
             ReadableByteChannel log ) throws IOException
     {
         buffer.clear();
-        buffer.limit( 8 );
+        buffer.limit( 16 );
         log.read( buffer );
-        long versionInLog = buffer.getLong();
-        long prevTxId = buffer.getLong();
         List<LogEntry> logEntryList = null;
         Map<Integer,List<LogEntry>> transactions = 
             new HashMap<Integer,List<LogEntry>>();
+        buffer.clear();
+        buffer.limit( 1 );
         while ( logEntryList == null && 
-                fileChannel.read( buffer ) != buffer.limit() )
+                log.read( buffer ) == buffer.limit() )
         {
             buffer.flip();
             byte entry = buffer.get();
@@ -879,9 +879,17 @@ public class XaLogicalLog
                     transactions.get( logEntry.getIdentifier() ).add( logEntry );
                 }
                 break;
+            case LogEntry.TX_1P_COMMIT:
+                logEntry = LogIoUtils.readTxOnePhaseCommit( buffer, log );
+                break;
+            case LogEntry.TX_2P_COMMIT:
+                logEntry = LogIoUtils.readTxTwoPhaseCommit( buffer, log );
+                break;
+            case LogEntry.DONE:
+                logEntry = LogIoUtils.readTxDoneEntry( buffer, log );
+                break;
             default:
-                throw new IOException( "Unable to locate transaction with internal identifier "
-                    + identifier );
+                throw new IOException( "Unknown log entry " + entry );
             }
             buffer.clear();
             buffer.limit( 1 );
@@ -909,8 +917,9 @@ public class XaLogicalLog
         Map<Integer,List<LogEntry>> transactions = 
             new HashMap<Integer,List<LogEntry>>();
         buffer.clear();
+        buffer.limit( 1 );
         while ( logEntryList == null && 
-                fileChannel.read( buffer ) != buffer.limit() )
+                log.read( buffer ) == buffer.limit() )
         {
             buffer.flip();
             byte entry = buffer.get();
@@ -1026,7 +1035,7 @@ public class XaLogicalLog
             String tmpNameHint ) throws IOException
     {
         String tmpName = generateUniqueName( tmpNameHint );
-        FileChannel txLog = new RandomAccessFile( tmpName, "r" ).getChannel();
+        FileChannel txLog = new RandomAccessFile( tmpName, "rw" ).getChannel();
         LogBuffer buf = new DirectMappedLogBuffer( txLog );
         for ( LogEntry entry : logEntryList )
         {
