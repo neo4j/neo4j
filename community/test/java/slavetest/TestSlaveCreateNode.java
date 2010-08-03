@@ -14,7 +14,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Master;
 
 public class TestSlaveCreateNode
@@ -22,9 +21,6 @@ public class TestSlaveCreateNode
     private static final RelationshipType REL_TYPE = DynamicRelationshipType.withName( "HA_TEST" );
     private static final File MASTER_PATH = new File( "target/dbs/master" );
     private static final File SLAVE_PATH = new File( "target/dbs/slave" );
-    
-    private static Master master;
-    private static Broker broker;
     
     @BeforeClass
     public static void initializeDbs()
@@ -37,8 +33,6 @@ public class TestSlaveCreateNode
                     new EmbeddedGraphDatabase( MASTER_PATH.getAbsolutePath() );
             masterDb.shutdown();
             FileUtils.copyDirectory( MASTER_PATH, SLAVE_PATH );
-            master = new FakeMaster( MASTER_PATH.getAbsolutePath() );
-            broker = new FakeBroker( master );
         }
         catch ( IOException e )
         {
@@ -49,23 +43,21 @@ public class TestSlaveCreateNode
     @Test
     public void slaveCreateNode()
     {
-        GraphDatabaseService graphdb = instantiateSlave();
-        Transaction tx = graphdb.beginTx();
+        Master master = new FakeMaster( MASTER_PATH.getAbsolutePath() );
+        FakeBroker broker = new FakeBroker( master ); 
+        GraphDatabaseService haDb = new HighlyAvailableGraphDatabase( SLAVE_PATH.getAbsolutePath(),
+                new HashMap<String, String>(), broker );
+        broker.setSlave( haDb );
+        Transaction tx = haDb.beginTx();
         try
         {
-            Node node = graphdb.createNode();
-            graphdb.getReferenceNode().createRelationshipTo( node, REL_TYPE );
+            Node node = haDb.createNode();
+            haDb.getReferenceNode().createRelationshipTo( node, REL_TYPE );
             tx.success();
         }
         finally
         {
             tx.finish();
         }
-    }
-
-    private GraphDatabaseService instantiateSlave()
-    {
-        return new HighlyAvailableGraphDatabase( SLAVE_PATH.getAbsolutePath(),
-                new HashMap<String, String>(), broker );
     }
 }
