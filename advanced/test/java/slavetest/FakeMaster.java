@@ -1,5 +1,9 @@
 package slavetest;
 
+import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,12 +15,14 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.ha.FailedResponse;
 import org.neo4j.kernel.impl.ha.IdAllocation;
 import org.neo4j.kernel.impl.ha.LockResult;
 import org.neo4j.kernel.impl.ha.LockStatus;
@@ -24,13 +30,23 @@ import org.neo4j.kernel.impl.ha.Master;
 import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.SlaveContext;
 import org.neo4j.kernel.impl.ha.TransactionStream;
+import org.neo4j.kernel.impl.ha.TransactionStreams;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class FakeMaster implements Master
 {
+    private static final Predicate<Long> ALL = new Predicate<Long>()
+    {
+        public boolean accept( Long item )
+        {
+            return true;
+        }
+    };
+    
     private final GraphDatabaseService graphDb;
     private final Map<TxIdElement, Transaction> transactions =
             new HashMap<TxIdElement, Transaction>();
@@ -58,17 +74,17 @@ public class FakeMaster implements Master
                 lockReleaser.addLockToTransaction( node, LockType.READ );
             }
             return new Response<LockResult>( new LockResult( LockStatus.OK_LOCKED ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         catch ( DeadlockDetectedException e )
         {
             return new Response<LockResult>( new LockResult( e.getMessage() ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         catch ( IllegalResourceException e )
         {
             return new Response<LockResult>( new LockResult( LockStatus.NOT_LOCKED ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         finally
         {
@@ -151,6 +167,23 @@ public class FakeMaster implements Master
         }
     }
 
+    void rollbackThisAndResumeOther( Transaction otherTx )
+    {
+        try
+        {
+            txManager.rollback();
+            if ( otherTx != null )
+            {
+                txManager.resume( otherTx );
+            }
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            throw new RuntimeException( e );
+        }
+    }
+    
     public Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
             Node... nodes )
     {
@@ -166,17 +199,17 @@ public class FakeMaster implements Master
                 lockReleaser.addLockToTransaction( node, LockType.WRITE );
             }
             return new Response<LockResult>( new LockResult( LockStatus.OK_LOCKED ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         catch ( DeadlockDetectedException e )
         {
             return new Response<LockResult>( new LockResult( e.getMessage() ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         catch ( IllegalResourceException e )
         {
             return new Response<LockResult>( new LockResult( LockStatus.NOT_LOCKED ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         finally
         {
@@ -199,17 +232,17 @@ public class FakeMaster implements Master
                 lockReleaser.addLockToTransaction( relationship, LockType.READ );
             }
             return new Response<LockResult>( new LockResult( LockStatus.OK_LOCKED ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         catch ( DeadlockDetectedException e )
         {
             return new Response<LockResult>( new LockResult( e.getMessage() ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         catch ( IllegalResourceException e )
         {
             return new Response<LockResult>( new LockResult( LockStatus.NOT_LOCKED ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         finally
         {
@@ -232,17 +265,17 @@ public class FakeMaster implements Master
                 lockReleaser.addLockToTransaction( relationship, LockType.WRITE );
             }
             return new Response<LockResult>( new LockResult( LockStatus.OK_LOCKED ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         catch ( DeadlockDetectedException e )
         {
             return new Response<LockResult>( new LockResult( e.getMessage() ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         catch ( IllegalResourceException e )
         {
             return new Response<LockResult>( new LockResult( LockStatus.NOT_LOCKED ),
-                    new TransactionStream() );
+                    new TransactionStreams() );
         }
         finally
         {
@@ -266,13 +299,41 @@ public class FakeMaster implements Master
             ids[i] = generator.nextId();
         }
         return new Response<IdAllocation>( new IdAllocation( ids, generator.getHighId(),
-                generator.getDefragCount() ), new TransactionStream() );
+                generator.getDefragCount() ), new TransactionStreams() );
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
             int eventIdentifier, String resource, TransactionStream transactionStream )
     {
-        throw new UnsupportedOperationException();
+        TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
+        Transaction otherTx = suspendOtherAndResumeThis( tx );
+        try
+        {
+            XaDataSource dataSource = getConfig().getTxModule().getXaDataSourceManager()
+                    .getXaDataSource( resource );
+            // Always exactly one transaction (ReadableByteChannel)
+            final long txId = dataSource.applyPreparedTransaction(
+                    transactionStream.getChannels().iterator().next() );
+            Predicate<Long> notThisTx = new Predicate<Long>()
+            {
+                public boolean accept( Long item )
+                {
+                    return item != txId;
+                }
+            };
+            return packResponse( context, txId, notThisTx );
+        }
+        catch ( IOException e )
+        {
+            return new FailedResponse<Long>();
+        }
+        finally
+        {
+            // Since the master-transaction carries no actual state, just locks
+            // we would like to release the locks... and it's best done by just
+            // rolling back the tx
+            rollbackThisAndResumeOther( otherTx );
+        }
     }
 
     public Response<Integer> createRelationshipType( SlaveContext context, String name )
@@ -282,7 +343,7 @@ public class FakeMaster implements Master
         if ( id != null )
         {
             // OK, return
-            return new Response<Integer>( id, new TransactionStream() );
+            return new Response<Integer>( id, new TransactionStreams() );
         }
         
         // No? Create it then
@@ -290,8 +351,37 @@ public class FakeMaster implements Master
         id = config.getRelationshipTypeCreator().getOrCreate( txManager,
                 config.getIdGeneratorModule().getIdGenerator(),
                 config.getPersistenceModule().getPersistenceManager(), name );
-        // TODO Include the transaction which created it in the tx stream
-        return new Response<Integer>( id, new TransactionStream() );
+        return packResponse( context, id, ALL );
+    }
+
+    private <T> Response<T> packResponse( SlaveContext context, T response,
+            Predicate<Long> filter )
+    {
+        try
+        {
+            TransactionStreams streams = new TransactionStreams();
+            for ( Map.Entry<String, Long> slaveEntry :
+                    context.lastAppliedTransactions().entrySet() )
+            {
+                String resourceName = slaveEntry.getKey();
+                XaDataSource dataSource = getConfig().getTxModule()
+                        .getXaDataSourceManager().getXaDataSource( resourceName );
+                long masterLastTx = dataSource.getLastCommittedTxId();
+                long slaveLastTx = slaveEntry.getValue();
+                Collection<ReadableByteChannel> channels = new ArrayList<ReadableByteChannel>();
+                for ( long txId = slaveLastTx+1; txId <= masterLastTx; txId++ )
+                {
+                    channels.add( dataSource.getCommittedTransaction( txId ) );
+                }
+                streams.add( slaveEntry.getKey(), new TransactionStream( channels ) );
+            }
+            return new Response<T>( response, new TransactionStreams() );
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+            return new FailedResponse<T>();
+        }
     }
 
     public Response<Void> pullUpdates( SlaveContext context )
@@ -312,7 +402,7 @@ public class FakeMaster implements Master
                 throw new RuntimeException( "Shouldn't happen" );
             }
             txManager.rollback();
-            return new Response<Void>( null, new TransactionStream() );
+            return new Response<Void>( null, new TransactionStreams() );
         }
         catch ( IllegalStateException e )
         {

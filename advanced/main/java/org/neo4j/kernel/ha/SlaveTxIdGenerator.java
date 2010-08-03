@@ -1,6 +1,7 @@
 package org.neo4j.kernel.ha;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.transaction.TransactionManager;
 
@@ -50,8 +51,8 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         {
             Response<Long> response = broker.getMaster().commitSingleResourceTransaction(
                     broker.getSlaveContext(), ((TxManager) txManager).getEventIdentifier(),
-                    dataSource.getName(), new TransactionStream(
-                            dataSource.getCommittedTransaction( identifier ) ) );
+                    dataSource.getName(), new TransactionStream( Arrays.asList(
+                            dataSource.getPreparedTransaction( identifier ) ) ) );
             return receiver.receive( response );
         }
         catch ( IOException e )

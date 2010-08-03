@@ -1,6 +1,8 @@
 package org.neo4j.kernel;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -10,6 +12,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
@@ -17,10 +20,13 @@ import org.neo4j.kernel.ha.SlaveTopLevelTransactionFactory;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.ha.Broker;
+import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
+import org.neo4j.kernel.impl.ha.TransactionStream;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
-public class HighlyAvailableGraphDatabase implements GraphDatabaseService
+public class HighlyAvailableGraphDatabase implements GraphDatabaseService, ResponseReceiver
 {
     private final String storeDir;
     private final Map<String, String> config;
@@ -63,13 +69,12 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
         }
         else
         {
-            ResponseReceiver receiver = new ResponseReceiver();
             this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
-                    new SlaveLockManagerFactory( broker, receiver ),
-                    new SlaveIdGeneratorFactory( broker, receiver ),
-                    new SlaveRelationshipTypeCreator( broker, receiver ),
-                    new SlaveTopLevelTransactionFactory( broker, receiver ),
-                    new SlaveTxIdGeneratorFactory( broker, receiver ) );
+                    new SlaveLockManagerFactory( broker, this ),
+                    new SlaveIdGeneratorFactory( broker, this ),
+                    new SlaveRelationshipTypeCreator( broker, this ),
+                    new SlaveTopLevelTransactionFactory( broker, this ),
+                    new SlaveTxIdGeneratorFactory( broker, this ) );
         }
     }
 
@@ -158,5 +163,27 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
             TransactionEventHandler<T> handler )
     {
         return localGraph.unregisterTransactionEventHandler( handler );
+    }
+
+    public <T> T receive( Response<T> response )
+    {
+        try
+        {
+            for ( Pair<String, TransactionStream> streams : response.transactions().getStreams() )
+            {
+                String resourceName = streams.first();
+                XaDataSource dataSource = localGraph.getConfig().getTxModule().getXaDataSourceManager()
+                        .getXaDataSource( resourceName );
+                for ( ReadableByteChannel channel : streams.other().getChannels() )
+                {
+                    dataSource.applyLog( channel );
+                }
+            }
+            return response.response();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }
