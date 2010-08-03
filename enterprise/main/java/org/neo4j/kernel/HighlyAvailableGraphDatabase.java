@@ -17,6 +17,7 @@ import org.neo4j.kernel.ha.SlaveTopLevelTransactionFactory;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdFactory;
 
 public class HighlyAvailableGraphDatabase implements GraphDatabaseService
 {
@@ -56,7 +57,8 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
         {
             this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                     LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT,
-                    DefaultRelationshipTypeCreator.INSTANCE, TopLevelTransactionFactory.DEFAULT );
+                    DefaultRelationshipTypeCreator.INSTANCE, TopLevelTransactionFactory.DEFAULT,
+                    TxIdFactory.DEFAULT );
         }
         else
         {
@@ -65,7 +67,8 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
                     new SlaveLockManager.SlaveLockManagerFactory( broker, receiver ),
                     new SlaveIdGenerator.SlaveIdGeneratorFactory( broker, receiver ),
                     new SlaveRelationshipTypeCreator( broker, receiver ),
-                    new SlaveTopLevelTransactionFactory( broker, receiver ) );
+                    new SlaveTopLevelTransactionFactory( broker, receiver ),
+                    new SlaveTxIdFactory( broker, receiver ) );
         }
     }
 
