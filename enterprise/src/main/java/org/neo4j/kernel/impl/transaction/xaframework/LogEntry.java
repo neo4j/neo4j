@@ -32,7 +32,7 @@ abstract class LogEntry
     static final byte TX_1P_COMMIT = (byte) 5;
     static final byte TX_2P_COMMIT = (byte) 6;
 
-    private final int identifier;
+    private int identifier;
     
     LogEntry( int identifier )
     {
@@ -134,5 +134,10 @@ abstract class LogEntry
         {
             return command;
         }
+    }
+
+    public void setIdentifier( int newXidIdentifier )
+    {
+        identifier = newXidIdentifier;
     }
 }
