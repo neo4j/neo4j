@@ -16,7 +16,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
-import org.neo4j.kernel.ha.SlaveTopLevelTransactionFactory;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.ha.Broker;
@@ -56,6 +55,11 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 //            throw new RuntimeException( e );
 //        }
 //    }
+    
+    public Config getConfig()
+    {
+        return localGraph.getConfig();
+    }
 
     protected void reevaluateMyself()
     {
@@ -64,8 +68,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         {
             this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                     LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT,
-                    DefaultRelationshipTypeCreator.INSTANCE, TopLevelTransactionFactory.DEFAULT,
-                    TxIdGeneratorFactory.DEFAULT );
+                    DefaultRelationshipTypeCreator.INSTANCE, TxIdGeneratorFactory.DEFAULT );
         }
         else
         {
@@ -73,7 +76,6 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                     new SlaveLockManagerFactory( broker, this ),
                     new SlaveIdGeneratorFactory( broker, this ),
                     new SlaveRelationshipTypeCreator( broker, this ),
-                    new SlaveTopLevelTransactionFactory( broker, this ),
                     new SlaveTxIdGeneratorFactory( broker, this ) );
         }
     }

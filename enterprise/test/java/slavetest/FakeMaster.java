@@ -92,17 +92,18 @@ public class FakeMaster implements Master
         }
     }
     
-    private Transaction getOrBeginTx( TxIdElement txId )
+    private Transaction getTx( TxIdElement txId )
+    {
+        return transactions.get( txId );
+    }
+
+    private Transaction beginTx( TxIdElement txId )
     {
         try
         {
-            Transaction tx = transactions.get( txId );
-            if ( tx == null )
-            {
-                txManager.begin();
-                tx = txManager.getTransaction();
-                transactions.put( txId, tx );
-            }
+            txManager.begin();
+            Transaction tx = txManager.getTransaction();
+            transactions.put( txId, tx );
             return tx;
         }
         catch ( NotSupportedException e )
@@ -114,13 +115,13 @@ public class FakeMaster implements Master
             throw new RuntimeException( e );
         }
     }
-
+    
     Transaction suspendOtherAndResumeThis( TxIdElement txId )
     {
         try
         {
             Transaction otherTx = txManager.getTransaction();
-            Transaction transaction = getOrBeginTx( txId );
+            Transaction transaction = getTx( txId );
             if ( otherTx != null && otherTx == transaction )
             {
                 return null;
@@ -133,8 +134,7 @@ public class FakeMaster implements Master
                 }
                 if ( transaction == null )
                 {
-//                    beginTransaction();
-                    throw new RuntimeException( "Shouldn't happen, right?" );
+                    beginTx( txId );
                 }
                 else
                 {
