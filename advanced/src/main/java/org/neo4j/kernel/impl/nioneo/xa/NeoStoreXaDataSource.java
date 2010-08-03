@@ -120,8 +120,8 @@ public class NeoStoreXaDataSource extends XaDataSource
         }
 
         neoStore = new NeoStore( config );
-        xaContainer = XaContainer.create( (String) config.get( "logical_log" ),
-            new CommandFactory( neoStore ), new TransactionFactory(), config );
+        xaContainer = XaContainer.create( this, (String) config.get( "logical_log" ),
+                new CommandFactory( neoStore ), new TransactionFactory(), config );
 
         if ( !readOnly )
         {
@@ -187,7 +187,7 @@ public class NeoStoreXaDataSource extends XaDataSource
         this.lockReleaser = lockReleaser;
         storeDir = logicalLogPath;
         neoStore = new NeoStore( neoStoreFileName );
-        xaContainer = XaContainer.create( logicalLogPath, new CommandFactory(
+        xaContainer = XaContainer.create( this, logicalLogPath, new CommandFactory(
             neoStore ), new TransactionFactory(), null );
 
         xaContainer.openLogicalLog();
@@ -487,5 +487,11 @@ public class NeoStoreXaDataSource extends XaDataSource
     public List<WindowPoolStats> getWindowPoolStats()
     {
         return neoStore.getAllWindowPoolStats();
+    }
+    
+    @Override
+    public long getLastCommittedTxId()
+    {
+        return neoStore.getLastCommittedTx();
     }
 }

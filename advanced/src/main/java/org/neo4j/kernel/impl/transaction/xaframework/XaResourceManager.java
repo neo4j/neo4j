@@ -47,10 +47,15 @@ public class XaResourceManager
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
     private final String name;
+    private final TxIdFactory txIdFactory;
+    private final XaDataSource dataSource;
 
-    XaResourceManager( XaTransactionFactory tf, String name )
+    XaResourceManager( XaDataSource dataSource, XaTransactionFactory tf,
+            TxIdFactory txIdFactory, String name )
     {
+        this.dataSource = dataSource;
         this.tf = tf;
+        this.txIdFactory = txIdFactory;
         this.name = name;
     }
 
@@ -374,7 +379,6 @@ public class XaResourceManager
     synchronized XaTransaction commit( Xid xid, boolean onePhase )
         throws XAException
     {
-        // TODO: if slave throw exception if onePhase == true
         XidStatus status = xidMap.get( xid );
         if ( status == null )
         {
@@ -389,6 +393,10 @@ public class XaResourceManager
                 if ( !xaTransaction.isRecovered() )
                 {
                     xaTransaction.prepare();
+                    
+                    // factory sets tx id on xaTransaction
+                    long txId = txIdFactory.generate( dataSource );
+                    
                     log.commitOnePhase( xaTransaction.getIdentifier(), 
                         xaTransaction.getCommitTxId() );
                 }
@@ -406,6 +414,7 @@ public class XaResourceManager
             {
                 if ( !onePhase )
                 {
+                    // factory sets tx id on xaTransaction
                     log.commitTwoPhase( xaTransaction.getIdentifier(), 
                         xaTransaction.getCommitTxId() );
                 }
