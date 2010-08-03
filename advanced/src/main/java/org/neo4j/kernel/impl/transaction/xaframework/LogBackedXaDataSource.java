@@ -106,4 +106,10 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     {
         return logicalLog.getCommittedTransaction( txId );
     }
+
+    @Override
+    public ReadableByteChannel getPreparedTransaction( long identifier ) throws IOException
+    {
+        return logicalLog.getPreparedTransaction( identifier );
+    }
 }
