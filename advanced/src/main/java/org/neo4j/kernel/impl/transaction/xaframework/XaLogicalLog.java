@@ -1067,11 +1067,16 @@ public class XaLogicalLog
         {
             return getLogicalLog( version );
         }
-        else
+        else if ( version == logVersion )
         {
             String currentLogName = 
                 fileName + (currentLog == LOG1 ? ".1" : ".2" );
             return new RandomAccessFile( currentLogName, "r" ).getChannel();
+        }
+        else
+        {
+            throw new RuntimeException( "Version[" + version + 
+                    "] is higher then current log version[" + logVersion + "]" );
         }
     }
 
@@ -1079,10 +1084,9 @@ public class XaLogicalLog
     {
         long version = logVersion;
         long committedTx = previousLogLastCommittedTx;
-        while ( committedTx <= txId )
+        while ( version >= 0 )
         {
-            version--;
-            ReadableByteChannel log = getLogicalLog( version );
+            ReadableByteChannel log = getLogicalLogOrMyself( version );
             ByteBuffer buf = ByteBuffer.allocate( 16 );
             if ( log.read( buf ) != 16 )
             {
@@ -1098,6 +1102,11 @@ public class XaLogicalLog
             }
             committedTx = buffer.getLong();
             log.close();
+            if ( committedTx <= txId )
+            {
+                break;
+            }
+            version--;
         }
         return version;
     }
