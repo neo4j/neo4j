@@ -335,4 +335,9 @@ public abstract class XaDataSource
         }
         return false;
     }
+    
+    public long getLastCommittedTxId()
+    {
+        throw new UnsupportedOperationException();
+    }
 }

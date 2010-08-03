@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
 import org.neo4j.kernel.impl.persistence.PersistenceModule;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdFactory;
 
 /**
  * A non-standard configuration object.
@@ -103,18 +104,21 @@ public class Config
     private final boolean readOnly;
     private final boolean backupSlave;
     private final IdGeneratorFactory idGeneratorFactory;
+    private final TxIdFactory txIdFactory;
 
     Config( GraphDatabaseService graphDb, String storeDir,
             Map<String, String> inputParams, KernelPanicEventGenerator kpe,
             TxModule txModule, LockManager lockManager,
             LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
-            TxEventSyncHookFactory txSyncHookFactory, RelationshipTypeCreator relTypeCreator )
+            TxEventSyncHookFactory txSyncHookFactory,
+            RelationshipTypeCreator relTypeCreator, TxIdFactory txIdFactory )
     {
         this.kpe = kpe;
         this.storeDir = storeDir;
         this.inputParams = inputParams;
         this.idGeneratorFactory = idGeneratorFactory;
         this.relTypeCreator = relTypeCreator;
+        this.txIdFactory = txIdFactory;
         this.params = getDefaultParams();
         this.txModule = txModule;
         this.lockManager = lockManager;
@@ -130,6 +134,7 @@ public class Config
                 readOnly );
 
         params.put( IdGeneratorFactory.class, idGeneratorFactory );
+        params.put( TxIdFactory.class, txIdFactory );
     }
 
     private static Map<Object, Object> getDefaultParams()
