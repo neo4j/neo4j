@@ -208,7 +208,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             super( map );
             try
             {
-                xaContainer = XaContainer.create( resourceFile(),
+                xaContainer = XaContainer.create( this, resourceFile(),
                     new DummyCommandFactory(), new DummyTransactionFactory(), 
                     null );
                 xaContainer.openLogicalLog();

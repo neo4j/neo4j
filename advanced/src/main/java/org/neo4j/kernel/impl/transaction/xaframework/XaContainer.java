@@ -70,7 +70,9 @@ public class XaContainer
     {
         this.cf = cf;
         this.tf = tf;
-        TxIdFactory txIdFactory = (TxIdFactory) config.get( TxIdFactory.class );
+        // Some tests just pass in null for config, so what the heck - just use the default one
+        TxIdFactory txIdFactory = config != null ? (TxIdFactory) config.get( TxIdFactory.class ) :
+                TxIdFactory.DEFAULT;
         rm = new XaResourceManager( dataSource, tf, txIdFactory, logicalLog );
         log = new XaLogicalLog( logicalLog, rm, cf, tf, config );
         rm.setLogicalLog( log );

@@ -1,10 +1,7 @@
 package org.neo4j.kernel.impl.ha;
 
-import java.util.Collection;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 
 /**
@@ -17,25 +14,25 @@ public interface Master
 
     Response<Integer> createRelationshipType( SlaveContext context, String name );
 
-    Response<LockResult> acquireWriteLock( SlaveContext context, int localTxId,
+    Response<LockResult> acquireWriteLock( SlaveContext context, int identifier,
             Node... nodes );
 
-    Response<LockResult> acquireReadLock( SlaveContext context, int localTxId,
+    Response<LockResult> acquireReadLock( SlaveContext context, int identifier,
             Node... nodes );
 
-    Response<LockResult> acquireWriteLock( SlaveContext context, int localTxId,
+    Response<LockResult> acquireWriteLock( SlaveContext context, int identifier,
             Relationship... relationships );
 
-    Response<LockResult> acquireReadLock( SlaveContext context, int localTxId,
+    Response<LockResult> acquireReadLock( SlaveContext context, int identifier,
             Relationship... relationships );
     
-    /*
-     * Pair<String, Integer>: key=xa resource name, value=committed tx id
-     */
-    Response<Collection<Pair<String, Integer>>> commitTransaction( SlaveContext context,
-            int localTxId, Collection<Pair<String, TransactionStream>> transactionStreams );
+//    Response<Collection<Pair<String, Integer>>> commitTransaction( SlaveContext context,
+//            int localTxId, Collection<Pair<String, TransactionStream>> transactionStreams );
+    
+    Response<Long> commitSingleResourceTransaction( SlaveContext context,
+            int identifier, String resource, TransactionStream transactionStream );
 
-    Response<Void> rollbackTransaction( SlaveContext context, int localTxId );
+    Response<Void> rollbackTransaction( SlaveContext context, int identifier );
 
     Response<Void> pullUpdates( SlaveContext context );
 }
