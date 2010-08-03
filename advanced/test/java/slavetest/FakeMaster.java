@@ -43,10 +43,10 @@ public class FakeMaster implements Master
         
     }
     
-    public Response<LockResult> acquireReadLock( SlaveContext context, int localTxId,
+    public Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
             Node... nodes )
     {
-        TxIdElement tx = new TxIdElement( context.slaveId(), localTxId );
+        TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( tx );
         try
         {
@@ -151,10 +151,10 @@ public class FakeMaster implements Master
         }
     }
 
-    public Response<LockResult> acquireWriteLock( SlaveContext context, int localTxId,
+    public Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
             Node... nodes )
     {
-        TxIdElement tx = new TxIdElement( context.slaveId(), localTxId );
+        TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( tx );
         try
         {
@@ -184,10 +184,10 @@ public class FakeMaster implements Master
         }
     }
 
-    public Response<LockResult> acquireReadLock( SlaveContext context, int localTxId,
+    public Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
             Relationship... relationships )
     {
-        TxIdElement tx = new TxIdElement( context.slaveId(), localTxId );
+        TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( tx );
         try
         {
@@ -217,10 +217,10 @@ public class FakeMaster implements Master
         }
     }
 
-    public Response<LockResult> acquireWriteLock( SlaveContext context, int localTxId,
+    public Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
             Relationship... relationships )
     {
-        TxIdElement tx = new TxIdElement( context.slaveId(), localTxId );
+        TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( tx );
         try
         {
@@ -270,7 +270,7 @@ public class FakeMaster implements Master
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
-            int localTxId, String resource, TransactionStream transactionStream )
+            int eventIdentifier, String resource, TransactionStream transactionStream )
     {
         throw new UnsupportedOperationException();
     }
@@ -300,9 +300,9 @@ public class FakeMaster implements Master
         return null;
     }
 
-    public Response<Void> rollbackTransaction( SlaveContext context, int localTxId )
+    public Response<Void> rollbackTransaction( SlaveContext context, int eventIdentifier )
     {
-        TxIdElement txId = new TxIdElement( context.slaveId(), localTxId );
+        TxIdElement txId = new TxIdElement( context.slaveId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( txId );
         try
         {
@@ -335,19 +335,19 @@ public class FakeMaster implements Master
     private static final class TxIdElement
     {
         private final int slaveId;
-        private final int localTxId;
+        private final int eventIdentifier;
         private final int hashCode;
         
-        TxIdElement( int slaveId, int localTxId )
+        TxIdElement( int slaveId, int eventIdentifier )
         {
             this.slaveId = slaveId;
-            this.localTxId = localTxId;
+            this.eventIdentifier = eventIdentifier;
             this.hashCode = calculateHashCode();
         }
 
         private int calculateHashCode()
         {
-            return (slaveId << 20) | localTxId;
+            return (slaveId << 20) | eventIdentifier;
         }
         
         @Override
@@ -360,7 +360,7 @@ public class FakeMaster implements Master
         public boolean equals( Object obj )
         {
             TxIdElement other = (TxIdElement) obj;
-            return other.slaveId == slaveId && other.localTxId == localTxId;
+            return other.slaveId == slaveId && other.eventIdentifier == eventIdentifier;
         }
     }
 }

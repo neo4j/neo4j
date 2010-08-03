@@ -10,15 +10,15 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.kernel.ha.SlaveIdGenerator;
-import org.neo4j.kernel.ha.SlaveLockManager;
+import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTopLevelTransactionFactory;
-import org.neo4j.kernel.ha.SlaveTxIdFactory;
+import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 
 public class HighlyAvailableGraphDatabase implements GraphDatabaseService
 {
@@ -59,17 +59,17 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService
             this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                     LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT,
                     DefaultRelationshipTypeCreator.INSTANCE, TopLevelTransactionFactory.DEFAULT,
-                    TxIdFactory.DEFAULT );
+                    TxIdGeneratorFactory.DEFAULT );
         }
         else
         {
             ResponseReceiver receiver = new ResponseReceiver();
             this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
-                    new SlaveLockManager.SlaveLockManagerFactory( broker, receiver ),
-                    new SlaveIdGenerator.SlaveIdGeneratorFactory( broker, receiver ),
+                    new SlaveLockManagerFactory( broker, receiver ),
+                    new SlaveIdGeneratorFactory( broker, receiver ),
                     new SlaveRelationshipTypeCreator( broker, receiver ),
                     new SlaveTopLevelTransactionFactory( broker, receiver ),
-                    new SlaveTxIdFactory( broker, receiver ) );
+                    new SlaveTxIdGeneratorFactory( broker, receiver ) );
         }
     }
 
