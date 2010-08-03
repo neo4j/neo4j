@@ -1,56 +1,50 @@
 package org.neo4j.kernel.impl.ha;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Collection;
 
 /**
  * Represents a stream of the data of one or more consecutive transactions. 
  */
 public final class TransactionStream
 {
-    private final byte[] array;
-    
-    public TransactionStream()
+    private final Collection<ReadableByteChannel> channels;
+
+    public TransactionStream( Collection<ReadableByteChannel> channels )
     {
-        this.array = new byte[0];
-    }
-    
-    public TransactionStream( ReadableByteChannel stream )
-    {
-        this.array = readStream( stream );
-    }
-    
-    public byte[] getByteArray()
-    {
-        return this.array;
+        this.channels = channels;
     }
 
-    private byte[] readStream( ReadableByteChannel stream )
+    public Collection<ReadableByteChannel> getChannels()
     {
-        ByteBuffer buffer = ByteBuffer.allocate( 1024 );
-        try
-        {
-            byte[] bytes = new byte[0];
-            while ( true )
-            {
-                buffer.clear();
-                int read = stream.read( buffer );
-                buffer.flip();
-                bytes = extend( bytes, buffer, read );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return channels;
     }
-
-    private static byte[] extend( byte[] bytes, ByteBuffer buffer, int read )
-    {
-        byte[] result = new byte[bytes.length+read];
-        System.arraycopy( bytes, 0, result, 0, bytes.length );
-        System.arraycopy( buffer.array(), bytes.length, result, bytes.length, read );
-        return result;
-    }
+    
+//    private byte[] readStream( ReadableByteChannel stream )
+//    {
+//        ByteBuffer buffer = ByteBuffer.allocate( 1024 );
+//        try
+//        {
+//            byte[] bytes = new byte[0];
+//            while ( true )
+//            {
+//                buffer.clear();
+//                int read = stream.read( buffer );
+//                buffer.flip();
+//                bytes = extend( bytes, buffer, read );
+//            }
+//        }
+//        catch ( IOException e )
+//        {
+//            throw new RuntimeException( e );
+//        }
+//    }
+//
+//    private static byte[] extend( byte[] bytes, ByteBuffer buffer, int read )
+//    {
+//        byte[] result = new byte[bytes.length+read];
+//        System.arraycopy( bytes, 0, result, 0, bytes.length );
+//        System.arraycopy( buffer.array(), bytes.length, result, bytes.length, read );
+//        return result;
+//    }
 }

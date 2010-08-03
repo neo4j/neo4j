@@ -341,7 +341,27 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException();
     }
     
+    public ReadableByteChannel getPreparedTransaction( long identifier ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    public void applyCommittedTransaction( ReadableByteChannel transaction ) throws IOException
+    {
+        getXaContainer().getResourceManager().applyCommittedTransaction( transaction );
+    }
+    
+    public long applyPreparedTransaction( ReadableByteChannel transaction ) throws IOException
+    {
+        return getXaContainer().getResourceManager().applyPreparedTransaction( transaction );
+    }
+    
     public long getLastCommittedTxId()
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    public XaContainer getXaContainer()
     {
         throw new UnsupportedOperationException();
     }

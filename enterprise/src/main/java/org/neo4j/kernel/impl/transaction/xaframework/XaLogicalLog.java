@@ -1440,7 +1440,7 @@ public class XaLogicalLog
     }
 
     public synchronized void applyTransactionWithoutTxId( ReadableByteChannel byteChannel, 
-            int nextTxId ) throws IOException
+            long nextTxId ) throws IOException
     {
         if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
         {

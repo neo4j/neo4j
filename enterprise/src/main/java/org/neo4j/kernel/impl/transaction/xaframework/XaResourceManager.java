@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -29,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -627,5 +629,19 @@ public class XaResourceManager
     public boolean hasRecoveredTransactions()
     {
         return recoveredTxCount > 0;
+    }
+
+    public synchronized void applyCommittedTransaction(
+            ReadableByteChannel transaction ) throws IOException
+    {
+        log.applyTransaction( transaction );
+    }
+    
+    public synchronized long applyPreparedTransaction(
+            ReadableByteChannel transaction ) throws IOException
+    {
+        long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
+        log.applyTransactionWithoutTxId( transaction, txId );
+        return txId;
     }
 }

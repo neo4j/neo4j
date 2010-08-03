@@ -1,14 +1,16 @@
 package org.neo4j.kernel.impl.ha;
 
+import java.util.Map;
+
 public final class SlaveContext
 {
     private final int slaveId;
-    private final long lastAppliedTransaction;
+    private final Map<String, Long> lastAppliedTransactions;
 
-    public SlaveContext( int slaveId, long lastAppliedTransaction )
+    public SlaveContext( int slaveId, Map<String, Long> lastAppliedTransactions )
     {
         this.slaveId = slaveId;
-        this.lastAppliedTransaction = lastAppliedTransaction;
+        this.lastAppliedTransactions = lastAppliedTransactions;
     }
 
     public int slaveId()
@@ -16,8 +18,8 @@ public final class SlaveContext
         return slaveId;
     }
 
-    public long latestAppliedTransaction()
+    public Map<String, Long> lastAppliedTransactions()
     {
-        return lastAppliedTransaction;
+        return lastAppliedTransactions;
     }
 }
