@@ -80,8 +80,7 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
     {
         this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this,
                 LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT,
-                DefaultRelationshipTypeCreator.INSTANCE,
-                TopLevelTransactionFactory.DEFAULT, TxIdGeneratorFactory.DEFAULT );
+                DefaultRelationshipTypeCreator.INSTANCE, TxIdGeneratorFactory.DEFAULT );
     }
 
     /**
