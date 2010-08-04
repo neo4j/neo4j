@@ -56,7 +56,11 @@ public class FakeMaster implements Master
     {
         graphDb = new EmbeddedGraphDatabase( path );
         txManager = getConfig().getTxModule().getTxManager();
-        
+    }
+    
+    public GraphDatabaseService getGraphDb()
+    {
+        return this.graphDb;
     }
     
     public Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
@@ -351,7 +355,8 @@ public class FakeMaster implements Master
         Config config = getConfig();
         id = config.getRelationshipTypeCreator().getOrCreate( txManager,
                 config.getIdGeneratorModule().getIdGenerator(),
-                config.getPersistenceModule().getPersistenceManager(), name );
+                config.getPersistenceModule().getPersistenceManager(),
+                config.getRelationshipTypeHolder(), name );
         return packResponse( context, id, ALL );
     }
 
@@ -372,7 +377,10 @@ public class FakeMaster implements Master
                 Collection<ReadableByteChannel> channels = new ArrayList<ReadableByteChannel>();
                 for ( long txId = slaveLastTx+1; txId <= masterLastTx; txId++ )
                 {
-                    channels.add( dataSource.getCommittedTransaction( txId ) );
+                    if ( filter.accept( txId ) )
+                    {
+                        channels.add( dataSource.getCommittedTransaction( txId ) );
+                    }
                 }
                 streams.add( slaveEntry.getKey(), new TransactionStream( channels ) );
             }

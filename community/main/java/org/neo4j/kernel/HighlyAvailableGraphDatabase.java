@@ -60,7 +60,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     {
         return localGraph.getConfig();
     }
-
+    
     protected void reevaluateMyself()
     {
         shutdownIfNecessary();

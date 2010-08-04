@@ -3,6 +3,7 @@ package org.neo4j.kernel.ha;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
@@ -20,7 +21,7 @@ public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
     }
     
     public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
-            PersistenceManager persistence, String name )
+            PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name )
     {
         return receiver.receive(
                 broker.getMaster().createRelationshipType( broker.getSlaveContext(), name ) );
