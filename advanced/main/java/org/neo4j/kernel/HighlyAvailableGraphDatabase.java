@@ -40,6 +40,16 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 //        this.broker = instantiateBroker();
         reevaluateMyself();
     }
+    
+    public Broker getBroker()
+    {
+        return this.broker;
+    }
+    
+    public void pullUpdates()
+    {
+        receive( broker.getMaster().pullUpdates( broker.getSlaveContext() ) );
+    }
 
 //    private Broker instantiateBroker()
 //    {

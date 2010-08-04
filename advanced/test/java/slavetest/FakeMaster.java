@@ -63,8 +63,8 @@ public class FakeMaster implements Master
         return this.graphDb;
     }
     
-    public Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
-            Node... nodes )
+    private <T> Response<LockResult> acquireLock( SlaveContext context, int eventIdentifier,
+            LockGrabber lockGrabber, T... entities )
     {
         TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( tx );
@@ -72,23 +72,19 @@ public class FakeMaster implements Master
         {
             LockManager lockManager = getConfig().getLockManager();
             LockReleaser lockReleaser = getConfig().getLockReleaser();
-            for ( Node node : nodes )
+            for ( T entity : entities )
             {
-                lockManager.getReadLock( node );
-                lockReleaser.addLockToTransaction( node, LockType.READ );
+                lockGrabber.grab( lockManager, lockReleaser, entity );
             }
-            return new Response<LockResult>( new LockResult( LockStatus.OK_LOCKED ),
-                    new TransactionStreams() );
+            return packResponse( context, new LockResult( LockStatus.OK_LOCKED ), ALL );
         }
         catch ( DeadlockDetectedException e )
         {
-            return new Response<LockResult>( new LockResult( e.getMessage() ),
-                    new TransactionStreams() );
+            return packResponse( context, new LockResult( e.getMessage() ), ALL );
         }
         catch ( IllegalResourceException e )
         {
-            return new Response<LockResult>( new LockResult( LockStatus.NOT_LOCKED ),
-                    new TransactionStreams() );
+            return packResponse( context, new LockResult( LockStatus.NOT_LOCKED ), ALL );
         }
         finally
         {
@@ -188,103 +184,28 @@ public class FakeMaster implements Master
         }
     }
     
+    public Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
+            Node... nodes )
+    {
+        return acquireLock( context, eventIdentifier, READ_LOCK_GRABBER, nodes );
+    }
+    
     public Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
             Node... nodes )
     {
-        TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
-        Transaction otherTx = suspendOtherAndResumeThis( tx );
-        try
-        {
-            LockManager lockManager = getConfig().getLockManager();
-            LockReleaser lockReleaser = getConfig().getLockReleaser();
-            for ( Node node : nodes )
-            {
-                lockManager.getWriteLock( node );
-                lockReleaser.addLockToTransaction( node, LockType.WRITE );
-            }
-            return new Response<LockResult>( new LockResult( LockStatus.OK_LOCKED ),
-                    new TransactionStreams() );
-        }
-        catch ( DeadlockDetectedException e )
-        {
-            return new Response<LockResult>( new LockResult( e.getMessage() ),
-                    new TransactionStreams() );
-        }
-        catch ( IllegalResourceException e )
-        {
-            return new Response<LockResult>( new LockResult( LockStatus.NOT_LOCKED ),
-                    new TransactionStreams() );
-        }
-        finally
-        {
-            suspendThisAndResumeOther( otherTx );
-        }
+        return acquireLock( context, eventIdentifier, WRITE_LOCK_GRABBER, nodes );
     }
 
     public Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
             Relationship... relationships )
     {
-        TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
-        Transaction otherTx = suspendOtherAndResumeThis( tx );
-        try
-        {
-            LockManager lockManager = getConfig().getLockManager();
-            LockReleaser lockReleaser = getConfig().getLockReleaser();
-            for ( Relationship relationship : relationships )
-            {
-                lockManager.getReadLock( relationship );
-                lockReleaser.addLockToTransaction( relationship, LockType.READ );
-            }
-            return new Response<LockResult>( new LockResult( LockStatus.OK_LOCKED ),
-                    new TransactionStreams() );
-        }
-        catch ( DeadlockDetectedException e )
-        {
-            return new Response<LockResult>( new LockResult( e.getMessage() ),
-                    new TransactionStreams() );
-        }
-        catch ( IllegalResourceException e )
-        {
-            return new Response<LockResult>( new LockResult( LockStatus.NOT_LOCKED ),
-                    new TransactionStreams() );
-        }
-        finally
-        {
-            suspendThisAndResumeOther( otherTx );
-        }
+        return acquireLock( context, eventIdentifier, READ_LOCK_GRABBER, relationships );
     }
 
     public Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
             Relationship... relationships )
     {
-        TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
-        Transaction otherTx = suspendOtherAndResumeThis( tx );
-        try
-        {
-            LockManager lockManager = getConfig().getLockManager();
-            LockReleaser lockReleaser = getConfig().getLockReleaser();
-            for ( Relationship relationship : relationships )
-            {
-                lockManager.getWriteLock( relationship );
-                lockReleaser.addLockToTransaction( relationship, LockType.WRITE );
-            }
-            return new Response<LockResult>( new LockResult( LockStatus.OK_LOCKED ),
-                    new TransactionStreams() );
-        }
-        catch ( DeadlockDetectedException e )
-        {
-            return new Response<LockResult>( new LockResult( e.getMessage() ),
-                    new TransactionStreams() );
-        }
-        catch ( IllegalResourceException e )
-        {
-            return new Response<LockResult>( new LockResult( LockStatus.NOT_LOCKED ),
-                    new TransactionStreams() );
-        }
-        finally
-        {
-            suspendThisAndResumeOther( otherTx );
-        }
+        return acquireLock( context, eventIdentifier, WRITE_LOCK_GRABBER, relationships );
     }
     
     private Config getConfig()
@@ -302,8 +223,9 @@ public class FakeMaster implements Master
         {
             ids[i] = generator.nextId();
         }
-        return new Response<IdAllocation>( new IdAllocation( ids, generator.getHighId(),
-                generator.getDefragCount() ), new TransactionStreams() );
+        
+        return packResponse( context, new IdAllocation( ids, generator.getHighId(),
+                generator.getDefragCount() ), ALL );
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
@@ -343,12 +265,12 @@ public class FakeMaster implements Master
 
     public Response<Integer> createRelationshipType( SlaveContext context, String name )
     {
-        // Does this type exist locally?
+        // Does this type exist already?
         Integer id = getConfig().getRelationshipTypeHolder().getIdFor( name );
         if ( id != null )
         {
             // OK, return
-            return new Response<Integer>( id, new TransactionStreams() );
+            return packResponse( context, id, ALL );
         }
         
         // No? Create it then
@@ -395,8 +317,7 @@ public class FakeMaster implements Master
 
     public Response<Void> pullUpdates( SlaveContext context )
     {
-        // TODO Auto-generated method stub
-        return null;
+        return packResponse( context, null, ALL );
     }
 
     public Response<Void> rollbackTransaction( SlaveContext context, int eventIdentifier )
@@ -411,7 +332,7 @@ public class FakeMaster implements Master
                 throw new RuntimeException( "Shouldn't happen" );
             }
             txManager.rollback();
-            return new Response<Void>( null, new TransactionStreams() );
+            return packResponse( context, null, ALL );
         }
         catch ( IllegalStateException e )
         {
@@ -462,4 +383,27 @@ public class FakeMaster implements Master
             return other.slaveId == slaveId && other.eventIdentifier == eventIdentifier;
         }
     }
+    
+    private static interface LockGrabber
+    {
+        void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity );
+    }
+    
+    private static LockGrabber READ_LOCK_GRABBER = new LockGrabber()
+    {
+        public void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity )
+        {
+            lockManager.getReadLock( entity );
+            lockReleaser.addLockToTransaction( entity, LockType.READ );
+        }
+    };
+    
+    private static LockGrabber WRITE_LOCK_GRABBER = new LockGrabber()
+    {
+        public void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity )
+        {
+            lockManager.getWriteLock( entity );
+            lockReleaser.addLockToTransaction( entity, LockType.WRITE );
+        }
+    };
 }
