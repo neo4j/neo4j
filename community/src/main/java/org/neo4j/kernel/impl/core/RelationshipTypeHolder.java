@@ -59,8 +59,7 @@ public class RelationshipTypeHolder
     {
         for ( int i = 0; i < types.length; i++ )
         {
-            relTypes.put( types[i].getName(), types[i].getId() );
-            relTranslation.put( types[i].getId(), types[i].getName() );
+            addRawRelationshipType( types[i] );
         }
     }
     
@@ -68,6 +67,12 @@ public class RelationshipTypeHolder
     {
         relTypes.put( type.getName(), type.getId() );
         relTranslation.put( type.getId(), type.getName() );
+        printIt( type.getId(), type.getName() );
+    }
+
+    private void printIt( int id, String name )
+    {
+        new Exception( "relTranslation.put( " + id + ", " + name + " )" ).printStackTrace();
     }
 
     public RelationshipType addValidRelationshipType( String name,
@@ -81,10 +86,12 @@ public class RelationshipTypeHolder
             }
             int id = createRelationshipType( name );
             relTranslation.put( id, name );
+            printIt( id, name );
         }
         else
         {
             relTranslation.put( relTypes.get( name ), name );
+            printIt( relTypes.get( name ), name );
         }
         return new RelationshipTypeImpl( name );
     }
@@ -136,7 +143,8 @@ public class RelationshipTypeHolder
         {
             return id;
         }
-        id = relTypeCreator.getOrCreate( transactionManager, idGenerator, persistenceManager, name );
+        id = relTypeCreator.getOrCreate( transactionManager, idGenerator,
+                persistenceManager, this, name );
         addRelType( name, id );
         return id;
     }
