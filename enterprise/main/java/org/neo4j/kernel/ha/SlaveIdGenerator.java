@@ -1,6 +1,8 @@
 package org.neo4j.kernel.ha;
 
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -16,6 +18,7 @@ public class SlaveIdGenerator implements IdGenerator
     {
         private final Broker broker;
         private final ResponseReceiver receiver;
+        private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
 
         public SlaveIdGeneratorFactory( Broker broker, ResponseReceiver receiver )
         {
@@ -25,17 +28,22 @@ public class SlaveIdGenerator implements IdGenerator
         
         public IdGenerator open( String fileName, int grabSize, IdType idType, long highestIdInUse )
         {
-            return new SlaveIdGenerator( idType, highestIdInUse, broker, receiver );
+            IdGenerator localIdGenerator = IdGeneratorFactory.DEFAULT.open( fileName, grabSize,
+                    idType, highestIdInUse );
+            IdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker, receiver,
+                    localIdGenerator );
+            generators.put( idType, generator );
+            return generator;
         }
         
         public void create( String fileName )
         {
+            IdGeneratorFactory.DEFAULT.create( fileName );
         }
 
         public IdGenerator get( IdType idType )
         {
-            // TODO Auto-generated method stub
-            return null;
+            return generators.get( idType );
         }
     };
     
@@ -45,18 +53,21 @@ public class SlaveIdGenerator implements IdGenerator
     private volatile long defragCount;
     private final Queue<Long> idQueue = new LinkedList<Long>();
     private final IdType idType;
+    private final IdGenerator localIdGenerator;
 
     public SlaveIdGenerator( IdType idType, long highestIdInUse, Broker broker,
-            ResponseReceiver receiver )
+            ResponseReceiver receiver, IdGenerator localIdGenerator )
     {
         this.idType = idType;
         this.highestIdInUse = highestIdInUse;
         this.broker = broker;
         this.receiver = receiver;
+        this.localIdGenerator = localIdGenerator;
     }
 
     public void close()
     {
+        this.localIdGenerator.close();
     }
 
     public void freeId( long id )
@@ -94,7 +105,18 @@ public class SlaveIdGenerator implements IdGenerator
         {
             idQueue.add( id );
         }
+        updateLocalIdGenerator();
         return idQueue.poll();
+    }
+
+    private void updateLocalIdGenerator()
+    {
+        long localHighId = this.localIdGenerator.getHighId();
+        if ( this.highestIdInUse > localHighId )
+        {
+            this.localIdGenerator.setHighId( this.highestIdInUse );
+            System.out.println( "set high id " + localHighId );
+        }
     }
 
     private Long nextLocalIdOrNull()

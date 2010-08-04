@@ -15,10 +15,12 @@ public class FakeBroker implements Broker
 {
     private final Master master;
     private GraphDatabaseService slaveDb;
+    private final int slaveNumber;
 
-    FakeBroker( Master master )
+    FakeBroker( Master master, int slaveNumber )
     {
         this.master = master;
+        this.slaveNumber = slaveNumber;
     }
     
     public Master getMaster()
@@ -40,6 +42,6 @@ public class FakeBroker implements Broker
         {
             txs.put( dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
-        return new SlaveContext( 0, txs );
+        return new SlaveContext( slaveNumber, txs );
     }
 }
