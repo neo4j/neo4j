@@ -4,6 +4,7 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
@@ -16,7 +17,7 @@ public class DefaultRelationshipTypeCreator implements RelationshipTypeCreator
     }
     
     public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
-            PersistenceManager persistence, String name )
+            PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name )
     {
         RelTypeCreater createrThread = new RelTypeCreater( name, txManager, idGenerator,
                 persistence );
@@ -37,7 +38,9 @@ public class DefaultRelationshipTypeCreator implements RelationshipTypeCreator
         }
         if ( createrThread.succeded() )
         {
-            return createrThread.getRelTypeId();
+            int id = createrThread.getRelTypeId();
+            relTypeHolder.addRawRelationshipType( new RelationshipTypeData( id, name ) );
+            return id;
         }
         throw new TransactionFailureException( 
                 "Unable to create relationship type " + name );
