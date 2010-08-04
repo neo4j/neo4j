@@ -67,12 +67,6 @@ public class RelationshipTypeHolder
     {
         relTypes.put( type.getName(), type.getId() );
         relTranslation.put( type.getId(), type.getName() );
-        printIt( type.getId(), type.getName() );
-    }
-
-    private void printIt( int id, String name )
-    {
-        new Exception( "relTranslation.put( " + id + ", " + name + " )" ).printStackTrace();
     }
 
     public RelationshipType addValidRelationshipType( String name,
@@ -86,12 +80,10 @@ public class RelationshipTypeHolder
             }
             int id = createRelationshipType( name );
             relTranslation.put( id, name );
-            printIt( id, name );
         }
         else
         {
             relTranslation.put( relTypes.get( name ), name );
-            printIt( relTypes.get( name ), name );
         }
         return new RelationshipTypeImpl( name );
     }
