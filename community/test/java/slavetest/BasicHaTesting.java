@@ -26,7 +26,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -40,14 +39,6 @@ public class BasicHaTesting
     private static final File SLAVE_PATH = new File( PARENT_PATH, "slave" );
     private FakeMaster master;
     private List<GraphDatabaseService> haDbs;
-    private static final Predicate<Integer> ALL = new Predicate<Integer>()
-    {
-        public boolean accept( Integer item )
-        {
-            return true;
-        }
-    };
-    private Predicate<Integer> verificationFilter = ALL;
     
     private void initializeDbs( int numSlaves )
     {
@@ -95,17 +86,17 @@ public class BasicHaTesting
 
     private void verify( GraphDatabaseService refDb, GraphDatabaseService... dbs )
     {
-        for ( Node node : refDb.getAllNodes() )
+        for ( GraphDatabaseService otherDb : dbs )
         {
-            int counter = 0;
-            for ( GraphDatabaseService otherDb : dbs )
+            Set<Node> otherNodes = IteratorUtil.addToCollection( otherDb.getAllNodes().iterator(),
+                    new HashSet<Node>() );
+            for ( Node node : refDb.getAllNodes() )
             {
-                if ( verificationFilter.accept( counter++ ) )
-                {
-                    Node otherNode = otherDb.getNodeById( node.getId() );
-                    verifyNode( node, otherNode, otherDb );
-                }
+                Node otherNode = otherDb.getNodeById( node.getId() );
+                verifyNode( node, otherNode, otherDb );
+                otherNodes.remove( otherNode );
             }
+            assertTrue( otherNodes.isEmpty() );
         }
     }
     
@@ -237,185 +228,6 @@ public class BasicHaTesting
         }
         return buffer.toString();
     }
-    
-//    private static class GrabWriteLockJob implements Job
-//    {
-//        private final Node node;
-//
-//        GrabWriteLockJob( Node node )
-//        {
-//            this.node = node;
-//        }
-//        
-//        public String execute( WaitingWorker worker )
-//        {
-//            try
-//            {
-//                node.removeProperty( "skdlsdksldk" );
-//                return "W " + node.getId();
-//            }
-//            catch ( DeadlockDetectedException e )
-//            {
-//                return "DL " + node.getId();
-//            }
-//        }
-//    }
-//    
-//    private static class RestartTxJob implements Job
-//    {
-//        private final boolean successful;
-//
-//        RestartTxJob( boolean successful )
-//        {
-//            this.successful = successful;
-//        }
-//        
-//        public String execute( WaitingWorker worker )
-//        {
-//            worker.endTx( successful );
-//            worker.beginTx();
-//            return null;
-//        }
-//    }
-//    
-//    private static class SetPropertyJob implements Job
-//    {
-//        private final Node node;
-//
-//        SetPropertyJob( Node node )
-//        {
-//            this.node = node;
-//        }
-//        
-//        public String execute( WaitingWorker worker )
-//        {
-//            node.setProperty( "yo", "ya" );
-//            return "SP " + node.getId();
-//        }
-//    }
-//    
-//    private static class DeleteNodeAndRelsJob implements Job
-//    {
-//        private final Node node;
-//
-//        DeleteNodeAndRelsJob( Node node )
-//        {
-//            this.node = node;
-//        }
-//        
-//        public String execute( WaitingWorker worker )
-//        {
-//            for ( Relationship rel : node.getRelationships() )
-//            {
-//                rel.delete();
-//            }
-//            node.delete();
-//            return "DNR " + node.getId();
-//        }
-//    }
-//    
-//    private static interface Job
-//    {
-//        String execute( WaitingWorker worker );
-//    }
-//    
-//    private static class WaitingWorker extends Thread
-//    {
-//        private final Queue<Job> jobs = new LinkedList<Job>();
-//        private final Queue<String> results;
-//        private final AtomicBoolean halted = new AtomicBoolean();
-//        private final GraphDatabaseService db;
-//        private Transaction tx;
-//        
-//        WaitingWorker( String name, GraphDatabaseService db, Queue<String> results )
-//        {
-//            super( name );
-//            this.db = db;
-//            this.results = results;
-//            start();
-//        }
-//        
-//        private void beginTx()
-//        {
-//            tx = db.beginTx();
-//        }
-//        
-//        private void endTx( boolean success )
-//        {
-//            if ( success )
-//            {
-//                tx.success();
-//            }
-//            tx.finish();
-//            tx = null;
-//        }
-//        
-//        public synchronized void add( Job job, boolean waitForCompletion )
-//        {
-//            synchronized ( jobs )
-//            {
-//                this.jobs.add( job );
-//            }
-//            if ( waitForCompletion )
-//            {
-//                try
-//                {
-//                    Thread.sleep( 50 );
-//                }
-//                catch ( InterruptedException e )
-//                {
-//                    Thread.interrupted();
-//                }
-//            }
-//        }
-//        
-//        @Override
-//        public void run()
-//        {
-//            beginTx();
-//            while ( !halted.get() || hasMoreJobs() )
-//            {
-//                Job job = null;
-//                synchronized ( jobs )
-//                {
-//                    job = jobs.poll();
-//                }
-//                if ( job == null )
-//                {
-//                    try
-//                    {
-//                        Thread.sleep( 1 );
-//                    }
-//                    catch ( InterruptedException e )
-//                    {
-//                        Thread.interrupted();
-//                    }
-//                    continue;
-//                }
-//                
-//                String result = job.execute( this );
-//                synchronized ( results )
-//                {
-//                    if ( result != null )
-//                    {
-//                        results.add( getName() + ":" + result );
-//                    }
-//                }
-//            }
-//            endTx( true );
-//        }
-//        
-//        private synchronized boolean hasMoreJobs()
-//        {
-//            return !jobs.isEmpty();
-//        }
-//
-//        public synchronized void halt()
-//        {
-//            this.halted.set( true );
-//            notify();
-//        }
-//    }
     
     @Test
     public void slaveCreateNode() throws Exception
@@ -597,149 +409,10 @@ public class BasicHaTesting
                 t.printStackTrace();
             }
         }
-        ((HighlyAvailableGraphDatabase) haDb).pullUpdates();
+        pullUpdates();
         assertTrue( haDb.getNodeById( node1.getId() ) != null );
     }
     
-//    @Test
-//    public void testLockingOnSingleSlave() throws Exception
-//    {
-//        initializeDbs( 1 );
-//        GraphDatabaseService slave = haDbs.get( 0 );
-//        
-//        Transaction tx = master.getGraphDb().beginTx();
-//        try
-//        {
-//            Node node1 = master.getGraphDb().createNode();
-//            master.getGraphDb().getReferenceNode().createRelationshipTo( node1, REL_TYPE );
-//            Node node2 = master.getGraphDb().createNode();
-//            node1.createRelationshipTo( node2, REL_TYPE );
-//            tx.success();
-//        }
-//        finally
-//        {
-//            tx.finish();
-//        }
-//        
-//        ((HighlyAvailableGraphDatabase) slave).pullUpdates();
-//        Node node1 = slave.getReferenceNode().getSingleRelationship(
-//                REL_TYPE, Direction.OUTGOING ).getEndNode();
-//        Node node2 = node1.getSingleRelationship( REL_TYPE, Direction.OUTGOING ).getEndNode();
-//        
-//        Queue<String> results = new LinkedList<String>();
-//        WaitingWorker worker1 = new WaitingWorker( "1", slave, results );
-//        WaitingWorker worker2 = new WaitingWorker( "2", slave, results );
-//        WaitingWorker masterWorker = new WaitingWorker( "M", master.getGraphDb(), results );
-//        worker1.add( new GrabWriteLockJob( node1 ), true );
-//        worker2.add( new GrabWriteLockJob( node2 ), true );
-//        worker1.add( new GrabWriteLockJob( node2 ), true );
-//        worker2.add( new GrabWriteLockJob( node1 ), true );
-//        worker2.add( new RestartTxJob( true ), true );
-//        
-//        Thread.sleep( 1000 );
-//        
-//        worker1.halt();
-//        worker2.halt();
-//        masterWorker.halt();
-//        
-//        System.out.println( results );
-//        assertCollection( results, "1:W " + node1.getId(),
-//                "2:W " + node2.getId(), "2:DL " + node1.getId() );
-//    }
-//    
-//    @Test
-//    public void testLockingOnMyltipleSlaves()
-//    {
-//        initializeDbs( 2 );
-//        GraphDatabaseService slave1 = haDbs.get( 0 );
-//        GraphDatabaseService slave2 = haDbs.get( 1 );
-//        
-//        Transaction tx = master.getGraphDb().beginTx();
-//        try
-//        {
-//            Node node1 = master.getGraphDb().createNode();
-//            master.getGraphDb().getReferenceNode().createRelationshipTo( node1, REL_TYPE );
-//            Node node2 = master.getGraphDb().createNode();
-//            node1.createRelationshipTo( node2, REL_TYPE );
-//            tx.success();
-//        }
-//        finally
-//        {
-//            tx.finish();
-//        }
-//        
-//        ((HighlyAvailableGraphDatabase) slave1).pullUpdates();
-//        ((HighlyAvailableGraphDatabase) slave2).pullUpdates();
-//        Node slave1Node1 = slave1.getReferenceNode().getSingleRelationship(
-//                REL_TYPE, Direction.OUTGOING ).getEndNode();
-//        Node slave1Node2 = slave1Node1.getSingleRelationship( REL_TYPE, Direction.OUTGOING ).getEndNode();
-//        Node slave2Node1 = slave2.getReferenceNode().getSingleRelationship(
-//                REL_TYPE, Direction.OUTGOING ).getEndNode();
-//        Node slave2Node2 = slave2Node1.getSingleRelationship( REL_TYPE, Direction.OUTGOING ).getEndNode();
-//        
-//        Queue<String> results = new LinkedList<String>();
-//        WaitingWorker worker1 = new WaitingWorker( "1", slave1, results );
-//        WaitingWorker worker2 = new WaitingWorker( "2", slave2, results );
-//        worker1.add( new GrabWriteLockJob( slave1Node1 ), true );
-//        worker2.add( new GrabWriteLockJob( slave2Node2 ), true );
-//        worker1.add( new GrabWriteLockJob( slave1Node2 ), true );
-//        worker2.add( new GrabWriteLockJob( slave2Node1 ), true );
-//        
-//        worker1.halt();
-//        worker2.halt();
-//        
-//        System.out.println( results );
-//        assertCollection( results, "1:W " + slave1Node1.getId(),
-//                "2:W " + slave2Node2.getId(), "2:DL " + slave2Node1.getId() );
-//    }
-    
-//    @Test
-//    public void testRollbackTx() throws Exception
-//    {
-//        initializeDbs( 2 );
-//        GraphDatabaseService slave1 = haDbs.get( 0 );
-//        GraphDatabaseService slave2 = haDbs.get( 1 );
-//        
-//        Transaction tx = master.getGraphDb().beginTx();
-//        try
-//        {
-//            Node node1 = master.getGraphDb().createNode();
-//            master.getGraphDb().getReferenceNode().createRelationshipTo( node1, REL_TYPE );
-//            Node node2 = master.getGraphDb().createNode();
-//            node1.createRelationshipTo( node2, REL_TYPE );
-//            tx.success();
-//        }
-//        finally
-//        {
-//            tx.finish();
-//        }
-//        
-//        pullUpdates();
-//        Node slave1Node1 = slave1.getReferenceNode().getSingleRelationship(
-//                REL_TYPE, Direction.OUTGOING ).getEndNode();
-//        Node slave1Node2 = slave1Node1.getSingleRelationship(
-//                REL_TYPE, Direction.OUTGOING ).getEndNode();
-//        Node slave2Node1 = slave2.getReferenceNode().getSingleRelationship(
-//                REL_TYPE, Direction.OUTGOING ).getEndNode();
-//        Node slave2Node2 = slave2Node1.getSingleRelationship(
-//                REL_TYPE, Direction.OUTGOING ).getEndNode();
-//
-//        Queue<String> results = new LinkedList<String>();
-//        WaitingWorker worker1 = new WaitingWorker( "1", slave1, results );
-//        WaitingWorker worker2 = new WaitingWorker( "2", slave2, results );
-//        worker1.add( new SetPropertyJob( slave1Node2 ), true );
-//        worker2.add( new DeleteNodeAndRelsJob( slave2Node2 ), true );
-//        worker2.add( new RestartTxJob( false ), true );
-//        worker1.add( new RestartTxJob( true ), true );
-//        worker2.halt();
-//        worker1.halt();
-//        Thread.sleep( 1000 );
-//        
-//        System.out.println( results );
-//        
-//        pullUpdates();
-//    }
-
     @Test
     public void testDeadlock() throws Exception
     {
@@ -760,9 +433,7 @@ public class BasicHaTesting
         {
             tx.finish();
         }
-        ((HighlyAvailableGraphDatabase) haDb1).pullUpdates();
-        ((HighlyAvailableGraphDatabase) haDb2).pullUpdates();
-        // verify( mDb, new GraphDatabaseService[] {haDb1, haDb2} );
+        pullUpdates();
         CountDownLatch barrier1 = new CountDownLatch( 1 );
         CountDownLatch barrier2 = new CountDownLatch( 1 );
         Worker1 w1 = new Worker1( haDb1, barrier1, barrier2, node1.getId(), node2.getId() ); w1.start();
@@ -775,9 +446,7 @@ public class BasicHaTesting
         boolean case2 = !w2.successfull && w2.deadlocked && w1.successfull && !w1.deadlocked;
         assertTrue( case1 != case2 );
         assertTrue( case1 || case2  );
-        
-        ((HighlyAvailableGraphDatabase) haDb1).pullUpdates();
-        ((HighlyAvailableGraphDatabase) haDb2).pullUpdates();
+        pullUpdates();
     }
 
     private static class Worker1 extends Thread
@@ -791,7 +460,8 @@ public class BasicHaTesting
         private boolean successfull = false;
         private boolean deadlocked = false;
         
-        Worker1( GraphDatabaseService db, CountDownLatch barrier1, CountDownLatch barrier2, long node1, long node2 )
+        Worker1( GraphDatabaseService db, CountDownLatch barrier1,
+                CountDownLatch barrier2, long node1, long node2 )
         {
             this.db = db;
             this.barrier1 = barrier1;
@@ -819,13 +489,13 @@ public class BasicHaTesting
                 }
                 db.getNodeById( node2 ).removeProperty( "2" );
                 db.getNodeById( node1 ).removeProperty( "1" );
-                System.out.println( "YAY worker1 won" );
+//                System.out.println( "YAY worker1 won" );
                 tx.success();
                 successfull = true;
             }
             catch ( DeadlockDetectedException e )
             {
-                System.out.println( "YAY worker1 deadlocked" );
+//                System.out.println( "YAY worker1 deadlocked" );
                 deadlocked = true;
             }
             catch ( Throwable t )
@@ -850,7 +520,8 @@ public class BasicHaTesting
         private boolean successfull = false;
         private boolean deadlocked = false;
         
-        Worker2( GraphDatabaseService db, CountDownLatch barrier1, CountDownLatch barrier2, long node1, long node2 )
+        Worker2( GraphDatabaseService db, CountDownLatch barrier1,
+                CountDownLatch barrier2, long node1, long node2 )
         {
             this.db = db;
             this.barrier1 = barrier1;
@@ -877,13 +548,13 @@ public class BasicHaTesting
                     e1.printStackTrace();
                 }
                 db.getNodeById( node1 ).setProperty( "1", "T2 2" );
-                System.out.println( "YAY worker2 won" );
+//                System.out.println( "YAY worker2 won" );
                 tx.success();
                 successfull = true;
             }
             catch ( DeadlockDetectedException e )
             {
-                System.out.println( "YAY worker2 deadlock" );
+//                System.out.println( "YAY worker2 deadlock" );
                 deadlocked = true;
             }
             catch ( Throwable t )
