@@ -47,11 +47,11 @@ public class TxModule
     private final XaDataSourceManager xaDsManager;
     private final KernelPanicEventGenerator kpe;
 
-    public TxModule( String txLogDir, KernelPanicEventGenerator kpe )
+    public TxModule( String txLogDir, KernelPanicEventGenerator kpe, TxRollbackHook rollbackHook )
     {
         this.txLogDir = txLogDir;
         this.kpe = kpe;
-        this.txManager = new TxManager( txLogDir, kpe );
+        this.txManager = new TxManager( txLogDir, kpe, rollbackHook );
         this.xaDsManager = new XaDataSourceManager();
     }
     
