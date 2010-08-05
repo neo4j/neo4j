@@ -260,13 +260,5 @@ public class TestSlaveCreateNode
         // See if db1 and 3 can see it the same way as 2
         ((HighlyAvailableGraphDatabase) db1).pullUpdates();
         ((HighlyAvailableGraphDatabase) db3).pullUpdates();
-        
-        verificationFilter = new Predicate<Integer>()
-        {
-            public boolean accept( Integer item )
-            {
-                return item == 2;
-            }
-        };
     }
 }
