@@ -698,6 +698,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.rotateLogicalLog();
         ds.rotateLogicalLog();
         ds.setCurrentLogVersion( currentVersion );
+        ds.setCommittedTxId( 0 );
         ds.makeBackupSlave();
         ds.applyLog( ds.getLogicalLog( currentVersion ) );
         ds.applyLog( ds.getLogicalLog( currentVersion + 1 ) );

@@ -395,6 +395,19 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     {
         neoStore.setVersion( version );
     }
+    
+    public void setCommittedTxId( long txId )
+    {
+        neoStore.setRecoveredStatus( true );
+        try
+        {
+            neoStore.setLastCommittedTx( txId );
+        }
+        finally
+        {
+            neoStore.setRecoveredStatus( false );
+        }
+    }
 
     @Override
     public void applyLog( ReadableByteChannel byteChannel ) throws IOException

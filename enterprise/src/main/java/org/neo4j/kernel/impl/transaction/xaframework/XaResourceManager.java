@@ -424,6 +424,10 @@ public class XaResourceManager
                 }
             }
             txStatus.markCommitStarted();
+            if ( xaTransaction.isRecovered() && xaTransaction.getCommitTxId() == -1 )
+            {
+                xaTransaction.setCommitTxId( dataSource.getLastCommittedTxId() + 1 );
+            }
             xaTransaction.commit();
         }
         log.done( xaTransaction.getIdentifier() );
