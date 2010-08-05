@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.management.Neo4jMBean;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.TxRollbackHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 
 class EmbeddedGraphDbImpl
@@ -97,10 +98,10 @@ class EmbeddedGraphDbImpl
     public EmbeddedGraphDbImpl( String storeDir, Map<String, String> inputParams,
             GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
             IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator,
-            TxIdGeneratorFactory txIdFactory )
+            TxIdGeneratorFactory txIdFactory, TxRollbackHook rollbackHook )
     {
         this.storeDir = storeDir;
-        TxModule txModule = newTxModule( inputParams );
+        TxModule txModule = newTxModule( inputParams, rollbackHook );
         LockManager lockManager = lockManagerFactory.create( txModule );
         LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         Config config = new Config( graphDbService, storeDir, inputParams,
@@ -114,11 +115,11 @@ class EmbeddedGraphDbImpl
         enableRemoteShellIfConfigSaysSo( params );
     }
 
-    private TxModule newTxModule( Map<String, String> inputParams )
+    private TxModule newTxModule( Map<String, String> inputParams, TxRollbackHook rollbackHook )
     {
         return Boolean.parseBoolean( inputParams.get( Config.READ_ONLY ) ) ? new TxModule( true,
                 kernelPanicEventGenerator ) : new TxModule( this.storeDir,
-                kernelPanicEventGenerator );
+                kernelPanicEventGenerator, rollbackHook );
     }
 
     private void enableRemoteShellIfConfigSaysSo( Map<Object, Object> params )

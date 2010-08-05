@@ -83,10 +83,13 @@ public class TxManager implements TransactionManager
     private final AtomicInteger rolledBackTxCount = new AtomicInteger( 0 );
     private int peakConcurrentTransactions = 0;
 
-    TxManager( String txLogDir, KernelPanicEventGenerator kpe )
+    private final TxRollbackHook rollbackHook;
+
+    TxManager( String txLogDir, KernelPanicEventGenerator kpe, TxRollbackHook rollbackHook )
     {
         this.txLogDir = txLogDir;
         this.kpe = kpe;
+        this.rollbackHook = rollbackHook;
     }
 
     synchronized int getNextEventIdentifier()
@@ -748,6 +751,7 @@ public class TxManager implements TransactionManager
             try
             {
                 rolledBackTxCount.incrementAndGet();
+                rollbackHook.rollbackTransaction( getEventIdentifier() );
                 tx.doRollback();
             }
             catch ( XAException e )
