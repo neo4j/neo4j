@@ -115,7 +115,6 @@ public class SlaveIdGenerator implements IdGenerator
         if ( this.highestIdInUse > localHighId )
         {
             this.localIdGenerator.setHighId( this.highestIdInUse );
-            System.out.println( "set high id " + localHighId );
         }
     }
 
@@ -127,6 +126,7 @@ public class SlaveIdGenerator implements IdGenerator
     public void setHighId( long id )
     {
         this.highestIdInUse = id;
+        this.localIdGenerator.setHighId( id );
     }
     
     public long getDefragCount()
