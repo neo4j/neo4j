@@ -26,9 +26,6 @@ public interface Master
     Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
             Relationship... relationships );
     
-//    Response<Collection<Pair<String, Integer>>> commitTransaction( SlaveContext context,
-//            int localTxId, Collection<Pair<String, TransactionStream>> transactionStreams );
-    
     Response<Long> commitSingleResourceTransaction( SlaveContext context,
             int eventIdentifier, String resource, TransactionStream transactionStream );
 

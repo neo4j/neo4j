@@ -32,6 +32,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
+import org.neo4j.kernel.impl.transaction.TxRollbackHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 
 /**
@@ -79,7 +80,8 @@ public final class EmbeddedReadOnlyGraphDatabase implements
         params.put( Config.READ_ONLY, "true" );
         this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this,
                 LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT,
-                DefaultRelationshipTypeCreator.INSTANCE, TxIdGeneratorFactory.DEFAULT );
+                DefaultRelationshipTypeCreator.INSTANCE, TxIdGeneratorFactory.DEFAULT,
+                TxRollbackHook.DEFAULT );
     }
 
     /**
