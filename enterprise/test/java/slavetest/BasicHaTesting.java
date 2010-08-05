@@ -2,6 +2,7 @@ package slavetest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,6 +21,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -479,6 +481,124 @@ public class BasicHaTesting
         // See if db1 and 3 can see it the same way as 2
         ((HighlyAvailableGraphDatabase) db1).pullUpdates();
         ((HighlyAvailableGraphDatabase) db3).pullUpdates();
+    }
+    
+    @Test
+    public void testMasterFailure()
+    {
+        initializeDbs( 1 );
+        GraphDatabaseService haDb = haDbs.get( 0 );
+        Transaction tx = haDb.beginTx();
+        Node node1;
+        try
+        {
+            node1 = haDb.createNode();
+            Relationship rel1 = haDb.getReferenceNode().createRelationshipTo( node1, REL_TYPE );
+            node1.setProperty( "name", "Mattias" );
+            rel1.setProperty( "something else", "Somewhat different" );
+            tx.success();
+        }
+        finally
+        {
+            master.getGraphDb().shutdown();
+            try
+            {
+                tx.finish();
+            }
+            catch ( Throwable t )
+            {
+                t.printStackTrace();
+            }
+        }
+        master = new FakeMaster( MASTER_PATH.getAbsolutePath() );
+        try
+        {
+            haDb.getNodeById( node1.getId() );
+            fail( "Node should not exist");
+        }
+        catch ( NotFoundException e )
+        { // good
+        }
+    }
+
+    @Test
+    public void testSlaveConstrainViolation()
+    {
+        initializeDbs( 1 );
+        GraphDatabaseService haDb = haDbs.get( 0 );
+        Transaction tx = haDb.beginTx();
+        Node node1;
+        try
+        {
+            node1 = haDb.createNode();
+            Relationship rel1 = haDb.getReferenceNode().createRelationshipTo( node1, REL_TYPE );
+            node1.setProperty( "name", "Mattias" );
+            rel1.setProperty( "something else", "Somewhat different" );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        tx = haDb.beginTx();
+        try
+        {
+           node1.delete();
+           tx.success();
+        }
+        finally
+        {
+            try
+            {
+                tx.finish();
+                fail( "Should throw exception" );
+            }
+            catch ( Throwable t )
+            { // good
+                t.printStackTrace();
+            }
+        }
+    }
+    
+    @Test
+    public void testMasterConstrainViolation()
+    {
+        initializeDbs( 1 );
+        GraphDatabaseService haDb = haDbs.get( 0 );
+        Transaction tx = haDb.beginTx();
+        Node node1;
+        try
+        {
+            node1 = haDb.createNode();
+            Relationship rel1 = haDb.getReferenceNode().createRelationshipTo( node1, REL_TYPE );
+            node1.setProperty( "name", "Mattias" );
+            rel1.setProperty( "something else", "Somewhat different" );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        tx = master.getGraphDb().beginTx();
+        try
+        {
+           master.getGraphDb().getNodeById( node1.getId() ).delete();
+           tx.success();
+        }
+        finally
+        {
+            try
+            {
+                tx.finish();
+                fail( "Should throw exception" );
+            }
+            catch ( Throwable t )
+            { // good
+                t.printStackTrace();
+            }
+        }
+        ((HighlyAvailableGraphDatabase) haDb).pullUpdates();
+        assertTrue( haDb.getNodeById( node1.getId() ) != null );
     }
     
 //    @Test
