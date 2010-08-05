@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.nio.ByteBuffer;
+import java.util.Random;
 
 import javax.transaction.xa.Xid;
 
@@ -45,6 +46,7 @@ public class XidImpl implements Xid
     private final byte branchId[];
     private final int formatId;
     
+    private static final Random r = new Random( System.currentTimeMillis() );
 
     // resourceId.length = 4, unique for each XAResource
     static byte[] getNewGlobalId()
@@ -54,7 +56,7 @@ public class XidImpl implements Xid
         System.arraycopy( INSTANCE_ID, 0, globalId, 0, INSTANCE_ID.length );
         ByteBuffer byteBuf = ByteBuffer.wrap( globalId );
         byteBuf.position( INSTANCE_ID.length );
-        long time = System.currentTimeMillis();
+        long time = r.nextLong(); // System.currentTimeMillis();
         long sequence = getNextSequenceId();
         byteBuf.putLong( time ).putLong( sequence );
         return globalId;
