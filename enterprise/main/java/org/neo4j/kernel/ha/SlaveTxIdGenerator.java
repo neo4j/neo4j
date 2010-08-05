@@ -35,14 +35,14 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     
     private final Broker broker;
     private final ResponseReceiver receiver;
-    private final TransactionManager txManager;
+    private final TxManager txManager;
 
     public SlaveTxIdGenerator( Broker broker, ResponseReceiver receiver,
             TransactionManager txManager )
     {
         this.broker = broker;
         this.receiver = receiver;
-        this.txManager = txManager;
+        this.txManager = (TxManager) txManager;
     }
 
     public long generate( XaDataSource dataSource, int identifier )
@@ -50,7 +50,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         try
         {
             Response<Long> response = broker.getMaster().commitSingleResourceTransaction(
-                    broker.getSlaveContext(), ((TxManager) txManager).getEventIdentifier(),
+                    broker.getSlaveContext(), txManager.getEventIdentifier(),
                     dataSource.getName(), new TransactionStream( Arrays.asList(
                             dataSource.getPreparedTransaction( identifier ) ) ) );
             return receiver.receive( response );
