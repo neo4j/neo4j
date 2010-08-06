@@ -356,7 +356,7 @@ public class NeoStore extends AbstractStore
         }
         if ( version.equals( "NeoStore v0.9.5" ) )
         {
-            ByteBuffer buffer = ByteBuffer.wrap( new byte[ 3 * RECORD_SIZE ] );
+            ByteBuffer buffer = ByteBuffer.wrap( new byte[ 4 * RECORD_SIZE ] );
             long time = System.currentTimeMillis();
             long random = r.nextLong();
             buffer.put( Record.IN_USE.byteValue() ).putLong( time );
