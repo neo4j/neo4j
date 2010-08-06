@@ -8,12 +8,14 @@
 
   <properties>
     <short-name>graph-algo</short-name>
+    <bundle.namespace>org.neo4j.graphalgo</bundle.namespace>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-graph-algo</artifactId>
   <groupId>org.neo4j</groupId>
   <version>0.7-SNAPSHOT</version>
+  <packaging>bundle</packaging>
   <name>${short-name}</name>
   <description>Graph algorithms for neo4j</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
