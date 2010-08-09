@@ -1,11 +1,7 @@
 package org.neo4j.kernel.impl.ha;
 
-import java.io.Serializable;
-
-public final class IdAllocation implements Serializable
+public final class IdAllocation
 {
-    private static final long serialVersionUID = 1L;
-
     private final long[] ids;
     private final long highestIdInUse;
     private final long defragCount;
