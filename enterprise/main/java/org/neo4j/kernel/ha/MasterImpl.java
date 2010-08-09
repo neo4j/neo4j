@@ -1,4 +1,4 @@
-package slavetest;
+package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -37,7 +37,12 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
-public class FakeMaster implements Master
+/**
+ * This is the real master code that executes on a master. The actual
+ * communication over network happens in {@link MasterClient} and
+ * {@link MasterServer}.
+ */
+public class MasterImpl implements Master
 {
     private static final Predicate<Long> ALL = new Predicate<Long>()
     {
@@ -52,7 +57,7 @@ public class FakeMaster implements Master
             new HashMap<TxIdElement, Transaction>();
     private final TransactionManager txManager;
     
-    FakeMaster( String path )
+    public MasterImpl( String path )
     {
         graphDb = new EmbeddedGraphDatabase( path );
         txManager = getConfig().getTxModule().getTxManager();
