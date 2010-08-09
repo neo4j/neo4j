@@ -30,6 +30,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.MasterImpl;
 
 public class BasicHaTesting
 {
@@ -37,7 +38,7 @@ public class BasicHaTesting
     private static final File PARENT_PATH = new File( "target/dbs" );
     private static final File MASTER_PATH = new File( PARENT_PATH, "master" );
     private static final File SLAVE_PATH = new File( PARENT_PATH, "slave" );
-    private FakeMaster master;
+    private MasterImpl master;
     private List<GraphDatabaseService> haDbs;
     
     protected GraphDatabaseService getSlave( int nr )
@@ -58,7 +59,7 @@ public class BasicHaTesting
                 FileUtils.copyDirectory( MASTER_PATH, slavePath( i ) );
             }
             haDbs = new ArrayList<GraphDatabaseService>();
-            master = new FakeMaster( MASTER_PATH.getAbsolutePath() );
+            master = new MasterImpl( MASTER_PATH.getAbsolutePath() );
             for ( int i = 0; i < numSlaves; i++ )
             {
                 File slavePath = slavePath( i );
@@ -75,7 +76,7 @@ public class BasicHaTesting
         }
     }
     
-    protected FakeMaster getMaster()
+    protected MasterImpl getMaster()
     {
         return master;
     }
@@ -332,7 +333,7 @@ public class BasicHaTesting
                 t.printStackTrace();
             }
         }
-        master = new FakeMaster( MASTER_PATH.getAbsolutePath() );
+        master = new MasterImpl( MASTER_PATH.getAbsolutePath() );
         try
         {
             haDb.getNodeById( node1.getId() );
