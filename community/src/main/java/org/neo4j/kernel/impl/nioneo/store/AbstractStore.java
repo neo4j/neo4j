@@ -117,10 +117,10 @@ public abstract class AbstractStore extends CommonAbstractStore
         super( fileName, config );
     }
 
-    public AbstractStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public AbstractStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     protected void loadStorage()
     {

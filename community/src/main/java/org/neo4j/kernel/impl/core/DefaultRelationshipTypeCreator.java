@@ -10,12 +10,6 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 public class DefaultRelationshipTypeCreator implements RelationshipTypeCreator
 {
-    public static final RelationshipTypeCreator INSTANCE = new DefaultRelationshipTypeCreator();
-    
-    private DefaultRelationshipTypeCreator()
-    {
-    }
-    
     public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
             PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name )
     {
