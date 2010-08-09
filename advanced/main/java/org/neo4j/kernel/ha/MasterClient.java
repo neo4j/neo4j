@@ -2,13 +2,6 @@ package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -25,12 +18,10 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.ha.IdAllocation;
 import org.neo4j.kernel.impl.ha.LockResult;
-import org.neo4j.kernel.impl.ha.LockStatus;
 import org.neo4j.kernel.impl.ha.Master;
 import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.SlaveContext;
@@ -43,24 +34,8 @@ import org.neo4j.kernel.impl.ha.TransactionStreams;
  * {@link MasterServer} (which delegates to {@link MasterImpl}
  * on the master side.
  */
-public class MasterClient implements Master
+public class MasterClient extends CommunicationProtocol implements Master
 {
-    public static final int PORT = 8901;
-    private static final int MEGA = 1024*1024;
-    
-    public static enum RequestType
-    {
-        ALLOCATE_IDS,
-        CREATE_RELATIONSHIP_TYPE,
-        ACQUIRE_NODE_WRITE_LOCK,
-        ACQUIRE_NODE_READ_LOCK,
-        ACQUIRE_RELATIONSHIP_WRITE_LOCK,
-        ACQUIRE_RELATIONSHIP_READ_LOCK,
-        COMMIT,
-        ROLLBACK,
-        PULL_UPDATES
-    }
-
     private static Client initClient()
     {
         ExecutorService executor = Executors.newCachedThreadPool();
@@ -73,12 +48,12 @@ public class MasterClient implements Master
     }
 
     private final Client client;
-    
+
     MasterClient()
     {
         client = initClient();
     }
-    
+
     private <T> Response<T> sendRequest( RequestType type,
             SlaveContext slaveContext, Serializer serializer, Deserializer<T> deserializer )
     {
@@ -90,7 +65,7 @@ public class MasterClient implements Master
             writeSlaveContext( buffer, slaveContext );
             serializer.write( buffer );
             client.channel.write(buffer);
-            
+
             // Read response
             ChannelBuffer message = client.blockingReadHandler.read();
             T response = deserializer.read( message );
@@ -121,7 +96,7 @@ public class MasterClient implements Master
             {
                 return readIdAllocation( buffer );
             }
-        } );                
+        } );
     }
 
     public Response<Integer> createRelationshipType( SlaveContext context, final String name )
@@ -141,120 +116,34 @@ public class MasterClient implements Master
             }
         } );
     }
-    
-    private static abstract class AcquireLockSerializer<E extends PropertyContainer> implements Serializer
-    {
-        private final E[] entities;
-        private final int eventIdentifier;
 
-        AcquireLockSerializer( int eventIdentifier, E... entities )
-        {
-            this.eventIdentifier = eventIdentifier;
-            this.entities = entities;
-        }
-        
-        public void write( ChannelBuffer buffer ) throws IOException
-        {
-            buffer.writeInt( eventIdentifier );
-            buffer.writeInt( entities.length );
-            for ( E entity : entities )
-            {
-                buffer.writeLong( getId( entity ) );
-            }
-        }
-        
-        protected abstract long getId( E entity );
-    }
-    
-    private static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
-    {
-        public LockResult read( ChannelBuffer buffer ) throws IOException
-        {
-            LockStatus status = LockStatus.values()[buffer.readByte()];
-            return status.hasMessage() ? new LockResult( readString( buffer ) ) :
-                    new LockResult( status );
-        }
-    };
-    private static final Deserializer<Void> VOID_DESERIALIZER = new Deserializer<Void>()
-    {
-        public Void read( ChannelBuffer buffer ) throws IOException
-        {
-            return null;
-        }
-    };
-    private static final Serializer EMPTY_SERIALIZER = new Serializer()
-    {
-        public void write( ChannelBuffer buffer ) throws IOException
-        {
-        }
-    };
-    
-    private static class AcquireNodeLockSerializer extends AcquireLockSerializer<Node>
-    {
-        AcquireNodeLockSerializer( int eventIdentifier, Node... entities )
-        {
-            super( eventIdentifier, entities );
-        }
-
-        @Override
-        protected long getId( Node entity )
-        {
-            return entity.getId();
-        }
-    }
-    
-    private static class AcquireRelationshipLockSerializer extends AcquireLockSerializer<Relationship>
-    {
-        AcquireRelationshipLockSerializer( int eventIdentifier, Relationship... entities )
-        {
-            super( eventIdentifier, entities );
-        }
-
-        @Override
-        protected long getId( Relationship entity )
-        {
-            return entity.getId();
-        }
-    }
-
-    protected static String readString( ChannelBuffer buffer )
-    {
-        int length = buffer.readInt();
-        char[] chars = new char[length];
-        for ( int i = 0; i < length; i++ )
-        {
-            chars[i] = buffer.readChar();
-        }
-        return new String( chars );
-    }
-
-    public Response<LockResult> acquireWriteLock( SlaveContext context, final int eventIdentifier,
-            final Node... nodes )
+    public Response<LockResult> acquireNodeWriteLock( SlaveContext context, final int eventIdentifier,
+            long... nodes )
     {
         return sendRequest( RequestType.ACQUIRE_NODE_WRITE_LOCK, context,
-                new AcquireNodeLockSerializer( eventIdentifier, nodes ), LOCK_RESULT_DESERIALIZER );
+                new AcquireLockSerializer( eventIdentifier, nodes ), LOCK_RESULT_DESERIALIZER );
     }
 
-    public Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
-            Node... nodes )
+    public Response<LockResult> acquireNodeReadLock( SlaveContext context, int eventIdentifier,
+            long... nodes )
     {
         return sendRequest( RequestType.ACQUIRE_NODE_READ_LOCK, context,
-                new AcquireNodeLockSerializer( eventIdentifier, nodes ), LOCK_RESULT_DESERIALIZER );
+                new AcquireLockSerializer( eventIdentifier, nodes ), LOCK_RESULT_DESERIALIZER );
     }
 
-    public Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
-            Relationship... relationships )
+    public Response<LockResult> acquireRelationshipWriteLock( SlaveContext context, int eventIdentifier,
+            long... relationships )
     {
         return sendRequest( RequestType.ACQUIRE_RELATIONSHIP_WRITE_LOCK, context,
-                new AcquireRelationshipLockSerializer( eventIdentifier, relationships ),
+                new AcquireLockSerializer( eventIdentifier, relationships ),
                 LOCK_RESULT_DESERIALIZER );
     }
 
-    public Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
-            Relationship... relationships )
+    public Response<LockResult> acquireRelationshipReadLock( SlaveContext context, int eventIdentifier,
+            long... relationships )
     {
         return sendRequest( RequestType.ACQUIRE_RELATIONSHIP_READ_LOCK, context,
-                new AcquireRelationshipLockSerializer( eventIdentifier, relationships ),
+                new AcquireLockSerializer( eventIdentifier, relationships ),
                 LOCK_RESULT_DESERIALIZER );
     }
 
@@ -278,56 +167,6 @@ public class MasterClient implements Master
         });
     }
 
-    protected void writeTransactionStream( ChannelBuffer dest, TransactionStream transactionStream )
-            throws IOException
-    {
-        final Collection<ReadableByteChannel> channels = transactionStream.getChannels();
-        dest.writeInt( channels.size() );
-        for ( ReadableByteChannel channel : channels )
-        {
-            ByteData data = new ByteData( channel );
-            dest.writeInt( data.size() );
-            for ( byte[] bytes : data )
-            {
-                dest.writeBytes( bytes );
-            }
-        }
-    }
-
-    private static class ByteData implements Iterable<byte[]>
-    {
-        private final Collection<byte[]> data;
-        private final int size;
-        
-        ByteData( ReadableByteChannel channel ) throws IOException
-        {
-            int size = 0, chunk = 0;
-            List<byte[]> data = new LinkedList<byte[]>();
-            ByteBuffer buffer = ByteBuffer.allocateDirect( 1 * MEGA );
-            while ( (chunk = channel.read( buffer )) >= 0 )
-            {
-                size += chunk;
-                byte[] bytes = new byte[chunk];
-                buffer.flip();
-                buffer.get( bytes );
-                buffer.clear();
-                data.add( bytes );
-            }
-            this.data = data;
-            this.size = size;
-        }
-
-        int size()
-        {
-            return size;
-        }
-
-        public Iterator<byte[]> iterator()
-        {
-            return data.iterator();
-        }
-    }
-    
     public Response<Void> rollbackTransaction( SlaveContext context, int eventIdentifier )
     {
         return sendRequest( RequestType.ROLLBACK, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
@@ -380,58 +219,5 @@ public class MasterClient implements Master
             pipeline.addLast( "blockingHandler", blockingReadHandler );
             return pipeline;
         }
-    }
-    
-    static interface Serializer
-    {
-        void write( ChannelBuffer buffer ) throws IOException;
-    }
-    
-    static interface Deserializer<T>
-    {
-        T read( ChannelBuffer buffer ) throws IOException;
-    }
-
-    protected static IdAllocation readIdAllocation( ChannelBuffer buffer )
-    {
-        int numberOfIds = buffer.readInt();
-        long[] ids = new long[numberOfIds];
-        for ( int i = 0; i < numberOfIds; i++ )
-        {
-            ids[i] = buffer.readLong();
-        }
-        long highId = buffer.readLong();
-        long defragCount = buffer.readLong();
-        return new IdAllocation( ids, highId, defragCount );
-    }
-    
-    protected static void writeString( ChannelBuffer buffer, String name )
-    {
-        char[] chars = name.toCharArray();
-        buffer.writeInt( chars.length );
-        
-        // TODO optimize?
-        for ( char ch : chars )
-        {
-            buffer.writeChar( ch );
-        }
-    }
-
-    protected static void writeSlaveContext( ChannelBuffer buffer, SlaveContext context )
-    {
-        buffer.writeInt( context.slaveId() );
-        Map<String, Long> txs = context.lastAppliedTransactions();
-        buffer.writeByte( txs.size() );
-        for ( Map.Entry<String, Long> tx : txs.entrySet() )
-        {
-            writeString( buffer, tx.getKey() );
-            buffer.writeLong( tx.getValue() );
-        }
-    }
-
-    protected static TransactionStreams readTransactionStreams( ChannelBuffer message )
-    {
-        // TODO implement
-        return new TransactionStreams();
     }
 }
