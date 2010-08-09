@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
+import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.ha.Broker;
@@ -19,6 +20,8 @@ public class SlaveIdGenerator implements IdGenerator
         private final Broker broker;
         private final ResponseReceiver receiver;
         private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
+        private final IdGeneratorFactory localFactory =
+                CommonFactories.defaultIdGeneratorFactory();
 
         public SlaveIdGeneratorFactory( Broker broker, ResponseReceiver receiver )
         {
@@ -28,7 +31,7 @@ public class SlaveIdGenerator implements IdGenerator
         
         public IdGenerator open( String fileName, int grabSize, IdType idType, long highestIdInUse )
         {
-            IdGenerator localIdGenerator = IdGeneratorFactory.DEFAULT.open( fileName, grabSize,
+            IdGenerator localIdGenerator = localFactory.open( fileName, grabSize,
                     idType, highestIdInUse );
             IdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker, receiver,
                     localIdGenerator );
@@ -38,7 +41,7 @@ public class SlaveIdGenerator implements IdGenerator
         
         public void create( String fileName )
         {
-            IdGeneratorFactory.DEFAULT.create( fileName );
+            localFactory.create( fileName );
         }
 
         public IdGenerator get( IdType idType )

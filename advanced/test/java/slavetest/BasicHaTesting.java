@@ -459,6 +459,76 @@ public class BasicHaTesting
         assertTrue( case1 || case2  );
         pullUpdates();
     }
+    
+    @Test
+    public void testGetRelationships()
+    {
+        initializeDbs( 1 );
+        GraphDatabaseService haDb1 = haDbs.get( 0 );
+        GraphDatabaseService mDb = master.getGraphDb();
+        
+        final RelationshipType TEST = DynamicRelationshipType.withName( "TEST" );
+        final RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
+        
+        Transaction tx = mDb.beginTx();
+        try
+        {
+            Node node = mDb.createNode();
+            mDb.getReferenceNode().createRelationshipTo( node, TEST );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        
+        tx = haDb1.beginTx();
+        try
+        {
+            Node node = haDb1.createNode();
+            haDb1.getReferenceNode().createRelationshipTo( node, KNOWS );
+            int relCount = 0;
+            for ( Relationship rel : haDb1.getReferenceNode().getRelationships( TEST, KNOWS ) )
+            {
+                relCount++;
+            }
+            assertEquals( 2, relCount );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        tx = haDb1.beginTx();
+        try
+        {
+            int relCount = 0;
+            for ( Relationship rel : haDb1.getReferenceNode().getRelationships( TEST, KNOWS ) )
+            {
+                relCount++;
+            }
+            assertEquals( 2, relCount );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        tx = haDb1.beginTx();
+        try
+        {
+            int relCount = 0;
+            for ( Relationship rel : haDb1.getReferenceNode().getRelationships( TEST, KNOWS ) )
+            {
+                relCount++;
+            }
+            assertEquals( 2, relCount );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
 
     private static class Worker1 extends Thread
     {
