@@ -22,6 +22,7 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -530,6 +531,76 @@ public class BasicHaTesting
         }
     }
 
+    @Test
+    public void testNoTransaction()
+    {
+        initializeDbs( 1 );
+        GraphDatabaseService haDb1 = haDbs.get( 0 );
+        GraphDatabaseService mDb = master.getGraphDb();
+        
+        final RelationshipType TEST = DynamicRelationshipType.withName( "TEST" );
+        final RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
+        
+        Transaction tx = mDb.beginTx();
+        Node masterNode;
+        try
+        {
+            masterNode = mDb.createNode();
+            mDb.getReferenceNode().createRelationshipTo( masterNode, TEST );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        
+        tx = haDb1.beginTx();
+        // try throw in node that does not exist and no tx on mdb
+        try
+        {
+            Node node = haDb1.createNode();
+            mDb.getReferenceNode().createRelationshipTo( node, KNOWS );
+            fail( "Should throw not found exception" );
+        }
+        catch ( NotFoundException e )
+        {
+            // good
+        }
+        finally
+        {
+            tx.finish();
+        }
+        // try no tx on mdb
+        try
+        {
+            mDb.getReferenceNode().createRelationshipTo( masterNode, KNOWS );
+            fail( "Should throw not in transaction exception" );
+        }
+        catch ( NotInTransactionException e )
+        {
+            // good
+        }
+        finally
+        {
+            tx.finish();
+        }
+        // try no tx on mdb
+        try
+        {
+            Node node = haDb1.createNode();
+            haDb1.getReferenceNode().createRelationshipTo( node, KNOWS );
+            fail( "Should throw not in transaction exception" );
+        }
+        catch ( NotInTransactionException e )
+        {
+            // good
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+    
     private static class Worker1 extends Thread
     {
         private final GraphDatabaseService db;
