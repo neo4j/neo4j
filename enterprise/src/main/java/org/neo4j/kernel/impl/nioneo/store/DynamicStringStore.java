@@ -38,10 +38,10 @@ public class DynamicStringStore extends AbstractDynamicStore
         super( fileName, config );
     }
 
-    public DynamicStringStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public DynamicStringStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     public String getTypeAndVersionDescriptor()
     {

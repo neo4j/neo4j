@@ -65,10 +65,10 @@ class DynamicArrayStore extends AbstractDynamicStore
         super( fileName, config );
     }
 
-    public DynamicArrayStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public DynamicArrayStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     public String getTypeAndVersionDescriptor()
     {

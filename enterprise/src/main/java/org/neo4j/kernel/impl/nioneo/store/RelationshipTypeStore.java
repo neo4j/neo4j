@@ -61,10 +61,10 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     /**
      * See {@link AbstractStore#AbstractStore(String)}
      */
-    public RelationshipTypeStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public RelationshipTypeStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     @Override
     protected void setRecovered()
@@ -120,12 +120,15 @@ public class RelationshipTypeStore extends AbstractStore implements Store
      * @throws IOException
      *             If unable to create store or name null
      */
-    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
+    public static void createStore( String fileName, Map<?, ?> config )
     {
+        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
+                IdGeneratorFactory.class );
         createEmptyStore( fileName, VERSION, idGeneratorFactory );
         DynamicStringStore.createStore( fileName + ".names",
             TYPE_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_BLOCK );
-        RelationshipTypeStore store = new RelationshipTypeStore( fileName );
+        RelationshipTypeStore store = new RelationshipTypeStore(
+                fileName, config );
         store.close();
     }
 

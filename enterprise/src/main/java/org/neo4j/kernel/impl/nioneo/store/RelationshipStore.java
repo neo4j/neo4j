@@ -52,10 +52,10 @@ public class RelationshipStore extends AbstractStore implements Store
     /**
      * See {@link AbstractStore#AbstractStore(String)}
      */
-    public RelationshipStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public RelationshipStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     public String getTypeAndVersionDescriptor()
     {

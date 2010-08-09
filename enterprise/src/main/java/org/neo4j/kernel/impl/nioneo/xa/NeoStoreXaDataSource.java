@@ -177,43 +177,43 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      * @throws IOException
      *             If unable to open store
      */
-    public NeoStoreXaDataSource( String neoStoreFileName,
-        String logicalLogPath, LockManager lockManager,
-        LockReleaser lockReleaser )
-        throws IOException, InstantiationException
-    {
-        super( null );
-        this.readOnly = false;
-        this.lockManager = lockManager;
-        this.lockReleaser = lockReleaser;
-        storeDir = logicalLogPath;
-        neoStore = new NeoStore( neoStoreFileName );
-        xaContainer = XaContainer.create( this, logicalLogPath, new CommandFactory(
-            neoStore ), new TransactionFactory(), null );
-        setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
-
-        xaContainer.openLogicalLog();
-        if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
-        {
-            neoStore.makeStoreOk();
-        }
-        else
-        {
-            logger.info( "Waiting for TM to take care of recovered " +
-                "transactions." );
-        }
-        idGenerators = new ArrayMap<Class<?>,Store>( 5, false, false );
-        this.idGenerators.put( Node.class, neoStore.getNodeStore() );
-        this.idGenerators.put( Relationship.class,
-            neoStore.getRelationshipStore() );
-        this.idGenerators.put( RelationshipType.class,
-            neoStore.getRelationshipTypeStore() );
-        // get TestXa unit test to run
-        this.idGenerators.put( PropertyStore.class,
-            neoStore.getPropertyStore() );
-        this.idGenerators.put( PropertyIndex.class,
-            neoStore.getPropertyStore().getIndexStore() );
-    }
+//    public NeoStoreXaDataSource( String neoStoreFileName,
+//        String logicalLogPath, LockManager lockManager,
+//        LockReleaser lockReleaser )
+//        throws IOException, InstantiationException
+//    {
+//        super( null );
+//        this.readOnly = false;
+//        this.lockManager = lockManager;
+//        this.lockReleaser = lockReleaser;
+//        storeDir = logicalLogPath;
+//        neoStore = new NeoStore( neoStoreFileName );
+//        xaContainer = XaContainer.create( this, logicalLogPath, new CommandFactory(
+//            neoStore ), new TransactionFactory(), null );
+//        setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
+//
+//        xaContainer.openLogicalLog();
+//        if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
+//        {
+//            neoStore.makeStoreOk();
+//        }
+//        else
+//        {
+//            logger.info( "Waiting for TM to take care of recovered " +
+//                "transactions." );
+//        }
+//        idGenerators = new ArrayMap<Class<?>,Store>( 5, false, false );
+//        this.idGenerators.put( Node.class, neoStore.getNodeStore() );
+//        this.idGenerators.put( Relationship.class,
+//            neoStore.getRelationshipStore() );
+//        this.idGenerators.put( RelationshipType.class,
+//            neoStore.getRelationshipTypeStore() );
+//        // get TestXa unit test to run
+//        this.idGenerators.put( PropertyStore.class,
+//            neoStore.getPropertyStore() );
+//        this.idGenerators.put( PropertyIndex.class,
+//            neoStore.getPropertyStore().getIndexStore() );
+//    }
 
     NeoStore getNeoStore()
     {
