@@ -14,6 +14,7 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.Config;
@@ -51,25 +52,25 @@ public class MasterImpl implements Master
             return true;
         }
     };
-    
+
     private final GraphDatabaseService graphDb;
     private final Map<TxIdElement, Transaction> transactions =
             new HashMap<TxIdElement, Transaction>();
     private final TransactionManager txManager;
-    
+
     public MasterImpl( String path )
     {
         graphDb = new EmbeddedGraphDatabase( path );
         txManager = getConfig().getTxModule().getTxManager();
     }
-    
+
     public GraphDatabaseService getGraphDb()
     {
         return this.graphDb;
     }
-    
-    private <T> Response<LockResult> acquireLock( SlaveContext context, int eventIdentifier,
-            LockGrabber lockGrabber, T... entities )
+
+    private <T extends PropertyContainer> Response<LockResult> acquireLock( SlaveContext context,
+            int eventIdentifier, LockGrabber lockGrabber, T... entities )
     {
         TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( tx );
@@ -96,7 +97,7 @@ public class MasterImpl implements Master
             suspendThisAndResumeOther( otherTx );
         }
     }
-    
+
     private Transaction getTx( TxIdElement txId )
     {
         return transactions.get( txId );
@@ -120,7 +121,7 @@ public class MasterImpl implements Master
             throw new RuntimeException( e );
         }
     }
-    
+
     Transaction suspendOtherAndResumeThis( TxIdElement txId )
     {
         try
@@ -154,7 +155,7 @@ public class MasterImpl implements Master
             throw new RuntimeException( e );
         }
     }
-    
+
     void suspendThisAndResumeOther( Transaction otherTx )
     {
         try
@@ -188,36 +189,56 @@ public class MasterImpl implements Master
             throw new RuntimeException( e );
         }
     }
-    
-    public Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
-            Node... nodes )
+
+    public Response<LockResult> acquireNodeReadLock( SlaveContext context, int eventIdentifier,
+            long... nodes )
     {
-        return acquireLock( context, eventIdentifier, READ_LOCK_GRABBER, nodes );
-    }
-    
-    public Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
-            Node... nodes )
-    {
-        return acquireLock( context, eventIdentifier, WRITE_LOCK_GRABBER, nodes );
+        return acquireLock( context, eventIdentifier, READ_LOCK_GRABBER, nodesById( nodes ) );
     }
 
-    public Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
-            Relationship... relationships )
+    public Response<LockResult> acquireNodeWriteLock( SlaveContext context, int eventIdentifier,
+            long... nodes )
     {
-        return acquireLock( context, eventIdentifier, READ_LOCK_GRABBER, relationships );
+        return acquireLock( context, eventIdentifier, WRITE_LOCK_GRABBER, nodesById(nodes) );
     }
 
-    public Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
-            Relationship... relationships )
+    public Response<LockResult> acquireRelationshipReadLock( SlaveContext context, int eventIdentifier,
+            long... relationships )
     {
-        return acquireLock( context, eventIdentifier, WRITE_LOCK_GRABBER, relationships );
+        return acquireLock( context, eventIdentifier, READ_LOCK_GRABBER, relationshipsById(relationships) );
     }
-    
+
+    public Response<LockResult> acquireRelationshipWriteLock( SlaveContext context, int eventIdentifier,
+            long... relationships )
+    {
+        return acquireLock( context, eventIdentifier, WRITE_LOCK_GRABBER, relationshipsById(relationships) );
+    }
+
+    private Node[] nodesById( long[] nodes )
+    {
+        Node[] result = new Node[nodes.length];
+        for ( int i = 0; i < nodes.length; i++ )
+        {
+            result[i] = graphDb.getNodeById( nodes[i] );
+        }
+        return result;
+    }
+
+    private Relationship[] relationshipsById( long[] nodes )
+    {
+        Relationship[] result = new Relationship[nodes.length];
+        for ( int i = 0; i < nodes.length; i++ )
+        {
+            result[i] = graphDb.getRelationshipById( nodes[i] );
+        }
+        return result;
+    }
+
     private Config getConfig()
     {
         return ((EmbeddedGraphDatabase) graphDb).getConfig();
     }
-    
+
     public Response<IdAllocation> allocateIds( SlaveContext context, IdType idType )
     {
         IdGeneratorFactory factory = getConfig().getIdGeneratorFactory();
@@ -228,7 +249,7 @@ public class MasterImpl implements Master
         {
             ids[i] = generator.nextId();
         }
-        
+
         return packResponse( context, new IdAllocation( ids, generator.getHighId(),
                 generator.getDefragCount() ), ALL );
     }
@@ -277,7 +298,7 @@ public class MasterImpl implements Master
             // OK, return
             return packResponse( context, id, ALL );
         }
-        
+
         // No? Create it then
         Config config = getConfig();
         id = config.getRelationshipTypeCreator().getOrCreate( txManager,
@@ -356,13 +377,13 @@ public class MasterImpl implements Master
             suspendThisAndResumeOther( otherTx );
         }
     }
-    
+
     private static final class TxIdElement
     {
         private final int slaveId;
         private final int eventIdentifier;
         private final int hashCode;
-        
+
         TxIdElement( int slaveId, int eventIdentifier )
         {
             this.slaveId = slaveId;
@@ -374,13 +395,13 @@ public class MasterImpl implements Master
         {
             return (slaveId << 20) | eventIdentifier;
         }
-        
+
         @Override
         public int hashCode()
         {
             return hashCode;
         }
-        
+
         @Override
         public boolean equals( Object obj )
         {
@@ -388,12 +409,12 @@ public class MasterImpl implements Master
             return other.slaveId == slaveId && other.eventIdentifier == eventIdentifier;
         }
     }
-    
+
     private static interface LockGrabber
     {
         void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity );
     }
-    
+
     private static LockGrabber READ_LOCK_GRABBER = new LockGrabber()
     {
         public void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity )
@@ -402,7 +423,7 @@ public class MasterImpl implements Master
             lockReleaser.addLockToTransaction( entity, LockType.READ );
         }
     };
-    
+
     private static LockGrabber WRITE_LOCK_GRABBER = new LockGrabber()
     {
         public void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity )

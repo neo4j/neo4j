@@ -69,10 +69,10 @@ public class SlaveLockManager extends LockManager
         do
         {
             result = node != null ?
-                    receiver.receive( broker.getMaster().acquireReadLock(
-                            broker.getSlaveContext(), getLocalTxId(), node ) ) :
-                    receiver.receive( broker.getMaster().acquireReadLock(
-                            broker.getSlaveContext(), getLocalTxId(), relationship ) );
+                    receiver.receive( broker.getMaster().acquireNodeReadLock(
+                            broker.getSlaveContext(), getLocalTxId(), node.getId() ) ) :
+                    receiver.receive( broker.getMaster().acquireRelationshipReadLock(
+                            broker.getSlaveContext(), getLocalTxId(), relationship.getId() ) );
                         
             switch ( result.getStatus() )
             {
@@ -105,10 +105,10 @@ public class SlaveLockManager extends LockManager
         do
         {
             result = node != null ?
-                    receiver.receive( broker.getMaster().acquireWriteLock(
-                            broker.getSlaveContext(), getLocalTxId(), node ) ) :
-                    receiver.receive( broker.getMaster().acquireWriteLock(
-                            broker.getSlaveContext(), getLocalTxId(), relationship ) );
+                    receiver.receive( broker.getMaster().acquireNodeWriteLock(
+                            broker.getSlaveContext(), getLocalTxId(), node.getId() ) ) :
+                    receiver.receive( broker.getMaster().acquireRelationshipWriteLock(
+                            broker.getSlaveContext(), getLocalTxId(), relationship.getId() ) );
                     
             switch ( result.getStatus() )
             {
