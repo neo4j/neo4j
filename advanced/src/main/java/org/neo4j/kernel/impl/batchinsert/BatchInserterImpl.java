@@ -32,8 +32,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.AutoConfigurator;
+import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -80,7 +82,9 @@ public class BatchInserterImpl implements BatchInserter
             params.put( entry.getKey(), entry.getValue() );
         }
         this.storeDir = storeDir;
-        String store = fixPath( storeDir, stringParams ); 
+        params.put( IdGeneratorFactory.class,
+                CommonFactories.defaultIdGeneratorFactory() );
+        String store = fixPath( storeDir, params ); 
         params.put( "neo_store", store );
         if ( dump )
         {
@@ -534,7 +538,7 @@ public class BatchInserterImpl implements BatchInserter
         return getRelationshipStore().getRecord( (int) (id & 0xFFFFFFFF) );
     }
 
-    private String fixPath( String dir, Map<String,String> config )
+    private String fixPath( String dir, Map<?,?> config )
     {
         File directories = new File( dir );
         if ( !directories.exists() )

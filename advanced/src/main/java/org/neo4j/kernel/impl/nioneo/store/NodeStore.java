@@ -49,10 +49,10 @@ public class NodeStore extends AbstractStore implements Store
     /**
      * See {@link AbstractStore#AbstractStore(String)}
      */
-    public NodeStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public NodeStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     public String getTypeAndVersionDescriptor()
     {
@@ -74,10 +74,12 @@ public class NodeStore extends AbstractStore implements Store
      * @throws IOException
      *             If unable to create node store or name null
      */
-    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
+    public static void createStore( String fileName, Map<?, ?> config )
     {
+        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
+                IdGeneratorFactory.class );
         createEmptyStore( fileName, VERSION, idGeneratorFactory );
-        NodeStore store = new NodeStore( fileName );
+        NodeStore store = new NodeStore( fileName, config );
         NodeRecord nodeRecord = new NodeRecord( store.nextId() );
         nodeRecord.setInUse( true );
         store.updateRecord( nodeRecord );

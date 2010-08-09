@@ -28,7 +28,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 
@@ -61,10 +60,10 @@ public class PropertyStore extends AbstractStore implements Store
     /**
      * See {@link AbstractStore#AbstractStore(String)}
      */
-    public PropertyStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public PropertyStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     @Override
     protected void initStorage()
@@ -137,8 +136,8 @@ public class PropertyStore extends AbstractStore implements Store
      */
     public static void createStore( String fileName, Map<?,?> config )
     {
-        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) Config.getFromConfig( config,
-                IdGeneratorFactory.class, IdGeneratorFactory.DEFAULT );
+        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
+                IdGeneratorFactory.class );
                 
         createEmptyStore( fileName, VERSION, idGeneratorFactory );
         int stringStoreBlockSize = 120;

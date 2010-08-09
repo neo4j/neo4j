@@ -150,8 +150,8 @@ public abstract class CommonAbstractStore
                 grabFileLock = false;
             }
         }
-        this.idGeneratorFactory = (IdGeneratorFactory) Config.getFromConfig( config,
-                IdGeneratorFactory.class, IdGeneratorFactory.DEFAULT );
+        this.idGeneratorFactory = (IdGeneratorFactory)
+                config.get( IdGeneratorFactory.class );
         
         checkStorage();
         loadStorage();
@@ -185,14 +185,14 @@ public abstract class CommonAbstractStore
      * @throws IOException
      *             If store doesn't exist
      */
-    public CommonAbstractStore( String fileName )
-    {
-        this.storageFileName = fileName;
-        idGeneratorFactory = IdGeneratorFactory.DEFAULT;
-        checkStorage();
-        loadStorage();
-        initStorage();
-    }
+//    public CommonAbstractStore( String fileName )
+//    {
+//        this.storageFileName = fileName;
+//        idGeneratorFactory = IdGeneratorFactory.DEFAULT;
+//        checkStorage();
+//        loadStorage();
+//        initStorage();
+//    }
 
     private void checkStorage()
     {

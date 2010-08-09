@@ -130,10 +130,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         super( fileName, config );
     }
 
-    public AbstractDynamicStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public AbstractDynamicStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     /**
      * Loads this store validating version and id generator. Also the block size

@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 
@@ -73,11 +73,11 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    public NeoStore( String fileName )
-    {
-        super( fileName );
-        REL_GRAB_SIZE = 100;
-    }
+//    public NeoStore( String fileName )
+//    {
+//        super( fileName );
+//        REL_GRAB_SIZE = 100;
+//    }
 
     /**
      * Initializes the node,relationship,property and relationship type stores.
@@ -158,16 +158,23 @@ public class NeoStore extends AbstractStore
      */
     public static void createStore( String fileName, Map<?,?> config )
     {
-        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) Config.getFromConfig( config,
-                IdGeneratorFactory.class, IdGeneratorFactory.DEFAULT );
+        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
+                IdGeneratorFactory.class );
                 
         createEmptyStore( fileName, VERSION, idGeneratorFactory );
-        NodeStore.createStore( fileName + ".nodestore.db", idGeneratorFactory );
+        NodeStore.createStore( fileName + ".nodestore.db", config );
         RelationshipStore.createStore( fileName + ".relationshipstore.db", idGeneratorFactory );
         PropertyStore.createStore( fileName + ".propertystore.db", config );
         RelationshipTypeStore.createStore( fileName
-            + ".relationshiptypestore.db", idGeneratorFactory );
-        NeoStore neoStore = new NeoStore( fileName );
+            + ".relationshiptypestore.db", config );
+        if ( !config.containsKey( "neo_store" ) )
+        {
+            // TODO Ugly
+            Map<Object, Object> newConfig = new HashMap<Object, Object>( config );
+            newConfig.put( "neo_store", fileName );
+            config = newConfig;
+        }
+        NeoStore neoStore = new NeoStore( config );
         // created time | random long | backup version
         neoStore.nextId(); neoStore.nextId(); neoStore.nextId();
         long time = System.currentTimeMillis();

@@ -31,12 +31,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestDynamicStore
 {
+    public static IdGeneratorFactory ID_GENERATOR_FACTORY =
+            CommonFactories.defaultIdGeneratorFactory();
+    
     private String path()
     {
         String path = AbstractNeo4jTestCase.getStorePath( "dynamicstore" );
@@ -124,7 +129,8 @@ public class TestDynamicStore
                 dynamicStoreFile(), "rw" ).getChannel();
             fileChannel.truncate( fileChannel.size() - 2 );
             fileChannel.close();
-            ByteStore store = new ByteStore( dynamicStoreFile() );
+            ByteStore store = new ByteStore( dynamicStoreFile(),
+                    ID_GENERATOR_FACTORY );
             store.makeStoreOk();
             store.close();
         }
@@ -255,7 +261,7 @@ public class TestDynamicStore
                 if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
                 {
                     store.close();
-                    store = new ByteStore( dynamicStoreFile() );
+                    store = new ByteStore( dynamicStoreFile(), ID_GENERATOR_FACTORY );
                 }
             }
         }
@@ -271,9 +277,10 @@ public class TestDynamicStore
         // store version, each store ends with this string (byte encoded)
         private static final String VERSION = "DynamicTestVersion v0.1";
 
-        public ByteStore( String fileName )
+        public ByteStore( String fileName, IdGeneratorFactory idGenerator )
         {
-            super( fileName );
+            super( fileName, MapUtil.map( "neo_store", fileName,
+                    IdGeneratorFactory.class, idGenerator ) );
         }
 
         public String getTypeAndVersionDescriptor()
@@ -283,9 +290,9 @@ public class TestDynamicStore
 
         public static ByteStore createStore( String fileName, int blockSize )
         {
-            createEmptyStore( fileName, blockSize, VERSION, IdGeneratorFactory.DEFAULT,
+            createEmptyStore( fileName, blockSize, VERSION, ID_GENERATOR_FACTORY,
                     IdType.ARRAY_BLOCK );
-            return new ByteStore( fileName );
+            return new ByteStore( fileName, ID_GENERATOR_FACTORY );
         }
 
         public byte[] getBytes( int blockId )

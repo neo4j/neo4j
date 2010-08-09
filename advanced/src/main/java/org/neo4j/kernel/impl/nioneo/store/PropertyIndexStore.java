@@ -50,10 +50,10 @@ public class PropertyIndexStore extends AbstractStore implements Store
         super( fileName, config );
     }
 
-    public PropertyIndexStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public PropertyIndexStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     protected void initStorage()
     {
