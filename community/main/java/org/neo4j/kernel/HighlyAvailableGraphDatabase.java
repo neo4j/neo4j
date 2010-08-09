@@ -13,18 +13,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
+import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
-import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.ha.TransactionStream;
-import org.neo4j.kernel.impl.transaction.TxRollbackHook;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class HighlyAvailableGraphDatabase implements GraphDatabaseService, ResponseReceiver
@@ -79,9 +76,11 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         if ( brokerSaysIAmMaster() )
         {
             this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
-                    LockManagerFactory.DEFAULT, IdGeneratorFactory.DEFAULT,
-                    DefaultRelationshipTypeCreator.INSTANCE, TxIdGeneratorFactory.DEFAULT,
-                    TxRollbackHook.DEFAULT );
+                    CommonFactories.defaultLockManagerFactory(),
+                    CommonFactories.defaultIdGeneratorFactory(),
+                    CommonFactories.defaultRelationshipTypeCreator(),
+                    CommonFactories.defaultTxIdGeneratorFactory(),
+                    CommonFactories.defaultTxRollbackHook() );
         }
         else
         {
