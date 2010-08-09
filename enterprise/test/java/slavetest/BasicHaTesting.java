@@ -40,7 +40,12 @@ public class BasicHaTesting
     private FakeMaster master;
     private List<GraphDatabaseService> haDbs;
     
-    private void initializeDbs( int numSlaves )
+    protected GraphDatabaseService getSlave( int nr )
+    {
+        return haDbs.get( nr );
+    }
+    
+    protected void initializeDbs( int numSlaves )
     {
         try
         {
@@ -70,12 +75,17 @@ public class BasicHaTesting
         }
     }
     
+    protected FakeMaster getMaster()
+    {
+        return master;
+    }
+    
     private static File slavePath( int num )
     {
         return new File( SLAVE_PATH, "" + num );
     }
     
-    private void shutdownDbs()
+    protected void shutdownDbs()
     {
         for ( GraphDatabaseService haDb : haDbs )
         {
@@ -84,7 +94,7 @@ public class BasicHaTesting
         master.getGraphDb().shutdown();
     }
 
-    private void verify( GraphDatabaseService refDb, GraphDatabaseService... dbs )
+    protected void verify( GraphDatabaseService refDb, GraphDatabaseService... dbs )
     {
         for ( GraphDatabaseService otherDb : dbs )
         {
