@@ -64,7 +64,6 @@ public abstract class AbstractHaTest
 
     private static void verifyNode( Node node, Node otherNode, GraphDatabaseService otherDb )
     {
-        System.out.println( "[" + node + "]" );
         verifyProperties( node, otherNode );
         Set<Long> otherRelIds = new HashSet<Long>();
         for ( Relationship otherRel : otherNode.getRelationships( Direction.OUTGOING ) )
@@ -75,8 +74,6 @@ public abstract class AbstractHaTest
         for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
         {
             Relationship otherRel = otherDb.getRelationshipById( rel.getId() );
-            System.out.println( tab( 1 ) + rel.getStartNode() + " --[" +
-                    rel.getType().name() + "," + rel.getId() + "]-> " + rel.getEndNode() );
             verifyProperties( rel, otherRel );
             if ( rel.getStartNode().getId() != otherRel.getStartNode().getId() )
             {
@@ -108,8 +105,6 @@ public abstract class AbstractHaTest
         {
             Object value1 = entity.getProperty( key );
             Object value2 = otherEntity.getProperty( key );
-            System.out.println( tab( entity instanceof Relationship ? 2 : 1 ) +
-                    "*" + key + "=" + value1 );
             if ( !value1.equals( value2 ) )
             {
                 throw new RuntimeException( entity + " not equals property '" + key + "': " +
