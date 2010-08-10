@@ -9,5 +9,5 @@ public interface StandaloneDbCom extends Remote
     
     void pullUpdates() throws RemoteException;
     
-    void shutdown() throws RemoteException;
+    void initiateShutdown() throws RemoteException;
 }

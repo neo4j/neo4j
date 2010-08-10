@@ -59,7 +59,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent e ) throws Exception
         {
             ChannelBuffer message = (ChannelBuffer) e.getMessage();
-            handleRequest( realMaster, ctx, message );
+            e.getChannel().write( handleRequest( realMaster, message ) );
         }
 
         @Override

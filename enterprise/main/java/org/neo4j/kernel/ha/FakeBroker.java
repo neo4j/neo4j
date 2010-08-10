@@ -1,4 +1,4 @@
-package slavetest;
+package org.neo4j.kernel.ha;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +14,7 @@ public class FakeBroker extends AbstractBroker
     private final Master master;
     private final int slaveNumber;
 
-    FakeBroker( Master master, int slaveNumber )
+    public FakeBroker( Master master, int slaveNumber )
     {
         this.master = master;
         this.slaveNumber = slaveNumber;
@@ -35,5 +35,11 @@ public class FakeBroker extends AbstractBroker
             txs.put( dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
         return new SlaveContext( slaveNumber, txs );
+    }
+
+    @Override
+    public boolean noobYouAreTheMaster()
+    {
+        return false;
     }
 }

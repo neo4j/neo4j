@@ -42,7 +42,8 @@ public class MasterClient extends CommunicationProtocol implements Master
         BlockingReadHandler<ChannelBuffer> blockingReadHandler = new BlockingReadHandler<ChannelBuffer>();
         bootstrap.setPipelineFactory( new ClientPipelineFactory( blockingReadHandler ) );
         ChannelFuture channelFuture = bootstrap.connect( new InetSocketAddress( MasterServer.PORT ) );
-        return new Client( blockingReadHandler, channelFuture );
+        Client client = new Client( blockingReadHandler, channelFuture );
+        return client;
     }
 
     private final Client client;
@@ -146,12 +147,14 @@ public class MasterClient extends CommunicationProtocol implements Master
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
-            int eventIdentifier, final String resource, final TransactionStream transactionStream )
+            final int eventIdentifier, final String resource,
+            final TransactionStream transactionStream )
     {
         return sendRequest( RequestType.COMMIT, context, new Serializer()
         {
             public void write( ChannelBuffer buffer ) throws IOException
             {
+                buffer.writeInt( eventIdentifier );
                 writeString( buffer, resource );
                 writeTransactionStream(buffer, transactionStream);
             }
@@ -165,9 +168,15 @@ public class MasterClient extends CommunicationProtocol implements Master
         });
     }
 
-    public Response<Void> rollbackTransaction( SlaveContext context, int eventIdentifier )
+    public Response<Void> rollbackTransaction( SlaveContext context, final int eventIdentifier )
     {
-        return sendRequest( RequestType.ROLLBACK, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
+        return sendRequest( RequestType.ROLLBACK, context, new Serializer()
+        {
+            public void write( ChannelBuffer buffer ) throws IOException
+            {
+                buffer.writeInt( eventIdentifier );
+            }
+        }, VOID_DESERIALIZER );
     }
 
     public Response<Void> pullUpdates( SlaveContext context )
