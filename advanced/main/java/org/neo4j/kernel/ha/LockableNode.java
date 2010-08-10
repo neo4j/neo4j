@@ -14,7 +14,7 @@ public class LockableNode implements Node
 {
     private final int id;
 
-    LockableNode( int id )
+    public LockableNode( int id )
     {
         this.id = id;
     }

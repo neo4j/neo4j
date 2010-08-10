@@ -161,4 +161,10 @@ public class MultiJvmTesting extends AbstractHaTest
     {
         return new MultiJvmDLFetcher();
     }
+
+    @Override
+    public void testSomePerformance() throws Exception
+    {
+        super.testSomePerformance();
+    }
 }
