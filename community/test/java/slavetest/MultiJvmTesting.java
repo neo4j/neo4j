@@ -44,6 +44,19 @@ public class MultiJvmTesting extends AbstractHaTest
     @After
     public void shutdownDbsAndVerify() throws Exception
     {
+        shutdownDbs();
+        
+        GraphDatabaseService masterDb = new EmbeddedGraphDatabase( MASTER_PATH.getAbsolutePath() );
+        for ( int i = 0; i < slaveJvms.size(); i++ )
+        {
+            GraphDatabaseService slaveDb =
+                    new EmbeddedGraphDatabase( slavePath( i ).getAbsolutePath() );
+            verify( masterDb, slaveDb );
+        }
+    }
+
+    protected void shutdownDbs() throws Exception
+    {
         for ( StandaloneDbCom slave : slaveJvms )
         {
             slave.initiateShutdown();
@@ -54,14 +67,6 @@ public class MultiJvmTesting extends AbstractHaTest
             waitUntilShutdownFileFound( slavePath( i ) );
         }
         waitUntilShutdownFileFound( MASTER_PATH );
-        
-        GraphDatabaseService masterDb = new EmbeddedGraphDatabase( MASTER_PATH.getAbsolutePath() );
-        for ( int i = 0; i < slaveJvms.size(); i++ )
-        {
-            GraphDatabaseService slaveDb =
-                    new EmbeddedGraphDatabase( slavePath( i ).getAbsolutePath() );
-            verify( masterDb, slaveDb );
-        }
     }
 
     private void waitUntilShutdownFileFound( File slavePath ) throws Exception
@@ -160,11 +165,5 @@ public class MultiJvmTesting extends AbstractHaTest
     protected Fetcher<DoubleLatch> getDoubleLatch() throws Exception
     {
         return new MultiJvmDLFetcher();
-    }
-
-    @Override
-    public void testSomePerformance() throws Exception
-    {
-        super.testSomePerformance();
     }
 }
