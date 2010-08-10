@@ -1,7 +1,5 @@
 package org.neo4j.kernel.impl.ha;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.IdType;
 
 /**
@@ -14,18 +12,18 @@ public interface Master
 
     Response<Integer> createRelationshipType( SlaveContext context, String name );
 
-    Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
-            Node... nodes );
+    Response<LockResult> acquireNodeWriteLock( SlaveContext context, int eventIdentifier,
+            long... nodes );
 
-    Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
-            Node... nodes );
+    Response<LockResult> acquireNodeReadLock( SlaveContext context, int eventIdentifier,
+            long... nodes );
 
-    Response<LockResult> acquireWriteLock( SlaveContext context, int eventIdentifier,
-            Relationship... relationships );
+    Response<LockResult> acquireRelationshipWriteLock( SlaveContext context, int eventIdentifier,
+            long... relationships );
 
-    Response<LockResult> acquireReadLock( SlaveContext context, int eventIdentifier,
-            Relationship... relationships );
-    
+    Response<LockResult> acquireRelationshipReadLock( SlaveContext context, int eventIdentifier,
+            long... relationships );
+
     Response<Long> commitSingleResourceTransaction( SlaveContext context,
             int eventIdentifier, String resource, TransactionStream transactionStream );
 
