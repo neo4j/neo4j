@@ -80,7 +80,7 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
         {
             try
             {
-                Thread.sleep( 1000 );
+                Thread.sleep( 100 );
             }
             catch ( InterruptedException e )
             {
@@ -110,7 +110,7 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
             {
                 try
                 {
-                    Thread.sleep( 500 );
+                    Thread.sleep( 50 );
                 }
                 catch ( InterruptedException e )
                 {
