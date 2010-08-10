@@ -1,11 +1,10 @@
-package slavetest;
+package org.neo4j.kernel.ha;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.impl.ha.Master;
 import org.neo4j.kernel.impl.ha.SlaveContext;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -36,5 +35,11 @@ public class FakeSlaveBroker extends AbstractBroker
             txs.put( dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
         return new SlaveContext( slaveId, txs );
+    }
+
+    @Override
+    public boolean noobYouAreTheMaster()
+    {
+        return false;
     }
 }

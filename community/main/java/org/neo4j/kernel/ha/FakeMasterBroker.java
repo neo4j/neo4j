@@ -1,8 +1,6 @@
-package slavetest;
+package org.neo4j.kernel.ha;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.ha.MasterImpl;
-import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.impl.ha.Master;
 import org.neo4j.kernel.impl.ha.SlaveContext;
 
@@ -27,5 +25,11 @@ public class FakeMasterBroker extends AbstractBroker
     public SlaveContext getSlaveContext()
     {
         throw new UnsupportedOperationException( "Shouldn't get called on master" );
+    }
+
+    @Override
+    public boolean noobYouAreTheMaster()
+    {
+        return true;
     }
 }

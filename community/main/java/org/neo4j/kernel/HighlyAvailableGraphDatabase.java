@@ -13,6 +13,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
@@ -95,8 +96,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     private boolean brokerSaysIAmMaster()
     {
-        // TODO Auto-generated method stub
-        return false;
+        return ((AbstractBroker) broker).noobYouAreTheMaster();
     }
 
     public Transaction beginTx()
