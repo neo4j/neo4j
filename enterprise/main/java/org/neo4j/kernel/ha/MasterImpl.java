@@ -250,7 +250,7 @@ public class MasterImpl implements Master
     {
         IdGeneratorFactory factory = getConfig().getIdGeneratorFactory();
         IdGenerator generator = factory.get( idType );
-        int size = 10;
+        int size = 1000;
         long[] ids = new long[size];
         for ( int i = 0; i < size; i++ )
         {

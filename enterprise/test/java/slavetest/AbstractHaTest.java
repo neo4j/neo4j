@@ -10,6 +10,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
@@ -287,6 +288,53 @@ public abstract class AbstractHaTest
         pullUpdates();
     }
     
+    @Test
+    public void testSomePerformance() throws Exception
+    {
+        initializeDbs( 1 );
+        
+        // w/o HA
+        final Job<Void> job =
+//            new CommonJobs.PerformanceIdAllocationJob();
+            new CommonJobs.PerformanceCreateNodesJob( 100, 1 );
+//        time( new Callable<Void>()
+//        {
+//            public Void call() throws Exception
+//            {
+//                return executeJobOnMaster( job );
+//            }
+//        } );
+        // HA on slave
+        time( new Callable<Void>()
+        {
+            public Void call() throws Exception
+            {
+                return executeJob( job, 0 );
+            }
+        } );
+        pullUpdates();
+    }
+    
+    private void time( Callable<Void> callable )
+    {
+        long t = System.currentTimeMillis();
+        try
+        {
+            callable.call();
+        }
+        catch ( RuntimeException e )
+        {
+            throw e;
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            throw new RuntimeException( e );
+        }
+        long time = System.currentTimeMillis() - t;
+        System.out.println( "time:" + time );
+    }
+
     protected abstract Fetcher<DoubleLatch> getDoubleLatch() throws Exception;
     
     private class Worker extends Thread
