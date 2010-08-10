@@ -47,7 +47,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
-        pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( 100000, 0, 4, 0, 4 ) );
+        pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( 1000000, 0, 4, 0, 4 ) );
         pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
         pipeline.addLast( "serverHandler", new ServerHandler() );
         return pipeline;

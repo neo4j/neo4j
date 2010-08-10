@@ -229,4 +229,10 @@ public class SingleJvmTesting extends AbstractHaTest
             }
         };
     }
+
+    @Override
+    public void testSomePerformance() throws Exception
+    {
+        super.testSomePerformance();
+    }
 }

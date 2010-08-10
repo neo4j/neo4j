@@ -11,14 +11,38 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.ha.LockableNode;
+import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
+import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.LockType;
 
 public class CommonJobs
 {
     public static final RelationshipType REL_TYPE = DynamicRelationshipType.withName( "HA_TEST" );
     public static final RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
     
-    public static abstract class TransactionalJob<T> implements Job<T>
+    public static abstract class AbstractJob<T> implements Job<T>
+    {
+        protected Config getConfig( GraphDatabaseService db )
+        {
+            Config config = null;
+            try
+            {
+                return (Config) db.getClass().getDeclaredMethod( "getConfig" ).invoke( db );
+            }
+            catch ( Exception e )
+            {
+                // Won't happen
+                throw new RuntimeException( e );
+            }
+        }
+    }
+    
+    public static abstract class TransactionalJob<T> extends AbstractJob<T>
     {
         public final T execute( GraphDatabaseService db ) throws RemoteException
         {
@@ -447,6 +471,71 @@ public class CommonJobs
                 throw new RuntimeException( e );
             }
             return new Boolean[] { success, deadlock };
+        }
+    }
+    
+    public static class PerformanceWriteLocksJob extends TransactionalJob<Void>
+    {
+        @Override
+        protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            Config config = getConfig( db );
+            LockManager lockManager = config.getLockManager();
+            LockReleaser lockReleaser = config.getLockReleaser();
+            for ( int i = 0; i < 10000; i++ )
+            {
+                Object resource = new LockableNode( i );
+                lockManager.getWriteLock( resource );
+                lockReleaser.addLockToTransaction( resource, LockType.WRITE );
+            }
+            return null;
+        }
+    }
+    
+    public static class PerformanceIdAllocationJob extends AbstractJob<Void>
+    {
+        public Void execute( GraphDatabaseService db )
+        {
+            Config config = getConfig( db );
+            IdGenerator generator = config.getIdGeneratorFactory().get( IdType.NODE );
+            for ( int i = 0; i < 100000; i++ )
+            {
+                generator.nextId();
+            }
+            return null;
+        }
+    }
+    
+    public static class PerformanceCreateNodesJob extends AbstractJob<Void>
+    {
+        private final int numTx;
+        private final int numNodesInEach;
+
+        public PerformanceCreateNodesJob( int numTx, int numNodesInEach )
+        {
+            this.numTx = numTx;
+            this.numNodesInEach = numNodesInEach;
+        }
+        
+        public Void execute( GraphDatabaseService db ) throws RemoteException
+        {
+            for ( int i = 0; i < numTx; i++ )
+            {
+                Transaction tx = db.beginTx();
+                try
+                {
+                    for ( int ii = 0; ii < numNodesInEach; ii++ )
+                    {
+                        db.createNode();
+                    }
+                    tx.success();
+                }
+                finally
+                {
+                    tx.finish();
+                }
+            }
+            return null;
         }
     }
 }
