@@ -17,8 +17,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.ha.IdAllocation;
 import org.neo4j.kernel.impl.ha.LockResult;
@@ -43,13 +41,13 @@ public class MasterClient extends CommunicationProtocol implements Master
                 executor, executor ) );
         BlockingReadHandler<ChannelBuffer> blockingReadHandler = new BlockingReadHandler<ChannelBuffer>();
         bootstrap.setPipelineFactory( new ClientPipelineFactory( blockingReadHandler ) );
-        ChannelFuture channelFuture = bootstrap.connect( new InetSocketAddress( PORT ) );
+        ChannelFuture channelFuture = bootstrap.connect( new InetSocketAddress( MasterServer.PORT ) );
         return new Client( blockingReadHandler, channelFuture );
     }
 
     private final Client client;
 
-    MasterClient()
+    public MasterClient()
     {
         client = initClient();
     }

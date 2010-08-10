@@ -19,7 +19,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LockReleaser;
@@ -58,9 +57,9 @@ public class MasterImpl implements Master
             new HashMap<TxIdElement, Transaction>();
     private final TransactionManager txManager;
 
-    public MasterImpl( String path )
+    public MasterImpl( GraphDatabaseService db )
     {
-        graphDb = new EmbeddedGraphDatabase( path );
+        graphDb = db;
         txManager = getConfig().getTxModule().getTxManager();
     }
 
@@ -214,29 +213,37 @@ public class MasterImpl implements Master
         return acquireLock( context, eventIdentifier, WRITE_LOCK_GRABBER, relationshipsById(relationships) );
     }
 
-    private Node[] nodesById( long[] nodes )
+    private Node[] nodesById( long[] ids )
     {
-        Node[] result = new Node[nodes.length];
-        for ( int i = 0; i < nodes.length; i++ )
+        Node[] result = new Node[ids.length];
+        for ( int i = 0; i < ids.length; i++ )
         {
-            result[i] = graphDb.getNodeById( nodes[i] );
+            result[i] = new LockableNode( (int) ids[i] );
         }
         return result;
     }
 
-    private Relationship[] relationshipsById( long[] nodes )
+    private Relationship[] relationshipsById( long[] ids )
     {
-        Relationship[] result = new Relationship[nodes.length];
-        for ( int i = 0; i < nodes.length; i++ )
+        Relationship[] result = new Relationship[ids.length];
+        for ( int i = 0; i < ids.length; i++ )
         {
-            result[i] = graphDb.getRelationshipById( nodes[i] );
+            result[i] = new LockableRelationship( (int) ids[i] );
         }
         return result;
     }
 
     private Config getConfig()
     {
-        return ((EmbeddedGraphDatabase) graphDb).getConfig();
+        try
+        {
+            // Quite ugly :)
+            return (Config) graphDb.getClass().getDeclaredMethod( "getConfig" ).invoke( graphDb );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public Response<IdAllocation> allocateIds( SlaveContext context, IdType idType )

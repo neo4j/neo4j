@@ -24,6 +24,8 @@ import org.neo4j.kernel.impl.ha.Master;
  */
 public class MasterServer extends CommunicationProtocol implements ChannelPipelineFactory
 {
+    public static final int PORT = 8901;
+    
     private final Master realMaster;
 
     public MasterServer( Master realMaster )
