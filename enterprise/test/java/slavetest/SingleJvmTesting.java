@@ -76,7 +76,6 @@ public class SingleJvmTesting extends AbstractHaTest
     @After
     public void verifyAndShutdownDbs()
     {
-        System.out.println( "ONLINE VERIFICATION" );
         verify( master.getGraphDb(), haDbs.toArray( new GraphDatabaseService[haDbs.size()] ) );
         shutdownDbs();
         
@@ -87,7 +86,6 @@ public class SingleJvmTesting extends AbstractHaTest
         {
             slaveOfflineDbs[i] = new EmbeddedGraphDatabase( slavePath( i ).getAbsolutePath() );
         }
-        System.out.println( "OFFLINE VERIFICATION" );
         verify( masterOfflineDb, slaveOfflineDbs );
         masterOfflineDb.shutdown();
         for ( GraphDatabaseService db : slaveOfflineDbs )
