@@ -494,11 +494,18 @@ public class CommonJobs
     
     public static class PerformanceIdAllocationJob extends AbstractJob<Void>
     {
+        private final int count;
+
+        public PerformanceIdAllocationJob( int count )
+        {
+            this.count = count;
+        }
+        
         public Void execute( GraphDatabaseService db )
         {
             Config config = getConfig( db );
             IdGenerator generator = config.getIdGeneratorFactory().get( IdType.NODE );
-            for ( int i = 0; i < 100000; i++ )
+            for ( int i = 0; i < count; i++ )
             {
                 generator.nextId();
             }
