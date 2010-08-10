@@ -19,11 +19,11 @@ public class ZooClient implements Watcher
     private final int machineId;
     private final String sequenceNr;
     
-    private int committedTx;
-    private int globalCommittedTx;
+    private long committedTx;
+    private long globalCommittedTx;
     
     public ZooClient( String servers, int machineId, long storeCreationTime, 
-        long storeId, int committedTx )
+        long storeId, long committedTx )
     {
         try
         {
@@ -51,7 +51,7 @@ public class ZooClient implements Watcher
             {
                 rootData = zooKeeper.getData( rootPath, false, null );
                 ByteBuffer buf = ByteBuffer.wrap( rootData );
-                globalCommittedTx = buf.getInt();
+                globalCommittedTx = buf.getLong();
                 if ( globalCommittedTx < committedTx )
                 {
                     throw new IllegalStateException( "Global committed tx " + 
@@ -77,9 +77,9 @@ public class ZooClient implements Watcher
             // try create root
             try
             {
-                byte data[] = new byte[4];
+                byte data[] = new byte[8];
                 ByteBuffer buf = ByteBuffer.wrap( data );
-                buf.putInt( committedTx );
+                buf.putLong( committedTx );
                 zooKeeper.create( rootPath, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
                     CreateMode.PERSISTENT );
             }
@@ -104,9 +104,9 @@ public class ZooClient implements Watcher
         try
         {
             String path = getRoot() + "/" + machineId + "_";
-            byte[] data = new byte[4];
+            byte[] data = new byte[8];
             ByteBuffer buf = ByteBuffer.wrap( data );
-            buf.putInt( committedTx );
+            buf.putLong( committedTx );
             String created = zooKeeper.create( path, data, 
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
             return created.substring( created.lastIndexOf( "_" ) + 1 );
@@ -145,7 +145,7 @@ public class ZooClient implements Watcher
                     byte[] data = zooKeeper.getData( root + "/" + child, false, 
                         null );
                     ByteBuffer buf = ByteBuffer.wrap( data );
-                    int tx = buf.getInt();
+                    long tx = buf.getLong();
                     if ( tx == globalCommittedTx )
                     {
                         if ( seq < lowestSeq )
@@ -177,7 +177,7 @@ public class ZooClient implements Watcher
         }
     }
     
-    public synchronized void setCommittedTx( int tx )
+    public synchronized void setCommittedTx( long tx )
     {
         if ( tx <= committedTx )
         {
@@ -187,9 +187,9 @@ public class ZooClient implements Watcher
         int masterId = getMaster();
         String root = getRoot();
         String path = root + "/" + machineId + "_" + sequenceNr;
-        byte[] data = new byte[4];
+        byte[] data = new byte[8];
         ByteBuffer buf = ByteBuffer.wrap( data );
-        buf.putInt( tx );
+        buf.putLong( tx );
         try
         {
             zooKeeper.setData( path, data, -1 );
