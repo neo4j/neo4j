@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.ha.IdAllocation;
@@ -193,16 +193,17 @@ abstract class CommunicationProtocol
     }
 
     @SuppressWarnings( "unchecked" )
-    protected static void handleRequest( Master realMaster,
-            @SuppressWarnings( "unused" ) ChannelHandlerContext ctx,
+    protected static ChannelBuffer handleRequest( Master realMaster,
             ChannelBuffer buffer ) throws IOException
     {
         RequestType type = RequestType.values()[buffer.readByte()];
         final SlaveContext context = readSlaveContext( buffer );
         Response<?> response = type.caller.callMaster( realMaster, context, buffer );
-        // TODO: is this really how you write stuff back?!
-        type.serializer.write( response.response(), buffer );
-        writeTransactionStreams( response.transactions(), buffer );
+        
+        ChannelBuffer targetBuffer = ChannelBuffers.dynamicBuffer();
+        type.serializer.write( response.response(), targetBuffer );
+        writeTransactionStreams( response.transactions(), targetBuffer );
+        return targetBuffer;
     }
 
     private static <T> void writeTransactionStreams( TransactionStreams txStreams,
@@ -272,7 +273,7 @@ abstract class CommunicationProtocol
         public int read( ByteBuffer dst ) throws IOException
         {
             if ( pos >= data.length ) return -1;
-            int size = Math.min( data.length - pos, dst.capacity() );
+            int size = Math.min( data.length - pos, dst.limit() - dst.position() );
             dst.put( data, pos, size );
             pos += size;
             return size;

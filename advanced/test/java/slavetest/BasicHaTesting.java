@@ -32,6 +32,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.FakeBroker;
 import org.neo4j.kernel.ha.MasterImpl;
 
 public class BasicHaTesting

@@ -1,9 +1,9 @@
-package slavetest;
+package org.neo4j.kernel.ha;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.ha.Broker;
 
-abstract class AbstractBroker implements Broker
+public abstract class AbstractBroker implements Broker
 {
     private GraphDatabaseService db;
     
@@ -16,4 +16,6 @@ abstract class AbstractBroker implements Broker
     {
         return this.db;
     }
+    
+    public abstract boolean noobYouAreTheMaster();
 }
