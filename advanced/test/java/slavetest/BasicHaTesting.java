@@ -1,6 +1,7 @@
 package slavetest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -60,7 +61,7 @@ public class BasicHaTesting
                 FileUtils.copyDirectory( MASTER_PATH, slavePath( i ) );
             }
             haDbs = new ArrayList<GraphDatabaseService>();
-            master = new MasterImpl( MASTER_PATH.getAbsolutePath() );
+            master = new MasterImpl( new EmbeddedGraphDatabase( MASTER_PATH.getAbsolutePath() ) );
             for ( int i = 0; i < numSlaves; i++ )
             {
                 File slavePath = slavePath( i );
@@ -68,7 +69,7 @@ public class BasicHaTesting
                 GraphDatabaseService db = new HighlyAvailableGraphDatabase(
                         slavePath.getAbsolutePath(), new HashMap<String, String>(), broker );
                 haDbs.add( db );
-                broker.setSlave( db );
+                broker.setDb( db );
             }
         }
         catch ( IOException e )
@@ -96,7 +97,7 @@ public class BasicHaTesting
         master.getGraphDb().shutdown();
     }
 
-    protected void verify( GraphDatabaseService refDb, GraphDatabaseService... dbs )
+    public static void verify( GraphDatabaseService refDb, GraphDatabaseService... dbs )
     {
         for ( GraphDatabaseService otherDb : dbs )
         {
@@ -334,7 +335,7 @@ public class BasicHaTesting
                 t.printStackTrace();
             }
         }
-        master = new MasterImpl( MASTER_PATH.getAbsolutePath() );
+        master = new MasterImpl( new EmbeddedGraphDatabase( MASTER_PATH.getAbsolutePath() ) );
         try
         {
             haDb.getNodeById( node1.getId() );
@@ -599,6 +600,54 @@ public class BasicHaTesting
         {
             tx.finish();
         }
+    }
+    
+    @Test
+    public void testNodeDeleted()
+    {
+        initializeDbs( 1 );
+        GraphDatabaseService slave = haDbs.get( 0 );
+        Transaction tx = master.getGraphDb().beginTx();
+        long nodeId = 0;
+        try
+        {
+            Node node = master.getGraphDb().createNode();
+            nodeId = node.getId();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        pullUpdates();
+        tx = master.getGraphDb().beginTx();
+        try
+        {
+            master.getGraphDb().getNodeById( nodeId ).delete();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        
+        tx = slave.beginTx();
+        Exception exception = null;
+        try
+        {
+            Node node = slave.getNodeById( nodeId );
+            node.setProperty( "name", "Bla" );
+            tx.success();
+        }
+        catch ( Exception e )
+        {
+            exception = e;
+        }
+        finally
+        {
+            tx.finish();
+        }
+        assertNotNull( exception );
     }
     
     private static class Worker1 extends Thread

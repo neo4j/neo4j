@@ -5,26 +5,27 @@ import java.util.Map;
 
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.impl.ha.Master;
 import org.neo4j.kernel.impl.ha.SlaveContext;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
-public class FakeBroker extends AbstractBroker
+public class FakeSlaveBroker extends AbstractBroker
 {
     private final Master master;
-    private final int slaveNumber;
-
-    FakeBroker( Master master, int slaveNumber )
+    private final int slaveId;
+    
+    public FakeSlaveBroker( int slaveId )
     {
-        this.master = master;
-        this.slaveNumber = slaveNumber;
+        this.slaveId = slaveId;
+        this.master = new MasterClient();
     }
     
     public Master getMaster()
     {
         return master;
     }
-
+    
     public SlaveContext getSlaveContext()
     {
         Config config = ((HighlyAvailableGraphDatabase) getDb()).getConfig();
@@ -34,6 +35,6 @@ public class FakeBroker extends AbstractBroker
         {
             txs.put( dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
-        return new SlaveContext( slaveNumber, txs );
+        return new SlaveContext( slaveId, txs );
     }
 }
