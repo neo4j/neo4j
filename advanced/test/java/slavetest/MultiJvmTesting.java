@@ -1,8 +1,5 @@
 package slavetest;
 
-import static org.junit.Assert.assertEquals;
-import static slavetest.BasicHaTesting.verify;
-
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -11,40 +8,24 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.impl.RmiLocation;
 
-public class MultiJvmTesting
+public class MultiJvmTesting extends AbstractHaTest
 {
-    private static final RelationshipType REL_TYPE = DynamicRelationshipType.withName( "HA_TEST" );
-    private static final File PARENT_PATH = new File( "target/mdbs" );
-    private static final File MASTER_PATH = new File( PARENT_PATH, "master" );
-    private static final File SLAVE_PATH = new File( PARENT_PATH, "slave" );
     private static final int MASTER_PORT = 8990;
     
     private StandaloneDbCom masterJvm;
     private List<StandaloneDbCom> slaveJvms;
     
-    private void initializeDbs( int numSlaves ) throws Exception
+    protected void initializeDbs( int numSlaves ) throws Exception
     {
         try
         {
-            FileUtils.deleteDirectory( PARENT_PATH );
-            GraphDatabaseService masterDb =
-                    new EmbeddedGraphDatabase( MASTER_PATH.getAbsolutePath() );
-            masterDb.shutdown();
-            for ( int i = 0; i < numSlaves; i++ )
-            {
-                FileUtils.copyDirectory( MASTER_PATH, slavePath( i ) );
-            }
-            
-            masterJvm = spawnJvm( MASTER_PATH, MASTER_PORT, "-master", "true" );
+            initDeadMasterAndSlaveDbs( numSlaves );
+            startUpMaster();
             slaveJvms = new ArrayList<StandaloneDbCom>();
             for ( int i = 0; i < numSlaves; i++ )
             {
@@ -132,22 +113,52 @@ public class MultiJvmTesting
         return result;
     }
 
-    private static File slavePath( int num )
+    @Override
+    protected void pullUpdates( int... slaves ) throws Exception
     {
-        return new File( SLAVE_PATH, "" + num );
+        if ( slaves.length == 0 )
+        {
+            for ( StandaloneDbCom db : slaveJvms )
+            {
+                db.pullUpdates();
+            }
+        }
+        else
+        {
+            for ( StandaloneDbCom db : slaveJvms )
+            {
+                db.pullUpdates();
+            }
+        }
+    }
+
+    @Override
+    protected <T> T executeJob( Job<T> job, int onSlave ) throws Exception
+    {
+        return slaveJvms.get( onSlave ).executeJob( job );
     }
     
-    @Test
-    public void testTwoSlaves() throws Exception
+    @Override
+    protected <T> T executeJobOnMaster( Job<T> job ) throws Exception
     {
-        initializeDbs( 2 );
-        StandaloneDbCom db1 = slaveJvms.get( 0 );
-        StandaloneDbCom db2 = slaveJvms.get( 1 );
-        final String name = "Mattias";
-        db1.executeJob( new CommonJobs.CreateSubRefNodeJob( name ) );
-        String readName = db2.executeJob( new CommonJobs.SetSubRefNameJob() );
-        
-        assertEquals( name, readName );
-        db1.pullUpdates();
+        return masterJvm.executeJob( job );
+    }
+    
+    @Override
+    protected void startUpMaster() throws Exception
+    {
+        masterJvm = spawnJvm( MASTER_PATH, MASTER_PORT, "-master", "true" );
+    }
+    
+    @Override
+    protected Job<Void> getMasterShutdownDispatcher()
+    {
+        return new CommonJobs.ShutdownJvm( masterJvm );
+    }
+    
+    @Override
+    protected Fetcher<DoubleLatch> getDoubleLatch() throws Exception
+    {
+        return new MultiJvmDLFetcher();
     }
 }

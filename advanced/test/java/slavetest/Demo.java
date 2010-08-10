@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
-public class Demo extends BasicHaTesting
+public class Demo extends SingleJvmTesting
 {
     public static void main( String args[] )
     {
