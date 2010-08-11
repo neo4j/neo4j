@@ -15,11 +15,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
-import org.neo4j.kernel.ha.SlaveTxRollbackHook;
+import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
+import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Response;
@@ -39,6 +40,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     private final Broker broker;
     private EmbeddedGraphDbImpl localGraph;
     private final int machineId;
+    private MasterServer masterServer;
 
     /**
      * Will instantiate its own ZooKeeper broker
@@ -70,9 +72,9 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     }
     
     private static Map<Integer, String> getHaServersFromConfig(
-            Map<String, String> config )
+            Map<?, ?> config )
     {
-        String value = config.get( CONFIG_KEY_HA_SERVERS );
+        String value = config.get( CONFIG_KEY_HA_SERVERS ).toString();
         Map<Integer, String> result = new HashMap<Integer, String>();
         for ( String part : value.split( Pattern.quote( "," ) ) )
         {
@@ -125,9 +127,15 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     
     protected void reevaluateMyself()
     {
-        shutdownIfNecessary();
-        if ( brokerSaysIAmMaster() )
+        boolean brokerSaysIAmMaster = brokerSaysIAmMaster();
+        boolean iAmCurrentlyMaster = masterServer != null;
+        if ( brokerSaysIAmMaster )
         {
+            if ( !iAmCurrentlyMaster )
+            {
+                shutdownIfStarted();
+            }
+            this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
             this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                     CommonFactories.defaultLockManagerFactory(),
                     CommonFactories.defaultIdGeneratorFactory(),
@@ -137,6 +145,10 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         }
         else
         {
+            if ( iAmCurrentlyMaster )
+            {
+                shutdownIfStarted();
+            }
             this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                     new SlaveLockManagerFactory( broker, this ),
                     new SlaveIdGeneratorFactory( broker, this ),
@@ -144,6 +156,16 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                     new SlaveTxIdGeneratorFactory( broker, this ),
                     new SlaveTxRollbackHook( broker, this ) );
         }
+    }
+
+    private int readHaMasterListenPort()
+    {
+        Map<Integer, String> haServers = getHaServersFromConfig( config );
+        System.out.println( haServers );
+        int machineId = broker.getMyMachineId();
+        System.out.println( "machineId:" + machineId );
+        String host = haServers.get( machineId );
+        return Integer.parseInt( host.split( Pattern.quote( ":" ) )[1] );
     }
 
     private boolean brokerSaysIAmMaster()
@@ -209,11 +231,16 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     public void shutdown()
     {
-        shutdownIfNecessary();
+        shutdownIfStarted();
     }
 
-    private void shutdownIfNecessary()
+    private void shutdownIfStarted()
     {
+        if ( this.masterServer != null )
+        {
+            this.masterServer.shutdown();
+            this.masterServer = null;
+        }
         if ( this.localGraph != null )
         {
             this.localGraph.shutdown();

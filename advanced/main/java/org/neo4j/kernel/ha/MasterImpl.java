@@ -55,12 +55,20 @@ public class MasterImpl implements Master
     private final GraphDatabaseService graphDb;
     private final Map<TxIdElement, Transaction> transactions =
             new HashMap<TxIdElement, Transaction>();
-    private final TransactionManager txManager;
+    private TransactionManager txManagerDontUse;
 
     public MasterImpl( GraphDatabaseService db )
     {
         graphDb = db;
-        txManager = getConfig().getTxModule().getTxManager();
+    }
+    
+    private TransactionManager getTxManager()
+    {
+        if ( txManagerDontUse == null )
+        {
+            txManagerDontUse = getConfig().getTxModule().getTxManager();
+        }
+        return txManagerDontUse;
     }
 
     public GraphDatabaseService getGraphDb()
@@ -106,6 +114,7 @@ public class MasterImpl implements Master
     {
         try
         {
+            TransactionManager txManager = getTxManager();
             txManager.begin();
             Transaction tx = txManager.getTransaction();
             transactions.put( txId, tx );
@@ -125,6 +134,7 @@ public class MasterImpl implements Master
     {
         try
         {
+            TransactionManager txManager = getTxManager();
             Transaction otherTx = txManager.getTransaction();
             Transaction transaction = getTx( txId );
             if ( otherTx != null && otherTx == transaction )
@@ -159,6 +169,7 @@ public class MasterImpl implements Master
     {
         try
         {
+            TransactionManager txManager = getTxManager();
             txManager.suspend();
             if ( otherTx != null )
             {
@@ -176,6 +187,7 @@ public class MasterImpl implements Master
     {
         try
         {
+            TransactionManager txManager = getTxManager();
             txManager.rollback();
             if ( otherTx != null )
             {
@@ -307,6 +319,7 @@ public class MasterImpl implements Master
         }
 
         // No? Create it then
+        TransactionManager txManager = getTxManager();
         Config config = getConfig();
         id = config.getRelationshipTypeCreator().getOrCreate( txManager,
                 config.getIdGeneratorModule().getIdGenerator(),
@@ -364,6 +377,7 @@ public class MasterImpl implements Master
             {
                 throw new RuntimeException( "Shouldn't happen" );
             }
+            TransactionManager txManager = getTxManager();
             txManager.rollback();
             return packResponse( context, null, ALL );
         }
