@@ -47,6 +47,7 @@ public class StartClient
     private AtomicBoolean hasBeenShutdown = new AtomicBoolean();
     public static final String ARG_PATH = "path";
     public static final String ARG_READONLY = "readonly";
+    public static final String ARG_HOST = "host";
     public static final String ARG_PORT = "port";
     public static final String ARG_NAME = "name";
     
@@ -76,15 +77,16 @@ public class StartClient
         }
         
         String path = args.get( ARG_PATH, null );
+        String host = args.get( ARG_HOST, null );
         String port = args.get( ARG_PORT, null );
         String name = args.get( ARG_NAME, null );
         
-        if ( path != null && ( port != null || name != null ) )
+        if ( path != null && ( port != null || name != null || host != null ) )
         {
             System.err.println( "You have supplied both " +
-                ARG_PATH + " as well as " + ARG_PORT + "/" + ARG_NAME + ". " +
+                ARG_PATH + " as well as " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + ". " +
                 "You should either supply only " + ARG_PATH +
-                " or " + ARG_PORT + "/" + ARG_NAME + " so that either a local or " +
+                " or " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + " so that either a local or " +
                 "remote shell client can be started" );
             return;
         }
@@ -246,9 +248,10 @@ public class StartClient
     {
         try
         {
+            String host = args.get( ARG_HOST, "localhost" );
             int port = args.getNumber( ARG_PORT, AbstractServer.DEFAULT_PORT ).intValue();
             String name = args.get( ARG_NAME, AbstractServer.DEFAULT_NAME );
-            ShellClient client = ShellLobby.newClient( port, name );
+            ShellClient client = ShellLobby.newClient( host, port, name );
             System.out.println( "NOTE: Remote Neo4j graph database service '" + name +
                     "' at port " + port );
             setSessionVariablesFromArgs( client, args );
@@ -334,12 +337,13 @@ public class StartClient
         int port = AbstractServer.DEFAULT_PORT;
         String name = AbstractServer.DEFAULT_NAME;
         String pathArg = StartClient.ARG_PATH;
+        String hostArg = StartClient.ARG_HOST;
         String portArg = StartClient.ARG_PORT;
         String nameArg = StartClient.ARG_NAME;
         System.out.println(
             "Example arguments for remote:\n" +
                 "\t-" + portArg + " " + port + "\n" +
-                "\t-" + portArg + " " + port +
+                "\t-" + hostArg + " " + "192.168.1.234" + " -" + portArg + " " + port +
                     " -" + nameArg + " " + name + "\n" +
                 "\t...or no arguments\n" +
             "Example arguments for local:\n" +

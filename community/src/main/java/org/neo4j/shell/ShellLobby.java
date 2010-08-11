@@ -59,18 +59,33 @@ public abstract class ShellLobby
 		return new SameJvmClient( server );
 	}
 	
+    /**
+     * Creates a client and "starts" it, i.e. grabs the console prompt.
+     * It will try to find a remote server on "localhost".
+     * @param port the RMI port.
+     * @param name the RMI name.
+     * @throws ShellException if no server was found at the RMI location.
+     * @return the new shell client.
+     */
+    public static ShellClient newClient( int port, String name )
+            throws ShellException
+    {
+        return newClient( "localhost", port, name );
+    }
+    
 	/**
 	 * Creates a client and "starts" it, i.e. grabs the console prompt.
 	 * It will try to find a remote server on "localhost".
+     * @param host the host (IP or domain name).
 	 * @param port the RMI port.
 	 * @param name the RMI name.
 	 * @throws ShellException if no server was found at the RMI location.
 	 * @return the new shell client.
 	 */
-	public static ShellClient newClient( int port, String name )
+	public static ShellClient newClient( String host, int port, String name )
 		throws ShellException
 	{
-		return newClient( RmiLocation.location( "localhost", port, name ) );
+		return newClient( RmiLocation.location( host, port, name ) );
 	}
 
 	/**
