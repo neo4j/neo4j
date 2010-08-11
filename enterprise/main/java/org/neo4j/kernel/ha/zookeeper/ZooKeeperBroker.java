@@ -12,15 +12,15 @@ public class ZooKeeperBroker implements Broker
     private final String storeDir;
     private final int machineId;
     private final String zooKeeperServers;
-    private final Map<Integer,String> connectInformation;
+    private final Map<Integer,String> haServers;
     
     public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
-            Map<Integer,String> connectInformation )
+            Map<Integer,String> haServers )
     {
         this.storeDir = storeDir;
         this.machineId = machineId;
         this.zooKeeperServers = zooKeeperServers;
-        this.connectInformation = connectInformation;
+        this.haServers = haServers;
         NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
         this.zooClient = new ZooClient( zooKeeperServers, machineId, 
                 store.getCreationTime(), store.getStoreId(), store.getLastCommittedTx() );
@@ -34,7 +34,7 @@ public class ZooKeeperBroker implements Broker
         {
             throw new RuntimeException( "I am master" );
         }
-        String host = connectInformation.get( masterId );
+        String host = haServers.get( masterId );
         // TODO
         // return new MasterClient( host );
         return null;

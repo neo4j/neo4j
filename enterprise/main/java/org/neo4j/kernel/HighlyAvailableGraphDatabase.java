@@ -3,7 +3,9 @@ package org.neo4j.kernel;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.ReadableByteChannel;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -14,33 +16,84 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.AbstractBroker;
-import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
-import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
+import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
+import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
+import org.neo4j.kernel.impl.ha.SlaveContext;
 import org.neo4j.kernel.impl.ha.TransactionStream;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class HighlyAvailableGraphDatabase implements GraphDatabaseService, ResponseReceiver
 {
+    public static final String CONFIG_KEY_HA_MACHINE_ID = "ha.machine_id";
+    public static final String CONFIG_KEY_HA_ZOO_KEEPER_SERVERS = "ha.zoo_keeper_servers";
+    public static final String CONFIG_KEY_HA_SERVERS = "ha.servers";
+    
     private final String storeDir;
     private final Map<String, String> config;
     private final Broker broker;
     private EmbeddedGraphDbImpl localGraph;
+    private final int machineId;
 
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config, Broker broker )
+    /**
+     * Will instantiate its own ZooKeeper broker
+     */
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
+    {
+        this( storeDir, config, instantiateBroker( storeDir, config ) );
+    }
+    
+    /**
+     * Only for testing
+     */
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config,
+            Broker broker )
     {
         this.storeDir = storeDir;
         this.config = config;
         this.broker = broker;
-//        this.broker = instantiateBroker();
+        this.machineId = getMachineIdFromConfig( config );
         reevaluateMyself();
     }
     
+    private static Broker instantiateBroker( String storeDir, Map<String, String> config )
+    {
+        return new ZooKeeperBroker( storeDir,
+                getMachineIdFromConfig( config ),
+                getZooKeeperServersFromConfig( config ),
+                getHaServersFromConfig( config ) );
+    }
+    
+    private static Map<Integer, String> getHaServersFromConfig(
+            Map<String, String> config )
+    {
+        String value = config.get( CONFIG_KEY_HA_SERVERS );
+        Map<Integer, String> result = new HashMap<Integer, String>();
+        for ( String part : value.split( Pattern.quote( "," ) ) )
+        {
+            String[] tokens = part.trim().split( Pattern.quote( "=" ) );
+            result.put( new Integer( tokens[0] ), tokens[1] );
+        }
+        return result;
+    }
+
+    private static String getZooKeeperServersFromConfig( Map<String, String> config )
+    {
+        return config.get( CONFIG_KEY_HA_ZOO_KEEPER_SERVERS );
+    }
+
+    private static int getMachineIdFromConfig( Map<String, String> config )
+    {
+        // Fail fast if null
+        return Integer.parseInt( config.get( CONFIG_KEY_HA_MACHINE_ID ) );
+    }
+
     public Broker getBroker()
     {
         return this.broker;
@@ -48,7 +101,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     
     public void pullUpdates()
     {
-        receive( broker.getMaster().pullUpdates( broker.getSlaveContext() ) );
+        receive( broker.getMaster().pullUpdates( getSlaveContext() ) );
     }
 
 //    private Broker instantiateBroker()
@@ -96,7 +149,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     private boolean brokerSaysIAmMaster()
     {
-        return ((AbstractBroker) broker).noobYouAreTheMaster();
+        return ((AbstractBroker) broker).thisIsMaster();
     }
 
     public Transaction beginTx()
@@ -178,6 +231,18 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             TransactionEventHandler<T> handler )
     {
         return localGraph.unregisterTransactionEventHandler( handler );
+    }
+    
+    public SlaveContext getSlaveContext()
+    {
+        Config config = getConfig();
+        Map<String, Long> txs = new HashMap<String, Long>();
+        for ( XaDataSource dataSource :
+                config.getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
+        {
+            txs.put( dataSource.getName(), dataSource.getLastCommittedTxId() );
+        }
+        return new SlaveContext( machineId, txs );
     }
 
     public <T> T receive( Response<T> response )

@@ -5,7 +5,6 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -15,6 +14,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.FakeBroker;
@@ -37,12 +37,13 @@ public class SingleJvmTesting extends AbstractHaTest
             initDeadMasterAndSlaveDbs( numSlaves );
             haDbs = new ArrayList<GraphDatabaseService>();
             startUpMaster();
+            FakeBroker broker = new FakeBroker( master ); 
             for ( int i = 0; i < numSlaves; i++ )
             {
                 File slavePath = slavePath( i );
-                FakeBroker broker = new FakeBroker( master, i ); 
                 GraphDatabaseService db = new HighlyAvailableGraphDatabase(
-                        slavePath.getAbsolutePath(), new HashMap<String, String>(), broker );
+                        slavePath.getAbsolutePath(), MapUtil.stringMap( "ha.machine_id", "" + i ),
+                        broker );
                 haDbs.add( db );
                 broker.setDb( db );
             }

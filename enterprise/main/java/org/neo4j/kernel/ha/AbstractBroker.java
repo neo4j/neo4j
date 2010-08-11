@@ -17,8 +17,6 @@ public abstract class AbstractBroker implements Broker
         return this.db;
     }
     
-    public abstract boolean noobYouAreTheMaster();
-    
     public void setLastCommittedTxId( long txId )
     {
         throw new RuntimeException( "implement this" );
