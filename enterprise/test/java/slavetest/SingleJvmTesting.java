@@ -34,13 +34,13 @@ public class SingleJvmTesting extends AbstractHaTest
     {
         try
         {
-            initDeadMasterAndSlaveDbs( numSlaves );
+            initDeadDbs( numSlaves );
             haDbs = new ArrayList<GraphDatabaseService>();
-            startUpMaster();
+            startUpMaster( numSlaves );
             FakeBroker broker = new FakeBroker( master ); 
-            for ( int i = 0; i < numSlaves; i++ )
+            for ( int i = 1; i <= numSlaves; i++ )
             {
-                File slavePath = slavePath( i );
+                File slavePath = dbPath( i );
                 GraphDatabaseService db = new HighlyAvailableGraphDatabase(
                         slavePath.getAbsolutePath(), MapUtil.stringMap( "ha.machine_id", "" + i ),
                         broker );
@@ -55,9 +55,9 @@ public class SingleJvmTesting extends AbstractHaTest
     }
     
     @Override
-    protected void startUpMaster()
+    protected void startUpMaster( int numSlaves )
     {
-        master = new MasterImpl( new EmbeddedGraphDatabase( MASTER_PATH.getAbsolutePath() ) );
+        master = new MasterImpl( new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() ) );
     }
 
     protected MasterImpl getMaster()
@@ -81,11 +81,11 @@ public class SingleJvmTesting extends AbstractHaTest
         shutdownDbs();
         
         GraphDatabaseService masterOfflineDb =
-                new EmbeddedGraphDatabase( MASTER_PATH.getAbsolutePath() );
+                new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
         GraphDatabaseService[] slaveOfflineDbs = new GraphDatabaseService[haDbs.size()];
-        for ( int i = 0; i < haDbs.size(); i++ )
+        for ( int i = 1; i <= haDbs.size(); i++ )
         {
-            slaveOfflineDbs[i] = new EmbeddedGraphDatabase( slavePath( i ).getAbsolutePath() );
+            slaveOfflineDbs[i-1] = new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
         }
         verify( masterOfflineDb, slaveOfflineDbs );
         masterOfflineDb.shutdown();

@@ -7,9 +7,11 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
@@ -31,18 +33,39 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
         storeDir = args.get( "path", null );
         out = new PrintStream( new File( new File( storeDir ), "output" ) );
         System.setOut( out );
+        System.setErr( out );
         try
         {
             println( "About to start" );
-            boolean isMaster = args.getBoolean( "master", false ).booleanValue();
-            int machineId = args.getNumber( "id", null ).intValue();
-            AbstractBroker broker = isMaster ? new FakeMasterBroker() :
-                    new FakeSlaveBroker();
-            this.db = new HighlyAvailableGraphDatabase( storeDir, MapUtil.stringMap(
-                    HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + machineId ),
-                    broker );
-            println( "Started HA db" );
-            broker.setDb( this.db );
+            
+            HighlyAvailableGraphDatabase haDb = null;
+            println( args.asMap().toString() );
+            if ( args.has( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID ) )
+            {
+                new EmbeddedGraphDatabase( storeDir ).shutdown();
+                Map<String, String> config = MapUtil.stringMap(
+                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID,
+                        args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, null ),
+                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS,
+                        args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, null ),
+                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS,
+                        args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, null ) );
+                haDb = new HighlyAvailableGraphDatabase( storeDir, config );
+                println( "Started HA db (w/ zoo keeper)" );
+            }
+            else
+            {
+                boolean isMaster = args.getBoolean( "master", false ).booleanValue();
+                int machineId = args.getNumber( "id", null ).intValue();
+                AbstractBroker broker = isMaster ? new FakeMasterBroker() :
+                        new FakeSlaveBroker();
+                haDb = new HighlyAvailableGraphDatabase( storeDir, MapUtil.stringMap(
+                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + machineId ),
+                        broker );
+                broker.setDb( haDb );
+                println( "Started HA db (w/o zoo keeper)" );
+            }
+            this.db = haDb;
             this.location = location;
             this.location.ensureRegistryCreated();
             this.location.bind( this );

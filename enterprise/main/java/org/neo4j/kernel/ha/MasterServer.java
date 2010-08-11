@@ -24,22 +24,21 @@ import org.neo4j.kernel.impl.ha.Master;
  */
 public class MasterServer extends CommunicationProtocol implements ChannelPipelineFactory
 {
-    public static final int PORT = 8901;
-    
+    private final ServerBootstrap bootstrap;
     private final Master realMaster;
 
-    public MasterServer( Master realMaster )
+    public MasterServer( Master realMaster, final int port )
     {
         this.realMaster = realMaster;
         ExecutorService executor = Executors.newCachedThreadPool();
-        final ServerBootstrap bootstrap = new ServerBootstrap( new NioServerSocketChannelFactory(
+        bootstrap = new ServerBootstrap( new NioServerSocketChannelFactory(
                 executor, executor ) );
         bootstrap.setPipelineFactory( this );
         executor.execute( new Runnable()
         {
             public void run()
             {
-                bootstrap.bind( new InetSocketAddress( CommunicationProtocol.PORT ) );
+                bootstrap.bind( new InetSocketAddress( port ) );
             }
         } );
     }
@@ -67,5 +66,11 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         {
             // TODO
         }
+    }
+    
+    public void shutdown()
+    {
+        // TODO
+//        bootstrap.releaseExternalResources();
     }
 }
