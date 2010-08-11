@@ -4,18 +4,18 @@ import java.util.Map;
 
 public final class SlaveContext
 {
-    private final int slaveId;
+    private final int machineId;
     private final Map<String, Long> lastAppliedTransactions;
 
-    public SlaveContext( int slaveId, Map<String, Long> lastAppliedTransactions )
+    public SlaveContext( int machineId, Map<String, Long> lastAppliedTransactions )
     {
-        this.slaveId = slaveId;
+        this.machineId = machineId;
         this.lastAppliedTransactions = lastAppliedTransactions;
     }
 
-    public int slaveId()
+    public int machineId()
     {
-        return slaveId;
+        return machineId;
     }
 
     public Map<String, Long> lastAppliedTransactions()
