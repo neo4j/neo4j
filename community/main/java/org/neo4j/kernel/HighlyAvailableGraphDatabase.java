@@ -15,13 +15,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.ha.AbstractBroker;
+import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
+import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
-import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
-import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
@@ -149,7 +148,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     private boolean brokerSaysIAmMaster()
     {
-        return ((AbstractBroker) broker).thisIsMaster();
+        return broker.thisIsMaster();
     }
 
     public Transaction beginTx()
