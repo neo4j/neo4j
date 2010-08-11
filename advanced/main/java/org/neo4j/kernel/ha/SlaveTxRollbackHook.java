@@ -18,6 +18,6 @@ public class SlaveTxRollbackHook implements TxRollbackHook
     public void rollbackTransaction( int eventIdentifier )
     {
         receiver.receive( broker.getMaster().rollbackTransaction(
-                broker.getSlaveContext(), eventIdentifier ) );
+                receiver.getSlaveContext(), eventIdentifier ) );
     }
 }

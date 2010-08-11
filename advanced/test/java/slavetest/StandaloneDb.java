@@ -7,9 +7,9 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
@@ -35,9 +35,11 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
         {
             println( "About to start" );
             boolean isMaster = args.getBoolean( "master", false ).booleanValue();
-            AbstractBroker broker = isMaster ? new FakeMasterBroker() : new FakeSlaveBroker(
-                    args.getNumber( "id", null ).intValue() );
-            this.db = new HighlyAvailableGraphDatabase( storeDir, new HashMap<String, String>(),
+            int machineId = args.getNumber( "id", null ).intValue();
+            AbstractBroker broker = isMaster ? new FakeMasterBroker() :
+                    new FakeSlaveBroker();
+            this.db = new HighlyAvailableGraphDatabase( storeDir, MapUtil.stringMap(
+                    HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + machineId ),
                     broker );
             println( "Started HA db" );
             broker.setDb( this.db );

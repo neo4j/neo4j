@@ -28,7 +28,7 @@ public class FakeMasterBroker extends AbstractBroker
     }
 
     @Override
-    public boolean noobYouAreTheMaster()
+    public boolean thisIsMaster()
     {
         return true;
     }

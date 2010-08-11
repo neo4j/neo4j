@@ -424,7 +424,7 @@ abstract class CommunicationProtocol
     @SuppressWarnings( "boxing" )
     protected static void writeSlaveContext( ChannelBuffer buffer, SlaveContext context )
     {
-        buffer.writeInt( context.slaveId() );
+        buffer.writeInt( context.machineId() );
         Map<String, Long> txs = context.lastAppliedTransactions();
         buffer.writeByte( txs.size() );
         for ( Map.Entry<String, Long> tx : txs.entrySet() )
@@ -437,13 +437,13 @@ abstract class CommunicationProtocol
     @SuppressWarnings( "boxing" )
     private static SlaveContext readSlaveContext( ChannelBuffer buffer )
     {
-        int slaveId = buffer.readInt();
+        int machineId = buffer.readInt();
         Map<String, Long> lastAppliedTransactions = new HashMap<String, Long>();
         int txsSize = buffer.readByte();
         for ( int i = 0; i < txsSize; i++ )
         {
             lastAppliedTransactions.put( readString( buffer ), buffer.readLong() );
         }
-        return new SlaveContext( slaveId, lastAppliedTransactions );
+        return new SlaveContext( machineId, lastAppliedTransactions );
     }
 }

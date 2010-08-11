@@ -24,6 +24,6 @@ public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
             PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name )
     {
         return receiver.receive(
-                broker.getMaster().createRelationshipType( broker.getSlaveContext(), name ) );
+                broker.getMaster().createRelationshipType( receiver.getSlaveContext(), name ) );
     }
 }
