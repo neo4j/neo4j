@@ -18,4 +18,14 @@ public abstract class AbstractBroker implements Broker
     }
     
     public abstract boolean noobYouAreTheMaster();
+    
+    public void setLastCommittedTxId( long txId )
+    {
+        throw new RuntimeException( "implement this" );
+    }
+    
+    public boolean thisIsMaster()
+    {
+        return false;
+    }
 }
