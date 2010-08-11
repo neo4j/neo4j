@@ -8,20 +8,50 @@ import org.neo4j.kernel.impl.ha.SlaveContext;
 
 public class ZooKeeperBroker implements Broker
 {
-    public ZooKeeperBroker( Map<String, String> config )
+    private final ZooClient zooClient;
+    private final String storeDir;
+    private final int machineId;
+    private final String zooKeeperServers;
+    private final Map<Integer,String> connectInformation;
+    
+    public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
+            Map<Integer,String> connectInformation )
     {
-        
+        this.storeDir = storeDir;
+        this.machineId = machineId;
+        this.zooKeeperServers = zooKeeperServers;
+        this.connectInformation = connectInformation;
+        NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
+        this.zooClient = new ZooClient( zooKeeperServers, machineId, 
+                store.getCreationTime(), store.getStoreId(), store.getLastCommittedTx() );
     }
+
     
     public Master getMaster()
     {
-        // TODO Auto-generated method stub
+        int masterId = zooClient.getMaster();
+        if ( masterId == machineId )
+        {
+            throw new RuntimeException( "I am master" );
+        }
+        String host = connectInformation.get( masterId );
+        // TODO
+        // return new MasterClient( host );
         return null;
     }
 
     public SlaveContext getSlaveContext()
     {
-        // TODO Auto-generated method stub
-        return null;
+        throw new RuntimeException( "Move this method somewhere else" );
+    }
+    
+    public void setLastCommittedTxId( long txId )
+    {
+        zooClient.setCommittedTx( txId );
+    }
+    
+    public boolean thisIsMaster()
+    {
+        return zooClient.getMaster() == machineId;
     }
 }
