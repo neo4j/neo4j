@@ -4,8 +4,6 @@ public interface Broker
 {
     Master getMaster();
     
-    SlaveContext getSlaveContext();
-    
     void setLastCommittedTxId( long txId );
     
     boolean thisIsMaster();
