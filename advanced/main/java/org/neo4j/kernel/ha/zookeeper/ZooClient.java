@@ -227,6 +227,14 @@ public class ZooClient implements Watcher
     {
         String servers = "localhost:2181,localhost:2182,localhost:2183";
         ZooClient client = new ZooClient( servers, 1, 2, 1, 0 );
+        try
+        {
+            Thread.sleep( 5 );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+        }
         System.out.println( client.getMaster() );
         client.setCommittedTx( 1 );
         System.out.println( client.getMaster() );
