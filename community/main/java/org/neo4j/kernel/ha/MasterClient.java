@@ -34,23 +34,23 @@ import org.neo4j.kernel.impl.ha.TransactionStreams;
  */
 public class MasterClient extends CommunicationProtocol implements Master
 {
-    private static Client initClient()
+    private static Client initClient( String hostNameOrIp, int port )
     {
         ExecutorService executor = Executors.newCachedThreadPool();
         ClientBootstrap bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
                 executor, executor ) );
         BlockingReadHandler<ChannelBuffer> blockingReadHandler = new BlockingReadHandler<ChannelBuffer>();
         bootstrap.setPipelineFactory( new ClientPipelineFactory( blockingReadHandler ) );
-        ChannelFuture channelFuture = bootstrap.connect( new InetSocketAddress( MasterServer.PORT ) );
+        ChannelFuture channelFuture = bootstrap.connect( new InetSocketAddress( hostNameOrIp, port ) );
         Client client = new Client( blockingReadHandler, channelFuture );
         return client;
     }
 
     private final Client client;
 
-    public MasterClient()
+    public MasterClient( String hostNameOrIp, int port )
     {
-        client = initClient();
+        client = initClient( hostNameOrIp, port );
     }
 
     private <T> Response<T> sendRequest( RequestType type,

@@ -2,9 +2,12 @@ package org.neo4j.kernel.ha.zookeeper;
 
 import java.util.Map;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.ha.MasterClient;
+import org.neo4j.kernel.ha.MasterImpl;
+import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Master;
-import org.neo4j.kernel.impl.ha.SlaveContext;
 
 public class ZooKeeperBroker implements Broker
 {
@@ -26,7 +29,6 @@ public class ZooKeeperBroker implements Broker
                 store.getCreationTime(), store.getStoreId(), store.getLastCommittedTx() );
     }
 
-    
     public Master getMaster()
     {
         int masterId = zooClient.getMaster();
@@ -35,16 +37,20 @@ public class ZooKeeperBroker implements Broker
             throw new RuntimeException( "I am master" );
         }
         String host = haServers.get( masterId );
-        // TODO
-        // return new MasterClient( host );
-        return null;
-    }
-
-    public SlaveContext getSlaveContext()
-    {
-        throw new RuntimeException( "Move this method somewhere else" );
+        return new MasterClient( host, getHaServerPort( masterId ) );
     }
     
+    private int getHaServerPort( int machineId )
+    {
+        String host = haServers.get( getMyMachineId() );
+        return Integer.parseInt( host.substring( host.indexOf( ":" ) + 1 ) );
+    }
+    
+    public Object instantiateMasterServer( GraphDatabaseService graphDb )
+    {
+        return new MasterServer( new MasterImpl( graphDb ), getHaServerPort( getMyMachineId() ) );
+    }
+
     public void setLastCommittedTxId( long txId )
     {
         zooClient.setCommittedTx( txId );
@@ -53,5 +59,10 @@ public class ZooKeeperBroker implements Broker
     public boolean thisIsMaster()
     {
         return zooClient.getMaster() == machineId;
+    }
+    
+    public int getMyMachineId()
+    {
+        return zooClient.getMaster();
     }
 }

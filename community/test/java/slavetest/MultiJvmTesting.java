@@ -17,21 +17,20 @@ public class MultiJvmTesting extends AbstractHaTest
 {
     private static final int MASTER_PORT = 8990;
     
-    private StandaloneDbCom masterJvm;
-    private List<StandaloneDbCom> slaveJvms;
+    private List<StandaloneDbCom> jvms;
     
     protected void initializeDbs( int numSlaves ) throws Exception
     {
+        jvms = new ArrayList<StandaloneDbCom>();
         try
         {
-            initDeadMasterAndSlaveDbs( numSlaves );
-            startUpMaster();
-            slaveJvms = new ArrayList<StandaloneDbCom>();
-            for ( int i = 0; i < numSlaves; i++ )
+            initDeadDbs( numSlaves );
+            startUpMaster( numSlaves );
+            for ( int i = 1; i <= numSlaves; i++ )
             {
-                File slavePath = slavePath( i );
-                StandaloneDbCom slaveJvm = spawnJvm( slavePath, MASTER_PORT + 1 + i, i );
-                slaveJvms.add( slaveJvm );
+                File slavePath = dbPath( i );
+                StandaloneDbCom slaveJvm = spawnJvm( numSlaves, slavePath, MASTER_PORT + i, i );
+                jvms.add( slaveJvm );
             }
         }
         catch ( IOException e )
@@ -43,32 +42,33 @@ public class MultiJvmTesting extends AbstractHaTest
     @After
     public void shutdownDbsAndVerify() throws Exception
     {
+        System.out.println( "shut down" );
         shutdownDbs();
         
-        GraphDatabaseService masterDb = new EmbeddedGraphDatabase( MASTER_PATH.getAbsolutePath() );
-        for ( int i = 0; i < slaveJvms.size(); i++ )
+        System.out.println( "verify" );
+        GraphDatabaseService masterDb = new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
+        for ( int i = 1; i < jvms.size(); i++ )
         {
             GraphDatabaseService slaveDb =
-                    new EmbeddedGraphDatabase( slavePath( i ).getAbsolutePath() );
+                    new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
             verify( masterDb, slaveDb );
         }
+        System.out.println( "verified" );
     }
 
     protected void shutdownDbs() throws Exception
     {
-        for ( StandaloneDbCom slave : slaveJvms )
+        for ( StandaloneDbCom slave : jvms )
         {
             slave.initiateShutdown();
         }
-        masterJvm.initiateShutdown();
-        for ( int i = 0; i < slaveJvms.size(); i++ )
+        for ( int i = 0; i < jvms.size(); i++ )
         {
-            waitUntilShutdownFileFound( slavePath( i ) );
+            waitUntilShutdownFileFound( dbPath( i ) );
         }
-        waitUntilShutdownFileFound( MASTER_PATH );
     }
 
-    private void waitUntilShutdownFileFound( File slavePath ) throws Exception
+    protected void waitUntilShutdownFileFound( File slavePath ) throws Exception
     {
         File file = new File( slavePath, "shutdown" );
         while ( !file.exists() )
@@ -77,7 +77,7 @@ public class MultiJvmTesting extends AbstractHaTest
         }
     }
 
-    private StandaloneDbCom spawnJvm( File path, int port, int machineId,
+    protected StandaloneDbCom spawnJvm( int numServers, File path, int port, int machineId,
             String... extraArgs ) throws Exception
     {
         Collection<String> list = new ArrayList<String>( Arrays.asList(
@@ -124,16 +124,16 @@ public class MultiJvmTesting extends AbstractHaTest
     {
         if ( slaves.length == 0 )
         {
-            for ( StandaloneDbCom db : slaveJvms )
+            for ( int i = 1; i < jvms.size(); i++ )
             {
-                db.pullUpdates();
+                jvms.get( i ).pullUpdates();
             }
         }
         else
         {
-            for ( StandaloneDbCom db : slaveJvms )
+            for ( int slave : slaves )
             {
-                db.pullUpdates();
+                jvms.get( slave+1 ).pullUpdates();
             }
         }
     }
@@ -141,25 +141,25 @@ public class MultiJvmTesting extends AbstractHaTest
     @Override
     protected <T> T executeJob( Job<T> job, int onSlave ) throws Exception
     {
-        return slaveJvms.get( onSlave ).executeJob( job );
+        return jvms.get( onSlave+1 ).executeJob( job );
     }
     
     @Override
     protected <T> T executeJobOnMaster( Job<T> job ) throws Exception
     {
-        return masterJvm.executeJob( job );
+        return jvms.get( 0 ).executeJob( job );
     }
     
     @Override
-    protected void startUpMaster() throws Exception
+    protected void startUpMaster( int numSlaves ) throws Exception
     {
-        masterJvm = spawnJvm( MASTER_PATH, MASTER_PORT, 999, "-master", "true" );
+        jvms.add( spawnJvm( numSlaves, dbPath( 0 ), MASTER_PORT, 0, "-master", "true" ) );
     }
     
     @Override
     protected Job<Void> getMasterShutdownDispatcher()
     {
-        return new CommonJobs.ShutdownJvm( masterJvm );
+        return new CommonJobs.ShutdownJvm( jvms.get( 0 ) );
     }
     
     @Override

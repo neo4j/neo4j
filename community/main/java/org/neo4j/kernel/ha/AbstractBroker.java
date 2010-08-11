@@ -26,4 +26,9 @@ public abstract class AbstractBroker implements Broker
     {
         return false;
     }
+    
+    public int getMyMachineId()
+    {
+        throw new UnsupportedOperationException();
+    }
 }
