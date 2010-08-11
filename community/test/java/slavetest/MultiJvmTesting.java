@@ -30,8 +30,7 @@ public class MultiJvmTesting extends AbstractHaTest
             for ( int i = 0; i < numSlaves; i++ )
             {
                 File slavePath = slavePath( i );
-                StandaloneDbCom slaveJvm = spawnJvm( slavePath, MASTER_PORT + 1 + i, "-id",
-                        "" + i );
+                StandaloneDbCom slaveJvm = spawnJvm( slavePath, MASTER_PORT + 1 + i, i );
                 slaveJvms.add( slaveJvm );
             }
         }
@@ -78,13 +77,15 @@ public class MultiJvmTesting extends AbstractHaTest
         }
     }
 
-    private StandaloneDbCom spawnJvm( File path, int port, String... extraArgs ) throws Exception
+    private StandaloneDbCom spawnJvm( File path, int port, int machineId,
+            String... extraArgs ) throws Exception
     {
         Collection<String> list = new ArrayList<String>( Arrays.asList(
                 "java", "-cp", System.getProperty( "java.class.path" ),
                 StandaloneDb.class.getName(),
                 "-path", path.getAbsolutePath(),
-                "-port", "" + port ) );
+                "-port", "" + port,
+                "-id", "" + machineId ) );
         list.addAll( Arrays.asList( extraArgs ) );
         
         Runtime.getRuntime().exec( list.toArray( new String[list.size()] ) );
@@ -152,7 +153,7 @@ public class MultiJvmTesting extends AbstractHaTest
     @Override
     protected void startUpMaster() throws Exception
     {
-        masterJvm = spawnJvm( MASTER_PATH, MASTER_PORT, "-master", "true" );
+        masterJvm = spawnJvm( MASTER_PATH, MASTER_PORT, 999, "-master", "true" );
     }
     
     @Override

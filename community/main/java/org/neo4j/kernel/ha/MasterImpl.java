@@ -71,7 +71,7 @@ public class MasterImpl implements Master
     private <T extends PropertyContainer> Response<LockResult> acquireLock( SlaveContext context,
             int eventIdentifier, LockGrabber lockGrabber, T... entities )
     {
-        TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
+        TxIdElement tx = new TxIdElement( context.machineId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( tx );
         try
         {
@@ -264,7 +264,7 @@ public class MasterImpl implements Master
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
             int eventIdentifier, String resource, TransactionStream transactionStream )
     {
-        TxIdElement tx = new TxIdElement( context.slaveId(), eventIdentifier );
+        TxIdElement tx = new TxIdElement( context.machineId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( tx );
         try
         {
@@ -355,7 +355,7 @@ public class MasterImpl implements Master
 
     public Response<Void> rollbackTransaction( SlaveContext context, int eventIdentifier )
     {
-        TxIdElement txId = new TxIdElement( context.slaveId(), eventIdentifier );
+        TxIdElement txId = new TxIdElement( context.machineId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( txId );
         try
         {
@@ -387,20 +387,20 @@ public class MasterImpl implements Master
 
     private static final class TxIdElement
     {
-        private final int slaveId;
+        private final int machineId;
         private final int eventIdentifier;
         private final int hashCode;
 
-        TxIdElement( int slaveId, int eventIdentifier )
+        TxIdElement( int machineId, int eventIdentifier )
         {
-            this.slaveId = slaveId;
+            this.machineId = machineId;
             this.eventIdentifier = eventIdentifier;
             this.hashCode = calculateHashCode();
         }
 
         private int calculateHashCode()
         {
-            return (slaveId << 20) | eventIdentifier;
+            return (machineId << 20) | eventIdentifier;
         }
 
         @Override
@@ -413,7 +413,7 @@ public class MasterImpl implements Master
         public boolean equals( Object obj )
         {
             TxIdElement other = (TxIdElement) obj;
-            return other.slaveId == slaveId && other.eventIdentifier == eventIdentifier;
+            return other.machineId == machineId && other.eventIdentifier == eventIdentifier;
         }
     }
 
