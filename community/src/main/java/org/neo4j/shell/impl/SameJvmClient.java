@@ -32,7 +32,7 @@ public class SameJvmClient extends AbstractClient
 {
 	private Output out = new SystemOutput();
 	private ShellServer server;
-	private Session session = new SameJvmSession();
+	private Session session = new SessionImpl();
 	
 	/**
 	 * @param server the server to communicate with.

@@ -20,14 +20,13 @@
 package org.neo4j.shell;
 
 import java.io.Serializable;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Map;
 
 /**
  * A session (or environment) for a shell client.
  */
-public interface Session extends Remote
+public interface Session extends Serializable
 {
 	/**
 	 * Sets a session value.
@@ -35,14 +34,14 @@ public interface Session extends Remote
 	 * @param value the value.
 	 * @throws RemoteException RMI error.
 	 */
-	void set( String key, Serializable value ) throws RemoteException;
+	void set( String key, Serializable value );
 	
 	/**
 	 * @param key the key to get the session value for.
 	 * @return the value for the {@code key} or {@code null} if not found.
 	 * @throws RemoteException RMI error.
 	 */
-	Serializable get( String key ) throws RemoteException;
+	Serializable get( String key );
 	
 	/**
 	 * Removes a value from the session.
@@ -50,13 +49,13 @@ public interface Session extends Remote
 	 * @return the removed value, or {@code null} if none.
 	 * @throws RemoteException RMI error.
 	 */
-	Serializable remove( String key ) throws RemoteException;
+	Serializable remove( String key );
 	
 	/**
 	 * @return all the available session keys.
 	 * @throws RemoteException RMI error.
 	 */
-	String[] keys() throws RemoteException;
+	String[] keys();
 	
 	/**
 	 * Returns the session as a {@link Map} representation. Changes in the
@@ -64,5 +63,5 @@ public interface Session extends Remote
 	 * @return the session as a {@link Map}.
 	 * @throws RemoteException RMI error.
 	 */
-	Map<String, Serializable> asMap() throws RemoteException;
+	Map<String, Serializable> asMap();
 }

@@ -136,15 +136,8 @@ public abstract class AbstractClient implements ShellClient
 
     private boolean shouldPrintStackTraces()
     {
-        try
-        {
-            Object value = this.session().get( STACKTRACES_KEY );
-            return this.getSafeBooleanValue( value, false );
-        }
-        catch ( RemoteException e )
-        {
-            return true;
-        }
+        Object value = this.session().get( STACKTRACES_KEY );
+        return this.getSafeBooleanValue( value, false );
     }
 
     private boolean getSafeBooleanValue( Object value, boolean def )

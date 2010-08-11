@@ -22,7 +22,6 @@ package org.neo4j.shell.apps.extra;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -143,17 +142,10 @@ public abstract class ScriptExecutor
 	private List<String> getEnvPaths( Session session )
 		throws ShellException
 	{
-		try
-		{
-			List<String> list = new ArrayList<String>();
-			collectPaths( list, ( String ) session.get( getPathKey() ) );
-			collectPaths( list, getDefaultPaths() );
-			return list;
-		}
-		catch ( RemoteException e )
-		{
-			throw new ShellException( e );
-		}
+	    List<String> list = new ArrayList<String>();
+	    collectPaths( list, ( String ) session.get( getPathKey() ) );
+	    collectPaths( list, getDefaultPaths() );
+	    return list;
 	}
 	
 	private void collectPaths( List<String> paths, String pathString )

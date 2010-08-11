@@ -49,7 +49,7 @@ public class RemoteClient extends AbstractClient
 	{
 		this.serverLocation = serverLocation;
 		this.server = findRemoteServer();
-		this.session = RemoteSession.newSession();
+		this.session = new SessionImpl();
 		this.out = RemoteOutput.newOutput();
 	}
 	
@@ -127,7 +127,6 @@ public class RemoteClient extends AbstractClient
 	protected void shutdown()
 	{
 		this.tryUnexport( this.out );
-		this.tryUnexport( this.session );
 	}
 	
 	private void tryUnexport( Remote remote )

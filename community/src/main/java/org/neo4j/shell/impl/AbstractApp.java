@@ -113,39 +113,18 @@ public abstract class AbstractApp implements App
 
 	protected static Serializable safeGet( Session session, String key )
 	{
-		try
-		{
-			return session.get( key );
-		}
-		catch ( RemoteException e )
-		{
-			throw new RuntimeException( e );
-		}
+	    return session.get( key );
 	}
 	
 	protected static void safeSet( Session session, String key,
 		Serializable value )
 	{
-		try
-		{
-			session.set( key, value );
-		}
-		catch ( RemoteException e )
-		{
-			throw new RuntimeException( e );
-		}
+	    session.set( key, value );
 	}
 
 	protected static Serializable safeRemove( Session session, String key )
 	{
-		try
-		{
-			return session.remove( key );
-		}
-		catch ( RemoteException e )
-		{
-			throw new RuntimeException( e );
-		}
+	    return session.remove( key );
 	}
 	
 	protected static Map<String, Object> parseFilter( String filterString,
