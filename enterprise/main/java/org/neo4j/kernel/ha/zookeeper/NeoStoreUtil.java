@@ -18,7 +18,7 @@ class NeoStoreUtil
     {
         try
         {
-            FileChannel fileChannel = new RandomAccessFile( storeDir + "/neostore.db", "r" ).getChannel();
+            FileChannel fileChannel = new RandomAccessFile( storeDir + "/neostore", "r" ).getChannel();
             ByteBuffer buf = ByteBuffer.allocate( 32 );
             if ( fileChannel.read( buf ) != 32 )
             {
