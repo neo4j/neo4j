@@ -1,23 +1,24 @@
-package org.neo4j.kernel.ha.zookeeper;
+package slavetest;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Properties;
-import java.util.TreeSet;
+import java.util.Collections;
 
-public class ZooKeeperClusterLifecycle
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperServerWrapper;
+
+public class LocalZooKeeperCluster
 {
     private final int size;
     private final DataDirectoryPolicy dataDirectoryPolicy;
     private final PortPolicy clientPortPolicy;
     private final PortPolicy serverFirstPortPolicy;
     private final PortPolicy serverSecondPortPolicy;
-    private final Collection<Runnable> shutdownHooks = new ArrayList<Runnable>();
+    private final Collection<ZooKeeperServerWrapper> wrappers =
+            new ArrayList<ZooKeeperServerWrapper>();
 
-    public ZooKeeperClusterLifecycle( int size, DataDirectoryPolicy dataDirectoryPolicy,
+    public LocalZooKeeperCluster( int size, DataDirectoryPolicy dataDirectoryPolicy,
             PortPolicy clientPortPolicy, PortPolicy serverFirstPortPolicy,
             PortPolicy serverSecondPortPolicy ) throws IOException
     {
@@ -31,20 +32,21 @@ public class ZooKeeperClusterLifecycle
     
     private void startCluster() throws IOException
     {
+        Collection<String> servers = new ArrayList<String>();
         for ( int i = 0; i < size; i++ )
         {
-            File configFile = writeZooKeeperConfigFile( i+1 );
-            final Process process = Runtime.getRuntime().exec( new String[] { "java", "-cp",
-                    System.getProperty( "java.class.path" ),
-                    "org.apache.zookeeper.server.quorum.QuorumPeerMain",
-                    configFile.getAbsolutePath() } );
-            shutdownHooks.add( new Runnable()
-            {
-                public void run()
-                {
-                    process.destroy();
-                }
-            } );
+            int id = i+1;
+            servers.add( "localhost:" + serverFirstPortPolicy.getPort( id ) + ":" +
+                    serverSecondPortPolicy.getPort( id ) );
+        }
+        
+        for ( int i = 0; i < size; i++ )
+        {
+            int id = i+1;
+            ZooKeeperServerWrapper wrapper = new ZooKeeperServerWrapper( id,
+                    dataDirectoryPolicy.getDataDirectory( id ),
+                    clientPortPolicy.getPort( id ), servers, Collections.<String, String>emptyMap() );
+            wrappers.add( wrapper );
         }
         waitForClusterToBeFullyStarted();
     }
@@ -60,47 +62,12 @@ public class ZooKeeperClusterLifecycle
             Thread.interrupted();
         }
     }
-
-    private File writeZooKeeperConfigFile( int id ) throws IOException
-    {
-        File directory = dataDirectoryPolicy.getDataDirectory( id );
-        directory.mkdirs();
-        File configFile = new File( directory, "config" + id + ".cfg" );
-        Properties props = new Properties();
-        populateZooConfig( props, id );
-        FileWriter writer = null;
-        writer = new FileWriter( configFile );
-        for ( Object key : new TreeSet<Object>( props.keySet() ) )
-        {
-            writer.write( key + " = " + props.get( key ) + "\n" );
-        }
-        writer.close();
-        
-        writer = new FileWriter( new File( directory, "myid" ) );
-        writer.write( "" + id );
-        writer.close();
-        return configFile;
-    }
-    
-    private void populateZooConfig( Properties props, int id )
-    {
-        props.setProperty( "tickTime", "2000" );
-        props.setProperty( "initLimit", "10" );
-        props.setProperty( "syncLimit", "5" );
-        props.setProperty( "clientPort", "" + clientPortPolicy.getPort( id ) );
-        props.setProperty( "dataDir", dataDirectoryPolicy.getDataDirectory( id ).getPath() );
-        for ( int i = 1; i <= size; i++ )
-        {
-            props.setProperty( "server." + i, "localhost:" + serverFirstPortPolicy.getPort( i ) +
-                    ":" + serverSecondPortPolicy.getPort( i ) );
-        }
-    }
     
     public void shutdown()
     {
-        for ( Runnable hook : shutdownHooks )
+        for ( ZooKeeperServerWrapper wrapper : wrappers )
         {
-            hook.run();
+            wrapper.shutdown();
         }
     }
 

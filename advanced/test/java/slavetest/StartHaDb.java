@@ -1,17 +1,24 @@
 package slavetest;
 
+import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 
 public class StartHaDb
 {
+    static final Map<Integer, String> HA_SERVERS = MapUtil.genericMap(
+            "1", "172.16.2.33:5559",
+            "2", "172.16.1.242:5559"
+    );
+    
     public static void main( String[] args ) throws Exception
     {
         final GraphDatabaseService db = new HighlyAvailableGraphDatabase( "var/hadb", MapUtil.stringMap(
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "2",
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, "172.16.2.33:2181,172.16.1.242:2181,172.16.4.14:2181",
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, "1=172.16.2.33:5559,2=172.16.1.242:5559",
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( StartZooKeeperServer.ZOO_KEEPER_SERVERS, "," ),
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, toHaServerFormat( HA_SERVERS ),
                 "enable_remote_shell", "true" ) );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
@@ -20,5 +27,25 @@ public class StartHaDb
                 db.shutdown();
             }
         } );
+    }
+    
+    private static String toHaServerFormat( Map<Integer, String> haServers )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( Map.Entry<Integer, String> entry : haServers.entrySet() )
+        {
+            builder.append( (builder.length() > 0 ? "," : "") + entry.getKey() + "=" + entry.getValue() );
+        }
+        return builder.toString();
+    }
+    
+    private static String join( String[] strings, String delimiter )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( String string : strings )
+        {
+            builder.append( (builder.length() > 0 ? delimiter : "") + string );
+        }
+        return builder.toString();
     }
 }
