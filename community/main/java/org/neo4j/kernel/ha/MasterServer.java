@@ -39,6 +39,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             public void run()
             {
                 bootstrap.bind( new InetSocketAddress( port ) );
+                System.out.println( "Master server bound to " + port );
             }
         } );
     }

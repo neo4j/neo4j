@@ -34,7 +34,7 @@ public class SingleJvmTesting extends AbstractHaTest
     {
         try
         {
-            initDeadDbs( numSlaves );
+            createDeadDbs( numSlaves );
             haDbs = new ArrayList<GraphDatabaseService>();
             startUpMaster( numSlaves );
             FakeBroker broker = new FakeBroker( master ); 
