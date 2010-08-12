@@ -47,7 +47,8 @@ public class ZooKeeperBroker implements Broker
 
     private Master getAndCacheMaster( int masterId )
     {
-        if ( masterClient == null || masterId != machineIdForMasterClient )
+        if ( masterClient == null || masterId != machineIdForMasterClient ||
+                zooClient.isNewConnection() )
         {
             machineIdForMasterClient = masterId;
             // TODO synchronization
