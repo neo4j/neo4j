@@ -13,7 +13,6 @@ import org.junit.BeforeClass;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.ClusterManager;
 import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterLifecycle;
 
 public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
 {
@@ -22,7 +21,7 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     private static final int BASE_HA_SERVER_PORT = 5559;
     private static final int ZOO_KEEPER_CLUSTER_SIZE = 3;
     
-    private static ZooKeeperClusterLifecycle zooKeeperCluster;
+    private static LocalZooKeeperCluster zooKeeperCluster;
     
     private ClusterManager zooKeeperMasterFetcher;
     private Map<Integer, StandaloneDbCom> jvmByMachineId;
@@ -31,11 +30,11 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     public static void startZooKeeperCluster() throws Exception
     {
         FileUtils.deleteDirectory( BASE_ZOO_KEEPER_DATA_DIR );
-        zooKeeperCluster = new ZooKeeperClusterLifecycle( ZOO_KEEPER_CLUSTER_SIZE,
-                ZooKeeperClusterLifecycle.defaultDataDirectoryPolicy( BASE_ZOO_KEEPER_DATA_DIR ),
-                ZooKeeperClusterLifecycle.defaultPortPolicy( 2181 ),
-                ZooKeeperClusterLifecycle.defaultPortPolicy( 2888 ),
-                ZooKeeperClusterLifecycle.defaultPortPolicy( 3888 ) );
+        zooKeeperCluster = new LocalZooKeeperCluster( ZOO_KEEPER_CLUSTER_SIZE,
+                LocalZooKeeperCluster.defaultDataDirectoryPolicy( BASE_ZOO_KEEPER_DATA_DIR ),
+                LocalZooKeeperCluster.defaultPortPolicy( 2181 ),
+                LocalZooKeeperCluster.defaultPortPolicy( 2888 ),
+                LocalZooKeeperCluster.defaultPortPolicy( 3888 ) );
     }
     
     @Override
