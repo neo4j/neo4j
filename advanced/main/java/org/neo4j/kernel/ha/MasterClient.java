@@ -42,12 +42,13 @@ public class MasterClient extends CommunicationProtocol implements Master
         BlockingReadHandler<ChannelBuffer> blockingReadHandler = new BlockingReadHandler<ChannelBuffer>();
         bootstrap.setPipelineFactory( new ClientPipelineFactory( blockingReadHandler ) );
         ChannelFuture channelFuture = bootstrap.connect(
-//                new InetSocketAddress( hostNameOrIp, port ) );
-                new InetSocketAddress( port ) );
+                new InetSocketAddress( hostNameOrIp, port ) );
+//                new InetSocketAddress( port ) );
         Client client = new Client( blockingReadHandler, channelFuture );
         try
         {
             channelFuture.await();
+            System.out.println( "Client connected to " + hostNameOrIp + ":" + port );
         }
         catch ( InterruptedException e )
         {
