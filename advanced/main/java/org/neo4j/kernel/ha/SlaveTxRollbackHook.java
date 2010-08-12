@@ -1,5 +1,6 @@
 package org.neo4j.kernel.ha;
 
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.transaction.TxRollbackHook;
@@ -17,7 +18,20 @@ public class SlaveTxRollbackHook implements TxRollbackHook
 
     public void rollbackTransaction( int eventIdentifier )
     {
-        receiver.receive( broker.getMaster().rollbackTransaction(
-                receiver.getSlaveContext(), eventIdentifier ) );
+        try
+        {
+            receiver.receive( broker.getMaster().rollbackTransaction(
+                    receiver.getSlaveContext(), eventIdentifier ) );
+        }
+        catch ( ZooKeeperException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
+        catch ( HaCommunicationException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
     }
 }

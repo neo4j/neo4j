@@ -2,6 +2,7 @@ package org.neo4j.kernel.ha;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.ha.Broker;
@@ -23,7 +24,20 @@ public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
     public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
             PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name )
     {
-        return receiver.receive(
-                broker.getMaster().createRelationshipType( receiver.getSlaveContext(), name ) );
+        try
+        {
+            return receiver.receive(
+                    broker.getMaster().createRelationshipType( receiver.getSlaveContext(), name ) );
+        }
+        catch ( ZooKeeperException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
+        catch ( HaCommunicationException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
     }
 }

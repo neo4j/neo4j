@@ -13,17 +13,29 @@ import org.apache.zookeeper.ZooKeeper;
 
 public class ZooClient implements Watcher
 {
-    private final ZooKeeper zooKeeper;
+    private final String servers;
     private final long storeCreationTime;
     private final long storeId;
     private final int machineId;
     private final String sequenceNr;
+    private ZooKeeper zooKeeper;
     
     private long committedTx;
 //    private long globalCommittedTx;
     
     public ZooClient( String servers, int machineId, long storeCreationTime, 
         long storeId, long committedTx )
+    {
+        this.servers = servers;
+        instantiateZooKeeper();
+        this.machineId = machineId;
+        this.storeCreationTime = storeCreationTime;
+        this.storeId = storeId;
+        this.committedTx = committedTx;
+        sequenceNr = setup();
+    }
+
+    private void instantiateZooKeeper()
     {
         try
         {
@@ -34,11 +46,6 @@ public class ZooClient implements Watcher
             throw new ZooKeeperException( 
                 "Unable to create zoo keeper client", e );
         }
-        this.machineId = machineId;
-        this.storeCreationTime = storeCreationTime;
-        this.storeId = storeId;
-        this.committedTx = committedTx;
-        sequenceNr = setup();
     }
     
     private String getRoot()
@@ -129,11 +136,34 @@ public class ZooClient implements Watcher
     
     public synchronized int getMaster()
     {
+        boolean haveTriedReInstantiate = false;
+        while ( true )
+        {
+            try
+            {
+                return getMasterInternal();
+            }
+            catch ( KeeperException e )
+            {
+                if ( !haveTriedReInstantiate && e.code() == KeeperException.Code.SESSIONEXPIRED )
+                {
+                    instantiateZooKeeper();
+                    haveTriedReInstantiate = true;
+                    continue;
+                }
+                throw new ZooKeeperException( "Unable to get master", e );
+            }
+        }
+    }
+
+    private int getMasterInternal() throws KeeperException
+    {
+        int currentMasterId;
         try
         {
             String root = getRoot();
             List<String> children = zooKeeper.getChildren( root, false );
-            int currentMasterId = -1;
+            currentMasterId = -1;
             int lowestSeq = Integer.MAX_VALUE;
             long highestTxId = -1;
             for ( String child : children )
@@ -157,26 +187,21 @@ public class ZooClient implements Watcher
                         }
                     }
                 }
-                catch ( KeeperException inner )
+                catch ( KeeperException e )
                 {
-                    if ( inner.code() != KeeperException.Code.NONODE )
+                    if ( e.code() != KeeperException.Code.NONODE )
                     {
-                        throw new ZooKeeperException( "Unabe to get master.", 
-                            inner );
+                        throw e;
                     }
                 }
             }
-            return currentMasterId;
-        }
-        catch ( KeeperException e )
-        {
-            throw new ZooKeeperException( "Unable to get master", e );
         }
         catch ( InterruptedException e )
         {
             Thread.interrupted();
-            throw new ZooKeeperException( "Interrupted.", e );
+            throw new ZooKeeperException( "Interrupted", e );
         }
+        return currentMasterId;
     }
     
     public synchronized void setCommittedTx( long tx )

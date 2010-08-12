@@ -8,6 +8,7 @@ import java.util.Queue;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.IdAllocation;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
@@ -90,14 +91,27 @@ public class SlaveIdGenerator implements IdGenerator
     public synchronized long nextId()
     {
         // if we dont have anymore grabbed ids from master, grab a bunch 
-        Long nextId = nextLocalIdOrNull();
-        if ( nextId == null )
+        try
         {
-            IdAllocation allocation = receiver.receive(
-                    broker.getMaster().allocateIds( receiver.getSlaveContext(), idType ) );
-            nextId = storeLocally( allocation );
+            Long nextId = nextLocalIdOrNull();
+            if ( nextId == null )
+            {
+                IdAllocation allocation = receiver.receive(
+                        broker.getMaster().allocateIds( receiver.getSlaveContext(), idType ) );
+                nextId = storeLocally( allocation );
+            }
+            return nextId.intValue();
         }
-        return nextId.intValue();
+        catch ( ZooKeeperException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
+        catch ( HaCommunicationException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
     }
 
     private Long storeLocally( IdAllocation allocation )

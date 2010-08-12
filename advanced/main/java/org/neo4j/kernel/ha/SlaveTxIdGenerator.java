@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
@@ -58,6 +59,16 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+        catch ( ZooKeeperException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
+        catch ( HaCommunicationException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
         }
     }
 }
