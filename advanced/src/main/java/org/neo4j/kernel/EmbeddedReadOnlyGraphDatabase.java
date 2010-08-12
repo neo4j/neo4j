@@ -80,7 +80,8 @@ public final class EmbeddedReadOnlyGraphDatabase implements
                 CommonFactories.defaultIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
                 CommonFactories.defaultTxIdGeneratorFactory(),
-                CommonFactories.defaultTxRollbackHook() );
+                CommonFactories.defaultTxRollbackHook(),
+                CommonFactories.defaultLastCommittedTxIdSetter() );
     }
 
     /**

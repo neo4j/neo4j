@@ -28,6 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
@@ -113,7 +114,8 @@ public class Config
             TxModule txModule, LockManager lockManager,
             LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
             TxEventSyncHookFactory txSyncHookFactory,
-            RelationshipTypeCreator relTypeCreator, TxIdGenerator txIdGenerator )
+            RelationshipTypeCreator relTypeCreator, TxIdGenerator txIdGenerator,
+            LastCommittedTxIdSetter lastCommittedTxIdSetter )
     {
         this.kpe = kpe;
         this.storeDir = storeDir;
@@ -138,6 +140,7 @@ public class Config
         params.put( IdGeneratorFactory.class, idGeneratorFactory );
         params.put( TxIdGenerator.class, txIdGenerator );
         params.put( TransactionManager.class, txModule.getTxManager() );
+        params.put( LastCommittedTxIdSetter.class, lastCommittedTxIdSetter );
     }
 
     private static Map<Object, Object> getDefaultParams()
