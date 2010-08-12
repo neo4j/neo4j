@@ -131,7 +131,7 @@ public abstract class AbstractHaTest
         return buffer.toString();
     }
 
-    protected void initDeadDbs( int numSlaves ) throws IOException
+    protected void createDeadDbs( int numSlaves ) throws IOException
     {
         FileUtils.deleteDirectory( PARENT_PATH );
         File firstDbPath = dbPath( 0 );
