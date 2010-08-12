@@ -48,15 +48,7 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
                 }
             } );
         }
-        System.out.println( "Awaiting zoo keeper cluster to start..." );
-        Thread.sleep( 10000 );
-        System.out.println( "Running tests..." );
-    }
-    
-    @Override
-    protected void initializeDbs( int numSlaves ) throws Exception
-    {
-        super.initializeDbs( numSlaves + 1 );
+        Thread.sleep( 5000 );
     }
     
     @Override
@@ -163,6 +155,7 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     @Override
     public void slaveCreateNode() throws Exception
     {
+        // TODO Auto-generated method stub
         super.slaveCreateNode();
     }
 }

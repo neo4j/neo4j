@@ -51,6 +51,11 @@ public class CommonJobs
             {
                 return executeInTransaction( db, tx );
             }
+            catch ( RuntimeException e )
+            {
+                e.printStackTrace( System.out );
+                throw e;
+            }
             finally
             {
                 beforeFinish();

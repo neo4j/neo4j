@@ -24,7 +24,7 @@ public class MultiJvmTesting extends AbstractHaTest
         jvms = new ArrayList<StandaloneDbCom>();
         try
         {
-            initDeadDbs( numSlaves );
+            createDeadDbs( numSlaves );
             startUpMaster( numSlaves );
             for ( int i = 1; i <= numSlaves; i++ )
             {
@@ -42,10 +42,8 @@ public class MultiJvmTesting extends AbstractHaTest
     @After
     public void shutdownDbsAndVerify() throws Exception
     {
-        System.out.println( "shut down" );
         shutdownDbs();
         
-        System.out.println( "verify" );
         GraphDatabaseService masterDb = new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
         for ( int i = 1; i < jvms.size(); i++ )
         {
@@ -53,7 +51,6 @@ public class MultiJvmTesting extends AbstractHaTest
                     new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
             verify( masterDb, slaveDb );
         }
-        System.out.println( "verified" );
     }
 
     protected void shutdownDbs() throws Exception

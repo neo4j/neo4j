@@ -22,6 +22,13 @@ public class PerformanceTests
         multi.initializeDbs( 1 );
         time( "Multi JVM HA", executeOnSlave( multi, job ) );
         multi.shutdownDbs();
+        
+        MultiJvmWithZooKeeperTesting multiZoo = new MultiJvmWithZooKeeperTesting();
+        MultiJvmWithZooKeeperTesting.startZooKeeperCluster();
+        multiZoo.initializeDbs( 1 );
+        time( "Multi JVM HA with ZooKeeper", executeOnSlave( multiZoo, job ) );
+        multiZoo.shutdownDbs();
+        MultiJvmWithZooKeeperTesting.shutdownZooKeeperCluster();
     }
 
     private Runnable executeOnSlave( final AbstractHaTest test, final Job<Void> job )

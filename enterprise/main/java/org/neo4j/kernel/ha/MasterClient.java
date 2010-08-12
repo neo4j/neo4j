@@ -41,8 +41,18 @@ public class MasterClient extends CommunicationProtocol implements Master
                 executor, executor ) );
         BlockingReadHandler<ChannelBuffer> blockingReadHandler = new BlockingReadHandler<ChannelBuffer>();
         bootstrap.setPipelineFactory( new ClientPipelineFactory( blockingReadHandler ) );
-        ChannelFuture channelFuture = bootstrap.connect( new InetSocketAddress( hostNameOrIp, port ) );
+        ChannelFuture channelFuture = bootstrap.connect(
+//                new InetSocketAddress( hostNameOrIp, port ) );
+                new InetSocketAddress( port ) );
         Client client = new Client( blockingReadHandler, channelFuture );
+        try
+        {
+            channelFuture.await();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+        }
         return client;
     }
 
