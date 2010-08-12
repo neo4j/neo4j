@@ -29,6 +29,7 @@ import java.util.Random;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -49,6 +50,7 @@ public class NeoStore extends AbstractStore
     private PropertyStore propStore;
     private RelationshipStore relStore;
     private RelationshipTypeStore relTypeStore;
+    private final LastCommittedTxIdSetter lastCommittedTxIdSetter;
     
     private final int REL_GRAB_SIZE;
 
@@ -71,6 +73,8 @@ public class NeoStore extends AbstractStore
         {
             REL_GRAB_SIZE = 100;
         }
+        lastCommittedTxIdSetter = (LastCommittedTxIdSetter)
+                config.get( LastCommittedTxIdSetter.class );
     }
 
 //    public NeoStore( String fileName )
@@ -236,6 +240,11 @@ public class NeoStore extends AbstractStore
                 txId + "] since the current one is[" + current + "]" );
         }
         setRecord( 3, txId );
+        // TODO Why check null here? because I have no time to fix the tests
+        if ( lastCommittedTxIdSetter != null )
+        {
+            lastCommittedTxIdSetter.setLastCommittedTxId( txId );
+        }
     }
     
     public long getNextCommitId()

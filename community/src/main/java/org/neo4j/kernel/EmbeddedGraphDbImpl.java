@@ -51,6 +51,7 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.ShellService.ShellNotAvailableException;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
@@ -98,7 +99,8 @@ class EmbeddedGraphDbImpl
     public EmbeddedGraphDbImpl( String storeDir, Map<String, String> inputParams,
             GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
             IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator,
-            TxIdGeneratorFactory txIdFactory, TxRollbackHook rollbackHook )
+            TxIdGeneratorFactory txIdFactory, TxRollbackHook rollbackHook,
+            LastCommittedTxIdSetter lastCommittedTxIdSetter )
     {
         this.storeDir = storeDir;
         TxModule txModule = newTxModule( inputParams, rollbackHook );
@@ -106,7 +108,8 @@ class EmbeddedGraphDbImpl
         LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         Config config = new Config( graphDbService, storeDir, inputParams,
                 kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGeneratorFactory,
-                new SyncHookFactory(), relTypeCreator, txIdFactory.create( txModule.getTxManager() ) );
+                new SyncHookFactory(), relTypeCreator, txIdFactory.create( txModule.getTxManager() ),
+                lastCommittedTxIdSetter );
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
         Map<Object, Object> params = graphDbInstance.start( graphDbService );
         nodeManager = config.getGraphDbModule().getNodeManager();

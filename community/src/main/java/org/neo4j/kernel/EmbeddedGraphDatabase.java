@@ -81,7 +81,8 @@ public final class EmbeddedGraphDatabase implements GraphDatabaseService
                 CommonFactories.defaultIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
                 CommonFactories.defaultTxIdGeneratorFactory(),
-                CommonFactories.defaultTxRollbackHook() );
+                CommonFactories.defaultTxRollbackHook(),
+                CommonFactories.defaultLastCommittedTxIdSetter() );
     }
 
     /**

@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
@@ -77,6 +78,17 @@ public class CommonFactories
             public void rollbackTransaction( int eventIdentifier )
             {
                 // Do nothing from the ordinary here
+            }
+        };
+    }
+    
+    public static LastCommittedTxIdSetter defaultLastCommittedTxIdSetter()
+    {
+        return new LastCommittedTxIdSetter()
+        {
+            public void setLastCommittedTxId( long txId )
+            {
+                // Do nothing
             }
         };
     }
