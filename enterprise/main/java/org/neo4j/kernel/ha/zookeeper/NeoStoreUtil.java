@@ -5,7 +5,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-class NeoStoreUtil
+public class NeoStoreUtil
 {
     private static final int RECORD_SIZE = 9;
 
@@ -13,8 +13,7 @@ class NeoStoreUtil
     private final long storeId;
     private final long txId;
     
-    
-    NeoStoreUtil( String storeDir )
+    public NeoStoreUtil( String storeDir )
     {
         try
         {
