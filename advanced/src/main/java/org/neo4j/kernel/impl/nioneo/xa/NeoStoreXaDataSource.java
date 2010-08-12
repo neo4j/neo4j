@@ -395,7 +395,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     {
         neoStore.setVersion( version );
     }
-    
+
+    // used for testing, do not use.
     public void setCommittedTxId( long txId )
     {
         neoStore.setRecoveredStatus( true );

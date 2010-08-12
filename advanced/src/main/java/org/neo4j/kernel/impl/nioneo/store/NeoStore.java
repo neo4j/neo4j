@@ -43,7 +43,7 @@ public class NeoStore extends AbstractStore
     // (byte encoded)
     private static final String VERSION = "NeoStore v0.9.6";
 
-    // 3 longs in header (long + in use), time | random | version
+    // 4 longs in header (long + in use), time | random | version | txid
     private static final int RECORD_SIZE = 9;
 
     private NodeStore nodeStore;
@@ -179,8 +179,8 @@ public class NeoStore extends AbstractStore
             config = newConfig;
         }
         NeoStore neoStore = new NeoStore( config );
-        // created time | random long | backup version
-        neoStore.nextId(); neoStore.nextId(); neoStore.nextId();
+        // created time | random long | backup version | tx id
+        neoStore.nextId(); neoStore.nextId(); neoStore.nextId(); neoStore.nextId();
         long time = System.currentTimeMillis();
         neoStore.setCreationTime( time );
         neoStore.setRandomNumber( r.nextLong() );
