@@ -18,15 +18,18 @@ public class NeoStoreUtil
         try
         {
             FileChannel fileChannel = new RandomAccessFile( storeDir + "/neostore", "r" ).getChannel();
-            ByteBuffer buf = ByteBuffer.allocate( 32 );
-            if ( fileChannel.read( buf ) != 32 )
+            ByteBuffer buf = ByteBuffer.allocate( 4*9 );
+            if ( fileChannel.read( buf ) != 4*9 )
             {
                 throw new RuntimeException( "Unable to read neo store header information" );
             }
             buf.flip();
+            buf.get(); // in use byte
             creationTime = buf.getLong();
+            buf.get(); // in use byte
             storeId = buf.getLong();
-            buf.getLong(); // skip log version
+            buf.get(); buf.getLong(); // skip log version
+            buf.get(); // in use byte
             txId = buf.getLong();
             fileChannel.close();
         }

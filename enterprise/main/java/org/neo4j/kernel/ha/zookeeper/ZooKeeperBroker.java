@@ -87,6 +87,6 @@ public class ZooKeeperBroker implements Broker
     
     public int getMyMachineId()
     {
-        return zooClient.getMaster();
+        return machineId;
     }
 }

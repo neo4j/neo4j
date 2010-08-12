@@ -20,7 +20,7 @@ public class ZooClient implements Watcher
     private final String sequenceNr;
     
     private long committedTx;
-    private long globalCommittedTx;
+//    private long globalCommittedTx;
     
     public ZooClient( String servers, int machineId, long storeCreationTime, 
         long storeId, long committedTx )
@@ -50,14 +50,14 @@ public class ZooClient implements Watcher
             try
             {
                 rootData = zooKeeper.getData( rootPath, false, null );
-                ByteBuffer buf = ByteBuffer.wrap( rootData );
-                globalCommittedTx = buf.getLong();
-                if ( globalCommittedTx < committedTx )
-                {
-                    throw new IllegalStateException( "Global committed tx " + 
-                        globalCommittedTx + " while machine[" + machineId + 
-                        "] @" + committedTx );
-                }
+//                ByteBuffer buf = ByteBuffer.wrap( rootData );
+//                globalCommittedTx = buf.getLong();
+//                if ( globalCommittedTx < committedTx )
+//                {
+//                    throw new IllegalStateException( "Global committed tx " + 
+//                        globalCommittedTx + " while machine[" + machineId + 
+//                        "] @" + committedTx );
+//                }
                 // ok we got the root
                 return rootPath;
             }
@@ -77,9 +77,9 @@ public class ZooClient implements Watcher
             // try create root
             try
             {
-                byte data[] = new byte[8];
-                ByteBuffer buf = ByteBuffer.wrap( data );
-                buf.putLong( committedTx );
+                byte data[] = new byte[0];
+                // ByteBuffer buf = ByteBuffer.wrap( data );
+                // buf.putLong( committedTx );
                 zooKeeper.create( rootPath, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
                     CreateMode.PERSISTENT );
             }
@@ -135,6 +135,7 @@ public class ZooClient implements Watcher
             List<String> children = zooKeeper.getChildren( root, false );
             int currentMasterId = -1;
             int lowestSeq = Integer.MAX_VALUE;
+            long highestTxId = -1;
             for ( String child : children )
             {
                 int index = child.indexOf( '_' );
@@ -146,8 +147,9 @@ public class ZooClient implements Watcher
                         null );
                     ByteBuffer buf = ByteBuffer.wrap( data );
                     long tx = buf.getLong();
-                    if ( tx == globalCommittedTx )
+                    if ( tx > highestTxId )
                     {
+                        highestTxId = tx;
                         if ( seq < lowestSeq )
                         {
                             currentMasterId = id;
@@ -221,23 +223,5 @@ public class ZooClient implements Watcher
             throw new ZooKeeperException( 
                 "Error closing zookeeper connection", e );
         }
-    }
-    
-    public static void main( String args[] )
-    {
-        String servers = "localhost:2181,localhost:2182,localhost:2183";
-        ZooClient client = new ZooClient( servers, 1, 2, 1, 0 );
-        try
-        {
-            Thread.sleep( 5 );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-        }
-        System.out.println( client.getMaster() );
-        client.setCommittedTx( 1 );
-        System.out.println( client.getMaster() );
-        client.shutdown();
     }
 }
