@@ -10,4 +10,8 @@ public interface StandaloneDbCom extends Remote
     void pullUpdates() throws RemoteException;
     
     void initiateShutdown() throws RemoteException;
+    
+    int getMachineId() throws RemoteException;
+    
+    void awaitStarted() throws RemoteException;
 }

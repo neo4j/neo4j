@@ -25,6 +25,7 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
     private final HighlyAvailableGraphDatabase db;
     private final RmiLocation location;
     private volatile boolean shutdown;
+    private final int machineId;
 
     public StandaloneDb( Args args, RmiLocation location ) throws Exception
     {
@@ -36,6 +37,7 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
         System.setErr( out );
         try
         {
+            int tempMachineId;
             println( "About to start" );
             
             HighlyAvailableGraphDatabase haDb = null;
@@ -43,9 +45,10 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
             if ( args.has( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID ) )
             {
                 new EmbeddedGraphDatabase( storeDir ).shutdown();
+                tempMachineId = args.getNumber(
+                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, null ).intValue();
                 Map<String, String> config = MapUtil.stringMap(
-                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID,
-                        args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, null ),
+                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + tempMachineId,
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS,
                         args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, null ),
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS,
@@ -56,19 +59,20 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
             else
             {
                 boolean isMaster = args.getBoolean( "master", false ).booleanValue();
-                int machineId = args.getNumber( "id", null ).intValue();
+                tempMachineId = args.getNumber( "id", null ).intValue();
                 AbstractBroker broker = isMaster ? new FakeMasterBroker() :
                         new FakeSlaveBroker();
                 haDb = new HighlyAvailableGraphDatabase( storeDir, MapUtil.stringMap(
-                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + machineId ),
+                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + tempMachineId ),
                         broker );
                 broker.setDb( haDb );
                 println( "Started HA db (w/o zoo keeper)" );
             }
-            this.db = haDb;
             this.location = location;
             this.location.ensureRegistryCreated();
             this.location.bind( this );
+            this.machineId = tempMachineId;
+            this.db = haDb;
             println( "RMI object bound" );
         }
         catch ( Exception e )
@@ -158,5 +162,25 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
     {
         println( "pullUpdates" );
         db.pullUpdates();
+    }
+    
+    public int getMachineId()
+    {
+        return this.machineId;
+    }
+    
+    public void awaitStarted()
+    {
+        while ( this.db == null )
+        {
+            try
+            {
+                Thread.sleep( 100 );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+            }
+        }
     }
 }
