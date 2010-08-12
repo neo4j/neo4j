@@ -6,6 +6,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.LockManagerFactory;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.LockResult;
 import org.neo4j.kernel.impl.ha.LockStatus;
@@ -55,35 +56,48 @@ public class SlaveLockManager extends LockManager
     public void getReadLock( Object resource ) throws DeadlockDetectedException,
             IllegalResourceException
     {
-        Node node = resource instanceof Node ? (Node) resource : null;
-        Relationship relationship = resource instanceof Relationship ?
-                (Relationship) resource : null;
-        if ( node == null && relationship == null )
+        try
         {
-            // This is a "fake" resource, only grab the lock locally
-            super.getReadLock( resource );
-            return;
-        }
-        
-        LockResult result = null;
-        do
-        {
-            result = node != null ?
-                    receiver.receive( broker.getMaster().acquireNodeReadLock(
-                            receiver.getSlaveContext(), getLocalTxId(), node.getId() ) ) :
-                    receiver.receive( broker.getMaster().acquireRelationshipReadLock(
-                            receiver.getSlaveContext(), getLocalTxId(), relationship.getId() ) );
-                        
-            switch ( result.getStatus() )
+            Node node = resource instanceof Node ? (Node) resource : null;
+            Relationship relationship = resource instanceof Relationship ?
+                    (Relationship) resource : null;
+            if ( node == null && relationship == null )
             {
-            case OK_LOCKED:
+                // This is a "fake" resource, only grab the lock locally
                 super.getReadLock( resource );
                 return;
-            case DEAD_LOCKED:
-                throw new DeadlockDetectedException( result.getDeadlockMessage() );
             }
+            
+            LockResult result = null;
+            do
+            {
+                result = node != null ?
+                        receiver.receive( broker.getMaster().acquireNodeReadLock(
+                                receiver.getSlaveContext(), getLocalTxId(), node.getId() ) ) :
+                        receiver.receive( broker.getMaster().acquireRelationshipReadLock(
+                                receiver.getSlaveContext(), getLocalTxId(), relationship.getId() ) );
+                            
+                switch ( result.getStatus() )
+                {
+                case OK_LOCKED:
+                    super.getReadLock( resource );
+                    return;
+                case DEAD_LOCKED:
+                    throw new DeadlockDetectedException( result.getDeadlockMessage() );
+                }
+            }
+            while ( result.getStatus() == LockStatus.NOT_LOCKED );
         }
-        while ( result.getStatus() == LockStatus.NOT_LOCKED );
+        catch ( ZooKeeperException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
+        catch ( HaCommunicationException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
     }
 
     @Override
@@ -91,35 +105,48 @@ public class SlaveLockManager extends LockManager
             IllegalResourceException
     {
         // Code copied from getReadLock. Fix!
-        Node node = resource instanceof Node ? (Node) resource : null;
-        Relationship relationship = resource instanceof Relationship ?
-                (Relationship) resource : null;
-        if ( node == null && relationship == null )
+        try
         {
-            // This is a "fake" resource, only grab the lock locally
-            super.getWriteLock( resource );
-            return;
-        }
-        
-        LockResult result = null;
-        do
-        {
-            result = node != null ?
-                    receiver.receive( broker.getMaster().acquireNodeWriteLock(
-                            receiver.getSlaveContext(), getLocalTxId(), node.getId() ) ) :
-                    receiver.receive( broker.getMaster().acquireRelationshipWriteLock(
-                            receiver.getSlaveContext(), getLocalTxId(), relationship.getId() ) );
-                    
-            switch ( result.getStatus() )
+            Node node = resource instanceof Node ? (Node) resource : null;
+            Relationship relationship = resource instanceof Relationship ?
+                    (Relationship) resource : null;
+            if ( node == null && relationship == null )
             {
-            case OK_LOCKED:
+                // This is a "fake" resource, only grab the lock locally
                 super.getWriteLock( resource );
                 return;
-            case DEAD_LOCKED:
-                throw new DeadlockDetectedException( result.getDeadlockMessage() );
             }
+            
+            LockResult result = null;
+            do
+            {
+                result = node != null ?
+                        receiver.receive( broker.getMaster().acquireNodeWriteLock(
+                                receiver.getSlaveContext(), getLocalTxId(), node.getId() ) ) :
+                        receiver.receive( broker.getMaster().acquireRelationshipWriteLock(
+                                receiver.getSlaveContext(), getLocalTxId(), relationship.getId() ) );
+                        
+                switch ( result.getStatus() )
+                {
+                case OK_LOCKED:
+                    super.getWriteLock( resource );
+                    return;
+                case DEAD_LOCKED:
+                    throw new DeadlockDetectedException( result.getDeadlockMessage() );
+                }
+            }
+            while ( result.getStatus() == LockStatus.NOT_LOCKED );
         }
-        while ( result.getStatus() == LockStatus.NOT_LOCKED );
+        catch ( ZooKeeperException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
+        catch ( HaCommunicationException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
     }
     
     // Release lock is as usual, since when the master committs it will release

@@ -15,13 +15,16 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
+import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
@@ -102,23 +105,21 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     
     public void pullUpdates()
     {
-        receive( broker.getMaster().pullUpdates( getSlaveContext() ) );
+        try
+        {
+            receive( broker.getMaster().pullUpdates( getSlaveContext() ) );
+        }
+        catch ( ZooKeeperException e )
+        {
+            somethingIsWrong( e );
+            throw e;
+        }
+        catch ( HaCommunicationException e )
+        {
+            somethingIsWrong( e );
+            throw e;
+        }
     }
-
-//    private Broker instantiateBroker()
-//    {
-//        String cls = config.get( "ha_broker" );
-//        cls = cls != null ? cls : "some.default.Broker";
-//        try
-//        {
-//            return Class.forName( cls ).asSubclass( Broker.class ).getConstructor(
-//                    Map.class ).newInstance( config );
-//        }
-//        catch ( Exception e )
-//        {
-//            throw new RuntimeException( e );
-//        }
-//    }
     
     public Config getConfig()
     {
@@ -141,7 +142,8 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                     CommonFactories.defaultIdGeneratorFactory(),
                     CommonFactories.defaultRelationshipTypeCreator(),
                     CommonFactories.defaultTxIdGeneratorFactory(),
-                    CommonFactories.defaultTxRollbackHook() );
+                    CommonFactories.defaultTxRollbackHook(),
+                    new ZooKeeperLastCommittedTxIdSetter( broker ) );
         }
         else
         {
@@ -154,18 +156,9 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                     new SlaveIdGeneratorFactory( broker, this ),
                     new SlaveRelationshipTypeCreator( broker, this ),
                     new SlaveTxIdGeneratorFactory( broker, this ),
-                    new SlaveTxRollbackHook( broker, this ) );
+                    new SlaveTxRollbackHook( broker, this ),
+                    new ZooKeeperLastCommittedTxIdSetter( broker ) );
         }
-    }
-
-    private int readHaMasterListenPort()
-    {
-        Map<Integer, String> haServers = getHaServersFromConfig( config );
-        System.out.println( haServers );
-        int machineId = broker.getMyMachineId();
-        System.out.println( "machineId:" + machineId );
-        String host = haServers.get( machineId );
-        return Integer.parseInt( host.split( Pattern.quote( ":" ) )[1] );
     }
 
     private boolean brokerSaysIAmMaster()
@@ -289,7 +282,20 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         }
         catch ( IOException e )
         {
+            somethingIsWrong( e );
             throw new RuntimeException( e );
         }
+    }
+    
+    public void somethingIsWrong( Exception e )
+    {
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                reevaluateMyself();
+            }
+        }.start();
     }
 }

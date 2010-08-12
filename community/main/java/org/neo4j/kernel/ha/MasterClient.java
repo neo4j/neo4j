@@ -43,17 +43,9 @@ public class MasterClient extends CommunicationProtocol implements Master
         bootstrap.setPipelineFactory( new ClientPipelineFactory( blockingReadHandler ) );
         ChannelFuture channelFuture = bootstrap.connect(
                 new InetSocketAddress( hostNameOrIp, port ) );
-//                new InetSocketAddress( port ) );
         Client client = new Client( blockingReadHandler, channelFuture );
-        try
-        {
-            channelFuture.await();
-            System.out.println( "Client connected to " + hostNameOrIp + ":" + port );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-        }
+        client.awaitConnected();
+        System.out.println( "Client connected to " + hostNameOrIp + ":" + port );
         return client;
     }
 
@@ -84,11 +76,11 @@ public class MasterClient extends CommunicationProtocol implements Master
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new HaCommunicationException( e );
         }
         catch ( InterruptedException e )
         {
-            throw new RuntimeException( e );
+            throw new HaCommunicationException( e );
         }
     }
 
