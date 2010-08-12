@@ -243,6 +243,7 @@ abstract class CommunicationProtocol
             {
                 dest.writeBytes( bytes );
             }
+            channel.close();
         }
     }
 
