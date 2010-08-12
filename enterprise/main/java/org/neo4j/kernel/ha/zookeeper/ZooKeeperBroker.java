@@ -13,9 +13,7 @@ import org.neo4j.kernel.impl.ha.Master;
 public class ZooKeeperBroker implements Broker
 {
     private final ZooClient zooClient;
-    private final String storeDir;
     private final int machineId;
-    private final String zooKeeperServers;
     private final Map<Integer,String> haServers;
     
     private int machineIdForMasterClient;
@@ -24,9 +22,7 @@ public class ZooKeeperBroker implements Broker
     public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
             Map<Integer,String> haServers )
     {
-        this.storeDir = storeDir;
         this.machineId = machineId;
-        this.zooKeeperServers = zooKeeperServers;
         this.haServers = haServers;
         NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
         this.zooClient = new ZooClient( zooKeeperServers, machineId, 
@@ -64,6 +60,10 @@ public class ZooKeeperBroker implements Broker
     private Pair<String, Integer> getHaServer( int machineId )
     {
         String host = haServers.get( machineId );
+        if ( host == null )
+        {
+            throw new RuntimeException( "No HA server for machine ID " + machineId );
+        }
         int pos = host.indexOf( ":" );
         return new Pair<String, Integer>( host.substring( 0, pos ),
                 Integer.parseInt( host.substring( pos + 1 ) ) );
