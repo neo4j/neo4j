@@ -147,7 +147,7 @@ public class ZooClient implements Watcher
                         null );
                     ByteBuffer buf = ByteBuffer.wrap( data );
                     long tx = buf.getLong();
-                    if ( tx > highestTxId )
+                    if ( tx >= highestTxId )
                     {
                         highestTxId = tx;
                         if ( seq < lowestSeq )
