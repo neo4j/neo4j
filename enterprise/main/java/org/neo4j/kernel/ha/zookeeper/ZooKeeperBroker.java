@@ -3,6 +3,7 @@ package org.neo4j.kernel.ha.zookeeper;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
@@ -52,23 +53,26 @@ public class ZooKeeperBroker implements Broker
     {
         if ( masterClient == null || masterId != machineIdForMasterClient )
         {
-            String host = haServers.get( masterId );
             machineIdForMasterClient = masterId;
             // TODO synchronization
-            masterClient = new MasterClient( host, getHaServerPort( masterId ) );
+            Pair<String, Integer> host = getHaServer( masterId );
+            masterClient = new MasterClient( host.first(), host.other() );
         }
         return masterClient;
     }
     
-    private int getHaServerPort( int machineId )
+    private Pair<String, Integer> getHaServer( int machineId )
     {
         String host = haServers.get( getMyMachineId() );
-        return Integer.parseInt( host.substring( host.indexOf( ":" ) + 1 ) );
+        int pos = host.indexOf( ":" );
+        return new Pair<String, Integer>( host.substring( 0, pos ),
+                Integer.parseInt( host.substring( pos + 1 ) ) );
     }
     
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
-        return new MasterServer( new MasterImpl( graphDb ), getHaServerPort( getMyMachineId() ) );
+        return new MasterServer( new MasterImpl( graphDb ),
+                getHaServer( getMyMachineId() ).other() );
     }
 
     public void setLastCommittedTxId( long txId )
