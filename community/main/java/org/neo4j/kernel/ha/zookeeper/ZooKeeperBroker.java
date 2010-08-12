@@ -63,7 +63,7 @@ public class ZooKeeperBroker implements Broker
     
     private Pair<String, Integer> getHaServer( int machineId )
     {
-        String host = haServers.get( getMyMachineId() );
+        String host = haServers.get( machineId );
         int pos = host.indexOf( ":" );
         return new Pair<String, Integer>( host.substring( 0, pos ),
                 Integer.parseInt( host.substring( pos + 1 ) ) );
