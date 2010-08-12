@@ -27,6 +27,7 @@ public abstract class AbstractHaTest
     static final RelationshipType REL_TYPE = DynamicRelationshipType.withName( "HA_TEST" );
     static final File PARENT_PATH = new File( "target/havar" );
     static final File DBS_PATH = new File( PARENT_PATH, "dbs" );
+    static final File SKELETON_DB_PATH = new File( DBS_PATH, "skeleton" );
     
     protected static File dbPath( int num )
     {
@@ -134,11 +135,10 @@ public abstract class AbstractHaTest
     protected void createDeadDbs( int numSlaves ) throws IOException
     {
         FileUtils.deleteDirectory( PARENT_PATH );
-        File firstDbPath = dbPath( 0 );
-        new EmbeddedGraphDatabase( firstDbPath.getAbsolutePath() ).shutdown();
-        for ( int i = 1; i <= numSlaves; i++ )
+        new EmbeddedGraphDatabase( SKELETON_DB_PATH.getAbsolutePath() ).shutdown();
+        for ( int i = 0; i <= numSlaves; i++ )
         {
-            FileUtils.copyDirectory( firstDbPath, dbPath( i ) );
+            FileUtils.copyDirectory( SKELETON_DB_PATH, dbPath( i ) );
         }
     }
 
