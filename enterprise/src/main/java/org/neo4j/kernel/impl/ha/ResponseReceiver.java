@@ -5,4 +5,6 @@ public interface ResponseReceiver
     SlaveContext getSlaveContext();
     
     <T> T receive( Response<T> response );
+    
+    void somethingIsWrong( Exception e );
 }
