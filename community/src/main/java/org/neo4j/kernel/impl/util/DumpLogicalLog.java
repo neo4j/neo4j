@@ -488,7 +488,7 @@ public class DumpLogicalLog
             case PROP_COMMAND:
                 return readPropertyCommand( byteChannel, buffer );
             case PROP_INDEX_COMMAND:
-                return readPropertyCommand( byteChannel, buffer );
+                return readPropertyIndexCommand( byteChannel, buffer );
             case REL_COMMAND:
                 return readRelationshipCommand( byteChannel, buffer );
             case REL_TYPE_COMMAND:
