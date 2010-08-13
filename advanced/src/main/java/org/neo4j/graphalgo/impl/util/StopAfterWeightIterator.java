@@ -28,7 +28,6 @@ public class StopAfterWeightIterator extends PrefetchingIterator<WeightedPath>
             return null;
         }
         WeightedPath path = new WeightedPathImpl( costEvaluator, paths.next() );
-        System.out.println( "found path " + path );
         if ( foundWeight != null && path.weight() > foundWeight )
         {
             return null;
