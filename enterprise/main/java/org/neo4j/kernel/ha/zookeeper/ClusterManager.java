@@ -93,6 +93,46 @@ public class ClusterManager implements Watcher
         }
     }
     
+    public void dumpInfo()
+    {
+        try
+        {
+            String root = getRoot();
+            List<String> children = zooKeeper.getChildren( root, false );
+            for ( String child : children )
+            {
+                int index = child.indexOf( '_' );
+                int id = Integer.parseInt( child.substring( 0, index ) );
+                int seq = Integer.parseInt( child.substring( index + 1 ) );                
+                try
+                {
+                    byte[] data = zooKeeper.getData( root + "/" + child, false, 
+                        null );
+                    ByteBuffer buf = ByteBuffer.wrap( data );
+                    long tx = buf.getLong();
+                    System.out.println( "machine=" + id + " (seq=" + seq + ") tx=" + tx );
+                }
+                catch ( KeeperException inner )
+                {
+                    if ( inner.code() != KeeperException.Code.NONODE )
+                    {
+                        throw new ZooKeeperException( "Unabe to get master.", 
+                            inner );
+                    }
+                }
+            }
+        }
+        catch ( KeeperException e )
+        {
+            throw new ZooKeeperException( "Unable to get master", e );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new ZooKeeperException( "Interrupted.", e );
+        }
+    }
+    
     public void shutdown()
     {
         try
@@ -103,6 +143,18 @@ public class ClusterManager implements Watcher
         {
             throw new ZooKeeperException( 
                 "Error closing zookeeper connection", e );
+        }
+    }
+    
+    public void close()
+    {
+        try
+        {
+            zooKeeper.close();
+        }
+        catch ( InterruptedException e )
+        {
+            e.printStackTrace();
         }
     }
 }
