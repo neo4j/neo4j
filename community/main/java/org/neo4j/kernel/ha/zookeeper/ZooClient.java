@@ -207,6 +207,7 @@ public class ZooClient implements Watcher
     
     public synchronized void setCommittedTx( long tx )
     {
+        System.out.println( "Setting txId=" + tx + " for machine=" + machineId );
         if ( tx <= committedTx )
         {
             throw new IllegalArgumentException( "tx=" + tx + 
