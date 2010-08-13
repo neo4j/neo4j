@@ -232,11 +232,13 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     {
         if ( this.masterServer != null )
         {
+            System.out.println( "Shutting down master server" );
             this.masterServer.shutdown();
             this.masterServer = null;
         }
         if ( this.localGraph != null )
         {
+            System.out.println( "Shutting down local graph" );
             this.localGraph.shutdown();
             this.localGraph = null;
         }
