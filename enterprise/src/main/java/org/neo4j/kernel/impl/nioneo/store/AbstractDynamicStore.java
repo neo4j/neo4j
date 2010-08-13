@@ -635,7 +635,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         createIdGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
-        nextBlockId(); // reserved first block containing blockSize
+//        nextBlockId(); // reserved first block containing blockSize
+        setHighId( 1 );
         FileChannel fileChannel = getFileChannel();
         int highId = 0;
         long defraggedCount = 0;
