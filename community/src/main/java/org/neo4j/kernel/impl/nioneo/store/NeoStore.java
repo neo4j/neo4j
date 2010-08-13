@@ -241,8 +241,7 @@ public class NeoStore extends AbstractStore
         }
         setRecord( 3, txId );
         // TODO Why check null here? because I have no time to fix the tests
-        if ( lastCommittedTxIdSetter != null && !isInRecoveryMode() && txId ==
-                getLastCommittedTx()+1 )
+        if ( lastCommittedTxIdSetter != null && txId == getLastCommittedTx()+1 )
         {
             lastCommittedTxIdSetter.setLastCommittedTxId( txId );
         }

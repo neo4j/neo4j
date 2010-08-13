@@ -1494,8 +1494,8 @@ public class XaLogicalLog
             e.printStackTrace();
             throw new IOException( e.getMessage() );
         }
-        LogEntry.Done done = new LogEntry.Done( entry.getIdentifier() );
-        LogIoUtils.writeLogEntry( done, writeBuffer );
+//        LogEntry.Done done = new LogEntry.Done( entry.getIdentifier() );
+//        LogIoUtils.writeLogEntry( done, writeBuffer );
         // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
         log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
     }
