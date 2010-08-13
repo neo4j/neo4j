@@ -17,7 +17,7 @@ public class ZooClient implements Watcher
     private final long storeCreationTime;
     private final long storeId;
     private final int machineId;
-    private final String sequenceNr;
+    private String sequenceNr;
     
     private long committedTx;
 //    private long globalCommittedTx;
@@ -150,6 +150,7 @@ public class ZooClient implements Watcher
         {
             System.out.println( "Instantiate new zoo keeper (session expired)" );
             instantiateZooKeeper();
+            sequenceNr = setup();
         }
     }
     
