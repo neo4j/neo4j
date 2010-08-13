@@ -214,6 +214,7 @@ public class ZooClient implements Watcher
             throw new IllegalArgumentException( "tx=" + tx + 
                 " but committedTx is " + committedTx );
         }
+        this.committedTx = tx;
         int masterId = getMaster();
         String root = getRoot();
         String path = root + "/" + machineId + "_" + sequenceNr;
