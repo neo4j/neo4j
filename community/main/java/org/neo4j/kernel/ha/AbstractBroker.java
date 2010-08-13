@@ -19,7 +19,7 @@ public abstract class AbstractBroker implements Broker
     
     public void setLastCommittedTxId( long txId )
     {
-        throw new RuntimeException( "implement this" );
+        // Do nothing
     }
     
     public boolean thisIsMaster()
