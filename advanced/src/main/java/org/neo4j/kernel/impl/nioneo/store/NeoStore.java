@@ -51,6 +51,7 @@ public class NeoStore extends AbstractStore
     private RelationshipStore relStore;
     private RelationshipTypeStore relTypeStore;
     private final LastCommittedTxIdSetter lastCommittedTxIdSetter;
+    private boolean isStarted;
     
     private final int REL_GRAB_SIZE;
 
@@ -241,7 +242,7 @@ public class NeoStore extends AbstractStore
         }
         setRecord( 3, txId );
         // TODO Why check null here? because I have no time to fix the tests
-        if ( lastCommittedTxIdSetter != null && txId == getLastCommittedTx()+1 )
+        if ( isStarted && lastCommittedTxIdSetter != null && txId == getLastCommittedTx()+1 )
         {
             lastCommittedTxIdSetter.setLastCommittedTxId( txId );
         }
@@ -341,8 +342,8 @@ public class NeoStore extends AbstractStore
         relStore.makeStoreOk();
         nodeStore.makeStoreOk();
         super.makeStoreOk();
+        isStarted = true;
     }
-    
     
     public void rebuildIdGenerators()
     {
