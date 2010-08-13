@@ -496,6 +496,11 @@ class EmbeddedGraphDbImpl
         }
         return handler;
     }
+    
+    void addShellApp( Class<?> app )
+    {
+        shellService.addApp( app );
+    }
 
     private class SyncHookFactory implements TxEventSyncHookFactory
     {
