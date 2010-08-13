@@ -36,7 +36,7 @@ public class SingleJvmTesting extends AbstractHaTest
         {
             createDeadDbs( numSlaves );
             haDbs = new ArrayList<GraphDatabaseService>();
-            startUpMaster( numSlaves );
+            startUpMaster();
             FakeBroker broker = new FakeBroker( master ); 
             for ( int i = 1; i <= numSlaves; i++ )
             {
@@ -55,7 +55,7 @@ public class SingleJvmTesting extends AbstractHaTest
     }
     
     @Override
-    protected void startUpMaster( int numSlaves )
+    protected void startUpMaster()
     {
         master = new MasterImpl( new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() ) );
     }

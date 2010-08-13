@@ -150,7 +150,7 @@ public abstract class AbstractHaTest
 
     protected abstract <T> T executeJobOnMaster( Job<T> job ) throws Exception;
     
-    protected abstract void startUpMaster( int numSlaves ) throws Exception;
+    protected abstract void startUpMaster() throws Exception;
 
     protected abstract Job<Void> getMasterShutdownDispatcher();
     
