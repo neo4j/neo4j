@@ -57,6 +57,18 @@ class ShellService
             return false;
         }
     }
+    
+    void addApp( Class<?> app )
+    {
+        try
+        {
+            shellServer.getClass().getMethod( "addApp", Class.class ).invoke( shellServer, app );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
 
     private Object startShellServer( Map<String,Serializable> config )
         throws RemoteException
