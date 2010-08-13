@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -69,7 +70,9 @@ public class MasterClient extends CommunicationProtocol implements Master
             client.channel.write(buffer);
 
             // Read response
-            ChannelBuffer message = client.blockingReadHandler.read();
+            ChannelBuffer message =
+//                client.blockingReadHandler.read();
+                client.blockingReadHandler.read( 20, TimeUnit.SECONDS );
             T response = deserializer.read( message );
             TransactionStreams txStreams = readTransactionStreams( message );
             return new Response<T>( response, txStreams );
