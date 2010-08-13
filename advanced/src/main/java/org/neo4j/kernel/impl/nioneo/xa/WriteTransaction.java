@@ -511,7 +511,15 @@ class WriteTransaction extends XaTransaction
                 command.execute();
                 removePropertyFromCache( command );
             }
-            neoStore.setLastCommittedTx( getCommitTxId() );            
+            neoStore.setRecoveredStatus( true );
+            try
+            {
+                neoStore.setLastCommittedTx( getCommitTxId() );
+            }
+            finally
+            {
+                neoStore.setRecoveredStatus( false );   
+            }
             neoStore.updateIdGenerators();
             if ( !isRecovered() )
             {
