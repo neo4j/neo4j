@@ -175,12 +175,12 @@ public class ZooClient implements Watcher
                     long tx = buf.getLong();
                     if ( tx >= highestTxId )
                     {
-                        highestTxId = tx;
-                        if ( seq < lowestSeq )
+                        if ( tx > highestTxId || seq < lowestSeq )
                         {
                             currentMasterId = id;
                             lowestSeq = seq;
                         }
+                        highestTxId = tx;
                     }
                 }
                 catch ( KeeperException inner )
