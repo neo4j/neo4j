@@ -54,6 +54,9 @@ public class ZooKeeperBroker implements Broker
             // TODO synchronization
             Pair<String, Integer> host = getHaServer( masterId );
             masterClient = new MasterClient( host.first(), host.other() );
+            
+            // To make sure the flag is reset (it may not have been called in the if-statement)
+            zooClient.isNewConnection();
         }
         return masterClient;
     }

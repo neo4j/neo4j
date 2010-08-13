@@ -54,17 +54,6 @@ public class ZooClient implements Watcher
         {
             this.zooKeeper = new ZooKeeper( servers, 5000, this );
             this.newConnection = true;
-            this.zooKeeper.register( new Watcher()
-            {
-                public void process( WatchedEvent event )
-                {
-                    if ( event.getState() == Watcher.Event.KeeperState.Expired )
-                    {
-                        System.out.println( "Instantiate new zoo keeper (session expired)" );
-                        instantiateZooKeeper();
-                    }
-                }
-            } );
         }
         catch ( IOException e )
         {
@@ -157,6 +146,11 @@ public class ZooClient implements Watcher
     public void process( WatchedEvent event )
     {
         System.out.println( "Got event: " + event );
+        if ( event.getState() == Watcher.Event.KeeperState.Expired )
+        {
+            System.out.println( "Instantiate new zoo keeper (session expired)" );
+            instantiateZooKeeper();
+        }
     }
     
     public synchronized int getMaster()
