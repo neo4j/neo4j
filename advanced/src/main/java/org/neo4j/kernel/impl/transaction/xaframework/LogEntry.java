@@ -107,7 +107,7 @@ public abstract class LogEntry
 
         public String toString()
         {
-            return "1PC[" + getIdentifier() + "]";
+            return "1PC[" + getIdentifier() + ", txId=" + txId + "]";
         }
     }
 
@@ -141,7 +141,7 @@ public abstract class LogEntry
 
         public String toString()
         {
-            return "2PC[" + getIdentifier() + "]";
+            return "2PC[" + getIdentifier() + ", txId=" + txId + "]";
         }
     }
 
