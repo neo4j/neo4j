@@ -350,7 +350,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
                 {
                     highId = i;
                 }
-                nextId();
+                // nextId();
             }
             highId++;
             fileChannel.truncate( highId * recordSize );
