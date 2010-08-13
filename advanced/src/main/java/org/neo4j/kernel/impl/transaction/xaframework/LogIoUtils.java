@@ -27,9 +27,9 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.transaction.XidImpl;
 
-class LogIoUtils
+public class LogIoUtils
 {
-    static LogEntry.Start readTxStartEntry( ByteBuffer buf, 
+    public static LogEntry.Start readTxStartEntry( ByteBuffer buf, 
             ReadableByteChannel channel, long position ) throws IOException
     {
         buf.clear();
@@ -84,7 +84,7 @@ class LogIoUtils
         return new LogEntry.Start( xid, identifier, position );
     }
 
-    static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf, 
+    public static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf, 
             ReadableByteChannel channel ) throws IOException
     {
         buf.clear();
@@ -98,7 +98,7 @@ class LogIoUtils
         return new LogEntry.Prepare( identifier );
     }
     
-    static LogEntry.OnePhaseCommit readTxOnePhaseCommit( ByteBuffer buf, 
+    public static LogEntry.OnePhaseCommit readTxOnePhaseCommit( ByteBuffer buf, 
             ReadableByteChannel channel ) throws IOException
     {
         buf.clear();
@@ -113,7 +113,7 @@ class LogIoUtils
         return new LogEntry.OnePhaseCommit( identifier, txId );
     }
     
-    static LogEntry.Done readTxDoneEntry( ByteBuffer buf, 
+    public static LogEntry.Done readTxDoneEntry( ByteBuffer buf, 
             ReadableByteChannel channel ) throws IOException
     {
         buf.clear();
@@ -127,7 +127,7 @@ class LogIoUtils
         return new LogEntry.Done( identifier );
     }
 
-    static LogEntry.TwoPhaseCommit readTxTwoPhaseCommit( ByteBuffer buf, 
+    public static LogEntry.TwoPhaseCommit readTxTwoPhaseCommit( ByteBuffer buf, 
             ReadableByteChannel channel ) throws IOException
     {
         buf.clear();
@@ -142,7 +142,7 @@ class LogIoUtils
         return new LogEntry.TwoPhaseCommit( identifier, txId );
     }
     
-    static LogEntry.Command readTxCommand( 
+    public static LogEntry.Command readTxCommand( 
             ByteBuffer buf, ReadableByteChannel channel, XaCommandFactory cf ) 
         throws IOException
     {
@@ -162,7 +162,7 @@ class LogIoUtils
         return new LogEntry.Command( identifier, command );
     }
     
-    static void writeLogEntry( LogEntry entry, LogBuffer buffer ) 
+    public static void writeLogEntry( LogEntry entry, LogBuffer buffer ) 
         throws IOException
     {
         if ( entry instanceof LogEntry.Command )

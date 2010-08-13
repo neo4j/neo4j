@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import javax.transaction.xa.Xid;
 
-abstract class LogEntry
+public abstract class LogEntry
 {
     // empty record due to memory mapped file
-    static final byte EMPTY = (byte) 0;
-    static final byte TX_START = (byte) 1;
-    static final byte TX_PREPARE = (byte) 2;
-    static final byte COMMAND = (byte) 3;
-    static final byte DONE = (byte) 4;
-    static final byte TX_1P_COMMIT = (byte) 5;
-    static final byte TX_2P_COMMIT = (byte) 6;
+    public static final byte EMPTY = (byte) 0;
+    public static final byte TX_START = (byte) 1;
+    public static final byte TX_PREPARE = (byte) 2;
+    public static final byte COMMAND = (byte) 3;
+    public static final byte DONE = (byte) 4;
+    public static final byte TX_1P_COMMIT = (byte) 5;
+    public static final byte TX_2P_COMMIT = (byte) 6;
 
     private int identifier;
     
@@ -39,12 +39,12 @@ abstract class LogEntry
         this.identifier = identifier;
     }
     
-    int getIdentifier()
+    public int getIdentifier()
     {
         return identifier;
     }
     
-    static class Start extends LogEntry
+    public static class Start extends LogEntry
     {
         private final Xid xid;
         private long startPosition;
@@ -56,12 +56,12 @@ abstract class LogEntry
             this.startPosition = startPosition;
         }
         
-        Xid getXid()
+        public Xid getXid()
         {
             return xid;
         }
         
-        long getStartPosition()
+        public long getStartPosition()
         {
             return startPosition;
         }
@@ -69,6 +69,11 @@ abstract class LogEntry
         void setStartPosition( long position )
         {
             this.startPosition = position;
+        }
+        
+        public String toString()
+        {
+            return "Start[" + getIdentifier() + "]";
         }
     }
     
@@ -78,9 +83,14 @@ abstract class LogEntry
         {
             super( identifier );
         }
+
+        public String toString()
+        {
+            return "Prepare[" + getIdentifier() + "]";
+        }
     }
     
-    static class OnePhaseCommit extends LogEntry
+    public static class OnePhaseCommit extends LogEntry
     {
         private final long txId;
         
@@ -90,21 +100,31 @@ abstract class LogEntry
             this.txId = txId;
         }
         
-        long getTxId()
+        public long getTxId()
         {
             return txId;
         }
+
+        public String toString()
+        {
+            return "1PC[" + getIdentifier() + "]";
+        }
     }
 
-    static class Done extends LogEntry
+    public static class Done extends LogEntry
     {
         Done( int identifier )
         {
             super( identifier );
         }
+    
+        public String toString()
+        {
+            return "Done[" + getIdentifier() + "]";
+        }
     }
 
-    static class TwoPhaseCommit extends LogEntry
+    public static class TwoPhaseCommit extends LogEntry
     {
         private final long txId;
         
@@ -114,13 +134,18 @@ abstract class LogEntry
             this.txId = txId;
         }
         
-        long getTxId()
+        public long getTxId()
         {
             return txId;
         }
+
+        public String toString()
+        {
+            return "2PC[" + getIdentifier() + "]";
+        }
     }
 
-    static class Command extends LogEntry
+    public static class Command extends LogEntry
     {
         private final XaCommand command;
         
@@ -130,9 +155,14 @@ abstract class LogEntry
             this.command = command;
         }
         
-        XaCommand getXaCommand()
+        public XaCommand getXaCommand()
         {
             return command;
+        }
+    
+        public String toString()
+        {
+            return "Command[" + getIdentifier() + ", " + command + "]";
         }
     }
 
