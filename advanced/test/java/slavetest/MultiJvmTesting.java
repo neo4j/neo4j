@@ -25,11 +25,11 @@ public class MultiJvmTesting extends AbstractHaTest
         try
         {
             createDeadDbs( numSlaves );
-            startUpMaster( numSlaves );
+            startUpMaster();
             for ( int i = 1; i <= numSlaves; i++ )
             {
                 File slavePath = dbPath( i );
-                StandaloneDbCom slaveJvm = spawnJvm( numSlaves, slavePath, MASTER_PORT + i, i );
+                StandaloneDbCom slaveJvm = spawnJvm( slavePath, MASTER_PORT + i, i );
                 jvms.add( slaveJvm );
             }
         }
@@ -74,7 +74,7 @@ public class MultiJvmTesting extends AbstractHaTest
         }
     }
 
-    protected StandaloneDbCom spawnJvm( int numServers, File path, int port, int machineId,
+    protected StandaloneDbCom spawnJvm( File path, int port, int machineId,
             String... extraArgs ) throws Exception
     {
         Collection<String> list = new ArrayList<String>( Arrays.asList(
@@ -148,9 +148,9 @@ public class MultiJvmTesting extends AbstractHaTest
     }
     
     @Override
-    protected void startUpMaster( int numSlaves ) throws Exception
+    protected void startUpMaster() throws Exception
     {
-        jvms.add( spawnJvm( numSlaves, dbPath( 0 ), MASTER_PORT, 0, "-master", "true" ) );
+        jvms.add( spawnJvm( dbPath( 0 ), MASTER_PORT, 0, "-master", "true" ) );
     }
     
     @Override

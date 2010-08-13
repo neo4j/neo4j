@@ -159,6 +159,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                     new SlaveTxRollbackHook( broker, this ),
                     new ZooKeeperLastCommittedTxIdSetter( broker ) );
         }
+        this.localGraph.addShellApp( Pullupdates.class );
     }
 
     private boolean brokerSaysIAmMaster()

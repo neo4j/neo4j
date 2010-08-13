@@ -25,6 +25,7 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     
     private ClusterManager zooKeeperMasterFetcher;
     private Map<Integer, StandaloneDbCom> jvmByMachineId;
+    private String haServersConfig;
     
     @BeforeClass
     public static void startZooKeeperCluster() throws Exception
@@ -46,10 +47,11 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
         zooKeeperMasterFetcher = new ClusterManager(
                 buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ),
                 store.getCreationTime(), store.getStoreId() );
+        haServersConfig = buildHaServersConfigValue( numSlaves+1 );
     }
     
     @Override
-    protected StandaloneDbCom spawnJvm( int numServers, File path, int port, int machineId,
+    protected StandaloneDbCom spawnJvm( File path, int port, int machineId,
             String... extraArgs ) throws Exception
     {
         List<String> myExtraArgs = new ArrayList<String>();
@@ -58,16 +60,16 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
         myExtraArgs.add( "-" + HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS );
         myExtraArgs.add( buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ) );
         myExtraArgs.add( "-" + HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS );
-        myExtraArgs.add( buildHaServersConfigValue( numServers ) );
+        myExtraArgs.add( haServersConfig );
         myExtraArgs.addAll( Arrays.asList( extraArgs ) );
-        StandaloneDbCom com = super.spawnJvm( numServers, path, port, machineId,
+        StandaloneDbCom com = super.spawnJvm( path, port, machineId,
                 myExtraArgs.toArray( new String[myExtraArgs.size()] ) );
         com.awaitStarted();
         jvmByMachineId.put( com.getMachineId(), com );
         return com;
     }
     
-    private String buildHaServersConfigValue( int numServers )
+    private static String buildHaServersConfigValue( int numServers )
     {
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < numServers; i++ )
