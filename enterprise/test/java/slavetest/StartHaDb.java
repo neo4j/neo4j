@@ -1,10 +1,12 @@
 package slavetest;
 
+import java.util.Date;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 
 public class StartHaDb
 {
@@ -15,8 +17,11 @@ public class StartHaDb
     
     public static void main( String[] args ) throws Exception
     {
+        NeoStoreUtil store = new NeoStoreUtil( "var/hadb" );
+        System.out.println( "Starting store: createTime=" + new Date( store.getCreationTime() ) + 
+                " identifier=" + store.getStoreId() + " last committed tx=" + store.getLastCommittedTx() );
         final GraphDatabaseService db = new HighlyAvailableGraphDatabase( "var/hadb", MapUtil.stringMap(
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "2",
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "1",
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( StartZooKeeperServer.ZOO_KEEPER_SERVERS, "," ),
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, toHaServerFormat( HA_SERVERS ),
                 "enable_remote_shell", "true" ) );
