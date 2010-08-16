@@ -28,11 +28,11 @@ public class ZooKeeperBroker implements Broker
         this.zooClient = new ZooClient( zooKeeperServers, machineId, 
                 store.getCreationTime(), store.getStoreId(), store.getLastCommittedTx() );
         
-        int masterId = zooClient.getMaster();
-        if ( masterId != this.machineId )
-        {
-            getAndCacheMaster( masterId );
-        }
+//        int masterId = zooClient.getMaster();
+//        if ( masterId != this.machineId )
+//        {
+//            getAndCacheMaster( masterId );
+//        }
     }
 
     public Master getMaster()
