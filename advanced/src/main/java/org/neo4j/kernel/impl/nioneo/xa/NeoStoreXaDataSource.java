@@ -125,7 +125,15 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
         if ( !readOnly )
         {
-            xaContainer.openLogicalLog();
+            neoStore.setRecoveredStatus( true );
+            try
+            {
+                xaContainer.openLogicalLog();
+            }
+            finally
+            {
+                neoStore.setRecoveredStatus( false );
+            }
         }
         if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
         {
@@ -299,15 +307,15 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             {
                 return neoStore.getVersion();
             }
-            neoStore.setRecoveredStatus( true );
-            try
-            {
+//            neoStore.setRecoveredStatus( true );
+//            try
+//            {
                 return neoStore.getVersion();
-            }
-            finally
-            {
-                neoStore.setRecoveredStatus( false );
-            }
+//            }
+//            finally
+//            {
+//                neoStore.setRecoveredStatus( false );
+//            }
         }
 
         @Override
