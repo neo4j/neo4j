@@ -1,16 +1,16 @@
 /*
  * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -39,9 +39,9 @@ class GraphStyle
 	 * @param edgeStyle
 	 *            the relationship style to use.
 	 */
-	protected GraphStyle( NodeStyle nodeStyle, RelationshipStyle edgeStyle )
+    protected GraphStyle( NodeStyle nodeStyle, RelationshipStyle edgeStyle )
 	{
-		this.configuration = null;
+        this.configuration = null;
 		this.nodeStyle = nodeStyle;
 		this.edgeStyle = edgeStyle;
 	}
@@ -70,6 +70,10 @@ class GraphStyle
 	protected void emitGraphStart( Appendable stream ) throws IOException
 	{
 		stream.append( "digraph Neo {\n" );
+        if ( configuration != null )
+        {
+            configuration.emitHeader( stream );
+        }
 		stream.append( "  node [\n" );
 		if ( configuration != null )
 		{
@@ -96,6 +100,24 @@ class GraphStyle
 	final RelationshipStyle edgeStyle;
 	private final DefaultStyleConfiguration configuration;
 	private static volatile Header header;
+
+    GraphStyle getSubgraphStyle( final String subgraphName )
+    {
+        return new GraphStyle( nodeStyle, edgeStyle )
+        {
+            @Override
+            protected void emitGraphStart( Appendable stream ) throws IOException
+            {
+                stream.append( " subgraph " + subgraphName + " {" );
+            }
+
+            @Override
+            protected void emitGraphEnd( Appendable stream ) throws IOException
+            {
+                stream.append( " }\n" );
+            }
+        };
+    }
 
 	static Header header()
 	{
@@ -156,6 +178,7 @@ class GraphStyle
 
 		final Map<String, String> nodeHeader = new HashMap<String, String>();
 		final Map<String, String> edgeHeader = new HashMap<String, String>();
+        final Map<String, String> graphHeader = new HashMap<String, String>();
 
 		private void assertMember( Map<String, String> header,
 		    Properties properties, String prefix, String key, String def )

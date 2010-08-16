@@ -11,7 +11,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.walk.Walker;
@@ -146,13 +145,7 @@ public class Script
 
     protected Walker createGraphWalker( GraphDatabaseService graphdb )
     {
-        List<RelationshipType> types = new ArrayList<RelationshipType>();
-        for ( RelationshipType type : graphdb.getRelationshipTypes() )
-        {
-            types.add( type );
-        }
-        return new Walker( graphdb.getAllNodes(),
-                types.toArray( new RelationshipType[types.size()] ) );
+        return Walker.fullGraph( graphdb );
     }
 
     public void nodeTitle( String pattern )

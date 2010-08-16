@@ -1,53 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project>
-	<parent>
-		<groupId>org.neo4j</groupId>
-		<artifactId>parent-pom</artifactId>
-		<version>6</version>
-	</parent>
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.neo4j</groupId>
-	<artifactId>neo4j-graphviz</artifactId>
-	<version>0.2-SNAPSHOT</version>
-	<description></description>
-
-	<properties>
-		<bundle.namespace>org.neo4j.remote</bundle.namespace>
-	</properties>
-
-	<packaging>bundle</packaging>
-
-	<scm>
-		<connection>
-			scm:svn:https://svn.neo4j.org/laboratory/components/neo-graphviz
-		</connection>
-		<url>https://trac.neo4j.org/browser/components/remote-graphdb</url>
-	</scm>
-
-
-	<dependencies>
-		<dependency>
-			<groupId>org.neo4j</groupId>
-			<artifactId>neo4j-kernel</artifactId>
-			<version>1.0-rc</version>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.4</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.jmock</groupId>
-			<artifactId>jmock</artifactId>
-			<version>2.4.0</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.jmock</groupId>
-			<artifactId>jmock-junit4</artifactId>
-			<version>2.4.0</version>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>7</version>
+  </parent>
+  
+  <groupId>org.neo4j</groupId>
+  <artifactId>neo4j-graphviz</artifactId>
+  <version>0.2-SNAPSHOT</version>
+  <description></description>
+  
+  <properties>
+    <bundle.namespace>org.neo4j.visualization</bundle.namespace>
+  </properties>
+  
+  <packaging>bundle</packaging>
+  
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/laboratory/components/neo-graphviz</connection>
+    <url>https://trac.neo4j.org/browser/laboratory/components/neo-graphviz</url>
+  </scm>
+  
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.4</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jmock</groupId>
+      <artifactId>jmock</artifactId>
+      <version>2.4.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jmock</groupId>
+      <artifactId>jmock-junit4</artifactId>
+      <version>2.4.0</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 </project>

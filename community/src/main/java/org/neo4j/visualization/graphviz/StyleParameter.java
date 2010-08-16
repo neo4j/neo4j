@@ -1,16 +1,16 @@
 /*
  * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -37,6 +37,21 @@ public interface StyleParameter
 	 *            the configuration to apply this parameter to.
 	 */
 	void configure( StyleConfiguration configuration );
+
+    final class GraphLabel implements StyleParameter
+    {
+        private final String label;
+
+        public GraphLabel( String label )
+        {
+            this.label = label;
+        }
+
+        public void configure( StyleConfiguration configuration )
+        {
+            configuration.setGraphProperty( "label", label );
+        }
+    }
 
 	/** Configure the font of nodes. */
 	final class NodeFont implements StyleParameter
@@ -148,10 +163,18 @@ public interface StyleParameter
 				public String getParameterValue( Relationship relationship,
 				    String key )
 				{
-					return getColor( relationship );
+                    if ( key == "color" )
+                    {
+                        return getColor( relationship );
+                    }
+                    else
+                    {
+                        return getFontColor( relationship );
+                    }
 				}
 			};
-			configuration.setRelationshipParameterGetter( "color", getter );
+            configuration.setRelationshipParameterGetter( "color", getter );
+            configuration.setRelationshipParameterGetter( "fontcolor", getter );
 		}
 
 		/**
@@ -162,7 +185,7 @@ public interface StyleParameter
 		 */
 		protected String getFontColor( Relationship relationship )
 		{
-			return null;
+            return getColor( relationship );
 		}
 
 		/**
@@ -222,7 +245,7 @@ public interface StyleParameter
 		 */
 		protected String getFontColor( RelationshipType type )
 		{
-			return null;
+            return getColor( type );
 		}
 
 		/**
@@ -271,7 +294,7 @@ public interface StyleParameter
 		 */
 		protected String getFontColor( Node node )
 		{
-			return null;
+            return getColor( node );
 		}
 
 		/**
@@ -290,7 +313,10 @@ public interface StyleParameter
 		 *            the node to get the color for.
 		 * @return the name of the color for the node.
 		 */
-		protected abstract String getFillColor( Node node );
+        protected String getFillColor( Node node )
+        {
+            return null;
+        }
 	}
 	/** Add a custom title to nodes. */
 	abstract class NodeTitle implements StyleParameter, TitleGetter<Node>

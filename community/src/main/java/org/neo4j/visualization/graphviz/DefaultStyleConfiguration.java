@@ -1,16 +1,16 @@
 /*
  * Copyright 2008 Network Engine for Objects in Lund AB [neotechnology.com]
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -35,12 +35,15 @@ class DefaultStyleConfiguration implements StyleConfiguration
 		    GraphStyle.header().nodeHeader );
 		this.edgeHeader = new HashMap<String, String>(
 		    GraphStyle.header().edgeHeader );
+		this.header = new HashMap<String, String>(
+		    GraphStyle.header().graphHeader );
 		for ( StyleParameter parameter : parameters )
 		{
 			parameter.configure( this );
 		}
 	}
 
+	private final Map<String, String> header;
 	private final Map<String, String> nodeHeader;
 	private final Map<String, String> edgeHeader;
 	private final Map<String, ParameterGetter<? super Node>> nodeParams = new HashMap<String, ParameterGetter<? super Node>>();
@@ -51,6 +54,11 @@ class DefaultStyleConfiguration implements StyleConfiguration
 	private TitleGetter<? super Relationship> edgeTitle = null;
 	private PropertyFormatter nodeFormat = null;
 	private PropertyFormatter edgeFormat = null;
+
+    void emitHeader( Appendable stream ) throws IOException
+    {
+        GraphStyle.emitHeader( stream, header );
+    }
 
 	void emitHeaderNode( Appendable stream ) throws IOException
 	{
@@ -160,6 +168,11 @@ class DefaultStyleConfiguration implements StyleConfiguration
 			stream.append( key + " = " + PropertyType.format( value ) + " : "
 			    + type.typeName + "\\l" );
 		}
+	}
+
+    public void setGraphProperty( String property, String value )
+	{
+        header.put( property, value );
 	}
 
 	public void setDefaultNodeProperty( String property, String value )

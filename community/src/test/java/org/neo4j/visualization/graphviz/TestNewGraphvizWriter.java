@@ -16,7 +16,6 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.visualization.graphviz.GraphvizWriter;
 import org.neo4j.walk.Walker;
 
 public class TestNewGraphvizWriter
@@ -66,10 +65,9 @@ public class TestNewGraphvizWriter
 			    .createRelationshipTo( emil, type.WORKS_FOR );
 			OutputStream out = new ByteArrayOutputStream();
 			GraphvizWriter writer = new GraphvizWriter();
-			writer.emit( out, new Walker( emil.traverse( Order.DEPTH_FIRST,
-			    StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL,
-			    type.KNOWS, Direction.BOTH, type.WORKS_FOR, Direction.BOTH ),
-			    type.KNOWS, type.WORKS_FOR ) );
+            writer.emit( out, Walker.crosscut( emil.traverse( Order.DEPTH_FIRST,
+                    StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL, type.KNOWS,
+                    Direction.BOTH, type.WORKS_FOR, Direction.BOTH ), type.KNOWS, type.WORKS_FOR ) );
 			tx.success();
 			System.out.println( out.toString() );
 		}
