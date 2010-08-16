@@ -16,6 +16,7 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.HaCommunicationException;
+import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
@@ -139,7 +140,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
             this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                     CommonFactories.defaultLockManagerFactory(),
-                    CommonFactories.defaultIdGeneratorFactory(),
+                    new MasterIdGeneratorFactory(),
                     CommonFactories.defaultRelationshipTypeCreator(),
                     CommonFactories.defaultTxIdGeneratorFactory(),
                     CommonFactories.defaultTxRollbackHook(),
