@@ -579,6 +579,9 @@ public class XaLogicalLog
     private void renameCurrentLogFileAndIncrementVersion( String logFileName, 
         long endPosition ) throws IOException
     {
+        System.out.println( " ---- Performing clean close on " + logFileName + " -----" );
+        DumpLogicalLog.main( new String[] { logFileName } );
+        System.out.println( " ----- end ----" );
         File file = new File( logFileName );
         if ( !file.exists() )
         {
@@ -607,6 +610,9 @@ public class XaLogicalLog
                     "Failed to truncate log at correct size", e );
             }
         }
+        System.out.println( " ---- Created " + newName + " -----" );
+        DumpLogicalLog.main( new String[] { newName } );
+        System.out.println( " ----- end ----" );
     }
     
     private void deleteCurrentLogFile( String logFileName ) throws IOException
