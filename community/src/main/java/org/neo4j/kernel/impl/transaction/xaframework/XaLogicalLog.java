@@ -1104,12 +1104,17 @@ public class XaLogicalLog
             if ( entry != null )
             {
                 entry.setIdentifier( newXidIdentifier );
-                applyEntry( entry );
-            }
-            if ( entry != null )
-            {
-                entry.setIdentifier( newXidIdentifier );
-                LogIoUtils.writeLogEntry( entry, writeBuffer );
+                if ( entry instanceof LogEntry.Commit )
+                {
+                    // hack to get done record written after commit record
+                    LogIoUtils.writeLogEntry( entry, writeBuffer );
+                    applyEntry( entry );
+                }
+                else
+                {
+                    applyEntry( entry );
+                    LogIoUtils.writeLogEntry( entry, writeBuffer );
+                }
                 return true;
             }
             return false;
