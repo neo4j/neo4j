@@ -280,7 +280,7 @@ public class TestDynamicStore
         public ByteStore( String fileName, IdGeneratorFactory idGenerator )
         {
             super( fileName, MapUtil.map( "neo_store", fileName,
-                    IdGeneratorFactory.class, idGenerator ) );
+                    IdGeneratorFactory.class, idGenerator ), IdType.ARRAY_BLOCK );
         }
 
         public String getTypeAndVersionDescriptor()
@@ -298,12 +298,6 @@ public class TestDynamicStore
         public byte[] getBytes( int blockId )
         {
             return get( blockId );
-        }
-        
-        @Override
-        protected IdType getIdType()
-        {
-            return IdType.ARRAY_BLOCK;
         }
 
         // public char[] getChars( int blockId ) throws IOException

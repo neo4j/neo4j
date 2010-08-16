@@ -47,7 +47,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 
     public PropertyIndexStore( String fileName, Map<?,?> config )
     {
-        super( fileName, config );
+        super( fileName, config, IdType.PROPERTY_INDEX );
     }
 
 //    public PropertyIndexStore( String fileName )
@@ -378,11 +378,5 @@ public class PropertyIndexStore extends AbstractStore implements Store
         list.add( keyPropertyStore.getWindowPoolStats() );
         list.add( getWindowPoolStats() );
         return list;
-    }
-    
-    @Override
-    protected IdType getIdType()
-    {
-        return IdType.PROPERTY_INDEX;
     }
 }

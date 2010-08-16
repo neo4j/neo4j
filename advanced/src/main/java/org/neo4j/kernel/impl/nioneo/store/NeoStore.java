@@ -51,13 +51,14 @@ public class NeoStore extends AbstractStore
     private RelationshipStore relStore;
     private RelationshipTypeStore relTypeStore;
     private final LastCommittedTxIdSetter lastCommittedTxIdSetter;
+    private final IdGeneratorFactory idGeneratorFactory;
     private boolean isStarted;
     
     private final int REL_GRAB_SIZE;
 
     public NeoStore( Map<?,?> config )
     {
-        super( (String) config.get( "neo_store" ), config );
+        super( (String) config.get( "neo_store" ), config, IdType.NEOSTORE_BLOCK );
         if ( getConfig() != null )
         {
             String grabSize = (String) getConfig().get( "relationship_grab_size" );
@@ -76,6 +77,7 @@ public class NeoStore extends AbstractStore
         }
         lastCommittedTxIdSetter = (LastCommittedTxIdSetter)
                 config.get( LastCommittedTxIdSetter.class );
+        idGeneratorFactory = (IdGeneratorFactory) config.get( IdGeneratorFactory.class );
     }
 
 //    public NeoStore( String fileName )
@@ -91,7 +93,7 @@ public class NeoStore extends AbstractStore
     protected void initStorage()
     {
         relTypeStore = new RelationshipTypeStore( getStorageFileName()
-            + ".relationshiptypestore.db", getConfig() );
+            + ".relationshiptypestore.db", getConfig(), IdType.RELATIONSHIP_TYPE );
         propStore = new PropertyStore( getStorageFileName()
             + ".propertystore.db", getConfig() );
         relStore = new RelationshipStore( getStorageFileName()
@@ -144,6 +146,11 @@ public class NeoStore extends AbstractStore
     public String getTypeAndVersionDescriptor()
     {
         return VERSION;
+    }
+    
+    public IdGeneratorFactory getIdGeneratorFactory()
+    {
+        return idGeneratorFactory;
     }
 
     public int getRecordSize()
@@ -412,11 +419,5 @@ public class NeoStore extends AbstractStore
         list.addAll( relStore.getAllWindowPoolStats() );
         list.addAll( relTypeStore.getAllWindowPoolStats() );
         return list;
-    }
-    
-    @Override
-    protected IdType getIdType()
-    {
-        return IdType.NEOSTORE_BLOCK;
     }
 }

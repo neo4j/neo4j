@@ -46,7 +46,7 @@ public class RelationshipStore extends AbstractStore implements Store
      */
     public RelationshipStore( String fileName, Map<?,?> config )
     {
-        super( fileName, config );
+        super( fileName, config, IdType.RELATIONSHIP );
     }
 
     /**
@@ -272,11 +272,5 @@ public class RelationshipStore extends AbstractStore implements Store
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
         list.add( getWindowPoolStats() );
         return list;
-    }
-    
-    @Override
-    protected IdType getIdType()
-    {
-        return IdType.RELATIONSHIP;
     }
 }
