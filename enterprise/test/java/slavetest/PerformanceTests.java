@@ -10,11 +10,19 @@ public class PerformanceTests
         testJob( new CommonJobs.PerformanceIdAllocationJob( 100000 ) );
     }
     
+    @Test
+    public void createNodes() throws Exception
+    {
+        testJob( new CommonJobs.PerformanceCreateNodesJob( 10, 1000 ) );
+    }
+    
     private void testJob( Job<Void> job ) throws Exception
     {
         SingleJvmTesting single = new SingleJvmTesting();
         single.initializeDbs( 1 );
         time( "No HA", executeOnMaster( single, job ) );
+        single.shutdownDbs();
+        single.initializeDbs( 1 );
         time( "Single JVM HA", executeOnSlave( single, job ) );
         single.shutdownDbs();
         
