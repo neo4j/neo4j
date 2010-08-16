@@ -1057,6 +1057,11 @@ public class XaLogicalLog
         }
 
         long version = findLogContainingTxId( txId );
+        if ( version == -1 )
+        {
+            throw new RuntimeException( "txId:" + txId + " not found in any logical log " +
+            		"(starting at " + logVersion + " and searching backwards" );
+        }
         
         // extract transaction
         ReadableByteChannel log = getLogicalLogOrMyself( version );
