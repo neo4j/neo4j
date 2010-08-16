@@ -2,7 +2,10 @@ package org.neo4j.kernel.ha.zookeeper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -10,6 +13,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.neo4j.helpers.Pair;
 
 public class ZooClient implements Watcher
 {
@@ -145,7 +149,7 @@ public class ZooClient implements Watcher
 
     public void process( WatchedEvent event )
     {
-        System.out.println( "Got event: " + event );
+        System.out.println( new Date() + " Got event: " + event );
         if ( event.getState() == Watcher.Event.KeeperState.Expired )
         {
             System.out.println( "Instantiate new zoo keeper (session expired)" );
@@ -158,6 +162,7 @@ public class ZooClient implements Watcher
     {
         try
         {
+            Map<Integer, Pair<Integer, Long>> rawData = new HashMap<Integer, Pair<Integer,Long>>();
             String root = getRoot();
             List<String> children = zooKeeper.getChildren( root, false );
             int currentMasterId = -1;
@@ -174,6 +179,10 @@ public class ZooClient implements Watcher
                         null );
                     ByteBuffer buf = ByteBuffer.wrap( data );
                     long tx = buf.getLong();
+                    if ( rawData.put( id, new Pair<Integer, Long>( seq, tx ) ) != null )
+                    {
+                        System.out.println( "warning: " + id + " found more than once" );
+                    }
                     if ( tx >= highestTxId )
                     {
                         if ( tx > highestTxId || seq < lowestSeq )
@@ -193,6 +202,7 @@ public class ZooClient implements Watcher
                     }
                 }
             }
+            System.out.println( "getMaster: " + currentMasterId + " based on " + rawData );
             return currentMasterId;
         }
         catch ( KeeperException e )
