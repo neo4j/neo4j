@@ -39,6 +39,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.DumpLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
@@ -1521,6 +1522,7 @@ public class XaLogicalLog
     
     public synchronized void rotate() throws IOException
     {
+        new Exception().printStackTrace();
         xaTf.flushAll();
         String newLogFile = fileName + ".2";
         String currentLogFile = fileName + ".1";
@@ -1547,6 +1549,9 @@ public class XaLogicalLog
             throw new IOException( "Copy log file: " + oldCopy + 
                 " already exist" );
         }
+        System.out.println( " ---- Performing rotate on " + currentLogFile + " -----" );
+        DumpLogicalLog.main( new String[] { currentLogFile } );
+        System.out.println( " ----- end ----" );
         long endPosition = writeBuffer.getFileChannelPosition();
         writeBuffer.force();
         FileChannel newLog = new RandomAccessFile( 
