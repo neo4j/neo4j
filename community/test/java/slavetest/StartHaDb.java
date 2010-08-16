@@ -27,7 +27,8 @@ public class StartHaDb
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "1",
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( StartZooKeeperServer.ZOO_KEEPER_SERVERS, "," ),
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, toHaServerFormat( HA_SERVERS ),
-                "enable_remote_shell", "true" ) );
+                "enable_remote_shell", "true",
+                "keep_logical_logs", "true" ) );
 //        Runtime.getRuntime().addShutdownHook( new Thread()
 //        {
 //            public void run()
