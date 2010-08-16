@@ -1112,6 +1112,10 @@ public class XaLogicalLog
                 }
                 else
                 {
+                    if ( entry instanceof LogEntry.Start )
+                    {
+                        startEntry = (LogEntry.Start) entry;
+                    }
                     applyEntry( entry );
                     LogIoUtils.writeLogEntry( entry, writeBuffer );
                 }
