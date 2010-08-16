@@ -29,8 +29,42 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 
 public class LogIoUtils
 {
-    public static LogEntry.Start readTxStartEntry( ByteBuffer buf, 
-            ReadableByteChannel channel, long position ) throws IOException
+    
+    public static LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel, 
+            XaCommandFactory cf ) throws IOException
+    {
+        buffer.clear();
+        buffer.limit( 1 );
+        if ( channel.read( buffer ) != buffer.limit() )
+        {
+            // ok no more entries we're done
+            return null;
+        }
+        buffer.flip();
+        byte entry = buffer.get();
+        switch ( entry )
+        {
+            case LogEntry.TX_START:
+                return readTxStartEntry( buffer, channel );
+            case LogEntry.TX_PREPARE:
+                return readTxPrepareEntry( buffer, channel );
+            case LogEntry.TX_1P_COMMIT:
+                return readTxOnePhaseCommitEntry( buffer, channel );
+            case LogEntry.TX_2P_COMMIT:
+                return readTxTwoPhaseCommitEntry( buffer, channel );
+            case LogEntry.COMMAND:
+                return readTxCommandEntry( buffer, channel, cf );
+            case LogEntry.DONE:
+                return readTxDoneEntry( buffer, channel );
+            case LogEntry.EMPTY:
+                return null;
+            default:
+                throw new IOException( "Unknown entry[" + entry + "]" );
+        }
+    }
+    
+    private static LogEntry.Start readTxStartEntry( ByteBuffer buf, 
+            ReadableByteChannel channel ) throws IOException
     {
         buf.clear();
         buf.limit( 1 );
@@ -81,10 +115,10 @@ public class LogIoUtils
         int formatId = buf.getInt();
         // re-create the transaction
         Xid xid = new XidImpl( globalId, branchId, formatId );
-        return new LogEntry.Start( xid, identifier, position );
+        return new LogEntry.Start( xid, identifier, -1 );
     }
 
-    public static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf, 
+    private static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf, 
             ReadableByteChannel channel ) throws IOException
     {
         buf.clear();
@@ -98,7 +132,7 @@ public class LogIoUtils
         return new LogEntry.Prepare( identifier );
     }
     
-    public static LogEntry.OnePhaseCommit readTxOnePhaseCommit( ByteBuffer buf, 
+    private static LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( ByteBuffer buf, 
             ReadableByteChannel channel ) throws IOException
     {
         buf.clear();
@@ -113,7 +147,7 @@ public class LogIoUtils
         return new LogEntry.OnePhaseCommit( identifier, txId );
     }
     
-    public static LogEntry.Done readTxDoneEntry( ByteBuffer buf, 
+    private static LogEntry.Done readTxDoneEntry( ByteBuffer buf, 
             ReadableByteChannel channel ) throws IOException
     {
         buf.clear();
@@ -127,7 +161,7 @@ public class LogIoUtils
         return new LogEntry.Done( identifier );
     }
 
-    public static LogEntry.TwoPhaseCommit readTxTwoPhaseCommit( ByteBuffer buf, 
+    private static LogEntry.TwoPhaseCommit readTxTwoPhaseCommitEntry( ByteBuffer buf, 
             ReadableByteChannel channel ) throws IOException
     {
         buf.clear();
@@ -142,7 +176,7 @@ public class LogIoUtils
         return new LogEntry.TwoPhaseCommit( identifier, txId );
     }
     
-    public static LogEntry.Command readTxCommand( 
+    private static LogEntry.Command readTxCommandEntry( 
             ByteBuffer buf, ReadableByteChannel channel, XaCommandFactory cf ) 
         throws IOException
     {

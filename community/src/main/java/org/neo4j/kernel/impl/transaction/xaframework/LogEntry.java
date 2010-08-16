@@ -90,11 +90,11 @@ public abstract class LogEntry
         }
     }
     
-    public static class OnePhaseCommit extends LogEntry
+    public static abstract class Commit extends LogEntry
     {
         private final long txId;
         
-        OnePhaseCommit( int identifier, long txId )
+        Commit( int identifier, long txId )
         {
             super( identifier );
             this.txId = txId;
@@ -104,10 +104,18 @@ public abstract class LogEntry
         {
             return txId;
         }
-
+    }
+    
+    public static class OnePhaseCommit extends Commit
+    {
+        OnePhaseCommit( int identifier, long txId )
+        {
+            super( identifier, txId );
+        }
+        
         public String toString()
         {
-            return "1PC[" + getIdentifier() + ", txId=" + txId + "]";
+            return "1PC[" + getIdentifier() + ", txId=" + getTxId() + "]";
         }
     }
 
@@ -124,24 +132,16 @@ public abstract class LogEntry
         }
     }
 
-    public static class TwoPhaseCommit extends LogEntry
+    public static class TwoPhaseCommit extends Commit
     {
-        private final long txId;
-        
         TwoPhaseCommit( int identifier, long txId )
         {
-            super( identifier );
-            this.txId = txId;
+            super( identifier, txId );
         }
         
-        public long getTxId()
-        {
-            return txId;
-        }
-
         public String toString()
         {
-            return "2PC[" + getIdentifier() + ", txId=" + txId + "]";
+            return "2PC[" + getIdentifier() + ", txId=" + getTxId() + "]";
         }
     }
 
