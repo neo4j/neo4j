@@ -238,6 +238,7 @@ public class XaLogicalLog
         }
         else
         {
+            System.out.println( "close fix cleanKill () @ pos: " + writeBuffer.getFileChannelPosition() + " and endPos=" + file.length() );
             renameCurrentLogFileAndIncrementVersion( fileName, file.length() );
         }
     }
@@ -683,6 +684,7 @@ public class XaLogicalLog
         }
         else
         {
+            System.out.println( "close() @ pos: " + writeBuffer.getFileChannelPosition() + " and endPos=" + endPosition );
             renameCurrentLogFileAndIncrementVersion( fileName + "." + 
                 logWas, endPosition );
         }
@@ -1479,6 +1481,7 @@ public class XaLogicalLog
         }
         log.fine( "Logical log version: " + logVersion + 
             ", committing tx=" + nextTxId + ")" );
+        System.out.println( "applyTxWithoutTxId#start @ pos: " + writeBuffer.getFileChannelPosition() );
         long logEntriesFound = 0;
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
@@ -1492,6 +1495,7 @@ public class XaLogicalLog
         {
             throw new IOException( "Unable to find start entry" );
         }
+        System.out.println( "applyTxWithoutTxId#before 1PC @ pos: " + writeBuffer.getFileChannelPosition() );
         LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit( 
                 entry.getIdentifier(), nextTxId );
         LogIoUtils.writeLogEntry( commit, writeBuffer );
@@ -1511,11 +1515,13 @@ public class XaLogicalLog
 //        LogIoUtils.writeLogEntry( done, writeBuffer );
         // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
         log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
+        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
     
     public synchronized void applyTransaction( ReadableByteChannel byteChannel )
         throws IOException
     {
+        System.out.println( "applyFullTx#start @ pos: " + writeBuffer.getFileChannelPosition() );
         long logEntriesFound = 0;
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
@@ -1524,6 +1530,7 @@ public class XaLogicalLog
             logEntriesFound++;
         }
         byteChannel.close();
+        System.out.println( "applyFullTx#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
     
     public synchronized void rotate() throws IOException
