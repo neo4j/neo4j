@@ -43,7 +43,7 @@ public class NodeStore extends AbstractStore implements Store
      */
     public NodeStore( String fileName, Map<?,?> config )
     {
-        super( fileName, config );
+        super( fileName, config, IdType.NODE );
     }
 
     /**
@@ -225,11 +225,5 @@ public class NodeStore extends AbstractStore implements Store
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
         list.add( getWindowPoolStats() );
         return list;
-    }
-    
-    @Override
-    protected IdType getIdType()
-    {
-        return IdType.NODE;
     }
 }

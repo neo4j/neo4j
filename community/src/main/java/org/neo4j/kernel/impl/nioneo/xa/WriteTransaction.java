@@ -520,7 +520,7 @@ class WriteTransaction extends XaTransaction
             {
                 neoStore.setRecoveredStatus( false );   
             }
-            neoStore.updateIdGenerators();
+            neoStore.getIdGeneratorFactory().updateIdGenerators( neoStore );
             if ( !isRecovered() )
             {
                 lockReleaser.commit();

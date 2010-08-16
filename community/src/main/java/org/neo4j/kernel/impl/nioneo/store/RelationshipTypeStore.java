@@ -53,9 +53,9 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     /**
      * See {@link AbstractStore#AbstractStore(String, Map)}
      */
-    public RelationshipTypeStore( String fileName, Map<?,?> config )
+    public RelationshipTypeStore( String fileName, Map<?,?> config, IdType idType )
     {
-        super( fileName, config );
+        super( fileName, config, idType );
     }
 
     /**
@@ -128,7 +128,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         DynamicStringStore.createStore( fileName + ".names",
             TYPE_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_BLOCK );
         RelationshipTypeStore store = new RelationshipTypeStore(
-                fileName, config );
+                fileName, config, IdType.RELATIONSHIP_TYPE );
         store.close();
     }
 
@@ -454,11 +454,5 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         list.add( typeNameStore.getWindowPoolStats() );
         list.add( getWindowPoolStats() );
         return list;
-    }
-    
-    @Override
-    protected IdType getIdType()
-    {
-        return IdType.RELATIONSHIP_TYPE;
     }
 }

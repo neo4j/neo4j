@@ -1065,7 +1065,8 @@ public class XaLogicalLog
         log.close();
         
         writeOutLogEntryList( logEntryList, name, "temporary-tx-write-out-" + txId );
-        return new RandomAccessFile( name, "r" ).getChannel();
+        ReadableByteChannel result = new RandomAccessFile( name, "r" ).getChannel();
+        return result;
     }
 
     private ReadableByteChannel getLogicalLogOrMyself( long version ) throws IOException

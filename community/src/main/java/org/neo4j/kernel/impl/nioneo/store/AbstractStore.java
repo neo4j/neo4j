@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 /**
@@ -112,9 +113,9 @@ public abstract class AbstractStore extends CommonAbstractStore
         idGeneratorFactory.create( fileName + ".id" );
     }
 
-    public AbstractStore( String fileName, Map<?,?> config )
+    public AbstractStore( String fileName, Map<?,?> config, IdType idType )
     {
-        super( fileName, config );
+        super( fileName, config, idType );
     }
 
 //    public AbstractStore( String fileName )

@@ -32,12 +32,10 @@ public class DynamicStringStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "StringPropertyStore v0.9.5";
-    private final IdType idType;
     
     public DynamicStringStore( String fileName, Map<?,?> config, IdType idType )
     {
-        super( fileName, config );
-        this.idType = idType;
+        super( fileName, config, idType );
     }
 
 //    public DynamicStringStore( String fileName )
@@ -84,11 +82,5 @@ public class DynamicStringStore extends AbstractDynamicStore
             "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
-    }
-    
-    @Override
-    protected IdType getIdType()
-    {
-        return idType;
     }
 }

@@ -1,5 +1,6 @@
 package org.neo4j.kernel.impl.ha;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,5 +20,13 @@ public class TransactionStreams
     public Collection<Pair<String, TransactionStream>> getStreams()
     {
         return Collections.unmodifiableCollection( this.streams );
+    }
+    
+    public void close() throws IOException
+    {
+        for ( Pair<String, TransactionStream> stream : streams )
+        {
+            stream.other().close();
+        }
     }
 }

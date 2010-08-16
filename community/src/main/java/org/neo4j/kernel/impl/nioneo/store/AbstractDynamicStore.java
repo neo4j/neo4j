@@ -125,9 +125,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 
     private int blockSize;
 
-    public AbstractDynamicStore( String fileName, Map<?,?> config )
+    public AbstractDynamicStore( String fileName, Map<?,?> config, IdType idType )
     {
-        super( fileName, config );
+        super( fileName, config, idType );
     }
 
 //    public AbstractDynamicStore( String fileName )

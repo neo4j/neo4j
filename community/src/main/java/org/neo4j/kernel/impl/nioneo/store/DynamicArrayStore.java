@@ -60,9 +60,9 @@ class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
-    public DynamicArrayStore( String fileName, Map<?,?> config )
+    public DynamicArrayStore( String fileName, Map<?,?> config, IdType idType )
     {
-        super( fileName, config );
+        super( fileName, config, idType );
     }
 
 //    public DynamicArrayStore( String fileName )
@@ -564,11 +564,5 @@ class DynamicArrayStore extends AbstractDynamicStore
             "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
             " of Neo4j." );
-    }
-    
-    @Override
-    protected IdType getIdType()
-    {
-        return IdType.ARRAY_BLOCK;
     }
 }
