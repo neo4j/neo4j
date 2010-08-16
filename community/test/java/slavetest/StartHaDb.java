@@ -1,5 +1,6 @@
 package slavetest;
 
+import java.io.File;
 import java.util.Date;
 import java.util.Map;
 
@@ -10,6 +11,8 @@ import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 
 public class StartHaDb
 {
+    public static final File PATH = new File( "var/hadb" );
+    
     static final Map<Integer, String> HA_SERVERS = MapUtil.genericMap(
             "1", "172.16.2.33:5559",
             "2", "172.16.1.242:5559"
@@ -17,21 +20,21 @@ public class StartHaDb
     
     public static void main( String[] args ) throws Exception
     {
-        NeoStoreUtil store = new NeoStoreUtil( "var/hadb" );
+        NeoStoreUtil store = new NeoStoreUtil( PATH.getPath() );
         System.out.println( "Starting store: createTime=" + new Date( store.getCreationTime() ) + 
                 " identifier=" + store.getStoreId() + " last committed tx=" + store.getLastCommittedTx() );
-        final GraphDatabaseService db = new HighlyAvailableGraphDatabase( "var/hadb", MapUtil.stringMap(
+        final GraphDatabaseService db = new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "1",
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( StartZooKeeperServer.ZOO_KEEPER_SERVERS, "," ),
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, toHaServerFormat( HA_SERVERS ),
                 "enable_remote_shell", "true" ) );
-        Runtime.getRuntime().addShutdownHook( new Thread()
-        {
-            public void run()
-            {
-                db.shutdown();
-            }
-        } );
+//        Runtime.getRuntime().addShutdownHook( new Thread()
+//        {
+//            public void run()
+//            {
+//                db.shutdown();
+//            }
+//        } );
     }
     
     private static String toHaServerFormat( Map<Integer, String> haServers )
