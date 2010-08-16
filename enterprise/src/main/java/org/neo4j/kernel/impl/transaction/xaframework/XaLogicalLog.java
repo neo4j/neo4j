@@ -125,7 +125,7 @@ public class XaLogicalLog
             }
             else
             {
-                open( fileName + ".1" );
+                open( getLog1FileName() );
                 setActiveLog( LOG1 );
             }
         }
@@ -145,40 +145,34 @@ public class XaLogicalLog
             buf.flip();
             char c = buf.asCharBuffer().get();
             File copy = new File( fileName + ".copy" );
-            if ( copy.exists() )
-            {
-                if ( !copy.delete() )
-                {
-                    log.warning( "Unable to delete " + copy.getName() );
-                }
-            }
+            safeDeleteFile( copy );
             if ( c == CLEAN )
             {
                 // clean
-                String newLog = fileName + ".1";
+                String newLog = getLog1FileName();
                 File file = new File( newLog );
                 if ( file.exists() )
                 {
                     fixCleanKill( newLog );
                 }
-                file = new File( fileName + ".2" );
+                file = new File( getLog2FileName() );
                 if ( file.exists() )
                 {
-                    fixCleanKill( fileName + ".2" );
+                    fixCleanKill( file.getPath() );
                 }
                 open( newLog );
                 setActiveLog( LOG1 );
             }
             else if ( c == LOG1 )
             {
-                String newLog = fileName + ".1";
+                String newLog = getLog1FileName();
                 if ( !new File( newLog ).exists() )
                 {
                     throw new IllegalStateException( 
                         "Active marked as 1 but no " + newLog + " exist" );
                 }
                 currentLog = LOG1;
-                File otherLog = new File( fileName + ".2" );
+                File otherLog = new File( getLog2FileName() );
                 if ( otherLog.exists() )
                 {
                     if ( !otherLog.delete() )
@@ -190,13 +184,13 @@ public class XaLogicalLog
             }
             else if ( c == LOG2 )
             {
-                String newLog = fileName + ".2";
+                String newLog = getLog2FileName();
                 if ( !new File( newLog ).exists() )
                 {
                     throw new IllegalStateException( 
                         "Active marked as 2 but no " + newLog + " exist" );
                 }
-                File otherLog = new File( fileName + ".1" );
+                File otherLog = new File( getLog1FileName() );
                 if ( otherLog.exists() )
                 {
                     if ( !otherLog.delete() )
@@ -212,6 +206,12 @@ public class XaLogicalLog
                 throw new IllegalStateException( "Unknown active log: " + c );
             }
         }
+        
+        instantiateCorrectWriteBuffer();
+    }
+
+    private void instantiateCorrectWriteBuffer() throws IOException
+    {
         if ( !useMemoryMapped )
         {
             writeBuffer = new DirectMappedLogBuffer( fileChannel );
@@ -219,6 +219,17 @@ public class XaLogicalLog
         else
         {
             writeBuffer = new MemoryMappedLogBuffer( fileChannel );
+        }
+    }
+
+    private void safeDeleteFile( File file )
+    {
+        if ( file.exists() )
+        {
+            if ( !file.delete() )
+            {
+                log.warning( "Unable to delete " + file.getName() );
+            }
         }
     }
     
@@ -428,6 +439,10 @@ public class XaLogicalLog
         {
             applyDoneEntry( (LogEntry.Done ) entry );
         }
+        else
+        {
+            throw new RuntimeException( "Unrecognized log entry " + entry );
+        }
     }
     
     private void applyStartEntry( LogEntry.Start entry) throws IOException
@@ -571,7 +586,7 @@ public class XaLogicalLog
             throw new IOException( "Logical log[" + logFileName + 
                 "] not found" );
         }
-        String newName = fileName + ".v" + xaTf.getAndSetNewVersion();
+        String newName = getFileName( xaTf.getAndSetNewVersion() );
         File newFile = new File( newName );
         boolean renamed = FileUtils.renameFile( file, newFile );
         
@@ -670,15 +685,43 @@ public class XaLogicalLog
                 logWas, endPosition );
         }
     }
+    
+    private long[] readLogHeader( ByteBuffer buffer,
+            ReadableByteChannel channel, boolean strict ) throws IOException
+    {
+        buffer.clear();
+        buffer.limit( 16 );
+        if ( channel.read( buffer ) != 16 )
+        {
+            if ( strict )
+            {
+                throw new IOException( "Unable to read log version and last committed tx" );
+            }
+            return null;
+        }
+        buffer.flip();
+        return new long[] { buffer.getLong(), buffer.getLong() };
+    }
+    
+    private long[] readAndAssertLogHeader( ByteBuffer buffer,
+            ReadableByteChannel channel, long expectedVersion ) throws IOException
+    {
+        long[] header = readLogHeader( buffer, channel, true );
+        if ( header[0] != expectedVersion )
+        {
+            throw new IOException( "Wrong version in log. Expected " + expectedVersion +
+                    ", but got " + header[0] );
+        }
+        return header;
+    }
 
     private void doInternalRecovery( String logFileName ) throws IOException
     {
         log.info( "Non clean shutdown detected on log [" + logFileName + 
             "]. Recovery started ..." );
         // get log creation time
-        buffer.clear();
-        buffer.limit( 16 );
-        if ( fileChannel.read( buffer ) != 16 )
+        long[] header = readLogHeader( buffer, fileChannel, false );
+        if ( header == null )
         {
             log.info( "Unable to read timestamp information, "
                 + "no records in logical log." );
@@ -691,9 +734,8 @@ public class XaLogicalLog
                 "rw" ).getChannel();
             return;
         }
-        buffer.flip();
-        logVersion = buffer.getLong();
-        long lastCommittedTx = buffer.getLong();
+        logVersion = header[0];
+        long lastCommittedTx = header[1];
         previousLogLastCommittedTx = lastCommittedTx;
         log.fine( "Logical log version: " + logVersion + " with committed tx[" +
             lastCommittedTx + "]" );
@@ -798,7 +840,7 @@ public class XaLogicalLog
 
     public ReadableByteChannel getLogicalLog( long version ) throws IOException
     {
-        String name = fileName + ".v" + version;
+        String name = getFileName( version );
         if ( !new File( name ).exists() )
         {
             throw new IOException( "No such log version:" + version );
@@ -809,9 +851,7 @@ public class XaLogicalLog
     private List<LogEntry> extractPreparedTransactionFromLog( long identifier, 
             ReadableByteChannel log ) throws IOException
     {
-        buffer.clear();
-        buffer.limit( 16 );
-        log.read( buffer );
+        readLogHeader( buffer, log, false );
         List<LogEntry> logEntryList = new ArrayList<LogEntry>();
         LogEntry entry;
         while ( (entry = LogIoUtils.readEntry( buffer, log, cf )) != null )
@@ -840,13 +880,8 @@ public class XaLogicalLog
     private List<LogEntry> extractTransactionFromLog( long txId, 
             long expectedVersion, ReadableByteChannel log ) throws IOException
     {
-        buffer.clear();
-        buffer.limit( 16 );
-        log.read( buffer );
-        buffer.flip();
-        long versionInLog = buffer.getLong();
-        assertExpectedVersion( expectedVersion, versionInLog );
-        long prevTxId = buffer.getLong();
+        long[] header = readAndAssertLogHeader( buffer, log, expectedVersion );
+        long prevTxId = header[1];
         assertLogCanContainTx( txId, prevTxId );
         List<LogEntry> logEntryList = null;
         Map<Integer,List<LogEntry>> transactions = 
@@ -904,16 +939,6 @@ public class XaLogicalLog
         }
     }
 
-    private void assertExpectedVersion( long expectedVersion, long versionInLog )
-            throws IOException
-    {
-        if ( versionInLog != expectedVersion )
-        {
-            throw new IOException( "Expected version " + expectedVersion + 
-                    " but got " + versionInLog );
-        }
-    }
-    
     private String generateUniqueName( String baseName )
     {
         String tmpName = baseName + "-" + System.currentTimeMillis();
@@ -998,8 +1023,7 @@ public class XaLogicalLog
         }
         else if ( version == logVersion )
         {
-            String currentLogName = 
-                fileName + (currentLog == LOG1 ? ".1" : ".2" );
+            String currentLogName = getCurrentLogFileName();
             return new RandomAccessFile( currentLogName, "r" ).getChannel();
         }
         else
@@ -1007,6 +1031,11 @@ public class XaLogicalLog
             throw new RuntimeException( "Version[" + version + 
                     "] is higher then current log version[" + logVersion + "]" );
         }
+    }
+    
+    private String getCurrentLogFileName()
+    {
+        return currentLog == LOG1 ? getLog1FileName() : getLog2FileName();
     }
 
     private long findLogContainingTxId( long txId ) throws IOException
@@ -1017,19 +1046,8 @@ public class XaLogicalLog
         {
             ReadableByteChannel log = getLogicalLogOrMyself( version );
             ByteBuffer buf = ByteBuffer.allocate( 16 );
-            if ( log.read( buf ) != 16 )
-            {
-                throw new IOException( "Unable to read log version " + 
-                        version );
-            }
-            buf.flip();
-            long readVersion = buf.getLong();
-            if ( readVersion != version )
-            {
-                throw new IOException( "Got " + readVersion + 
-                        " from log when expecting " + version );
-            }
-            committedTx = buf.getLong();
+            long[] header = readAndAssertLogHeader( buf, log, version );
+            committedTx = header[1];
             log.close();
             if ( committedTx <= txId )
             {
@@ -1042,30 +1060,19 @@ public class XaLogicalLog
     
     public long getLogicalLogLength( long version )
     {
-        String name = fileName + ".v" + version;
-        File file = new File( name );
-        if ( !file.exists() )
-        {
-            return -1;
-        }
-        return file.length();
+        File file = new File( getFileName( version ) );
+        return file.exists() ? file.length() : -1;
     }
     
     public boolean hasLogicalLog( long version )
     {
-        String name = fileName + ".v" + version;
-        return new File( name ).exists();
+        return new File( getFileName( version ) ).exists();
     }
     
     public boolean deleteLogicalLog( long version )
     {
-        String name = fileName + ".v" + version;
-        File file = new File(name );
-        if ( file.exists() )
-        {
-            return FileUtils.deleteFile( file );
-        }
-        return false;
+        File file = new File(getFileName( version ) );
+        return file.exists() ? FileUtils.deleteFile( file ) : false;
     }
     
     public void makeBackupSlave()
@@ -1137,15 +1144,9 @@ public class XaLogicalLog
         {
             throw new IllegalStateException( "There are active transactions" );
         }
-        buffer.clear();
-        buffer.limit( 16 );
-        if ( byteChannel.read( buffer ) != 16 )
-        {
-            throw new IOException( "Unable to read log version" );
-        }
-        buffer.flip();
-        logVersion = buffer.getLong();
-        long previousCommittedTx = buffer.getLong();
+        long[] header = readLogHeader( buffer, byteChannel, true );
+        logVersion = header[0];
+        long previousCommittedTx = header[1];
         if ( logVersion != xaTf.getCurrentVersion() )
         {
             throw new IllegalStateException( "Tried to apply version " + 
@@ -1231,34 +1232,36 @@ public class XaLogicalLog
 //        System.out.println( "applyFullTx#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
     
+    private String getLog1FileName()
+    {
+        return fileName + ".1";
+    }
+    
+    private String getLog2FileName()
+    {
+        return fileName + ".2";
+    }
+    
     public synchronized void rotate() throws IOException
     {
         xaTf.flushAll();
-        String newLogFile = fileName + ".2";
-        String currentLogFile = fileName + ".1";
+        String newLogFile = getLog2FileName();
+        String currentLogFile = getLog1FileName();
         char newActiveLog = LOG2;
         long currentVersion = xaTf.getCurrentVersion();
-        String oldCopy = fileName + ".v" + currentVersion;
+        String oldCopy = getFileName( currentVersion );
         if ( currentLog == CLEAN || currentLog == LOG2 )
         {
             newActiveLog = LOG1;
-            newLogFile = fileName + ".1";
-            currentLogFile = fileName + ".2";
+            newLogFile = getLog1FileName();
+            currentLogFile = getLog2FileName();
         }
         else
         {
             assert currentLog == LOG1;
         }
-        if ( new File( newLogFile ).exists() )
-        {
-            throw new IOException( "New log file: " + newLogFile + 
-                " already exist" );
-        }
-        if ( new File( oldCopy ).exists() )
-        {
-            throw new IOException( "Copy log file: " + oldCopy + 
-                " already exist" );
-        }
+        assertFileDoesntExist( newLogFile, "New log file" );
+        assertFileDoesntExist( oldCopy, "Copy log file" );
 //        System.out.println( " ---- Performing rotate on " + currentLogFile + " -----" );
 //        DumpLogicalLog.main( new String[] { currentLogFile } );
 //        System.out.println( " ----- end ----" );
@@ -1276,19 +1279,7 @@ public class XaLogicalLog
             throw new IOException( "Unable to write log version to new" );
         }
         fileChannel.position( 0 );
-        buffer.clear();
-        buffer.limit( 16 );
-        if( fileChannel.read( buffer ) != 16 )
-        {
-            throw new IOException( "Verification of log version failed" );
-        }
-        buffer.flip();
-        long verification = buffer.getLong();
-        if ( verification != currentVersion )
-        {
-            throw new IOException( "Verification of log version failed, " + 
-                " expected " + currentVersion + " got " + verification );
-        }
+        long[] header =  readAndAssertLogHeader( buffer, fileChannel, currentVersion );
         if ( xidIdentMap.size() > 0 )
         {
             fileChannel.position( getFirstStartEntry( endPosition ) );
@@ -1324,13 +1315,14 @@ public class XaLogicalLog
             throw new IOException( "version change failed" );
         }
         fileChannel = newLog;
-        if ( !useMemoryMapped )
+        instantiateCorrectWriteBuffer();
+    }
+
+    private void assertFileDoesntExist( String file, String description ) throws IOException
+    {
+        if ( new File( file ).exists() )
         {
-            writeBuffer = new DirectMappedLogBuffer( fileChannel );
-        }
-        else
-        {
-            writeBuffer = new MemoryMappedLogBuffer( fileChannel );
+            throw new IOException( description + ": " + file + " already exist" );
         }
     }
     
@@ -1373,6 +1365,7 @@ public class XaLogicalLog
         fc.close();
         currentLog = c;
     }
+    
     public void setKeepLogs( boolean keep )
     {
         this.keepLogs = keep;
