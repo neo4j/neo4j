@@ -69,7 +69,7 @@ public class PropertyStore extends AbstractStore implements Store
     protected void initStorage()
     {
         stringPropertyStore = new DynamicStringStore( getStorageFileName()
-            + ".strings", getConfig() );
+            + ".strings", getConfig(), IdType.STRING_BLOCK );
         propertyIndexStore = new PropertyIndexStore( getStorageFileName()
             + ".index", getConfig() );
         arrayPropertyStore = new DynamicArrayStore( getStorageFileName()

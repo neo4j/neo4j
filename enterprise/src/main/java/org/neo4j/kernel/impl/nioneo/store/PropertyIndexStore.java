@@ -58,7 +58,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
     protected void initStorage()
     {
         keyPropertyStore = new DynamicStringStore( getStorageFileName()
-            + ".keys", getConfig() );
+            + ".keys", getConfig(), IdType.PROPERTY_INDEX_BLOCK );
     }
 
     public String getTypeAndVersionDescriptor()
