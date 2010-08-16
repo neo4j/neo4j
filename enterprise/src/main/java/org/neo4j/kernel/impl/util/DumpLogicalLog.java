@@ -75,52 +75,13 @@ public class DumpLogicalLog
     private static boolean readEntry( FileChannel channel, ByteBuffer buf, 
             XaCommandFactory cf ) throws IOException
     {
-        buf.clear();
-        buf.limit( 1 );
-        if ( channel.read( buf ) != buf.limit() )
+        LogEntry entry = LogIoUtils.readEntry( buf, channel, cf );
+        if ( entry != null )
         {
-            // ok no more entries we're done
-            return false;
+            System.out.println( entry.toString() );
+            return true;
         }
-        buf.flip();
-        byte byteEntry = buf.get();
-        LogEntry entry;
-        switch ( byteEntry )
-        {
-            case LogEntry.TX_START:
-                long position = channel.position();
-                entry = LogIoUtils.readTxStartEntry( buf, channel, position );
-                System.out.println( "Start: " + entry );
-                return entry != null;
-            case LogEntry.TX_PREPARE:
-                entry = LogIoUtils.readTxPrepareEntry( buf, channel );
-                System.out.println( "Prepare: " + entry );
-                return entry != null;
-            case LogEntry.TX_1P_COMMIT:
-                entry = LogIoUtils.readTxOnePhaseCommit( buf, channel );
-                System.out.println( "1PC: " + entry );
-                return entry != null;
-            case LogEntry.TX_2P_COMMIT:
-                entry = LogIoUtils.readTxTwoPhaseCommit( buf, channel );
-                System.out.println( "2PC: " + entry );
-                return entry != null;
-            case LogEntry.COMMAND:
-                entry = LogIoUtils.readTxCommand( buf, channel, cf );
-                System.out.println( "Command: " + entry );
-                return entry != null;
-            case LogEntry.DONE:
-                entry = LogIoUtils.readTxDoneEntry( buf, channel );
-                System.out.println( "Done: " + entry );
-                return entry != null;
-            case LogEntry.EMPTY:
-                position = channel.position();
-                System.out.println( "Empty @ position " + position );
-                channel.position( channel.position() - 1 );
-                return false;
-            default:
-                throw new IOException( "Internal recovery failed, "
-                    + "unknown log entry[" + byteEntry + "]" );
-        }
+        return false;
     }
     
     private static class CommandFactory extends XaCommandFactory
