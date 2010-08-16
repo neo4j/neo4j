@@ -38,7 +38,6 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.DumpLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
