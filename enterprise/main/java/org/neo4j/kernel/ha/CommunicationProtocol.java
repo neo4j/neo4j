@@ -216,6 +216,7 @@ abstract class CommunicationProtocol
             writeString( buffer, streamPair.first() );
             writeTransactionStream( buffer, streamPair.other() );
         }
+        txStreams.close();
     }
 
     protected static TransactionStreams readTransactionStreams( ChannelBuffer buffer )
@@ -256,7 +257,6 @@ abstract class CommunicationProtocol
             buffer.readBytes( data );
             channels[i] = new ByteArrayChannel( data );
         }
-        // TODO Auto-generated method stub
         return new TransactionStream( Arrays.asList( channels ) );
     }
 

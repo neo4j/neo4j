@@ -279,6 +279,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 for ( ReadableByteChannel channel : streams.other().getChannels() )
                 {
                     dataSource.applyCommittedTransaction( channel );
+                    channel.close();
                 }
             }
             return response.response();
