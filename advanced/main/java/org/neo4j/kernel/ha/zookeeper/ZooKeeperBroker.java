@@ -40,7 +40,9 @@ public class ZooKeeperBroker implements Broker
         int masterId = zooClient.getMaster();
         if ( masterId == machineId )
         {
-            throw new RuntimeException( "I am master" );
+            throw new ZooKeeperException( "I am master, so can't call getMaster() here",
+                    new Exception() );
+//            throw new RuntimeException( "I am master" );
         }
         return getAndCacheMaster( masterId );
     }
