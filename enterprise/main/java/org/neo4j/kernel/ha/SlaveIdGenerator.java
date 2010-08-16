@@ -13,6 +13,7 @@ import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.IdAllocation;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class SlaveIdGenerator implements IdGenerator
 {
@@ -48,6 +49,11 @@ public class SlaveIdGenerator implements IdGenerator
         public IdGenerator get( IdType idType )
         {
             return generators.get( idType );
+        }
+        
+        public void updateIdGenerators( NeoStore store )
+        {
+            store.updateIdGenerators();
         }
     };
     
