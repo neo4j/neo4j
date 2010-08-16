@@ -84,7 +84,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     protected void initStorage()
     {
         typeNameStore = new DynamicStringStore(
-            getStorageFileName() + ".names", getConfig() );
+            getStorageFileName() + ".names", getConfig(), IdType.RELATIONSHIP_TYPE_BLOCK );
     }
 
     @Override

@@ -32,10 +32,12 @@ public class DynamicStringStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "StringPropertyStore v0.9.5";
-
-    public DynamicStringStore( String fileName, Map<?,?> config )
+    private final IdType idType;
+    
+    public DynamicStringStore( String fileName, Map<?,?> config, IdType idType )
     {
         super( fileName, config );
+        this.idType = idType;
     }
 
 //    public DynamicStringStore( String fileName )
@@ -87,6 +89,6 @@ public class DynamicStringStore extends AbstractDynamicStore
     @Override
     protected IdType getIdType()
     {
-        return IdType.STRING_BLOCK;
+        return idType;
     }
 }
