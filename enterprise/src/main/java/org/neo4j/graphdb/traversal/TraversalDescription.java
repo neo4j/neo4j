@@ -6,6 +6,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.Uniqueness;
 
 /**
  * Represents a description of a traversal. This interface describes the rules
@@ -33,23 +34,26 @@ import org.neo4j.helpers.Predicate;
 public interface TraversalDescription
 {
     /**
-     * Sets the {@link Uniqueness} to use.
+     * Sets the {@link UniquenessFactory} for creating the
+     * {@link UniquenessFilter} to use.
      *
-     * @param uniqueness the {@link Uniqueness} to use.
+     * @param uniqueness the {@link UniquenessFactory} the creator
+     * of the desired {@link UniquenessFilter} to use.
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription uniqueness( Uniqueness uniqueness );
+    TraversalDescription uniqueness( UniquenessFactory uniqueness );
 
     /**
-     * Sets the {@link Uniqueness} to use. It also accepts an extra parameter
-     * which is obligatory for certain uniqueness's, f.ex
+     * Sets the {@link UniquenessFactory} for creating the
+     * {@link UniquenessFilter} to use. It also accepts an extra parameter
+     * which is mandatory for certain uniqueness's, f.ex
      * {@link Uniqueness#NODE_RECENT}.
      *
-     * @param uniqueness the {@link Uniqueness} to use.
-     * @param parameter the extra parameter to go with the uniqueness.
+     * @param uniqueness the {@link UniquenessFactory} the creator
+     * of the desired {@link UniquenessFilter} to use.
      * @return a new traversal description with the new modifications.
      */
-    TraversalDescription uniqueness( Uniqueness uniqueness, Object parameter );
+    TraversalDescription uniqueness( UniquenessFactory uniqueness, Object parameter );
 
     /**
      * Adds {@code pruning} to the list of {@link PruneEvaluator}s which

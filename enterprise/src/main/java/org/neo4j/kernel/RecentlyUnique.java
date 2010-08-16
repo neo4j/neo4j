@@ -1,8 +1,9 @@
-package org.neo4j.kernel.impl.traversal;
+package org.neo4j.kernel;
 
+import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.kernel.impl.cache.LruCache;
 
-class RecentlyUnique extends UniquenessFilter
+class RecentlyUnique extends AbstractUniquenessFilter
 {
     private static final Object PLACE_HOLDER = new Object();
     private static final int DEFAULT_RECENT_SIZE = 10000; 
@@ -17,9 +18,9 @@ class RecentlyUnique extends UniquenessFilter
                 ((Number) parameter).intValue(), null );
     }
 
-    @Override
-    boolean check( long id, boolean remember )
+    public boolean check( TraversalBranch branch, boolean remember )
     {
+        long id = type.getId( branch );
         boolean add = recentlyVisited.get( id ) == null;
         if ( add&remember )
         {

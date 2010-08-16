@@ -9,6 +9,7 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.Traversal;
 
 public class TestMultiRelTypesAndDirections extends AbstractTestBase
 {
@@ -23,13 +24,13 @@ public class TestMultiRelTypesAndDirections extends AbstractTestBase
     @Test
     public void testCIsReturnedOnDepthTwoDepthFirst()
     {
-        testCIsReturnedOnDepthTwo( new TraversalDescriptionImpl().depthFirst() );
+        testCIsReturnedOnDepthTwo( Traversal.description().depthFirst() );
     }
 
     @Test
     public void testCIsReturnedOnDepthTwoBreadthFirst()
     {
-        testCIsReturnedOnDepthTwo( new TraversalDescriptionImpl().breadthFirst() );
+        testCIsReturnedOnDepthTwo( Traversal.description().breadthFirst() );
     }
 
     private void testCIsReturnedOnDepthTwo( TraversalDescription description )
