@@ -10,7 +10,7 @@ import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.kernel.impl.traversal.TraverserImpl.TraverserIterator;
 
-class ExpansionSourceImpl implements TraversalBranch
+class TraversalBranchImpl implements TraversalBranch
 {
     private final TraversalBranch parent;
     private final Node source;
@@ -24,7 +24,7 @@ class ExpansionSourceImpl implements TraversalBranch
     /*
      * For expansion sources for all nodes except the start node
      */
-    ExpansionSourceImpl( TraverserIterator traverser, TraversalBranch parent, int depth,
+    TraversalBranchImpl( TraverserIterator traverser, TraversalBranch parent, int depth,
             Node source, RelationshipExpander expander, Relationship toHere )
     {
         this.traverser = traverser;
@@ -38,7 +38,7 @@ class ExpansionSourceImpl implements TraversalBranch
     /*
      * For the start node expansion source
      */
-    ExpansionSourceImpl( TraverserIterator  traverser, Node source,
+    TraversalBranchImpl( TraverserIterator  traverser, Node source,
             RelationshipExpander expander )
     {
         this.traverser = traverser;
@@ -72,7 +72,7 @@ class ExpansionSourceImpl implements TraversalBranch
             }
             expandedCount++;
             Node node = relationship.getOtherNode( source );
-            TraversalBranch next = new ExpansionSourceImpl( traverser, this, depth + 1, node,
+            TraversalBranch next = new TraversalBranchImpl( traverser, this, depth + 1, node,
                     traverser.description.expander, relationship );
             if ( traverser.okToProceed( next ) )
             {
