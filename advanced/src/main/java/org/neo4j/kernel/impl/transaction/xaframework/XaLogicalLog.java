@@ -637,7 +637,7 @@ public class XaLogicalLog
         if ( writeBuffer != null )
         {
             writeBuffer.force();
-            writeBuffer = null;
+//            writeBuffer = null;
         }
         fileChannel.close();
         fileChannel = null;
@@ -656,7 +656,7 @@ public class XaLogicalLog
             log.info( "Close invoked with " + xidIdentMap.size() + 
                 " running transaction(s). " );
             writeBuffer.force();
-            writeBuffer = null;
+            // writeBuffer = null;
             fileChannel.close();
             log.info( "Dirty log: " + fileName + "." + currentLog + 
                 " now closed. Recovery will be started automatically next " + 
@@ -1210,22 +1210,22 @@ public class XaLogicalLog
             switch ( entry )
             {
                 case LogEntry.TX_START:
-                    readTxStartEntry();
+                    readTxStartEntry( -1 );
                     return true;
                 case LogEntry.TX_PREPARE:
-                    readTxPrepareEntry();
+                    readTxPrepareEntry( -1 );
                     return true;
                 case LogEntry.TX_1P_COMMIT:
-                    readAndApplyTxOnePhaseCommit();
+                    readAndApplyTxOnePhaseCommit( -1 );
                     return true;
                 case LogEntry.TX_2P_COMMIT:
-                    readAndApplyTxTwoPhaseCommit();
+                    readAndApplyTxTwoPhaseCommit( -1 );
                     return true;
                 case LogEntry.COMMAND:
-                    readCommandEntry();
+                    readCommandEntry( -1 );
                     return true;
                 case LogEntry.DONE:
-                    readDoneEntry();
+                    readDoneEntry( -1 );
                     return true;
                 case LogEntry.EMPTY:
                     return false;
@@ -1250,23 +1250,23 @@ public class XaLogicalLog
             switch ( entry )
             {
                 case LogEntry.TX_START:
-                    logEntry = readTxStartEntry();
+                    logEntry = readTxStartEntry( newXidIdentifier );
                     startEntry = (LogEntry.Start) logEntry;
                     break;
                 case LogEntry.TX_PREPARE:
-                    logEntry = readTxPrepareEntry();
+                    logEntry = readTxPrepareEntry( newXidIdentifier );
                     break;
                 case LogEntry.TX_1P_COMMIT:
-                    logEntry = readAndApplyTxOnePhaseCommit();
+                    logEntry = readAndApplyTxOnePhaseCommit( newXidIdentifier );
                     break;
                 case LogEntry.TX_2P_COMMIT:
-                    logEntry = readAndApplyTxTwoPhaseCommit();
+                    logEntry = readAndApplyTxTwoPhaseCommit( newXidIdentifier );
                     break;
                 case LogEntry.COMMAND:
-                    logEntry = readCommandEntry();
+                    logEntry = readCommandEntry( newXidIdentifier );
                     break;
                 case LogEntry.DONE:
-                    logEntry = readDoneEntry();
+                    logEntry = readDoneEntry( newXidIdentifier );
                     break;
                 case LogEntry.EMPTY:
                     break;
@@ -1283,18 +1283,19 @@ public class XaLogicalLog
             return false;
         }
         
-        private LogEntry readTxStartEntry() throws IOException
+        private LogEntry readTxStartEntry( int identifier ) throws IOException
         {
             // get the global id
             LogEntry.Start entry = LogIoUtils.readTxStartEntry( buffer, 
                     byteChannel, -1 );
+            identifier = setIdentifierForEntry( identifier, entry );
             if ( entry == null )
             {
                 throw new IOException( "Unable to read tx start entry" );
             }
             // re-create the transaction
             Xid xid = entry.getXid();
-            int identifier = entry.getIdentifier();
+//            int identifier = entry.getIdentifier();
             xidIdentMap.put( identifier, entry );
             XaTransaction xaTx = xaTf.create( identifier );
             xaTx.setRecovered();
@@ -1302,8 +1303,21 @@ public class XaLogicalLog
             xaRm.injectStart( xid, xaTx );
             return entry;
         }
+
+        private int setIdentifierForEntry( int identifier, LogEntry entry )
+        {
+            if ( identifier == -1 )
+            {
+                identifier = entry.getIdentifier();
+            }
+            else
+            {
+                entry.setIdentifier( identifier );
+            }
+            return identifier;
+        }
     
-        private LogEntry readTxPrepareEntry() throws IOException
+        private LogEntry readTxPrepareEntry( int identifier ) throws IOException
         {
             // get the tx identifier
             LogEntry.Prepare prepareEntry = 
@@ -1312,7 +1326,8 @@ public class XaLogicalLog
             {
                 throw new IOException( "Unable to read tx prepare entry" );
             }
-            int identifier = prepareEntry.getIdentifier();
+            identifier = setIdentifierForEntry( identifier, prepareEntry );
+//            int identifier = prepareEntry.getIdentifier();
             LogEntry.Start entry = xidIdentMap.get( identifier );
             if ( entry == null )
             {
@@ -1328,7 +1343,7 @@ public class XaLogicalLog
             return prepareEntry;
         }
 
-        private LogEntry readAndApplyTxOnePhaseCommit() throws IOException
+        private LogEntry readAndApplyTxOnePhaseCommit(int identifier) throws IOException
         {
             // get the tx identifier
             LogEntry.OnePhaseCommit commit = 
@@ -1337,7 +1352,7 @@ public class XaLogicalLog
             {
                 throw new IOException( "Unable to read tx 1PC entry" );
             }
-            int identifier = commit.getIdentifier();
+            identifier = setIdentifierForEntry( identifier, commit );
             long txId = commit.getTxId();
             LogEntry.Start entry = xidIdentMap.get( identifier );
             if ( entry == null )
@@ -1359,7 +1374,7 @@ public class XaLogicalLog
             return commit;
         }
 
-        private LogEntry readAndApplyTxTwoPhaseCommit() throws IOException
+        private LogEntry readAndApplyTxTwoPhaseCommit(int identifier) throws IOException
         {
             LogEntry.TwoPhaseCommit commit = 
                 LogIoUtils.readTxTwoPhaseCommit( buffer, byteChannel );
@@ -1367,7 +1382,7 @@ public class XaLogicalLog
             {
                 throw new IOException( "Unable to read tx 2PC entry" );
             }
-            int identifier = commit.getIdentifier();
+            identifier = setIdentifierForEntry( identifier, commit );
             long txId = commit.getTxId();
             LogEntry.Start entry = xidIdentMap.get( identifier );
             if ( entry == null )
@@ -1389,7 +1404,7 @@ public class XaLogicalLog
             return commit;
         }
 
-        private LogEntry readCommandEntry() throws IOException
+        private LogEntry readCommandEntry(int identifier) throws IOException
         {
             LogEntry.Command entry = 
                 LogIoUtils.readTxCommand( buffer, byteChannel, cf );
@@ -1397,7 +1412,7 @@ public class XaLogicalLog
             {
                 throw new IOException( "Unable to read tx command entry" );
             }
-            int identifier = entry.getIdentifier();
+            identifier = setIdentifierForEntry( identifier, entry );
             XaCommand command = entry.getXaCommand();
             command.setRecovered();
             XaTransaction xaTx = recoveredTxMap.get( identifier );
@@ -1405,7 +1420,7 @@ public class XaLogicalLog
             return entry;
         }
 
-        private LogEntry readDoneEntry() throws IOException
+        private LogEntry readDoneEntry(int identifier) throws IOException
         {
             LogEntry.Done done = 
                 LogIoUtils.readTxDoneEntry( buffer, byteChannel );
@@ -1414,7 +1429,7 @@ public class XaLogicalLog
                 // not throw exception?
                 return null;
             }
-            int identifier = done.getIdentifier();
+            identifier = setIdentifierForEntry( identifier, done );
             LogEntry.Start entry = xidIdentMap.get( identifier );
             if ( entry == null )
             {
@@ -1497,7 +1512,7 @@ public class XaLogicalLog
         }
         System.out.println( "applyTxWithoutTxId#before 1PC @ pos: " + writeBuffer.getFileChannelPosition() );
         LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit( 
-                entry.getIdentifier(), nextTxId );
+                xidIdent, nextTxId );
         LogIoUtils.writeLogEntry( commit, writeBuffer );
         Xid xid = entry.getXid();
         try
@@ -1535,7 +1550,6 @@ public class XaLogicalLog
     
     public synchronized void rotate() throws IOException
     {
-        new Exception().printStackTrace();
         xaTf.flushAll();
         String newLogFile = fileName + ".2";
         String currentLogFile = fileName + ".1";
