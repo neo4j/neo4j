@@ -37,7 +37,8 @@ public class ZooClient implements Watcher
         this.storeCreationTime = storeCreationTime;
         this.storeId = storeId;
         this.committedTx = committedTx;
-        sequenceNr = setup();
+        this.sequenceNr = "not initialized yet";
+//        sequenceNr = setup();
     }
     
     boolean isNewConnection()
@@ -134,6 +135,7 @@ public class ZooClient implements Watcher
             buf.putLong( committedTx );
             String created = zooKeeper.create( path, data, 
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
+            System.out.println( "wrote " + committedTx + " to zookeeper" );
             return created.substring( created.lastIndexOf( "_" ) + 1 );
         }
         catch ( KeeperException e )
@@ -152,8 +154,10 @@ public class ZooClient implements Watcher
         System.out.println( new Date() + " Got event: " + event );
         if ( event.getState() == Watcher.Event.KeeperState.Expired )
         {
-            System.out.println( "Instantiate new zoo keeper (session expired)" );
             instantiateZooKeeper();
+        }
+        else if ( event.getState() == Watcher.Event.KeeperState.SyncConnected )
+        {
             sequenceNr = setup();
         }
     }

@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -45,7 +46,8 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     private EmbeddedGraphDbImpl localGraph;
     private final int machineId;
     private MasterServer masterServer;
-
+    private AtomicBoolean reevaluatingMyself = new AtomicBoolean();
+    
     /**
      * Will instantiate its own ZooKeeper broker
      */
@@ -129,38 +131,56 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     
     protected void reevaluateMyself()
     {
-        boolean brokerSaysIAmMaster = brokerSaysIAmMaster();
-        boolean iAmCurrentlyMaster = masterServer != null;
-        if ( brokerSaysIAmMaster )
+        if ( !reevaluatingMyself.compareAndSet( false, true ) )
         {
-            if ( !iAmCurrentlyMaster )
-            {
-                shutdownIfStarted();
-            }
-            this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
-            this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
-                    CommonFactories.defaultLockManagerFactory(),
-                    new MasterIdGeneratorFactory(),
-                    CommonFactories.defaultRelationshipTypeCreator(),
-                    CommonFactories.defaultTxIdGeneratorFactory(),
-                    CommonFactories.defaultTxRollbackHook(),
-                    new ZooKeeperLastCommittedTxIdSetter( broker ) );
+            return;
         }
-        else
+                
+        try
         {
-            if ( iAmCurrentlyMaster )
+            boolean brokerSaysIAmMaster = brokerSaysIAmMaster();
+            boolean iAmCurrentlyMaster = masterServer != null;
+            if ( brokerSaysIAmMaster )
             {
-                shutdownIfStarted();
+                if ( !iAmCurrentlyMaster )
+                {
+                    shutdownIfStarted();
+                }
+                if ( this.localGraph == null )
+                {
+                    this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
+                    this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
+                            CommonFactories.defaultLockManagerFactory(),
+                            new MasterIdGeneratorFactory(),
+                            CommonFactories.defaultRelationshipTypeCreator(),
+                            CommonFactories.defaultTxIdGeneratorFactory(),
+                            CommonFactories.defaultTxRollbackHook(),
+                            new ZooKeeperLastCommittedTxIdSetter( broker ) );
+                }
             }
-            this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
-                    new SlaveLockManagerFactory( broker, this ),
-                    new SlaveIdGeneratorFactory( broker, this ),
-                    new SlaveRelationshipTypeCreator( broker, this ),
-                    new SlaveTxIdGeneratorFactory( broker, this ),
-                    new SlaveTxRollbackHook( broker, this ),
-                    new ZooKeeperLastCommittedTxIdSetter( broker ) );
+            else
+            {
+                if ( iAmCurrentlyMaster )
+                {
+                    shutdownIfStarted();
+                }
+                if ( this.localGraph == null )
+                {
+                    this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
+                            new SlaveLockManagerFactory( broker, this ),
+                            new SlaveIdGeneratorFactory( broker, this ),
+                            new SlaveRelationshipTypeCreator( broker, this ),
+                            new SlaveTxIdGeneratorFactory( broker, this ),
+                            new SlaveTxRollbackHook( broker, this ),
+                            new ZooKeeperLastCommittedTxIdSetter( broker ) );
+                }
+            }
+            this.localGraph.addShellApp( Pullupdates.class );
         }
-        this.localGraph.addShellApp( Pullupdates.class );
+        finally
+        {
+            reevaluatingMyself.set( false );
+        }
     }
 
     private boolean brokerSaysIAmMaster()
@@ -265,6 +285,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         {
             txs.put( dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
+        System.out.println( "Sending slaveContext:" + machineId + ", " + txs );
         return new SlaveContext( machineId, txs );
     }
 
@@ -294,6 +315,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     
     public void somethingIsWrong( Exception e )
     {
+        new Exception( "Something is wrong" ).printStackTrace();
         new Thread()
         {
             @Override
