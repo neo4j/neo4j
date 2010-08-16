@@ -494,7 +494,6 @@ public class PropertyStore extends AbstractStore implements Store
         if ( value instanceof String )
         {
             int stringBlockId = nextStringBlockId();
-            System.out.println( "string block id " + stringBlockId );
             record.setPropBlock( stringBlockId );
             String string = (String) value;
             int length = string.length();
