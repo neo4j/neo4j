@@ -118,6 +118,8 @@ public abstract class CommonAbstractStore
     private boolean readOnly = false;
     private boolean backupSlave = false;
 
+    private final IdType idType;
+
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
      * loading any configuration defined in <CODE>config</CODE>. After
@@ -138,10 +140,11 @@ public abstract class CommonAbstractStore
      * @throws IOException
      *             If store doesn't exist
      */
-    public CommonAbstractStore( String fileName, Map<?,?> config )
+    public CommonAbstractStore( String fileName, Map<?,?> config, IdType idType )
     {
         this.storageFileName = fileName;
         this.config = config;
+        this.idType = idType;
         if ( config != null )
         {
             String fileLock = (String) config.get( "grab_file_lock" );
@@ -532,8 +535,6 @@ public abstract class CommonAbstractStore
             DEFAULT_ID_GRAB_SIZE );
     }
     
-    protected abstract IdType getIdType();
-    
     protected IdGenerator openIdGenerator( String fileName, int grabSize )
     {
         return idGeneratorFactory.open( fileName, grabSize, getIdType(),
@@ -699,5 +700,10 @@ public abstract class CommonAbstractStore
     public WindowPoolStats getWindowPoolStats()
     {
         return windowPool.getStats();
+    }
+    
+    public IdType getIdType()
+    {
+        return idType;
     }
 }

@@ -54,7 +54,7 @@ public class PropertyStore extends AbstractStore implements Store
      */
     public PropertyStore( String fileName, Map<?,?> config )
     {
-        super( fileName, config );
+        super( fileName, config, IdType.PROPERTY );
     }
 
     /**
@@ -73,7 +73,7 @@ public class PropertyStore extends AbstractStore implements Store
         propertyIndexStore = new PropertyIndexStore( getStorageFileName()
             + ".index", getConfig() );
         arrayPropertyStore = new DynamicArrayStore( getStorageFileName()
-            + ".arrays", getConfig() );
+            + ".arrays", getConfig(), IdType.ARRAY_BLOCK );
     }
 
     @Override
@@ -494,6 +494,7 @@ public class PropertyStore extends AbstractStore implements Store
         if ( value instanceof String )
         {
             int stringBlockId = nextStringBlockId();
+            System.out.println( "string block id " + stringBlockId );
             record.setPropBlock( stringBlockId );
             String string = (String) value;
             int length = string.length();
@@ -689,11 +690,5 @@ public class PropertyStore extends AbstractStore implements Store
     public int getArrayBlockSize()
     {
         return arrayPropertyStore.getBlockSize();
-    }
-    
-    @Override
-    protected IdType getIdType()
-    {
-        return IdType.PROPERTY;
     }
 }
