@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 
@@ -28,7 +29,7 @@ public class StartHaDb
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( StartZooKeeperServer.ZOO_KEEPER_SERVERS, "," ),
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, toHaServerFormat( HA_SERVERS ),
                 "enable_remote_shell", "true",
-                "keep_logical_logs", "true" ) );
+                Config.KEEP_LOGICAL_LOGS, "true" ) );
 //        Runtime.getRuntime().addShutdownHook( new Thread()
 //        {
 //            public void run()
