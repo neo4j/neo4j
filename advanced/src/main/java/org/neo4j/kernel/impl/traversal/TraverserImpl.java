@@ -8,6 +8,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.graphdb.traversal.UniquenessFilter;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
@@ -68,39 +69,19 @@ class TraverserImpl implements Traverser
 
         TraverserIterator()
         {
-            PrimitiveTypeFetcher type = PrimitiveTypeFetcher.NODE;
             this.description = TraverserImpl.this.description;
-            switch ( description.uniqueness )
-            {
-            case RELATIONSHIP_GLOBAL:
-                type = PrimitiveTypeFetcher.RELATIONSHIP;
-            case NODE_GLOBAL:
-                this.uniquness = new GloballyUnique( type );
-                break;
-            case RELATIONSHIP_PATH:
-                type = PrimitiveTypeFetcher.RELATIONSHIP;
-            case NODE_PATH:
-                this.uniquness = new PathUnique( type );
-                break;
-            case RELATIONSHIP_RECENT:
-                type = PrimitiveTypeFetcher.RELATIONSHIP;
-            case NODE_RECENT:
-                this.uniquness = new RecentlyUnique( type,
-                        description.uniquenessParameter );
-                break;
-            case NONE:
-                this.uniquness = new NotUnique();
-                break;
-            default:
-                throw new IllegalArgumentException( "Unknown Uniquness "
-                                                    + description.uniqueness );
-            }
+            this.uniquness = description.uniqueness.create( description.uniquenessParameter );
             this.startNode = TraverserImpl.this.startNode;
             this.sourceSelector = description.branchSelector.create(
-                    new StartNodeExpansionSource( this, startNode,
+                    new StartNodeTraversalBranch( this, startNode,
                             description.expander ) );
         }
 
+        boolean okToProceedFirst( TraversalBranch source )
+        {
+            return this.uniquness.checkFirst( source );
+        }
+        
         boolean okToProceed( TraversalBranch source )
         {
             return this.uniquness.check( source, true );

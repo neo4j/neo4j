@@ -5,12 +5,12 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
-public final class FinalExpansionSource implements TraversalBranch
+public final class FinalTraversalBranch implements TraversalBranch
 {
     private final Node head;
     private final Relationship[] path;
 
-    public FinalExpansionSource( Node head, Relationship... path )
+    public FinalTraversalBranch( Node head, Relationship... path )
     {
         this.head = head;
         this.path = path;
@@ -23,7 +23,7 @@ public final class FinalExpansionSource implements TraversalBranch
     }
 
     /**
-     * Returns <code>null</code> since {@link FinalExpansionSource} does not
+     * Returns <code>null</code> since {@link FinalTraversalBranch} does not
      * expand.
      */
     public TraversalBranch next()
