@@ -6,9 +6,9 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
-import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.Traversal;
+import org.neo4j.kernel.Uniqueness;
 
 public class AllPaths implements PathFinder<Path>
 {
@@ -31,10 +31,8 @@ public class AllPaths implements PathFinder<Path>
             }
         };
 
-        return Traversal.description().expand(
-                expander ).depthFirst().filter( filter ).prune(
-                        Traversal.pruneAfterDepth( maxDepth ) ).uniqueness(
- uniqueness() ).traverse( start );
+        return Traversal.description().expand( expander ).depthFirst().filter( filter ).prune(
+                Traversal.pruneAfterDepth( maxDepth ) ).uniqueness( uniqueness() ).traverse( start );
     }
 
     protected Uniqueness uniqueness()

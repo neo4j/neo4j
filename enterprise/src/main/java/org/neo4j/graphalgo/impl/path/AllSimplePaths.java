@@ -1,7 +1,7 @@
 package org.neo4j.graphalgo.impl.path;
 
 import org.neo4j.graphdb.RelationshipExpander;
-import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.kernel.Uniqueness;
 
 public class AllSimplePaths extends AllPaths
 {
@@ -9,7 +9,7 @@ public class AllSimplePaths extends AllPaths
     {
         super( maxDepth, expander );
     }
-    
+
     @Override
     protected Uniqueness uniqueness()
     {
