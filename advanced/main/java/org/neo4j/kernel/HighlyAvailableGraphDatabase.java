@@ -315,7 +315,6 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     
     public void somethingIsWrong( Exception e )
     {
-        new Exception( "Something is wrong" ).printStackTrace();
         new Thread()
         {
             @Override
