@@ -3,6 +3,10 @@ package org.neo4j.helpers;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Arrays;
@@ -102,6 +106,29 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 public abstract class Service
 {
     /**
+     * Designates that a class implements the specified service and should be
+     * added to the services listings file (META-INF/services/[service-name]).
+     * 
+     * The annotation in itself does not provide any functionality for adding
+     * the implementation class to the services listings file. But it serves as
+     * a handle for an Annotation Processing Tool to utilize for performing that
+     * task.
+     *
+     * @author Tobias Ivarsson
+     */
+    @Target( ElementType.TYPE )
+    @Retention( RetentionPolicy.SOURCE )
+    public @interface Implementation
+    {
+        /**
+         * The service(s) this class implements.
+         *
+         * @return the services this class implements.
+         */
+        Class<?>[] value();
+    }
+
+    /**
      * A base class for services, similar to {@link Service}, that compares keys
      * using case insensitive comparison instead of exact comparison.
      *
@@ -142,6 +169,7 @@ public abstract class Service
     public static <T> Iterable<T> load( Class<T> type )
     {
         Iterable<T> loader;
+        if ( null != ( loader = osgiLoader( type ) ) ) return loader;
         if ( null != ( loader = java6Loader( type ) ) ) return loader;
         if ( null != ( loader = sunJava5Loader( type ) ) ) return loader;
         if ( null != ( loader = ourOwnLoader( type ) ) ) return loader;
@@ -163,7 +191,7 @@ public abstract class Service
             if ( impl.matches( key ) ) return impl;
         }
         throw new NoSuchElementException( String.format(
-                "Could not find any implementation of %s whith a key=\"%s\"",
+                "Could not find any implementation of %s with a key=\"%s\"",
                 type.getName(), key ) );
     }
 
@@ -229,6 +257,12 @@ public abstract class Service
                 };
             }
         };
+    }
+
+    private static <T> Iterable<T> osgiLoader( Class<T> type )
+    {
+        // TODO: implement loading services in an OSGi environment
+        return null;
     }
 
     private static <T> Iterable<T> java6Loader( Class<T> type )

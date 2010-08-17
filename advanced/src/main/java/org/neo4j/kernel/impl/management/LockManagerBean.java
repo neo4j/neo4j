@@ -9,7 +9,7 @@ class LockManagerBean extends Neo4jMBean implements LockManager
 {
     private final org.neo4j.kernel.impl.transaction.LockManager lockManager;
 
-    LockManagerBean( int instanceId, org.neo4j.kernel.impl.transaction.LockManager lockManager )
+    LockManagerBean( String instanceId, org.neo4j.kernel.impl.transaction.LockManager lockManager )
             throws NotCompliantMBeanException
     {
         super( instanceId, LockManager.class );
