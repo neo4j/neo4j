@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -35,6 +35,8 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -45,6 +47,7 @@ import org.neo4j.shell.ShellException;
 /**
  * Traverses the graph using {@link Traverser}.
  */
+@Service.Implementation( App.class )
 public class Trav extends GraphDatabaseApp
 {
     /**
@@ -77,7 +80,7 @@ public class Trav extends GraphDatabaseApp
             "the whole value" ) );
         this.addOptionDefinition( "c", OPTION_DEF_FOR_C );
     }
-    
+
     @Override
     public String getDescription()
     {
@@ -85,13 +88,13 @@ public class Trav extends GraphDatabaseApp
     		"It's a reflection of the neo4j traverser API with some options for filtering " +
     		"which nodes will be returned.";
     }
-    
+
     @Override
     protected String exec( AppCommandParser parser, Session session,
         Output out ) throws ShellException, RemoteException
     {
         assertCurrentIsNode( session );
-        
+
         Node node = this.getCurrent( session ).asNode();
         boolean caseInsensitiveFilters = parser.options().containsKey( "i" );
         boolean looseFilters = parser.options().containsKey( "l" );
@@ -102,12 +105,12 @@ public class Trav extends GraphDatabaseApp
             out.println( "No matching relationship types" );
             return null;
         }
-        
+
         StopEvaluator stopEvaluator = parseStopEvaluator( parser );
         ReturnableEvaluator returnableEvaluator =
             parseReturnableEvaluator( parser );
         Order order = parseOrder( parser );
-        
+
         String filterString = parser.options().get( "f" );
         Map<String, Object> filterMap = filterString != null ?
             parseFilter( filterString, out ) : null;
@@ -139,7 +142,7 @@ public class Trav extends GraphDatabaseApp
                         {
                             continue;
                         }
-                        
+
                         if ( matches( newPattern( filterKey,
                             caseInsensitiveFilters ), key,
                             caseInsensitiveFilters, looseFilters ) )
@@ -157,7 +160,7 @@ public class Trav extends GraphDatabaseApp
                         }
                     }
                 }
-                
+
                 if ( matchPerFilterKey.size() == filterMap.size() )
                 {
                     hit = true;
@@ -171,7 +174,7 @@ public class Trav extends GraphDatabaseApp
         }
         return null;
     }
-	
+
     private Order parseOrder( AppCommandParser parser )
     {
         return ( Order ) parseEnum( Order.class, parser.options().get( "o" ),
@@ -216,13 +219,13 @@ public class Trav extends GraphDatabaseApp
             {
             	allRelationshipTypes.add( type );
             }
-            
+
             for ( Map.Entry<String, Object> entry : map.entrySet() )
             {
                 String type = entry.getKey();
                 Direction direction = getDirection( ( String ) entry.getValue(),
                     Direction.BOTH );
-                
+
                 Pattern typePattern =
                     newPattern( type, caseInsensitiveFilters );
                 for ( RelationshipType relationshipType : allRelationshipTypes )

@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,9 +26,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.AppShellServer;
@@ -48,10 +47,7 @@ import org.neo4j.shell.apps.Alias;
 public abstract class AbstractAppServer extends AbstractServer
 	implements AppShellServer
 {
-	private Map<String, Class<? extends App>> apps =
-	    new TreeMap<String, Class<? extends App>>();
-	private Map<Class<? extends App>, App> appInstances =
-	    new HashMap<Class<? extends App>, App>();
+    private final Map<String, App> apps = new HashMap<String, App>();
 
 	/**
 	 * Constructs a new server.
@@ -61,54 +57,50 @@ public abstract class AbstractAppServer extends AbstractServer
 		throws RemoteException
 	{
 		super();
+        for ( App app : Service.load( App.class ) )
+        {
+            addApp( app );
+        }
 	}
 
-	public void addApp( Class<? extends App> appClass )
+    @Deprecated
+    public void addApp( Class<? extends App> appClass )
+    {
+        try
+        {
+            addApp( appClass.newInstance() );
+        }
+        catch ( Exception ignored )
+        {
+        }
+    }
+
+    private void addApp( App app )
+    {
+        apps.put( app.getName(), app );
+        try
+        {
+            ( (AbstractApp) app ).setServer( this );
+        }
+        catch ( Exception e )
+        {
+            // TODO It's OK, or is it?
+        }
+    }
+
+    public App findApp( String command )
 	{
-		this.apps.put( appClass.getSimpleName().toLowerCase(), appClass );
-	}
-	
-	/**
-	 * @return a list of the {@link App}s this server manages.
-	 */
-	public Set<Class<? extends App>> getApps()
-	{
-		return new TreeSet<Class<? extends App>>( this.apps.values() );
+        return apps.get( command );
 	}
 
-	public App findApp( String command )
-	{
-	    Class<? extends App> app = this.apps.get( command );
-	    if ( app == null )
-	    {
-	        return null;
-	    }
-	    
-	    App result = this.appInstances.get( app );
-	    if ( result == null )
-	    {
-    	    try
-            {
-                result = app.newInstance();
-                ( ( AbstractApp ) result ).setServer( this );
-                this.appInstances.put( app, result );
-            }
-            catch ( Exception e )
-            {
-                // TODO It's OK, or is it?
-            }
-	    }
-        return result;
-	}
-	
 	@Override
 	public void shutdown()
 	{
-	    for ( App app : this.appInstances.values() )
+	    for ( App app : this.apps.values() )
 	    {
 	        app.shutdown();
 	    }
-	    
+
 	    super.shutdown();
 	}
 
@@ -119,12 +111,12 @@ public abstract class AbstractAppServer extends AbstractServer
 		{
 			return "";
 		}
-		
+
         line = replaceAlias( line, session );
 		AppCommandParser parser = new AppCommandParser( this, line );
 		return parser.app().execute( parser, session, out );
 	}
-	
+
 	protected String replaceAlias( String line, Session session )
 	        throws ShellException
     {
@@ -151,7 +143,8 @@ public abstract class AbstractAppServer extends AbstractServer
 	{
 		return apps.keySet().toArray( new String[apps.size()] );
 	}
-    
+
+    @Override
     public TabCompletion tabComplete( String partOfLine, Session session )
             throws ShellException, RemoteException
     {

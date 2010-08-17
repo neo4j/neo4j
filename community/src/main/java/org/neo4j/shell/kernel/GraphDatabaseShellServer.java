@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -32,19 +32,7 @@ import org.neo4j.shell.SimpleAppServer;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.BashVariableInterpreter;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
-import org.neo4j.shell.kernel.apps.Cd;
 import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
-import org.neo4j.shell.kernel.apps.Gsh;
-import org.neo4j.shell.kernel.apps.Index;
-import org.neo4j.shell.kernel.apps.Jsh;
-import org.neo4j.shell.kernel.apps.Ls;
-import org.neo4j.shell.kernel.apps.Mkrel;
-import org.neo4j.shell.kernel.apps.Mv;
-import org.neo4j.shell.kernel.apps.Pwd;
-import org.neo4j.shell.kernel.apps.Rm;
-import org.neo4j.shell.kernel.apps.Rmrel;
-import org.neo4j.shell.kernel.apps.Set;
-import org.neo4j.shell.kernel.apps.Trav;
 
 /**
  * A {@link ShellServer} which contains common methods to use with a
@@ -64,7 +52,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         throws RemoteException
     {
         super();
-        addGraphDbApps();
+        // addGraphDbApps();
         this.graphDb = graphDb;
         this.bashInterpreter = new BashVariableInterpreter();
         this.bashInterpreter.addReplacer( "W", new WorkingDirReplacer() );
@@ -73,7 +61,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
             ".*name.*,.*title.*" );
         this.setProperty( AbstractClient.TITLE_MAX_LENGTH, "40" );
     }
-    
+
     protected String getShellPrompt()
     {
         String name = "neo4j-sh";
@@ -89,22 +77,6 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     public String welcome()
     {
         return "Welcome to the Neo4j Shell! Enter 'help' for a list of commands";
-    }
-    
-    private void addGraphDbApps()
-    {
-        addApp( Cd.class );
-        addApp( Gsh.class );
-        addApp( Jsh.class );
-        addApp( Ls.class );
-        addApp( Mkrel.class );
-        addApp( Mv.class );
-        addApp( Pwd.class );
-        addApp( Rm.class );
-        addApp( Rmrel.class );
-        addApp( Set.class );
-        addApp( Trav.class );
-        addApp( Index.class );
     }
 
     @Override

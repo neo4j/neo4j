@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -23,6 +23,8 @@ import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -33,6 +35,7 @@ import org.neo4j.shell.ShellException;
 /**
  * Sets a property for the current node or relationship.
  */
+@Service.Implementation( App.class )
 public class Set extends GraphDatabaseApp
 {
     private static class ValueTypeContext
@@ -41,7 +44,7 @@ public class Set extends GraphDatabaseApp
         private final Class<?> boxClass;
         private final Class<?> fundamentalArrayClass;
         private final Class<?> boxArrayClass;
-        
+
         ValueTypeContext( Class<?> fundamentalClass, Class<?> boxClass,
             Class<?> fundamentalArrayClass, Class<?> boxArrayClass )
         {
@@ -50,31 +53,31 @@ public class Set extends GraphDatabaseApp
             this.fundamentalArrayClass = fundamentalArrayClass;
             this.boxArrayClass = boxArrayClass;
         }
-        
+
         public String getName()
         {
             return fundamentalClass.equals( boxClass ) ?
                 boxClass.getSimpleName() : fundamentalClass.getSimpleName();
         }
-        
+
         public String getArrayName()
         {
             return getName() + "[]";
         }
     }
-    
+
     private static class ValueType
     {
         private final ValueTypeContext context;
         private final boolean isArray;
-        
+
         ValueType( ValueTypeContext context, boolean isArray )
         {
             this.context = context;
             this.isArray = isArray;
         }
     }
-    
+
     private static final Map<String, ValueType> NAME_TO_VALUE_TYPE =
         new HashMap<String, ValueType>();
     static
@@ -98,7 +101,7 @@ public class Set extends GraphDatabaseApp
         mapNameToValueType( new ValueTypeContext(
             String.class, String.class, String[].class, String[].class ) );
     }
-    
+
     private static final Map<Class<?>, String> VALUE_TYPE_TO_NAME =
         new HashMap<Class<?>, String>();
     static
@@ -117,7 +120,7 @@ public class Set extends GraphDatabaseApp
                 context.getArrayName() );
         }
     }
-    
+
     private static void mapNameToValueType( ValueTypeContext context )
     {
         NAME_TO_VALUE_TYPE.put( context.getName(),
@@ -125,7 +128,7 @@ public class Set extends GraphDatabaseApp
         NAME_TO_VALUE_TYPE.put( context.getArrayName(),
             new ValueType( context, true ) );
     }
-    
+
     /**
      * Constructs a new "set" application.
      */
@@ -147,7 +150,7 @@ public class Set extends GraphDatabaseApp
         return "Sets a property on the current node or relationship.\n" +
         	"Usage: set <key> <value>";
     }
-    
+
     protected static String getValueTypeName( Class<?> cls )
     {
         return VALUE_TYPE_TO_NAME.get( cls );
@@ -247,7 +250,7 @@ public class Set extends GraphDatabaseApp
         String type = parser.options().containsKey( "t" ) ?
             parser.options().get( "t" ) : String.class.getSimpleName();
         ValueType valueType = NAME_TO_VALUE_TYPE.get( type );
-        
+
         if ( valueType == null )
         {
             throw new ShellException( "Invalid value type '" + type + "'" );

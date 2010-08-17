@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.AppShellServer;
@@ -38,10 +39,11 @@ import org.neo4j.shell.impl.ClassLister;
 /**
  * Prints a short manual for an {@link App}.
  */
+@Service.Implementation( App.class )
 public class Man extends AbstractApp
 {
     public static final int CONSOLE_WIDTH = 80;
-    
+
     private static Collection<String> availableCommands;
 
     public String execute( AppCommandParser parser, Session session,
@@ -122,7 +124,7 @@ public class Man extends AbstractApp
         }
         return lines.toArray( new String[lines.size()] );
     }
-    
+
     private static int findSpaceBefore( String description, int position )
     {
         while ( !Character.isWhitespace( description.charAt( position ) ) )
@@ -185,7 +187,7 @@ public class Man extends AbstractApp
      * Utility method for getting a short help string for a server. Basically it
      * contains an introductory message and also lists all available apps for
      * the server.
-     * 
+     *
      * @param server
      *            the server to ask for
      * @return the short introductory help string.
@@ -199,7 +201,7 @@ public class Man extends AbstractApp
 
     /**
      * Uses {@link ClassLister} to list apps available at the server.
-     * 
+     *
      * @param server
      *            the {@link ShellServer}.
      * @return a list of available commands a client can execute, whre the

@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -30,6 +30,8 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -41,6 +43,7 @@ import org.neo4j.shell.ShellException;
  * Mimics the POSIX application "rmdir", but neo4j has relationships instead of
  * directories (if you look at Neo4j in a certain perspective).
  */
+@Service.Implementation( App.class )
 public class Rmrel extends GraphDatabaseApp
 {
     /**
@@ -64,7 +67,7 @@ public class Rmrel extends GraphDatabaseApp
         Output out ) throws ShellException
     {
         assertCurrentIsNode( session );
-        
+
         if ( parser.arguments().isEmpty() )
         {
             throw new ShellException(
@@ -142,7 +145,7 @@ public class Rmrel extends GraphDatabaseApp
         Node refNode = getServer().getDb().getReferenceNode();
         Traverser traverser = node.traverse( Order.DEPTH_FIRST,
             StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL,
-            filterList.toArray() ); 
+            filterList.toArray() );
         for ( Node testNode : traverser )
         {
             if ( refNode.equals( testNode ) )

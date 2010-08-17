@@ -33,7 +33,9 @@ import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.Traversal;
+import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -45,6 +47,7 @@ import org.neo4j.shell.ShellException;
  * Mimics the POSIX application with the same name, i.e. lists
  * properties/relationships on a node or a relationship.
  */
+@Service.Implementation( App.class )
 public class Ls extends GraphDatabaseApp
 {
     /**
@@ -136,7 +139,7 @@ public class Ls extends GraphDatabaseApp
         }
         return null;
     }
-    
+
     private void displayNodes( AppCommandParser parser, NodeOrRelationship thing,
             Session session, Output out ) throws RemoteException, ShellException
     {

@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,6 +25,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -36,11 +38,12 @@ import org.neo4j.shell.ShellException;
  * Mimics the POSIX application "mkdir", but neo4j has relationships instead of
  * directories (if you look at Neo4j in a certain perspective).
  */
+@Service.Implementation( App.class )
 public class Mkrel extends GraphDatabaseApp
 {
     public static final String KEY_LAST_CREATED_NODE = "LAST_CREATED_NODE";
     public static final String KEY_LAST_CREATED_RELATIONSHIP = "LAST_CREATED_RELATIONSHIP";
-    
+
     /**
      * Constructs a new application which can create relationships and nodes
      * in Neo4j.
@@ -70,7 +73,7 @@ public class Mkrel extends GraphDatabaseApp
         throws ShellException, RemoteException
     {
         assertCurrentIsNode( session );
-        
+
         boolean createNode = parser.options().containsKey( "c" );
         boolean suppliedNode = !parser.arguments().isEmpty();
         Node node = null;

@@ -2,16 +2,19 @@ package org.neo4j.shell.apps;
 
 import java.rmi.RemoteException;
 
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.impl.AbstractApp;
 
+@Service.Implementation( App.class )
 public class Alias extends AbstractApp
 {
     public static final String ALIAS_PREFIX = "ALIAS_";
-    
+
     @Override
     public String getDescription()
     {
@@ -28,7 +31,7 @@ public class Alias extends AbstractApp
             printAllAliases( session, out );
             return null;
         }
-        
+
         String[] keyValue = Export.splitInKeyEqualsValue( line );
         String key = ALIAS_PREFIX + keyValue[ 0 ];
         String value = keyValue[ 1 ];

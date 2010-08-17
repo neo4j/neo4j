@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -13,20 +15,21 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.impl.AbstractApp;
 
+@Service.Implementation( App.class )
 public class Script extends AbstractApp
 {
     {
         addOptionDefinition( "v", new OptionDefinition( OptionValueType.NONE,
                 "Verbose, print commands" ) );
     }
-    
+
     @Override
     public String getDescription()
     {
         return "Executes a script of shell commands, supply a file name " +
         		"containing the script";
     }
-    
+
     public String execute( AppCommandParser parser, Session session,
             Output out ) throws ShellException
     {
@@ -34,7 +37,7 @@ public class Script extends AbstractApp
         File file = new File( parser.arguments().get( 0 ) );
         BufferedReader reader = null;
         try
-        {        
+        {
             if ( !file.exists() )
             {
                 out.println( "Couldn't find file '" +

@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -27,6 +27,8 @@ import java.util.TreeSet;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -39,11 +41,12 @@ import org.neo4j.shell.impl.RelationshipToNodeIterable;
 /**
  * Mimics the POSIX application with the same name, i.e. traverses to a node.
  */
+@Service.Implementation( App.class )
 public class Cd extends GraphDatabaseApp
 {
     private static final String START_ALIAS = "start";
     private static final String END_ALIAS = "end";
-    
+
     /**
      * The {@link Session} key to use to store the current node and working
      * directory (i.e. the path which the client got to it).
@@ -67,7 +70,7 @@ public class Cd extends GraphDatabaseApp
         return "Changes the current node or relationship, i.e. traverses " +
        		"one step to another node or relationship. Usage: cd <id>";
     }
-    
+
     @Override
     public List<String> completionCandidates( String partOfLine, Session session )
     {
@@ -116,7 +119,7 @@ public class Cd extends GraphDatabaseApp
             return super.completionCandidates( partOfLine, session );
         }
     }
-    
+
     private static void maybeAddCompletionCandidate( Collection<String> candidates,
             String candidate, String lastWord )
     {
@@ -174,7 +177,7 @@ public class Cd extends GraphDatabaseApp
                         throw new ShellException( "No connected node with title '" + arg + "'" );
                     }
                 }
-                
+
                 newId = parser.options().containsKey( "r" ) ?
                     new TypedId( NodeOrRelationship.TYPE_RELATIONSHIP, suppliedId ) :
                     new TypedId( NodeOrRelationship.TYPE_NODE, suppliedId );
@@ -207,7 +210,7 @@ public class Cd extends GraphDatabaseApp
         {
             return (Long) matchParts[1];
         }
-        
+
         String titleMatch = (String) matchParts[0];
         for ( Node otherNode : RelationshipToNodeIterable.wrap( node.getRelationships(), node ) )
         {
@@ -291,7 +294,7 @@ public class Cd extends GraphDatabaseApp
             {
                 return false;
             }
-            
+
             Relationship relationship = current.asRelationship();
             if ( relationship.getStartNode().getId() == newId.getId() ||
                 relationship.getEndNode().getId() == newId.getId() )

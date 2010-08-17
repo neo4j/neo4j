@@ -10,6 +10,8 @@ import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
@@ -17,13 +19,15 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
+// TODO: this class should be moved to the neo4j-index component
+@Service.Implementation( App.class )
 public class Index extends GraphDatabaseApp
 {
     public static final String KEY_INDEX_CLASS_NAME = "INDEX_CLASS_NAME";
-    
+
     private Map<String, Object> indexServices = new HashMap<String, Object>();
     private boolean firstRun = true;
-    
+
     {
         addOptionDefinition( "g", new OptionDefinition( OptionValueType.NONE,
                 "Get nodes for the given key and value" ) );
@@ -42,7 +46,7 @@ public class Index extends GraphDatabaseApp
                 "Does a 'ls' command on the returned nodes. " +
                 "Could also be done using the -c option. (Implies -g)" ) );
     }
-    
+
     @Override
     public String getDescription()
     {
@@ -52,7 +56,7 @@ public class Index extends GraphDatabaseApp
         		"index -g name \"Thomas A. Anderson\"  (will get nodes matching that name)\n" +
         		"index --cd name \"Agent Smith\"  (will 'cd' to the 'Agent Smith' node).";
     }
-    
+
     @Override
     public void shutdown()
     {
@@ -85,7 +89,7 @@ public class Index extends GraphDatabaseApp
                         "org.neo4j.index.lucene.LuceneIndexService" );
             }
         }
-        
+
         try
         {
             Object indexService =
@@ -95,7 +99,7 @@ public class Index extends GraphDatabaseApp
                 throw new ShellException( "No IndexService given, use the " +
                         KEY_INDEX_CLASS_NAME + " environment variable" );
             }
-            
+
             boolean get = parser.options().containsKey( "g" ) ||
                     parser.options().containsKey( "cd" ) ||
                     parser.options().containsKey( "ls" );
@@ -106,7 +110,7 @@ public class Index extends GraphDatabaseApp
             {
                 throw new ShellException( "Supply one of: -g, -i, -r" );
             }
-        
+
             if ( get )
             {
                 get( indexService, parser, session, out );
@@ -168,14 +172,14 @@ public class Index extends GraphDatabaseApp
             commandsToRun.addAll( Arrays.asList(
                     commandToRun.split( Pattern.quote( "&&" ) ) ) );
         }
-        
+
         for ( Node node : result )
         {
             printAndInterpretTemplateLines( commandsToRun, false, !specialCommand, node,
                     getServer(), session, out );
         }
     }
-    
+
     private void index( Object indexService, AppCommandParser parser,
             Session session, Output out ) throws Exception
     {
@@ -191,7 +195,7 @@ public class Index extends GraphDatabaseApp
                 String.class, Object.class ).invoke( indexService,
                         node, key, value );
     }
-    
+
     private void remove( Object indexService, AppCommandParser parser,
             Session session, Output out ) throws Exception
     {
@@ -233,13 +237,13 @@ public class Index extends GraphDatabaseApp
             throw new ShellException(
                     "No indexing capabilities on the classpath" );
         }
-        
+
         String className = ( String ) safeGet( session, KEY_INDEX_CLASS_NAME );
         if ( className == null )
         {
             return null;
         }
-        
+
         // TODO OK to synchronize on this?
         Object indexService = null;
         synchronized ( this.indexServices )
