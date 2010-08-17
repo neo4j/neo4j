@@ -10,7 +10,8 @@ class TransactionManagerBean extends Neo4jMBean implements TransactionManager
 {
     private final TxModule txModule;
 
-    TransactionManagerBean( int instanceId, TxModule txModule ) throws NotCompliantMBeanException
+    TransactionManagerBean( String instanceId, TxModule txModule )
+            throws NotCompliantMBeanException
     {
         super( instanceId, TransactionManager.class );
         this.txModule = txModule;

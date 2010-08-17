@@ -47,7 +47,8 @@ class Configuration extends Neo4jMBean
     }
     private final Map<Object, Object> config;
 
-    Configuration( int instanceId, Map<Object, Object> config ) throws NotCompliantMBeanException
+    Configuration( String instanceId, Map<Object, Object> config )
+            throws NotCompliantMBeanException
     {
         super( instanceId );
         this.config = config;

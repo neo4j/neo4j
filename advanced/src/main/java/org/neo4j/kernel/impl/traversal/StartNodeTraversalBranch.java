@@ -5,9 +5,9 @@ import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.kernel.impl.traversal.TraverserImpl.TraverserIterator;
 
-class StartNodeExpansionSource extends ExpansionSourceImpl
+class StartNodeTraversalBranch extends TraversalBranchImpl
 {
-    StartNodeExpansionSource( TraverserIterator traverser, Node source,
+    StartNodeTraversalBranch( TraverserIterator traverser, Node source,
             RelationshipExpander expander )
     {
         super( traverser, source, expander );
@@ -18,8 +18,7 @@ class StartNodeExpansionSource extends ExpansionSourceImpl
     {
         if ( !hasExpandedRelationships() )
         {
-            if ( traverser.uniquness.type == PrimitiveTypeFetcher.RELATIONSHIP
-                 || traverser.okToProceed( this ) )
+            if ( traverser.okToProceedFirst( this ) )
             {
                 expandRelationships( false );
                 return this;

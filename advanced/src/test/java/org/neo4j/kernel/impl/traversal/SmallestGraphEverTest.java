@@ -7,7 +7,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.kernel.Traversal;
+import org.neo4j.kernel.Uniqueness;
 
 public class SmallestGraphEverTest extends AbstractTestBase
 {
@@ -20,85 +21,85 @@ public class SmallestGraphEverTest extends AbstractTestBase
     @Test
     public void testUnrestrictedTraversalCanFinishDepthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().depthFirst(), Uniqueness.NONE );
+        execute( Traversal.description().depthFirst(), Uniqueness.NONE );
     }
 
     @Test
     public void testUnrestrictedTraversalCanFinishBreadthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.NONE );
+        execute( Traversal.description().breadthFirst(), Uniqueness.NONE );
     }
 
     @Test
     public void testNodeGlobalTraversalCanFinishDepthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().depthFirst(), Uniqueness.NODE_GLOBAL );
+        execute( Traversal.description().depthFirst(), Uniqueness.NODE_GLOBAL );
     }
 
     @Test
     public void testNodeGlobalTraversalCanFinishBreadthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.NODE_GLOBAL );
+        execute( Traversal.description().breadthFirst(), Uniqueness.NODE_GLOBAL );
     }
 
     @Test
     public void testRelationshipGlobalTraversalCanFinishDepthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().depthFirst(), Uniqueness.RELATIONSHIP_GLOBAL );
+        execute( Traversal.description().depthFirst(), Uniqueness.RELATIONSHIP_GLOBAL );
     }
 
     @Test
     public void testRelationshipGlobalTraversalCanFinishBreadthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.RELATIONSHIP_GLOBAL );
+        execute( Traversal.description().breadthFirst(), Uniqueness.RELATIONSHIP_GLOBAL );
     }
 
     @Test
     public void testNodePathTraversalCanFinishDepthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().depthFirst(), Uniqueness.NODE_PATH );
+        execute( Traversal.description().depthFirst(), Uniqueness.NODE_PATH );
     }
 
     @Test
     public void testNodePathTraversalCanFinishBreadthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.NODE_PATH );
+        execute( Traversal.description().breadthFirst(), Uniqueness.NODE_PATH );
     }
 
     @Test
     public void testRelationshipPathTraversalCanFinishDepthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().depthFirst(), Uniqueness.RELATIONSHIP_PATH );
+        execute( Traversal.description().depthFirst(), Uniqueness.RELATIONSHIP_PATH );
     }
 
     @Test
     public void testRelationshipPathTraversalCanFinishBreadthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.RELATIONSHIP_PATH );
+        execute( Traversal.description().breadthFirst(), Uniqueness.RELATIONSHIP_PATH );
     }
 
     @Test
     public void testNodeRecentTraversalCanFinishDepthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().depthFirst(), Uniqueness.NODE_RECENT );
+        execute( Traversal.description().depthFirst(), Uniqueness.NODE_RECENT );
     }
 
     @Test
     public void testNodeRecentTraversalCanFinishBreadthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.NODE_RECENT );
+        execute( Traversal.description().breadthFirst(), Uniqueness.NODE_RECENT );
     }
 
     @Test
     public void testRelationshipRecentTraversalCanFinishDepthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().depthFirst(), Uniqueness.RELATIONSHIP_RECENT );
+        execute( Traversal.description().depthFirst(), Uniqueness.RELATIONSHIP_RECENT );
     }
 
     @Test
     public void testRelationshipRecentTraversalCanFinishBreadthFirst() throws Exception
     {
-        execute( new TraversalDescriptionImpl().breadthFirst(), Uniqueness.RELATIONSHIP_RECENT );
+        execute( Traversal.description().breadthFirst(), Uniqueness.RELATIONSHIP_RECENT );
     }
 
     private void execute( TraversalDescription traversal, Uniqueness uniqueness )

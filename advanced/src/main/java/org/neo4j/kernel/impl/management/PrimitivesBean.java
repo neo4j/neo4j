@@ -14,7 +14,7 @@ class PrimitivesBean extends Neo4jMBean implements Primitives
 {
     private final NodeManager nodeManager;
 
-    PrimitivesBean( int instanceId, NodeManager nodeManager ) throws NotCompliantMBeanException
+    PrimitivesBean( String instanceId, NodeManager nodeManager ) throws NotCompliantMBeanException
     {
         super( instanceId, Primitives.class );
         this.nodeManager = nodeManager;

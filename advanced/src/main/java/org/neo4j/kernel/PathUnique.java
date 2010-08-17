@@ -1,16 +1,15 @@
-package org.neo4j.kernel.impl.traversal;
+package org.neo4j.kernel;
 
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
-class PathUnique extends UniquenessFilter
+class PathUnique extends AbstractUniquenessFilter
 {
     PathUnique( PrimitiveTypeFetcher type )
     {
         super( type );
     }
     
-    @Override
-    boolean check( TraversalBranch source, boolean remember )
+    public boolean check( TraversalBranch source, boolean remember )
     {
         long idToCompare = type.getId( source );
         while ( (source = source.parent()) != null )
@@ -21,11 +20,5 @@ class PathUnique extends UniquenessFilter
             }
         }
         return true;
-    }
-
-    @Override
-    boolean check( long id, boolean remember )
-    {
-        throw new UnsupportedOperationException();
     }
 }

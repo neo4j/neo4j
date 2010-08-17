@@ -15,7 +15,7 @@ import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.impl.traversal.FinalExpansionSource;
+import org.neo4j.kernel.impl.traversal.FinalTraversalBranch;
 import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
 
 /**
@@ -222,7 +222,7 @@ public class Traversal
         {
             relationships[i] = iter.next();
         }
-        return new FinalExpansionSource( tailPath.startNode(), relationships );
+        return new FinalTraversalBranch( tailPath.startNode(), relationships );
     }
 
     /**
