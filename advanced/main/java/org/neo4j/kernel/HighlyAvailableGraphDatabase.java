@@ -19,12 +19,12 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
-import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
+import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
+import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.ha.Broker;
@@ -175,7 +175,6 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                             new ZooKeeperLastCommittedTxIdSetter( broker ) );
                 }
             }
-            this.localGraph.addShellApp( Pullupdates.class );
         }
         finally
         {
