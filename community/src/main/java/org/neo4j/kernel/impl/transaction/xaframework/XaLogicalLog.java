@@ -998,6 +998,7 @@ public class XaLogicalLog
         }
 
         long version = findLogContainingTxId( txId );
+        System.out.println( "Found txId:" + txId + " in log version:" + version );
         if ( version == -1 )
         {
             throw new RuntimeException( "txId:" + txId + " not found in any logical log " +
