@@ -22,9 +22,7 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.Serializable;
-import java.rmi.RemoteException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -50,13 +48,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.kernel.ShellService.ShellNotAvailableException;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.KernelExtension.Function;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
-import org.neo4j.kernel.impl.management.Neo4jMBean;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
 class EmbeddedGraphDbImpl
 {
@@ -65,13 +62,12 @@ class EmbeddedGraphDbImpl
     private static Logger log =
         Logger.getLogger( EmbeddedGraphDbImpl.class.getName() );
     private static final AtomicInteger INSTANCE_ID_COUNTER = new AtomicInteger();
-    private ShellService shellService;
     private Transaction placeboTransaction = null;
     private final GraphDbInstance graphDbInstance;
     private final GraphDatabaseService graphDbService;
     private final NodeManager nodeManager;
     private final String storeDir;
-    private final int instanceId = INSTANCE_ID_COUNTER.getAndIncrement();
+    private final String instanceId = Integer.toString( INSTANCE_ID_COUNTER.getAndIncrement() );
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -80,7 +76,7 @@ class EmbeddedGraphDbImpl
     private final KernelPanicEventGenerator kernelPanicEventGenerator =
             new KernelPanicEventGenerator( kernelEventHandlers );
 
-    private final Runnable jmxShutdownHook;
+    private final KernelExtension.KernelData extensions;
 
     /**
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
@@ -95,79 +91,68 @@ class EmbeddedGraphDbImpl
     {
         this.storeDir = storeDir;
         graphDbInstance = new GraphDbInstance( storeDir, true );
-        Map<Object, Object> params = graphDbInstance.start( graphDbService,
+        final Map<Object, Object> params = graphDbInstance.start( graphDbService,
                 config, kernelPanicEventGenerator, new SyncHookFactory() );
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
-        jmxShutdownHook = initJMX( params );
-        enableRemoteShellIfConfigSaysSo( params );
-    }
-
-    private void enableRemoteShellIfConfigSaysSo( Map<Object, Object> params )
-    {
-        String shellConfig = (String) params.get( "enable_remote_shell" );
-        if ( shellConfig != null )
-        {
-            if ( shellConfig.contains( "=" ) )
-            {
-                enableRemoteShell( parseShellConfigParameter( shellConfig ) );
-            }
-            else if ( Boolean.parseBoolean( shellConfig ) )
-            {
-                enableRemoteShell();
-            }
-        }
-    }
-
-    private Map<String, Serializable> parseShellConfigParameter( String shellConfig )
-    {
-        Map<String, Serializable> map = new HashMap<String, Serializable>();
-        for ( String keyValue : shellConfig.split( "," ) )
-        {
-            String[] splitted = keyValue.split( "=" );
-            if ( splitted.length != 2 )
-            {
-                throw new RuntimeException( "Invalid shell configuration '" + shellConfig +
-                        "' should be '<key1>=<value1>,<key2>=<value2>...' where key can" +
-                        " be any of [port, name]" );
-            }
-            String key = splitted[0];
-            Serializable value = splitted[1];
-            if ( key.equals( "port" ) )
-            {
-                value = Integer.parseInt( splitted[1] );
-            }
-            map.put( key, value );
-        }
-        return map;
-    }
-
-    private Runnable initJMX( final Map<Object, Object> params )
-    {
-        return Neo4jMBean.initMBeans( new Neo4jMBean.Creator(
-                instanceId, KERNEL_VERSION,
-                (NeoStoreXaDataSource) graphDbInstance.getConfig().getTxModule()
-                    .getXaDataSourceManager().getXaDataSource( "nioneodb" ) )
+        this.extensions = new KernelExtension.KernelData( instanceId )
         {
             @Override
-            protected void create( Neo4jMBean.Factory jmx )
+            public String version()
             {
-                jmx.createDynamicConfigurationMBean( params );
-                jmx.createPrimitiveMBean( nodeManager );
-                jmx.createStoreFileMBean();
-                jmx.createCacheMBean( nodeManager );
-                jmx.createLockManagerMBean( getConfig().getLockManager() );
-                jmx.createTransactionManagerMBean( getConfig().getTxModule() );
-                jmx.createMemoryMappingMBean( getConfig().getTxModule().getXaDataSourceManager() );
-                jmx.createXaManagerMBean( getConfig().getTxModule().getXaDataSourceManager() );
+                return KERNEL_VERSION;
             }
-        } );
+
+            @Override
+            public Config getConfig()
+            {
+                return EmbeddedGraphDbImpl.this.getConfig();
+            }
+
+            @Override
+            public Map<Object, Object> getConfigParams()
+            {
+                return params;
+            }
+
+            @Override
+            public GraphDatabaseService graphDatabase()
+            {
+                return EmbeddedGraphDbImpl.this.graphDbService;
+            }
+        };
+        initializeExtensions();
+    }
+
+    private void initializeExtensions()
+    {
+        for ( KernelExtension extension : Service.load( KernelExtension.class ) )
+        {
+            try
+            {
+                extension.load( extensions );
+            }
+            catch ( Exception ex )
+            {
+                log.warning( "Error loading " + extension + ": " + ex );
+            }
+        }
     }
 
     <T> T getManagementBean( Class<T> beanClass )
     {
-        return Neo4jMBean.getBean( instanceId, beanClass );
+        KernelExtension jmx = Service.load( KernelExtension.class, "kernel jmx" );
+        KernelExtension.Function<T> getBean = null;
+        if ( jmx != null && jmx.isLoaded( extensions ) )
+        {
+            getBean = jmx.function( extensions, "getBean", beanClass, Class.class );
+        }
+        if ( getBean == null )
+        {
+            throw new UnsupportedOperationException( "Neo4j JMX support not enabled" );
+        }
+        return getBean.call( beanClass );
     }
 
     /**
@@ -242,20 +227,7 @@ class EmbeddedGraphDbImpl
         if ( graphDbInstance.started() )
         {
             sendShutdownEvent();
-            jmxShutdownHook.run();
-        }
-
-        if ( this.shellService != null )
-        {
-            try
-            {
-                this.shellService.shutdown();
-                this.shellService = null;
-            }
-            catch ( Throwable t )
-            {
-                log.warning( "Error shutting down shell server: " + t );
-            }
+            extensions.shutdown( log );
         }
         graphDbInstance.shutdown();
     }
@@ -273,33 +245,22 @@ class EmbeddedGraphDbImpl
         return this.enableRemoteShell( null );
     }
 
-    public boolean enableRemoteShell(
-        final Map<String,Serializable> initialProperties )
+    public boolean enableRemoteShell( final Map<String, Serializable> config )
     {
-        if ( shellService != null )
+        KernelExtension shell = Service.load( KernelExtension.class, "shell" );
+        Function<Void> enable = null;
+        if ( shell != null )
         {
-            throw new IllegalStateException( "Shell already enabled" );
+            enable = shell.function( extensions, "enableRemoteShell", void.class, Map.class );
         }
-
-        Map<String,Serializable> properties = initialProperties != null ? initialProperties :
-                Collections.<String, Serializable>emptyMap();
-        try
-        {
-            shellService = new ShellService( this.graphDbService, properties );
-            return true;
-        }
-        catch ( RemoteException e )
-        {
-            throw new IllegalStateException( "Can't start remote Neo4j shell",
-                e );
-        }
-        catch ( ShellNotAvailableException e )
+        if ( enable == null )
         {
             log.info( "Shell library not available. Neo4j shell not "
-                + "started. Please add the Neo4j shell jar to the classpath." );
-            e.printStackTrace();
+                      + "started. Please add the Neo4j shell jar to the classpath." );
             return false;
         }
+        enable.call( config );
+        return true;
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()
