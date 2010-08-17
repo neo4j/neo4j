@@ -83,7 +83,7 @@ public class TxManager implements TransactionManager
     private final AtomicInteger rolledBackTxCount = new AtomicInteger( 0 );
     private int peakConcurrentTransactions = 0;
 
-    private final TxRollbackHook rollbackHook;
+    final TxRollbackHook rollbackHook;
 
     TxManager( String txLogDir, KernelPanicEventGenerator kpe, TxRollbackHook rollbackHook )
     {

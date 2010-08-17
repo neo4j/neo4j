@@ -516,6 +516,9 @@ class TransactionImpl implements Transaction
                 re.getResource().commit( re.getXid(), onePhase );
             }
         }
+        
+        this.txManager.rollbackHook.doneCommitting( eventIdentifier );
+        
         status = Status.STATUS_COMMITTED;
     }
 
