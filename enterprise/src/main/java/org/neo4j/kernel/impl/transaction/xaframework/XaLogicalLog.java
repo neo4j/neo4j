@@ -856,7 +856,8 @@ public class XaLogicalLog
         LogEntry entry;
         while ( (entry = LogIoUtils.readEntry( buffer, log, cf )) != null )
         {
-            if ( entry.getIdentifier() != identifier )
+            // TODO For now just skip Prepare entries
+            if ( entry.getIdentifier() != identifier || entry instanceof LogEntry.Prepare )
             {
                 continue;
             }

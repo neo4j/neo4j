@@ -26,6 +26,8 @@ public interface Master
 
     Response<Long> commitSingleResourceTransaction( SlaveContext context,
             int eventIdentifier, String resource, TransactionStream transactionStream );
+    
+    Response<Void> doneCommitting( SlaveContext context, int eventIdentifier );
 
     Response<Void> rollbackTransaction( SlaveContext context, int eventIdentifier );
 
