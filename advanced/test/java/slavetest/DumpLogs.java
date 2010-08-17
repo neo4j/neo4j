@@ -8,7 +8,7 @@ public class DumpLogs
 {
     public static void main( String[] args ) throws Exception
     {
-        for ( File file : new File( "var/hadb" ).listFiles() )
+        for ( File file : new File( "target/havar/dbs/1" ).listFiles() )
         {
             if ( file.getName().contains( "logical" ) && !file.getName().endsWith( ".active" ) )
             {

@@ -299,13 +299,21 @@ public class MasterImpl implements Master
             e.printStackTrace();
             return new FailedResponse<Long>();
         }
-        finally
-        {
+//        finally
+//        {
             // Since the master-transaction carries no actual state, just locks
             // we would like to release the locks... and it's best done by just
             // rolling back the tx
-            rollbackThisAndResumeOther( otherTx );
-        }
+//            rollbackThisAndResumeOther( otherTx );
+//        }
+    }
+    
+    public Response<Void> doneCommitting( SlaveContext context, int eventIdentifier )
+    {
+        TxIdElement tx = new TxIdElement( context.machineId(), eventIdentifier );
+        Transaction otherTx = suspendOtherAndResumeThis( tx );
+        rollbackThisAndResumeOther( otherTx );
+        return packResponse( context, null, ALL );
     }
 
     public Response<Integer> createRelationshipType( SlaveContext context, String name )

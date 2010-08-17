@@ -39,15 +39,15 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     }
     
     @Override
-    protected void initializeDbs( int numSlaves ) throws Exception
+    protected void initializeDbs( int numSlaves, Map<String,String> config ) throws Exception
     {
         this.jvmByMachineId = new HashMap<Integer, StandaloneDbCom>();
-        super.initializeDbs( numSlaves );
+        haServersConfig = buildHaServersConfigValue( numSlaves+1 );
+        super.initializeDbs( numSlaves, config );
         NeoStoreUtil store = new NeoStoreUtil( SKELETON_DB_PATH.getAbsolutePath() );
         zooKeeperMasterFetcher = new ClusterManager(
                 buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ),
                 store.getCreationTime(), store.getStoreId() );
-        haServersConfig = buildHaServersConfigValue( numSlaves+1 );
     }
     
     @Override

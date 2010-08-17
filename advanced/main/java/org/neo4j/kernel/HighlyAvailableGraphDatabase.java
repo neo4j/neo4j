@@ -16,15 +16,17 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Pair;
+import org.neo4j.index.IndexService;
+import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
-import org.neo4j.kernel.ha.SlaveTxRollbackHook;
-import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
+import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveTxRollbackHook;
+import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.ha.Broker;
@@ -44,6 +46,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     private final Map<String, String> config;
     private final Broker broker;
     private EmbeddedGraphDbImpl localGraph;
+    private IndexService localIndex;
     private final int machineId;
     private MasterServer masterServer;
     private AtomicBoolean reevaluatingMyself = new AtomicBoolean();
@@ -144,7 +147,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             {
                 if ( !iAmCurrentlyMaster )
                 {
-                    shutdownIfStarted();
+                    shutdown();
                 }
                 if ( this.localGraph == null )
                 {
@@ -156,13 +159,14 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                             CommonFactories.defaultTxIdGeneratorFactory(),
                             CommonFactories.defaultTxRollbackHook(),
                             new ZooKeeperLastCommittedTxIdSetter( broker ) );
+                    instantiateIndexIfNeeded();
                 }
             }
             else
             {
                 if ( iAmCurrentlyMaster )
                 {
-                    shutdownIfStarted();
+                    shutdown();
                 }
                 if ( this.localGraph == null )
                 {
@@ -173,12 +177,21 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                             new SlaveTxIdGeneratorFactory( broker, this ),
                             new SlaveTxRollbackHook( broker, this ),
                             new ZooKeeperLastCommittedTxIdSetter( broker ) );
+                    instantiateIndexIfNeeded();
                 }
             }
         }
         finally
         {
             reevaluatingMyself.set( false );
+        }
+    }
+
+    private void instantiateIndexIfNeeded()
+    {
+        if ( Boolean.parseBoolean( config.get( "index" ) ) )
+        {
+            this.localIndex = new LuceneIndexService( this );
         }
     }
 
@@ -243,18 +256,19 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         return localGraph.registerTransactionEventHandler( handler );
     }
 
-    public void shutdown()
-    {
-        shutdownIfStarted();
-    }
-
-    private void shutdownIfStarted()
+    public synchronized void shutdown()
     {
         if ( this.masterServer != null )
         {
             System.out.println( "Shutting down master server" );
             this.masterServer.shutdown();
             this.masterServer = null;
+        }
+        if ( this.localIndex != null )
+        {
+            System.out.println( "Shutting down local index" );
+            this.localIndex.shutdown();
+            this.localIndex = null;
         }
         if ( this.localGraph != null )
         {
@@ -322,5 +336,10 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 reevaluateMyself();
             }
         }.start();
+    }
+    
+    public IndexService getIndexService()
+    {
+        return this.localIndex;
     }
 }
