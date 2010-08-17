@@ -91,30 +91,13 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>${neo4j.version}</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <!-- TODO: reverse this dependency:
-        neo4j-index should have a 'provided' dependency on shell,
-        and provide implementations of commands that shell can load. -->
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-index</artifactId>
-      <version>${neo4j.version}</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <!-- TODO: reverse this dependency:
-        neo4j-online-backup should have a 'provided' dependency on shell,
-        and provide implementations of commands that shell can load. -->
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-online-backup</artifactId>
-      <version>0.7-SNAPSHOT</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jline</groupId>
       <artifactId>jline</artifactId>
       <version>${jline.version}</version>
-      <scope>compile</scope>
+      <scope>provided</scope>
       <exclusions>
         <exclusion>
           <groupId>junit</groupId>
