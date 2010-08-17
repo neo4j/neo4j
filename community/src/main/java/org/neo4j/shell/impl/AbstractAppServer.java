@@ -112,13 +112,19 @@ public abstract class AbstractAppServer extends AbstractServer
 			return "";
 		}
 
-        line = replaceAlias( line, session );
-		AppCommandParser parser = new AppCommandParser( this, line );
-		return parser.app().execute( parser, session, out );
+        try
+        {
+            line = replaceAlias( line, session );
+            AppCommandParser parser = new AppCommandParser( this, line );
+            return parser.app().execute( parser, session, out );
+        }
+        catch ( Exception e )
+        {
+            throw wrapException( e );
+        }
 	}
 
-	protected String replaceAlias( String line, Session session )
-	        throws ShellException
+    protected String replaceAlias( String line, Session session )
     {
 	    boolean changed = true;
 	    Set<String> appNames = new HashSet<String>();
@@ -149,16 +155,28 @@ public abstract class AbstractAppServer extends AbstractServer
             throws ShellException, RemoteException
     {
         // TODO We can't assume it's an AppShellServer, can we?
-        AppCommandParser parser = new AppCommandParser( this, partOfLine );
-        App app = parser.app();
-        List<String> appCandidates = app.completionCandidates( partOfLine, session );
-        appCandidates = quote( appCandidates );
-        if ( appCandidates.size() == 1 )
+        try
         {
-            appCandidates.set( 0, appCandidates.get( 0 ) + " " );
+            AppCommandParser parser = new AppCommandParser( this, partOfLine );
+            App app = parser.app();
+            List<String> appCandidates = app.completionCandidates( partOfLine, session );
+            appCandidates = quote( appCandidates );
+            if ( appCandidates.size() == 1 )
+            {
+                appCandidates.set( 0, appCandidates.get( 0 ) + " " );
+            }
+            int cursor = partOfLine.length() - TextUtil.lastWordOrQuoteOf( partOfLine, true ).length();
+            return new TabCompletion( appCandidates, cursor );
         }
-        int cursor = partOfLine.length() - TextUtil.lastWordOrQuoteOf( partOfLine, true ).length();
-        return new TabCompletion( appCandidates, cursor );
+        catch ( Exception e )
+        {
+            throw wrapException( e );
+        }
+    }
+
+    private ShellException wrapException( Exception e )
+    {
+        return ShellException.wrapCause( e );
     }
 
     private static List<String> quote( List<String> candidates )

@@ -27,7 +27,6 @@ import java.rmi.RemoteException;
 import java.util.Map;
 
 import org.neo4j.shell.Output;
-import org.neo4j.shell.ShellException;
 
 /**
  * Executes groovy scripts purely via reflection
@@ -54,78 +53,44 @@ public class GshExecutor extends ScriptExecutor
 	@Override
 	protected void runScript( Object groovyScriptEngine,
 		String scriptName, Map<String, Object> properties, String[] paths )
-		throws ShellException
+		throws Exception
 	{
-		try
-		{
-			properties.put( "out",
-				new GshOutput( ( Output ) properties.get( "out" ) ) );
-			Object binding = this.newGroovyBinding( properties );
-			Method runMethod = groovyScriptEngine.getClass().getMethod(
-				"run", String.class, binding.getClass() );
-			runMethod.invoke( groovyScriptEngine, scriptName + ".groovy",
-				binding );
-		}
-		catch ( Exception e )
-		{
-			// Don't pass the exception on because the client most certainly
-			// doesn't have groovy in the classpath.
-			throw new ShellException( "Groovy exception: " +
-				this.findProperMessage( e ) + "\n" +
-				"\n----------[ACTUAL EXCEPTION]----------" + "\n" +
-				this.stackTraceAsString( e ) +
-				"----------[END OF ACTUAL EXCEPTION]----------\n" );
-		}
+		properties.put( "out",
+			new GshOutput( ( Output ) properties.get( "out" ) ) );
+		Object binding = this.newGroovyBinding( properties );
+		Method runMethod = groovyScriptEngine.getClass().getMethod(
+			"run", String.class, binding.getClass() );
+		runMethod.invoke( groovyScriptEngine, scriptName + ".groovy",
+			binding );
 	}
 	
 	private Object newGroovyBinding( Map<String, Object> properties )
-		throws ShellException
+		throws Exception
 	{
-		try
+		Class<?> cls = Class.forName( BINDING_CLASS );
+		Object binding = cls.newInstance();
+		Method setPropertyMethod =
+			cls.getMethod( "setProperty", String.class, Object.class );
+		for ( String key : properties.keySet() )
 		{
-			Class<?> cls = Class.forName( BINDING_CLASS );
-			Object binding = cls.newInstance();
-			Method setPropertyMethod =
-				cls.getMethod( "setProperty", String.class, Object.class );
-			for ( String key : properties.keySet() )
-			{
-				setPropertyMethod.invoke( binding, key, properties.get( key ) );
-			}
-			return binding;
+			setPropertyMethod.invoke( binding, key, properties.get( key ) );
 		}
-		catch ( Exception e )
-		{
-			throw new ShellException( "Invalid groovy classes", e );
-		}
+		return binding;
 	}
 
 	@Override
 	protected Object newInterpreter( String[] paths )
-		throws ShellException
+		throws Exception
 	{
-		try
-		{
-			Class<?> cls = Class.forName( ENGINE_CLASS );
-			return cls.getConstructor( String[].class ).newInstance(
-				new Object[] { paths } );
-		}
-		catch ( Exception e )
-		{
-			throw new ShellException( "Invalid groovy classes", e );
-		}
+		Class<?> cls = Class.forName( ENGINE_CLASS );
+		return cls.getConstructor( String[].class ).newInstance(
+			new Object[] { paths } );
 	}
 	
 	@Override
-	protected void ensureDependenciesAreInClasspath() throws ShellException
+	protected void ensureDependenciesAreInClasspath() throws Exception
 	{
-		try
-		{
-			Class.forName( BINDING_CLASS );
-		}
-		catch ( ClassNotFoundException e )
-		{
-			throw new ShellException( "Groovy not found in the classpath", e );
-		}
+	    Class.forName( BINDING_CLASS );
 	}
 
 	/**

@@ -118,7 +118,7 @@ public class StartClient
         }
         catch ( Exception e )
         {
-            throw new ShellException( "Neo4j not found on the classpath", e );
+            throw new ShellException( "Neo4j not found on the classpath" );
         }
     }
 
@@ -263,7 +263,7 @@ public class StartClient
         }
     }
 
-    protected static void setSessionVariablesFromArgs(
+    public static void setSessionVariablesFromArgs(
         ShellClient client, Args args ) throws RemoteException
     {
         String profile = args.get( "profile", null );

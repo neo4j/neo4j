@@ -19,18 +19,14 @@
  */
 package org.neo4j.shell;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 /**
  * A general shell exception when an error occurs.
  */
 public class ShellException extends Exception
 {
-	/**
-	 * Empty exception.
-	 */
-	public ShellException()
-	{
-	}
-
 	/**
 	 * @param message the description of the exception.
 	 */
@@ -47,12 +43,46 @@ public class ShellException extends Exception
 		super( cause );
 	}
 
-	/**
-	 * @param message the description of the exception.
-	 * @param cause the cause of the exception.
-	 */
-	public ShellException( String message, Throwable cause )
+	public static ShellException wrapCause( Throwable cause )
 	{
-		super( message, cause );
+        if ( cause instanceof ShellException )
+        {
+            return isCompletelyRecognizedException( cause ) ? (ShellException) cause :
+                    softWrap( cause );
+        }
+        else if ( isCompletelyRecognizedException( cause ) )
+        {
+            return new ShellException( cause );
+        }
+        else
+        {
+            return softWrap( cause );
+        }
 	}
+	
+	private static ShellException softWrap( Throwable cause )
+	{
+	    return new ShellException( stackTraceAsString( cause ) );
+	}
+
+    private static boolean isCompletelyRecognizedException( Throwable e )
+    {
+        String packageName = e.getClass().getPackage().getName();
+        if ( !( e instanceof ShellException ) &&
+                !packageName.startsWith( "java" ) )
+        {
+            return false;
+        }
+        Throwable cause = e.getCause();
+        return cause == null ? true : isCompletelyRecognizedException( cause );
+    }
+    
+    private static String stackTraceAsString( Throwable cause )
+    {
+        StringWriter writer = new StringWriter();
+        PrintWriter printWriter = new PrintWriter( writer, false );
+        cause.printStackTrace( printWriter );
+        printWriter.close();
+        return writer.getBuffer().toString();
+    }
 }

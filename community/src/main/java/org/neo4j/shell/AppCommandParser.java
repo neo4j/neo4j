@@ -52,7 +52,7 @@ public class AppCommandParser
 	 * @throws ShellException if there's something wrong with the line.
 	 */
 	public AppCommandParser( AppShellServer server, String line )
-		throws ShellException
+		throws Exception
 	{
 		this.server = server;
 		if ( line != null )
@@ -63,7 +63,7 @@ public class AppCommandParser
 		this.parse();
 	}
 	
-	private void parse() throws ShellException
+	private void parse() throws Exception
 	{
 		if ( this.line == null || this.line.trim().length() == 0 )
 		{
@@ -80,19 +80,12 @@ public class AppCommandParser
         return index == -1 ? line : line.substring( 0, index );
 	}
 	
-	private void parseApp() throws ShellException
+	private void parseApp() throws Exception
 	{
 		int index = findNextWhiteSpace( this.line, 0 );
 		this.appName = index == -1 ?
 			this.line : this.line.substring( 0, index );
-		try
-		{
-			this.app = this.server.findApp( this.appName );
-		}
-		catch ( Exception e )
-		{
-			throw new ShellException( e );
-		}
+		this.app = this.server.findApp( this.appName );
 		if ( this.app == null )
 		{
 			throw new ShellException(
@@ -111,7 +104,7 @@ public class AppCommandParser
 			{
 				// It is one long name
 				String name = string.substring( 2 );
-				i = this.fetchArguments( parsed, i, name );
+				i = fetchArguments( parsed, i, name );
 			}
 			else if ( this.isOption( string ) )
 			{
@@ -119,7 +112,7 @@ public class AppCommandParser
 				for ( int o = 0; o < options.length(); o++ )
 				{
 					String name = String.valueOf( options.charAt( o ) );
-					i = this.fetchArguments( parsed, i, name );
+					i = fetchArguments( parsed, i, name );
 				}
 			}
 			else

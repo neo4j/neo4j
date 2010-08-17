@@ -20,8 +20,6 @@
 package org.neo4j.shell.apps.extra;
 
 import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -54,7 +52,7 @@ public abstract class ScriptExecutor
 	 * @throws ShellException if the execution of a groovy script fails.
 	 */
 	public void execute( String line, Session session, Output out )
-		throws ShellException
+		throws Exception
 	{
 		this.ensureDependenciesAreInClasspath();
 		if ( line == null || line.trim().length() == 0 )
@@ -73,7 +71,7 @@ public abstract class ScriptExecutor
 
 	private void runScripts( Object interpreter,
 		Map<String, Object> properties, String line, String[] paths )
-		throws ShellException
+		throws Exception
 	{
 		ArgReader reader = new ArgReader(
 			AppCommandParser.tokenizeStringWithQuotes( line ) );
@@ -94,7 +92,7 @@ public abstract class ScriptExecutor
 	
 	protected abstract void runScript( Object interpreter,
 		String scriptName, Map<String, Object> properties, String[] paths )
-		throws ShellException;
+		throws Exception;
 	
 	protected String findProperMessage( Throwable e )
 	{
@@ -104,15 +102,6 @@ public abstract class ScriptExecutor
 			message = this.findProperMessage( e.getCause() );
 		}
 		return message;
-	}
-	
-	protected String stackTraceAsString( Throwable e )
-	{
-		StringWriter writer = new StringWriter();
-		PrintWriter printer = new PrintWriter( writer );
-		e.printStackTrace( printer );
-		printer.close();
-		return writer.getBuffer().toString();
 	}
 	
 	private String[] getScriptArgs( ArgReader reader )
@@ -160,10 +149,10 @@ public abstract class ScriptExecutor
 	}
 	
 	protected abstract Object newInterpreter( String[] paths )
-		throws ShellException;
+		throws Exception;
 	
 	protected abstract void ensureDependenciesAreInClasspath()
-		throws ShellException;
+		throws Exception;
 
 	static class ArgReader implements Iterator<String>
 	{

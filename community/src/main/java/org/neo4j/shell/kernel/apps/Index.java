@@ -1,6 +1,5 @@
 package org.neo4j.shell.kernel.apps;
 
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -79,7 +78,7 @@ public class Index extends GraphDatabaseApp
 
     @Override
     protected String exec( AppCommandParser parser, Session session,
-            Output out ) throws ShellException, RemoteException
+            Output out ) throws Exception
     {
         if ( firstRun )
         {
@@ -124,15 +123,6 @@ public class Index extends GraphDatabaseApp
                 remove( indexService, parser, session, out );
             }
             return null;
-        }
-        catch ( ShellException e )
-        {
-            throw e;
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-            throw new ShellException( e );
         }
         finally
         {

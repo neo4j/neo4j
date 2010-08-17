@@ -22,7 +22,6 @@ package org.neo4j.shell.apps.extra;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.impl.AbstractApp;
 
 /**
@@ -42,7 +41,7 @@ import org.neo4j.shell.impl.AbstractApp;
 public class Gsh extends AbstractApp
 {
 	public String execute( AppCommandParser parser, Session session,
-		Output out ) throws ShellException
+		Output out ) throws Exception
 	{
 		String line = parser.getLineWithoutApp();
 		new GshExecutor().execute( line, session, out );

@@ -55,10 +55,10 @@ public interface App
 	 * this string, one example is that all apps returns null and the "exit"
 	 * app returns "e" so that the server interprets the "e" as a sign that
 	 * it should exit. 
-	 * @throws ShellException if the execution fails.
+	 * @throws Exception if the execution fails.
 	 */
 	String execute( AppCommandParser parser, Session session, Output out )
-		throws ShellException;
+		throws Exception;
 	
 	/**
 	 * Returns the server this app runs in.

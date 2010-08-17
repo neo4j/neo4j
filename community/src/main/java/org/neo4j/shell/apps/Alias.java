@@ -1,13 +1,10 @@
 package org.neo4j.shell.apps;
 
-import java.rmi.RemoteException;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.impl.AbstractApp;
 
 @Service.Implementation( App.class )
@@ -23,7 +20,7 @@ public class Alias extends AbstractApp
     }
 
     public String execute( AppCommandParser parser, Session session,
-            Output out ) throws ShellException
+            Output out ) throws Exception
     {
         String line = parser.getLineWithoutApp();
         if ( line.trim().length() == 0 )
@@ -47,24 +44,17 @@ public class Alias extends AbstractApp
     }
 
     private void printAllAliases( Session session, Output out )
-            throws ShellException
+            throws Exception
     {
-        try
+        for ( String key : session.keys() )
         {
-            for ( String key : session.keys() )
+            if ( !key.startsWith( ALIAS_PREFIX ) )
             {
-                if ( !key.startsWith( ALIAS_PREFIX ) )
-                {
-                    continue;
-                }
-                String shortKey = key.substring( ALIAS_PREFIX.length() );
-                out.println( "alias " + shortKey + "='" + session.get( key ) +
-                        "'" );
+                continue;
             }
-        }
-        catch ( RemoteException e )
-        {
-            throw new ShellException( e );
+            String shortKey = key.substring( ALIAS_PREFIX.length() );
+            out.println( "alias " + shortKey + "='" + session.get( key ) +
+                    "'" );
         }
     }
 }

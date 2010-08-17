@@ -20,14 +20,12 @@
 package org.neo4j.shell.apps;
 
 import java.io.Serializable;
-import java.rmi.RemoteException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.impl.AbstractApp;
 
 /**
@@ -44,20 +42,13 @@ public class Env extends AbstractApp
 	}
 
 	public String execute( AppCommandParser parser, Session session,
-		Output out ) throws ShellException
+		Output out ) throws Exception
 	{
-		try
+		for ( String key : session.keys() )
 		{
-			for ( String key : session.keys() )
-			{
-				Serializable value = session.get( key );
-				out.println( key + "=" + ( value == null ? "" : value ) );
-			}
-			return null;
+			Serializable value = session.get( key );
+			out.println( key + "=" + ( value == null ? "" : value ) );
 		}
-		catch ( RemoteException e )
-		{
-			throw new ShellException( e );
-		}
+		return null;
 	}
 }

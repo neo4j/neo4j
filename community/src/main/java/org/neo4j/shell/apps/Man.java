@@ -47,51 +47,44 @@ public class Man extends AbstractApp
     private static Collection<String> availableCommands;
 
     public String execute( AppCommandParser parser, Session session,
-        Output out ) throws ShellException
+        Output out ) throws Exception
     {
-        try
+        if ( parser.arguments().size() == 0 )
         {
-            if ( parser.arguments().size() == 0 )
-            {
-                out.println( getHelpString( getServer() ) );
-                return null;
-            }
+            out.println( getHelpString( getServer() ) );
+            return null;
+        }
 
-            App app = this.getApp( parser );
-            out.println( "" );
-            for ( String line : splitDescription( fixDesciption( app.getDescription() ),
-                    CONSOLE_WIDTH ) )
+        App app = this.getApp( parser );
+        out.println( "" );
+        for ( String line : splitDescription( fixDesciption( app.getDescription() ),
+                CONSOLE_WIDTH ) )
+        {
+            out.println( line );
+        }
+        println( out, "" );
+        boolean hasOptions = false;
+        for ( String option : app.getAvailableOptions() )
+        {
+            hasOptions = true;
+            String description = fixDesciption( app.getDescription( option ) );
+            String[] descriptionLines = splitDescription( description, CONSOLE_WIDTH );
+            for ( int i = 0; i < descriptionLines.length; i++ )
             {
-                out.println( line );
-            }
-            println( out, "" );
-            boolean hasOptions = false;
-            for ( String option : app.getAvailableOptions() )
-            {
-                hasOptions = true;
-                String description = fixDesciption( app.getDescription( option ) );
-                String[] descriptionLines = splitDescription( description, CONSOLE_WIDTH );
-                for ( int i = 0; i < descriptionLines.length; i++ )
+                String line = "";
+                if ( i == 0 )
                 {
-                    String line = "";
-                    if ( i == 0 )
-                    {
-                        String optionPrefix = option.length() > 1 ? "--" : "-";
-                        line = optionPrefix + option;
-                    }
-                    line += "\t ";
-                    line += descriptionLines[ i ];
-                    println( out, line );
+                    String optionPrefix = option.length() > 1 ? "--" : "-";
+                    line = optionPrefix + option;
                 }
-            }
-            if ( hasOptions )
-            {
-                println( out, "" );
+                line += "\t ";
+                line += descriptionLines[ i ];
+                println( out, line );
             }
         }
-        catch ( RemoteException e )
+        if ( hasOptions )
         {
-            throw new ShellException( e );
+            println( out, "" );
         }
         return null;
     }
@@ -157,23 +150,16 @@ public class Man extends AbstractApp
         out.println( "  " + string );
     }
 
-    private App getApp( AppCommandParser parser ) throws ShellException
+    private App getApp( AppCommandParser parser ) throws Exception
     {
         String appName = parser.arguments().get( 0 );
-        try
+        App app = this.getServer().findApp( appName );
+        if ( app == null )
         {
-            App app = this.getServer().findApp( appName );
-            if ( app == null )
-            {
-                throw new ShellException( "No manual entry for '" + appName +
-                    "'" );
-            }
-            return app;
+            throw new ShellException( "No manual entry for '" + appName +
+                "'" );
         }
-        catch ( RemoteException e )
-        {
-            throw new ShellException( e );
-        }
+        return app;
     }
 
     @Override

@@ -181,7 +181,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     }
 
     public final String execute( AppCommandParser parser, Session session,
-        Output out ) throws ShellException
+        Output out ) throws Exception
     {
         Transaction tx = getServer().getDb().beginTx();
         try
@@ -189,10 +189,6 @@ public abstract class GraphDatabaseApp extends AbstractApp
             String result = this.exec( parser, session, out );
             tx.success();
             return result;
-        }
-        catch ( RemoteException e )
-        {
-            throw new ShellException( e );
         }
         finally
         {
@@ -206,7 +202,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     }
 
     protected abstract String exec( AppCommandParser parser, Session session,
-        Output out ) throws ShellException, RemoteException;
+        Output out ) throws Exception;
 
     private static String getDisplayNameForCurrent(
             GraphDatabaseShellServer server, Session session )

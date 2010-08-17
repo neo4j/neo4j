@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import java.rmi.RemoteException;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -45,7 +43,7 @@ public class Rm extends GraphDatabaseApp
 
     @Override
     protected String exec( AppCommandParser parser, Session session,
-        Output out ) throws ShellException
+        Output out ) throws Exception
     {
         if ( parser.arguments().isEmpty() )
         {
@@ -53,19 +51,12 @@ public class Rm extends GraphDatabaseApp
                 "remove, like: rm title" );
         }
 
-        try
+        String key = parser.arguments().get( 0 );
+        NodeOrRelationship thing = getCurrent( session );
+        if ( thing.removeProperty( key ) == null )
         {
-            String key = parser.arguments().get( 0 );
-            NodeOrRelationship thing = getCurrent( session );
-            if ( thing.removeProperty( key ) == null )
-            {
-                out.println( "Property '" + key + "' not found" );
-            }
-            return null;
+            out.println( "Property '" + key + "' not found" );
         }
-        catch ( RemoteException e )
-        {
-            throw new ShellException( e );
-        }
+        return null;
     }
 }

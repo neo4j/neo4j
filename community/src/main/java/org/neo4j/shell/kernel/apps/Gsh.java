@@ -24,7 +24,6 @@ import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 
 /**
  * Wraps a {@link org.neo4j.shell.apps.extra.Gsh} in a
@@ -49,7 +48,7 @@ public class Gsh extends GraphDatabaseApp
 
     @Override
     protected String exec( AppCommandParser parser, Session session, Output out )
-        throws ShellException
+        throws Exception
     {
         return sh.execute( parser, session, out );
     }

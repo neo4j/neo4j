@@ -3,7 +3,6 @@ package org.neo4j.shell.apps;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
@@ -12,7 +11,6 @@ import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.impl.AbstractApp;
 
 @Service.Implementation( App.class )
@@ -31,7 +29,7 @@ public class Script extends AbstractApp
     }
 
     public String execute( AppCommandParser parser, Session session,
-            Output out ) throws ShellException
+            Output out ) throws Exception
     {
         boolean verbose = parser.options().containsKey( "v" );
         File file = new File( parser.arguments().get( 0 ) );
@@ -60,10 +58,6 @@ public class Script extends AbstractApp
                 }
                 getServer().interpretLine( line, session, out );
             }
-        }
-        catch ( IOException e )
-        {
-            throw new ShellException( e );
         }
         finally
         {

@@ -76,7 +76,7 @@ public class JshExecutor extends ScriptExecutor
 		}
 		catch ( ClassNotFoundException e )
 		{
-			throw new ShellException( "Jython not found in the classpath", e );
+			throw new ShellException( "Jython not found in the classpath" );
 		}
 	}
 	
@@ -95,36 +95,26 @@ public class JshExecutor extends ScriptExecutor
 		}
 		catch ( Exception e )
 		{
-			throw new ShellException( "Invalid jython classes", e );
+			throw new ShellException( "Invalid jython classes" );
 		}
 	}
 	
 	@Override
 	protected void runScript( Object interpreter, String scriptName,
-	    Map<String, Object> properties, String[] paths ) throws ShellException
+	    Map<String, Object> properties, String[] paths ) throws Exception
 	{
 		File scriptFile = findScriptFile( scriptName, paths );
-		try
+		Output out = ( Output ) properties.remove( "out" );
+		interpreter.getClass().getMethod( "setOut", Writer.class ).invoke(
+			interpreter, new OutputWriter( out ) );
+		Method setMethod = interpreter.getClass().getMethod( "set",
+			String.class, Object.class );
+		for ( String key : properties.keySet() )
 		{
-			Output out = ( Output ) properties.remove( "out" );
-			interpreter.getClass().getMethod( "setOut", Writer.class ).invoke(
-				interpreter, new OutputWriter( out ) );
-			Method setMethod = interpreter.getClass().getMethod( "set",
-				String.class, Object.class );
-			for ( String key : properties.keySet() )
-			{
-				setMethod.invoke( interpreter, key, properties.get( key ) );
-			}
-			interpreter.getClass().getMethod( "execfile", String.class )
-				.invoke( interpreter, scriptFile.getAbsolutePath() );
+			setMethod.invoke( interpreter, key, properties.get( key ) );
 		}
-		catch ( Exception e )
-		{
-			// Don't pass the exception on because the client most certainly
-			// doesn't have groovy in the classpath.
-			throw new ShellException( "Jython exception: " +
-				this.stackTraceAsString( e ) );
-		}
+		interpreter.getClass().getMethod( "execfile", String.class )
+			.invoke( interpreter, scriptFile.getAbsolutePath() );
 	}
 	
 	private File findScriptFile( String scriptName, String[] paths )
