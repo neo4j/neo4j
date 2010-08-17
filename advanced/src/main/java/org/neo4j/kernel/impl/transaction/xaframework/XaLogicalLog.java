@@ -1050,7 +1050,7 @@ public class XaLogicalLog
             long[] header = readAndAssertLogHeader( buf, log, version );
             committedTx = header[1];
             log.close();
-            if ( committedTx <= txId )
+            if ( committedTx < txId )
             {
                 break;
             }
