@@ -75,6 +75,7 @@ public class XaContainer
         // null diring normal circumstances.
         TxIdGenerator txIdFactory = config != null ?
                 (TxIdGenerator) config.get( TxIdGenerator.class ) : TxIdGenerator.DEFAULT;
+        txIdFactory = txIdFactory != null ? txIdFactory : TxIdGenerator.DEFAULT;
         
         rm = new XaResourceManager( dataSource, tf, txIdFactory, logicalLog );
         log = new XaLogicalLog( logicalLog, rm, cf, tf, config );
