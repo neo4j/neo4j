@@ -13,7 +13,7 @@ import org.neo4j.kernel.management.WindowPoolInfo;
 @Description( "The status of Neo4j memory mapping" )
 class MemoryMappingBean extends Neo4jMBean implements MemoryMapping
 {
-    static MemoryMappingBean create( final int instanceId, final NeoStoreXaDataSource datasource )
+    static MemoryMappingBean create( final String instanceId, final NeoStoreXaDataSource datasource )
     {
         return createMX( new MXFactory<MemoryMappingBean>()
         {
@@ -33,14 +33,14 @@ class MemoryMappingBean extends Neo4jMBean implements MemoryMapping
 
     private final NeoStoreXaDataSource datasource;
 
-    private MemoryMappingBean( int instanceId, NeoStoreXaDataSource datasource )
+    private MemoryMappingBean( String instanceId, NeoStoreXaDataSource datasource )
             throws NotCompliantMBeanException
     {
         super( instanceId, MemoryMapping.class );
         this.datasource = datasource;
     }
 
-    private MemoryMappingBean( int instanceId, NeoStoreXaDataSource datasource, boolean isMXBean )
+    private MemoryMappingBean( String instanceId, NeoStoreXaDataSource datasource, boolean isMXBean )
     {
         super( instanceId, MemoryMapping.class, isMXBean );
         this.datasource = datasource;

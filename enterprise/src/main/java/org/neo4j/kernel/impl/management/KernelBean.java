@@ -22,7 +22,7 @@ class KernelBean extends Neo4jMBean implements Kernel
     private final String storeDir;
     private final ObjectName query;
 
-    KernelBean( int instanceId, String kernelVersion, NeoStoreXaDataSource datasource,
+    KernelBean( String instanceId, String kernelVersion, NeoStoreXaDataSource datasource,
             ObjectName query )
             throws NotCompliantMBeanException
     {

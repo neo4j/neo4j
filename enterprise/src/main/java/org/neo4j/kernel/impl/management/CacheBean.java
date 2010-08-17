@@ -13,7 +13,7 @@ class CacheBean extends Neo4jMBean implements Cache
 {
     private final NodeManager nodeManager;
 
-    CacheBean( int instanceId, NodeManager nodeManager ) throws NotCompliantMBeanException
+    CacheBean( String instanceId, NodeManager nodeManager ) throws NotCompliantMBeanException
     {
         super( instanceId, Cache.class );
         this.nodeManager = nodeManager;

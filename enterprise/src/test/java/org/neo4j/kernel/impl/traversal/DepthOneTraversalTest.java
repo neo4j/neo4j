@@ -24,12 +24,12 @@ public class DepthOneTraversalTest extends AbstractTestBase
     @Test
     public void shouldGetBothNodesOnDepthOneForDepthFirst()
     {
-        shouldGetBothNodesOnDepthOne( new TraversalDescriptionImpl().depthFirst() );
+        shouldGetBothNodesOnDepthOne( Traversal.description().depthFirst() );
     }
 
     @Test
     public void shouldGetBothNodesOnDepthOneForBreadthFirst()
     {
-        shouldGetBothNodesOnDepthOne( new TraversalDescriptionImpl().breadthFirst() );
+        shouldGetBothNodesOnDepthOne( Traversal.description().breadthFirst() );
     }
 }

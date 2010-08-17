@@ -1,4 +1,4 @@
-package org.neo4j.kernel.impl.traversal;
+package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.TraversalBranch;

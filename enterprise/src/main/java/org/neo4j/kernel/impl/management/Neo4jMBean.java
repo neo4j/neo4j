@@ -42,7 +42,7 @@ public class Neo4jMBean extends StandardMBean
         return new JmxShutdown( jmx.beans );
     }
 
-    public static <T> T getBean( int instanceId, Class<T> beanType )
+    public static <T> T getBean( String instanceId, Class<T> beanType )
     {
         if ( beanType.isInterface()
              && ( beanType.getPackage().getName().equals( "org.neo4j.kernel.management" )
@@ -64,11 +64,11 @@ public class Neo4jMBean extends StandardMBean
 
     public static abstract class Creator
     {
-        private final int id;
+        private final String id;
         private final String kernelVersion;
         private final NeoStoreXaDataSource datasource;
 
-        protected Creator( int instanceId, String kernelVersion, NeoStoreXaDataSource datasource )
+        protected Creator( String instanceId, String kernelVersion, NeoStoreXaDataSource datasource )
         {
             if ( kernelVersion == null || datasource == null )
             {
@@ -392,7 +392,7 @@ public class Neo4jMBean extends StandardMBean
 
     private final ObjectName objectName;
 
-    Neo4jMBean( int instanceId, Class<?> mbeanIface, boolean isMXBean )
+    Neo4jMBean( String instanceId, Class<?> mbeanIface, boolean isMXBean )
     {
         super( mbeanIface, isMXBean );
         objectName = getObjectName( instanceId, mbeanIface, getClass() );
@@ -402,7 +402,7 @@ public class Neo4jMBean extends StandardMBean
         }
     }
 
-    Neo4jMBean( int instanceId, Class<?> mbeanIface ) throws NotCompliantMBeanException
+    Neo4jMBean( String instanceId, Class<?> mbeanIface ) throws NotCompliantMBeanException
     {
         super( mbeanIface );
         objectName = getObjectName( instanceId, mbeanIface, getClass() );
@@ -412,13 +412,13 @@ public class Neo4jMBean extends StandardMBean
         }
     }
 
-    Neo4jMBean( int instanceId ) throws NotCompliantMBeanException
+    Neo4jMBean( String instanceId ) throws NotCompliantMBeanException
     {
         super( DynamicMBean.class );
         objectName = getObjectName( instanceId, DynamicMBean.class, getClass() );
     }
 
-    private static ObjectName getObjectName( int instanceId, Class<?> iface, Class<?> clazz )
+    private static ObjectName getObjectName( String instanceId, Class<?> iface, Class<?> clazz )
     {
         final String name;
         if ( iface == null )
