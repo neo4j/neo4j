@@ -32,7 +32,7 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
     @Test
     public void testMaxDepthAndCustomPruneEvaluatorCombined()
     {
-        TraversalDescription description = new TraversalDescriptionImpl().filter( Traversal.returnAll() )
+        TraversalDescription description = Traversal.description().filter( Traversal.returnAll() )
                 .prune( Traversal.pruneAfterDepth( 1 ) ).prune( new PruneEvaluator()
                 {
                     public boolean pruneAfter( Path position )

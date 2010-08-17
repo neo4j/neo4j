@@ -13,7 +13,8 @@ import org.neo4j.kernel.management.XaResourceInfo;
 @Description( "Information about the XA transaction manager" )
 class XaManagerBean extends Neo4jMBean implements XaManager
 {
-    static XaManagerBean create( final int instanceId, final XaDataSourceManager datasourceMananger )
+    static XaManagerBean create( final String instanceId,
+            final XaDataSourceManager datasourceMananger )
     {
         return createMX( new MXFactory<XaManagerBean>()
         {
@@ -33,14 +34,15 @@ class XaManagerBean extends Neo4jMBean implements XaManager
 
     private final XaDataSourceManager datasourceMananger;
 
-    private XaManagerBean( int instanceId, XaDataSourceManager datasourceMananger )
+    private XaManagerBean( String instanceId, XaDataSourceManager datasourceMananger )
             throws NotCompliantMBeanException
     {
         super( instanceId, XaManager.class );
         this.datasourceMananger = datasourceMananger;
     }
 
-    private XaManagerBean( int instanceId, XaDataSourceManager datasourceMananger, boolean isMXBean )
+    private XaManagerBean( String instanceId, XaDataSourceManager datasourceMananger,
+            boolean isMXBean )
     {
         super( instanceId, XaManager.class, isMXBean );
         this.datasourceMananger = datasourceMananger;

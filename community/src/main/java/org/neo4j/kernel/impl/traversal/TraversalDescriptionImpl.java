@@ -10,10 +10,11 @@ import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Traversal;
+import org.neo4j.kernel.Uniqueness;
 
 public final class TraversalDescriptionImpl implements TraversalDescription
 {
@@ -25,14 +26,14 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     }
 
     final Expander expander;
-    final Uniqueness uniqueness;
+    final UniquenessFactory uniqueness;
     final Object uniquenessParameter;
     final PruneEvaluator pruning;
     final Predicate<Path> filter;
     final BranchOrderingPolicy branchSelector;
 
     private TraversalDescriptionImpl( Expander expander,
-            Uniqueness uniqueness, Object uniquenessParameter,
+            UniquenessFactory uniqueness, Object uniquenessParameter,
             PruneEvaluator pruning, Predicate<Path> filter,
             BranchOrderingPolicy branchSelector )
     {
@@ -55,7 +56,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     /* (non-Javadoc)
      * @see org.neo4j.graphdb.traversal.TraversalDescription#uniqueness(org.neo4j.graphdb.traversal.Uniqueness)
      */
-    public TraversalDescription uniqueness( Uniqueness uniqueness )
+    public TraversalDescription uniqueness( UniquenessFactory uniqueness )
     {
         return new TraversalDescriptionImpl( expander, uniqueness, null, pruning,
                 filter, branchSelector );
@@ -64,7 +65,7 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     /* (non-Javadoc)
      * @see org.neo4j.graphdb.traversal.TraversalDescription#uniqueness(org.neo4j.graphdb.traversal.Uniqueness, java.lang.Object)
      */
-    public TraversalDescription uniqueness( Uniqueness uniqueness,
+    public TraversalDescription uniqueness( UniquenessFactory uniqueness,
             Object parameter )
     {
         if ( this.uniqueness == uniqueness )
@@ -76,33 +77,8 @@ public final class TraversalDescriptionImpl implements TraversalDescription
             }
         }
 
-        switch ( uniqueness )
-        {
-        case NODE_RECENT:
-        case RELATIONSHIP_RECENT:
-            acceptIntegerNumber( uniqueness, parameter );
-            break;
-
-        default:
-            throw new IllegalArgumentException(
-                    uniqueness.name() + " doesn't accept any parameters" );
-        }
-
         return new TraversalDescriptionImpl( expander, uniqueness, parameter,
                 pruning, filter, branchSelector );
-    }
-
-    private static void acceptIntegerNumber( Uniqueness uniqueness,
-            Object parameter )
-    {
-        boolean isDecimalNumber = parameter instanceof Number
-                                  && !( parameter instanceof Float || parameter instanceof Double );
-        if ( !isDecimalNumber )
-        {
-            throw new IllegalArgumentException(
-                    uniqueness + " doesn't accept non-decimal values"
-                            + ", like '" + parameter + "'" );
-        }
     }
 
     /* (non-Javadoc)
