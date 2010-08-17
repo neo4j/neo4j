@@ -34,4 +34,23 @@ public class SlaveTxRollbackHook implements TxRollbackHook
             throw e;
         }
     }
+
+    public void doneCommitting( int eventIdentifier )
+    {
+        try
+        {
+            receiver.receive( broker.getMaster().doneCommitting(
+                    receiver.getSlaveContext(), eventIdentifier ) );
+        }
+        catch ( ZooKeeperException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
+        catch ( HaCommunicationException e )
+        {
+            receiver.somethingIsWrong( e );
+            throw e;
+        }
+    }
 }

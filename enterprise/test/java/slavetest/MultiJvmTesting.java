@@ -6,10 +6,11 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.After;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.impl.RmiLocation;
 
@@ -19,17 +20,18 @@ public class MultiJvmTesting extends AbstractHaTest
     
     private List<StandaloneDbCom> jvms;
     
-    protected void initializeDbs( int numSlaves ) throws Exception
+    protected void initializeDbs( int numSlaves, Map<String,String> config ) throws Exception
     {
         jvms = new ArrayList<StandaloneDbCom>();
         try
         {
             createDeadDbs( numSlaves );
-            startUpMaster();
+            startUpMaster( config );
             for ( int i = 1; i <= numSlaves; i++ )
             {
                 File slavePath = dbPath( i );
-                StandaloneDbCom slaveJvm = spawnJvm( slavePath, MASTER_PORT + i, i );
+                StandaloneDbCom slaveJvm = spawnJvm( slavePath, MASTER_PORT + i, i,
+                        buildExtraArgs( config ) );
                 jvms.add( slaveJvm );
             }
         }
@@ -39,16 +41,27 @@ public class MultiJvmTesting extends AbstractHaTest
         }
     }
     
+    protected static String[] buildExtraArgs( Map<String, String> config )
+    {
+        List<String> list = new ArrayList<String>();
+        for ( Map.Entry<String, String> entry : config.entrySet() )
+        {
+            list.add( "-" + entry.getKey() );
+            list.add( entry.getValue() );
+        }
+        return list.toArray( new String[list.size()] );
+    }
+
     @After
     public void shutdownDbsAndVerify() throws Exception
     {
         shutdownDbs();
         
-        GraphDatabaseService masterDb = new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
+        VerifyDbContext masterDb = new VerifyDbContext( new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() ) );
         for ( int i = 1; i < jvms.size(); i++ )
         {
-            GraphDatabaseService slaveDb =
-                    new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
+            VerifyDbContext slaveDb =
+                    new VerifyDbContext( new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() ) );
             verify( masterDb, slaveDb );
         }
     }
@@ -74,7 +87,7 @@ public class MultiJvmTesting extends AbstractHaTest
         }
     }
 
-    protected StandaloneDbCom spawnJvm( File path, int port, int machineId,
+    protected StandaloneDbCom spawnJvm( File path, int port, int machineId, 
             String... extraArgs ) throws Exception
     {
         Collection<String> list = new ArrayList<String>( Arrays.asList(
@@ -84,7 +97,6 @@ public class MultiJvmTesting extends AbstractHaTest
                 "-port", "" + port,
                 "-id", "" + machineId ) );
         list.addAll( Arrays.asList( extraArgs ) );
-        
         Runtime.getRuntime().exec( list.toArray( new String[list.size()] ) );
         StandaloneDbCom result = null;
         long startTime = System.currentTimeMillis();
@@ -148,9 +160,11 @@ public class MultiJvmTesting extends AbstractHaTest
     }
     
     @Override
-    protected void startUpMaster() throws Exception
+    protected void startUpMaster( Map<String, String> config ) throws Exception
     {
-        jvms.add( spawnJvm( dbPath( 0 ), MASTER_PORT, 0, "-master", "true" ) );
+        Map<String, String> newConfig = new HashMap<String, String>( config );
+        newConfig.put( "master", "true" );
+        jvms.add( spawnJvm( dbPath( 0 ), MASTER_PORT, 0, buildExtraArgs( newConfig ) ) );
     }
     
     @Override
