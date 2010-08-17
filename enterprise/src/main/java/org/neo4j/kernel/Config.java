@@ -58,6 +58,8 @@ public class Config
     public static final String DUMP_CONFIGURATION = "dump_configuration";
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database" )
     public static final String KEEP_LOGICAL_LOGS = "keep_logical_logs";
+    @Description( "Enable a remote shell server which shell clients can log in to" )
+    public static final String ENABLE_REMOTE_SHELL = "enable_remote_shell";
 
     public static final String BACKUP_SLAVE = "backup_slave";
 
