@@ -18,7 +18,7 @@ class StoreFileBean extends Neo4jMBean implements StoreFile
     private static final String LOGICAL_LOG2 = "nioneo_logical.log.2";
     private final File storePath;
 
-    StoreFileBean( int instanceId, File storePath ) throws NotCompliantMBeanException
+    StoreFileBean( String instanceId, File storePath ) throws NotCompliantMBeanException
     {
         super( instanceId, StoreFile.class );
         this.storePath = storePath;
