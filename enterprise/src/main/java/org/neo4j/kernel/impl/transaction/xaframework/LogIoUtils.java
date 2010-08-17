@@ -29,165 +29,86 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 
 public class LogIoUtils
 {
-    
     public static LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel, 
             XaCommandFactory cf ) throws IOException
     {
-        buffer.clear();
-        buffer.limit( 1 );
-        if ( channel.read( buffer ) != buffer.limit() )
+        try
         {
-            // ok no more entries we're done
-            return null;
+            byte entry = readNextByte( buffer, channel );
+            switch ( entry )
+            {
+                case LogEntry.TX_START:
+                    return readTxStartEntry( buffer, channel );
+                case LogEntry.TX_PREPARE:
+                    return readTxPrepareEntry( buffer, channel );
+                case LogEntry.TX_1P_COMMIT:
+                    return readTxOnePhaseCommitEntry( buffer, channel );
+                case LogEntry.TX_2P_COMMIT:
+                    return readTxTwoPhaseCommitEntry( buffer, channel );
+                case LogEntry.COMMAND:
+                    return readTxCommandEntry( buffer, channel, cf );
+                case LogEntry.DONE:
+                    return readTxDoneEntry( buffer, channel );
+                case LogEntry.EMPTY:
+                    return null;
+                default:
+                    throw new IOException( "Unknown entry[" + entry + "]" );
+            }
         }
-        buffer.flip();
-        byte entry = buffer.get();
-        switch ( entry )
+        catch ( ReadPastEndException e )
         {
-            case LogEntry.TX_START:
-                return readTxStartEntry( buffer, channel );
-            case LogEntry.TX_PREPARE:
-                return readTxPrepareEntry( buffer, channel );
-            case LogEntry.TX_1P_COMMIT:
-                return readTxOnePhaseCommitEntry( buffer, channel );
-            case LogEntry.TX_2P_COMMIT:
-                return readTxTwoPhaseCommitEntry( buffer, channel );
-            case LogEntry.COMMAND:
-                return readTxCommandEntry( buffer, channel, cf );
-            case LogEntry.DONE:
-                return readTxDoneEntry( buffer, channel );
-            case LogEntry.EMPTY:
-                return null;
-            default:
-                throw new IOException( "Unknown entry[" + entry + "]" );
+            return null;
         }
     }
     
     private static LogEntry.Start readTxStartEntry( ByteBuffer buf, 
-            ReadableByteChannel channel ) throws IOException
+            ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
-        buf.clear();
-        buf.limit( 1 );
-        if ( channel.read( buf ) != buf.limit() )
-        {
-            return null;
-        }
-        buf.flip();
-        byte globalIdLength = buf.get();
-        // get the branchId id
-        buf.clear();
-        buf.limit( 1 );
-        if ( channel.read( buf ) != buf.limit() )
-        {
-            return null;
-        }
-        buf.flip();
-        byte branchIdLength = buf.get();
+        byte globalIdLength = readNextByte( buf, channel );
+        byte branchIdLength = readNextByte( buf, channel );
         byte globalId[] = new byte[globalIdLength];
-        ByteBuffer tmpBuffer = ByteBuffer.wrap( globalId );
-        if ( channel.read( tmpBuffer ) != globalId.length )
-        {
-            return null;
-        }
+        readIntoBufferAndFlip( ByteBuffer.wrap( globalId ), channel, globalIdLength );
         byte branchId[] = new byte[branchIdLength];
-        tmpBuffer = ByteBuffer.wrap( branchId );
-        if ( channel.read( tmpBuffer ) != branchId.length )
-        {
-            return null;
-        }
-        // get the tx identifier
-        buf.clear();
-        buf.limit( 4 );
-        if ( channel.read( buf ) != buf.limit() )
-        {
-            return null;
-        }
-        buf.flip();
-        int identifier = buf.getInt();
-        // get the format id
-        buf.clear();
-        buf.limit( 4 );
-        if ( channel.read( buf ) != buf.limit() )
-        {
-            return null;
-        }
-        buf.flip();
-        int formatId = buf.getInt();
+        readIntoBufferAndFlip( ByteBuffer.wrap( branchId ), channel, branchIdLength );
+        int identifier = readNextInt( buf, channel );
+        int formatId = readNextInt( buf, channel );
+        
         // re-create the transaction
         Xid xid = new XidImpl( globalId, branchId, formatId );
         return new LogEntry.Start( xid, identifier, -1 );
     }
 
     private static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf, 
-            ReadableByteChannel channel ) throws IOException
+            ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
-        buf.clear();
-        buf.limit( 4 );
-        if ( channel.read( buf ) != buf.limit() )
-        {
-            return null;
-        }
-        buf.flip();
-        int identifier = buf.getInt();
-        return new LogEntry.Prepare( identifier );
+        return new LogEntry.Prepare( readNextInt( buf, channel ) );
     }
     
     private static LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( ByteBuffer buf, 
-            ReadableByteChannel channel ) throws IOException
+            ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
-        buf.clear();
-        buf.limit( 12 );
-        if ( channel.read( buf ) != buf.limit() )
-        {
-            return null;
-        }
-        buf.flip();
-        int identifier = buf.getInt();
-        long txId = buf.getLong();
-        return new LogEntry.OnePhaseCommit( identifier, txId );
+        return new LogEntry.OnePhaseCommit( readNextInt( buf, channel ),
+                readNextLong( buf, channel ) );
     }
     
     private static LogEntry.Done readTxDoneEntry( ByteBuffer buf, 
-            ReadableByteChannel channel ) throws IOException
+            ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
-        buf.clear();
-        buf.limit( 4 );
-        if ( channel.read( buf ) != buf.limit() )
-        {
-            return null;
-        }
-        buf.flip();
-        int identifier = buf.getInt();
-        return new LogEntry.Done( identifier );
+        return new LogEntry.Done( readNextInt( buf, channel ) );
     }
 
     private static LogEntry.TwoPhaseCommit readTxTwoPhaseCommitEntry( ByteBuffer buf, 
-            ReadableByteChannel channel ) throws IOException
+            ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
-        buf.clear();
-        buf.limit( 12 );
-        if ( channel.read( buf ) != buf.limit() )
-        {
-            return null;
-        }
-        buf.flip();
-        int identifier = buf.getInt();
-        long txId = buf.getLong();
-        return new LogEntry.TwoPhaseCommit( identifier, txId );
+        return new LogEntry.TwoPhaseCommit( readNextInt( buf, channel ),
+                readNextLong( buf, channel ) );
     }
     
     private static LogEntry.Command readTxCommandEntry( 
             ByteBuffer buf, ReadableByteChannel channel, XaCommandFactory cf ) 
-        throws IOException
+            throws IOException, ReadPastEndException
     {
-        buf.clear();
-        buf.limit( 4 );
-        if ( channel.read( buf ) != buf.limit() )
-        {
-            return null;
-        }
-        buf.flip();
-        int identifier = buf.getInt();
+        int identifier = readNextInt( buf, channel );
         XaCommand command = cf.readCommand( channel, buf );
         if ( command == null )
         {
@@ -237,5 +158,36 @@ public class LogIoUtils
                     entry.getIdentifier() ).putLong( 
                             ((LogEntry.OnePhaseCommit) entry).getTxId() );
         }
+    }
+
+    private static int readNextInt( ByteBuffer buf, ReadableByteChannel channel )
+            throws IOException, ReadPastEndException
+    {
+        return readIntoBufferAndFlip( buf, channel, 4 ).getInt();
+    }
+
+    private static long readNextLong( ByteBuffer buf, ReadableByteChannel channel )
+            throws IOException, ReadPastEndException
+    {
+        return readIntoBufferAndFlip( buf, channel, 8 ).getLong();
+    }
+    
+    private static byte readNextByte( ByteBuffer buf, ReadableByteChannel channel )
+            throws IOException, ReadPastEndException
+    {
+        return readIntoBufferAndFlip( buf, channel, 1 ).get();
+    }
+
+    private static ByteBuffer readIntoBufferAndFlip( ByteBuffer buf, ReadableByteChannel channel,
+            int numberOfBytes ) throws IOException, ReadPastEndException
+    {
+        buf.clear();
+        buf.limit( numberOfBytes );
+        if ( channel.read( buf ) != buf.limit() )
+        {
+            throw new ReadPastEndException();
+        }
+        buf.flip();
+        return buf;
     }
 }
