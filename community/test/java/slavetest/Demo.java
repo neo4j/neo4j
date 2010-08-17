@@ -8,7 +8,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 public class Demo extends SingleJvmTesting
 {
-    public static void main( String args[] )
+    public static void main( String args[] ) throws Exception
     {
         Demo demo = new Demo();
         demo.initializeDbs( 1 );

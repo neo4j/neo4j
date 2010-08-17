@@ -26,10 +26,10 @@ public class StartHaDb
         System.out.println( "Starting store: createTime=" + new Date( store.getCreationTime() ) + 
                 " identifier=" + store.getStoreId() + " last committed tx=" + store.getLastCommittedTx() );
         final GraphDatabaseService db = new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "3",
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "2",
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( StartZooKeeperServer.ZOO_KEEPER_SERVERS, "," ),
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, toHaServerFormat( HA_SERVERS ),
-                "enable_remote_shell", "true",
+                Config.ENABLE_REMOTE_SHELL, "true",
                 Config.KEEP_LOGICAL_LOGS, "true" ) );
 //        Runtime.getRuntime().addShutdownHook( new Thread()
 //        {

@@ -11,8 +11,10 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.index.IndexService;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.LockableNode;
 import org.neo4j.kernel.impl.core.LockReleaser;
@@ -547,6 +549,20 @@ public class CommonJobs
                     tx.finish();
                 }
             }
+            return null;
+        }
+    }
+    
+    public static class CreateNodeAndIndexJob extends TransactionalJob<Void>
+    {
+        @Override
+        protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            IndexService index = ((HighlyAvailableGraphDatabase) db).getIndexService();
+            Node node = db.createNode();
+            node.setProperty( "name", "Johan" );
+            index.index( node, "name", node.getProperty( "name" ) );
+            tx.success();
             return null;
         }
     }

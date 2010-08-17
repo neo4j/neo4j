@@ -52,7 +52,8 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS,
                         args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, null ),
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS,
-                        args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, null ) );
+                        args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, null ),
+                        "index", args.get( "index", null ) );
                 haDb = new HighlyAvailableGraphDatabase( storeDir, config );
                 println( "Started HA db (w/ zoo keeper)" );
             }
@@ -63,7 +64,8 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
                 AbstractBroker broker = isMaster ? new FakeMasterBroker() :
                         new FakeSlaveBroker();
                 haDb = new HighlyAvailableGraphDatabase( storeDir, MapUtil.stringMap(
-                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + tempMachineId ),
+                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + tempMachineId,
+                        "index", args.get( "index", null ) ),
                         broker );
                 broker.setDb( haDb );
                 println( "Started HA db (w/o zoo keeper)" );

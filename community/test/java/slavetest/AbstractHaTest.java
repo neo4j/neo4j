@@ -8,18 +8,19 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public abstract class AbstractHaTest
@@ -28,31 +29,34 @@ public abstract class AbstractHaTest
     static final File PARENT_PATH = new File( "target/havar" );
     static final File DBS_PATH = new File( PARENT_PATH, "dbs" );
     static final File SKELETON_DB_PATH = new File( DBS_PATH, "skeleton" );
+    static final Map<String, String> INDEX_CONFIG = MapUtil.stringMap( "index", "true" );
     
     protected static File dbPath( int num )
     {
         return new File( DBS_PATH, "" + num );
     }
 
-    public static void verify( GraphDatabaseService refDb, GraphDatabaseService... dbs )
+    public static void verify( VerifyDbContext refDb, VerifyDbContext... dbs )
     {
-        for ( GraphDatabaseService otherDb : dbs )
+        for ( VerifyDbContext otherDb : dbs )
         {
-            Set<Node> otherNodes = IteratorUtil.addToCollection( otherDb.getAllNodes().iterator(),
+            Set<Node> otherNodes = IteratorUtil.addToCollection( otherDb.db.getAllNodes().iterator(),
                     new HashSet<Node>() );
-            for ( Node node : refDb.getAllNodes() )
+            for ( Node node : refDb.db.getAllNodes() )
             {
-                Node otherNode = otherDb.getNodeById( node.getId() );
-                verifyNode( node, otherNode, otherDb );
+                Node otherNode = otherDb.db.getNodeById( node.getId() );
+                verifyNode( node, otherNode, refDb, otherDb );
                 otherNodes.remove( otherNode );
             }
             assertTrue( otherNodes.isEmpty() );
         }
     }
 
-    private static void verifyNode( Node node, Node otherNode, GraphDatabaseService otherDb )
+    private static void verifyNode( Node node, Node otherNode,
+            VerifyDbContext refDb, VerifyDbContext otherDb )
     {
         verifyProperties( node, otherNode );
+        verifyIndex( node, otherNode, refDb, otherDb );
         Set<Long> otherRelIds = new HashSet<Long>();
         for ( Relationship otherRel : otherNode.getRelationships( Direction.OUTGOING ) )
         {
@@ -61,7 +65,7 @@ public abstract class AbstractHaTest
         
         for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
         {
-            Relationship otherRel = otherDb.getRelationshipById( rel.getId() );
+            Relationship otherRel = otherDb.db.getRelationshipById( rel.getId() );
             verifyProperties( rel, otherRel );
             if ( rel.getStartNode().getId() != otherRel.getStartNode().getId() )
             {
@@ -83,6 +87,42 @@ public abstract class AbstractHaTest
             throw new RuntimeException( "Other node " + otherNode + " has more relationships " +
                     otherRelIds );
         }
+    }
+
+    private static void verifyIndex( Node node, Node otherNode, VerifyDbContext refDb,
+            VerifyDbContext otherDb )
+    {
+        if ( refDb.index == null || otherDb.index == null )
+        {
+            return;
+        }
+        
+        Set<String> otherKeys = new HashSet<String>();
+        for ( String key : otherNode.getPropertyKeys() )
+        {
+            if ( isIndexed( otherNode, otherDb, key ) )
+            {
+                otherKeys.add( key );
+            }
+        }
+        
+        for ( String key : node.getPropertyKeys() )
+        {
+            if ( otherKeys.remove( key ) != isIndexed( node, refDb, key ) )
+            {
+                throw new RuntimeException( "Index differs on " + node + ", " + key );
+            }
+        }
+        if ( !otherKeys.isEmpty() )
+        {
+            throw new RuntimeException( "Other node " + otherNode + " has more indexing: " +
+                    otherKeys );
+        }
+    }
+
+    private static boolean isIndexed( Node node, VerifyDbContext db, String key )
+    {
+        return db.index.getSingleNode( key, node.getProperty( key ) ) != null;
     }
 
     private static void verifyProperties( PropertyContainer entity, PropertyContainer otherEntity )
@@ -141,8 +181,13 @@ public abstract class AbstractHaTest
             FileUtils.copyDirectory( SKELETON_DB_PATH, dbPath( i ) );
         }
     }
+    
+    protected final void initializeDbs( int numSlaves ) throws Exception
+    {
+        initializeDbs( numSlaves, MapUtil.stringMap( ) );
+    }
 
-    protected abstract void initializeDbs( int numSlaves ) throws Exception;
+    protected abstract void initializeDbs( int numSlaves, Map<String, String> config ) throws Exception;
     
     protected abstract void pullUpdates( int... slaves ) throws Exception;
     
@@ -150,7 +195,7 @@ public abstract class AbstractHaTest
 
     protected abstract <T> T executeJobOnMaster( Job<T> job ) throws Exception;
     
-    protected abstract void startUpMaster() throws Exception;
+    protected abstract void startUpMaster( Map<String, String> config ) throws Exception;
 
     protected abstract Job<Void> getMasterShutdownDispatcher();
     
@@ -267,6 +312,13 @@ public abstract class AbstractHaTest
         assertTrue( case1 != case2 );
         assertTrue( case1 || case2  );
         pullUpdates();
+    }
+    
+    @Test
+    public void createNodeAndIndex() throws Exception
+    {
+        initializeDbs( 1, INDEX_CONFIG );
+        executeJob( new CommonJobs.CreateNodeAndIndexJob(), 0 );
     }
     
     protected abstract void shutdownDbs() throws Exception;

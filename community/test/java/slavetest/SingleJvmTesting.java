@@ -5,7 +5,9 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
@@ -14,7 +16,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.FakeBroker;
@@ -30,20 +32,22 @@ public class SingleJvmTesting extends AbstractHaTest
         return haDbs.get( nr );
     }
     
-    protected void initializeDbs( int numSlaves )
+    protected void initializeDbs( int numSlaves, Map<String,String> config )
     {
         try
         {
             createDeadDbs( numSlaves );
             haDbs = new ArrayList<GraphDatabaseService>();
-            startUpMaster();
+            startUpMaster( config );
             FakeBroker broker = new FakeBroker( master ); 
             for ( int i = 1; i <= numSlaves; i++ )
             {
                 File slavePath = dbPath( i );
+                Map<String,String> cfg = new HashMap<String, String>(config);
+                cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(i) );
+                cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
                 GraphDatabaseService db = new HighlyAvailableGraphDatabase(
-                        slavePath.getAbsolutePath(), MapUtil.stringMap( "ha.machine_id", "" + i ),
-                        broker );
+                        slavePath.getAbsolutePath(), cfg, broker );
                 haDbs.add( db );
                 broker.setDb( db );
             }
@@ -55,7 +59,7 @@ public class SingleJvmTesting extends AbstractHaTest
     }
     
     @Override
-    protected void startUpMaster()
+    protected void startUpMaster( Map<String, String> config )
     {
         master = new MasterImpl( new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() ) );
     }
@@ -77,24 +81,34 @@ public class SingleJvmTesting extends AbstractHaTest
     @After
     public void verifyAndShutdownDbs()
     {
-        verify( master.getGraphDb(), haDbs.toArray( new GraphDatabaseService[haDbs.size()] ) );
+        verify( new VerifyDbContext( master.getGraphDb() ), getVerifyDbArray() );
         shutdownDbs();
         
-        GraphDatabaseService masterOfflineDb =
-                new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
-        GraphDatabaseService[] slaveOfflineDbs = new GraphDatabaseService[haDbs.size()];
+        VerifyDbContext masterOfflineDb =
+                new VerifyDbContext( new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() ) );
+        VerifyDbContext[] slaveOfflineDbs = new VerifyDbContext[haDbs.size()];
         for ( int i = 1; i <= haDbs.size(); i++ )
         {
-            slaveOfflineDbs[i-1] = new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
+            slaveOfflineDbs[i-1] = new VerifyDbContext( new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() ) );
         }
         verify( masterOfflineDb, slaveOfflineDbs );
-        masterOfflineDb.shutdown();
-        for ( GraphDatabaseService db : slaveOfflineDbs )
+        masterOfflineDb.db.shutdown();
+        for ( VerifyDbContext db : slaveOfflineDbs )
         {
-            db.shutdown();
+            db.db.shutdown();
         }
     }
     
+    private VerifyDbContext[] getVerifyDbArray()
+    {
+        VerifyDbContext[] contexts = new VerifyDbContext[haDbs.size()];
+        for ( int i = 0; i < contexts.length; i++ )
+        {
+            contexts[i] = new VerifyDbContext( haDbs.get( i ) );
+        }
+        return contexts;
+    }
+
     protected <T> T executeJob( Job<T> job, int slave ) throws Exception
     {
         return job.execute( haDbs.get( slave ) );
@@ -124,7 +138,7 @@ public class SingleJvmTesting extends AbstractHaTest
     }
     
     @Test
-    public void testMixingEntitiesFromWrongDbs()
+    public void testMixingEntitiesFromWrongDbs() throws Exception
     {
         initializeDbs( 1 );
         GraphDatabaseService haDb1 = haDbs.get( 0 );
