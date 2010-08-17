@@ -127,7 +127,7 @@ class EmbeddedGraphDbImpl
 
     private void enableRemoteShellIfConfigSaysSo( Map<Object, Object> params )
     {
-        String shellConfig = (String) params.get( "enable_remote_shell" );
+        String shellConfig = (String) params.get( Config.ENABLE_REMOTE_SHELL );
         if ( shellConfig != null )
         {
             if ( shellConfig.contains( "=" ) )
