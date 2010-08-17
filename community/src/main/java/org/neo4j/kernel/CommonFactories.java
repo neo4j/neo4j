@@ -87,6 +87,11 @@ public class CommonFactories
             {
                 // Do nothing from the ordinary here
             }
+
+            public void doneCommitting( int eventIdentifier )
+            {
+                // Do nothing from the ordinary here
+            }
         };
     }
     
