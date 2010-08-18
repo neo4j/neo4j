@@ -17,21 +17,28 @@ public class EmbeddedNeo4jWithIndexing
     private static GraphDatabaseService graphDb;
     private static IndexService indexService;
 
+    // START SNIPPET: createRelTypes
     private static enum RelTypes implements RelationshipType
     {
-        USERS_REFERENCE, USER,
+        USERS_REFERENCE,
+        USER
     }
+    // END SNIPPET: createRelTypes
 
     public static void main( final String[] args )
     {
+        // START SNIPPET: startDb
         graphDb = new EmbeddedGraphDatabase( DB_PATH );
         indexService = new LuceneIndexService( graphDb );
         registerShutdownHook();
+        // END SNIPPET: startDb
+
+        // START SNIPPET: addUsers
         Transaction tx = graphDb.beginTx();
         try
         {
             // Create users sub reference node (see design guidelines on
-            // http://wiki.neo4j.org)
+            // http://wiki.neo4j.org/ )
             Node usersReferenceNode = graphDb.createNode();
             graphDb.getReferenceNode().createRelationshipTo(
                 usersReferenceNode, RelTypes.USERS_REFERENCE );
@@ -42,25 +49,30 @@ public class EmbeddedNeo4jWithIndexing
                 usersReferenceNode.createRelationshipTo( userNode,
                     RelTypes.USER );
             }
+            // END SNIPPET: addUsers
             System.out.println( "Users created" );
+
             // Find a user through the search index
+            // START SNIPPET: findUser
             int idToFind = 45;
             Node foundUser = indexService.getSingleNode( USERNAME_KEY,
                 idToUserName( idToFind ) );
             System.out.println( "The username of user " + idToFind + " is "
                 + foundUser.getProperty( USERNAME_KEY ) );
+            // END SNIPPET: findUser
+
             // Delete the persons and remove them from the index
-            for ( Relationship relationship : usersReferenceNode
-                .getRelationships( RelTypes.USER, Direction.OUTGOING ) )
+            for ( Relationship relationship : usersReferenceNode.getRelationships(
+                    RelTypes.USER, Direction.OUTGOING ) )
             {
                 Node user = relationship.getEndNode();
-                indexService.removeIndex( user, USERNAME_KEY, user
-                    .getProperty( USERNAME_KEY ) );
+                indexService.removeIndex( user, USERNAME_KEY,
+                        user.getProperty( USERNAME_KEY ) );
                 user.delete();
                 relationship.delete();
             }
             usersReferenceNode.getSingleRelationship( RelTypes.USERS_REFERENCE,
-                Direction.INCOMING ).delete();
+                    Direction.INCOMING ).delete();
             usersReferenceNode.delete();
             tx.success();
         }
@@ -78,6 +90,7 @@ public class EmbeddedNeo4jWithIndexing
         graphDb.shutdown();
     }
 
+    // START SNIPPET: helperMethods
     private static String idToUserName( final int id )
     {
         return "user" + id + "@neo4j.org";
@@ -90,6 +103,7 @@ public class EmbeddedNeo4jWithIndexing
         indexService.index( node, USERNAME_KEY, username );
         return node;
     }
+    // END SNIPPET: helperMethods
 
     private static void registerShutdownHook()
     {

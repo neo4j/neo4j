@@ -1,5 +1,6 @@
 <assembly>
     <id></id>
+    <includeSiteDirectory>true</includeSiteDirectory>
     <formats>
         <format>tar.gz</format>
         <format>zip</format>

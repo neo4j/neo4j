@@ -20,6 +20,7 @@ public class Person
     static final RelationshipType FRIEND = 
         DynamicRelationshipType.withName( "FRIEND" );
 
+    // START SNIPPET: the-node
     private final Node underlyingNode;
 
     Person( Node personNode )
@@ -31,12 +32,16 @@ public class Person
     {
         return underlyingNode;
     }
+    // END SNIPPET: the-node
 
+    // START SNIPPET: delegate-to-the-node
     public String getName()
     {
         return (String) underlyingNode.getProperty( NAME );
     }
+    // END SNIPPET: delegate-to-the-node
 
+    // START SNIPPET: override
     @Override
     public int hashCode()
     {
@@ -58,6 +63,8 @@ public class Person
     {
         return "Person[" + getName() + "]";
     }
+
+    // END SNIPPET: override
 
     public void addFriend( Person otherPerson )
     {
