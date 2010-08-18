@@ -1,0 +1,11 @@
+Graph-algo example
+
+Path finding example
+
+	Calculating the shortest path (least number of relationships) between two nodes.
+	Let's say we want to calculate the shortest path from Neo to Agent Smith.
+	This is how to do it:
+	
+%{source-code|snippet=shortestPathUsage|file=src/main/java/org/neo4j/examples/apoc/CalculateShortestPath.java}
+
+    Full source code: {{{https://trac.neo4j.org/browser/examples/apoc-examples/trunk/src/main/java/org/neo4j/examples/apoc/CalculateShortestPath.java}browser}} {{{https://svn.neo4j.org/examples/apoc-examples/trunk/src/main/java/org/neo4j/examples/apoc/CalculateShortestPath.java}svn}}

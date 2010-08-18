@@ -5,11 +5,16 @@
   <name>Neo4j Apoc</name>
   <version>1.2-SNAPSHOT</version>
   <description>Basic Neo4j examples</description>
+  <url>http://components.neo4j.org/${project.artifactId}/</url>
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
   </parent>
+
+  <properties>
+    <short-name>apoc-examples</short-name>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -38,14 +43,10 @@
   </issueManagement>
   
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/examples/apoc-examples/trunk</connection>
-    <url>https://trac.neo4j.org/browser/examples/apoc-examples</url>
+    <connection>scm:svn:https://svn.neo4j.org/examples/${short-name}/trunk</connection>
+    <url>https://trac.neo4j.org/browser/examples/${short-name}</url>
   </scm>
   
-  <properties>
-    <short-name>apoc-examples</short-name>
-  </properties>
-
   <build>
     <plugins>
       <plugin>
@@ -89,6 +90,18 @@
             <phase>package</phase>
             <goals>
               <goal>assemble</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-site-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>create-site</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>site</goal>
             </goals>
           </execution>
         </executions>
