@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,11 +25,11 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-abstract class NodeOrRelationship
+public abstract class NodeOrRelationship
 {
     public static final String TYPE_NODE = "n";
     public static final String TYPE_RELATIONSHIP = "r";
-    
+
     public static NodeOrRelationship wrap( Node node )
     {
         return new WrapNode( node );
@@ -46,7 +46,7 @@ abstract class NodeOrRelationship
     {
         this.nodeOrRelationship = nodeOrRelationship;
     }
-    
+
     public boolean isNode()
     {
         return nodeOrRelationship instanceof Node;
@@ -66,14 +66,14 @@ abstract class NodeOrRelationship
     {
         return (Relationship) nodeOrRelationship;
     }
-    
+
     public TypedId getTypedId()
     {
         return new TypedId( getType(), getId() );
     }
-    
+
     abstract String getType();
-    
+
     public abstract long getId();
 
     public abstract boolean hasProperty( String key );
@@ -90,7 +90,7 @@ abstract class NodeOrRelationship
 
     public abstract Iterable<Relationship> getRelationships(
         Direction direction );
-    
+
     @Override
     public boolean equals( Object o )
     {
@@ -100,7 +100,7 @@ abstract class NodeOrRelationship
         }
         return getTypedId().equals( ( (NodeOrRelationship) o ).getTypedId() );
     }
-    
+
     @Override
     public int hashCode()
     {
@@ -118,7 +118,7 @@ abstract class NodeOrRelationship
         {
             return asNode();
         }
-        
+
         @Override
         public String getType()
         {
@@ -185,7 +185,7 @@ abstract class NodeOrRelationship
         {
             return asRelationship();
         }
-        
+
         @Override
         public String getType()
         {

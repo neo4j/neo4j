@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -52,11 +52,11 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 public abstract class GraphDatabaseApp extends AbstractApp
 {
     private static final String CURRENT_KEY = "CURRENT_DIR";
-    static final OptionDefinition OPTION_DEF_FOR_C = new OptionDefinition(
+    protected static final OptionDefinition OPTION_DEF_FOR_C = new OptionDefinition(
             OptionValueType.MUST,
             "Command to run for each returned node. Use $n for node-id, example:\n" +
             "-c \"ls -f name $n\". Multiple commands can be supplied with && in between" );
-    
+
     /**
      * @param server the {@link GraphDatabaseShellServer} to get the current
      * node/relationship from.
@@ -83,26 +83,26 @@ public abstract class GraphDatabaseApp extends AbstractApp
         }
         return result;
     }
-    
+
     protected NodeOrRelationship getCurrent( Session session )
         throws ShellException
     {
         return getCurrent( getServer(), session );
     }
-    
+
     public static boolean isCurrent( Session session, NodeOrRelationship thing )
     {
         String currentThing = ( String ) safeGet( session, CURRENT_KEY );
         return currentThing != null && currentThing.equals(
                 thing.getTypedId().toString() );
     }
-    
+
     protected static void setCurrent( Session session,
         NodeOrRelationship current )
     {
         safeSet( session, CURRENT_KEY, current.getTypedId().toString() );
     }
-    
+
     protected void assertCurrentIsNode( Session session )
         throws ShellException
     {
@@ -113,7 +113,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
                 "You must stand on a node to be able to do this" );
         }
     }
-    
+
     @Override
     public GraphDatabaseShellServer getServer()
     {
@@ -124,7 +124,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     {
         return DynamicRelationshipType.withName( name );
     }
-    
+
     protected Direction getDirection( String direction ) throws ShellException
     {
         return getDirection( direction, Direction.OUTGOING );
@@ -133,9 +133,9 @@ public abstract class GraphDatabaseApp extends AbstractApp
     protected Direction getDirection( String direction,
         Direction defaultDirection ) throws ShellException
     {
-        return ( Direction ) parseEnum( Direction.class, direction, defaultDirection ); 
+        return ( Direction ) parseEnum( Direction.class, direction, defaultDirection );
     }
-    
+
     protected static NodeOrRelationship getThingById(
         GraphDatabaseShellServer server, TypedId typedId ) throws ShellException
     {
@@ -168,7 +168,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         }
         return result;
     }
-    
+
     protected NodeOrRelationship getThingById( TypedId typedId )
         throws ShellException
     {
@@ -233,7 +233,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
                 true, checkForMe );
         }
     }
-    
+
     /**
      * @param server the {@link GraphDatabaseShellServer} to run at.
      * @param session the {@link Session} used by the client.
@@ -263,7 +263,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         {
             return getDisplayNameForCurrent( server, session );
         }
-        
+
         String title = findTitle( server, session, node );
         StringBuilder result = new StringBuilder( "(" );
         result.append( node.getId() );
@@ -271,7 +271,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         result.append( ")" );
         return result.toString();
     }
-    
+
     protected static String findTitle( GraphDatabaseShellServer server,
         Session session, Node node )
     {
@@ -281,7 +281,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         {
             return null;
         }
-        
+
         String[] titleKeys = keys.split( Pattern.quote( "," ) );
         Pattern[] patterns = new Pattern[ titleKeys.length ];
         for ( int i = 0; i < titleKeys.length; i++ )
@@ -331,27 +331,27 @@ public abstract class GraphDatabaseApp extends AbstractApp
         {
             return getDisplayNameForCurrent( server, session );
         }
-        
+
         StringBuilder result = new StringBuilder( "<" );
         result.append( verbose ? relationship.getId() + "," : "" );
         result.append( relationship.getType().name() );
         result.append( ">" );
         return result.toString();
     }
-    
+
     protected static String fixCaseSensitivity( String string,
         boolean caseInsensitive )
     {
         return caseInsensitive ? string.toLowerCase() : string;
     }
-    
+
     protected static Pattern newPattern( String pattern,
         boolean caseInsensitive )
     {
         return pattern == null ? null : Pattern.compile(
             fixCaseSensitivity( pattern, caseInsensitive ) );
     }
-    
+
     protected static boolean matches( Pattern patternOrNull, String value,
         boolean caseInsensitive, boolean loose )
     {
@@ -365,7 +365,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
             patternOrNull.matcher( value ).find() :
             patternOrNull.matcher( value ).matches();
     }
-    
+
     protected static <T extends Enum<T>> Enum<T> parseEnum(
         Class<T> enumClass, String name, Enum<T> defaultValue  )
     {
@@ -373,7 +373,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         {
             return defaultValue;
         }
-        
+
         name = name.toLowerCase();
         for ( T enumConstant : enumClass.getEnumConstants() )
         {
@@ -392,12 +392,12 @@ public abstract class GraphDatabaseApp extends AbstractApp
         throw new IllegalArgumentException( "No '" + name + "' or '" +
             name + ".*' in " + enumClass );
     }
-    
+
     protected static String frame( String string, boolean frame )
     {
         return frame ? "[" + string + "]" : string;
     }
-    
+
     protected static String format( Object value, boolean includeFraming )
     {
         String result = null;
@@ -433,7 +433,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         {
             out.println( getDisplayName( server, session, node, true ) );
         }
-        
+
         if ( !templateLines.isEmpty() )
         {
             Map<String, Object> data = new HashMap<String, Object>();
