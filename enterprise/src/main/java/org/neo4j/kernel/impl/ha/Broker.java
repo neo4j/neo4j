@@ -14,4 +14,6 @@ public interface Broker
     
     // I know... this isn't supposed to be here
     Object instantiateMasterServer( GraphDatabaseService graphDb );
+    
+    void shutdown();
 }
