@@ -6,6 +6,8 @@ import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -13,6 +15,8 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
@@ -24,21 +28,27 @@ import org.neo4j.kernel.impl.ha.Master;
  */
 public class MasterServer extends CommunicationProtocol implements ChannelPipelineFactory
 {
+    private final ChannelFactory channelFactory;
     private final ServerBootstrap bootstrap;
     private final Master realMaster;
+    private final ChannelGroup channelGroup;
 
     public MasterServer( Master realMaster, final int port )
     {
         this.realMaster = realMaster;
         ExecutorService executor = Executors.newCachedThreadPool();
-        bootstrap = new ServerBootstrap( new NioServerSocketChannelFactory(
-                executor, executor ) );
+        channelFactory = new NioServerSocketChannelFactory(
+                executor, executor );
+        bootstrap = new ServerBootstrap( channelFactory );
         bootstrap.setPipelineFactory( this );
+        channelGroup = new DefaultChannelGroup();
         executor.execute( new Runnable()
         {
             public void run()
             {
-                bootstrap.bind( new InetSocketAddress( port ) );
+                Channel channel = bootstrap.bind( new InetSocketAddress( port ) );
+                // Add the "server" channel
+                channelGroup.add( channel );
                 System.out.println( "Master server bound to " + port );
             }
         } );
@@ -59,6 +69,8 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent e ) throws Exception
         {
             ChannelBuffer message = (ChannelBuffer) e.getMessage();
+            // Add each "client" channel
+            channelGroup.add( e.getChannel() );
             e.getChannel().write( handleRequest( realMaster, message ) );
         }
 
@@ -71,7 +83,8 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     
     public void shutdown()
     {
-        // TODO
-//        bootstrap.releaseExternalResources();
+        // Close all open connections
+        channelGroup.close().awaitUninterruptibly();
+        channelFactory.releaseExternalResources();
     }
 }
