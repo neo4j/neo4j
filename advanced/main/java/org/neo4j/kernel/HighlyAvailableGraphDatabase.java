@@ -18,6 +18,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Pair;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
@@ -45,7 +46,8 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     
     private final String storeDir;
     private final Map<String, String> config;
-    private final Broker broker;
+    private final BrokerFactory brokerFactory;
+    private Broker broker;
     private EmbeddedGraphDbImpl localGraph;
     private IndexService localIndex;
     private final int machineId;
@@ -58,19 +60,32 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
     {
-        this( storeDir, config, instantiateBroker( storeDir, config ) );
+        this( storeDir, config, defaultBrokerFactory( storeDir, config ) );
     }
-    
+
+    private static BrokerFactory defaultBrokerFactory( final String storeDir,
+            final Map<String, String> config )
+    {
+        return new BrokerFactory()
+        {
+            public Broker create()
+            {
+                return instantiateBroker( storeDir, config );
+            }
+        };
+    }
+
     /**
      * Only for testing
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config,
-            Broker broker )
+            BrokerFactory brokerFactory )
     {
         this.storeDir = storeDir;
         this.config = config;
-        this.broker = broker;
+        this.brokerFactory = brokerFactory;
         this.machineId = getMachineIdFromConfig( config );
+        this.broker = brokerFactory.create();
         reevaluateMyself();
     }
     
@@ -177,6 +192,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     private void startAsMaster()
     {
+        this.broker = brokerFactory.create();
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 new SlaveLockManagerFactory( broker, this ),
                 new SlaveIdGeneratorFactory( broker, this ),
@@ -189,6 +205,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     private void startAsSlave()
     {
+        this.broker = brokerFactory.create();
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 CommonFactories.defaultLockManagerFactory(),
@@ -287,6 +304,12 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             System.out.println( "Shutting down update puller" );
             this.updatePuller.halt();
             this.updatePuller = null;
+        }
+        if ( this.broker != null )
+        {
+            System.out.println( "Shutting down broker" );
+            this.broker.shutdown();
+            this.broker = null;
         }
         if ( this.masterServer != null )
         {

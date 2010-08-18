@@ -47,7 +47,7 @@ public class SingleJvmTesting extends AbstractHaTest
                 cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(i) );
                 cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
                 GraphDatabaseService db = new HighlyAvailableGraphDatabase(
-                        slavePath.getAbsolutePath(), cfg, broker );
+                        slavePath.getAbsolutePath(), cfg, wrap( broker ) );
                 haDbs.add( db );
                 broker.setDb( db );
             }
