@@ -31,4 +31,9 @@ public abstract class AbstractBroker implements Broker
     {
         throw new UnsupportedOperationException();
     }
+    
+    public void shutdown()
+    {
+        // Do nothing
+    }
 }

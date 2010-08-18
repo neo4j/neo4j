@@ -95,4 +95,13 @@ public class ZooKeeperBroker implements Broker
     {
         return machineId;
     }
+    
+    public void shutdown()
+    {
+        if ( masterClient != null )
+        {
+            masterClient.shutdown();
+        }
+        zooClient.shutdown();
+    }
 }

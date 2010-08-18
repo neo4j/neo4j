@@ -8,6 +8,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import static slavetest.AbstractHaTest.wrap;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
@@ -66,7 +67,7 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
                 haDb = new HighlyAvailableGraphDatabase( storeDir, MapUtil.stringMap(
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + tempMachineId,
                         "index", args.get( "index", null ) ),
-                        broker );
+                        wrap( broker ) );
                 broker.setDb( haDb );
                 println( "Started HA db (w/o zoo keeper)" );
             }

@@ -23,6 +23,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.ha.BrokerFactory;
+import org.neo4j.kernel.impl.ha.Broker;
 
 public abstract class AbstractHaTest
 {
@@ -415,5 +417,16 @@ public abstract class AbstractHaTest
         this.nodePropCount = nodePropCount;
         this.relPropCount = relPropCount;
         this.nodeIndexPropCount = nodeIndexPropCount;
+    }
+    
+    static BrokerFactory wrap( final Broker broker )
+    {
+        return new BrokerFactory()
+        {
+            public Broker create()
+            {
+                return broker;
+            }
+        };
     }
 }

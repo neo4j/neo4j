@@ -244,4 +244,9 @@ public class MasterClient extends CommunicationProtocol implements Master
             return pipeline;
         }
     }
+    
+    public void shutdown()
+    {
+        client.close();
+    }
 }
