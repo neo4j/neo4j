@@ -67,6 +67,17 @@ public class ZooClient implements Watcher
         }
     }
     
+    private String getRootWithRetries()
+    {
+        return doZooKeeperJobWithRetries( new Job<String>()
+        {
+            public String doJob()
+            {
+                return getRoot();
+            }
+        } );
+    }
+    
     private String getRoot()
     {
         String rootPath = "/" + storeCreationTime + "_" + storeId;
@@ -266,5 +277,36 @@ public class ZooClient implements Watcher
             throw new ZooKeeperException( 
                 "Error closing zookeeper connection", e );
         }
+    }
+    
+    private <T> T doZooKeeperJobWithRetries( Job<T> job )
+    {
+        ZooKeeperException exception = null;
+        for ( int i = 0; i < 5; i++ )
+        {
+            try
+            {
+                return job.doJob();
+            }
+            catch ( ZooKeeperException e )
+            {
+                exception = e;
+                try
+                {
+                    // TODO Just sleep 300ms ?
+                    Thread.sleep( 300 );
+                }
+                catch ( InterruptedException e1 )
+                {
+                    Thread.interrupted();
+                }
+            }
+        }
+        throw exception;
+    }
+    
+    private static interface Job<T>
+    {
+        T doJob();
     }
 }

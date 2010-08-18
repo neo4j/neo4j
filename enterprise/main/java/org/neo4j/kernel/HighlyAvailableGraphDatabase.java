@@ -41,6 +41,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     public static final String CONFIG_KEY_HA_MACHINE_ID = "ha.machine_id";
     public static final String CONFIG_KEY_HA_ZOO_KEEPER_SERVERS = "ha.zoo_keeper_servers";
     public static final String CONFIG_KEY_HA_SERVERS = "ha.servers";
+    public static final String CONFIG_KEY_HA_PULL_INTERVAL = "ha.pull_interval";
     
     private final String storeDir;
     private final Map<String, String> config;
@@ -50,6 +51,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     private final int machineId;
     private MasterServer masterServer;
     private AtomicBoolean reevaluatingMyself = new AtomicBoolean();
+    private UpdatePuller updatePuller;
     
     /**
      * Will instantiate its own ZooKeeper broker
@@ -113,6 +115,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     {
         try
         {
+            System.out.println( Thread.currentThread().getName() + " pulls updates" );
             receive( broker.getMaster().pullUpdates( getSlaveContext() ) );
         }
         catch ( ZooKeeperException e )
@@ -151,15 +154,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 }
                 if ( this.localGraph == null )
                 {
-                    this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
-                    this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
-                            CommonFactories.defaultLockManagerFactory(),
-                            new MasterIdGeneratorFactory(),
-                            CommonFactories.defaultRelationshipTypeCreator(),
-                            CommonFactories.defaultTxIdGeneratorFactory(),
-                            CommonFactories.defaultTxRollbackHook(),
-                            new ZooKeeperLastCommittedTxIdSetter( broker ) );
-                    instantiateIndexIfNeeded();
+                    startAsSlave();
                 }
             }
             else
@@ -170,14 +165,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 }
                 if ( this.localGraph == null )
                 {
-                    this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
-                            new SlaveLockManagerFactory( broker, this ),
-                            new SlaveIdGeneratorFactory( broker, this ),
-                            new SlaveRelationshipTypeCreator( broker, this ),
-                            new SlaveTxIdGeneratorFactory( broker, this ),
-                            new SlaveTxRollbackHook( broker, this ),
-                            new ZooKeeperLastCommittedTxIdSetter( broker ) );
-                    instantiateIndexIfNeeded();
+                    startAsMaster();
                 }
             }
         }
@@ -187,6 +175,42 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         }
     }
 
+    private void startAsMaster()
+    {
+        this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
+                new SlaveLockManagerFactory( broker, this ),
+                new SlaveIdGeneratorFactory( broker, this ),
+                new SlaveRelationshipTypeCreator( broker, this ),
+                new SlaveTxIdGeneratorFactory( broker, this ),
+                new SlaveTxRollbackHook( broker, this ),
+                new ZooKeeperLastCommittedTxIdSetter( broker ) );
+        instantiateIndexIfNeeded();
+    }
+
+    private void startAsSlave()
+    {
+        this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
+        this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
+                CommonFactories.defaultLockManagerFactory(),
+                new MasterIdGeneratorFactory(),
+                CommonFactories.defaultRelationshipTypeCreator(),
+                CommonFactories.defaultTxIdGeneratorFactory(),
+                CommonFactories.defaultTxRollbackHook(),
+                new ZooKeeperLastCommittedTxIdSetter( broker ) );
+        instantiateIndexIfNeeded();
+        instantiateAutoUpdatePullerIfConfigSaysSo();
+    }
+
+    private void instantiateAutoUpdatePullerIfConfigSaysSo()
+    {
+        String pullInterval = this.config.get( CONFIG_KEY_HA_PULL_INTERVAL );
+        if ( pullInterval != null )
+        {
+            updatePuller = UpdatePuller.startAutoPull( this,
+                    TimeUtil.parseTimeMillis( pullInterval ) );
+        }
+    }
+    
     private void instantiateIndexIfNeeded()
     {
         if ( Boolean.parseBoolean( config.get( "index" ) ) )
@@ -258,6 +282,12 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     public synchronized void shutdown()
     {
+        if ( this.updatePuller != null )
+        {
+            System.out.println( "Shutting down update puller" );
+            this.updatePuller.halt();
+            this.updatePuller = null;
+        }
         if ( this.masterServer != null )
         {
             System.out.println( "Shutting down master server" );
