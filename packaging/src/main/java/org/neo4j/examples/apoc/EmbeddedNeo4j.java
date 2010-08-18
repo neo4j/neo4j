@@ -12,16 +12,22 @@ public class EmbeddedNeo4j
     private static final String DB_PATH = "neo4j-store";
     private static final String NAME_KEY = "name";
 
+    // START SNIPPET: createReltype
     private static enum ExampleRelationshipTypes implements RelationshipType
     {
         EXAMPLE
     }
+    // END SNIPPET: createReltype
 
     public static void main( final String[] args )
     {
+        // START SNIPPET: startDb
         GraphDatabaseService graphDb = new EmbeddedGraphDatabase( DB_PATH );
         registerShutdownHook( graphDb );
-        // Encapsulate some operations in a transaction
+        // END SNIPPET: startDb
+
+        // START SNIPPET: operationsInATransaction
+        // Encapsulate operations in a transaction
         Transaction tx = graphDb.beginTx();
         try
         {
@@ -29,23 +35,34 @@ public class EmbeddedNeo4j
             firstNode.setProperty( NAME_KEY, "Hello" );
             Node secondNode = graphDb.createNode();
             secondNode.setProperty( NAME_KEY, "World" );
+
             firstNode.createRelationshipTo( secondNode,
                 ExampleRelationshipTypes.EXAMPLE );
+
             String greeting = firstNode.getProperty( NAME_KEY ) + " "
                 + secondNode.getProperty( NAME_KEY );
             System.out.println( greeting );
+            // END SNIPPET: operationsInATransaction
+
+            // START SNIPPET: removingData
+            // let's remove the data before committing
             firstNode.getSingleRelationship( ExampleRelationshipTypes.EXAMPLE,
-                Direction.OUTGOING ).delete();
+                    Direction.OUTGOING ).delete();
             firstNode.delete();
             secondNode.delete();
+
             tx.success();
         }
         finally
         {
             tx.finish();
         }
+        // END SNIPPET: removingData
+
         System.out.println( "Shutting down database ..." );
+        // START SNIPPET: shutdownServer
         graphDb.shutdown();
+        // END SNIPPET: shutdownServer
     }
 
     private static void registerShutdownHook( final GraphDatabaseService graphDb )
