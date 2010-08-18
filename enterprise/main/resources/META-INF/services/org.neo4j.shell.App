@@ -1,1 +1,1 @@
-org.neo4j.index.impl.Ix
+org.neo4j.index.impl.IndexProviderShellApp
