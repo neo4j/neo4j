@@ -1,0 +1,8 @@
+Social network
+
+Path finding example
+
+    What we want to achieve here is to create a network between friends.
+    So the basic structure of our data goes like this:
+
+[./images/social-network.png] Node space view
