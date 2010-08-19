@@ -116,11 +116,11 @@ public class IndexProviderShellApp extends GraphDatabaseApp
             Iterable<Node> result;
             if ( query )
             {
-                result = query( indexes, parser, session, out );
+                result = query( indexes, parser );
             }
             else
             {
-                result = get( indexes, parser, session, out );
+                result = get( indexes, parser );
             }
             for ( Node node : result )
             {
@@ -130,11 +130,11 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         }
         else if ( index )
         {
-            index( indexes, parser, session, out );
+            index( indexes, parser, session );
         }
         else if ( remove )
         {
-            remove( indexes, parser, session, out );
+            remove( indexes, parser, session );
         }
         return null;
     }
@@ -152,8 +152,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         return count;
     }
 
-    private Iterable<Node> get( IndexProvider indexes, AppCommandParser parser, Session session,
-            Output out )
+    private Iterable<Node> get( IndexProvider indexes, AppCommandParser parser )
     {
         String index = parser.arguments().get( 0 );
         String key = parser.arguments().get( 1 );
@@ -161,21 +160,20 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         return indexes.nodeIndex( index, emptyConfig() ).get( key, value );
     }
 
-    private Iterable<Node> query( IndexProvider indexes, AppCommandParser parser, Session session,
-            Output out )
+    private Iterable<Node> query( IndexProvider indexes, AppCommandParser parser )
     {
         String index = parser.arguments().get( 0 );
         String query = parser.arguments().get( 1 );
         return indexes.nodeIndex( index, emptyConfig() ).query( query );
     }
 
-    private void index( IndexProvider indexes, AppCommandParser parser, Session session, Output out )
+    private void index( IndexProvider indexes, AppCommandParser parser, Session session )
             throws ShellException
     {
         Node node = getCurrent( session ).asNode();
         String index = parser.arguments().get( 0 );
-        String key = parser.arguments().get( 0 );
-        Object value = parser.arguments().size() > 1 ? parser.arguments().get( 1 )
+        String key = parser.arguments().get( 1 );
+        Object value = parser.arguments().size() > 2 ? parser.arguments().get( 2 )
                 : node.getProperty( key, null );
         if ( value == null )
         {
@@ -184,7 +182,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         indexes.nodeIndex( index, emptyConfig() ).add( node, key, value );
     }
 
-    private void remove( IndexProvider indexes, AppCommandParser parser, Session session, Output out )
+    private void remove( IndexProvider indexes, AppCommandParser parser, Session session )
             throws ShellException
     {
         Node node = getCurrent( session ).asNode();
