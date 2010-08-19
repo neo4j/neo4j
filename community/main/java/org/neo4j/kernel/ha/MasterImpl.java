@@ -44,6 +44,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
  */
 public class MasterImpl implements Master
 {
+    private static final int ID_GRAB_SIZE = 1000;
+    
     private static final Predicate<Long> ALL = new Predicate<Long>()
     {
         public boolean accept( Long item )
@@ -258,19 +260,17 @@ public class MasterImpl implements Master
         }
     }
 
-    public Response<IdAllocation> allocateIds( SlaveContext context, IdType idType )
+    public IdAllocation allocateIds( IdType idType )
     {
         IdGeneratorFactory factory = getConfig().getIdGeneratorFactory();
         IdGenerator generator = factory.get( idType );
-        int size = 1000;
+        int size = ID_GRAB_SIZE;
         long[] ids = new long[size];
         for ( int i = 0; i < size; i++ )
         {
             ids[i] = generator.nextId();
         }
-
-        return packResponse( context, new IdAllocation( ids, generator.getHighId(),
-                generator.getDefragCount() ), ALL );
+        return new IdAllocation( ids, generator.getHighId(), generator.getDefragCount() ); 
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
@@ -299,13 +299,14 @@ public class MasterImpl implements Master
             e.printStackTrace();
             return new FailedResponse<Long>();
         }
-//        finally
-//        {
+        finally
+        {
+            suspendThisAndResumeOther( otherTx );
             // Since the master-transaction carries no actual state, just locks
             // we would like to release the locks... and it's best done by just
             // rolling back the tx
 //            rollbackThisAndResumeOther( otherTx );
-//        }
+        }
     }
     
     public Response<Void> doneCommitting( SlaveContext context, int eventIdentifier )

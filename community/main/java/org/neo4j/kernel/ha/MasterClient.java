@@ -65,7 +65,10 @@ public class MasterClient extends CommunicationProtocol implements Master
             // Send 'em over the wire
             ChannelBuffer buffer = ChannelBuffers.dynamicBuffer();
             buffer.writeByte( type.ordinal() );
-            writeSlaveContext( buffer, slaveContext );
+            if ( type.includesSlaveContext() )
+            {
+                writeSlaveContext( buffer, slaveContext );
+            }
             serializer.write( buffer );
             client.channel.write(buffer);
 
@@ -74,7 +77,8 @@ public class MasterClient extends CommunicationProtocol implements Master
 //                client.blockingReadHandler.read();
                 client.blockingReadHandler.read( 20, TimeUnit.SECONDS );
             T response = deserializer.read( message );
-            TransactionStreams txStreams = readTransactionStreams( message );
+            TransactionStreams txStreams = type.includesSlaveContext() ?
+                    readTransactionStreams( message ) : TransactionStreams.EMPTY;
             return new Response<T>( response, txStreams );
         }
         catch ( IOException e )
@@ -87,9 +91,9 @@ public class MasterClient extends CommunicationProtocol implements Master
         }
     }
 
-    public Response<IdAllocation> allocateIds( SlaveContext context, final IdType idType )
+    public IdAllocation allocateIds( final IdType idType )
     {
-        return sendRequest( RequestType.ALLOCATE_IDS, context, new Serializer()
+        return sendRequest( RequestType.ALLOCATE_IDS, null, new Serializer()
         {
             public void write( ChannelBuffer buffer ) throws IOException
             {
@@ -101,7 +105,7 @@ public class MasterClient extends CommunicationProtocol implements Master
             {
                 return readIdAllocation( buffer );
             }
-        } );
+        } ).response();
     }
 
     public Response<Integer> createRelationshipType( SlaveContext context, final String name )
