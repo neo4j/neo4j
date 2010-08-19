@@ -3,6 +3,7 @@ package org.neo4j.kernel;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.ha.SlaveContext;
 import org.neo4j.kernel.impl.ha.TransactionStream;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class HighlyAvailableGraphDatabase implements GraphDatabaseService, ResponseReceiver
@@ -54,6 +56,9 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     private MasterServer masterServer;
     private AtomicBoolean reevaluatingMyself = new AtomicBoolean();
     private UpdatePuller updatePuller;
+
+    // Just "cached" instances which are used internally here
+    private XaDataSourceManager localDataSourceManager;
     
     /**
      * Will instantiate its own ZooKeeper broker
@@ -147,7 +152,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     
     public Config getConfig()
     {
-        return localGraph.getConfig();
+        return this.localGraph.getConfig();
     }
     
     protected void reevaluateMyself()
@@ -170,7 +175,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 }
                 if ( this.localGraph == null )
                 {
-                    startAsSlave();
+                    startAsMaster();
                 }
             }
             else
@@ -181,9 +186,11 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 }
                 if ( this.localGraph == null )
                 {
-                    startAsMaster();
+                    startAsSlave();
                 }
             }
+            this.localDataSourceManager =
+                    localGraph.getConfig().getTxModule().getXaDataSourceManager();
         }
         finally
         {
@@ -191,7 +198,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         }
     }
 
-    private void startAsMaster()
+    private void startAsSlave()
     {
         this.broker = brokerFactory.create();
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
@@ -204,7 +211,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         instantiateIndexIfNeeded();
     }
 
-    private void startAsSlave()
+    private void startAsMaster()
     {
         this.broker = brokerFactory.create();
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
@@ -329,6 +336,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             System.out.println( "Shutting down local graph" );
             this.localGraph.shutdown();
             this.localGraph = null;
+            this.localDataSourceManager = null;
         }
     }
 
@@ -345,14 +353,15 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     
     public SlaveContext getSlaveContext()
     {
-        Config config = getConfig();
-        Map<String, Long> txs = new HashMap<String, Long>();
-        for ( XaDataSource dataSource :
-                config.getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
+        Collection<XaDataSource> dataSources = localDataSourceManager.getAllRegisteredDataSources();
+        @SuppressWarnings("unchecked")
+        Pair<String, Long>[] txs = new Pair[dataSources.size()];
+        int i = 0;
+        for ( XaDataSource dataSource : dataSources )
         {
-            txs.put( dataSource.getName(), dataSource.getLastCommittedTxId() );
+            txs[i++] = new Pair<String, Long>( 
+                    dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
-//        System.out.println( "Sending slaveContext:" + machineId + ", " + txs );
         return new SlaveContext( machineId, txs );
     }
 
@@ -363,8 +372,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             for ( Pair<String, TransactionStream> streams : response.transactions().getStreams() )
             {
                 String resourceName = streams.first();
-                XaDataSource dataSource = localGraph.getConfig().getTxModule().getXaDataSourceManager()
-                        .getXaDataSource( resourceName );
+                XaDataSource dataSource = localDataSourceManager.getXaDataSource( resourceName );
                 for ( ReadableByteChannel channel : streams.other().getChannels() )
                 {
                     dataSource.applyCommittedTransaction( channel );

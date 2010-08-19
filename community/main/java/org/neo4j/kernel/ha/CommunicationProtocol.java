@@ -5,11 +5,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -459,12 +457,12 @@ abstract class CommunicationProtocol
     protected static void writeSlaveContext( ChannelBuffer buffer, SlaveContext context )
     {
         buffer.writeInt( context.machineId() );
-        Map<String, Long> txs = context.lastAppliedTransactions();
-        buffer.writeByte( txs.size() );
-        for ( Map.Entry<String, Long> tx : txs.entrySet() )
+        Pair<String, Long>[] txs = context.lastAppliedTransactions();
+        buffer.writeByte( txs.length );
+        for ( Pair<String, Long> tx : txs )
         {
-            writeString( buffer, tx.getKey() );
-            buffer.writeLong( tx.getValue() );
+            writeString( buffer, tx.first() );
+            buffer.writeLong( tx.other() );
         }
     }
 
@@ -472,11 +470,12 @@ abstract class CommunicationProtocol
     private static SlaveContext readSlaveContext( ChannelBuffer buffer )
     {
         int machineId = buffer.readInt();
-        Map<String, Long> lastAppliedTransactions = new HashMap<String, Long>();
         int txsSize = buffer.readByte();
+        Pair<String, Long>[] lastAppliedTransactions = new Pair[txsSize];
         for ( int i = 0; i < txsSize; i++ )
         {
-            lastAppliedTransactions.put( readString( buffer ), buffer.readLong() );
+            lastAppliedTransactions[i] = new Pair<String, Long>(
+                    readString( buffer ), buffer.readLong() );
         }
         return new SlaveContext( machineId, lastAppliedTransactions );
     }
