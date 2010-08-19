@@ -351,7 +351,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         {
             txs.put( dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
-        System.out.println( "Sending slaveContext:" + machineId + ", " + txs );
+//        System.out.println( "Sending slaveContext:" + machineId + ", " + txs );
         return new SlaveContext( machineId, txs );
     }
 
