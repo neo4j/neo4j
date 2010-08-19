@@ -22,7 +22,7 @@ import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 
-public class CommonJobs
+public abstract class CommonJobs
 {
     public static final RelationshipType REL_TYPE = DynamicRelationshipType.withName( "HA_TEST" );
     public static final RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
@@ -481,15 +481,22 @@ public class CommonJobs
         }
     }
     
-    public static class PerformanceWriteLocksJob extends TransactionalJob<Void>
+    public static class PerformanceAcquireWriteLocksJob extends TransactionalJob<Void>
     {
+        private final int amount;
+
+        public PerformanceAcquireWriteLocksJob( int amount )
+        {
+            this.amount = amount;
+        }
+        
         @Override
         protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
             Config config = getConfig( db );
             LockManager lockManager = config.getLockManager();
             LockReleaser lockReleaser = config.getLockReleaser();
-            for ( int i = 0; i < 10000; i++ )
+            for ( int i = 0; i < amount; i++ )
             {
                 Object resource = new LockableNode( i );
                 lockManager.getWriteLock( resource );
