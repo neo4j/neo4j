@@ -16,7 +16,7 @@ public class FakeBroker extends AbstractBroker
     {
         return master;
     }
-
+    
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
         throw new UnsupportedOperationException();

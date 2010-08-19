@@ -11,6 +11,7 @@ import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.IdAllocation;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
+import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class SlaveIdGenerator implements IdGenerator
@@ -61,7 +62,7 @@ public class SlaveIdGenerator implements IdGenerator
     private final ResponseReceiver receiver;
     private volatile long highestIdInUse;
     private volatile long defragCount;
-    private LongArrayIterator idQueue = new LongArrayIterator( new long[0] );
+    private IdRangeIterator idQueue = new IdRangeIterator( new IdRange( new long[0], 0, 0 ) );
     private final IdType idType;
     private final IdGenerator localIdGenerator;
 
@@ -118,12 +119,17 @@ public class SlaveIdGenerator implements IdGenerator
             throw e;
         }
     }
+    
+    public IdRange nextIdBatch( int size )
+    {
+        throw new UnsupportedOperationException( "Should never be called" );
+    }
 
     private long storeLocally( IdAllocation allocation )
     {
         this.highestIdInUse = allocation.getHighestIdInUse();
         this.defragCount = allocation.getDefragCount();
-        this.idQueue = new LongArrayIterator( allocation.getIds() );
+        this.idQueue = new IdRangeIterator( allocation.getIdRange() );
         updateLocalIdGenerator();
         return idQueue.next();
     }
@@ -153,19 +159,38 @@ public class SlaveIdGenerator implements IdGenerator
         return this.defragCount;
     }
     
-    private static class LongArrayIterator
+    private static class IdRangeIterator
     {
-        private int position;
-        private final long[] array;
-        
-        LongArrayIterator( long[] array )
+        private int position = 0;
+        private final long[] defrag;
+        private final long start;
+        private final int length;
+
+        IdRangeIterator( IdRange idRange )
         {
-            this.array = array;
+            this.defrag = idRange.getDefragIds();
+            this.start = idRange.getRangeStart();
+            this.length = idRange.getRangeLength();
         }
         
         long next()
         {
-            return position < array.length ? array[position++] : VALUE_REPRESENTING_NULL;
+            try
+            {
+                if ( position < defrag.length )
+                {
+                    return defrag[position];
+                }
+                else
+                {
+                    int offset = position - defrag.length;
+                    return ( offset < length ) ? ( start + offset ) : VALUE_REPRESENTING_NULL;
+                }
+            }
+            finally
+            {
+                ++position;
+            }
         }
     }
 }
