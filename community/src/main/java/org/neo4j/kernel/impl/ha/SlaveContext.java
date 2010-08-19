@@ -1,13 +1,13 @@
 package org.neo4j.kernel.impl.ha;
 
-import java.util.Map;
+import org.neo4j.helpers.Pair;
 
 public final class SlaveContext
 {
     private final int machineId;
-    private final Map<String, Long> lastAppliedTransactions;
+    private final Pair<String, Long>[] lastAppliedTransactions;
 
-    public SlaveContext( int machineId, Map<String, Long> lastAppliedTransactions )
+    public SlaveContext( int machineId, Pair<String, Long>[] lastAppliedTransactions )
     {
         this.machineId = machineId;
         this.lastAppliedTransactions = lastAppliedTransactions;
@@ -18,7 +18,7 @@ public final class SlaveContext
         return machineId;
     }
 
-    public Map<String, Long> lastAppliedTransactions()
+    public Pair<String, Long>[] lastAppliedTransactions()
     {
         return lastAppliedTransactions;
     }
