@@ -1,9 +1,7 @@
 package org.neo4j.kernel.ha;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -17,6 +15,8 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class SlaveIdGenerator implements IdGenerator
 {
+    private static final long VALUE_REPRESENTING_NULL = -1;
+    
     public static class SlaveIdGeneratorFactory implements IdGeneratorFactory
     {
         private final Broker broker;
@@ -61,7 +61,7 @@ public class SlaveIdGenerator implements IdGenerator
     private final ResponseReceiver receiver;
     private volatile long highestIdInUse;
     private volatile long defragCount;
-    private final Queue<Long> idQueue = new LinkedList<Long>();
+    private LongArrayIterator idQueue = new LongArrayIterator( new long[0] );
     private final IdType idType;
     private final IdGenerator localIdGenerator;
 
@@ -96,17 +96,17 @@ public class SlaveIdGenerator implements IdGenerator
 
     public synchronized long nextId()
     {
-        // if we dont have anymore grabbed ids from master, grab a bunch 
         try
         {
-            Long nextId = nextLocalIdOrNull();
-            if ( nextId == null )
+            long nextId = nextLocalId();
+            if ( nextId == VALUE_REPRESENTING_NULL )
             {
+                // If we dont have anymore grabbed ids from master, grab a bunch 
                 IdAllocation allocation = receiver.receive(
                         broker.getMaster().allocateIds( receiver.getSlaveContext(), idType ) );
                 nextId = storeLocally( allocation );
             }
-            return nextId.intValue();
+            return nextId;
         }
         catch ( ZooKeeperException e )
         {
@@ -120,16 +120,13 @@ public class SlaveIdGenerator implements IdGenerator
         }
     }
 
-    private Long storeLocally( IdAllocation allocation )
+    private long storeLocally( IdAllocation allocation )
     {
         this.highestIdInUse = allocation.getHighestIdInUse();
         this.defragCount = allocation.getDefragCount();
-        for ( long id : allocation.getIds() )
-        {
-            idQueue.add( id );
-        }
+        this.idQueue = new LongArrayIterator( allocation.getIds() );
         updateLocalIdGenerator();
-        return idQueue.poll();
+        return idQueue.next();
     }
 
     private void updateLocalIdGenerator()
@@ -141,9 +138,9 @@ public class SlaveIdGenerator implements IdGenerator
         }
     }
 
-    private Long nextLocalIdOrNull()
+    private long nextLocalId()
     {
-        return this.idQueue.poll();
+        return this.idQueue.next();
     }
 
     public void setHighId( long id )
@@ -155,5 +152,21 @@ public class SlaveIdGenerator implements IdGenerator
     public long getDefragCount()
     {
         return this.defragCount;
+    }
+    
+    private static class LongArrayIterator
+    {
+        private int position;
+        private final long[] array;
+        
+        LongArrayIterator( long[] array )
+        {
+            this.array = array;
+        }
+        
+        long next()
+        {
+            return position < array.length ? array[position++] : VALUE_REPRESENTING_NULL;
+        }
     }
 }
