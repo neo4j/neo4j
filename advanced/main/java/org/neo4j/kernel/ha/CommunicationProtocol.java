@@ -229,7 +229,10 @@ abstract class CommunicationProtocol
         
         ChannelBuffer targetBuffer = ChannelBuffers.dynamicBuffer();
         type.serializer.write( response.response(), targetBuffer );
-        writeTransactionStreams( response.transactions(), targetBuffer );
+        if ( type.includesSlaveContext() )
+        {
+            writeTransactionStreams( response.transactions(), targetBuffer );
+        }
         return targetBuffer;
     }
 
