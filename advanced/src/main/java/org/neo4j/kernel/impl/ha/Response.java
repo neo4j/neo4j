@@ -20,4 +20,9 @@ public class Response<T>
     {
         return transactions;
     }
+
+    public static <R> Response<R> wrapResponseObjectOnly( R response )
+    {
+        return new Response<R>( response, TransactionStreams.EMPTY );
+    }
 }

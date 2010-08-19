@@ -8,7 +8,7 @@ import org.neo4j.kernel.IdType;
  */
 public interface Master
 {
-    Response<IdAllocation> allocateIds( SlaveContext context, IdType idType );
+    IdAllocation allocateIds( IdType idType );
 
     Response<Integer> createRelationshipType( SlaveContext context, String name );
 
