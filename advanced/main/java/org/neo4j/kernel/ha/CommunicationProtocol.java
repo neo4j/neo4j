@@ -94,7 +94,7 @@ abstract class CommunicationProtocol
                     ChannelBuffer input )
             {
                 IdType idType = IdType.values()[input.readByte()];
-                return master.allocateIds( context, idType );
+                return Response.wrapResponseObjectOnly( master.allocateIds( idType ) );
             }
         }, new ObjectSerializer<IdAllocation>()
         {
@@ -108,7 +108,7 @@ abstract class CommunicationProtocol
                 result.writeLong( idAllocation.getHighestIdInUse() );
                 result.writeLong( idAllocation.getDefragCount() );
             }
-        } ),
+        }, false ),
         CREATE_RELATIONSHIP_TYPE( new MasterCaller<Integer>()
         {
             public Response<Integer> callMaster( Master master, SlaveContext context,
@@ -194,11 +194,24 @@ abstract class CommunicationProtocol
         final MasterCaller caller;
         @SuppressWarnings( "unchecked" )
         final ObjectSerializer serializer;
+        private final boolean includesSlaveContext;
 
-        private <T> RequestType( MasterCaller<T> caller, ObjectSerializer<T> serializer )
+        private <T> RequestType( MasterCaller<T> caller, ObjectSerializer<T> serializer,
+                boolean includesSlaveContext )
         {
             this.caller = caller;
             this.serializer = serializer;
+            this.includesSlaveContext = includesSlaveContext;
+        }
+        
+        private <T> RequestType( MasterCaller<T> caller, ObjectSerializer<T> serializer )
+        {
+            this( caller, serializer, true );
+        }
+        
+        public boolean includesSlaveContext()
+        {
+            return this.includesSlaveContext;
         }
     }
 
@@ -207,7 +220,7 @@ abstract class CommunicationProtocol
             ChannelBuffer buffer ) throws IOException
     {
         RequestType type = RequestType.values()[buffer.readByte()];
-        final SlaveContext context = readSlaveContext( buffer );
+        SlaveContext context = type.includesSlaveContext() ? readSlaveContext( buffer ) : null;
         Response<?> response = type.caller.callMaster( realMaster, context, buffer );
         
         ChannelBuffer targetBuffer = ChannelBuffers.dynamicBuffer();

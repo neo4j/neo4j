@@ -102,8 +102,7 @@ public class SlaveIdGenerator implements IdGenerator
             if ( nextId == VALUE_REPRESENTING_NULL )
             {
                 // If we dont have anymore grabbed ids from master, grab a bunch 
-                IdAllocation allocation = receiver.receive(
-                        broker.getMaster().allocateIds( receiver.getSlaveContext(), idType ) );
+                IdAllocation allocation = broker.getMaster().allocateIds( idType );
                 nextId = storeLocally( allocation );
             }
             return nextId;
