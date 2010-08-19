@@ -28,6 +28,8 @@ abstract class CommunicationProtocol
 {
     public static final int PORT = 8901;
     private static final int MEGA = 1024 * 1024;
+    static final int MAX_FRAME_LENGTH = 1000000;
+    
     static final ObjectSerializer<Integer> INTEGER_SERIALIZER = new ObjectSerializer<Integer>()
     {
         @SuppressWarnings( "boxing" )
