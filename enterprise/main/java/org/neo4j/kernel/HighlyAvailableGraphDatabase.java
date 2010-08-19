@@ -214,7 +214,6 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     private void startAsMaster()
     {
         this.broker = brokerFactory.create();
-        this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 CommonFactories.defaultLockManagerFactory(),
                 new MasterIdGeneratorFactory(),
@@ -222,6 +221,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 CommonFactories.defaultTxIdGeneratorFactory(),
                 CommonFactories.defaultTxRollbackHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
+        this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         instantiateIndexIfNeeded();
         instantiateAutoUpdatePullerIfConfigSaysSo();
     }
