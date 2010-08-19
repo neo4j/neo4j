@@ -9,40 +9,80 @@ public class PerformanceTests
     {
         testJob( new CommonJobs.PerformanceIdAllocationJob( 1000000 ) );
     }
-    
+
     @Test
     public void createNodes() throws Exception
     {
         testJob( new CommonJobs.PerformanceCreateNodesJob( 10, 1000 ) );
     }
-    
+
     @Test
     public void grabLocks() throws Exception
     {
         testJob( new CommonJobs.PerformanceAcquireWriteLocksJob( 10000 ) );
     }
-    
+
+    public static void main( String[] args ) throws Exception
+    {
+        PerformanceTests perf = new PerformanceTests();
+        perf.selective = true;
+        for ( String test : args )
+        {
+            PerformanceTests.class.getDeclaredMethod( test ).invoke( perf );
+        }
+    }
+
+    private boolean selective = false;
+
     private void testJob( Job<Void> job ) throws Exception
     {
-        SingleJvmTesting single = new SingleJvmTesting();
-        single.initializeDbs( 1 );
-        time( "No HA", executeOnMaster( single, job ) );
-        single.shutdownDbs();
-        single.initializeDbs( 1 );
-        time( "Single JVM HA", executeOnSlave( single, job ) );
-        single.shutdownDbs();
-        
-        MultiJvmTesting multi = new MultiJvmTesting();
-        multi.initializeDbs( 1 );
-        time( "Multi JVM HA", executeOnSlave( multi, job ) );
-        multi.shutdownDbs();
-        
-        MultiJvmWithZooKeeperTesting multiZoo = new MultiJvmWithZooKeeperTesting();
-        MultiJvmWithZooKeeperTesting.startZooKeeperCluster();
-        multiZoo.initializeDbs( 1 );
-        time( "Multi JVM HA with ZooKeeper", executeOnSlave( multiZoo, job ) );
-        multiZoo.shutdownDbs();
-        MultiJvmWithZooKeeperTesting.shutdownZooKeeperCluster();
+        final boolean noHa = doTest( "NO_HA" );
+        final boolean singleJvm = doTest( "SINGLE_JVM" );
+        if ( noHa || singleJvm )
+        {
+            SingleJvmTesting single = new SingleJvmTesting();
+            if ( noHa )
+            {
+                single.initializeDbs( 1 );
+                time( "No HA", executeOnMaster( single, job ) );
+                single.shutdownDbs();
+            }
+            if ( singleJvm )
+            {
+                single.initializeDbs( 1 );
+                time( "Single JVM HA", executeOnSlave( single, job ) );
+                single.shutdownDbs();
+            }
+        }
+
+        if ( doTest( "MULTI_JVM" ) )
+        {
+            MultiJvmTesting multi = new MultiJvmTesting();
+            multi.initializeDbs( 1 );
+            time( "Multi JVM HA", executeOnSlave( multi, job ) );
+            multi.shutdownDbs();
+        }
+        if ( doTest( "FULL_HA" ) )
+        {
+            MultiJvmWithZooKeeperTesting multiZoo = new MultiJvmWithZooKeeperTesting();
+            MultiJvmWithZooKeeperTesting.startZooKeeperCluster();
+            multiZoo.initializeDbs( 1 );
+            time( "Multi JVM HA with ZooKeeper", executeOnSlave( multiZoo, job ) );
+            multiZoo.shutdownDbs();
+            MultiJvmWithZooKeeperTesting.shutdownZooKeeperCluster();
+        }
+    }
+
+    private boolean doTest( String testName )
+    {
+        if ( selective )
+        {
+            return Boolean.getBoolean( "org.neo4j.ha.test." + testName );
+        }
+        else
+        {
+            return true;
+        }
     }
 
     private Runnable executeOnSlave( final AbstractHaTest test, final Job<Void> job )
