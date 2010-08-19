@@ -7,16 +7,19 @@ public class PerformanceTests
     @Test
     public void allocateIds() throws Exception
     {
-//        testJob( new CommonJobs.PerformanceIdAllocationJob( 100000000 ) );
-//        testJob( new CommonJobs.PerformanceIdAllocationJob( 100000000 ) );
         testJob( new CommonJobs.PerformanceIdAllocationJob( 1000000 ) );
-//        testJob( new CommonJobs.PerformanceIdAllocationJob( 100000 ) );
     }
     
     @Test
     public void createNodes() throws Exception
     {
         testJob( new CommonJobs.PerformanceCreateNodesJob( 10, 1000 ) );
+    }
+    
+    @Test
+    public void grabLocks() throws Exception
+    {
+        testJob( new CommonJobs.PerformanceAcquireWriteLocksJob( 10000 ) );
     }
     
     private void testJob( Job<Void> job ) throws Exception
