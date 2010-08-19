@@ -13,6 +13,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.neo4j.helpers.Pair;
 
 public class ZooClient implements Watcher
@@ -24,9 +25,10 @@ public class ZooClient implements Watcher
     private String sequenceNr;
     
     private long committedTx;
-//    private long globalCommittedTx;
     private final String servers;
-    private boolean newConnection;
+    
+    private volatile KeeperState keeperState = KeeperState.Disconnected;
+    private volatile boolean shutdown = false;
     
     public ZooClient( String servers, int machineId, long storeCreationTime, 
         long storeId, long committedTx )
@@ -38,44 +40,83 @@ public class ZooClient implements Watcher
         this.storeId = storeId;
         this.committedTx = committedTx;
         this.sequenceNr = "not initialized yet";
-//        sequenceNr = setup();
     }
     
-    boolean isNewConnection()
+    public void process( WatchedEvent event )
     {
-        try
+        System.out.println( new Date() + " Got event: " + event );
+        if ( event.getState() == Watcher.Event.KeeperState.Expired )
         {
-            return newConnection;
+            keeperState = KeeperState.Expired;
+            instantiateZooKeeper();
         }
-        finally
+        else if ( event.getState() == Watcher.Event.KeeperState.SyncConnected )
         {
-            newConnection = false;
+            keeperState = KeeperState.SyncConnected;
+            sequenceNr = setup();
+        }
+        else if ( event.getState() == Watcher.Event.KeeperState.Disconnected )
+        {
+            keeperState = KeeperState.Disconnected;
         }
     }
-
+    
+    private final long TIME_OUT = 5000;
+    
+    private void waitForSyncConnected()
+    {
+        if ( keeperState == KeeperState.SyncConnected )
+        {
+            return;
+        }
+        if ( shutdown == true )
+        {
+            throw new ZooKeeperException( "ZooKeeper client has been shutdwon" );
+        }
+        long startTime = System.currentTimeMillis();
+        long currentTime = startTime;
+        synchronized ( keeperState )
+        {
+            do
+            {
+                try
+                {
+                    keeperState.wait( 250 );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.interrupted();
+                }
+                if ( keeperState == KeeperState.SyncConnected )
+                {
+                    return;
+                }
+                if ( shutdown == true )
+                {
+                    throw new ZooKeeperException( "ZooKeeper client has been shutdwon" );
+                }
+                currentTime = System.currentTimeMillis();
+            }
+            while ( (currentTime - startTime) < TIME_OUT );
+            if ( keeperState != KeeperState.SyncConnected )
+            {
+                throw new ZooKeeperTimedOutException( 
+                        "Connection to ZooKeeper server timed out, keeper state=" + keeperState );
+            }
+        }
+    }
+    
     private void instantiateZooKeeper()
     {
         try
         {
             this.zooKeeper = new ZooKeeper( servers, 5000, this );
-            this.newConnection = true;
         }
         catch ( IOException e )
         {
             throw new ZooKeeperException( 
                 "Unable to create zoo keeper client", e );
         }
-    }
-    
-    private String getRootWithRetries()
-    {
-        return doZooKeeperJobWithRetries( new Job<String>()
-        {
-            public String doJob()
-            {
-                return getRoot();
-            }
-        } );
     }
     
     private String getRoot()
@@ -87,15 +128,6 @@ public class ZooClient implements Watcher
             try
             {
                 rootData = zooKeeper.getData( rootPath, false, null );
-//                ByteBuffer buf = ByteBuffer.wrap( rootData );
-//                globalCommittedTx = buf.getLong();
-//                if ( globalCommittedTx < committedTx )
-//                {
-//                    throw new IllegalStateException( "Global committed tx " + 
-//                        globalCommittedTx + " while machine[" + machineId + 
-//                        "] @" + committedTx );
-//                }
-                // ok we got the root
                 return rootPath;
             }
             catch ( KeeperException e )
@@ -115,8 +147,6 @@ public class ZooClient implements Watcher
             try
             {
                 byte data[] = new byte[0];
-                // ByteBuffer buf = ByteBuffer.wrap( data );
-                // buf.putLong( committedTx );
                 zooKeeper.create( rootPath, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
                     CreateMode.PERSISTENT );
             }
@@ -160,21 +190,9 @@ public class ZooClient implements Watcher
         }
     }
 
-    public void process( WatchedEvent event )
-    {
-        System.out.println( new Date() + " Got event: " + event );
-        if ( event.getState() == Watcher.Event.KeeperState.Expired )
-        {
-            instantiateZooKeeper();
-        }
-        else if ( event.getState() == Watcher.Event.KeeperState.SyncConnected )
-        {
-            sequenceNr = setup();
-        }
-    }
-    
     public synchronized int getMaster()
     {
+        waitForSyncConnected();
         try
         {
             Map<Integer, Pair<Integer, Long>> rawData = new HashMap<Integer, Pair<Integer,Long>>();
@@ -234,6 +252,7 @@ public class ZooClient implements Watcher
     public synchronized void setCommittedTx( long tx )
     {
         System.out.println( "Setting txId=" + tx + " for machine=" + machineId );
+        waitForSyncConnected();
         if ( tx <= committedTx )
         {
             throw new IllegalArgumentException( "tx=" + tx + 
@@ -270,6 +289,7 @@ public class ZooClient implements Watcher
     {
         try
         {
+            shutdown = true;
             zooKeeper.close();
         }
         catch ( InterruptedException e )
@@ -277,36 +297,5 @@ public class ZooClient implements Watcher
             throw new ZooKeeperException( 
                 "Error closing zookeeper connection", e );
         }
-    }
-    
-    private <T> T doZooKeeperJobWithRetries( Job<T> job )
-    {
-        ZooKeeperException exception = null;
-        for ( int i = 0; i < 5; i++ )
-        {
-            try
-            {
-                return job.doJob();
-            }
-            catch ( ZooKeeperException e )
-            {
-                exception = e;
-                try
-                {
-                    // TODO Just sleep 300ms ?
-                    Thread.sleep( 300 );
-                }
-                catch ( InterruptedException e1 )
-                {
-                    Thread.interrupted();
-                }
-            }
-        }
-        throw exception;
-    }
-    
-    private static interface Job<T>
-    {
-        T doJob();
     }
 }

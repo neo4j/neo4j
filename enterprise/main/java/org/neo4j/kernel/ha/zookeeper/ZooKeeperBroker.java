@@ -40,7 +40,7 @@ public class ZooKeeperBroker implements Broker
 
     public Master getMaster()
     {
-        if ( !zooClient.isNewConnection() && masterClient != null )
+        if ( /*!zooClient.masterChanged() &&*/ masterClient != null )
         {
             return masterClient;
         }
