@@ -7,7 +7,10 @@ public class PerformanceTests
     @Test
     public void allocateIds() throws Exception
     {
-        testJob( new CommonJobs.PerformanceIdAllocationJob( 100000 ) );
+//        testJob( new CommonJobs.PerformanceIdAllocationJob( 100000000 ) );
+//        testJob( new CommonJobs.PerformanceIdAllocationJob( 100000000 ) );
+        testJob( new CommonJobs.PerformanceIdAllocationJob( 1000000 ) );
+//        testJob( new CommonJobs.PerformanceIdAllocationJob( 100000 ) );
     }
     
     @Test

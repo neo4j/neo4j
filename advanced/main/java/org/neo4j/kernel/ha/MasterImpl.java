@@ -264,13 +264,8 @@ public class MasterImpl implements Master
     {
         IdGeneratorFactory factory = getConfig().getIdGeneratorFactory();
         IdGenerator generator = factory.get( idType );
-        int size = ID_GRAB_SIZE;
-        long[] ids = new long[size];
-        for ( int i = 0; i < size; i++ )
-        {
-            ids[i] = generator.nextId();
-        }
-        return new IdAllocation( ids, generator.getHighId(), generator.getDefragCount() ); 
+        return new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ),
+                generator.getHighId(), generator.getDefragCount() ); 
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,

@@ -36,4 +36,8 @@ public abstract class AbstractBroker implements Broker
     {
         // Do nothing
     }
+
+    public void invalidateMaster()
+    {
+    }
 }

@@ -159,6 +159,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 
         try
         {
+            broker.invalidateMaster();
             boolean brokerSaysIAmMaster = brokerSaysIAmMaster();
             boolean iAmCurrentlyMaster = masterServer != null;
             if ( brokerSaysIAmMaster )
