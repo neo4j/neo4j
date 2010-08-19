@@ -13,17 +13,17 @@ import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 public class StartHaDb
 {
     public static final File PATH = new File( "var/hadb" );
-    
-    static final Map<Integer, String> HA_SERVERS = MapUtil.genericMap(
-            "1", "172.16.2.33:5559",
-            "2", "172.16.1.242:5559",
-            "3", "172.16.4.14:5559"
+
+    static final Map<Integer, String> HA_SERVERS = MapUtil.genericMap( //
+            "1", "172.16.2.33:5559", // JS
+            "2", "172.16.1.242:5559", // MP
+            "3", "172.16.4.14:5559" // TI
     );
-    
+
     public static void main( String[] args ) throws Exception
     {
         NeoStoreUtil store = new NeoStoreUtil( PATH.getPath() );
-        System.out.println( "Starting store: createTime=" + new Date( store.getCreationTime() ) + 
+        System.out.println( "Starting store: createTime=" + new Date( store.getCreationTime() ) +
                 " identifier=" + store.getStoreId() + " last committed tx=" + store.getLastCommittedTx() );
         final GraphDatabaseService db = new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "2",
@@ -39,7 +39,7 @@ public class StartHaDb
 //            }
 //        } );
     }
-    
+
     private static String toHaServerFormat( Map<Integer, String> haServers )
     {
         StringBuilder builder = new StringBuilder();
@@ -49,7 +49,7 @@ public class StartHaDb
         }
         return builder.toString();
     }
-    
+
     private static String join( String[] strings, String delimiter )
     {
         StringBuilder builder = new StringBuilder();
