@@ -398,7 +398,10 @@ public class XaResourceManager
             txStatus.markCommitStarted();
             xaTransaction.commit();
         }
-        log.done( xaTransaction.getIdentifier() );
+        if ( !xaTransaction.isRecovered() )
+        {
+            log.done( xaTransaction.getIdentifier() );
+        }
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
         {
