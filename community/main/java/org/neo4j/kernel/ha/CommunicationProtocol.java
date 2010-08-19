@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.ha.Response;
 import org.neo4j.kernel.impl.ha.SlaveContext;
 import org.neo4j.kernel.impl.ha.TransactionStream;
 import org.neo4j.kernel.impl.ha.TransactionStreams;
+import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
 abstract class CommunicationProtocol
 {
@@ -100,11 +101,14 @@ abstract class CommunicationProtocol
         {
             public void write( IdAllocation idAllocation, ChannelBuffer result ) throws IOException
             {
-                result.writeInt( idAllocation.getIds().length );
-                for ( long id : idAllocation.getIds() )
+                IdRange idRange = idAllocation.getIdRange();
+                result.writeInt( idRange.getDefragIds().length );
+                for ( long id : idRange.getDefragIds() )
                 {
                     result.writeLong( id );
                 }
+                result.writeLong( idRange.getRangeStart() );
+                result.writeInt( idRange.getRangeLength() );
                 result.writeLong( idAllocation.getHighestIdInUse() );
                 result.writeLong( idAllocation.getDefragCount() );
             }
@@ -411,15 +415,18 @@ abstract class CommunicationProtocol
 
     protected static IdAllocation readIdAllocation( ChannelBuffer buffer )
     {
-        int numberOfIds = buffer.readInt();
-        long[] ids = new long[numberOfIds];
-        for ( int i = 0; i < numberOfIds; i++ )
+        int numberOfDefragIds = buffer.readInt();
+        long[] defragIds = new long[numberOfDefragIds];
+        for ( int i = 0; i < numberOfDefragIds; i++ )
         {
-            ids[i] = buffer.readLong();
+            defragIds[i] = buffer.readLong();
         }
+        long rangeStart = buffer.readLong();
+        int rangeLength = buffer.readInt();
         long highId = buffer.readLong();
         long defragCount = buffer.readLong();
-        return new IdAllocation( ids, highId, defragCount );
+        return new IdAllocation( new IdRange( defragIds, rangeStart, rangeLength ),
+                highId, defragCount );
     }
 
     protected static void writeString( ChannelBuffer buffer, String name )

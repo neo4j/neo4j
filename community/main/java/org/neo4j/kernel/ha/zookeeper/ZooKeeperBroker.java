@@ -27,42 +27,41 @@ public class ZooKeeperBroker implements Broker
         NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
         this.zooClient = new ZooClient( zooKeeperServers, machineId, 
                 store.getCreationTime(), store.getStoreId(), store.getLastCommittedTx() );
-        
-//        int masterId = zooClient.getMaster();
-//        if ( masterId != this.machineId )
-//        {
-//            getAndCacheMaster( masterId );
-//        }
+    }
+    
+    public void invalidateMaster()
+    {
+        if ( masterClient != null )
+        {
+            masterClient.shutdown();
+            masterClient = null;
+        }
     }
 
     public Master getMaster()
     {
+        if ( !zooClient.isNewConnection() && masterClient != null )
+        {
+            return masterClient;
+        }
+        
         int masterId = zooClient.getMaster();
         if ( masterId == machineId )
         {
             throw new ZooKeeperException( "I am master, so can't call getMaster() here",
                     new Exception() );
-//            throw new RuntimeException( "I am master" );
         }
-        return getAndCacheMaster( masterId );
-    }
-
-    private Master getAndCacheMaster( int masterId )
-    {
-        if ( masterClient == null || masterId != machineIdForMasterClient ||
-                zooClient.isNewConnection() )
-        {
-            machineIdForMasterClient = masterId;
-            // TODO synchronization
-            Pair<String, Integer> host = getHaServer( masterId );
-            masterClient = new MasterClient( host.first(), host.other() );
-            
-            // To make sure the flag is reset (it may not have been called in the if-statement)
-            zooClient.isNewConnection();
-        }
+        invalidateMaster();
+        createMaster( masterId );
         return masterClient;
     }
-    
+
+    private void createMaster( int masterId )
+    {
+        Pair<String, Integer> host = getHaServer( masterId );
+        masterClient = new MasterClient( host.first(), host.other() );
+    }
+
     private Pair<String, Integer> getHaServer( int machineId )
     {
         String host = haServers.get( machineId );
@@ -98,10 +97,7 @@ public class ZooKeeperBroker implements Broker
     
     public void shutdown()
     {
-        if ( masterClient != null )
-        {
-            masterClient.shutdown();
-        }
+        invalidateMaster();
         zooClient.shutdown();
     }
 }
