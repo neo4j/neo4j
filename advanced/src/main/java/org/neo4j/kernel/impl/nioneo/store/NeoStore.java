@@ -53,6 +53,7 @@ public class NeoStore extends AbstractStore
     private final LastCommittedTxIdSetter lastCommittedTxIdSetter;
     private final IdGeneratorFactory idGeneratorFactory;
     private boolean isStarted;
+    private long lastCommittedTx = -1;
     
     private final int REL_GRAB_SIZE;
 
@@ -249,10 +250,11 @@ public class NeoStore extends AbstractStore
         }
         setRecord( 3, txId );
         // TODO Why check null here? because I have no time to fix the tests
-        if ( isStarted && lastCommittedTxIdSetter != null )
+        if ( isStarted && lastCommittedTxIdSetter != null && txId != lastCommittedTx )
         {
             lastCommittedTxIdSetter.setLastCommittedTxId( txId );
         }
+        lastCommittedTx = txId;
     }
     
     public long getNextCommitId()
@@ -260,9 +262,13 @@ public class NeoStore extends AbstractStore
         return getRecord( 3 ) + 1;
     }
     
-    public long getLastCommittedTx()
+    public synchronized long getLastCommittedTx()
     {
-        return getRecord( 3 );
+        if ( lastCommittedTx == -1 )
+        {
+           lastCommittedTx = getRecord( 3 );
+        }
+        return lastCommittedTx;
     }
     
     public long incrementVersion()
