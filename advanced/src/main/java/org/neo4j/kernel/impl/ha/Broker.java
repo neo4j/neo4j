@@ -4,6 +4,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 public interface Broker
 {
+    void invalidateMaster();
+    
     Master getMaster();
     
     void setLastCommittedTxId( long txId );
