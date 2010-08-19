@@ -1,14 +1,16 @@
 package org.neo4j.kernel.impl.ha;
 
+import org.neo4j.kernel.impl.nioneo.store.IdRange;
+
 public final class IdAllocation
 {
-    private final long[] ids;
+    private final IdRange idRange;
     private final long highestIdInUse;
     private final long defragCount;
 
-    public IdAllocation( long[] ids, long highestIdInUse, long defragCount )
+    public IdAllocation( IdRange idRange, long highestIdInUse, long defragCount )
     {
-        this.ids = ids;
+        this.idRange = idRange;
         this.highestIdInUse = highestIdInUse;
         this.defragCount = defragCount;
     }
@@ -23,8 +25,8 @@ public final class IdAllocation
         return defragCount;
     }
 
-    public long[] getIds()
+    public IdRange getIdRange()
     {
-        return this.ids;
+        return this.idRange;
     }
 }

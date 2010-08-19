@@ -36,7 +36,12 @@ public class ReadOnlyIdGenerator implements IdGenerator
     {
         throw new ReadOnlyDbException();
     }
-
+    
+    public IdRange nextIdBatch( int size )
+    {
+        throw new ReadOnlyDbException();
+    }
+    
     public void setHighId( long id )
     {
         throw new ReadOnlyDbException();
