@@ -49,18 +49,19 @@ public class ZooClient implements Watcher
     
     public void process( WatchedEvent event )
     {
-        System.out.println( this + ", " + new Date() + " Got event: " + event + "(path=" + event.getPath() + ")" );
-        if ( event.getState() == Watcher.Event.KeeperState.Expired )
+        String path = event.getPath();
+        System.out.println( this + ", " + new Date() + " Got event: " + event + "(path=" + path + ")" );
+        if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
         {
             keeperState = KeeperState.Expired;
             instantiateZooKeeper();
         }
-        else if ( event.getState() == Watcher.Event.KeeperState.SyncConnected )
+        else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
         {
             sequenceNr = setup();
             keeperState = KeeperState.SyncConnected;
         }
-        else if ( event.getState() == Watcher.Event.KeeperState.Disconnected )
+        else if ( path == null && event.getState() == Watcher.Event.KeeperState.Disconnected )
         {
             keeperState = KeeperState.Disconnected;
         }
