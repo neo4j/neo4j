@@ -136,9 +136,11 @@ public class ZooClient implements Watcher
             String root = getRoot();
             String path = root + "/" + MASTER_NOTIFY_CHILD;
             byte[] data = null;
+            boolean exists = false;
             try
             { 
                 data = zooKeeper.getData( path, true, null );
+                exists = true;
                 if ( data[0] == currentMasterId )
                 {
                     return;
@@ -156,8 +158,11 @@ public class ZooClient implements Watcher
             try
             {
                 data = new byte[] { (byte) currentMasterId };
-                zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
-                        CreateMode.PERSISTENT );
+                if ( !exists )
+                {
+                    zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
+                            CreateMode.PERSISTENT );
+                }
                 zooKeeper.setData( path, data, -1 );
                 System.out.println( "master-notify set to " + currentMasterId );
                 
