@@ -44,7 +44,7 @@ public class ZooClient implements Watcher
     
     public void process( WatchedEvent event )
     {
-        System.out.println( new Date() + " Got event: " + event );
+        System.out.println( this + ", " + new Date() + " Got event: " + event + "(path=" + event.getPath() + ")" );
         if ( event.getState() == Watcher.Event.KeeperState.Expired )
         {
             keeperState = KeeperState.Expired;
@@ -166,11 +166,40 @@ public class ZooClient implements Watcher
         throw new IllegalStateException();
     }
     
+    private void cleanupChildren()
+    {
+        try
+        {
+            String root = getRoot();
+            List<String> children = zooKeeper.getChildren( root, false );
+            for ( String child : children )
+            {
+                int index = child.indexOf( '_' );
+                int id = Integer.parseInt( child.substring( 0, index ) );
+                if ( id == machineId )
+                {
+                    zooKeeper.delete( root + "/" + child, -1 );
+                }
+            }
+        }
+        catch ( KeeperException e )
+        {
+            throw new ZooKeeperException( "Unable to clean up old child", e );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new ZooKeeperException( "Interrupted.", e );
+        }
+    }
+    
     private String setup()
     {
         try
         {
-            String path = getRoot() + "/" + machineId + "_";
+            cleanupChildren();
+            String root = getRoot();
+            String path = root + "/" + machineId + "_";
             byte[] data = new byte[8];
             ByteBuffer buf = ByteBuffer.wrap( data );
             buf.putLong( committedTx );
