@@ -135,7 +135,6 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     {
         try
         {
-            System.out.println( Thread.currentThread().getName() + " pulls updates" );
             receive( broker.getMaster().pullUpdates( getSlaveContext() ) );
         }
         catch ( ZooKeeperException e )
@@ -307,33 +306,29 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     public synchronized void shutdown()
     {
+        System.out.println( "Shutdown called on HA db " + this );
         if ( this.updatePuller != null )
         {
-            System.out.println( "Shutting down update puller" );
             this.updatePuller.halt();
             this.updatePuller = null;
         }
         if ( this.broker != null )
         {
-            System.out.println( "Shutting down broker" );
             this.broker.shutdown();
             this.broker = null;
         }
         if ( this.masterServer != null )
         {
-            System.out.println( "Shutting down master server" );
             this.masterServer.shutdown();
             this.masterServer = null;
         }
         if ( this.localIndex != null )
         {
-            System.out.println( "Shutting down local index" );
             this.localIndex.shutdown();
             this.localIndex = null;
         }
         if ( this.localGraph != null )
         {
-            System.out.println( "Shutting down local graph" );
             this.localGraph.shutdown();
             this.localGraph = null;
             this.localDataSourceManager = null;
