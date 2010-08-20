@@ -208,6 +208,7 @@ class EmbeddedGraphDbImpl
     public synchronized void shutdown()
     {
         if ( inShutdown ) return;
+        inShutdown = true;
         try
         {
             if ( graphDbInstance.started() )
