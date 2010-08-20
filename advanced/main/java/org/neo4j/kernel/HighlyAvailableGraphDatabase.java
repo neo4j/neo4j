@@ -65,10 +65,16 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
     {
-        this( storeDir, config, defaultBrokerFactory( storeDir, config ) );
+//        this( storeDir, config, defaultBrokerFactory( storeDir, config ) );
+        this.storeDir = storeDir;
+        this.config = config;
+        this.brokerFactory = defaultBrokerFactory( storeDir, config );
+        this.machineId = getMachineIdFromConfig( config );
+        this.broker = brokerFactory.create();
+        reevaluateMyself();
     }
 
-    private static BrokerFactory defaultBrokerFactory( final String storeDir,
+    private BrokerFactory defaultBrokerFactory( final String storeDir,
             final Map<String, String> config )
     {
         return new BrokerFactory()
@@ -94,12 +100,12 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         reevaluateMyself();
     }
     
-    private static Broker instantiateBroker( String storeDir, Map<String, String> config )
+    private Broker instantiateBroker( String storeDir, Map<String, String> config )
     {
         return new ZooKeeperBroker( storeDir,
                 getMachineIdFromConfig( config ),
                 getZooKeeperServersFromConfig( config ),
-                getHaServersFromConfig( config ) );
+                getHaServersFromConfig( config ), this );
     }
     
     private static Map<Integer, String> getHaServersFromConfig(
