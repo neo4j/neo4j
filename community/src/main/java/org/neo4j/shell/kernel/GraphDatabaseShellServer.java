@@ -24,6 +24,7 @@ import java.rmi.RemoteException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
@@ -48,11 +49,16 @@ public class GraphDatabaseShellServer extends SimpleAppServer
      * shell server.
      * @throws RemoteException if an RMI error occurs.
      */
+    public GraphDatabaseShellServer( String path, boolean readOnly )
+            throws RemoteException
+    {
+        this( instantiateGraphDb( path, readOnly ) );
+    }
+    
     public GraphDatabaseShellServer( GraphDatabaseService graphDb )
-        throws RemoteException
+            throws RemoteException
     {
         super();
-        // addGraphDbApps();
         this.graphDb = graphDb;
         this.bashInterpreter = new BashVariableInterpreter();
         this.bashInterpreter.addReplacer( "W", new WorkingDirReplacer() );
@@ -60,6 +66,12 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         this.setProperty( AbstractClient.TITLE_KEYS_KEY,
             ".*name.*,.*title.*" );
         this.setProperty( AbstractClient.TITLE_MAX_LENGTH, "40" );
+    }
+
+    private static GraphDatabaseService instantiateGraphDb( String path, boolean readOnly )
+    {
+        return readOnly ? new EmbeddedReadOnlyGraphDatabase( path ) :
+                new EmbeddedGraphDatabase( path );
     }
 
     protected String getShellPrompt()
@@ -125,5 +137,10 @@ public class GraphDatabaseShellServer extends SimpleAppServer
                     ( GraphDatabaseShellServer ) server, session ),
                     false ).toString();
         }
+    }
+    
+    public void shutdown()
+    {
+        this.graphDb.shutdown();
     }
 }

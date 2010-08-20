@@ -29,10 +29,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.Args;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.StandardConsole;
@@ -204,18 +200,14 @@ public class StartClient
     private void tryStartLocalServerAndClient( String dbPath,
         boolean readOnly, Args args ) throws Exception
     {
-        final GraphDatabaseService graph = readOnly ?
-            new EmbeddedReadOnlyGraphDatabase( dbPath ) :
-            new EmbeddedGraphDatabase( dbPath );
         
-        final GraphDatabaseShellServer server =
-            new GraphDatabaseShellServer( graph );
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( dbPath, readOnly );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
             @Override
             public void run()
             {
-                shutdownIfNecessary( server, graph );
+                shutdownIfNecessary( server );
             }
         } );
         
@@ -224,18 +216,16 @@ public class StartClient
         ShellClient client = new SameJvmClient( server );
         setSessionVariablesFromArgs( client, args );
         client.grabPrompt();
-        shutdownIfNecessary( server, graph );
+        shutdownIfNecessary( server );
     }
 
-    private void shutdownIfNecessary( ShellServer server,
-            GraphDatabaseService graphDb )
+    private void shutdownIfNecessary( ShellServer server )
     {
         try
         {
             if ( !hasBeenShutdown.compareAndSet( false, true ) )
             {
                 server.shutdown();
-                graphDb.shutdown();
             }
         }
         catch ( RemoteException e )
