@@ -9,6 +9,7 @@ import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Master;
+import org.neo4j.kernel.impl.ha.ResponseReceiver;
 
 public class ZooKeeperBroker implements Broker
 {
@@ -20,13 +21,14 @@ public class ZooKeeperBroker implements Broker
     private MasterClient masterClient;
     
     public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
-            Map<Integer,String> haServers )
+            Map<Integer,String> haServers, ResponseReceiver receiver )
     {
         this.machineId = machineId;
         this.haServers = haServers;
         NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
         this.zooClient = new ZooClient( zooKeeperServers, machineId, 
-                store.getCreationTime(), store.getStoreId(), store.getLastCommittedTx() );
+                store.getCreationTime(), store.getStoreId(), store.getLastCommittedTx(),
+                receiver );
     }
     
     public void invalidateMaster()

@@ -15,9 +15,12 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.ha.ResponseReceiver;
 
 public class ZooClient implements Watcher
 {
+    private static final String MASTER_NOTIFY_CHILD = "/master-notify";
+    
     private ZooKeeper zooKeeper;
     private final long storeCreationTime;
     private final long storeId;
@@ -29,11 +32,13 @@ public class ZooClient implements Watcher
     
     private volatile KeeperState keeperState = KeeperState.Disconnected;
     private volatile boolean shutdown = false;
+    private final ResponseReceiver receiver;
     
     public ZooClient( String servers, int machineId, long storeCreationTime, 
-        long storeId, long committedTx )
+        long storeId, long committedTx, ResponseReceiver receiver )
     {
         this.servers = servers;
+        this.receiver = receiver;
         instantiateZooKeeper();
         this.machineId = machineId;
         this.storeCreationTime = storeCreationTime;
@@ -58,6 +63,11 @@ public class ZooClient implements Watcher
         else if ( event.getState() == Watcher.Event.KeeperState.Disconnected )
         {
             keeperState = KeeperState.Disconnected;
+        }
+        else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
+        {
+            System.out.println( "NodeDataChanged (most likely master-notify)" );
+            receiver.somethingIsWrong( new Exception() );
         }
     }
     
@@ -116,6 +126,56 @@ public class ZooClient implements Watcher
         {
             throw new ZooKeeperException( 
                 "Unable to create zoo keeper client", e );
+        }
+    }
+    
+    private void setMasterChangeWatcher( int currentMasterId )
+    {
+        try
+        {
+            String root = getRoot();
+            String path = root + MASTER_NOTIFY_CHILD;
+            byte[] data = null;
+            try
+            { 
+                data = zooKeeper.getData( path, true, null );
+                if ( data[0] == currentMasterId )
+                {
+                    return;
+                }
+            }
+            catch ( KeeperException e )
+            {
+                if ( e.code() != KeeperException.Code.NONODE )
+                {
+                    throw new ZooKeeperException( "Couldn't get master notify node", e );
+                }
+            }
+            
+            // Didn't exist or has changed
+            try
+            {
+                data = new byte[] { (byte) currentMasterId };
+                zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
+                        CreateMode.PERSISTENT );
+                zooKeeper.setData( path, data, -1 );
+                System.out.println( "master-notify set to " + currentMasterId );
+                
+                // Add a watch for it
+                zooKeeper.getData( path, true, null );
+            }
+            catch ( KeeperException e )
+            {
+                if ( e.code() != KeeperException.Code.NODEEXISTS )
+                {
+                    throw new ZooKeeperException( "Couldn't set master notify node", e );
+                }
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new ZooKeeperException( "Interrupted", e );
         }
     }
     
@@ -205,7 +265,7 @@ public class ZooClient implements Watcher
             buf.putLong( committedTx );
             String created = zooKeeper.create( path, data, 
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
-            System.out.println( "wrote " + committedTx + " to zookeeper" );
+            System.out.println( this + " wrote " + committedTx + " to zookeeper" );
             return created.substring( created.lastIndexOf( "_" ) + 1 );
         }
         catch ( KeeperException e )
@@ -265,6 +325,7 @@ public class ZooClient implements Watcher
                 }
             }
             System.out.println( "getMaster: " + currentMasterId + " based on " + rawData );
+            setMasterChangeWatcher( currentMasterId );
             return currentMasterId;
         }
         catch ( KeeperException e )
