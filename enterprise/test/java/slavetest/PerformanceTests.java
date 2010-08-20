@@ -11,7 +11,13 @@ public class PerformanceTests
     }
 
     @Test
-    public void createNodes() throws Exception
+    public void createFewNodesInManyTransactions() throws Exception
+    {
+        testJob( new CommonJobs.PerformanceCreateNodesJob( 10, 100 ) );
+    }
+    
+    @Test
+    public void createManyNodesInFewTransactions() throws Exception
     {
         testJob( new CommonJobs.PerformanceCreateNodesJob( 10, 1000 ) );
     }
