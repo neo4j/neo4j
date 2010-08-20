@@ -19,7 +19,7 @@ import org.neo4j.kernel.impl.ha.ResponseReceiver;
 
 public class ZooClient implements Watcher
 {
-    private static final String MASTER_NOTIFY_CHILD = "/master-notify";
+    private static final String MASTER_NOTIFY_CHILD = "master-notify";
     
     private ZooKeeper zooKeeper;
     private final long storeCreationTime;
@@ -134,7 +134,7 @@ public class ZooClient implements Watcher
         try
         {
             String root = getRoot();
-            String path = root + MASTER_NOTIFY_CHILD;
+            String path = root + "/" + MASTER_NOTIFY_CHILD;
             byte[] data = null;
             try
             { 
@@ -292,6 +292,11 @@ public class ZooClient implements Watcher
             long highestTxId = -1;
             for ( String child : children )
             {
+                if ( child.equals( MASTER_NOTIFY_CHILD ) )
+                {
+                    continue;
+                }
+                
                 int index = child.indexOf( '_' );
                 int id = Integer.parseInt( child.substring( 0, index ) );
                 int seq = Integer.parseInt( child.substring( index + 1 ) );                
