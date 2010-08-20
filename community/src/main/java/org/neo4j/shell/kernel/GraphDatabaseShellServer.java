@@ -23,7 +23,6 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.shell.Session;
@@ -95,22 +94,13 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     public Serializable interpretVariable( String key, Serializable value,
         Session session ) throws ShellException
     {
-        Transaction tx = getDb().beginTx();
-        try
+        Serializable result = value;
+        if ( key.equals( AbstractClient.PROMPT_KEY ) )
         {
-            Serializable result = value;
-            if ( key.equals( AbstractClient.PROMPT_KEY ) )
-            {
-                result = this.bashInterpreter.interpret( (String) value, this,
-                    session );
-            }
-            tx.success();
-            return result;
+            result = this.bashInterpreter.interpret( (String) value, this,
+                session );
         }
-        finally
-        {
-            tx.finish();
-        }
+        return result;
     }
 
     /**
