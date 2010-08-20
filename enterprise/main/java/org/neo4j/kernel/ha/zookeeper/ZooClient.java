@@ -57,8 +57,8 @@ public class ZooClient implements Watcher
         }
         else if ( event.getState() == Watcher.Event.KeeperState.SyncConnected )
         {
-            keeperState = KeeperState.SyncConnected;
             sequenceNr = setup();
+            keeperState = KeeperState.SyncConnected;
         }
         else if ( event.getState() == Watcher.Event.KeeperState.Disconnected )
         {
@@ -234,6 +234,10 @@ public class ZooClient implements Watcher
             List<String> children = zooKeeper.getChildren( root, false );
             for ( String child : children )
             {
+                if ( child.equals( MASTER_NOTIFY_CHILD ) )
+                {
+                    continue;
+                }
                 int index = child.indexOf( '_' );
                 int id = Integer.parseInt( child.substring( 0, index ) );
                 if ( id == machineId )
@@ -276,6 +280,11 @@ public class ZooClient implements Watcher
         {
             Thread.interrupted();
             throw new ZooKeeperException( "Setup got interrupted", e );
+        }
+        catch ( Throwable t )
+        {
+            t.printStackTrace();
+            throw new ZooKeeperException( "Unknown setup error", t );
         }
     }
 
