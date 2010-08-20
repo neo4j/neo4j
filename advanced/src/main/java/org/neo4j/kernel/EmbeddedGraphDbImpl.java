@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import javax.transaction.RollbackException;
@@ -61,13 +60,11 @@ class EmbeddedGraphDbImpl
 
     private static Logger log =
         Logger.getLogger( EmbeddedGraphDbImpl.class.getName() );
-    private static final AtomicInteger INSTANCE_ID_COUNTER = new AtomicInteger();
     private Transaction placeboTransaction = null;
     private final GraphDbInstance graphDbInstance;
     private final GraphDatabaseService graphDbService;
     private final NodeManager nodeManager;
     private final String storeDir;
-    private final String instanceId = Integer.toString( INSTANCE_ID_COUNTER.getAndIncrement() );
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -96,7 +93,7 @@ class EmbeddedGraphDbImpl
         nodeManager =
             graphDbInstance.getConfig().getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
-        this.extensions = new KernelExtension.KernelData( instanceId )
+        this.extensions = new KernelExtension.KernelData()
         {
             @Override
             public String version()
@@ -122,22 +119,7 @@ class EmbeddedGraphDbImpl
                 return EmbeddedGraphDbImpl.this.graphDbService;
             }
         };
-        initializeExtensions();
-    }
-
-    private void initializeExtensions()
-    {
-        for ( KernelExtension extension : Service.load( KernelExtension.class ) )
-        {
-            try
-            {
-                extension.load( extensions );
-            }
-            catch ( Exception ex )
-            {
-                log.warning( "Error loading " + extension + ": " + ex );
-            }
-        }
+        extensions.startup( log );
     }
 
     <T> T getManagementBean( Class<T> beanClass )
@@ -222,14 +204,23 @@ class EmbeddedGraphDbImpl
         return nodeManager.getReferenceNode();
     }
 
-    public void shutdown()
+    private boolean inShutdown = false;
+    public synchronized void shutdown()
     {
-        if ( graphDbInstance.started() )
+        if ( inShutdown ) return;
+        try
         {
-            sendShutdownEvent();
-            extensions.shutdown( log );
+            if ( graphDbInstance.started() )
+            {
+                sendShutdownEvent();
+                extensions.shutdown( log );
+            }
+            graphDbInstance.shutdown();
         }
-        graphDbInstance.shutdown();
+        finally
+        {
+            inShutdown = false;
+        }
     }
 
     private void sendShutdownEvent()
