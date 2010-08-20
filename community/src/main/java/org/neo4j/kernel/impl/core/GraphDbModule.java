@@ -106,11 +106,11 @@ public class GraphDbModule
         // load and verify from PS
         RelationshipTypeData relTypes[] = null;
         PropertyIndexData propertyIndexes[] = null;
-        beginTx();
+        // beginTx();
         relTypes = persistenceManager.loadAllRelationshipTypes();
         propertyIndexes = persistenceManager.loadPropertyIndexes( 
             INDEX_COUNT );
-        commitTx();
+        // commitTx();
         nodeManager.addRawRelationshipTypes( relTypes );
         nodeManager.addPropertyIndexes( propertyIndexes );
         if ( propertyIndexes.length < INDEX_COUNT )
