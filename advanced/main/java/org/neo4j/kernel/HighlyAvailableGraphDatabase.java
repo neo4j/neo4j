@@ -199,7 +199,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     private void startAsSlave()
     {
-        ensureBrokerInstantiated();
+//        ensureBrokerInstantiated();
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 new SlaveLockManagerFactory( broker, this ),
                 new SlaveIdGeneratorFactory( broker, this ),
@@ -210,17 +210,17 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         instantiateIndexIfNeeded();
     }
 
-    private void ensureBrokerInstantiated()
-    {
-        if ( this.broker == null )
-        {
-            this.broker = brokerFactory.create();
-        }
-    }
+//    private void ensureBrokerInstantiated()
+//    {
+//        if ( this.broker == null )
+//        {
+//            this.broker = brokerFactory.create();
+//        }
+//    }
 
     private void startAsMaster()
     {
-        ensureBrokerInstantiated();
+//        ensureBrokerInstantiated();
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 CommonFactories.defaultLockManagerFactory(),
                 new MasterIdGeneratorFactory(),
@@ -320,11 +320,11 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             this.updatePuller.halt();
             this.updatePuller = null;
         }
-        if ( this.broker != null )
-        {
-            this.broker.shutdown();
-            this.broker = null;
-        }
+//        if ( this.broker != null )
+//        {
+//            this.broker.shutdown();
+//            this.broker = null;
+//        }
         if ( this.masterServer != null )
         {
             this.masterServer.shutdown();
