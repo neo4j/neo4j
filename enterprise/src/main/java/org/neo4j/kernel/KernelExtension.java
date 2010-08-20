@@ -12,6 +12,8 @@ import org.neo4j.helpers.Service;
 
 public abstract class KernelExtension extends Service
 {
+    private static final String INSTANCE_ID = "instanceId";
+
     protected KernelExtension( String key )
     {
         super( key );
@@ -29,13 +31,60 @@ public abstract class KernelExtension extends Service
         return this.getClass().equals( obj.getClass() );
     }
 
+    public final void agentLoad( String agentArgs )
+    {
+        final Map<String, String> parameters = new HashMap<String, String>();
+        for ( String arg : agentArgs.split( ";" ) )
+        {
+            String[] parts = arg.split( "=", 2 );
+            if ( parts.length == 2 )
+            {
+                arg = parts[0].trim();
+                if ( INSTANCE_ID.equalsIgnoreCase( arg ) ) arg = INSTANCE_ID;
+                parameters.put( arg, parts[1] );
+            }
+            else
+            {
+                parameters.put( arg.trim(), null );
+            }
+        }
+        final KernelData kernel = KernelData.getInstance( parameters );
+        if ( kernel == null ) throw new IllegalStateException( "could not load kernel" );
+        kernel.extraParameters.putAll( parameters );
+        this.load( kernel );
+    }
+
     public static abstract class KernelData
     {
+        private static final Map<String, KernelData> instances = new HashMap<String, KernelData>();
+        private static int ID_COUNTER = 0;
+
+        private static synchronized String newInstance( KernelData instance )
+        {
+            final String instanceId = Integer.toString( ID_COUNTER++ );
+            instances.put( instanceId, instance );
+            return instanceId;
+        }
+
+        private static synchronized KernelData getInstance( Map<String, String> parameters )
+        {
+            String instanceId = parameters.remove( INSTANCE_ID );
+            if ( instanceId != null ) return instances.get( instanceId );
+            if ( instances.size() == 1 ) return instances.values().iterator().next();
+            return null;
+        }
+
+        private static synchronized void removeInstance( String instanceId )
+        {
+            instances.remove( instanceId );
+        }
+
+        private final Map<String, String> extraParameters = new HashMap<String, String>();
         private final String instanceId;
 
-        KernelData( String instanceId )
+        KernelData()
         {
-            this.instanceId = instanceId;
+            instanceId = newInstance( this );
         }
 
         public final String instanceId()
@@ -65,7 +114,22 @@ public abstract class KernelExtension extends Service
 
         private final Map<KernelExtension, Object> state = new HashMap<KernelExtension, Object>();
 
-        void shutdown( Logger log )
+        void startup( Logger log )
+        {
+            for ( KernelExtension extension : Service.load( KernelExtension.class ) )
+            {
+                try
+                {
+                    extension.load( this );
+                }
+                catch ( Exception ex )
+                {
+                    log.warning( "Error loading " + extension + ": " + ex );
+                }
+            }
+        }
+
+        synchronized void shutdown( Logger log )
         {
             for ( KernelExtension loaded : state.keySet() )
             {
@@ -78,6 +142,7 @@ public abstract class KernelExtension extends Service
                     log.warning( "Error unloading " + loaded + ": " + ex );
                 }
             }
+            removeInstance( instanceId );
         }
 
         public final Object getState( KernelExtension extension )
@@ -94,6 +159,18 @@ public abstract class KernelExtension extends Service
             else
             {
                 return state.put( extension, value );
+            }
+        }
+
+        public final Object getParam( String key )
+        {
+            if ( extraParameters.containsKey( key ) )
+            {
+                return extraParameters.get( key );
+            }
+            else
+            {
+                return getConfigParams().get( key );
             }
         }
     }
