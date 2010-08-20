@@ -60,6 +60,7 @@ public class ZooClient implements Watcher
         {
             sequenceNr = setup();
             keeperState = KeeperState.SyncConnected;
+            receiver.somethingIsWrong( new Exception() );
         }
         else if ( path == null && event.getState() == Watcher.Event.KeeperState.Disconnected )
         {
