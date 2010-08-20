@@ -1,5 +1,6 @@
 package org.neo4j.kernel;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.ReadableByteChannel;
@@ -213,6 +214,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 new SlaveTxIdGeneratorFactory( broker, this ),
                 new SlaveTxRollbackHook( broker, this ),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
+        markThatIAmMaster( false );
         instantiateIndexIfNeeded();
     }
 
@@ -224,6 +226,26 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 //        }
 //    }
 
+    private void markThatIAmMaster( boolean isMaster )
+    {
+        File file = new File( storeDir, "i-am-master" );
+        if ( isMaster )
+        {
+            try
+            {
+                file.createNewFile();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+        else
+        {
+            file.delete();
+        }
+    }
+
     private void startAsMaster()
     {
 //        ensureBrokerInstantiated();
@@ -234,6 +256,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 CommonFactories.defaultTxIdGeneratorFactory(),
                 CommonFactories.defaultTxRollbackHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
+        markThatIAmMaster( true );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         instantiateIndexIfNeeded();
         instantiateAutoUpdatePullerIfConfigSaysSo();
