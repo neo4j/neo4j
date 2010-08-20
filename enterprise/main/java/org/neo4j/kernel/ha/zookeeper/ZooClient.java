@@ -288,7 +288,6 @@ public class ZooClient implements Watcher
                 " but committedTx is " + committedTx );
         }
         this.committedTx = tx;
-        int masterId = getMaster();
         String root = getRoot();
         String path = root + "/" + machineId + "_" + sequenceNr;
         byte[] data = new byte[8];
@@ -297,10 +296,6 @@ public class ZooClient implements Watcher
         try
         {
             zooKeeper.setData( path, data, -1 );
-            if ( masterId == machineId )
-            {
-                zooKeeper.setData( root, data, -1 );
-            }
         }
         catch ( KeeperException e )
         {
@@ -311,7 +306,6 @@ public class ZooClient implements Watcher
             Thread.interrupted();
             throw new ZooKeeperException( "Interrupted...", e );
         }
-        
     }
     
     public void shutdown()
