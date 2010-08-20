@@ -21,7 +21,7 @@ public final class ShellServerExtension extends KernelExtension
     @Override
     protected void load( KernelData kernel )
     {
-        String shellConfig = (String) kernel.getConfigParams().get( "enable_remote_shell" );
+        String shellConfig = (String) kernel.getParam( "enable_remote_shell" );
         if ( shellConfig != null )
         {
             if ( shellConfig.contains( "=" ) )
@@ -89,7 +89,7 @@ public final class ShellServerExtension extends KernelExtension
                                 + "' should be '<key1>=<value1>,<key2>=<value2>...' where key can"
                                 + " be any of [port, name]" );
             }
-            String key = splitted[0];
+            String key = splitted[0].trim();
             Serializable value = splitted[1];
             if ( key.equals( "port" ) )
             {

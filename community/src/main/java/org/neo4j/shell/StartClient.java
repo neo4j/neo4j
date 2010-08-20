@@ -3,17 +3,17 @@
  *     Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -23,14 +23,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.impl.ShellServerExtension;
 import org.neo4j.shell.impl.StandardConsole;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
@@ -46,11 +49,12 @@ public class StartClient
     public static final String ARG_HOST = "host";
     public static final String ARG_PORT = "port";
     public static final String ARG_NAME = "name";
-    
+    public static final String ARG_PID = "pid";
+
     private StartClient()
     {
     }
-    
+
     /**
      * Starts a shell client. Remote or local depending on the arguments.
      * @param args the arguments from the command line. Can contain
@@ -62,7 +66,12 @@ public class StartClient
     {
         new StartClient().start( arguments );
     }
-    
+
+    public static void agentmain( String agentArgs )
+    {
+        new ShellServerExtension().agentLoad( agentArgs );
+    }
+
     private void start( String[] arguments )
     {
         Args args = new Args( arguments );
@@ -71,13 +80,15 @@ public class StartClient
             printUsage();
             return;
         }
-        
+
         String path = args.get( ARG_PATH, null );
         String host = args.get( ARG_HOST, null );
         String port = args.get( ARG_PORT, null );
         String name = args.get( ARG_NAME, null );
-        
-        if ( path != null && ( port != null || name != null || host != null ) )
+        String pid = args.get( ARG_PID, null );
+
+        if ( ( path != null && ( port != null || name != null || host != null || pid != null ) )
+             || ( pid != null && host != null ) )
         {
             System.err.println( "You have supplied both " +
                 ARG_PATH + " as well as " + ARG_HOST + "/" + ARG_PORT + "/" + ARG_NAME + ". " +
@@ -102,8 +113,31 @@ public class StartClient
         // Remote
         else
         {
+            // Start server on the supplied process
+            if ( pid != null )
+            {
+                startServer( pid, args );
+            }
             startRemote( args );
         }
+    }
+
+    private static final Method attachMethod, loadMethod;
+    static
+    {
+        Method attach, load;
+        try
+        {
+            Class<?> vmClass = Class.forName( "com.sun.tools.attach.VirtualMachine" );
+            attach = vmClass.getMethod( "attach", String.class );
+            load = vmClass.getMethod( "loadAgent", String.class, String.class );
+        }
+        catch ( Exception e )
+        {
+            attach = load = null;
+        }
+        attachMethod = attach;
+        loadMethod = load;
     }
 
     private static void checkNeo4jDependency() throws ShellException
@@ -130,7 +164,7 @@ public class StartClient
                 " /my/path/here" );
             return;
         }
-        
+
         try
         {
             boolean readOnly = args.getBoolean( ARG_READONLY, false );
@@ -188,7 +222,7 @@ public class StartClient
         {
             return true;
         }
-        
+
         Throwable cause = e.getCause();
         if ( cause != null )
         {
@@ -200,7 +234,7 @@ public class StartClient
     private void tryStartLocalServerAndClient( String dbPath,
         boolean readOnly, Args args ) throws Exception
     {
-        
+
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( dbPath, readOnly );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
@@ -210,7 +244,7 @@ public class StartClient
                 shutdownIfNecessary( server );
             }
         } );
-        
+
         System.out.println( "NOTE: Local Neo4j graph database service at '" +
             dbPath + "'" );
         ShellClient client = new SameJvmClient( server );
@@ -231,6 +265,23 @@ public class StartClient
         catch ( RemoteException e )
         {
             throw new RuntimeException( e );
+        }
+    }
+
+    private void startServer( String pid, Args args )
+    {
+        String port = args.get( "port", Integer.toString( AbstractServer.DEFAULT_PORT ) );
+        String name = args.get( "name", AbstractServer.DEFAULT_NAME );
+        try
+        {
+            String jarfile = new File(
+                    getClass().getProtectionDomain().getCodeSource().getLocation().toURI() ).getAbsolutePath();
+            Object vm = attachMethod.invoke( null, pid );
+            loadMethod.invoke( vm, jarfile, "enable_remote_shell = port=" + port + ", name=" + name );
+        }
+        catch ( Exception e )
+        {
+            handleException( e, args );
         }
     }
 
@@ -261,7 +312,7 @@ public class StartClient
         {
             applyProfileFile( new File( profile ), client );
         }
-        
+
         for ( Map.Entry<String, String> entry : args.asMap().entrySet() )
         {
             String key = entry.getKey();
@@ -272,7 +323,7 @@ public class StartClient
             }
         }
     }
-    
+
     private static void applyProfileFile( File file, ShellClient client )
     {
         InputStream in = null;
@@ -307,7 +358,7 @@ public class StartClient
             }
         }
     }
-    
+
     private static void handleException( Exception e, Args args )
     {
         String message = e.getCause() instanceof ConnectException ?

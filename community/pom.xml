@@ -74,6 +74,7 @@
             <manifestEntries>
               <url>http://neo4j.org</url>
               <Class-Path>neo4j-kernel-${neo4j.version}.jar neo4j-index-${neo4j.version}.jar neo4j-commons-${neo4j.version}.jar lucene-core-${lucene.version}.jar jta-${jta.version}.jar geronimo-jta_${jta.version}_spec-1.1.1.jar jline-${jline.version}.jar</Class-Path>
+              <Agent-Class>org.neo4j.shell.StartClient</Agent-Class>
             </manifestEntries>
           </archive>
         </configuration>
