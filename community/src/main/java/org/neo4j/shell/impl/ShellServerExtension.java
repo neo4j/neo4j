@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.shell.StartClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 @Service.Implementation( KernelExtension.class )
@@ -53,8 +54,10 @@ public final class ShellServerExtension extends KernelExtension
         try
         {
             server = new GraphDatabaseShellServer( kernel.graphDatabase() );
-            int port = (Integer) getConfig( config, "port", "DEFAULT_PORT" );
-            String name = (String) getConfig( config, "name", "DEFAULT_NAME" );
+            int port = (Integer) getConfig( config, StartClient.ARG_PORT,
+                    AbstractServer.DEFAULT_PORT );
+            String name = (String) getConfig( config, StartClient.ARG_NAME,
+                    AbstractServer.DEFAULT_NAME );
             server.makeRemotelyAvailable( port, name );
         }
         catch ( Exception ex )
@@ -87,11 +90,12 @@ public final class ShellServerExtension extends KernelExtension
                 throw new RuntimeException(
                         "Invalid shell configuration '" + shellConfig
                                 + "' should be '<key1>=<value1>,<key2>=<value2>...' where key can"
-                                + " be any of [port, name]" );
+                                + " be any of [" + StartClient.ARG_PORT + ", " +
+                                StartClient.ARG_NAME + "]" );
             }
             String key = splitted[0].trim();
             Serializable value = splitted[1];
-            if ( key.equals( "port" ) )
+            if ( key.equals( StartClient.ARG_PORT ) )
             {
                 value = Integer.parseInt( splitted[1] );
             }
@@ -101,21 +105,9 @@ public final class ShellServerExtension extends KernelExtension
     }
 
     private Serializable getConfig( Map<String, Serializable> config, String key,
-            String defaultVariableName ) throws RemoteException
+            Serializable defaultValue ) throws RemoteException
     {
         Serializable result = config.get( key );
-        if ( result == null )
-        {
-            try
-            {
-                result = (Serializable) AbstractServer.class.getDeclaredField(
-                        defaultVariableName ).get( null );
-            }
-            catch ( Exception e )
-            {
-                throw new RemoteException( "Default variable not found", e );
-            }
-        }
-        return result;
+        return result != null ? result : defaultValue;
     }
 }

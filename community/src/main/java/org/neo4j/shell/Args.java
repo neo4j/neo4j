@@ -27,7 +27,7 @@ import java.util.Map;
  *   '-path' '/my/path/to/something'
  * </pre>
  */
-public class Args
+class Args
 {
     private final String[] args;
     private final Map<String, String> map = new HashMap<String, String>();
