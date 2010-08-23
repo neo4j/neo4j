@@ -98,7 +98,7 @@
       <groupId>jline</groupId>
       <artifactId>jline</artifactId>
       <version>${jline.version}</version>
-      <scope>provided</scope>
+      <!--scope>provided</scope-->
       <exclusions>
         <exclusion>
           <groupId>junit</groupId>
