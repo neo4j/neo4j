@@ -164,7 +164,15 @@ public class MultiJvmTesting extends AbstractHaTest
     {
         Map<String, String> newConfig = new HashMap<String, String>( config );
         newConfig.put( "master", "true" );
-        jvms.add( spawnJvm( dbPath( 0 ), MASTER_PORT, 0, buildExtraArgs( newConfig ) ) );
+        StandaloneDbCom com = spawnJvm( dbPath( 0 ), MASTER_PORT, 0, buildExtraArgs( newConfig ) );
+        if ( jvms.isEmpty() )
+        {
+            jvms.add( com );
+        }
+        else
+        {
+            jvms.set( 0, com );
+        }
     }
     
     @Override
