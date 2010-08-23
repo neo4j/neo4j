@@ -143,7 +143,6 @@ public class TestXa extends AbstractNeo4jTestCase
                 IdGeneratorFactory.class, ID_GENERATOR_FACTORY ) );
         lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
         lockReleaser = getEmbeddedGraphDb().getConfig().getLockReleaser();
-
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //            lockManager, lockReleaser );

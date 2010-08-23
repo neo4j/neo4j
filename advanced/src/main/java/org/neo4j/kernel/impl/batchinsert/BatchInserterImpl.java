@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -65,6 +66,8 @@ public class BatchInserterImpl implements BatchInserter
     
     private final BatchGraphDatabaseImpl graphDbService;
     
+    private final StringLogger msgLog;
+    
     public BatchInserterImpl( String storeDir )
     {
         this( storeDir, Collections.EMPTY_MAP );
@@ -73,6 +76,7 @@ public class BatchInserterImpl implements BatchInserter
     public BatchInserterImpl( String storeDir, 
         Map<String,String> stringParams )
     {
+        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         Map<Object,Object> params = getDefaultParams();
         params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
         boolean dump = Boolean.parseBoolean( stringParams.get( Config.DUMP_CONFIGURATION ) );
@@ -90,8 +94,12 @@ public class BatchInserterImpl implements BatchInserter
         {
             Config.dumpConfiguration( params );
         }
-        // TODO: check if clean shutdown
+        msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         neoStore = new NeoStore( params );
+        if ( !neoStore.isStoreOk() )
+        {
+            throw new IllegalStateException( storeDir + " store is not cleanly shutdown." );
+        }
         neoStore.makeStoreOk();
         PropertyIndexData[] indexes = 
             getPropertyIndexStore().getPropertyIndexes( 10000 );
@@ -337,6 +345,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         graphDbService.clearCaches();
         neoStore.close();
+        msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")" );
     }
 
     private Map<Object,Object> getDefaultParams()
@@ -354,7 +363,7 @@ public class BatchInserterImpl implements BatchInserter
     
     public String toString()
     {
-        return "EmbeddedBatchInserted[" + storeDir + "]";
+        return "EmbeddedBatchInserter[" + storeDir + "]";
     }
     
     private static class RelationshipTypeImpl implements RelationshipType
