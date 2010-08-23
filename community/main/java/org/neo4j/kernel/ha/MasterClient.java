@@ -76,6 +76,10 @@ public class MasterClient extends CommunicationProtocol implements Master
             ChannelBuffer message =
 //                client.blockingReadHandler.read();
                 client.blockingReadHandler.read( 20, TimeUnit.SECONDS );
+            if ( message == null )
+            {
+                throw new HaCommunicationException( "Channel has been closed" );
+            }
             T response = deserializer.read( message );
             TransactionStreams txStreams = type.includesSlaveContext() ?
                     readTransactionStreams( message ) : TransactionStreams.EMPTY;

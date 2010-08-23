@@ -16,8 +16,6 @@ public class ZooKeeperBroker implements Broker
     private final ZooClient zooClient;
     private final int machineId;
     private final Map<Integer,String> haServers;
-    
-    private int machineIdForMasterClient;
     private MasterClient masterClient;
     
     public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
@@ -26,9 +24,8 @@ public class ZooKeeperBroker implements Broker
         this.machineId = machineId;
         this.haServers = haServers;
         NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
-        this.zooClient = new ZooClient( zooKeeperServers, machineId, 
-                store.getCreationTime(), store.getStoreId(), store.getLastCommittedTx(),
-                receiver );
+        this.zooClient = new ZooClient( zooKeeperServers, machineId, store.getCreationTime(),
+                store.getStoreId(), store.getLastCommittedTx(), receiver );
     }
     
     public void invalidateMaster()
@@ -42,7 +39,7 @@ public class ZooKeeperBroker implements Broker
 
     public Master getMaster()
     {
-        if ( /*!zooClient.masterChanged() &&*/ masterClient != null )
+        if ( masterClient != null )
         {
             return masterClient;
         }
