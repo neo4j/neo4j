@@ -31,6 +31,7 @@ import java.util.Map;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * An abstract representation of a store. A store is a file that contains
@@ -177,6 +178,19 @@ public abstract class AbstractStore extends CommonAbstractStore
         {
             setStoreNotOk();
         }
+        finally 
+        {
+            if ( !getStoreOk() )
+            {
+                if ( getConfig() != null )
+                {
+                    String storeDir = (String) getConfig().get( "store_dir" );
+                    StringLogger msgLog = StringLogger.getLogger( 
+                            storeDir + "/messages.log" );
+                    msgLog.logMessage( getStorageFileName() + " non clean shutdown detected" );
+                }
+            }
+        }
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
             getRecordSize(), getFileChannel(), getMappedMem(), 
             getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
@@ -315,6 +329,14 @@ public abstract class AbstractStore extends CommonAbstractStore
                 "Unable to rebuild id generator " + getStorageFileName(), e );
         }
         setHighId( highId + 1 );
+        if ( getConfig() != null )
+        {
+            String storeDir = (String) getConfig().get( "store_dir" );
+            StringLogger msgLog = StringLogger.getLogger( 
+                    storeDir + "/messages.log" );
+            msgLog.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() + 
+                    " defragged count=" + defraggedCount );
+        }
         logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId()
             + " (defragged=" + defraggedCount + ")" );
         closeIdGenerator();

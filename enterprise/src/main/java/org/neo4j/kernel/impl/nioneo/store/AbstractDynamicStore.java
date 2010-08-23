@@ -33,6 +33,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * An abstract representation of a dynamic store. The difference between a
@@ -194,6 +195,19 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         catch ( InvalidIdGeneratorException e )
         {
             setStoreNotOk();
+        }
+        finally 
+        {
+            if ( !getStoreOk() )
+            {
+                if ( getConfig() != null )
+                {
+                    String storeDir = (String) getConfig().get( "store_dir" );
+                    StringLogger msgLog = StringLogger.getLogger( 
+                            storeDir + "/messages.log" );
+                    msgLog.logMessage( getStorageFileName() + " non clean shutdown detected" );
+                }
+            }
         }
         
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
@@ -694,6 +708,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         setHighId( highId + 1 );
         logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId()
             + " (defragged=" + defraggedCount + ")" );
+        if ( getConfig() != null )
+        {
+            String storeDir = (String) getConfig().get( "store_dir" );
+            StringLogger msgLog = StringLogger.getLogger( 
+                    storeDir + "/messages.log" );
+            msgLog.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() + 
+                    " defragged count=" + defraggedCount );
+        }
         closeIdGenerator();
         openIdGenerator();
     }

@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a factory for
@@ -76,6 +77,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private boolean backupSlave = false;
 
     private boolean logApplied = false;
+    
+    private final StringLogger msgLog;
 
     /**
      * Creates a <CODE>NeoStoreXaDataSource</CODE> using configuration from
@@ -106,6 +109,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         this.lockManager = (LockManager) config.get( LockManager.class );
         this.lockReleaser = (LockReleaser) config.get( LockReleaser.class );
         storeDir = (String) config.get( "store_dir" );
+        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         String store = (String) config.get( "neo_store" );
         if ( !config.containsKey( REBUILD_IDGENERATORS_FAST ) )
         {
@@ -115,6 +119,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         String create = "" + config.get( "create" );
         if ( !readOnly && !file.exists() && "true".equals( create ) )
         {
+            msgLog.logMessage( "Creating new db @ " + store );
             autoCreatePath( store );
             NeoStore.createStore( store, config );
         }
