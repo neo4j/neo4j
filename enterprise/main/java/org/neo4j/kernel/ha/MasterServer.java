@@ -1,8 +1,15 @@
 package org.neo4j.kernel.ha;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -20,7 +27,9 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.ha.Master;
+import org.neo4j.kernel.impl.ha.SlaveContext;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -28,10 +37,15 @@ import org.neo4j.kernel.impl.ha.Master;
  */
 public class MasterServer extends CommunicationProtocol implements ChannelPipelineFactory
 {
+    private final static int DEAD_CONNECTIONS_CHECK_INTERVAL = 10;
+    
     private final ChannelFactory channelFactory;
     private final ServerBootstrap bootstrap;
     private final Master realMaster;
     private final ChannelGroup channelGroup;
+    private final ScheduledExecutorService deadConnectionsPoller;
+    private final Map<Integer, Collection<Channel>> channelsPerClient =
+            new HashMap<Integer, Collection<Channel>>();
 
     public MasterServer( Master realMaster, final int port )
     {
@@ -52,6 +66,14 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 System.out.println( "Master server bound to " + port );
             }
         } );
+        deadConnectionsPoller = new ScheduledThreadPoolExecutor( 1 );
+        deadConnectionsPoller.scheduleWithFixedDelay( new Runnable()
+        {
+            public void run()
+            {
+                checkForDeadConnections();
+            }
+        }, DEAD_CONNECTIONS_CHECK_INTERVAL, DEAD_CONNECTIONS_CHECK_INTERVAL, TimeUnit.SECONDS );
     }
 
     public ChannelPipeline getPipeline() throws Exception
@@ -69,10 +91,18 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         @Override
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent e ) throws Exception
         {
-            ChannelBuffer message = (ChannelBuffer) e.getMessage();
-            // Add each "client" channel
-            channelGroup.add( e.getChannel() );
-            e.getChannel().write( handleRequest( realMaster, message ) );
+            try
+            {
+                ChannelBuffer message = (ChannelBuffer) e.getMessage();
+                Pair<ChannelBuffer, SlaveContext> result = handleRequest( realMaster, message );
+                rememberChannel( e.getChannel(), result.other() );
+                e.getChannel().write( result.first() );
+            }
+            catch ( Exception e1 )
+            {
+                e1.printStackTrace();
+                throw e1;
+            }
         }
 
         @Override
@@ -85,7 +115,64 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     public void shutdown()
     {
         // Close all open connections
+        deadConnectionsPoller.shutdown();
         channelGroup.close().awaitUninterruptibly();
         channelFactory.releaseExternalResources();
+    }
+
+    private void rememberChannel( Channel channel, SlaveContext other )
+    {
+        channelGroup.add( channel );
+        if ( other == null )
+        {
+            return;
+        }
+        
+        int id = other.machineId();
+        synchronized ( channelsPerClient )
+        {
+            Collection<Channel> channels = channelsPerClient.get( id );
+            if ( channels == null )
+            {
+                channels = new HashSet<Channel>();
+                channelsPerClient.put( id, channels );
+                System.out.println( "new client connected " + id + ", " + channel );
+            }
+            channels.add( channel );
+        }
+    }
+
+    private void checkForDeadConnections()
+    {
+        synchronized ( channelsPerClient )
+        {
+            for ( Map.Entry<Integer, Collection<Channel>> entry : channelsPerClient.entrySet() )
+            {
+                if ( !pruneDeadChannels( entry.getValue() ) )
+                {
+                    System.out.println( "Rolling back dead transaction from client " +
+                            entry.getKey() + " since it went down" );
+                    realMaster.rollbackOngoingTransactions( new SlaveContext( entry.getKey(),
+                            new Pair[0] ) );
+                }
+            }
+        }
+    }
+
+    private boolean pruneDeadChannels( Collection<Channel> channels )
+    {
+        boolean anyoneAlive = false;
+        for ( Channel channel : channels.toArray( new Channel[channels.size()] ) )
+        {
+            if ( channel.isConnected() )
+            {
+                anyoneAlive = true;
+            }
+            else
+            {
+                channels.remove( channel );
+            }
+        }
+        return anyoneAlive;
     }
 }

@@ -7,6 +7,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
@@ -56,7 +59,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     private final int machineId;
     private MasterServer masterServer;
     private AtomicBoolean reevaluatingMyself = new AtomicBoolean();
-    private UpdatePuller updatePuller;
+    private ScheduledExecutorService updatePuller;
 
     // Just "cached" instances which are used internally here
     private XaDataSourceManager localDataSourceManager;
@@ -206,6 +209,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     private void startAsSlave()
     {
+        assertIWasntMasterWhenShutDown();
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 new SlaveLockManagerFactory( broker, this ),
                 new SlaveIdGeneratorFactory( broker, this ),
@@ -214,6 +218,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 new SlaveTxRollbackHook( broker, this ),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
         instantiateIndexIfNeeded();
+        instantiateAutoUpdatePullerIfConfigSaysSo();
     }
 
     private void startAsMaster()
@@ -228,7 +233,6 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         markThatIAmMaster();
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         instantiateIndexIfNeeded();
-        instantiateAutoUpdatePullerIfConfigSaysSo();
     }
     
     private File getMasterMarkFile()
@@ -263,8 +267,15 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         String pullInterval = this.config.get( CONFIG_KEY_HA_PULL_INTERVAL );
         if ( pullInterval != null )
         {
-            updatePuller = UpdatePuller.startAutoPull( this,
-                    TimeUtil.parseTimeMillis( pullInterval ) );
+            long timeMillis = TimeUtil.parseTimeMillis( pullInterval );
+            updatePuller = new ScheduledThreadPoolExecutor( 1 );
+            updatePuller.scheduleWithFixedDelay( new Runnable()
+            {
+                public void run()
+                {
+                    pullUpdates();
+                }
+            }, timeMillis, timeMillis, TimeUnit.MILLISECONDS );
         }
     }
     
@@ -342,14 +353,9 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         System.out.println( "Shutdown called on HA db " + this );
         if ( this.updatePuller != null )
         {
-            this.updatePuller.halt();
+            this.updatePuller.shutdown();
             this.updatePuller = null;
         }
-//        if ( this.broker != null )
-//        {
-//            this.broker.shutdown();
-//            this.broker = null;
-//        }
         if ( this.masterServer != null )
         {
             this.masterServer.shutdown();
