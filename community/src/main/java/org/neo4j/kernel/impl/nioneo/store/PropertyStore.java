@@ -207,6 +207,7 @@ public class PropertyStore extends AbstractStore implements Store
         try
         {
             updateRecord( record );
+            registerIdFromUpdateRecord( record.getId() );
         }
         finally
         {

@@ -242,6 +242,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
     public void updateRecord( DynamicRecord record )
     {
         int blockId = record.getId();
+        if ( isInRecoveryMode() )
+        {
+            registerIdFromUpdateRecord( blockId );
+        }
         PersistenceWindow window = acquireWindow( blockId, OperationType.WRITE );
         try
         {
@@ -694,18 +698,23 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         openIdGenerator();
     }
 
-    protected void updateHighId()
-    {
-        try
-        {
-            long highId = getFileChannel().size() / getBlockSize();
-            super.setHighId( highId );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
+//    @Override
+//    protected void updateHighId()
+//    {
+//        try
+//        {
+//            long highId = getFileChannel().size() / getBlockSize();
+//            
+//            if ( highId > getHighId() )
+//            {
+//                setHighId( highId );
+//            }
+//        }
+//        catch ( IOException e )
+//        {
+//            throw new UnderlyingStorageException( e );
+//        }
+//    }
     
     @Override
     protected long figureOutHighestIdInUse()
