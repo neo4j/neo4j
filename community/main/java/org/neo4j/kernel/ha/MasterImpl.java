@@ -401,6 +401,7 @@ public class MasterImpl implements Master
         {
             if ( entry.getKey().machineId == slaveMachineId )
             {
+                System.out.println( "Rolling back ongoing tx " + entry );
                 Transaction otherTx = suspendOtherAndResumeThis( entry.getKey() );
                 rollbackThisAndResumeOther( entry.getKey(), otherTx );
                 rolledbackTxs.add( entry.getKey() );
