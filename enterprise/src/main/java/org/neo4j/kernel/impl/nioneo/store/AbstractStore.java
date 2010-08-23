@@ -183,16 +183,6 @@ public abstract class AbstractStore extends CommonAbstractStore
     }
 
     /**
-     * Returns the highest id in use by this store.
-     * 
-     * @return The highest id in use
-     */
-    public long getHighId()
-    {
-        return super.getHighId();
-    }
-
-    /**
      * Sets the high id of {@link IdGenerator}.
      * 
      * @param id
@@ -203,18 +193,23 @@ public abstract class AbstractStore extends CommonAbstractStore
         super.setHighId( id );
     }
     
-    protected void updateHighId()
-    {
-        try
-        {
-            long highId = getFileChannel().size() / getRecordSize();
-            setHighId( highId );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
+//    @Override
+//    protected void updateHighId()
+//    {
+//        try
+//        {
+//            long highId = getFileChannel().size() / getRecordSize();
+//            
+//            if ( highId > getHighId() )
+//            {
+//                setHighId( highId );
+//            }
+//        }
+//        catch ( IOException e )
+//        {
+//            throw new UnderlyingStorageException( e );
+//        }
+//    }
 
     private int findHighIdBackwards() throws IOException
     {

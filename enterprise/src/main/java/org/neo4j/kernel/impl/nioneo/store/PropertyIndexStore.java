@@ -221,6 +221,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
         try
         {
             updateRecord( record );
+            registerIdFromUpdateRecord( record.getId() );
         }
         finally
         {

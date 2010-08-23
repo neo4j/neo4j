@@ -158,6 +158,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         try
         {
             updateRecord( record );
+            registerIdFromUpdateRecord( record.getId() );
         }
         finally
         {
