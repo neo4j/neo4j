@@ -41,6 +41,8 @@ public abstract class CommonAbstractStore
 {
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
+    
+    private long highestUpdateRecordId = -1;
 
     /**
      * Returns the type and version that identifies this store.
@@ -334,9 +336,9 @@ public abstract class CommonAbstractStore
      *
      * @return The highest id in use.
      */
-    protected long getHighId()
+    public long getHighId()
     {
-        return idGenerator.getHighId();
+        return idGenerator != null ? idGenerator.getHighId() : -1;
     }
 
     /**
@@ -696,7 +698,6 @@ public abstract class CommonAbstractStore
         return idGenerator.getNumberOfIdsInUse();
     }
 
-
     public WindowPoolStats getWindowPoolStats()
     {
         return windowPool.getStats();
@@ -705,5 +706,20 @@ public abstract class CommonAbstractStore
     public IdType getIdType()
     {
         return idType;
+    }
+
+    protected void registerIdFromUpdateRecord( long id )
+    {
+        highestUpdateRecordId = Math.max( highestUpdateRecordId, id );
+    }
+
+    protected void updateHighId()
+    {
+        long highId = highestUpdateRecordId;
+        highestUpdateRecordId = -1;
+        if ( highId > getHighId() )
+        {
+            setHighId( highId );
+        }
     }
 }

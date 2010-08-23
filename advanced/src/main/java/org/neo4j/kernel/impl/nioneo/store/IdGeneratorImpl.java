@@ -27,8 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 
-import org.neo4j.kernel.impl.util.DebugUtil;
-
 /**
  * This class generates unique ids for a resource type. For example, nodes in a
  * nodes space are connected to each other via relationships. On nodes and
@@ -223,8 +221,6 @@ public class IdGeneratorImpl implements IdGenerator
      */
     public synchronized void setHighId( long id )
     {
-        DebugUtil.printShortStackTrace(
-                new Exception( "Set high id " + id + " for " + fileName ), 7 );
         nextFreeId = id;
     }
 
