@@ -34,6 +34,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 // make package access?
 public class XaResourceManager
@@ -47,6 +48,7 @@ public class XaResourceManager
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
     private final String name;
+    private StringLogger msgLog;
 
     XaResourceManager( XaTransactionFactory tf, String name )
     {
@@ -57,6 +59,7 @@ public class XaResourceManager
     synchronized void setLogicalLog( XaLogicalLog log )
     {
         this.log = log;
+        this.msgLog = log.getStringLogger();
     }
 
     synchronized XaTransaction getXaTransaction( XAResource xaRes )
@@ -510,6 +513,8 @@ public class XaResourceManager
     
     synchronized void checkXids() throws IOException
     {
+        msgLog.logMessage( "XaResourceManager[" + name + "] sorting " + 
+                xidMap.size() + " xids" );
         Iterator<Xid> keyIterator = xidMap.keySet().iterator();
         LinkedList<Xid> xids = new LinkedList<Xid>();
         while ( keyIterator.hasNext() )
@@ -578,10 +583,17 @@ public class XaResourceManager
 
     private void checkIfRecoveryComplete()
     {
+        msgLog.logMessage( "XaResourceManager[" + name + "] checkRecoveryComplete " + xidMap.size() + " xids" );
         if ( log.scanIsComplete() && recoveredTxCount == 0 )
         {
             // log.makeNewLog();
             tf.recoveryComplete();
+            msgLog.logMessage( "XaResourceManager[" + name + "] recovery completed." );
+        }
+        else
+        {
+            msgLog.logMessage( "XaResourceManager[" + name + 
+                    "] recovery not completed, xidCount=" + recoveredTxCount + " waiting for global tm" );
         }
     }
 

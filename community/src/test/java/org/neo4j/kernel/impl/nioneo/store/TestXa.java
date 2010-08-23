@@ -135,7 +135,7 @@ public class TestXa extends AbstractNeo4jTestCase
         NeoStore.createStore( file( "neo" ), Collections.EMPTY_MAP );
         lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
         lockReleaser = getEmbeddedGraphDb().getConfig().getLockReleaser();
-        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
     }
@@ -406,7 +406,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
-        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -446,7 +446,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
-        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -486,7 +486,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
-        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -511,7 +511,7 @@ public class TestXa extends AbstractNeo4jTestCase
         renameCopiedLogicalLog();
         truncateLogicalLog( 39 );
         truncateLogicalLog( 40 );
-        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -537,7 +537,7 @@ public class TestXa extends AbstractNeo4jTestCase
         renameCopiedLogicalLog();
         truncateLogicalLog( 32 );
         truncateLogicalLog( 40 );
-        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -566,7 +566,7 @@ public class TestXa extends AbstractNeo4jTestCase
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
         truncateLogicalLog( 141 );
-        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
@@ -595,7 +595,7 @@ public class TestXa extends AbstractNeo4jTestCase
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
         truncateLogicalLog( 145 );
-        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
