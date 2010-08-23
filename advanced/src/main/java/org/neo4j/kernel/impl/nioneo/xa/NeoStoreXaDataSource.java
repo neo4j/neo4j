@@ -248,6 +248,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
         neoStore.close();
         logger.fine( "NeoStore closed" );
+        msgLog.logMessage( "NeoStore closed" );
     }
 
     @Override

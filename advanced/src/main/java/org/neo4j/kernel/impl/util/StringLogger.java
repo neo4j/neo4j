@@ -43,6 +43,7 @@ public class StringLogger
     public synchronized void logMessage( String msg )
     {
         out.println( new Date() + ": " + msg );
+        out.flush();
     } 
 
     public synchronized void logMessage( String msg, Throwable cause )
