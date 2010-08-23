@@ -38,6 +38,7 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -103,6 +104,8 @@ public class XaLogicalLog
     private boolean backupSlave = false;
     private boolean useMemoryMapped = true;
 
+    private final StringLogger msgLog;
+    
     XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
         XaTransactionFactory xaTf, Map<Object,Object> config )
     {
@@ -114,6 +117,8 @@ public class XaLogicalLog
         log = Logger.getLogger( this.getClass().getName() + "/" + fileName );
         buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
             + Xid.MAXBQUALSIZE * 10 );
+        String root = (String) config.get( "store_dir" );
+        msgLog = StringLogger.getLogger( root + "/messages.log" );
     }
     
     private boolean getMemoryMapped( Map<Object,Object> config )
@@ -266,12 +271,14 @@ public class XaLogicalLog
         }
         else
         {
+            msgLog.logMessage( "[" + fileToOpen + "] clean empty log, " );
             logVersion = xaTf.getCurrentVersion();
             buffer.clear();
             buffer.putLong( logVersion );
             buffer.flip();
             fileChannel.write( buffer );
             scanIsComplete = true;
+            msgLog.logMessage( "[" + fileToOpen + "] clean empty log, version=" + logVersion );
         }
     }
 
@@ -727,18 +734,26 @@ public class XaLogicalLog
                 logWas, endPosition );
         }
     }
+    
+    StringLogger getStringLogger()
+    {
+        return msgLog;
+    }
 
     private void doInternalRecovery( String logFileName ) throws IOException
     {
         log.info( "Non clean shutdown detected on log [" + logFileName + 
+            "]. Recovery started ..." );
+        msgLog.logMessage( "Non clean shutdown detected on log [" + logFileName + 
             "]. Recovery started ..." );
         // get log creation time
         buffer.clear();
         buffer.limit( 8 );
         if ( fileChannel.read( buffer ) != 8 )
         {
-            log.info( "Unable to read timestamp information, "
+            log.info( "Unable to read header information, "
                 + "no records in logical log." );
+            msgLog.logMessage( "No log version found for " + logFileName );
             fileChannel.close();
             boolean success = FileUtils.renameFile( new File( logFileName ), 
                 new File( logFileName + "_unknown_timestamp_" + 
@@ -751,6 +766,7 @@ public class XaLogicalLog
         buffer.flip();
         logVersion = buffer.getLong();
         log.fine( "Logical log version: " + logVersion );
+        msgLog.logMessage( "[" + logFileName + "] logVersion=" + logVersion  );
         long logEntriesFound = 0;
         long lastEntryPos = fileChannel.position();
         while ( readEntry() )
@@ -760,6 +776,10 @@ public class XaLogicalLog
         }
         // make sure we overwrite any broken records
         fileChannel.position( lastEntryPos );
+
+        msgLog.logMessage( "[" + logFileName + "] entries found=" + logEntriesFound + 
+                " lastEntryPos=" + lastEntryPos  );
+        
         // zero out the slow way since windows don't support truncate very well
         buffer.clear();
         while ( buffer.hasRemaining() )
@@ -782,6 +802,7 @@ public class XaLogicalLog
         scanIsComplete = true;
         log.fine( "Internal recovery completed, scanned " + logEntriesFound
             + " log entries." );
+        
         xaRm.checkXids();
         if ( xidIdentMap.size() == 0 )
         {
@@ -1190,6 +1211,7 @@ public class XaLogicalLog
                 logVersion + " but expected version " + 
                 xaTf.getCurrentVersion() );
         }
+        msgLog.logMessage( "Applying log version=" + logVersion );
         log.fine( "Logical log version: " + logVersion );
         long logEntriesFound = 0;
         LogApplier logApplier = new LogApplier( byteChannel, buffer, xaTf, xaRm,
@@ -1202,6 +1224,8 @@ public class XaLogicalLog
         xaTf.flushAll();
         xaTf.getAndSetNewVersion();
         xaRm.reset();
+        msgLog.logMessage( "Apply of log version=" + logVersion + " successfull, " + 
+                logEntriesFound + " nr of log entries found." );
         log.info( "Log[" + fileName + "] version " + logVersion + 
                 " applied successfully." );
     }
@@ -1224,6 +1248,9 @@ public class XaLogicalLog
         {
             assert currentLog == LOG1;
         }
+        msgLog.logMessage( "Rotating [" + currentLogFile + "] @ version=" + 
+                currentVersion + " to " +  newLogFile + "from position " + 
+                writeBuffer.getFileChannelPosition() );
         if ( new File( newLogFile ).exists() )
         {
             throw new IOException( "New log file: " + newLogFile + 
@@ -1299,6 +1326,8 @@ public class XaLogicalLog
             buffer.clear();
             buffer.limit( 1 );
         }
+        msgLog.logMessage( "Rotate: old log scanned, newLog @ pos=" + 
+                newLog.position() );
         newLog.force( false );
         releaseCurrentLogFile();
         setActiveLog( newActiveLog );
@@ -1325,6 +1354,8 @@ public class XaLogicalLog
         {
             writeBuffer = new MemoryMappedLogBuffer( fileChannel );
         }
+        msgLog.logMessage( "Log rotated, newLog @ pos=" + 
+                writeBuffer.getFileChannelPosition() + " and version " + (currentVersion + 1) ); 
     }
     
     private long getFirstStartEntry( long endPosition )
@@ -1338,6 +1369,8 @@ public class XaLogicalLog
                 firstEntryPosition = entry.getStartPosition();
             }
         }
+        msgLog.logMessage( "Rotate log first start entry @ pos=" + 
+                firstEntryPosition );
         return firstEntryPosition;
     }
 

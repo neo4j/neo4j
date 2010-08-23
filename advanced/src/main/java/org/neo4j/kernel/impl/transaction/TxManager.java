@@ -52,6 +52,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Public for testing purpose only. Use {@link TransactionFactory} to get a
@@ -82,10 +83,13 @@ public class TxManager implements TransactionManager
     private final AtomicInteger comittedTxCount = new AtomicInteger( 0 );
     private final AtomicInteger rolledBackTxCount = new AtomicInteger( 0 );
     private int peakConcurrentTransactions = 0;
+    
+    private final StringLogger msgLog;
 
     TxManager( String txLogDir, KernelPanicEventGenerator kpe )
     {
         this.txLogDir = txLogDir;
+        this.msgLog = StringLogger.getLogger( txLogDir + "/messages.log" );
         this.kpe = kpe;
     }
 
@@ -96,6 +100,7 @@ public class TxManager implements TransactionManager
 
     void stop()
     {
+        StringLogger.close( txLogDir + "/messages.log" );
         if ( txLog != null )
         {
             try
@@ -137,6 +142,7 @@ public class TxManager implements TransactionManager
                         currentTxLog + "] not found." );
                 }
                 txLog = new TxLog( currentTxLog );
+                msgLog.logMessage( "TM opening log: " + currentTxLog );
             }
             else
             {
@@ -157,6 +163,7 @@ public class TxManager implements TransactionManager
                     "rw" ).getChannel();
                 fc.write( buf );
                 txLog = new TxLog( txLogDir + separator + txLog1FileName );
+                msgLog.logMessage( "TM new log: " + txLog1FileName );
                 fc.force( true );
                 fc.close();
             }
@@ -227,6 +234,7 @@ public class TxManager implements TransactionManager
 
     private void recover( Iterator<List<TxLog.Record>> danglingRecordList )
     {
+        msgLog.logMessage( "TM non resolved transactions found in " + txLog.getName() );
         try
         {
             // contains NonCompletedTransaction that needs to be committed
@@ -257,6 +265,7 @@ public class TxManager implements TransactionManager
                         {
                             log.fine( "Found pre commit " + xids[i]
                                 + " rolling back ... " );
+                            msgLog.logMessage( "TM: Found pre commit " + xids[i] + " rolling back ... " );
                             rollbackList.remove( xids[i] );
                             xaRes.rollback( xids[i] );
                         }
@@ -309,6 +318,7 @@ public class TxManager implements TransactionManager
                     }
                     log.fine( "Commiting tx seq[" + seq + "][" + 
                         xids[i] + "] ... " );
+                    msgLog.logMessage( "TM: Committing tx " + xids[i] );
                     resourceMap.get( resource ).commit( xids[i], false );
                 }
             }
@@ -324,6 +334,7 @@ public class TxManager implements TransactionManager
                         "Couldn't find XAResource for " + xid );
                 }
                 log.fine( "Rollback " + xid + " ... " );
+                msgLog.logMessage( "TM: no match found for " + xid + " removing" );
                 resourceMap.get( resource ).rollback( xid );
             }
             if ( rollbackList.size() > 0 )
@@ -333,6 +344,8 @@ public class TxManager implements TransactionManager
                     + "any of the XAResources recover list. " + "Assuming "
                     + rollbackList.size()
                     + " transactions already rolled back." );
+                msgLog.logMessage( "TM: no match found for in total " + rollbackList.size() +
+                        " transaction that should have been rolled back" );
             }
         }
         catch ( XAException e )
