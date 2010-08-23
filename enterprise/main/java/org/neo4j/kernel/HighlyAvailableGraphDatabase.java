@@ -66,25 +66,13 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
     {
-//        this( storeDir, config, defaultBrokerFactory( storeDir, config ) );
         this.storeDir = storeDir;
+        assertIWasntMasterWhenShutDown();
         this.config = config;
         this.brokerFactory = defaultBrokerFactory( storeDir, config );
         this.machineId = getMachineIdFromConfig( config );
         this.broker = brokerFactory.create();
         reevaluateMyself();
-    }
-
-    private BrokerFactory defaultBrokerFactory( final String storeDir,
-            final Map<String, String> config )
-    {
-        return new BrokerFactory()
-        {
-            public Broker create()
-            {
-                return instantiateBroker( storeDir, config );
-            }
-        };
     }
 
     /**
@@ -101,6 +89,18 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         reevaluateMyself();
     }
     
+    private BrokerFactory defaultBrokerFactory( final String storeDir,
+            final Map<String, String> config )
+    {
+        return new BrokerFactory()
+        {
+            public Broker create()
+            {
+                return instantiateBroker( storeDir, config );
+            }
+        };
+    }
+
     private Broker instantiateBroker( String storeDir, Map<String, String> config )
     {
         return new ZooKeeperBroker( storeDir,
@@ -213,7 +213,6 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 new SlaveTxIdGeneratorFactory( broker, this ),
                 new SlaveTxRollbackHook( broker, this ),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
-        markThatIAmMaster( false );
         instantiateIndexIfNeeded();
     }
 
@@ -226,29 +225,36 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 CommonFactories.defaultTxIdGeneratorFactory(),
                 CommonFactories.defaultTxRollbackHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
-        markThatIAmMaster( true );
+        markThatIAmMaster();
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         instantiateIndexIfNeeded();
         instantiateAutoUpdatePullerIfConfigSaysSo();
     }
-
-    private void markThatIAmMaster( boolean isMaster )
+    
+    private File getMasterMarkFile()
     {
-        File file = new File( storeDir, "i-am-master" );
-        if ( isMaster )
+        return new File( storeDir, "i-am-master" );
+    }
+
+    private void markThatIAmMaster()
+    {
+        File file = getMasterMarkFile();
+        try
         {
-            try
-            {
-                file.createNewFile();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            file.createNewFile();
         }
-        else
+        catch ( IOException e )
         {
-            file.delete();
+            throw new RuntimeException( e );
+        }
+    }
+    
+    private void assertIWasntMasterWhenShutDown()
+    {
+        if ( getMasterMarkFile().exists() )
+        {
+            throw new RuntimeException( "I was master the previous session, " +
+                    "so can't start up in this state" );
         }
     }
     
