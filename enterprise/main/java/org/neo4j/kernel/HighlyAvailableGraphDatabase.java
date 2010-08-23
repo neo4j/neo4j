@@ -206,7 +206,6 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     private void startAsSlave()
     {
-//        ensureBrokerInstantiated();
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 new SlaveLockManagerFactory( broker, this ),
                 new SlaveIdGeneratorFactory( broker, this ),
@@ -218,13 +217,20 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         instantiateIndexIfNeeded();
     }
 
-//    private void ensureBrokerInstantiated()
-//    {
-//        if ( this.broker == null )
-//        {
-//            this.broker = brokerFactory.create();
-//        }
-//    }
+    private void startAsMaster()
+    {
+        this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
+                CommonFactories.defaultLockManagerFactory(),
+                new MasterIdGeneratorFactory(),
+                CommonFactories.defaultRelationshipTypeCreator(),
+                CommonFactories.defaultTxIdGeneratorFactory(),
+                CommonFactories.defaultTxRollbackHook(),
+                new ZooKeeperLastCommittedTxIdSetter( broker ) );
+        markThatIAmMaster( true );
+        this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
+        instantiateIndexIfNeeded();
+        instantiateAutoUpdatePullerIfConfigSaysSo();
+    }
 
     private void markThatIAmMaster( boolean isMaster )
     {
@@ -245,23 +251,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             file.delete();
         }
     }
-
-    private void startAsMaster()
-    {
-//        ensureBrokerInstantiated();
-        this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
-                CommonFactories.defaultLockManagerFactory(),
-                new MasterIdGeneratorFactory(),
-                CommonFactories.defaultRelationshipTypeCreator(),
-                CommonFactories.defaultTxIdGeneratorFactory(),
-                CommonFactories.defaultTxRollbackHook(),
-                new ZooKeeperLastCommittedTxIdSetter( broker ) );
-        markThatIAmMaster( true );
-        this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
-        instantiateIndexIfNeeded();
-        instantiateAutoUpdatePullerIfConfigSaysSo();
-    }
-
+    
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
     {
         String pullInterval = this.config.get( CONFIG_KEY_HA_PULL_INTERVAL );

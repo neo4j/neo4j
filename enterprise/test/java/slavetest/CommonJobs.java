@@ -2,6 +2,7 @@ package slavetest;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -261,10 +262,12 @@ public abstract class CommonJobs
     public static class DeleteNodeJob implements Job<Boolean>
     {
         private final long id;
+        private final boolean deleteIndexing;
 
-        public DeleteNodeJob( long id )
+        public DeleteNodeJob( long id, boolean deleteIndexing )
         {
             this.id = id;
+            this.deleteIndexing = deleteIndexing;
         }
         
         public Boolean execute( GraphDatabaseService db ) throws RemoteException
@@ -273,7 +276,16 @@ public abstract class CommonJobs
             boolean successful = false;
             try
             {
-                db.getNodeById( id ).delete();
+                Node node = db.getNodeById( id );
+                if ( deleteIndexing )
+                {
+                    IndexService index = ((HighlyAvailableGraphDatabase) db).getIndexService();
+                    for ( String key : node.getPropertyKeys() )
+                    {
+                        index.removeIndex( node, key, node.getProperty( key ) );
+                    }
+                }
+                node.delete();
                 tx.success();
             }
             finally
@@ -560,15 +572,49 @@ public abstract class CommonJobs
         }
     }
     
-    public static class CreateNodeAndIndexJob extends TransactionalJob<Void>
+    public static class CreateNodeAndIndexJob extends TransactionalJob<Long>
     {
+        private String key;
+        private Object value;
+
+        public CreateNodeAndIndexJob( String key, Object value )
+        {
+            this.key = key;
+            this.value = value;
+        }
+        
+        @Override
+        protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            IndexService index = ((HighlyAvailableGraphDatabase) db).getIndexService();
+            Node node = db.createNode();
+            node.setProperty( key, value );
+            index.index( node, key, value );
+            tx.success();
+            return node.getId();
+        }
+    }
+    
+    public static class AddIndex extends TransactionalJob<Void>
+    {
+        private final Map<String, Object> properties;
+        private final long nodeId;
+
+        public AddIndex( long nodeId, Map<String, Object> properties )
+        {
+            this.nodeId = nodeId;
+            this.properties = properties;
+        }
+
         @Override
         protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
             IndexService index = ((HighlyAvailableGraphDatabase) db).getIndexService();
-            Node node = db.createNode();
-            node.setProperty( "name", "Johan" );
-            index.index( node, "name", node.getProperty( "name" ) );
+            Node node = db.getNodeById( nodeId );
+            for ( Map.Entry<String, Object> entry : properties.entrySet() )
+            {
+                index.index( node, entry.getKey(), entry.getValue() );
+            }
             tx.success();
             return null;
         }

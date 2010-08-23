@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -245,136 +246,6 @@ public abstract class AbstractHaTest
 
     protected abstract Job<Void> getMasterShutdownDispatcher();
     
-    @Test
-    public void slaveCreateNode() throws Exception
-    {
-        setExpectedResults( 3, 2, 2, 2, 0 );
-        initializeDbs( 1 );
-        executeJob( new CommonJobs.CreateSomeEntitiesJob(), 0 );
-    }
-    
-    @Test
-    public void testMultipleSlaves() throws Exception
-    {
-        setExpectedResults( 2, 1, 1, 1, 0 );
-        initializeDbs( 3 );
-        executeJob( new CommonJobs.CreateSubRefNodeJob( CommonJobs.REL_TYPE.name(), null, null ), 0 );
-        executeJob( new CommonJobs.SetSubRefPropertyJob( "name", "Hello" ), 1 );
-        pullUpdates( 0, 2 );
-    }
-
-//    @Test
-//    public void testMasterFailure() throws Exception
-//    {
-//        initializeDbs( 1 );
-//        Serializable[] result = executeJob( new CommonJobs.CreateSubRefNodeMasterFailJob(
-//                getMasterShutdownDispatcher() ), 0 );
-//        assertFalse( (Boolean) result[0] );
-//        startUpMaster();
-//        long nodeId = (Long) result[1];
-//        Boolean existed = executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 );
-//        assertFalse( existed.booleanValue() );
-//    }
-    
-    @Test
-    public void testSlaveConstraintViolation() throws Exception
-    {
-        setExpectedResults( 2, 1, 0, 1, 0 );
-        initializeDbs( 1 );
-        
-        Long nodeId = executeJob( new CommonJobs.CreateSubRefNodeJob(
-                CommonJobs.REL_TYPE.name(), null, null ), 0 );
-        Boolean successful = executeJob( new CommonJobs.DeleteNodeJob( nodeId.longValue() ), 0 );
-        assertFalse( successful.booleanValue() );
-    }
-    
-    @Test
-    public void testMasterConstrainViolation() throws Exception
-    {
-        setExpectedResults( 2, 1, 1, 1, 0 );
-        initializeDbs( 1 );
-        
-        Long nodeId = executeJob( new CommonJobs.CreateSubRefNodeJob( CommonJobs.REL_TYPE.name(),
-                "name", "Mattias" ), 0 );
-        Boolean successful = executeJobOnMaster( new CommonJobs.DeleteNodeJob( nodeId.longValue() ) );
-        assertFalse( successful.booleanValue() );
-        pullUpdates();
-    }
-
-    @Test
-    public void testGetRelationships() throws Exception
-    {
-        setExpectedResults( 3, 2, 0, 0, 0 );
-        initializeDbs( 1 );
-        
-        assertEquals( (Integer) 1, executeJob( new CommonJobs.CreateSubRefNodeWithRelCountJob(
-                CommonJobs.REL_TYPE.name(), CommonJobs.REL_TYPE.name(), CommonJobs.KNOWS.name() ), 0 ) );
-        assertEquals( (Integer) 2, executeJob( new CommonJobs.CreateSubRefNodeWithRelCountJob(
-                CommonJobs.REL_TYPE.name(), CommonJobs.REL_TYPE.name(), CommonJobs.KNOWS.name() ), 0 ) );
-        assertEquals( (Integer) 2, executeJob( new CommonJobs.GetRelationshipCountJob(
-                CommonJobs.REL_TYPE.name(), CommonJobs.KNOWS.name() ), 0 ) );
-        assertEquals( (Integer) 2, executeJobOnMaster( new CommonJobs.GetRelationshipCountJob(
-                CommonJobs.REL_TYPE.name(), CommonJobs.KNOWS.name() ) ) );
-    }
-
-    @Test
-    public void testNoTransaction() throws Exception
-    {
-        setExpectedResults( 2, 1, 0, 1, 0 );
-        initializeDbs( 1 );
-        
-        executeJobOnMaster( new CommonJobs.CreateSubRefNodeJob(
-                CommonJobs.REL_TYPE.name(), null, null ) );
-        assertFalse( executeJob( new CommonJobs.CreateNodeOutsideOfTxJob(), 0 ).booleanValue() );
-        assertFalse( executeJobOnMaster( new CommonJobs.CreateNodeOutsideOfTxJob() ).booleanValue() );
-    }
-
-    @Test
-    public void testNodeDeleted() throws Exception
-    {
-        setExpectedResults( 1, 0, 0, 0, 0 );
-        initializeDbs( 1 );
-        
-        Long nodeId = executeJobOnMaster( new CommonJobs.CreateNodeJob() );
-        pullUpdates();
-        assertTrue( executeJobOnMaster( new CommonJobs.DeleteNodeJob(
-                nodeId.longValue() ) ).booleanValue() );
-        assertFalse( executeJob( new CommonJobs.SetNodePropertyJob( nodeId.longValue(), "something",
-                "some thing" ), 0 ) );
-    }
-
-    @Test
-    public void testDeadlock() throws Exception
-    {
-        initializeDbs( 2 );
-        
-        Long[] nodes = executeJobOnMaster( new CommonJobs.CreateNodesJob( 2 ) );
-        pullUpdates();
-        
-        Fetcher<DoubleLatch> fetcher = getDoubleLatch();
-        Worker w1 = new Worker( 0, new CommonJobs.Worker1Job( nodes[0], nodes[1], fetcher ) );
-        Worker w2 = new Worker( 1, new CommonJobs.Worker2Job( nodes[0], nodes[1], fetcher ) );
-        w1.start();
-        w2.start();
-        while ( w1.isAlive() || w2.isAlive() )
-        {
-            Thread.sleep( 500 );
-        }
-        boolean case1 = w2.successfull && !w2.deadlocked && !w1.successfull && w1.deadlocked;
-        boolean case2 = !w2.successfull && w2.deadlocked && w1.successfull && !w1.deadlocked;
-        assertTrue( case1 != case2 );
-        assertTrue( case1 || case2  );
-        pullUpdates();
-    }
-    
-    @Test
-    public void createNodeAndIndex() throws Exception
-    {
-        setExpectedResults( 2, 0, 1, 0, 1 );
-        initializeDbs( 1, INDEX_CONFIG );
-        executeJob( new CommonJobs.CreateNodeAndIndexJob(), 0 );
-    }
-    
     protected abstract void shutdownDbs() throws Exception;
     
     protected abstract Fetcher<DoubleLatch> getDoubleLatch() throws Exception;
@@ -429,4 +300,147 @@ public abstract class AbstractHaTest
             }
         };
     }
+    
+    @Test
+    public void slaveCreateNode() throws Exception
+    {
+        setExpectedResults( 3, 2, 2, 2, 0 );
+        initializeDbs( 1 );
+        executeJob( new CommonJobs.CreateSomeEntitiesJob(), 0 );
+    }
+    
+    @Test
+    public void testMultipleSlaves() throws Exception
+    {
+        setExpectedResults( 2, 1, 1, 1, 0 );
+        initializeDbs( 3 );
+        executeJob( new CommonJobs.CreateSubRefNodeJob( CommonJobs.REL_TYPE.name(), null, null ), 0 );
+        executeJob( new CommonJobs.SetSubRefPropertyJob( "name", "Hello" ), 1 );
+        pullUpdates( 0, 2 );
+    }
+
+    @Test
+    public void testMasterFailure() throws Exception
+    {
+        initializeDbs( 1 );
+        Serializable[] result = executeJob( new CommonJobs.CreateSubRefNodeMasterFailJob(
+                getMasterShutdownDispatcher() ), 0 );
+        assertFalse( (Boolean) result[0] );
+        startUpMaster( MapUtil.stringMap() );
+        long nodeId = (Long) result[1];
+        Boolean existed = executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 );
+        assertFalse( existed.booleanValue() );
+    }
+    
+    @Test
+    public void testSlaveConstraintViolation() throws Exception
+    {
+        setExpectedResults( 2, 1, 0, 1, 0 );
+        initializeDbs( 1 );
+        
+        Long nodeId = executeJob( new CommonJobs.CreateSubRefNodeJob(
+                CommonJobs.REL_TYPE.name(), null, null ), 0 );
+        Boolean successful = executeJob( new CommonJobs.DeleteNodeJob( nodeId.longValue(),
+                false ), 0 );
+        assertFalse( successful.booleanValue() );
+    }
+    
+    @Test
+    public void testMasterConstrainViolation() throws Exception
+    {
+        setExpectedResults( 2, 1, 1, 1, 0 );
+        initializeDbs( 1 );
+        
+        Long nodeId = executeJob( new CommonJobs.CreateSubRefNodeJob( CommonJobs.REL_TYPE.name(),
+                "name", "Mattias" ), 0 );
+        Boolean successful = executeJobOnMaster(
+                new CommonJobs.DeleteNodeJob( nodeId.longValue(), false ) );
+        assertFalse( successful.booleanValue() );
+        pullUpdates();
+    }
+
+    @Test
+    public void testGetRelationships() throws Exception
+    {
+        setExpectedResults( 3, 2, 0, 0, 0 );
+        initializeDbs( 1 );
+        
+        assertEquals( (Integer) 1, executeJob( new CommonJobs.CreateSubRefNodeWithRelCountJob(
+                CommonJobs.REL_TYPE.name(), CommonJobs.REL_TYPE.name(), CommonJobs.KNOWS.name() ), 0 ) );
+        assertEquals( (Integer) 2, executeJob( new CommonJobs.CreateSubRefNodeWithRelCountJob(
+                CommonJobs.REL_TYPE.name(), CommonJobs.REL_TYPE.name(), CommonJobs.KNOWS.name() ), 0 ) );
+        assertEquals( (Integer) 2, executeJob( new CommonJobs.GetRelationshipCountJob(
+                CommonJobs.REL_TYPE.name(), CommonJobs.KNOWS.name() ), 0 ) );
+        assertEquals( (Integer) 2, executeJobOnMaster( new CommonJobs.GetRelationshipCountJob(
+                CommonJobs.REL_TYPE.name(), CommonJobs.KNOWS.name() ) ) );
+    }
+
+    @Test
+    public void testNoTransaction() throws Exception
+    {
+        setExpectedResults( 2, 1, 0, 1, 0 );
+        initializeDbs( 1 );
+        
+        executeJobOnMaster( new CommonJobs.CreateSubRefNodeJob(
+                CommonJobs.REL_TYPE.name(), null, null ) );
+        assertFalse( executeJob( new CommonJobs.CreateNodeOutsideOfTxJob(), 0 ).booleanValue() );
+        assertFalse( executeJobOnMaster( new CommonJobs.CreateNodeOutsideOfTxJob() ).booleanValue() );
+    }
+
+    @Test
+    public void testNodeDeleted() throws Exception
+    {
+        setExpectedResults( 1, 0, 0, 0, 0 );
+        initializeDbs( 1 );
+        
+        Long nodeId = executeJobOnMaster( new CommonJobs.CreateNodeJob() );
+        pullUpdates();
+        assertTrue( executeJobOnMaster( new CommonJobs.DeleteNodeJob(
+                nodeId.longValue(), false ) ).booleanValue() );
+        assertFalse( executeJob( new CommonJobs.SetNodePropertyJob( nodeId.longValue(), "something",
+                "some thing" ), 0 ) );
+    }
+
+    @Test
+    public void testDeadlock() throws Exception
+    {
+        initializeDbs( 2 );
+        
+        Long[] nodes = executeJobOnMaster( new CommonJobs.CreateNodesJob( 2 ) );
+        pullUpdates();
+        
+        Fetcher<DoubleLatch> fetcher = getDoubleLatch();
+        Worker w1 = new Worker( 0, new CommonJobs.Worker1Job( nodes[0], nodes[1], fetcher ) );
+        Worker w2 = new Worker( 1, new CommonJobs.Worker2Job( nodes[0], nodes[1], fetcher ) );
+        w1.start();
+        w2.start();
+        while ( w1.isAlive() || w2.isAlive() )
+        {
+            Thread.sleep( 500 );
+        }
+        boolean case1 = w2.successfull && !w2.deadlocked && !w1.successfull && w1.deadlocked;
+        boolean case2 = !w2.successfull && w2.deadlocked && w1.successfull && !w1.deadlocked;
+        assertTrue( case1 != case2 );
+        assertTrue( case1 || case2  );
+        pullUpdates();
+    }
+    
+    @Test
+    public void createNodeAndIndex() throws Exception
+    {
+        setExpectedResults( 2, 0, 1, 0, 1 );
+        initializeDbs( 1, INDEX_CONFIG );
+        executeJob( new CommonJobs.CreateNodeAndIndexJob( "name", "Neo" ), 0 );
+    }
+    
+//    @Test
+//    public void indexingAndTwoSlaves() throws Exception
+//    {
+//        initializeDbs( 2, INDEX_CONFIG );
+//        long id = executeJob( new CommonJobs.CreateNodeAndIndexJob( "name", "Morpheus" ), 0 );
+//        pullUpdates();
+//        executeJob( new CommonJobs.AddIndex( id, MapUtil.map( "key1",
+//                new String[] { "value1", "value2" }, "key 2", 105.43f ) ), 1 );
+//        pullUpdates();
+//    }
 }
