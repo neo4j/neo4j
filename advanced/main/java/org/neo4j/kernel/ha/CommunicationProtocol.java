@@ -218,7 +218,7 @@ abstract class CommunicationProtocol
     }
 
     @SuppressWarnings( "unchecked" )
-    protected static ChannelBuffer handleRequest( Master realMaster,
+    protected static Pair<ChannelBuffer, SlaveContext> handleRequest( Master realMaster,
             ChannelBuffer buffer ) throws IOException
     {
         RequestType type = RequestType.values()[buffer.readByte()];
@@ -231,7 +231,7 @@ abstract class CommunicationProtocol
         {
             writeTransactionStreams( response.transactions(), targetBuffer );
         }
-        return targetBuffer;
+        return new Pair<ChannelBuffer, SlaveContext>( targetBuffer, context );
     }
 
     private static <T> void writeTransactionStreams( TransactionStreams txStreams,
