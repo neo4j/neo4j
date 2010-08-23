@@ -47,7 +47,6 @@ public class TestOrderByTypeExpander extends AbstractTestBase
     {
         for ( String name : names )
         {
-            System.out.println( name );
             Node node = itr.next();
             assertEquals( "expected " + name + ", was " + node.getProperty( "name" ),
                     getNodeWithName( name ), node );
