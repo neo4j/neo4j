@@ -103,7 +103,6 @@ public class TxManager implements TransactionManager
 
     void stop()
     {
-        StringLogger.close( txLogDir + "/messages.log" );
         if ( txLog != null )
         {
             try
@@ -116,6 +115,8 @@ public class TxManager implements TransactionManager
                     + ", " + e );
             }
         }
+        msgLog.logMessage( "TM shutting down" );
+        StringLogger.close( txLogDir + "/messages.log" );
     }
 
     void init( XaDataSourceManager xaDsManagerToUse )

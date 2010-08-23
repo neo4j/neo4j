@@ -267,7 +267,6 @@ public class XaLogicalLog
         }
         else
         {
-            msgLog.logMessage( "[" + fileToOpen + "] clean empty log, " );
             logVersion = xaTf.getCurrentVersion();
             buffer.clear();
             buffer.putLong( logVersion );
@@ -277,7 +276,7 @@ public class XaLogicalLog
             buffer.flip();
             fileChannel.write( buffer );
             scanIsComplete = true;
-            msgLog.logMessage( "[" + fileToOpen + "] clean empty log, version=" + logVersion );
+            msgLog.logMessage( "Opened [" + fileToOpen + "] clean empty log, version=" + logVersion );
         }
     }
 
@@ -505,6 +504,7 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectOnePhaseCommit( xid );
+            msgLog.logMessage( "Injected one phase commit, txId=" + commit.getTxId() );
         }
         catch ( XAException e )
         {
@@ -547,6 +547,7 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectTwoPhaseCommit( xid );
+            msgLog.logMessage( "Injected two phase commit, txId=" + commit.getTxId() );
         }
         catch ( XAException e )
         {
@@ -693,6 +694,7 @@ public class XaLogicalLog
             renameCurrentLogFileAndIncrementVersion( fileName + "." + 
                 logWas, endPosition );
         }
+        msgLog.logMessage( "Closed log " + fileName );
     }
     
     private long[] readLogHeader( ByteBuffer buffer,
@@ -756,7 +758,8 @@ public class XaLogicalLog
         previousLogLastCommittedTx = lastCommittedTx;
         log.fine( "Logical log version: " + logVersion + " with committed tx[" +
             lastCommittedTx + "]" );
-        msgLog.logMessage( "[" + logFileName + "] logVersion=" + logVersion  );
+        msgLog.logMessage( "[" + logFileName + "] logVersion=" + logVersion + 
+                " with committed tx=" + lastCommittedTx );
         long logEntriesFound = 0;
         long lastEntryPos = fileChannel.position();
         LogEntry entry;
@@ -1141,6 +1144,7 @@ public class XaLogicalLog
                     // hack to get done record written after commit record
                     LogIoUtils.writeLogEntry( entry, writeBuffer );
                     applyEntry( entry );
+                    msgLog.logMessage( "Applying external tx: " + ((LogEntry.Commit) entry).getTxId() );
                 }
                 else
                 {
@@ -1243,6 +1247,7 @@ public class XaLogicalLog
 //        LogIoUtils.writeLogEntry( done, writeBuffer );
         // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
         log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
+        msgLog.logMessage( "Applied external tx and generated tx id=" + nextTxId );
 //        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
     
