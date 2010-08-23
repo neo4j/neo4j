@@ -30,6 +30,8 @@ public interface Master
     Response<Void> doneCommitting( SlaveContext context, int eventIdentifier );
 
     Response<Void> rollbackTransaction( SlaveContext context, int eventIdentifier );
+    
+    void rollbackOngoingTransactions( SlaveContext context );
 
     Response<Void> pullUpdates( SlaveContext context );
 }
