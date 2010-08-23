@@ -2,7 +2,6 @@ package org.neo4j.kernel.ha.zookeeper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +19,8 @@ import org.neo4j.kernel.impl.ha.ResponseReceiver;
 
 public class ZooClient implements Watcher
 {
+    private static final String MASTER_NOTIFY_CHILD = "master-notify";
+    
     private ZooKeeper zooKeeper;
     private final long storeCreationTime;
     private final long storeId;
@@ -49,39 +50,26 @@ public class ZooClient implements Watcher
     public void process( WatchedEvent event )
     {
         String path = event.getPath();
-        System.out.println( this + ", " + new Date() + 
-                " Got event: " + event + "(path=" + path + ")" );
-        if ( path == null )
+        System.out.println( this + ", " + new Date() + " Got event: " + event + "(path=" + path + ")" );
+        if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
         {
-            if ( event.getState() == Watcher.Event.KeeperState.Expired )
-            {
-                keeperState = KeeperState.Expired;
-                instantiateZooKeeper();
-            }
-            else if ( event.getState() == Watcher.Event.KeeperState.SyncConnected )
-            {
-                sequenceNr = setup();
-                keeperState = KeeperState.SyncConnected;
-                receiver.somethingIsWrong( new Exception() );
-            }
-            else if ( event.getState() == Watcher.Event.KeeperState.Disconnected )
-            {
-                keeperState = KeeperState.Disconnected;
-            }
+            keeperState = KeeperState.Expired;
+            instantiateZooKeeper();
         }
-        else
+        else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
         {
-            if ( event.getType() == Watcher.Event.EventType.NodeChildrenChanged )
-            {
-                // Assert path = rootPath?
-                // 
-                // Here either a new machine came into the cluster
-                // or a machine (or its network) went down.
-                receiver.somethingIsWrong( new Exception() );
-                
-                // Add the watch again
-                getRoot( true );
-            }
+            sequenceNr = setup();
+            keeperState = KeeperState.SyncConnected;
+            receiver.somethingIsWrong( new Exception() );
+        }
+        else if ( path == null && event.getState() == Watcher.Event.KeeperState.Disconnected )
+        {
+            keeperState = KeeperState.Disconnected;
+        }
+        else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
+        {
+            System.out.println( "NodeDataChanged (most likely master-notify)" );
+            receiver.somethingIsWrong( new Exception() );
         }
     }
     
@@ -143,21 +131,21 @@ public class ZooClient implements Watcher
         }
     }
     
-    private String setOrCreate( String path, boolean pathIsRelative, byte[] data, boolean addWatch )
+    private void setMasterChangeWatcher( int currentMasterId )
     {
-        String created = null;
         try
         {
-            path = pathIsRelative ? getRoot( addWatch ) + "/" + path : path;
+            String root = getRoot();
+            String path = root + "/" + MASTER_NOTIFY_CHILD;
+            byte[] data = null;
             boolean exists = false;
-            byte[] existingData = null;
             try
-            {
-                existingData = zooKeeper.getData( path, addWatch, null );
+            { 
+                data = zooKeeper.getData( path, true, null );
                 exists = true;
-                if ( Arrays.equals( data, existingData ) )
+                if ( data[0] == currentMasterId )
                 {
-                    return null;
+                    return;
                 }
             }
             catch ( KeeperException e )
@@ -167,23 +155,21 @@ public class ZooClient implements Watcher
                     throw new ZooKeeperException( "Couldn't get master notify node", e );
                 }
             }
-
-            // Didn't exist or value differs
+            
+            // Didn't exist or has changed
             try
             {
+                data = new byte[] { (byte) currentMasterId };
                 if ( !exists )
                 {
-                    created = zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                    zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
                             CreateMode.PERSISTENT );
                 }
                 zooKeeper.setData( path, data, -1 );
-
+                System.out.println( "master-notify set to " + currentMasterId );
+                
                 // Add a watch for it
-                if ( addWatch )
-                {
-                    zooKeeper.getData( path, true, null );
-                }
-                return created;
+                zooKeeper.getData( path, true, null );
             }
             catch ( KeeperException e )
             {
@@ -198,25 +184,67 @@ public class ZooClient implements Watcher
             Thread.interrupted();
             throw new ZooKeeperException( "Interrupted", e );
         }
-        return created;
     }
     
-    private String getRoot( boolean addWatch )
+    private String getRoot()
     {
         String rootPath = "/" + storeCreationTime + "_" + storeId;
-        setOrCreate( rootPath, false, new byte[] { 0 }, addWatch );
-        return rootPath;
+        byte[] rootData = null;
+        do
+        {
+            try
+            {
+                rootData = zooKeeper.getData( rootPath, false, null );
+                return rootPath;
+            }
+            catch ( KeeperException e )
+            {
+                if ( e.code() != KeeperException.Code.NONODE )
+                {
+                    throw new ZooKeeperException( "Unable to get root node", 
+                        e ); 
+                }
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+                throw new ZooKeeperException( "Got interrupted", e );
+            }
+            // try create root
+            try
+            {
+                byte data[] = new byte[0];
+                zooKeeper.create( rootPath, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
+                    CreateMode.PERSISTENT );
+            }
+            catch ( KeeperException e )
+            {
+                if ( e.code() != KeeperException.Code.NODEEXISTS )
+                {
+                    throw new ZooKeeperException( "Unable to create root", e );
+                }
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+                throw new ZooKeeperException( "Got interrupted", e );
+            }
+        } while ( rootData == null );
+        throw new IllegalStateException();
     }
     
     private void cleanupChildren()
     {
         try
         {
-            String root = getRoot( false );
+            String root = getRoot();
             List<String> children = zooKeeper.getChildren( root, false );
             for ( String child : children )
             {
-                System.out.println( child );
+                if ( child.equals( MASTER_NOTIFY_CHILD ) )
+                {
+                    continue;
+                }
                 int index = child.indexOf( '_' );
                 int id = Integer.parseInt( child.substring( 0, index ) );
                 if ( id == machineId )
@@ -241,7 +269,7 @@ public class ZooClient implements Watcher
         try
         {
             cleanupChildren();
-            String root = getRoot( true );
+            String root = getRoot();
             String path = root + "/" + machineId + "_";
             byte[] data = new byte[8];
             ByteBuffer buf = ByteBuffer.wrap( data );
@@ -249,10 +277,6 @@ public class ZooClient implements Watcher
             String created = zooKeeper.create( path, data, 
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
             System.out.println( this + " wrote " + committedTx + " to zookeeper" );
-            
-            // Need to add watch here?
-            getRoot( true );
-            
             return created.substring( created.lastIndexOf( "_" ) + 1 );
         }
         catch ( KeeperException e )
@@ -277,13 +301,18 @@ public class ZooClient implements Watcher
         try
         {
             Map<Integer, Pair<Integer, Long>> rawData = new HashMap<Integer, Pair<Integer,Long>>();
-            String root = getRoot( true );
+            String root = getRoot();
             List<String> children = zooKeeper.getChildren( root, false );
             int currentMasterId = -1;
             int lowestSeq = Integer.MAX_VALUE;
             long highestTxId = -1;
             for ( String child : children )
             {
+                if ( child.equals( MASTER_NOTIFY_CHILD ) )
+                {
+                    continue;
+                }
+                
                 int index = child.indexOf( '_' );
                 int id = Integer.parseInt( child.substring( 0, index ) );
                 int seq = Integer.parseInt( child.substring( index + 1 ) );                
@@ -317,6 +346,7 @@ public class ZooClient implements Watcher
                 }
             }
             System.out.println( "getMaster: " + currentMasterId + " based on " + rawData );
+            setMasterChangeWatcher( currentMasterId );
             return currentMasterId;
         }
         catch ( KeeperException e )
@@ -340,7 +370,7 @@ public class ZooClient implements Watcher
                 " but committedTx is " + committedTx );
         }
         this.committedTx = tx;
-        String root = getRoot( true );
+        String root = getRoot();
         String path = root + "/" + machineId + "_" + sequenceNr;
         byte[] data = new byte[8];
         ByteBuffer buf = ByteBuffer.wrap( data );
