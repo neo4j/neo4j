@@ -135,7 +135,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                 .getLockManager();
             LockReleaser lockReleaser = getEmbeddedGraphDb().getConfig()
                 .getLockReleaser();
-            ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+            ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
                 lockManager, lockReleaser );
         }
         catch ( InstantiationException e )

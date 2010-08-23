@@ -372,4 +372,10 @@ public class NeoStore extends AbstractStore
         list.addAll( relTypeStore.getAllWindowPoolStats() );
         return list;
     }
+    
+    public boolean isStoreOk()
+    {
+        return getStoreOk() && relTypeStore.getStoreOk() &&
+            propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk();
+    }
 }

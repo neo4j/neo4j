@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a factory for
@@ -73,6 +75,8 @@ public class NeoStoreXaDataSource extends XaDataSource
     private boolean backupSlave = false;
     
     private boolean logApplied = false;
+    
+    private final StringLogger msgLog;
 
     /**
      * Creates a <CODE>NeoStoreXaDataSource</CODE> using configuration from
@@ -109,6 +113,7 @@ public class NeoStoreXaDataSource extends XaDataSource
         this.lockManager = (LockManager) config.get( LockManager.class );
         this.lockReleaser = (LockReleaser) config.get( LockReleaser.class );
         storeDir = (String) config.get( "store_dir" );
+        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         String store = (String) config.get( "neo_store" );
         if ( !config.containsKey( "rebuild_idgenerators_fast" ) )
         {
@@ -118,6 +123,7 @@ public class NeoStoreXaDataSource extends XaDataSource
         String create = "" + config.get( "create" );
         if ( !readOnly && !file.exists() && "true".equals( create ) )
         {
+            msgLog.logMessage( "Creating new db @ " + store );
             autoCreatePath( store );
             NeoStore.createStore( store, config );
         }
@@ -188,9 +194,12 @@ public class NeoStoreXaDataSource extends XaDataSource
         this.lockManager = lockManager;
         this.lockReleaser = lockReleaser;
         storeDir = logicalLogPath;
+        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         neoStore = new NeoStore( neoStoreFileName );
-        xaContainer = XaContainer.create( logicalLogPath, new CommandFactory(
-            neoStore ), new TransactionFactory(), null );
+        Map<Object,Object> config = new HashMap<Object, Object>();
+        config.put( "store_dir", storeDir );
+        xaContainer = XaContainer.create( logicalLogPath + "/nioneo_logical.log", new CommandFactory(
+            neoStore ), new TransactionFactory(), config );
 
         xaContainer.openLogicalLog();
         if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )

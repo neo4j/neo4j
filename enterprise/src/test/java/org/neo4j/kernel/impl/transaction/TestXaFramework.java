@@ -190,15 +190,16 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         private XaContainer xaContainer = null;
 
-        public DummyXaDataSource( java.util.Map<?,?> map )
+        public DummyXaDataSource( java.util.Map<Object,Object> map )
             throws InstantiationException
         {
             super( map );
             try
             {
+                map.put( "store_dir", path() );
                 xaContainer = XaContainer.create( resourceFile(),
                     new DummyCommandFactory(), new DummyTransactionFactory(), 
-                    null );
+                    map );
                 xaContainer.openLogicalLog();
             }
             catch ( IOException e )
