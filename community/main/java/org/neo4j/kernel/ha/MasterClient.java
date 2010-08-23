@@ -203,6 +203,11 @@ public class MasterClient extends CommunicationProtocol implements Master
             }
         }, VOID_DESERIALIZER );
     }
+    
+    public void rollbackOngoingTransactions( SlaveContext context )
+    {
+        throw new UnsupportedOperationException( "Should never be called from the client side" );
+    }
 
     public Response<Void> pullUpdates( SlaveContext context )
     {

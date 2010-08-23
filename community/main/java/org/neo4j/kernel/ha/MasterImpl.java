@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,7 +59,7 @@ public class MasterImpl implements Master
     private final Config graphDbConfig;
     
     private final Map<TxIdElement, Transaction> transactions =
-            new HashMap<TxIdElement, Transaction>();
+            Collections.synchronizedMap( new HashMap<TxIdElement, Transaction>() );
 
     public MasterImpl( GraphDatabaseService db )
     {
@@ -178,12 +179,13 @@ public class MasterImpl implements Master
         }
     }
 
-    void rollbackThisAndResumeOther( Transaction otherTx )
+    void rollbackThisAndResumeOther( TxIdElement txId, Transaction otherTx )
     {
         try
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.rollback();
+            transactions.remove( txId );
             if ( otherTx != null )
             {
                 txManager.resume( otherTx );
@@ -300,7 +302,7 @@ public class MasterImpl implements Master
     {
         TxIdElement tx = new TxIdElement( context.machineId(), eventIdentifier );
         Transaction otherTx = suspendOtherAndResumeThis( tx );
-        rollbackThisAndResumeOther( otherTx );
+        rollbackThisAndResumeOther( tx, otherTx );
         return packResponse( context, null, ALL );
     }
 
@@ -365,7 +367,7 @@ public class MasterImpl implements Master
         Transaction otherTx = suspendOtherAndResumeThis( txId );
         try
         {
-            Transaction tx = transactions.get( txId );
+            Transaction tx = transactions.remove( txId );
             if ( tx == null )
             {
                 throw new RuntimeException( "Shouldn't happen" );
@@ -388,6 +390,26 @@ public class MasterImpl implements Master
         finally
         {
             suspendThisAndResumeOther( otherTx );
+        }
+    }
+    
+    public void rollbackOngoingTransactions( SlaveContext context )
+    {
+        int slaveMachineId = context.machineId();
+        Collection<TxIdElement> rolledbackTxs = new ArrayList<TxIdElement>();
+        for ( Map.Entry<TxIdElement, Transaction> entry : transactions.entrySet() )
+        {
+            if ( entry.getKey().machineId == slaveMachineId )
+            {
+                Transaction otherTx = suspendOtherAndResumeThis( entry.getKey() );
+                rollbackThisAndResumeOther( entry.getKey(), otherTx );
+                rolledbackTxs.add( entry.getKey() );
+            }
+        }
+        
+        for ( TxIdElement element : rolledbackTxs )
+        {
+            transactions.remove( element );
         }
     }
 
