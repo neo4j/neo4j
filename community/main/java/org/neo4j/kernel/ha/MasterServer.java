@@ -148,7 +148,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         {
             for ( Map.Entry<Integer, Collection<Channel>> entry : channelsPerClient.entrySet() )
             {
-                if ( !pruneDeadChannels( entry.getValue() ) )
+                if ( !entry.getValue().isEmpty() && !pruneDeadChannels( entry.getValue() ) )
                 {
                     System.out.println( "Rolling back dead transaction from client " +
                             entry.getKey() + " since it went down" );
