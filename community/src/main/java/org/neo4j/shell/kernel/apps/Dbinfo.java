@@ -172,10 +172,10 @@ public class Dbinfo extends GraphDatabaseApp
     private void availableBeans( MBeanServer mbeans, Kernel kernel, StringBuilder result )
     {
         result.append( "Available Management Beans\n" );
-        for ( ObjectName name : mbeans.queryNames( kernel.getMBeanQuery(), null ) )
+        for ( Object name : mbeans.queryNames( kernel.getMBeanQuery(), null ) )
         {
             result.append( "* " );
-            result.append( name.getKeyProperty( "name" ) );
+            result.append( ( (ObjectName) name ).getKeyProperty( "name" ) );
             result.append( "\n" );
         }
     }
