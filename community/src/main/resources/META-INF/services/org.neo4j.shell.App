@@ -16,3 +16,4 @@ org.neo4j.shell.kernel.apps.Trav
 org.neo4j.shell.kernel.apps.Index
 org.neo4j.shell.kernel.apps.Gsh
 org.neo4j.shell.kernel.apps.Jsh
+org.neo4j.shell.kernel.apps.Dbinfo
