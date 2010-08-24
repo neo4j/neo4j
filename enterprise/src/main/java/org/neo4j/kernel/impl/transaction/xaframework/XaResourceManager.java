@@ -24,11 +24,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -44,7 +47,7 @@ public class XaResourceManager
     private final ArrayMap<Xid,XidStatus> xidMap = 
         new ArrayMap<Xid,XidStatus>();
     private int recoveredTxCount = 0;
-    private List<Integer> recoveredDoneRecords = new LinkedList<Integer>();
+    private Set<Integer> recoveredDoneRecords = new HashSet<Integer>();
 
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
@@ -406,7 +409,7 @@ public class XaResourceManager
         {
             log.done( xaTransaction.getIdentifier() );
         }
-        else
+        else if ( !log.scanIsComplete() )
         {
             recoveredDoneRecords.add( xaTransaction.getIdentifier() );
         }
@@ -494,6 +497,7 @@ public class XaResourceManager
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
         {
+            recoveredDoneRecords.remove( xaTransaction.getIdentifier() );
             recoveredTxCount--;
             checkIfRecoveryComplete();
         }
