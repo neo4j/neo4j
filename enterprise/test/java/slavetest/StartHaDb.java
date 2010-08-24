@@ -40,7 +40,7 @@ public class StartHaDb
 //        } );
     }
 
-    private static String toHaServerFormat( Map<Integer, String> haServers )
+    static String toHaServerFormat( Map<Integer, String> haServers )
     {
         StringBuilder builder = new StringBuilder();
         for ( Map.Entry<Integer, String> entry : haServers.entrySet() )

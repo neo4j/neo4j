@@ -10,7 +10,8 @@ public class DumpZooInfo
     {
         NeoStoreUtil store = new NeoStoreUtil( "var/hadb" );
         ClusterManager clusterManager = new ClusterManager( 
-                "localhost", store.getCreationTime(), store.getStoreId(), "" );
+                "localhost", store.getCreationTime(), store.getStoreId(),
+                StartHaDb.toHaServerFormat( StartHaDb.HA_SERVERS ) );
         System.out.println( "Master is " + clusterManager.getMaster() );
         System.out.println( "Connected slaves" );
         for ( MachineInfo info : clusterManager.getConnectedSlaves() )
