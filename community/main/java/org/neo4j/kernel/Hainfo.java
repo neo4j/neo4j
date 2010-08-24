@@ -24,7 +24,7 @@ public class Hainfo extends GraphDatabaseApp
             for ( Pair<Integer, Collection<Integer>> entry : master.getConnectedClients() )
             {
                 out.println( "\tMachine ID: " + entry.first() );
-                if ( !entry.other().isEmpty() )
+                if ( entry.other() != null && !entry.other().isEmpty() )
                 {
                     out.println( "\tOngoing transactions: " + entry.other() );
                 }
