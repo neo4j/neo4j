@@ -27,11 +27,9 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -1322,21 +1320,24 @@ public class XaLogicalLog
             fileChannel.position( getFirstStartEntry( endPosition ) );
         }
         LogEntry entry;
-        Set<Integer> startEntriesWritten = new HashSet<Integer>();
+        // Set<Integer> startEntriesWritten = new HashSet<Integer>();
         while ((entry = LogIoUtils.readEntry( buffer, fileChannel, cf )) != null )
         {
             if ( xidIdentMap.get( entry.getIdentifier() ) != null )
             {
                 if ( entry instanceof LogEntry.Start )
                 {
-                    ((LogEntry.Start) entry).setStartPosition( newLog.position() );
-                    startEntriesWritten.add( entry.getIdentifier() );
+                    LogEntry.Start startEntry = (LogEntry.Start) entry;
+                    startEntry.setStartPosition( newLog.position() );
+                    // overwrite old start entry with new that has updated position
+                    xidIdentMap.put( startEntry.getIdentifier(), startEntry );
+                    // startEntriesWritten.add( entry.getIdentifier() );
                 }
-                if ( !startEntriesWritten.contains( entry.getIdentifier() ) )
-                {
-                    throw new IOException( "Unable to rotate log since start entry for identifier[" +
-                            entry.getIdentifier() + "] not written" );
-                }
+//                if ( !startEntriesWritten.contains( entry.getIdentifier() ) )
+//                {
+//                    throw new IOException( "Unable to rotate log since start entry for identifier[" +
+//                            entry.getIdentifier() + "] not written" );
+//                }
                 LogBuffer newLogBuffer = new DirectLogBuffer( newLog, buffer );
                 LogIoUtils.writeLogEntry( entry, newLogBuffer );
             }
