@@ -438,4 +438,9 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     {
         return this.localIndex;
     }
+    
+    protected MasterServer getMasterServerIfMaster()
+    {
+        return masterServer;
+    }
 }

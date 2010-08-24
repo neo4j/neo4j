@@ -1,6 +1,7 @@
 package org.neo4j.kernel.ha;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -146,6 +147,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     {
         synchronized ( channelsPerClient )
         {
+            Collection<Integer> clientsToRemove = new ArrayList<Integer>();
             for ( Map.Entry<Integer, Collection<Channel>> entry : channelsPerClient.entrySet() )
             {
                 if ( !entry.getValue().isEmpty() && !pruneDeadChannels( entry.getValue() ) )
@@ -154,7 +156,13 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                             entry.getKey() + " since it went down" );
                     realMaster.rollbackOngoingTransactions( new SlaveContext( entry.getKey(),
                             new Pair[0] ) );
+                    clientsToRemove.add( entry.getKey() );
                 }
+            }
+            
+            for ( Integer id : clientsToRemove )
+            {
+                channelsPerClient.remove( id );
             }
         }
     }
@@ -174,5 +182,33 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             }
         }
         return anyoneAlive;
+    }
+    
+    // =====================================================================
+    // Just some methods which aren't really used when running a HA cluster,
+    // but exposed so that other tools can reach that information.
+    // =====================================================================
+    
+    /**
+     * Returns pairs of:
+     * key: machine ID
+     * value: collection of ongoing transaction event identifiers
+     */
+    public Iterable<Pair<Integer, Collection<Integer>>> getConnectedClients()
+    {
+        Collection<Integer> clients = null;
+        synchronized ( channelsPerClient )
+        {
+            clients = new ArrayList<Integer>( channelsPerClient.keySet() );
+        }
+        
+        Map<Integer, Collection<Integer>> txs = ((MasterImpl) realMaster).getOngoingTransactions();
+        Collection<Pair<Integer, Collection<Integer>>> result =
+                new ArrayList<Pair<Integer,Collection<Integer>>>();
+        for ( Integer id : clients )
+        {
+            result.add( new Pair<Integer, Collection<Integer>>( id, txs.get( id ) ) );
+        }
+        return result;
     }
 }
