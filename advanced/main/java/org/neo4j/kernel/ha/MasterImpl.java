@@ -468,4 +468,25 @@ public class MasterImpl implements Master
             lockReleaser.addLockToTransaction( entity, LockType.WRITE );
         }
     };
+    
+    // =====================================================================
+    // Just some methods which aren't really used when running a HA cluster,
+    // but exposed so that other tools can reach that information.
+    // =====================================================================
+    
+    public Map<Integer, Collection<Integer>> getOngoingTransactions()
+    {
+        Map<Integer, Collection<Integer>> result = new HashMap<Integer, Collection<Integer>>();
+        for ( TxIdElement txId : transactions.keySet() )
+        {
+            Collection<Integer> identifiers = result.get( txId.machineId );
+            if ( identifiers == null )
+            {
+                identifiers = new ArrayList<Integer>();
+                result.put( txId.machineId, identifiers );
+            }
+            identifiers.add( txId.eventIdentifier );
+        }
+        return result;
+    }
 }
