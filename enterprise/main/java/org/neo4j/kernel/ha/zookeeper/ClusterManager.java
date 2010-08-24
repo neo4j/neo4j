@@ -1,39 +1,25 @@
 package org.neo4j.kernel.ha.zookeeper;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
 
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 
-public class ClusterManager implements Watcher
+public class ClusterManager extends AbstractZooKeeperManager
 {
     private final ZooKeeper zooKeeper;
-    private final long storeCreationTime;
-    private final long storeId;
-
-    public ClusterManager( String servers, long storeCreationTime, 
-        long storeId )
-    {
-        try
-        {
-            this.zooKeeper = new ZooKeeper( servers, 5000, this );
-        }
-        catch ( IOException e )
-        {
-            throw new ZooKeeperException( 
-                "Unable to create zoo keeper client", e );
-        }
-        this.storeCreationTime = storeCreationTime;
-        this.storeId = storeId;
-    }
+    private final Map<Integer, String> haServers;
     
-    private String getRoot()
+    public ClusterManager( String servers, long storeCreationTime, 
+        long storeId, String haServers )
     {
-        return "/" + storeCreationTime + "_" + storeId;
+        super( servers, storeCreationTime, storeId );
+        this.zooKeeper = instantiateZooKeeper();
+        this.haServers = HighlyAvailableGraphDatabase.parseHaServersConfig( haServers );
     }
     
     public void process( WatchedEvent event )
@@ -41,120 +27,47 @@ public class ClusterManager implements Watcher
         System.out.println( "Got event: " + event );
     }
     
-    public synchronized int getMaster()
+    /**
+     * Returns the disconnected slaves in this cluster so that all slaves
+     * which are specified in the HA servers configuration, but not in the
+     * zoo keeper cluster will be returned.
+     * @return the disconnected slaves in this cluster.
+     */
+    public MachineInfo[] getDisconnectedSlaves()
     {
-        try
+        Collection<MachineInfo> infos = new ArrayList<MachineInfo>();
+        for ( Map.Entry<Integer, String> entry : haServers.entrySet() )
         {
-            String root = getRoot();
-            List<String> children = zooKeeper.getChildren( root, false );
-            int currentMasterId = -1;
-            int lowestSeq = Integer.MAX_VALUE;
-            long highestTxId = -1;
-            for ( String child : children )
-            {
-                int index = child.indexOf( '_' );
-                int id = Integer.parseInt( child.substring( 0, index ) );
-                int seq = Integer.parseInt( child.substring( index + 1 ) );                
-                try
-                {
-                    byte[] data = zooKeeper.getData( root + "/" + child, false, 
-                        null );
-                    ByteBuffer buf = ByteBuffer.wrap( data );
-                    long tx = buf.getLong();
-                    if ( tx >= highestTxId )
-                    {
-                        highestTxId = tx;
-                        if ( seq < lowestSeq )
-                        {
-                            currentMasterId = id;
-                            lowestSeq = seq;
-                        }
-                    }
-                }
-                catch ( KeeperException inner )
-                {
-                    if ( inner.code() != KeeperException.Code.NONODE )
-                    {
-                        throw new ZooKeeperException( "Unabe to get master.", 
-                            inner );
-                    }
-                }
-            }
-            return currentMasterId;
+            infos.add( new MachineInfo( entry.getKey(), -1, -1, entry.getValue() ) );
         }
-        catch ( KeeperException e )
-        {
-            throw new ZooKeeperException( "Unable to get master", e );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw new ZooKeeperException( "Interrupted.", e );
-        }
+        infos.removeAll( Arrays.asList( getAllMachines() ) );
+        return infos.toArray( new MachineInfo[infos.size()] );
     }
     
-    public void dumpInfo()
+    /**
+     * Returns the connected slaves in this cluster.
+     * @return the connected slaves in this cluster.
+     */
+    public MachineInfo[] getConnectedSlaves()
     {
-        try
-        {
-            String root = getRoot();
-            List<String> children = zooKeeper.getChildren( root, false );
-            for ( String child : children )
-            {
-                int index = child.indexOf( '_' );
-                int id = Integer.parseInt( child.substring( 0, index ) );
-                int seq = Integer.parseInt( child.substring( index + 1 ) );                
-                try
-                {
-                    byte[] data = zooKeeper.getData( root + "/" + child, false, 
-                        null );
-                    ByteBuffer buf = ByteBuffer.wrap( data );
-                    long tx = buf.getLong();
-                    System.out.println( "machine=" + id + " (seq=" + seq + ") tx=" + tx );
-                }
-                catch ( KeeperException inner )
-                {
-                    if ( inner.code() != KeeperException.Code.NONODE )
-                    {
-                        throw new ZooKeeperException( "Unabe to get master.", 
-                            inner );
-                    }
-                }
-            }
-        }
-        catch ( KeeperException e )
-        {
-            throw new ZooKeeperException( "Unable to get master", e );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw new ZooKeeperException( "Interrupted.", e );
-        }
+        Map<Integer, MachineInfo> machines = getAllMachines();
+        MachineInfo master = getMasterBasedOn( machines.values() );
+        Collection<MachineInfo> result = new ArrayList<MachineInfo>( machines.values() );
+        result.remove( master );
+        return result.toArray( new MachineInfo[result.size()] );
     }
     
-    public void shutdown()
+    @Override
+    protected ZooKeeper getZooKeeper()
     {
-        try
-        {
-            zooKeeper.close();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new ZooKeeperException( 
-                "Error closing zookeeper connection", e );
-        }
+        return this.zooKeeper;
     }
     
-    public void close()
+    @Override
+    protected String getHaServer( int machineId )
     {
-        try
-        {
-            zooKeeper.close();
-        }
-        catch ( InterruptedException e )
-        {
-            e.printStackTrace();
-        }
+        String server = haServers.get( machineId );
+        return server != null ? server :
+                "No HA server config specified for machine ID " + machineId;
     }
 }

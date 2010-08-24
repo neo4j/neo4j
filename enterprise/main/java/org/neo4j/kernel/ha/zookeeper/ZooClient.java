@@ -1,34 +1,27 @@
 package org.neo4j.kernel.ha.zookeeper;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
 
-public class ZooClient implements Watcher
+public class ZooClient extends AbstractZooKeeperManager
 {
     private static final String MASTER_NOTIFY_CHILD = "master-notify";
     
     private ZooKeeper zooKeeper;
-    private final long storeCreationTime;
-    private final long storeId;
     private final int machineId;
     private String sequenceNr;
     
     private long committedTx;
-    private final String servers;
     
     private volatile KeeperState keeperState = KeeperState.Disconnected;
     private volatile boolean shutdown = false;
@@ -37,12 +30,10 @@ public class ZooClient implements Watcher
     public ZooClient( String servers, int machineId, long storeCreationTime, 
         long storeId, long committedTx, ResponseReceiver receiver )
     {
-        this.servers = servers;
+        super( servers, storeCreationTime, storeId );
+        this.zooKeeper = instantiateZooKeeper();
         this.receiver = receiver;
-        instantiateZooKeeper();
         this.machineId = machineId;
-        this.storeCreationTime = storeCreationTime;
-        this.storeId = storeId;
         this.committedTx = committedTx;
         this.sequenceNr = "not initialized yet";
     }
@@ -72,8 +63,6 @@ public class ZooClient implements Watcher
             receiver.somethingIsWrong( new Exception() );
         }
     }
-    
-    private final long TIME_OUT = 5000;
     
     private void waitForSyncConnected()
     {
@@ -109,25 +98,12 @@ public class ZooClient implements Watcher
                 }
                 currentTime = System.currentTimeMillis();
             }
-            while ( (currentTime - startTime) < TIME_OUT );
+            while ( (currentTime - startTime) < SESSION_TIME_OUT );
             if ( keeperState != KeeperState.SyncConnected )
             {
                 throw new ZooKeeperTimedOutException( 
                         "Connection to ZooKeeper server timed out, keeper state=" + keeperState );
             }
-        }
-    }
-    
-    private void instantiateZooKeeper()
-    {
-        try
-        {
-            this.zooKeeper = new ZooKeeper( servers, 5000, this );
-        }
-        catch ( IOException e )
-        {
-            throw new ZooKeeperException( 
-                "Unable to create zoo keeper client", e );
         }
     }
     
@@ -186,9 +162,11 @@ public class ZooClient implements Watcher
         }
     }
     
-    private String getRoot()
+    public String getRoot()
     {
-        String rootPath = "/" + storeCreationTime + "_" + storeId;
+        String rootPath = super.getRoot();
+        
+        // Make sure it exists
         byte[] rootData = null;
         do
         {
@@ -295,69 +273,15 @@ public class ZooClient implements Watcher
         }
     }
 
-    public synchronized int getMaster()
+    public synchronized MachineInfo getMaster()
     {
         waitForSyncConnected();
-        try
+        MachineInfo result = super.getMaster();
+        if ( result != null )
         {
-            Map<Integer, Pair<Integer, Long>> rawData = new HashMap<Integer, Pair<Integer,Long>>();
-            String root = getRoot();
-            List<String> children = zooKeeper.getChildren( root, false );
-            int currentMasterId = -1;
-            int lowestSeq = Integer.MAX_VALUE;
-            long highestTxId = -1;
-            for ( String child : children )
-            {
-                if ( child.equals( MASTER_NOTIFY_CHILD ) )
-                {
-                    continue;
-                }
-                
-                int index = child.indexOf( '_' );
-                int id = Integer.parseInt( child.substring( 0, index ) );
-                int seq = Integer.parseInt( child.substring( index + 1 ) );                
-                try
-                {
-                    byte[] data = zooKeeper.getData( root + "/" + child, false, 
-                        null );
-                    ByteBuffer buf = ByteBuffer.wrap( data );
-                    long tx = buf.getLong();
-                    if ( rawData.put( id, new Pair<Integer, Long>( seq, tx ) ) != null )
-                    {
-                        System.out.println( "warning: " + id + " found more than once" );
-                    }
-                    if ( tx >= highestTxId )
-                    {
-                        if ( tx > highestTxId || seq < lowestSeq )
-                        {
-                            currentMasterId = id;
-                            lowestSeq = seq;
-                        }
-                        highestTxId = tx;
-                    }
-                }
-                catch ( KeeperException inner )
-                {
-                    if ( inner.code() != KeeperException.Code.NONODE )
-                    {
-                        throw new ZooKeeperException( "Unabe to get master.", 
-                            inner );
-                    }
-                }
-            }
-            System.out.println( "getMaster: " + currentMasterId + " based on " + rawData );
-            setMasterChangeWatcher( currentMasterId );
-            return currentMasterId;
+            setMasterChangeWatcher( result.getMachineId() );
         }
-        catch ( KeeperException e )
-        {
-            throw new ZooKeeperException( "Unable to get master", e );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw new ZooKeeperException( "Interrupted.", e );
-        }
+        return result;
     }
     
     public synchronized void setCommittedTx( long tx )
@@ -392,15 +316,19 @@ public class ZooClient implements Watcher
     
     public void shutdown()
     {
-        try
-        {
-            shutdown = true;
-            zooKeeper.close();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new ZooKeeperException( 
-                "Error closing zookeeper connection", e );
-        }
+        this.shutdown = true;
+        super.shutdown();
+    }
+
+    @Override
+    protected ZooKeeper getZooKeeper()
+    {
+        return zooKeeper;
+    }
+
+    @Override
+    protected String getHaServer( int machineId )
+    {
+        return "";
     }
 }
