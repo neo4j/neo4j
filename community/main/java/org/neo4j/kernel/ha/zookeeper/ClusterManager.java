@@ -1,7 +1,6 @@
 package org.neo4j.kernel.ha.zookeeper;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -40,7 +39,7 @@ public class ClusterManager extends AbstractZooKeeperManager
         {
             infos.add( new MachineInfo( entry.getKey(), -1, -1, entry.getValue() ) );
         }
-        infos.removeAll( Arrays.asList( getAllMachines() ) );
+        infos.removeAll( getAllMachines().values() );
         return infos.toArray( new MachineInfo[infos.size()] );
     }
     
