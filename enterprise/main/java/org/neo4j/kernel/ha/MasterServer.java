@@ -3,6 +3,7 @@ package org.neo4j.kernel.ha;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -207,7 +208,9 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 new ArrayList<Pair<Integer,Collection<Integer>>>();
         for ( Integer id : clients )
         {
-            result.add( new Pair<Integer, Collection<Integer>>( id, txs.get( id ) ) );
+            Collection<Integer> ongoingTxs = txs.get( id );
+            result.add( new Pair<Integer, Collection<Integer>>( id, ongoingTxs != null ?
+                    ongoingTxs : Collections.<Integer>emptyList() ) );
         }
         return result;
     }
