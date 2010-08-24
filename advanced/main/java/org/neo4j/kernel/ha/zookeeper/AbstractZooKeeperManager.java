@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -76,11 +77,14 @@ public abstract class AbstractZooKeeperManager implements Watcher
     
     protected MachineInfo getMasterBasedOn( Collection<MachineInfo> machines )
     {
+        Map<Integer, Pair<Long, Integer>> debugData = new TreeMap<Integer, Pair<Long, Integer>>();
         MachineInfo master = null;
         int lowestSeq = Integer.MAX_VALUE;
         long highestTxId = -1;
         for ( MachineInfo info : getAllMachines().values() )
         {
+            debugData.put( info.machineId,
+                    new Pair<Long, Integer>( info.latestTxId, info.sequenceId ) );
             if ( info.latestTxId >= highestTxId )
             {
                 highestTxId = info.latestTxId;
@@ -91,6 +95,8 @@ public abstract class AbstractZooKeeperManager implements Watcher
                 }
             }
         }
+        System.out.println( "getMaster " + (master != null ? master.machineId : "none") +
+                " based on " + debugData );
         return master;
     }
 
