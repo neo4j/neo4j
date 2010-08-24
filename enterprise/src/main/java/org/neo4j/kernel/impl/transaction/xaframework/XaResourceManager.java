@@ -44,6 +44,7 @@ public class XaResourceManager
     private final ArrayMap<Xid,XidStatus> xidMap = 
         new ArrayMap<Xid,XidStatus>();
     private int recoveredTxCount = 0;
+    private List<Integer> recoveredDoneRecords = new LinkedList<Integer>();
 
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
@@ -405,6 +406,10 @@ public class XaResourceManager
         {
             log.done( xaTransaction.getIdentifier() );
         }
+        else
+        {
+            recoveredDoneRecords.add( xaTransaction.getIdentifier() );
+        }
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
         {
@@ -588,6 +593,18 @@ public class XaResourceManager
         {
             // log.makeNewLog();
             tf.recoveryComplete();
+            try
+            {
+                for ( int identifier : recoveredDoneRecords )
+                {
+                    log.doneInternal( identifier );
+                }
+                recoveredDoneRecords.clear();
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
             msgLog.logMessage( "XaResourceManager[" + name + "] recovery completed." );
         }
         else
