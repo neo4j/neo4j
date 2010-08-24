@@ -47,7 +47,8 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
         NeoStoreUtil store = new NeoStoreUtil( SKELETON_DB_PATH.getAbsolutePath() );
         zooKeeperMasterFetcher = new ClusterManager(
                 buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ),
-                store.getCreationTime(), store.getStoreId() );
+                store.getCreationTime(), store.getStoreId(),
+                buildHaServersConfigValue( numSlaves+1 ) );
     }
     
     @Override
@@ -94,7 +95,7 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     @Override
     protected <T> T executeJobOnMaster( Job<T> job ) throws Exception
     {
-        int masterMachineId = zooKeeperMasterFetcher.getMaster();
+        int masterMachineId = zooKeeperMasterFetcher.getMaster().getMachineId();
         return jvmByMachineId.get( masterMachineId ).executeJob( job );
     }
     
@@ -102,5 +103,12 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     public static void shutdownZooKeeperCluster()
     {
         zooKeeperCluster.shutdown();
+    }
+    
+    @Override
+    public void slaveCreateNode() throws Exception
+    {
+        // TODO Auto-generated method stub
+        super.slaveCreateNode();
     }
 }

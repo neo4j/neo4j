@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -115,9 +115,14 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     private static Map<Integer, String> getHaServersFromConfig(
             Map<?, ?> config )
     {
-        String value = config.get( CONFIG_KEY_HA_SERVERS ).toString();
-        Map<Integer, String> result = new HashMap<Integer, String>();
-        for ( String part : value.split( Pattern.quote( "," ) ) )
+        return parseHaServersConfig( (String) config.get( CONFIG_KEY_HA_SERVERS ) );
+    }
+    
+    public static Map<Integer, String> parseHaServersConfig( String configValue )
+    {
+        // Nice to have sorted
+        Map<Integer, String> result = new TreeMap<Integer, String>();
+        for ( String part : configValue.split( Pattern.quote( "," ) ) )
         {
             String[] tokens = part.trim().split( Pattern.quote( "=" ) );
             result.put( new Integer( tokens[0] ), tokens[1] );

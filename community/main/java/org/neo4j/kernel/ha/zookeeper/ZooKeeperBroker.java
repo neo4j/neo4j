@@ -7,6 +7,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
+import org.neo4j.kernel.ha.zookeeper.AbstractZooKeeperManager.MachineInfo;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Master;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
@@ -44,14 +45,22 @@ public class ZooKeeperBroker implements Broker
             return masterClient;
         }
         
-        int masterId = zooClient.getMaster();
-        if ( masterId == machineId )
+        MachineInfo master = zooClient.getMaster();
+        if ( master != null && master.getMachineId() == machineId )
         {
             throw new ZooKeeperException( "I am master, so can't call getMaster() here",
                     new Exception() );
         }
         invalidateMaster();
-        createMaster( masterId );
+        if ( master != null )
+        {
+            createMaster( master.getMachineId() );
+        }
+        else
+        {
+            // TODO Really?
+            createMaster( -1 );
+        }
         return masterClient;
     }
 
@@ -86,7 +95,8 @@ public class ZooKeeperBroker implements Broker
     
     public boolean thisIsMaster()
     {
-        return zooClient.getMaster() == machineId;
+        MachineInfo master = zooClient.getMaster();
+        return master != null && master.getMachineId() == machineId;
     }
     
     public int getMyMachineId()
