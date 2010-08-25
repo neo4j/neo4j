@@ -2,7 +2,6 @@ package slavetest;
 
 import java.io.File;
 import java.util.Date;
-import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
@@ -14,11 +13,11 @@ public class StartHaDb
 {
     public static final File PATH = new File( "var/hadb" );
 
-    static final Map<Integer, String> HA_SERVERS = MapUtil.genericMap( //
-            "1", "172.16.2.33:5559", // JS
-            "2", "172.16.1.242:5559", // MP
-            "3", "172.16.4.14:5559" // TI
-    );
+    static final String HA_SERVER = "172.16.1.242:5559";
+        
+//            "1", "172.16.2.33:5559", // JS
+//            "2", "172.16.1.242:5559", // MP
+//            "3", "172.16.4.14:5559" // TI
 
     public static void main( String[] args ) throws Exception
     {
@@ -28,7 +27,7 @@ public class StartHaDb
         final GraphDatabaseService db = new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "2",
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( StartZooKeeperServer.ZOO_KEEPER_SERVERS, "," ),
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, toHaServerFormat( HA_SERVERS ),
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, HA_SERVER,
                 Config.ENABLE_REMOTE_SHELL, "true",
                 Config.KEEP_LOGICAL_LOGS, "true" ) );
 //        Runtime.getRuntime().addShutdownHook( new Thread()
@@ -38,16 +37,6 @@ public class StartHaDb
 //                db.shutdown();
 //            }
 //        } );
-    }
-
-    static String toHaServerFormat( Map<Integer, String> haServers )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( Map.Entry<Integer, String> entry : haServers.entrySet() )
-        {
-            builder.append( (builder.length() > 0 ? "," : "") + entry.getKey() + "=" + entry.getValue() );
-        }
-        return builder.toString();
     }
 
     private static String join( String[] strings, String delimiter )
