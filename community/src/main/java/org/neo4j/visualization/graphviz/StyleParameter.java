@@ -52,7 +52,7 @@ public interface StyleParameter
 
         public void configure( StyleConfiguration configuration )
         {
-            configuration.setGraphProperty( "label", label );
+            configuration.setGraphProperty( "label", configuration.escapeLabel( label ) );
         }
     }
 
@@ -323,7 +323,7 @@ public interface StyleParameter
 	}
     /**
      * Reverse the logical order of relationships.
-     * 
+     *
      * This affects how the layout of the nodes.
      */
     abstract class ReverseRelationshipOrder implements StyleParameter

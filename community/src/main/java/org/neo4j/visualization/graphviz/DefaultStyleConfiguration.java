@@ -44,6 +44,15 @@ class DefaultStyleConfiguration implements StyleConfiguration
 		}
 	}
 
+    public String escapeLabel( String label )
+    {
+        label = label.replace( "\\", "\\\\" );
+        label = label.replace( "\"", "\\\"" );
+        label = label.replace( "'", "\\\\'" );
+        label = label.replace( "\n", "\\n" );
+        return label;
+    }
+
 	private final Map<String, String> header;
 	private final Map<String, String> nodeHeader;
 	private final Map<String, String> edgeHeader;

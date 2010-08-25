@@ -49,4 +49,6 @@ interface StyleConfiguration
 	void setRelationshipPropertyFomatter( PropertyFormatter format );
 
     void setRelationshipReverseOrderPredicate( Predicate<Relationship> reversed );
+
+    String escapeLabel( String label );
 }
