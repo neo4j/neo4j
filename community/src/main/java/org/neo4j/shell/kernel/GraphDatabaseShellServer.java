@@ -42,6 +42,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
 {
     private GraphDatabaseService graphDb;
     private BashVariableInterpreter bashInterpreter;
+    private boolean graphDbCreatedHere;
 
     /**
      * @param graphDb the {@link GraphDatabaseService} instance to use with the
@@ -52,6 +53,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
             throws RemoteException
     {
         this( instantiateGraphDb( path, readOnly ) );
+        this.graphDbCreatedHere = false;
     }
     
     public GraphDatabaseShellServer( GraphDatabaseService graphDb )
@@ -65,6 +67,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         this.setProperty( AbstractClient.TITLE_KEYS_KEY,
             ".*name.*,.*title.*" );
         this.setProperty( AbstractClient.TITLE_MAX_LENGTH, "40" );
+        this.graphDbCreatedHere = true;
     }
 
     private static GraphDatabaseService instantiateGraphDb( String path, boolean readOnly )
@@ -131,6 +134,9 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     
     public void shutdown()
     {
-        this.graphDb.shutdown();
+        if ( graphDbCreatedHere )
+        {
+            this.graphDb.shutdown();
+        }
     }
 }
