@@ -45,7 +45,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 {
     public static final String CONFIG_KEY_HA_MACHINE_ID = "ha.machine_id";
     public static final String CONFIG_KEY_HA_ZOO_KEEPER_SERVERS = "ha.zoo_keeper_servers";
-    public static final String CONFIG_KEY_HA_SERVERS = "ha.servers";
+    public static final String CONFIG_KEY_HA_SERVER = "ha.server";
     public static final String CONFIG_KEY_HA_PULL_INTERVAL = "ha.pull_interval";
     
     private final String storeDir;
@@ -107,7 +107,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     private static String getHaServerFromConfig( Map<?, ?> config )
     {
-        return (String) config.get( CONFIG_KEY_HA_SERVERS );
+        return (String) config.get( CONFIG_KEY_HA_SERVER );
     }
 
     private static String getZooKeeperServersFromConfig( Map<String, String> config )

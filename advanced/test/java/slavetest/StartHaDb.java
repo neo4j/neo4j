@@ -27,7 +27,7 @@ public class StartHaDb
         final GraphDatabaseService db = new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "2",
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( StartZooKeeperServer.ZOO_KEEPER_SERVERS, "," ),
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, HA_SERVER,
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, HA_SERVER,
                 Config.ENABLE_REMOTE_SHELL, "true",
                 Config.KEEP_LOGICAL_LOGS, "true" ) );
 //        Runtime.getRuntime().addShutdownHook( new Thread()
