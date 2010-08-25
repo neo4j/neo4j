@@ -710,7 +710,7 @@ public abstract class CommonAbstractStore
 
     protected void registerIdFromUpdateRecord( long id )
     {
-        highestUpdateRecordId = Math.max( highestUpdateRecordId, id );
+        highestUpdateRecordId = Math.max( highestUpdateRecordId, id + 1 );
     }
 
     protected void updateHighId()
