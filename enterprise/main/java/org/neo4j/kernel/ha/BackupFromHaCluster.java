@@ -20,14 +20,11 @@ public class BackupFromHaCluster
         
         final Machine master = cluster.getMaster();
         System.out.println( "Master:" + master );
-        String haServers = arguments.get(
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, null );
         Map<String, String> config = MapUtil.stringMap(
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID,
-                String.valueOf( master.getMachineId() ),
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, haServers );
+                String.valueOf( master.getMachineId() ) );
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir, config,
-                AbstractBroker.wrapSingleBroker( new FakeBroker( new MasterClient(
+                AbstractBroker.wrapSingleBroker( new BackupBroker( new MasterClient(
                         master.getServer().first(), master.getServer().other() ) ) ) );
         System.out.println( "Leaching backup from master " + master );
         try
@@ -38,6 +35,7 @@ public class BackupFromHaCluster
         finally
         {
             db.shutdown();
+            cluster.shutdown();
         }
     }
 }
