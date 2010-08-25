@@ -262,7 +262,6 @@ public class ZooClient extends AbstractZooKeeperManager
             String path = root + "/" + machineId + "_";
             String created = zooKeeper.create( path, dataRepresentingMe( committedTx ), 
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
-            System.out.println( this + " wrote " + committedTx + " to zookeeper" );
             return created.substring( created.lastIndexOf( "_" ) + 1 );
         }
         catch ( KeeperException e )
@@ -289,7 +288,6 @@ public class ZooClient extends AbstractZooKeeperManager
         {
             zooKeeper.create( path, new byte[0],
                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT );
-            System.out.println( "Created the ha server root" );
         }
         catch ( KeeperException e )
         {
@@ -306,7 +304,6 @@ public class ZooClient extends AbstractZooKeeperManager
         {
             zooKeeper.create( machinePath, data,
                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT );
-            System.out.println( "Creating entry for " + haServer );
         }
         catch ( KeeperException e )
         {
@@ -316,7 +313,7 @@ public class ZooClient extends AbstractZooKeeperManager
             }
         }
         zooKeeper.setData( machinePath, data, -1 );
-        System.out.println( "wrote " + data.length + " bytes for " + machinePath );
+        System.out.println( "Wrote HA server " + haServer + " to zoo keeper" );
     }
 
     private byte[] haServerAsData()
@@ -325,7 +322,6 @@ public class ZooClient extends AbstractZooKeeperManager
         ByteBuffer buffer = ByteBuffer.wrap( array );
         buffer.put( (byte) haServer.length() );
         buffer.asCharBuffer().put( haServer.toCharArray() ).flip();
-        System.out.println( "buffer limit " + buffer.limit() );
         byte[] actualArray = new byte[buffer.limit()];
         System.arraycopy( array, 0, actualArray, 0, actualArray.length );
         return actualArray;
