@@ -50,6 +50,7 @@ public class StringLogger
     {
         out.println( new Date() + ": " + msg + " " + cause.getMessage() );
         cause.printStackTrace( out );
+        out.flush();
     }
     
     public synchronized static void close( String filename )
