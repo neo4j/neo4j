@@ -324,8 +324,8 @@ public class ZooClient extends AbstractZooKeeperManager
         byte[] array = new byte[haServer.length()*2 + 20];
         ByteBuffer buffer = ByteBuffer.wrap( array );
         buffer.put( (byte) haServer.length() );
-        buffer.asCharBuffer().put( haServer.toCharArray() );
-        buffer.flip();
+        buffer.asCharBuffer().put( haServer.toCharArray() ).flip();
+        System.out.println( "buffer limit " + buffer.limit() );
         byte[] actualArray = new byte[buffer.limit()];
         System.arraycopy( array, 0, actualArray, 0, actualArray.length );
         return actualArray;
