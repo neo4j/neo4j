@@ -51,8 +51,8 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + tempMachineId,
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS,
                         args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, null ),
-                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS,
-                        args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS, null ),
+                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER,
+                        args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, null ),
                         "index", args.get( "index", null ) );
                 haDb = new HighlyAvailableGraphDatabase( storeDir, config );
                 println( "Started HA db (w/ zoo keeper)" );

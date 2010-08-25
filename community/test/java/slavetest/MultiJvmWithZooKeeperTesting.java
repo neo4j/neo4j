@@ -56,7 +56,7 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
         myExtraArgs.add( "" + (machineId+1) );
         myExtraArgs.add( "-" + HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS );
         myExtraArgs.add( buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ) );
-        myExtraArgs.add( "-" + HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVERS );
+        myExtraArgs.add( "-" + HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER );
         myExtraArgs.add( haServersConfig );
         myExtraArgs.addAll( Arrays.asList( extraArgs ) );
         StandaloneDbCom com = super.spawnJvm( path, port, machineId,
