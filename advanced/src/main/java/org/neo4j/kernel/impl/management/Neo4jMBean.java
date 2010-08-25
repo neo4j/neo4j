@@ -351,7 +351,11 @@ public class Neo4jMBean extends StandardMBean
         {
             proxyMaker = new ProxyMaker();
         }
-        catch ( Throwable t )
+        catch ( Exception t )
+        {
+            proxyMaker = null;
+        }
+        catch ( LinkageError t )
         {
             proxyMaker = null;
         }

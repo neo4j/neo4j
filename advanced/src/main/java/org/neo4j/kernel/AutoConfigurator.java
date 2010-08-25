@@ -49,6 +49,9 @@ public class AutoConfigurator
         catch ( Exception e )
         { // ok we tried but probably 1.5 JVM or other class library implementation
         }
+        catch ( LinkageError e )
+        { // ok we tried but probably 1.5 JVM or other class library implementation
+        }
         if ( mem != -1 )
         {
             totalPhysicalMemMb = (int) (mem / 1024 / 1024 );
