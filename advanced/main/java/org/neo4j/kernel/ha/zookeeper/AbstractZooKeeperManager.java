@@ -3,6 +3,7 @@ package org.neo4j.kernel.ha.zookeeper;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,16 +20,16 @@ import org.neo4j.helpers.Pair;
  */
 public abstract class AbstractZooKeeperManager implements Watcher
 {
+    protected static final String HA_SERVERS_CHILD = "ha-servers";
     protected static final int SESSION_TIME_OUT = 5000;
     
     private final String servers;
-    private final String rootPath;
+    private final Map<Integer, String> haServersCache = Collections.synchronizedMap(
+            new HashMap<Integer, String>() );
 
-    public AbstractZooKeeperManager( String servers, long storeCreationTime, 
-            long storeId )
+    public AbstractZooKeeperManager( String servers )
     {
         this.servers = servers;
-        this.rootPath = "/" + storeCreationTime + "_" + storeId;
     }
     
     protected ZooKeeper instantiateZooKeeper()
@@ -46,10 +47,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
     
     protected abstract ZooKeeper getZooKeeper();
     
-    public String getRoot()
-    {
-        return this.rootPath;
-    }
+    public abstract String getRoot();
     
     protected Pair<Integer, Integer> parseChild( String child )
     {
@@ -70,41 +68,41 @@ public abstract class AbstractZooKeeperManager implements Watcher
         return buf.getLong();
     }
     
-    public MachineInfo getMaster()
+    public Machine getMaster()
     {
         return getMasterBasedOn( getAllMachines().values() );
     }
     
-    protected MachineInfo getMasterBasedOn( Collection<MachineInfo> machines )
+    protected Machine getMasterBasedOn( Collection<Machine> machines )
     {
         Map<Integer, Pair<Long, Integer>> debugData = new TreeMap<Integer, Pair<Long, Integer>>();
-        MachineInfo master = null;
+        Machine master = null;
         int lowestSeq = Integer.MAX_VALUE;
         long highestTxId = -1;
-        for ( MachineInfo info : getAllMachines().values() )
+        for ( Machine info : getAllMachines().values() )
         {
-            debugData.put( info.machineId,
-                    new Pair<Long, Integer>( info.latestTxId, info.sequenceId ) );
-            if ( info.latestTxId >= highestTxId )
+            debugData.put( info.getMachineId(),
+                    new Pair<Long, Integer>( info.getLatestTxId(), info.getSequenceId() ) );
+            if ( info.getLatestTxId() >= highestTxId )
             {
-                highestTxId = info.latestTxId;
-                if ( info.sequenceId < lowestSeq )
+                highestTxId = info.getLatestTxId();
+                if ( info.getSequenceId() < lowestSeq )
                 {
                     master = info;
-                    lowestSeq = info.sequenceId;
+                    lowestSeq = info.getSequenceId();
                 }
             }
         }
-        System.out.println( "getMaster " + (master != null ? master.machineId : "none") +
+        System.out.println( "getMaster " + (master != null ? master.getMachineId() : "none") +
                 " based on " + debugData );
         return master;
     }
 
-    protected synchronized Map<Integer, MachineInfo> getAllMachines()
+    protected synchronized Map<Integer, Machine> getAllMachines()
     {
         try
         {
-            Map<Integer, MachineInfo> result = new HashMap<Integer, MachineInfo>();
+            Map<Integer, Machine> result = new HashMap<Integer, Machine>();
             String root = getRoot();
             List<String> children = getZooKeeper().getChildren( root, false );
             for ( String child : children )
@@ -120,9 +118,9 @@ public abstract class AbstractZooKeeperManager implements Watcher
                     int id = parsedChild.first();
                     int seq = parsedChild.other();
                     long tx = readDataAsLong( root + "/" + child );
-                    if ( !result.containsKey( id ) || seq > result.get( id ).sequenceId )
+                    if ( !result.containsKey( id ) || seq > result.get( id ).getSequenceId() )
                     {
-                        result.put( id, new MachineInfo( id, seq, tx, getHaServer( id ) ) );
+                        result.put( id, new Machine( id, seq, tx, getHaServer( id ) ) );
                     }
                 }
                 catch ( KeeperException inner )
@@ -147,7 +145,42 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
     }
     
-    protected abstract String getHaServer( int machineId );
+    protected String getHaServer( int machineId )
+    {
+        String result = haServersCache.get( machineId );
+        if ( result == null )
+        {
+            result = readHaServer( machineId );
+            haServersCache.put( machineId, result );
+        }
+        return result;
+    }
+    
+    protected String readHaServer( int machineId )
+    {
+        String rootPath = getRoot();
+        try
+        {
+            String haServerPath = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId;
+            byte[] serverData = getZooKeeper().getData( haServerPath, false, null );
+            ByteBuffer buffer = ByteBuffer.wrap( serverData );
+            byte length = buffer.get();
+            char[] chars = new char[length];
+            buffer.asCharBuffer().get( chars );
+            String result = String.valueOf( chars );
+            System.out.println( "Read HA server:" + result + " (for machineID " + machineId +
+                    ") from zoo keeper" );
+            return result;
+        }
+        catch ( KeeperException e )
+        {
+            throw new ZooKeeperException( "Couldn't find the HA servers root node", e );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new ZooKeeperException( "Interrupted", e );
+        }
+    }
     
     public void shutdown()
     {
@@ -159,61 +192,6 @@ public abstract class AbstractZooKeeperManager implements Watcher
         {
             throw new ZooKeeperException( 
                 "Error closing zookeeper connection", e );
-        }
-    }
-
-    public static class MachineInfo
-    {
-        private final int machineId;
-        private final int sequenceId;
-        private final long latestTxId;
-        private final String server;
-
-        MachineInfo( int machineId, int sequenceId, long lastestTxId, String server )
-        {
-            this.machineId = machineId;
-            this.sequenceId = sequenceId;
-            this.latestTxId = lastestTxId;
-            this.server = server;
-        }
-
-        public int getMachineId()
-        {
-            return machineId;
-        }
-
-        public long getLatestTxId()
-        {
-            return latestTxId;
-        }
-
-        public int getSequenceId()
-        {
-            return sequenceId;
-        }
-
-        public String getServer()
-        {
-            return server;
-        }
-        
-        @Override
-        public String toString()
-        {
-            return "MachineInfo[ID:" + machineId + ", sequence:" + sequenceId +
-                    ", latest tx id:" + latestTxId + ", server:" + server + "]";
-        }
-        
-        @Override
-        public boolean equals( Object obj )
-        {
-            return (obj instanceof MachineInfo) && ((MachineInfo) obj).machineId == machineId;
-        }
-        
-        @Override
-        public int hashCode()
-        {
-            return machineId*19;
         }
     }
 }

@@ -6,12 +6,10 @@ import java.io.Serializable;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -74,7 +72,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         this.config = config;
         this.brokerFactory = defaultBrokerFactory( storeDir, config );
         this.machineId = getMachineIdFromConfig( config );
-        this.broker = brokerFactory.create();
+        this.broker = brokerFactory.create( storeDir, config );
         reevaluateMyself();
     }
 
@@ -88,7 +86,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         this.config = config;
         this.brokerFactory = brokerFactory;
         this.machineId = getMachineIdFromConfig( config );
-        this.broker = brokerFactory.create();
+        this.broker = brokerFactory.create( storeDir, config );
         reevaluateMyself();
     }
     
@@ -97,37 +95,19 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     {
         return new BrokerFactory()
         {
-            public Broker create()
+            public Broker create( String storeDir, Map<String, String> config )
             {
-                return instantiateBroker( storeDir, config );
+                return new ZooKeeperBroker( storeDir,
+                        getMachineIdFromConfig( config ),
+                        getZooKeeperServersFromConfig( config ),
+                        getHaServerFromConfig( config ), HighlyAvailableGraphDatabase.this );
             }
         };
     }
 
-    private Broker instantiateBroker( String storeDir, Map<String, String> config )
+    private static String getHaServerFromConfig( Map<?, ?> config )
     {
-        return new ZooKeeperBroker( storeDir,
-                getMachineIdFromConfig( config ),
-                getZooKeeperServersFromConfig( config ),
-                getHaServersFromConfig( config ), this );
-    }
-    
-    private static Map<Integer, String> getHaServersFromConfig(
-            Map<?, ?> config )
-    {
-        return parseHaServersConfig( (String) config.get( CONFIG_KEY_HA_SERVERS ) );
-    }
-    
-    public static Map<Integer, String> parseHaServersConfig( String configValue )
-    {
-        // Nice to have sorted
-        Map<Integer, String> result = new TreeMap<Integer, String>();
-        for ( String part : configValue.split( Pattern.quote( "," ) ) )
-        {
-            String[] tokens = part.trim().split( Pattern.quote( "=" ) );
-            result.put( new Integer( tokens[0] ), tokens[1] );
-        }
-        return result;
+        return (String) config.get( CONFIG_KEY_HA_SERVERS );
     }
 
     private static String getZooKeeperServersFromConfig( Map<String, String> config )
@@ -185,7 +165,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             {
                 if ( !iAmCurrentlyMaster )
                 {
-                    shutdown();
+                    internalShutdown();
                 }
                 if ( this.localGraph == null )
                 {
@@ -196,7 +176,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             {
                 if ( iAmCurrentlyMaster )
                 {
-                    shutdown();
+                    internalShutdown();
                 }
                 if ( this.localGraph == null )
                 {
@@ -353,9 +333,9 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         return localGraph.registerTransactionEventHandler( handler );
     }
 
-    public synchronized void shutdown()
+    public synchronized void internalShutdown()
     {
-        System.out.println( "Shutdown called on HA db " + this );
+        System.out.println( "Internal shutdown of HA db " + this );
         if ( this.updatePuller != null )
         {
             this.updatePuller.shutdown();
@@ -377,6 +357,16 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             this.localGraph = null;
             this.localDataSourceManager = null;
         }
+    }
+    
+    public synchronized void shutdown()
+    {
+        if ( this.broker != null )
+        {
+            this.broker.shutdown();
+            this.broker = null;
+        }
+        internalShutdown();
     }
 
     public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )

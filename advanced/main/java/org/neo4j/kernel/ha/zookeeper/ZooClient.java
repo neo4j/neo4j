@@ -11,6 +11,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
 
 public class ZooClient extends AbstractZooKeeperManager
@@ -26,11 +27,15 @@ public class ZooClient extends AbstractZooKeeperManager
     private volatile KeeperState keeperState = KeeperState.Disconnected;
     private volatile boolean shutdown = false;
     private final ResponseReceiver receiver;
+    private final String rootPath;
+    private final String haServer;
     
     public ZooClient( String servers, int machineId, long storeCreationTime, 
-        long storeId, long committedTx, ResponseReceiver receiver )
+        long storeId, long committedTx, ResponseReceiver receiver, String haServer )
     {
-        super( servers, storeCreationTime, storeId );
+        super( servers );
+        this.rootPath = "/" + storeCreationTime + "_" + storeId;
+        this.haServer = haServer;
         this.zooKeeper = instantiateZooKeeper();
         this.receiver = receiver;
         this.machineId = machineId;
@@ -164,8 +169,6 @@ public class ZooClient extends AbstractZooKeeperManager
     
     public String getRoot()
     {
-        String rootPath = super.getRoot();
-        
         // Make sure it exists
         byte[] rootData = null;
         do
@@ -219,13 +222,12 @@ public class ZooClient extends AbstractZooKeeperManager
             List<String> children = zooKeeper.getChildren( root, false );
             for ( String child : children )
             {
-                if ( child.equals( MASTER_NOTIFY_CHILD ) )
+                Pair<Integer, Integer> parsedChild = parseChild( child );
+                if ( parsedChild == null )
                 {
                     continue;
                 }
-                int index = child.indexOf( '_' );
-                int id = Integer.parseInt( child.substring( 0, index ) );
-                if ( id == machineId )
+                if ( parsedChild.first() == machineId )
                 {
                     zooKeeper.delete( root + "/" + child, -1 );
                 }
@@ -242,17 +244,23 @@ public class ZooClient extends AbstractZooKeeperManager
         }
     }
     
+    private byte[] dataRepresentingMe( long txId )
+    {
+        byte[] array = new byte[8];
+        ByteBuffer buffer = ByteBuffer.wrap( array );
+        buffer.putLong( txId );
+        return array;
+    }
+    
     private String setup()
     {
         try
         {
             cleanupChildren();
+            writeHaServerConfig();
             String root = getRoot();
             String path = root + "/" + machineId + "_";
-            byte[] data = new byte[8];
-            ByteBuffer buf = ByteBuffer.wrap( data );
-            buf.putLong( committedTx );
-            String created = zooKeeper.create( path, data, 
+            String created = zooKeeper.create( path, dataRepresentingMe( committedTx ), 
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
             System.out.println( this + " wrote " + committedTx + " to zookeeper" );
             return created.substring( created.lastIndexOf( "_" ) + 1 );
@@ -273,10 +281,59 @@ public class ZooClient extends AbstractZooKeeperManager
         }
     }
 
-    public synchronized MachineInfo getMaster()
+    private void writeHaServerConfig() throws InterruptedException, KeeperException
+    {
+        // Make sure the HA server root is created
+        String path = rootPath + "/" + HA_SERVERS_CHILD;
+        try
+        {
+            zooKeeper.create( path, new byte[0],
+                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT );
+            System.out.println( "Created the ha server root" );
+        }
+        catch ( KeeperException e )
+        {
+            if ( e.code() != KeeperException.Code.NODEEXISTS )
+            {
+                throw e;
+            }
+        }
+        
+        // Write the HA server config.
+        String machinePath = path + "/" + machineId;
+        byte[] data = haServerAsData();
+        try
+        {
+            zooKeeper.create( machinePath, data,
+                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT );
+            System.out.println( "Creating entry for " + haServer );
+        }
+        catch ( KeeperException e )
+        {
+            if ( e.code() != KeeperException.Code.NODEEXISTS )
+            {
+                throw e;
+            }
+        }
+        zooKeeper.setData( machinePath, data, -1 );
+    }
+
+    private byte[] haServerAsData()
+    {
+        byte[] array = new byte[100];
+        ByteBuffer buffer = ByteBuffer.wrap( array );
+        buffer.put( (byte) haServer.length() );
+        buffer.asCharBuffer().put( haServer.toCharArray() );
+        buffer.flip();
+        byte[] actualArray = new byte[buffer.limit()];
+        System.arraycopy( array, 0, actualArray, 0, actualArray.length );
+        return actualArray;
+    }
+
+    public synchronized Machine getMaster()
     {
         waitForSyncConnected();
-        MachineInfo result = super.getMaster();
+        Machine result = super.getMaster();
         if ( result != null )
         {
             setMasterChangeWatcher( result.getMachineId() );
@@ -296,9 +353,7 @@ public class ZooClient extends AbstractZooKeeperManager
         this.committedTx = tx;
         String root = getRoot();
         String path = root + "/" + machineId + "_" + sequenceNr;
-        byte[] data = new byte[8];
-        ByteBuffer buf = ByteBuffer.wrap( data );
-        buf.putLong( tx );
+        byte[] data = dataRepresentingMe( tx );
         try
         {
             zooKeeper.setData( path, data, -1 );
@@ -325,10 +380,10 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         return zooKeeper;
     }
-
+    
     @Override
     protected String getHaServer( int machineId )
     {
-        return "";
+        return machineId == this.machineId ? haServer : super.getHaServer( machineId );
     }
 }

@@ -19,6 +19,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.FakeBroker;
 import org.neo4j.kernel.ha.MasterImpl;
 
@@ -47,7 +48,7 @@ public class SingleJvmTesting extends AbstractHaTest
                 cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(i) );
                 cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
                 GraphDatabaseService db = new HighlyAvailableGraphDatabase(
-                        slavePath.getAbsolutePath(), cfg, wrap( broker ) );
+                        slavePath.getAbsolutePath(), cfg, AbstractBroker.wrapSingleBroker( broker ) );
                 haDbs.add( db );
                 broker.setDb( db );
             }
