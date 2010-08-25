@@ -1,9 +1,7 @@
 package org.neo4j.kernel.ha.zookeeper;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +23,7 @@ public class ClusterManager extends AbstractZooKeeperManager
         this.zooKeeper = instantiateZooKeeper();
     }
     
-    private void waitForSyncConnected()
+    protected void waitForSyncConnected()
     {
         long startTime = System.currentTimeMillis();
         while ( System.currentTimeMillis()-startTime < SESSION_TIME_OUT )
@@ -137,48 +135,5 @@ public class ClusterManager extends AbstractZooKeeperManager
     protected ZooKeeper getZooKeeper()
     {
         return this.zooKeeper;
-    }
-    
-    @Override
-    protected String getHaServer( int machineId )
-    {
-        if ( haServers == null )
-        {
-            haServers = readHaServers();
-        }
-        
-        String server = haServers.get( machineId );
-        return server != null ? server :
-                "No HA server config specified for machine ID " + machineId;
-    }
-
-    private Map<Integer, String> readHaServers()
-    {
-        waitForSyncConnected();
-        Map<Integer, String> result = new HashMap<Integer, String>();
-        String rootPath = getRoot();
-        try
-        {
-            String haRootPath = rootPath + "/" + HA_SERVERS_CHILD;
-            for ( String child : zooKeeper.getChildren( rootPath + "/" + HA_SERVERS_CHILD, false ) )
-            {
-                byte[] serverData = zooKeeper.getData( child, false, null );
-                ByteBuffer buffer = ByteBuffer.wrap( serverData );
-                byte length = buffer.get();
-                char[] chars = new char[length];
-                buffer.asCharBuffer().get( chars );
-                result.put( Integer.parseInt( child ), String.valueOf( chars ) );
-            }
-            System.out.println( "Read HA servers:" + result + " from zoo keeper" );
-            return result;
-        }
-        catch ( KeeperException e )
-        {
-            throw new ZooKeeperException( "Couldn't find the HA servers root node", e );
-        }
-        catch ( InterruptedException e )
-        {
-            throw new ZooKeeperException( "Interrupted", e );
-        }
     }
 }
