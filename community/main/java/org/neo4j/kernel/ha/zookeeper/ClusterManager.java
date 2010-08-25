@@ -87,7 +87,7 @@ public class ClusterManager extends AbstractZooKeeperManager
             if ( foundChild != null )
             {
                 System.out.println( "Read root path " + foundChild + " from zoo keeper" );
-                return foundChild;
+                return "/" + foundChild;
             }
             throw new RuntimeException( "No root child found in zoo keeper" );
         }
