@@ -18,11 +18,14 @@ package org.neo4j.visualization.graphviz;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.visualization.PropertyType;
 
 /**
@@ -318,6 +321,45 @@ public interface StyleParameter
             return null;
         }
 	}
+    /**
+     * Reverse the logical order of relationships.
+     * 
+     * This affects how the layout of the nodes.
+     */
+    abstract class ReverseRelationshipOrder implements StyleParameter
+    {
+        public void configure( StyleConfiguration configuration )
+        {
+            configuration.setRelationshipReverseOrderPredicate( new Predicate<Relationship>()
+            {
+                public boolean accept( Relationship item )
+                {
+                    return reversedOrder( item );
+                }
+            } );
+        }
+
+        protected abstract boolean reversedOrder( Relationship edge );
+    }
+    /** Reverse the logical order of relationships with specific types. */
+    final class ReverseOrderRelationshipTypes extends ReverseRelationshipOrder
+    {
+        private final Set<String> reversedTypes = new HashSet<String>();
+
+        public ReverseOrderRelationshipTypes( RelationshipType... types )
+        {
+            for ( RelationshipType type : types )
+            {
+                reversedTypes.add( type.name() );
+            }
+        }
+
+        @Override
+        protected boolean reversedOrder( Relationship edge )
+        {
+            return reversedTypes.contains( edge.getType().name() );
+        }
+    }
 	/** Add a custom title to nodes. */
 	abstract class NodeTitle implements StyleParameter, TitleGetter<Node>
 	{

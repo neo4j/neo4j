@@ -23,6 +23,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.visualization.PropertyType;
 
 class DefaultStyleConfiguration implements StyleConfiguration
@@ -54,6 +55,12 @@ class DefaultStyleConfiguration implements StyleConfiguration
 	private TitleGetter<? super Relationship> edgeTitle = null;
 	private PropertyFormatter nodeFormat = null;
 	private PropertyFormatter edgeFormat = null;
+    private Predicate<Relationship> reversedRelationshipOrder = null;
+
+    boolean reverseOrder( Relationship edge )
+    {
+        return reversedRelationshipOrder != null && reversedRelationshipOrder.accept( edge );
+    }
 
     void emitHeader( Appendable stream ) throws IOException
     {
@@ -169,6 +176,11 @@ class DefaultStyleConfiguration implements StyleConfiguration
 			    + type.typeName + "\\l" );
 		}
 	}
+
+    public void setRelationshipReverseOrderPredicate( Predicate<Relationship> reversed )
+    {
+        reversedRelationshipOrder = reversed;
+    }
 
     public void setGraphProperty( String property, String value )
 	{
