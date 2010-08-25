@@ -108,7 +108,7 @@ public abstract class Service
     /**
      * Designates that a class implements the specified service and should be
      * added to the services listings file (META-INF/services/[service-name]).
-     * 
+     *
      * The annotation in itself does not provide any functionality for adding
      * the implementation class to the services listings file. But it serves as
      * a handle for an Annotation Processing Tool to utilize for performing that
@@ -278,6 +278,10 @@ public abstract class Service
         {
             return null;
         }
+        catch ( LinkageError e )
+        {
+            return null;
+        }
     }
 
     private static <T> Iterable<T> sunJava5Loader( final Class<T> type )
@@ -289,6 +293,10 @@ public abstract class Service
                     "providers", Class.class );
         }
         catch ( Exception e )
+        {
+            return null;
+        }
+        catch ( LinkageError e )
         {
             return null;
         }
@@ -365,6 +373,11 @@ public abstract class Service
                                 }
                                 catch ( Exception e )
                                 {
+                                    return null;
+                                }
+                                catch ( LinkageError e )
+                                {
+                                    return null;
                                 }
                             }
                             return null;

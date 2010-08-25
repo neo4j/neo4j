@@ -101,7 +101,7 @@ class GraphDbInstance
         boolean useMemoryMapped = true;
         if ( stringParams.containsKey( Config.USE_MEMORY_MAPPED_BUFFERS ) )
         {
-            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, 
+            params.put( Config.USE_MEMORY_MAPPED_BUFFERS,
                     stringParams.get( Config.USE_MEMORY_MAPPED_BUFFERS ) );
         }
         if ( "false".equals( params.get( Config.USE_MEMORY_MAPPED_BUFFERS ) ) )
@@ -148,7 +148,10 @@ class GraphDbInstance
             catch ( ClassNotFoundException e )
             { // ok index util not on class path
             }
-            
+            catch ( NoClassDefFoundError err )
+            { // ok index util not on class path
+            }
+
             try
             {
                 Class clazz = Class.forName( Config.LUCENE_FULLTEXT_DS_CLASS );
@@ -162,7 +165,10 @@ class GraphDbInstance
             catch ( ClassNotFoundException e )
             { // ok index util not on class path
             }
-            
+            catch ( NoClassDefFoundError err )
+            { // ok index util not on class path
+            }
+
             try
             {
                 Class<?> cls = Class.forName( "org.neo4j.index.impl.lucene.LuceneDataSource" );
@@ -170,6 +176,9 @@ class GraphDbInstance
                         "162374".getBytes(), config.getParams() );
             }
             catch ( ClassNotFoundException e )
+            { // ok new lucene index not on classpath
+            }
+            catch ( NoClassDefFoundError err )
             { // ok new lucene index not on classpath
             }
         }
@@ -205,12 +214,12 @@ class GraphDbInstance
                 }
             }
         }
-        
+
         if ( config.getTxModule().getXaDataSourceManager().hasDataSource( "lucene-index" ) )
         {
             config.getTxModule().getXaDataSourceManager().unregisterDataSource( "lucene-index" );
         }
-        
+
         started = true;
         return Collections.unmodifiableMap( params );
     }
@@ -238,7 +247,7 @@ class GraphDbInstance
 
     private XaDataSource registerLuceneDataSource( String name,
             String className, TxModule txModule, String luceneDirectory,
-            LockManager lockManager, byte[] resourceId, 
+            LockManager lockManager, byte[] resourceId,
             Map<Object,Object> params )
     {
         params.put( "dir", luceneDirectory );
