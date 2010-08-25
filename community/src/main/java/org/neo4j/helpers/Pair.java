@@ -23,4 +23,10 @@ public final class Pair<T1, T2>
     {
         return other;
     }
+
+    @Override
+    public String toString()
+    {
+        return "(" + first + ", " + other + ")";
+    }
 }
