@@ -69,7 +69,7 @@ public class ZooClient extends AbstractZooKeeperManager
         }
     }
     
-    private void waitForSyncConnected()
+    protected void waitForSyncConnected()
     {
         if ( keeperState == KeeperState.SyncConnected )
         {
@@ -332,7 +332,6 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public synchronized Machine getMaster()
     {
-        waitForSyncConnected();
         Machine result = super.getMaster();
         if ( result != null )
         {

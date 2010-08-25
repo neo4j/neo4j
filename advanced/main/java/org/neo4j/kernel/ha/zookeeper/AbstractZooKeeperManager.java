@@ -100,6 +100,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
 
     protected synchronized Map<Integer, Machine> getAllMachines()
     {
+        waitForSyncConnected();
         try
         {
             Map<Integer, Machine> result = new HashMap<Integer, Machine>();
@@ -158,6 +159,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
     
     protected String readHaServer( int machineId )
     {
+        waitForSyncConnected();
         String rootPath = getRoot();
         try
         {
@@ -194,4 +196,6 @@ public abstract class AbstractZooKeeperManager implements Watcher
                 "Error closing zookeeper connection", e );
         }
     }
+    
+    protected abstract void waitForSyncConnected();
 }
