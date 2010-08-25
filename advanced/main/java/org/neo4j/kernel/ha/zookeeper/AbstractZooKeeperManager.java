@@ -165,9 +165,11 @@ public abstract class AbstractZooKeeperManager implements Watcher
         {
             String haServerPath = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId;
             byte[] serverData = getZooKeeper().getData( haServerPath, false, null );
+            System.out.println( "server data " + serverData.length + " from " + haServerPath );
             ByteBuffer buffer = ByteBuffer.wrap( serverData );
             byte length = buffer.get();
             char[] chars = new char[length];
+            System.out.println( "get length " + length );
             buffer.asCharBuffer().get( chars );
             String result = String.valueOf( chars );
             System.out.println( "Read HA server:" + result + " (for machineID " + machineId +

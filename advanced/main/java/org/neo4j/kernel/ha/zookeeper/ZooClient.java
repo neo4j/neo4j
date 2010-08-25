@@ -316,11 +316,12 @@ public class ZooClient extends AbstractZooKeeperManager
             }
         }
         zooKeeper.setData( machinePath, data, -1 );
+        System.out.println( "wrote " + data.length + " bytes for " + machinePath );
     }
 
     private byte[] haServerAsData()
     {
-        byte[] array = new byte[100];
+        byte[] array = new byte[haServer.length()*2 + 20];
         ByteBuffer buffer = ByteBuffer.wrap( array );
         buffer.put( (byte) haServer.length() );
         buffer.asCharBuffer().put( haServer.toCharArray() );
