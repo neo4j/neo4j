@@ -12,7 +12,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.ClusterManager;
-import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 
 public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
 {
@@ -44,11 +43,8 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
         this.jvmByMachineId = new HashMap<Integer, StandaloneDbCom>();
         haServersConfig = buildHaServersConfigValue( numSlaves+1 );
         super.initializeDbs( numSlaves, config );
-        NeoStoreUtil store = new NeoStoreUtil( SKELETON_DB_PATH.getAbsolutePath() );
         zooKeeperMasterFetcher = new ClusterManager(
-                buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ),
-                store.getCreationTime(), store.getStoreId(),
-                buildHaServersConfigValue( numSlaves+1 ) );
+                buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ) );
     }
     
     @Override
@@ -103,12 +99,5 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     public static void shutdownZooKeeperCluster()
     {
         zooKeeperCluster.shutdown();
-    }
-    
-    @Override
-    public void slaveCreateNode() throws Exception
-    {
-        // TODO Auto-generated method stub
-        super.slaveCreateNode();
     }
 }

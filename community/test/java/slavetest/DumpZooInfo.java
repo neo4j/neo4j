@@ -1,25 +1,21 @@
 package slavetest;
 
-import org.neo4j.kernel.ha.zookeeper.AbstractZooKeeperManager.MachineInfo;
 import org.neo4j.kernel.ha.zookeeper.ClusterManager;
-import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
+import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public class DumpZooInfo
 {
     public static void main( String[] args )
     {
-        NeoStoreUtil store = new NeoStoreUtil( "var/hadb" );
-        ClusterManager clusterManager = new ClusterManager( 
-                "localhost", store.getCreationTime(), store.getStoreId(),
-                StartHaDb.toHaServerFormat( StartHaDb.HA_SERVERS ) );
+        ClusterManager clusterManager = new ClusterManager( "localhost" );
         System.out.println( "Master is " + clusterManager.getMaster() );
         System.out.println( "Connected slaves" );
-        for ( MachineInfo info : clusterManager.getConnectedSlaves() )
+        for ( Machine info : clusterManager.getConnectedSlaves() )
         {
             System.out.println( "\t" + info );
         }
         System.out.println( "Disconnected slaves" );
-        for ( MachineInfo info : clusterManager.getDisconnectedSlaves() )
+        for ( Machine info : clusterManager.getDisconnectedSlaves() )
         {
             System.out.println( "\t" + info );
         }
