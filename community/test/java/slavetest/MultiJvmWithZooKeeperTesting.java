@@ -24,7 +24,7 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     
     private ClusterManager zooKeeperMasterFetcher;
     private Map<Integer, StandaloneDbCom> jvmByMachineId;
-    private String haServersConfig;
+//    private String haServersConfig;
     
     @BeforeClass
     public static void startZooKeeperCluster() throws Exception
@@ -41,7 +41,7 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     protected void initializeDbs( int numSlaves, Map<String,String> config ) throws Exception
     {
         this.jvmByMachineId = new HashMap<Integer, StandaloneDbCom>();
-        haServersConfig = buildHaServersConfigValue( numSlaves+1 );
+//        haServersConfig = buildHaServersConfigValue( numSlaves+1 );
         super.initializeDbs( numSlaves, config );
         zooKeeperMasterFetcher = new ClusterManager(
                 buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ) );
@@ -57,7 +57,7 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
         myExtraArgs.add( "-" + HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS );
         myExtraArgs.add( buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ) );
         myExtraArgs.add( "-" + HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER );
-        myExtraArgs.add( haServersConfig );
+        myExtraArgs.add( buildHaServerConfigValue( machineId ) );
         myExtraArgs.addAll( Arrays.asList( extraArgs ) );
         StandaloneDbCom com = super.spawnJvm( path, port, machineId,
                 myExtraArgs.toArray( new String[myExtraArgs.size()] ) );
@@ -66,15 +66,9 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
         return com;
     }
     
-    private static String buildHaServersConfigValue( int numServers )
+    private static String buildHaServerConfigValue( int machineId )
     {
-        StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < numServers; i++ )
-        {
-            builder.append( (i > 0 ? "," : "") + (i+1) + "=localhost:" +
-                    (BASE_HA_SERVER_PORT + i) );
-        }
-        return builder.toString();
+        return "localhost:" + (BASE_HA_SERVER_PORT + machineId);
     }
 
     private static String buildZooKeeperServersConfigValue( int zooKeeperClusterSize )
@@ -99,5 +93,12 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     public static void shutdownZooKeeperCluster()
     {
         zooKeeperCluster.shutdown();
+    }
+    
+    @Override
+    public void slaveCreateNode() throws Exception
+    {
+        // TODO Mattias Persson: Implement slaveCreateNode (26 aug 2010)
+        super.slaveCreateNode();
     }
 }
