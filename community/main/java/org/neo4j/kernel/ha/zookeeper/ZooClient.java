@@ -303,7 +303,7 @@ public class ZooClient extends AbstractZooKeeperManager
         try
         {
             zooKeeper.create( machinePath, data,
-                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT );
+                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL );
         }
         catch ( KeeperException e )
         {
