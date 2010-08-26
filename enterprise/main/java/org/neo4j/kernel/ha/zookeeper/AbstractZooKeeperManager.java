@@ -186,6 +186,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
     
     public void shutdown()
     {
+//        new Exception( "shutdown zookeeper" ).printStackTrace();
         try
         {
             getZooKeeper().close();
