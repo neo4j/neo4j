@@ -17,9 +17,9 @@ public class ClusterManager extends AbstractZooKeeperManager
     private KeeperState state = KeeperState.Disconnected;
     private Map<Integer, String> haServers;
     
-    public ClusterManager( String servers )
+    public ClusterManager( String zooKeeperServers )
     {
-        super( servers );
+        super( zooKeeperServers );
         this.zooKeeper = instantiateZooKeeper();
     }
     
