@@ -51,12 +51,12 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     private final String storeDir;
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
-    private Broker broker;
-    private EmbeddedGraphDbImpl localGraph;
-    private IndexService localIndex;
+    private final Broker broker;
+    private volatile EmbeddedGraphDbImpl localGraph;
+    private volatile IndexService localIndex;
     private final int machineId;
-    private MasterServer masterServer;
-    private AtomicBoolean reevaluatingMyself = new AtomicBoolean();
+    private volatile MasterServer masterServer;
+    private final AtomicBoolean reevaluatingMyself = new AtomicBoolean();
     private ScheduledExecutorService updatePuller;
 
     // Just "cached" instances which are used internally here
@@ -67,6 +67,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
     {
+//        new Exception( "HA database constructor 1" ).printStackTrace();
         this.storeDir = storeDir;
         assertIWasntMasterWhenShutDown();
         this.config = config;
@@ -82,6 +83,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config,
             BrokerFactory brokerFactory )
     {
+//        new Exception( "HA database constructor 2" ).printStackTrace();
         this.storeDir = storeDir;
         this.config = config;
         this.brokerFactory = brokerFactory;
@@ -364,7 +366,6 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         if ( this.broker != null )
         {
             this.broker.shutdown();
-            this.broker = null;
         }
         internalShutdown();
     }
@@ -424,7 +425,22 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             @Override
             public void run()
             {
-                reevaluateMyself();
+                for ( int i = 0; i < 5; i++ )
+                {
+                    try
+                    {
+                        reevaluateMyself();
+                        break;
+                    }
+                    catch ( ZooKeeperException e )
+                    {
+                        e.printStackTrace();
+                    }
+                    catch ( HaCommunicationException e )
+                    {
+                        e.printStackTrace();
+                    }
+                }
             }
         }.start();
     }

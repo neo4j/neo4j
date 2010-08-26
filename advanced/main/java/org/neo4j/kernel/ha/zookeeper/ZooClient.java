@@ -9,6 +9,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
+import org.apache.zookeeper.ZooKeeper.States;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.helpers.Pair;
@@ -29,6 +30,7 @@ public class ZooClient extends AbstractZooKeeperManager
     private final ResponseReceiver receiver;
     private final String rootPath;
     private final String haServer;
+    private volatile boolean firstSyncConnected = true;
     
     public ZooClient( String servers, int machineId, long storeCreationTime, 
         long storeId, long committedTx, ResponseReceiver receiver, String haServer )
@@ -56,7 +58,14 @@ public class ZooClient extends AbstractZooKeeperManager
         {
             sequenceNr = setup();
             keeperState = KeeperState.SyncConnected;
-            receiver.somethingIsWrong( new Exception() );
+            if ( firstSyncConnected )
+            {
+                firstSyncConnected = false;
+            }
+            else
+            {
+                receiver.somethingIsWrong( new Exception() );
+            }
         }
         else if ( path == null && event.getState() == Watcher.Event.KeeperState.Disconnected )
         {
@@ -124,7 +133,8 @@ public class ZooClient extends AbstractZooKeeperManager
             { 
                 data = zooKeeper.getData( path, true, null );
                 exists = true;
-                if ( data[0] == currentMasterId )
+                int id = ByteBuffer.wrap( data ).getInt();
+                if ( id == currentMasterId )
                 {
                     return;
                 }
@@ -140,13 +150,17 @@ public class ZooClient extends AbstractZooKeeperManager
             // Didn't exist or has changed
             try
             {
-                data = new byte[] { (byte) currentMasterId };
+                data = new byte[4];
+                ByteBuffer.wrap( data ).putInt( currentMasterId );
                 if ( !exists )
                 {
                     zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
                             CreateMode.PERSISTENT );
                 }
-                zooKeeper.setData( path, data, -1 );
+                else
+                {
+                    zooKeeper.setData( path, data, -1 );
+                }
                 System.out.println( "master-notify set to " + currentMasterId );
                 
                 // Add a watch for it
@@ -169,6 +183,9 @@ public class ZooClient extends AbstractZooKeeperManager
     
     public String getRoot()
     {
+        States state = zooKeeper.getState();
+        System.out.println( "State before getRoot " + state + ", isAlive:" + state.isAlive() );
+        
         // Make sure it exists
         byte[] rootData = null;
         do
