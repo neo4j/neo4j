@@ -92,6 +92,7 @@ public class XaLogicalLog
     private boolean backupSlave = false;
     private boolean slave = false;
     private boolean useMemoryMapped = true;
+    private final String storeDir;
 
     private final StringLogger msgLog;
     
@@ -106,8 +107,8 @@ public class XaLogicalLog
         log = Logger.getLogger( this.getClass().getName() + "/" + fileName );
         buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
             + Xid.MAXBQUALSIZE * 10 );
-        String root = (String) config.get( "store_dir" );
-        msgLog = StringLogger.getLogger( root + "/messages.log" );
+        storeDir = (String) config.get( "store_dir" );
+        msgLog = StringLogger.getLogger( new File( storeDir, "messages.log" ).getPath() );
     }
     
     private boolean getMemoryMapped( Map<Object,Object> config )
@@ -966,12 +967,12 @@ public class XaLogicalLog
 
     private String generateUniqueName( String baseName )
     {
-        String tmpName = baseName + "-" + System.currentTimeMillis();
-        while ( new File( tmpName ).exists() )
+        File tmpFile = null;
+        while ( tmpFile == null || tmpFile.exists() )
         {
-            tmpName = baseName + "-" + System.currentTimeMillis() + "_";
+            tmpFile = new File( storeDir, baseName + "-" + System.currentTimeMillis() );
         }
-        return tmpName;
+        return tmpFile.getPath();
     }
     
     public synchronized ReadableByteChannel getPreparedTransaction( long identifier )
@@ -996,6 +997,7 @@ public class XaLogicalLog
             String tmpNameHint ) throws IOException
     {
         String tmpName = generateUniqueName( tmpNameHint );
+        System.out.println( "tmpName:" + tmpName );
         FileChannel txLog = new RandomAccessFile( tmpName, "rw" ).getChannel();
         LogBuffer buf = new DirectMappedLogBuffer( txLog );
         for ( LogEntry entry : logEntryList )
