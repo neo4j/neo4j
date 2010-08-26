@@ -1,3 +1,21 @@
+    SNAPSHOT    
+----------------
+
+-New features
+o Kernel extensions - additional services for the Neo4j Kernel are loaded
+  automatically if they are present on the classpath.
+o The ability to inject Kernel extensions in a running instance through JVM
+  agents. This is used for loading the shell on an running instance.
+
+-API
+o Traversal: Uniqueness is now instantiated through a factory, with
+  the previous enum (moved to org.neo4j.kernel) as default implementation.
+
+-Bug fixes
+o Circumvented the fact that Class.forName() sometimes throws a
+  NoClassDefFoundError instead of ClassNotFoundException.
+
+
 1.1 (2010-07-29)
 ----------------
 

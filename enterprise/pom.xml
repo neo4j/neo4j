@@ -87,6 +87,10 @@
           <include>CHANGES.txt</include>
         </includes>
       </resource>
+      <resource>
+        <directory>${basedir}/src/main/resources/META-INF/</directory>
+        <targetPath>META-INF</targetPath>
+      </resource>
     </resources>
     <plugins>
       <plugin>
