@@ -19,6 +19,7 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerConnection;
+import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
@@ -278,14 +279,27 @@ public class Neo4jMBean extends StandardMBean
 
     private static final ProxyMaker PROXY_MAKER;
 
-    private static class ProxyMaker
+    private static abstract class ProxyMaker
+    {
+        final boolean supportsMxBean;
+
+        ProxyMaker( boolean supportsMxBean )
+        {
+            this.supportsMxBean = supportsMxBean;
+        }
+
+        abstract <T> T makeProxy( ObjectName name, Class<T> beanType );
+    }
+
+    private static class Java6ProxyMaker extends ProxyMaker
     {
         private final Method isMXBeanInterface;
         private final Method newMBeanProxy;
         private final Method newMXBeanProxy;
 
-        ProxyMaker() throws Exception
+        Java6ProxyMaker() throws Exception
         {
+            super( true );
             Class<?> JMX = Class.forName( "javax.management.JMX" );
             this.isMXBeanInterface = JMX.getMethod( "isMXBeanInterface", Class.class );
             this.newMBeanProxy = JMX.getMethod( "newMBeanProxy", MBeanServerConnection.class,
@@ -294,6 +308,7 @@ public class Neo4jMBean extends StandardMBean
                     ObjectName.class, Class.class );
         }
 
+        @Override
         <T> T makeProxy( ObjectName name, Class<T> beanType )
         {
             try
@@ -343,13 +358,29 @@ public class Neo4jMBean extends StandardMBean
         }
     }
 
+    private static class Java5ProxyMaker extends ProxyMaker
+    {
+        Java5ProxyMaker() throws Exception
+        {
+            super( false );
+            Class.forName( "javax.management.MBeanServerInvocationHandler" );
+        }
+
+        @Override
+        <T> T makeProxy( ObjectName name, Class<T> beanType )
+        {
+            return MBeanServerInvocationHandler.newProxyInstance( getPlatformMBeanServer(), name,
+                    beanType, false );
+        }
+    }
+
     private static final boolean SUPPORT_MX_BEAN;
     static
     {
         ProxyMaker proxyMaker;
         try
         {
-            proxyMaker = new ProxyMaker();
+            proxyMaker = new Java6ProxyMaker();
         }
         catch ( Exception t )
         {
@@ -359,8 +390,23 @@ public class Neo4jMBean extends StandardMBean
         {
             proxyMaker = null;
         }
+        if ( proxyMaker == null )
+        {
+            try
+            {
+                proxyMaker = new Java5ProxyMaker();
+            }
+            catch ( Exception t )
+            {
+                proxyMaker = null;
+            }
+            catch ( LinkageError t )
+            {
+                proxyMaker = null;
+            }
+        }
         PROXY_MAKER = proxyMaker;
-        SUPPORT_MX_BEAN = proxyMaker != null;
+        SUPPORT_MX_BEAN = proxyMaker != null && proxyMaker.supportsMxBean;
     }
 
     static abstract class MXFactory<T extends Neo4jMBean>
