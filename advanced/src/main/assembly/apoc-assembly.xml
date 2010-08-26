@@ -1,5 +1,6 @@
 <assembly>
     <id></id>
+    <!-- DOCS -->
     <includeSiteDirectory>true</includeSiteDirectory>
     <formats>
         <format>tar.gz</format>
@@ -24,11 +25,6 @@
         <fileSet>
             <directory>target/dependencies</directory>
             <outputDirectory>lib/report</outputDirectory>
-        </fileSet>
-        <!-- DOCS -->
-        <fileSet>
-            <directory>target/apidocs</directory>
-            <outputDirectory>docs</outputDirectory>
         </fileSet>
         <!-- SHELL -->        
         <fileSet>
