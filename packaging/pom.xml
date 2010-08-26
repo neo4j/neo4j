@@ -5,7 +5,7 @@
   <name>Neo4j Apoc</name>
   <version>1.2-SNAPSHOT</version>
   <description>Basic Neo4j examples</description>
-  <url>http://components.neo4j.org/${project.artifactId}/</url>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
@@ -44,11 +44,20 @@
   
   <scm>
     <connection>scm:svn:https://svn.neo4j.org/examples/${short-name}/trunk</connection>
-    <url>https://trac.neo4j.org/browser/examples/${short-name}</url>
+    <url>https://trac.neo4j.org/browser/examples/${short-name}/trunk</url>
   </scm>
   
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>license-report</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin
@@ -95,6 +104,19 @@
         </executions>
       </plugin>
       <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>create-javadocs</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>attach-javadocs</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-site-plugin</artifactId>
         <executions>
           <execution>
@@ -127,7 +149,7 @@
       </plugin>
     </plugins>
   </build>
-
+  
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
