@@ -373,11 +373,9 @@ public abstract class Service
                                 }
                                 catch ( Exception e )
                                 {
-                                    return null;
                                 }
                                 catch ( LinkageError e )
                                 {
-                                    return null;
                                 }
                             }
                             return null;
