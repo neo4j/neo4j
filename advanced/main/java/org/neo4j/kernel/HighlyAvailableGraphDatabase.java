@@ -11,6 +11,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
+import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.ha.Broker;
@@ -47,6 +49,9 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     public static final String CONFIG_KEY_HA_ZOO_KEEPER_SERVERS = "ha.zoo_keeper_servers";
     public static final String CONFIG_KEY_HA_SERVER = "ha.server";
     public static final String CONFIG_KEY_HA_PULL_INTERVAL = "ha.pull_interval";
+    
+    // Temporary name
+    public static final String CONFIG_KEY_HA_SKELETON_DB_PATH = "ha.skeleton_db_path";
     
     private final String storeDir;
     private final Map<String, String> config;
@@ -67,15 +72,47 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
     {
-//        new Exception( "HA database constructor 1" ).printStackTrace();
+//        config = makeDbCopyIfNoRecreationStrategySpecified( storeDir, config );
         this.storeDir = storeDir;
-        assertIWasntMasterWhenShutDown();
         this.config = config;
+        assertIWasntMasterWhenShutDown();
         this.brokerFactory = defaultBrokerFactory( storeDir, config );
         this.machineId = getMachineIdFromConfig( config );
         this.broker = brokerFactory.create( storeDir, config );
         reevaluateMyself();
     }
+
+//    /**
+//     * This is juuust for small data sets and should only be used when testing
+//     * it out. Ease of use on a n00b level.
+//     */
+//    private Map<String, String> makeDbCopyIfNoRecreationStrategySpecified( String storeDir,
+//            Map<String, String> config )
+//    {
+//        if ( config.containsKey( CONFIG_KEY_HA_SKELETON_DB_PATH ) ||
+//                !new File( storeDir ).exists() )
+//        {
+//            return config;
+//        }
+//        
+//        try
+//        {
+//            File tmpFile = File.createTempFile( "test", "test" );
+//            File tmpDir = tmpFile.getParentFile();
+//            tmpFile.delete();
+//            
+//            File tmpDbDir = new File( tmpDir, "hadb-" + System.currentTimeMillis() );
+//            FileUtils.copyDirectory( new File( storeDir ), tmpDbDir );
+//            Map<String, String> result = new HashMap<String, String>( config );
+//            result.put( CONFIG_KEY_HA_SKELETON_DB_PATH, tmpDbDir.getAbsolutePath() );
+//            System.out.println( "Made a tmp copy to " + tmpDbDir.getAbsolutePath() );
+//            return result;
+//        }
+//        catch ( IOException e )
+//        {
+//            throw new RuntimeException( e );
+//        }
+//    }
 
     /**
      * Only for testing
@@ -83,7 +120,6 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config,
             BrokerFactory brokerFactory )
     {
-//        new Exception( "HA database constructor 2" ).printStackTrace();
         this.storeDir = storeDir;
         this.config = config;
         this.brokerFactory = brokerFactory;
@@ -163,6 +199,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             broker.invalidateMaster();
             boolean brokerSaysIAmMaster = brokerSaysIAmMaster();
             boolean iAmCurrentlyMaster = masterServer != null;
+            boolean restarted = false;
             if ( brokerSaysIAmMaster )
             {
                 if ( !iAmCurrentlyMaster )
@@ -172,6 +209,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 if ( this.localGraph == null )
                 {
                     startAsMaster();
+                    restarted = true;
                 }
             }
             else
@@ -183,10 +221,14 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
                 if ( this.localGraph == null )
                 {
                     startAsSlave();
+                    restarted = true;
                 }
             }
-            this.localDataSourceManager =
-                    localGraph.getConfig().getTxModule().getXaDataSourceManager();
+            
+            if ( restarted )
+            {
+                dbGotRestarted();
+            }
         }
         finally
         {
@@ -210,6 +252,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
 
     private void startAsMaster()
     {
+        assertIWasntMasterWhenShutDown();
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 CommonFactories.defaultLockManagerFactory(),
                 new MasterIdGeneratorFactory(),
@@ -244,11 +287,46 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     {
         if ( getMasterMarkFile().exists() )
         {
-            throw new RuntimeException( "I was master the previous session, " +
-                    "so can't start up in this state" );
+            if ( !recreateDb() )
+            {
+                throw new RuntimeException( "I was master the previous session, " +
+                        "so can't start up in this state (and no method specified how " +
+                        "I should replicate from another DB" ); 
+            }
         }
     }
     
+    private boolean recreateDb()
+    {
+        // This is temporary and shouldn't be used in production, but the
+        // functionality is the same: I come to the conclusion that this db
+        // is void and should be recreated from some source.
+        String recreateFrom = this.config.get( CONFIG_KEY_HA_SKELETON_DB_PATH );
+        if ( recreateFrom != null )
+        {
+            try
+            {
+                FileUtils.cleanDirectory( new File( storeDir ) );
+                FileUtils.copyDirectory( new File( recreateFrom ), new File( storeDir ) );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+            System.out.println( "=== RECREATED DB from " + recreateFrom + " ===" );
+            return true;
+        }
+        return false;
+    }
+
+    private void dbGotRestarted()
+    {
+        this.localDataSourceManager =
+            localGraph.getConfig().getTxModule().getXaDataSourceManager();
+        NeoStoreUtil store = new NeoStoreUtil( storeDir );
+        broker.setLastCommittedTxId( store.getLastCommittedTx() );
+    }
+
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
     {
         String pullInterval = this.config.get( CONFIG_KEY_HA_PULL_INTERVAL );
