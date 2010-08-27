@@ -13,12 +13,13 @@ import org.neo4j.shell.TabCompletion;
 class ShellTabCompletor implements Completor
 {
     private final ShellClient client;
-    private final Completor appNameCompletor;
+    
+    private long timeWhenCached;
+    private Completor appNameCompletor;
 
-    public ShellTabCompletor( ShellClient client ) throws RemoteException
+    public ShellTabCompletor( ShellClient client )
     {
         this.client = client;
-        this.appNameCompletor = new SimpleCompletor( client.getServer().getAllAvailableCommands() );
     }
     
     public int complete( String buffer, int cursor, List candidates )
@@ -40,7 +41,7 @@ class ShellTabCompletor implements Completor
             else
             {
                 // Complete the app name
-                return this.appNameCompletor.complete( buffer, cursor, candidates );
+                return getAppNameCompletor().complete( buffer, cursor, candidates );
             }
         }
         catch ( RemoteException e )
@@ -54,5 +55,15 @@ class ShellTabCompletor implements Completor
             e.printStackTrace();
         }
         return cursor;
+    }
+    
+    private Completor getAppNameCompletor() throws RemoteException
+    {
+        if ( timeWhenCached != client.timeForMostRecentConnection() )
+        {
+            timeWhenCached = client.timeForMostRecentConnection();
+            appNameCompletor = new SimpleCompletor( client.getServer().getAllAvailableCommands() );
+        }
+        return this.appNameCompletor;
     }
 }

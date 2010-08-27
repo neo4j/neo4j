@@ -52,4 +52,10 @@ public interface ShellClient
 	 * @return the output instance where output will be passed to.
 	 */
 	Output getOutput();
+	
+	/**
+	 * @return the time (millis) when the most recent connection was made
+	 * to the master.
+	 */
+	long timeForMostRecentConnection();
 }

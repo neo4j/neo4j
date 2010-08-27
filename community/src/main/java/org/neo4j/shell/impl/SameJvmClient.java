@@ -40,6 +40,7 @@ public class SameJvmClient extends AbstractClient
 	public SameJvmClient( ShellServer server )
 	{
 		this.server = server;
+		updateTimeForMostRecentConnection();
 	}
 	
 	public Output getOutput()

@@ -62,6 +62,7 @@ public abstract class AbstractClient implements ShellClient
         Arrays.asList( "exit", "quit" ) );
 
     private Console console;
+    private long timeConnection;
 
     public void grabPrompt()
     {
@@ -229,5 +230,15 @@ public abstract class AbstractClient implements ShellClient
     static String[] getExitCommands()
     {
         return EXIT_COMMANDS.toArray( new String[ EXIT_COMMANDS.size() ] );
+    }
+    
+    protected void updateTimeForMostRecentConnection()
+    {
+        this.timeConnection = System.currentTimeMillis();
+    }
+    
+    public long timeForMostRecentConnection()
+    {
+        return timeConnection;
     }
 }

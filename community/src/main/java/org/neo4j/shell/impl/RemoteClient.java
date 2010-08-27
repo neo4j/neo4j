@@ -57,7 +57,9 @@ public class RemoteClient extends AbstractClient
 	{
 		try
 		{
-			return ( ShellServer ) this.serverLocation.getBoundObject();
+			ShellServer result = ( ShellServer ) this.serverLocation.getBoundObject();
+			updateTimeForMostRecentConnection();
+			return result;
 		}
 		catch ( RemoteException e )
 		{
