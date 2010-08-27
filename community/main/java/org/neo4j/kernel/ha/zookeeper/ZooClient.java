@@ -358,11 +358,11 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         System.out.println( "Setting txId=" + tx + " for machine=" + machineId );
         waitForSyncConnected();
-        if ( tx <= committedTx )
-        {
-            throw new IllegalArgumentException( "tx=" + tx + 
-                " but committedTx is " + committedTx );
-        }
+//        if ( tx <= committedTx )
+//        {
+//            throw new IllegalArgumentException( "tx=" + tx + 
+//                " but committedTx is " + committedTx );
+//        }
         this.committedTx = tx;
         String root = getRoot();
         String path = root + "/" + machineId + "_" + sequenceNr;
