@@ -409,7 +409,7 @@ public class XaResourceManager
         {
             log.done( xaTransaction.getIdentifier() );
         }
-        else if ( !log.scanIsComplete() )
+        else if ( !log.scanIsComplete() || recoveredTxCount > 0 )
         {
             recoveredDoneRecords.add( xaTransaction.getIdentifier() );
         }
