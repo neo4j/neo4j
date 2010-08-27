@@ -1188,10 +1188,12 @@ public class XaLogicalLog
             " (previous committed tx=" + previousCommittedTx + ")" );
         long logEntriesFound = 0;
         LogApplier logApplier = new LogApplier( byteChannel );
+        scanIsComplete = false;
         while ( logApplier.readAndApplyEntry() )
         {
             logEntriesFound++;
         }
+        scanIsComplete = true;
         byteChannel.close();
         xaTf.flushAll();
         xaTf.getAndSetNewVersion();
