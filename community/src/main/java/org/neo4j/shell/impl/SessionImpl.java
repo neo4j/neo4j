@@ -30,6 +30,8 @@ import org.neo4j.shell.Session;
 
 public class SessionImpl implements Session
 {
+    private static final long serialVersionUID = 1L;
+    
     interface SessionWriter extends Remote
     {
         void set( String key, Serializable value ) throws RemoteException;
@@ -37,6 +39,8 @@ public class SessionImpl implements Session
 
     private static class SessionWriterImpl extends UnicastRemoteObject implements SessionWriter
     {
+        private static final long serialVersionUID = 1L;
+        
         private final Map<String, Serializable> properties;
 
         SessionWriterImpl( Map<String, Serializable> properties ) throws RemoteException
