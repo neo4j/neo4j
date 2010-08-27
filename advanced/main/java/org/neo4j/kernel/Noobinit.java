@@ -15,6 +15,7 @@ public class Noobinit extends GraphDatabaseApp
     @Override
     protected String exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
+        boolean fail = parser.options().containsKey( "fail" );
         try
         {
             RelationshipType type = DynamicRelationshipType.withName( "REL_TYPE" );
@@ -35,6 +36,10 @@ public class Noobinit extends GraphDatabaseApp
                 otherNode = fromNode.getGraphDatabase().createNode();
                 fromNode.createRelationshipTo( otherNode, type );
                 out.println( "Created new relationship" );
+            }
+            if ( fail )
+            {
+                throw new Exception( "Just failing because you told me to" );
             }
             return null;
         }
