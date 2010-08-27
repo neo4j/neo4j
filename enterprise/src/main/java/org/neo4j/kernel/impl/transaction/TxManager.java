@@ -594,61 +594,94 @@ public class TxManager implements TransactionManager
         HeuristicRollbackException
     {
         // mark as commit in log done TxImpl.doCommit()
-        Throwable commitFailureCause = null;
-        int xaErrorCode = -1;
-        if ( tx.getResourceCount() == 0 )
+        try
         {
-            tx.setStatus( Status.STATUS_COMMITTED );
-        }
-        else
-        {
-            try
+            Throwable commitFailureCause = null;
+            int xaErrorCode = -1;
+            if ( tx.getResourceCount() == 0 )
             {
-                tx.doCommit();
+                tx.setStatus( Status.STATUS_COMMITTED );
             }
-            catch ( XAException e )
+            else
             {
-                xaErrorCode = e.errorCode;
-                e.printStackTrace();
-                log.severe( "Commit failed, status="
-                    + getTxStatusAsString( tx.getStatus() ) + ", errorCode="
-                    + xaErrorCode );
-                if ( tx.getStatus() == Status.STATUS_COMMITTED )
+                try
                 {
-                    // this should never be
+                    tx.doCommit();
+                }
+                catch ( XAException e )
+                {
+                    xaErrorCode = e.errorCode;
+                    e.printStackTrace();
+                    log.severe( "Commit failed, status="
+                        + getTxStatusAsString( tx.getStatus() ) + ", errorCode="
+                        + xaErrorCode );
+                    if ( tx.getStatus() == Status.STATUS_COMMITTED )
+                    {
+                        // this should never be
+                        setTmNotOk();
+                        throw new TransactionFailureException(
+                            "commit threw exception but status is committed?", e );
+                    }
+                }
+                catch ( Throwable t )
+                {
+                    t.printStackTrace();
+                    commitFailureCause = t;
+                }
+            }
+            if ( tx.getStatus() != Status.STATUS_COMMITTED )
+            {
+                try
+                {
+                    tx.doRollback();
+                }
+                catch ( XAException e )
+                {
+                    e.printStackTrace();
+                    log.severe( "Unable to rollback transaction. "
+                        + "Some resources may be commited others not. "
+                        + "Neo4j kernel should be SHUTDOWN for "
+                        + "resource maintance and transaction recovery ---->" );
                     setTmNotOk();
-                    throw new TransactionFailureException(
-                        "commit threw exception but status is committed?", e );
+                    if ( commitFailureCause != null )
+                    {
+                        commitFailureCause.printStackTrace();
+                    }
+                    throw new HeuristicMixedException(
+                        "Unable to rollback ---> error code in commit: "
+                            + xaErrorCode + " ---> error code for rollback: "
+                            + e.errorCode );
                 }
-            }
-            catch ( Throwable t )
-            {
-                t.printStackTrace();
-                commitFailureCause = t;
-            }
-        }
-        if ( tx.getStatus() != Status.STATUS_COMMITTED )
-        {
-            try
-            {
-                tx.doRollback();
-            }
-            catch ( XAException e )
-            {
-                e.printStackTrace();
-                log.severe( "Unable to rollback transaction. "
-                    + "Some resources may be commited others not. "
-                    + "Neo4j kernel should be SHUTDOWN for "
-                    + "resource maintance and transaction recovery ---->" );
-                setTmNotOk();
-                if ( commitFailureCause != null )
+                tx.doAfterCompletion();
+                txThreadMap.remove( thread );
+                try
                 {
-                    commitFailureCause.printStackTrace();
+                    if ( tx.isGlobalStartRecordWritten() )
+                    {
+                        getTxLog().txDone( tx.getGlobalId() );
+                    }
                 }
-                throw new HeuristicMixedException(
-                    "Unable to rollback ---> error code in commit: "
-                        + xaErrorCode + " ---> error code for rollback: "
-                        + e.errorCode );
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                    log.severe( "Error writing transaction log" );
+                    setTmNotOk();
+                    throw new SystemException( "TM encountered a problem, "
+                        + " error writing transaction log," + e );
+                }
+                tx.setStatus( Status.STATUS_NO_TRANSACTION );
+                if ( commitFailureCause == null )
+                {
+                    throw new HeuristicRollbackException(
+                        "Failed to commit, transaction rolledback ---> "
+                            + "error code was: " + xaErrorCode );
+                }
+                else
+                {
+                    throw new HeuristicRollbackException(
+                        "Failed to commit, transaction rolledback ---> " + 
+                        commitFailureCause );
+                }
             }
             tx.doAfterCompletion();
             txThreadMap.remove( thread );
@@ -668,37 +701,11 @@ public class TxManager implements TransactionManager
                     + " error writing transaction log," + e );
             }
             tx.setStatus( Status.STATUS_NO_TRANSACTION );
-            if ( commitFailureCause == null )
-            {
-                throw new HeuristicRollbackException(
-                    "Failed to commit, transaction rolledback ---> "
-                        + "error code was: " + xaErrorCode );
-            }
-            else
-            {
-                throw new HeuristicRollbackException(
-                    "Failed to commit, transaction rolledback ---> " + 
-                    commitFailureCause );
-            }
         }
-        tx.doAfterCompletion();
-        txThreadMap.remove( thread );
-        try
+        finally
         {
-            if ( tx.isGlobalStartRecordWritten() )
-            {
-                getTxLog().txDone( tx.getGlobalId() );
-            }
+            rollbackHook.doneCommitting( tx.getEventIdentifier() );
         }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-            log.severe( "Error writing transaction log" );
-            setTmNotOk();
-            throw new SystemException( "TM encountered a problem, "
-                + " error writing transaction log," + e );
-        }
-        tx.setStatus( Status.STATUS_NO_TRANSACTION );
     }
 
     private void rollbackCommit( Thread thread, TransactionImpl tx )
@@ -755,53 +762,60 @@ public class TxManager implements TransactionManager
         {
             throw new IllegalStateException( "Not in transaction" );
         }
-        if ( tx.getStatus() == Status.STATUS_ACTIVE ||
-            tx.getStatus() == Status.STATUS_MARKED_ROLLBACK || 
-            tx.getStatus() == Status.STATUS_PREPARING )
+        try
         {
-            tx.setStatus( Status.STATUS_MARKED_ROLLBACK );
-            tx.doBeforeCompletion();
-            // delist resources?
-            try
+            if ( tx.getStatus() == Status.STATUS_ACTIVE ||
+                tx.getStatus() == Status.STATUS_MARKED_ROLLBACK || 
+                tx.getStatus() == Status.STATUS_PREPARING )
             {
-                rolledBackTxCount.incrementAndGet();
-                rollbackHook.rollbackTransaction( getEventIdentifier() );
-                tx.doRollback();
-            }
-            catch ( XAException e )
-            {
-                e.printStackTrace();
-                log.severe( "Unable to rollback marked or active transaction. "
-                    + "Some resources may be commited others not. "
-                    + "Neo4j kernel should be SHUTDOWN for "
-                    + "resource maintance and transaction recovery ---->" );
-                setTmNotOk();
-                throw new SystemException( "Unable to rollback "
-                    + " ---> error code for rollback: " + e.errorCode );
-            }
-            tx.doAfterCompletion();
-            txThreadMap.remove( thread );
-            try
-            {
-                if ( tx.isGlobalStartRecordWritten() )
+                tx.setStatus( Status.STATUS_MARKED_ROLLBACK );
+                tx.doBeforeCompletion();
+                // delist resources?
+                try
                 {
-                    getTxLog().txDone( tx.getGlobalId() );
+                    rolledBackTxCount.incrementAndGet();
+                    rollbackHook.rollbackTransaction( getEventIdentifier() );
+                    tx.doRollback();
                 }
+                catch ( XAException e )
+                {
+                    e.printStackTrace();
+                    log.severe( "Unable to rollback marked or active transaction. "
+                        + "Some resources may be commited others not. "
+                        + "Neo4j kernel should be SHUTDOWN for "
+                        + "resource maintance and transaction recovery ---->" );
+                    setTmNotOk();
+                    throw new SystemException( "Unable to rollback "
+                        + " ---> error code for rollback: " + e.errorCode );
+                }
+                tx.doAfterCompletion();
+                txThreadMap.remove( thread );
+                try
+                {
+                    if ( tx.isGlobalStartRecordWritten() )
+                    {
+                        getTxLog().txDone( tx.getGlobalId() );
+                    }
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                    log.severe( "Error writing transaction log" );
+                    setTmNotOk();
+                    throw new SystemException( "TM encountered a problem, "
+                        + " error writing transaction log," + e );
+                }
+                tx.setStatus( Status.STATUS_NO_TRANSACTION );
             }
-            catch ( IOException e )
+            else
             {
-                e.printStackTrace();
-                log.severe( "Error writing transaction log" );
-                setTmNotOk();
-                throw new SystemException( "TM encountered a problem, "
-                    + " error writing transaction log," + e );
+                throw new IllegalStateException( "Tx status is: "
+                    + getTxStatusAsString( tx.getStatus() ) );
             }
-            tx.setStatus( Status.STATUS_NO_TRANSACTION );
         }
-        else
+        finally
         {
-            throw new IllegalStateException( "Tx status is: "
-                + getTxStatusAsString( tx.getStatus() ) );
+            rollbackHook.doneCommitting( tx.getEventIdentifier() );
         }
     }
 
