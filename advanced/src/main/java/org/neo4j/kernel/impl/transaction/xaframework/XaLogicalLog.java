@@ -1216,10 +1216,12 @@ public class XaLogicalLog
         long logEntriesFound = 0;
         LogApplier logApplier = new LogApplier( byteChannel, buffer, xaTf, xaRm,
             cf, xidIdentMap, recoveredTxMap );
+        scanIsComplete = false;
         while ( logApplier.readAndApplyEntry() )
         {
             logEntriesFound++;
         }
+        scanIsComplete = true;
         byteChannel.close();
         xaTf.flushAll();
         xaTf.getAndSetNewVersion();
