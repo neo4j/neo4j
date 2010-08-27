@@ -138,5 +138,6 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         {
             this.graphDb.shutdown();
         }
+        super.shutdown();
     }
 }
