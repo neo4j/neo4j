@@ -447,96 +447,107 @@ class TransactionImpl implements Transaction
 
     void doCommit() throws XAException, SystemException
     {
-        boolean onePhase = isOnePhase();
-        boolean readOnly = true;
-        if ( !onePhase )
+        try
         {
-            // prepare
-            status = Status.STATUS_PREPARING;
-            LinkedList<Xid> preparedXids = new LinkedList<Xid>();
+            boolean onePhase = isOnePhase();
+            boolean readOnly = true;
+            if ( !onePhase )
+            {
+                // prepare
+                status = Status.STATUS_PREPARING;
+                LinkedList<Xid> preparedXids = new LinkedList<Xid>();
+                Iterator<ResourceElement> itr = resourceList.iterator();
+                while ( itr.hasNext() )
+                {
+                    ResourceElement re = itr.next();
+                    if ( !preparedXids.contains( re.getXid() ) )
+                    {
+                        preparedXids.add( re.getXid() );
+                        int vote = re.getResource().prepare( re.getXid() );
+                        if ( vote == XAResource.XA_OK )
+                        {
+                            readOnly = false;
+                        }
+                        else if ( vote == XAResource.XA_RDONLY )
+                        {
+                            re.setStatus( RS_READONLY );
+                        }
+                        else
+                        {
+                            // rollback tx
+                            status = Status.STATUS_MARKED_ROLLBACK;
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        // set it to readonly, only need to commit once
+                        re.setStatus( RS_READONLY );
+                    }
+                }
+                status = Status.STATUS_PREPARED;
+            }
+            // commit
+            if ( !onePhase && readOnly )
+            {
+                status = Status.STATUS_COMMITTED;
+                return;
+            }
+            if ( !onePhase )
+            {
+                try
+                {
+                    txManager.getTxLog().markAsCommitting( getGlobalId() );
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                    log.severe( "Error writing transaction log" );
+                    txManager.setTmNotOk();
+                    throw new SystemException( "TM encountered a problem, "
+                        + " error writing transaction log," + e );
+                }
+            }
+            status = Status.STATUS_COMMITTING;
             Iterator<ResourceElement> itr = resourceList.iterator();
             while ( itr.hasNext() )
             {
                 ResourceElement re = itr.next();
-                if ( !preparedXids.contains( re.getXid() ) )
+                if ( re.getStatus() != RS_READONLY )
                 {
-                    preparedXids.add( re.getXid() );
-                    int vote = re.getResource().prepare( re.getXid() );
-                    if ( vote == XAResource.XA_OK )
-                    {
-                        readOnly = false;
-                    }
-                    else if ( vote == XAResource.XA_RDONLY )
-                    {
-                        re.setStatus( RS_READONLY );
-                    }
-                    else
-                    {
-                        // rollback tx
-                        status = Status.STATUS_MARKED_ROLLBACK;
-                        return;
-                    }
-                }
-                else
-                {
-                    // set it to readonly, only need to commit once
-                    re.setStatus( RS_READONLY );
+                    re.getResource().commit( re.getXid(), onePhase );
                 }
             }
-            status = Status.STATUS_PREPARED;
-        }
-        // commit
-        if ( !onePhase && readOnly )
-        {
             status = Status.STATUS_COMMITTED;
-            return;
         }
-        if ( !onePhase )
+        finally
         {
-            try
-            {
-                txManager.getTxLog().markAsCommitting( getGlobalId() );
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-                log.severe( "Error writing transaction log" );
-                txManager.setTmNotOk();
-                throw new SystemException( "TM encountered a problem, "
-                    + " error writing transaction log," + e );
-            }
+            this.txManager.rollbackHook.doneCommitting( eventIdentifier );
         }
-        status = Status.STATUS_COMMITTING;
-        Iterator<ResourceElement> itr = resourceList.iterator();
-        while ( itr.hasNext() )
-        {
-            ResourceElement re = itr.next();
-            if ( re.getStatus() != RS_READONLY )
-            {
-                re.getResource().commit( re.getXid(), onePhase );
-            }
-        }
-        
-        this.txManager.rollbackHook.doneCommitting( eventIdentifier );
-        
-        status = Status.STATUS_COMMITTED;
     }
 
     void doRollback() throws XAException
     {
-        status = Status.STATUS_ROLLING_BACK;
-        LinkedList<Xid> rolledbackXids = new LinkedList<Xid>();
-        Iterator<ResourceElement> itr = resourceList.iterator();
-        while ( itr.hasNext() )
+        try
         {
-            ResourceElement re = itr.next();
-            if ( !rolledbackXids.contains( re.getXid() ) )
+            status = Status.STATUS_ROLLING_BACK;
+            LinkedList<Xid> rolledbackXids = new LinkedList<Xid>();
+            Iterator<ResourceElement> itr = resourceList.iterator();
+            while ( itr.hasNext() )
             {
-                rolledbackXids.add( re.getXid() );
-                re.getResource().rollback( re.getXid() );
+                ResourceElement re = itr.next();
+                if ( !rolledbackXids.contains( re.getXid() ) )
+                {
+                    rolledbackXids.add( re.getXid() );
+                    re.getResource().rollback( re.getXid() );
+                }
             }
+            status = Status.STATUS_ROLLEDBACK;
         }
-        status = Status.STATUS_ROLLEDBACK;
+        finally
+        {
+            this.txManager.rollbackHook.doneCommitting( eventIdentifier );
+        }
     }
 
     private static class ResourceElement
