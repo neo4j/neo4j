@@ -19,6 +19,7 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.Traversal;
+import org.neo4j.kernel.Uniqueness;
 
 public class MatrixTest
 {
@@ -168,8 +169,26 @@ public class MatrixTest
                 } );
         return td.traverse( startNode );
     }
-
     // END SNIPPET: find-hackers
+
+    @Test
+    public void depthTwoTraversal()
+    {
+        // work in progress
+        TraversalDescription td = Traversal.description().depthFirst().relationships(
+                RelTypes.KNOWS ).uniqueness( Uniqueness.NONE ).prune(
+                Traversal.pruneAfterDepth( 2 ) ).filter( new Predicate<Path>()
+        {
+            public boolean accept( Path item )
+            {
+                return item.length() > 1;
+            }
+        } );
+        for ( Path path : td.traverse( getNeoNode() ) )
+        {
+            System.out.println( path );
+        }
+    }
 
     private static void registerShutdownHook()
     {
