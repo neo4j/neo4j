@@ -35,8 +35,8 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
  */
-public final class EmbeddedReadOnlyGraphDatabase implements
-        GraphDatabaseService
+public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
+        implements GraphDatabaseService
 {
     private static Map<String, String> readOnlyParams = new HashMap<String, String>();
 
@@ -149,6 +149,12 @@ public final class EmbeddedReadOnlyGraphDatabase implements
     public Config getConfig()
     {
         return graphDbImpl.getConfig();
+    }
+    
+    @Override
+    public <T> T getManagementBean( Class<T> type )
+    {
+        return graphDbImpl.getManagementBean( type );
     }
 
     @Override
