@@ -146,7 +146,7 @@ public class LogIoUtils
         {
             buffer.put( LogEntry.TX_1P_COMMIT ).putInt( 
                     entry.getIdentifier() ).putLong( 
-                            ((LogEntry.OnePhaseCommit) entry).getTxId() );
+                            ((LogEntry.Commit) entry).getTxId() );
         }
         else if ( entry instanceof LogEntry.Prepare )
         {
@@ -156,7 +156,7 @@ public class LogIoUtils
         {
             buffer.put( LogEntry.TX_2P_COMMIT ).putInt( 
                     entry.getIdentifier() ).putLong( 
-                            ((LogEntry.OnePhaseCommit) entry).getTxId() );
+                            ((LogEntry.Commit) entry).getTxId() );
         }
     }
 
