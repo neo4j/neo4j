@@ -934,7 +934,7 @@ public class XaLogicalLog
                     transactions.remove( entry.getIdentifier() );
                 }
             }
-            else if ( entry instanceof LogEntry.Command )
+            else if ( entry instanceof LogEntry.Command || entry instanceof LogEntry.Prepare )
             {
                 transactions.get( entry.getIdentifier() ).add( entry );
             }
