@@ -22,12 +22,15 @@ public class JmxTest
         assertTrue( startTime.before( now ) || startTime.equals( now ) );
     }
 
+    // START SNIPPET: getStartTime
     private static Date getStartTimeFromManagementBean(
             GraphDatabaseService graphDbService )
     {
+        // use EmbeddedGraphDatabase to access management beans
         EmbeddedGraphDatabase graphDb = (EmbeddedGraphDatabase) graphDbService;
         Kernel kernel = graphDb.getManagementBean( Kernel.class );
         Date startTime = kernel.getKernelStartTime();
         return startTime;
     }
+    // END SNIPPET: getStartTime
 }
