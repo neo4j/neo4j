@@ -1217,6 +1217,7 @@ public class XaLogicalLog
             ", committing tx=" + nextTxId + ")" );
 //        System.out.println( "applyTxWithoutTxId#start @ pos: " + writeBuffer.getFileChannelPosition() );
         long logEntriesFound = 0;
+        scanIsComplete = false;
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
         while ( logApplier.readAndApplyAndWriteEntry( xidIdent ) )
@@ -1239,15 +1240,19 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( nextTxId );
             xaRm.commit( xid, true );
+            LogEntry doneEntry = new LogEntry.Done( entry.getIdentifier() );
+            LogIoUtils.writeLogEntry( doneEntry, writeBuffer );
         }
         catch ( XAException e )
         {
             e.printStackTrace();
             throw new IOException( e.getMessage() );
         }
+        
 //        LogEntry.Done done = new LogEntry.Done( entry.getIdentifier() );
 //        LogIoUtils.writeLogEntry( done, writeBuffer );
         // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
+        scanIsComplete = true;
         log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
         msgLog.logMessage( "Applied external tx and generated tx id=" + nextTxId );
 //        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
@@ -1258,6 +1263,7 @@ public class XaLogicalLog
     {
 //        System.out.println( "applyFullTx#start @ pos: " + writeBuffer.getFileChannelPosition() );
         long logEntriesFound = 0;
+        scanIsComplete = false;
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
         while ( logApplier.readAndApplyAndWriteEntry( xidIdent ) )
@@ -1265,6 +1271,7 @@ public class XaLogicalLog
             logEntriesFound++;
         }
         byteChannel.close();
+        scanIsComplete = true;
 //        System.out.println( "applyFullTx#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
     
