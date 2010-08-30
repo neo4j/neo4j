@@ -184,7 +184,6 @@ public class ZooClient extends AbstractZooKeeperManager
     public String getRoot()
     {
         States state = zooKeeper.getState();
-        System.out.println( "State before getRoot " + state + ", isAlive:" + state.isAlive() );
         
         // Make sure it exists
         byte[] rootData = null;
