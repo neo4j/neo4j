@@ -48,7 +48,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
  *
  * For more information, see {@link GraphDatabaseService}.
  */
-public final class EmbeddedGraphDatabase implements GraphDatabaseService
+public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implements GraphDatabaseService
 {
     private final EmbeddedGraphDbImpl graphDbImpl;
 
