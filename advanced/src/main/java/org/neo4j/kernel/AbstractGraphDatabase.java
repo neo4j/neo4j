@@ -7,6 +7,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
  */
 public abstract class AbstractGraphDatabase implements GraphDatabaseService
 {
+    public abstract String getStoreDir();
+    
     public abstract Config getConfig();
     
     public abstract <T> T getManagementBean( Class<T> type );
