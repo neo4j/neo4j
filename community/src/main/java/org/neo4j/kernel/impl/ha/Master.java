@@ -12,26 +12,20 @@ public interface Master
 
     Response<Integer> createRelationshipType( SlaveContext context, String name );
 
-    Response<LockResult> acquireNodeWriteLock( SlaveContext context, int eventIdentifier,
-            long... nodes );
+    Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes );
 
-    Response<LockResult> acquireNodeReadLock( SlaveContext context, int eventIdentifier,
-            long... nodes );
+    Response<LockResult> acquireNodeReadLock( SlaveContext context, long... nodes );
 
-    Response<LockResult> acquireRelationshipWriteLock( SlaveContext context, int eventIdentifier,
-            long... relationships );
+    Response<LockResult> acquireRelationshipWriteLock( SlaveContext context, long... relationships );
 
-    Response<LockResult> acquireRelationshipReadLock( SlaveContext context, int eventIdentifier,
-            long... relationships );
+    Response<LockResult> acquireRelationshipReadLock( SlaveContext context, long... relationships );
 
     Response<Long> commitSingleResourceTransaction( SlaveContext context,
-            int eventIdentifier, String resource, TransactionStream transactionStream );
+            String resource, TransactionStream transactionStream );
     
-    Response<Void> doneCommitting( SlaveContext context, int eventIdentifier );
+    Response<Void> doneCommitting( SlaveContext context );
 
-    Response<Void> rollbackTransaction( SlaveContext context, int eventIdentifier );
+    Response<Void> rollbackTransaction( SlaveContext context );
     
-    void rollbackOngoingTransactions( SlaveContext context );
-
     Response<Void> pullUpdates( SlaveContext context );
 }

@@ -26,4 +26,10 @@ public class LockResult
     {
         return deadlockMessage;
     }
+    
+    @Override
+    public String toString()
+    {
+        return "LockResult[" + status + ", " + deadlockMessage + "]";
+    }
 }
