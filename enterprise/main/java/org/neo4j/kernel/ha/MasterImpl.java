@@ -276,7 +276,7 @@ public class MasterImpl implements Master
                     .getXaDataSourceManager().getXaDataSource( resource );
             // Always exactly one transaction (ReadableByteChannel)
             final long txId = dataSource.applyPreparedTransaction(
-                    transactionStream.getChannels().iterator().next() );
+                    transactionStream.getChannels().iterator().next().other() );
             Predicate<Long> notThisTx = new Predicate<Long>()
             {
                 public boolean accept( Long item )
@@ -339,12 +339,12 @@ public class MasterImpl implements Master
                 XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
                         .getXaDataSource( resourceName );
                 long masterLastTx = dataSource.getLastCommittedTxId();
-                Collection<ReadableByteChannel> channels = new ArrayList<ReadableByteChannel>();
+                Collection<Pair<Long, ReadableByteChannel>> channels = new ArrayList<Pair<Long, ReadableByteChannel>>();
                 for ( long txId = txEntry.other()+1; txId <= masterLastTx; txId++ )
                 {
                     if ( filter.accept( txId ) )
                     {
-                        channels.add( dataSource.getCommittedTransaction( txId ) );
+                        channels.add( new Pair<Long, ReadableByteChannel>( txId, dataSource.getCommittedTransaction( txId ) ) );
                     }
                 }
                 streams.add( resourceName, new TransactionStream( channels ) );
