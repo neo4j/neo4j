@@ -21,7 +21,7 @@ public class SlaveTxRollbackHook implements TxRollbackHook
         try
         {
             receiver.receive( broker.getMaster().rollbackTransaction(
-                    receiver.getSlaveContext(), eventIdentifier ) );
+                    receiver.getSlaveContext( eventIdentifier ) ) );
         }
         catch ( ZooKeeperException e )
         {
@@ -40,7 +40,7 @@ public class SlaveTxRollbackHook implements TxRollbackHook
         try
         {
             receiver.receive( broker.getMaster().doneCommitting(
-                    receiver.getSlaveContext(), eventIdentifier ) );
+                    receiver.getSlaveContext( eventIdentifier ) ) );
         }
         catch ( ZooKeeperException e )
         {

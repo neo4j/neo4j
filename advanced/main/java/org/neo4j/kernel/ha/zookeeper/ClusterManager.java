@@ -15,7 +15,6 @@ public class ClusterManager extends AbstractZooKeeperManager
     private final ZooKeeper zooKeeper;
     private String rootPath;
     private KeeperState state = KeeperState.Disconnected;
-    private Map<Integer, String> haServers;
     
     public ClusterManager( String zooKeeperServers )
     {
@@ -107,16 +106,16 @@ public class ClusterManager extends AbstractZooKeeperManager
      * zoo keeper cluster will be returned.
      * @return the disconnected slaves in this cluster.
      */
-    public Machine[] getDisconnectedSlaves()
-    {
-        Collection<Machine> infos = new ArrayList<Machine>();
-        for ( Map.Entry<Integer, String> entry : haServers.entrySet() )
-        {
-            infos.add( new Machine( entry.getKey(), -1, -1, entry.getValue() ) );
-        }
-        infos.removeAll( getAllMachines().values() );
-        return infos.toArray( new Machine[infos.size()] );
-    }
+//    public Machine[] getDisconnectedSlaves()
+//    {
+//        Collection<Machine> infos = new ArrayList<Machine>();
+//        for ( Map.Entry<Integer, String> entry : haServers.entrySet() )
+//        {
+//            infos.add( new Machine( entry.getKey(), -1, -1, entry.getValue() ) );
+//        }
+//        infos.removeAll( getAllMachines().values() );
+//        return infos.toArray( new Machine[infos.size()] );
+//    }
     
     /**
      * Returns the connected slaves in this cluster.
