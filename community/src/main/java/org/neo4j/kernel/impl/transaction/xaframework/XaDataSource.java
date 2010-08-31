@@ -346,9 +346,22 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException();
     }
     
-    public void applyCommittedTransaction( ReadableByteChannel transaction ) throws IOException
+    public synchronized void applyCommittedTransaction( long txId, ReadableByteChannel transaction ) throws IOException
     {
-        getXaContainer().getResourceManager().applyCommittedTransaction( transaction );
+        if ( getLastCommittedTxId() + 1 == txId )
+        {
+            getXaContainer().getResourceManager().applyCommittedTransaction( transaction );
+        }
+        else if ( getLastCommittedTxId() + 1 < txId )
+        {
+            throw new IOException( "Tried to apply transaction with txId=" + txId + 
+                    " but last committed txId=" + getLastCommittedTxId() );
+        }
+        else
+        {
+            System.out.println( "Tried to apply transaction with txId=" + txId + 
+                    " but last committed txId=" + getLastCommittedTxId() );
+        }
     }
     
     public long applyPreparedTransaction( ReadableByteChannel transaction ) throws IOException
