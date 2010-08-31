@@ -213,7 +213,7 @@ abstract class CommunicationProtocol
     }
 
     @SuppressWarnings( "unchecked" )
-    protected static Pair<ChannelBuffer, SlaveContext> handleRequest( Master realMaster,
+    protected static ChannelBuffer handleRequest( Master realMaster,
             ChannelBuffer buffer, Channel channel, MasterServer server ) throws IOException
     {
         // TODO Not very pretty solution (to pass in MasterServer here)
@@ -236,7 +236,7 @@ abstract class CommunicationProtocol
         {
             writeTransactionStreams( response.transactions(), targetBuffer );
         }
-        return new Pair<ChannelBuffer, SlaveContext>( targetBuffer, context );
+        return targetBuffer;
     }
     
     private static <T> void writeTransactionStreams( TransactionStreams txStreams,

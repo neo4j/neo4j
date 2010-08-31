@@ -29,7 +29,6 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.ha.Master;
 import org.neo4j.kernel.impl.ha.SlaveContext;
 
@@ -40,6 +39,7 @@ import org.neo4j.kernel.impl.ha.SlaveContext;
 public class MasterServer extends CommunicationProtocol implements ChannelPipelineFactory
 {
     private final static int DEAD_CONNECTIONS_CHECK_INTERVAL = 10;
+    private final static int MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
     
     private final ChannelFactory channelFactory;
     private final ServerBootstrap bootstrap;
@@ -54,7 +54,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         this.realMaster = realMaster;
         ExecutorService executor = Executors.newCachedThreadPool();
         channelFactory = new NioServerSocketChannelFactory(
-                executor, executor );
+                executor, executor, MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
         bootstrap = new ServerBootstrap( channelFactory );
         bootstrap.setPipelineFactory( this );
         channelGroup = new DefaultChannelGroup();
@@ -73,7 +73,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         {
             public void run()
             {
-                checkForDeadConnections();
+//                checkForDeadConnections();
             }
         }, DEAD_CONNECTIONS_CHECK_INTERVAL, DEAD_CONNECTIONS_CHECK_INTERVAL, TimeUnit.SECONDS );
     }
@@ -96,9 +96,9 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             try
             {
                 ChannelBuffer message = (ChannelBuffer) e.getMessage();
-                Pair<ChannelBuffer, SlaveContext> result = handleRequest( realMaster, message, 
+                ChannelBuffer result = handleRequest( realMaster, message, 
                         e.getChannel(), MasterServer.this );
-                e.getChannel().write( result.first() );
+                e.getChannel().write( result );
             }
             catch ( Exception e1 )
             {
@@ -110,6 +110,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         @Override
         public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
         {
+            e.getCause().printStackTrace();
             // TODO
         }
     }

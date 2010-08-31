@@ -75,10 +75,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
 
-            // Read response
-            ChannelBuffer message =
-//                client.blockingReadHandler.read();
-                    reader.read( 20, TimeUnit.SECONDS );
+            ChannelBuffer message = reader.read( 20, TimeUnit.SECONDS );
             if ( message == null )
             {
                 throw new HaCommunicationException( "Channel has been closed" );
@@ -142,6 +139,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 }
                 else
                 {
+                    new Exception( "close channel " + channel ).printStackTrace();
                     channel.close();
                 }
             }
@@ -272,23 +270,24 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( MAX_FRAME_LENGTH,
                 0, 4, 0, 4 ) );
         pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
-        pipeline.addLast( "blockingHandler", new BlockingReadHandler<ChannelBuffer>() );
+        BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<ChannelBuffer>();
+        pipeline.addLast( "blockingHandler", reader );
         return pipeline;
     }
     
     public void shutdown()
     {
-        synchronized ( unusedChannels )
+        synchronized ( channels )
         {
             for ( Channel channel : unusedChannels )
             {
+                new Exception( "close unused channel in shutdown " + channel ).printStackTrace();
                 channel.close();
             }
-        }
-        synchronized ( channels )
-        {
+            
             for ( Channel channel : channels.values() )
             {
+                new Exception( "close channel in shutdown " + channel ).printStackTrace();
                 channel.close();
             }
         }
