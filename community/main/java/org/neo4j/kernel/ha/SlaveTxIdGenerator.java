@@ -1,10 +1,12 @@
 package org.neo4j.kernel.ha;
 
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.Response;
@@ -51,10 +53,11 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         try
         {
             int eventIdentifier = txManager.getEventIdentifier();
+            Pair<Long, ReadableByteChannel> tx = new Pair<Long, ReadableByteChannel>( -1L,
+                    dataSource.getPreparedTransaction( identifier ) );
             Response<Long> response = broker.getMaster().commitSingleResourceTransaction(
                     receiver.getSlaveContext( eventIdentifier ),
-                    dataSource.getName(), new TransactionStream( Arrays.asList(
-                            dataSource.getPreparedTransaction( identifier ) ) ) );
+                    dataSource.getName(), new TransactionStream( Arrays.asList( tx ) ) );
             return receiver.receive( response );
         }
         catch ( IOException e )

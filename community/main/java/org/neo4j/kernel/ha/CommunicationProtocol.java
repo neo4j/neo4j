@@ -3,7 +3,7 @@ package org.neo4j.kernel.ha;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -267,30 +267,35 @@ abstract class CommunicationProtocol
     protected static void writeTransactionStream( ChannelBuffer dest,
             TransactionStream transactionStream ) throws IOException
     {
-        final Collection<ReadableByteChannel> channels = transactionStream.getChannels();
-        dest.writeByte( channels.size() );
-        for ( ReadableByteChannel channel : channels )
+        Collection<Pair<Long, ReadableByteChannel>> channels = transactionStream.getChannels();
+        dest.writeInt( channels.size() );
+        for ( Pair<Long, ReadableByteChannel> channel : channels )
         {
-            ByteData data = new ByteData( channel );
+            dest.writeLong( channel.first() );
+            ByteData data = new ByteData( channel.other() );
             dest.writeInt( data.size() );
             for ( byte[] bytes : data )
             {
                 dest.writeBytes( bytes );
             }
-            channel.close();
+            channel.other().close();
         }
     }
 
     private static TransactionStream readTransactionStream( ChannelBuffer buffer )
     {
-        ReadableByteChannel[] channels = new ReadableByteChannel[buffer.readByte()];
-        for ( int i = 0; i < channels.length; i++ )
+        Collection<Pair<Long, ReadableByteChannel>> channels =
+                new ArrayList<Pair<Long,ReadableByteChannel>>();
+        int size = buffer.readInt();
+        for ( int i = 0; i < size; i++ )
         {
+            long txId = buffer.readLong();
             byte[] data = new byte[buffer.readInt()];
             buffer.readBytes( data );
-            channels[i] = new ByteArrayChannel( data );
+            ReadableByteChannel channel = new ByteArrayChannel( data );
+            channels.add( new Pair<Long, ReadableByteChannel>( txId, channel ) );
         }
-        return new TransactionStream( Arrays.asList( channels ) );
+        return new TransactionStream( channels );
     }
 
     private static class ByteArrayChannel implements ReadableByteChannel

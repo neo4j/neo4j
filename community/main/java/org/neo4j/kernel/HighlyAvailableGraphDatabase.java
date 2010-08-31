@@ -494,10 +494,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 String resourceName = streams.first();
                 XaDataSource dataSource = localDataSourceManager.getXaDataSource( resourceName );
-                for ( ReadableByteChannel channel : streams.other().getChannels() )
+                for ( Pair<Long, ReadableByteChannel> channel : streams.other().getChannels() )
                 {
-                    dataSource.applyCommittedTransaction( channel );
-                    channel.close();
+                    dataSource.applyCommittedTransaction( channel.first(), channel.other() );
+                    channel.other().close();
                 }
             }
             return response.response();
