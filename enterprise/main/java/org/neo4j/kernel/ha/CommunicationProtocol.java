@@ -11,6 +11,7 @@ import java.util.List;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.Channel;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.ha.IdAllocation;
@@ -122,37 +123,33 @@ abstract class CommunicationProtocol
         ACQUIRE_NODE_WRITE_LOCK( new AquireLockCall()
         {
             @Override
-            Response<LockResult> lock( Master master, SlaveContext context, int eventIdentifier,
-                    long... ids )
+            Response<LockResult> lock( Master master, SlaveContext context, long... ids )
             {
-                return master.acquireNodeWriteLock( context, eventIdentifier, ids );
+                return master.acquireNodeWriteLock( context, ids );
             }
         }, LOCK_SERIALIZER ),
         ACQUIRE_NODE_READ_LOCK( new AquireLockCall()
         {
             @Override
-            Response<LockResult> lock( Master master, SlaveContext context, int eventIdentifier,
-                    long... ids )
+            Response<LockResult> lock( Master master, SlaveContext context, long... ids )
             {
-                return master.acquireNodeReadLock( context, eventIdentifier, ids );
+                return master.acquireNodeReadLock( context, ids );
             }
         }, LOCK_SERIALIZER ),
         ACQUIRE_RELATIONSHIP_WRITE_LOCK( new AquireLockCall()
         {
             @Override
-            Response<LockResult> lock( Master master, SlaveContext context, int eventIdentifier,
-                    long... ids )
+            Response<LockResult> lock( Master master, SlaveContext context, long... ids )
             {
-                return master.acquireRelationshipWriteLock( context, eventIdentifier, ids );
+                return master.acquireRelationshipWriteLock( context, ids );
             }
         }, LOCK_SERIALIZER ),
         ACQUIRE_RELATIONSHIP_READ_LOCK( new AquireLockCall()
         {
             @Override
-            Response<LockResult> lock( Master master, SlaveContext context, int eventIdentifier,
-                    long... ids )
+            Response<LockResult> lock( Master master, SlaveContext context, long... ids )
             {
-                return master.acquireRelationshipReadLock( context, eventIdentifier, ids );
+                return master.acquireRelationshipReadLock( context, ids );
             }
         }, LOCK_SERIALIZER ),
         COMMIT( new MasterCaller<Long>()
@@ -160,11 +157,9 @@ abstract class CommunicationProtocol
             public Response<Long> callMaster( Master master, SlaveContext context,
                     ChannelBuffer input )
             {
-                int eventIdentifier = input.readInt();
                 String resource = readString( input );
                 TransactionStream transactionStream = readTransactionStream( input );
-                return master.commitSingleResourceTransaction( context, eventIdentifier, resource,
-                        transactionStream );
+                return master.commitSingleResourceTransaction( context, resource, transactionStream );
             }
         }, LONG_SERIALIZER ),
         ROLLBACK( new MasterCaller<Void>()
@@ -172,7 +167,7 @@ abstract class CommunicationProtocol
             public Response<Void> callMaster( Master master, SlaveContext context,
                     ChannelBuffer input )
             {
-                return master.rollbackTransaction( context, input.readInt() );
+                return master.rollbackTransaction( context );
             }
         }, VOID_SERIALIZER ),
         PULL_UPDATES( new MasterCaller<Void>()
@@ -188,7 +183,7 @@ abstract class CommunicationProtocol
             public Response<Void> callMaster( Master master, SlaveContext context,
                     ChannelBuffer input )
             {
-                return master.doneCommitting( context, input.readInt() );
+                return master.doneCommitting( context );
             }
         }, VOID_SERIALIZER );
 
@@ -219,11 +214,21 @@ abstract class CommunicationProtocol
 
     @SuppressWarnings( "unchecked" )
     protected static Pair<ChannelBuffer, SlaveContext> handleRequest( Master realMaster,
-            ChannelBuffer buffer ) throws IOException
+            ChannelBuffer buffer, Channel channel, MasterServer server ) throws IOException
     {
+        // TODO Not very pretty solution (to pass in MasterServer here)
+        // but what the heck.
         RequestType type = RequestType.values()[buffer.readByte()];
-        SlaveContext context = type.includesSlaveContext() ? readSlaveContext( buffer ) : null;
+        SlaveContext context = null;
+        if ( type.includesSlaveContext() )
+        {
+            context = readSlaveContext( buffer );
+            server.mapSlave( channel, context );
+        }
+        System.out.println( Thread.currentThread() + " Got request from slave: " + type + ", " + context );
         Response<?> response = type.caller.callMaster( realMaster, context, buffer );
+        System.out.println( Thread.currentThread() + " Handled request and got " + response.response() + 
+                " as response object" );
         
         ChannelBuffer targetBuffer = ChannelBuffers.dynamicBuffer();
         type.serializer.write( response.response(), targetBuffer );
@@ -233,7 +238,7 @@ abstract class CommunicationProtocol
         }
         return new Pair<ChannelBuffer, SlaveContext>( targetBuffer, context );
     }
-
+    
     private static <T> void writeTransactionStreams( TransactionStreams txStreams,
             ChannelBuffer buffer ) throws IOException
     {
@@ -322,17 +327,14 @@ abstract class CommunicationProtocol
     protected static class AcquireLockSerializer implements Serializer
     {
         private final long[] entities;
-        private final int eventIdentifier;
 
-        AcquireLockSerializer( int eventIdentifier, long... entities )
+        AcquireLockSerializer( long... entities )
         {
-            this.eventIdentifier = eventIdentifier;
             this.entities = entities;
         }
 
         public void write( ChannelBuffer buffer ) throws IOException
         {
-            buffer.writeInt( eventIdentifier );
             buffer.writeInt( entities.length );
             for ( long entity : entities )
             {
@@ -346,17 +348,15 @@ abstract class CommunicationProtocol
         public Response<LockResult> callMaster( Master master, SlaveContext context,
                 ChannelBuffer input )
         {
-            int eventIdentifier = input.readInt();
             long[] ids = new long[input.readInt()];
             for ( int i = 0; i < ids.length; i++ )
             {
                 ids[i] = input.readLong();
             }
-            return lock( master, context, eventIdentifier, ids );
+            return lock( master, context, ids );
         }
 
-        abstract Response<LockResult> lock( Master master, SlaveContext context,
-                int eventIdentifier, long... ids );
+        abstract Response<LockResult> lock( Master master, SlaveContext context, long... ids );
     }
 
     protected static class ByteData implements Iterable<byte[]>
@@ -457,6 +457,7 @@ abstract class CommunicationProtocol
     protected static void writeSlaveContext( ChannelBuffer buffer, SlaveContext context )
     {
         buffer.writeInt( context.machineId() );
+        buffer.writeInt( context.getEventIdentifier() );
         Pair<String, Long>[] txs = context.lastAppliedTransactions();
         buffer.writeByte( txs.length );
         for ( Pair<String, Long> tx : txs )
@@ -470,6 +471,7 @@ abstract class CommunicationProtocol
     private static SlaveContext readSlaveContext( ChannelBuffer buffer )
     {
         int machineId = buffer.readInt();
+        int eventIdentifier = buffer.readInt();
         int txsSize = buffer.readByte();
         Pair<String, Long>[] lastAppliedTransactions = new Pair[txsSize];
         for ( int i = 0; i < txsSize; i++ )
@@ -477,6 +479,6 @@ abstract class CommunicationProtocol
             lastAppliedTransactions[i] = new Pair<String, Long>(
                     readString( buffer ), buffer.readLong() );
         }
-        return new SlaveContext( machineId, lastAppliedTransactions );
+        return new SlaveContext( machineId, eventIdentifier, lastAppliedTransactions );
     }
 }

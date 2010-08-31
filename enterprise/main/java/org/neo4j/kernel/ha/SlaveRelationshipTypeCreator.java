@@ -9,6 +9,7 @@ import org.neo4j.kernel.impl.ha.Broker;
 import org.neo4j.kernel.impl.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.TxManager;
 
 public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
 {
@@ -26,8 +27,9 @@ public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
     {
         try
         {
-            return receiver.receive(
-                    broker.getMaster().createRelationshipType( receiver.getSlaveContext(), name ) );
+            int eventIdentifier = ((TxManager) txManager).getEventIdentifier();
+            return receiver.receive( broker.getMaster().createRelationshipType(
+                    receiver.getSlaveContext( eventIdentifier ), name ) );
         }
         catch ( ZooKeeperException e )
         {

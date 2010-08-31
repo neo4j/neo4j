@@ -71,11 +71,12 @@ public class SlaveLockManager extends LockManager
             LockResult result = null;
             do
             {
+                int eventIdentifier = getLocalTxId();
                 result = node != null ?
                         receiver.receive( broker.getMaster().acquireNodeReadLock(
-                                receiver.getSlaveContext(), getLocalTxId(), node.getId() ) ) :
+                                receiver.getSlaveContext( eventIdentifier ), node.getId() ) ) :
                         receiver.receive( broker.getMaster().acquireRelationshipReadLock(
-                                receiver.getSlaveContext(), getLocalTxId(), relationship.getId() ) );
+                                receiver.getSlaveContext( eventIdentifier ), relationship.getId() ) );
                             
                 switch ( result.getStatus() )
                 {
@@ -120,11 +121,12 @@ public class SlaveLockManager extends LockManager
             LockResult result = null;
             do
             {
+                int eventIdentifier = getLocalTxId();
                 result = node != null ?
                         receiver.receive( broker.getMaster().acquireNodeWriteLock(
-                                receiver.getSlaveContext(), getLocalTxId(), node.getId() ) ) :
+                                receiver.getSlaveContext( eventIdentifier ), node.getId() ) ) :
                         receiver.receive( broker.getMaster().acquireRelationshipWriteLock(
-                                receiver.getSlaveContext(), getLocalTxId(), relationship.getId() ) );
+                                receiver.getSlaveContext( eventIdentifier ), relationship.getId() ) );
                         
                 switch ( result.getStatus() )
                 {

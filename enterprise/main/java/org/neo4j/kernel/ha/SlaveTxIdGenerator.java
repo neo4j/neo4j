@@ -50,8 +50,9 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     {
         try
         {
+            int eventIdentifier = txManager.getEventIdentifier();
             Response<Long> response = broker.getMaster().commitSingleResourceTransaction(
-                    receiver.getSlaveContext(), txManager.getEventIdentifier(),
+                    receiver.getSlaveContext( eventIdentifier ),
                     dataSource.getName(), new TransactionStream( Arrays.asList(
                             dataSource.getPreparedTransaction( identifier ) ) ) );
             return receiver.receive( response );

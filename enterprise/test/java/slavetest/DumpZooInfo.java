@@ -14,11 +14,11 @@ public class DumpZooInfo
         {
             System.out.println( "\t" + info );
         }
-        System.out.println( "Disconnected slaves" );
-        for ( Machine info : clusterManager.getDisconnectedSlaves() )
-        {
-            System.out.println( "\t" + info );
-        }
+//        System.out.println( "Disconnected slaves" );
+//        for ( Machine info : clusterManager.getDisconnectedSlaves() )
+//        {
+//            System.out.println( "\t" + info );
+//        }
         clusterManager.shutdown();
     }
 }

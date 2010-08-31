@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -306,18 +305,18 @@ public abstract class AbstractHaTest
         pullUpdates( 0, 2 );
     }
 
-    @Test
-    public void testMasterFailure() throws Exception
-    {
-        initializeDbs( 1 );
-        Serializable[] result = executeJob( new CommonJobs.CreateSubRefNodeMasterFailJob(
-                getMasterShutdownDispatcher() ), 0 );
-        assertFalse( (Boolean) result[0] );
-        startUpMaster( MapUtil.stringMap() );
-        long nodeId = (Long) result[1];
-        Boolean existed = executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 );
-        assertFalse( existed.booleanValue() );
-    }
+//    @Test
+//    public void testMasterFailure() throws Exception
+//    {
+//        initializeDbs( 1 );
+//        Serializable[] result = executeJob( new CommonJobs.CreateSubRefNodeMasterFailJob(
+//                getMasterShutdownDispatcher() ), 0 );
+//        assertFalse( (Boolean) result[0] );
+//        startUpMaster( MapUtil.stringMap() );
+//        long nodeId = (Long) result[1];
+//        Boolean existed = executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 );
+//        assertFalse( existed.booleanValue() );
+//    }
     
     @Test
     public void testSlaveConstraintViolation() throws Exception
@@ -420,14 +419,15 @@ public abstract class AbstractHaTest
         executeJob( new CommonJobs.CreateNodeAndIndexJob( "name", "Neo" ), 0 );
     }
     
-//    @Test
-//    public void indexingAndTwoSlaves() throws Exception
-//    {
-//        initializeDbs( 2, INDEX_CONFIG );
-//        long id = executeJob( new CommonJobs.CreateNodeAndIndexJob( "name", "Morpheus" ), 0 );
+    @Test
+    public void indexingAndTwoSlaves() throws Exception
+    {
+        initializeDbs( 2, INDEX_CONFIG );
+        long id = executeJobOnMaster( new CommonJobs.CreateNodeAndIndexJob( "name", "Morpheus" ) );
 //        pullUpdates();
+        long id2 = executeJobOnMaster( new CommonJobs.CreateNodeAndIndexJob( "name", "Trinity" ) );
 //        executeJob( new CommonJobs.AddIndex( id, MapUtil.map( "key1",
 //                new String[] { "value1", "value2" }, "key 2", 105.43f ) ), 1 );
-//        pullUpdates();
-//    }
+        pullUpdates();
+    }
 }
