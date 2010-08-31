@@ -8,19 +8,28 @@ public class DumpLogs
 {
     public static void main( String[] args ) throws Exception
     {
-        for ( File file : new File( "var/hadb" ).listFiles() )
+        for ( File file : new File( "target/havar/dbs/0" ).listFiles() )
         {
-            if ( file.getName().contains( "logical" ) && !file.getName().endsWith( ".active" ) )
+            if ( !file.getName().contains( ".1" ) ) continue;
+            
+            try
             {
-                System.out.println( "\n=== " + file.getPath() + " ===" );
-                if ( file.getName().contains( ".ptx_" ) || file.getName().contains( ".tx_" ) )
+                if ( file.getName().contains( "logical" ) && !file.getName().endsWith( ".active" ) )
                 {
-                    DumpLogicalLog.main( new String[] { "-single", file.getPath() } );
+                    System.out.println( "\n=== " + file.getPath() + " ===" );
+                    if ( file.getName().contains( ".ptx_" ) || file.getName().contains( ".tx_" ) )
+                    {
+                        DumpLogicalLog.main( new String[] { "-single", file.getPath() } );
+                    }
+                    else
+                    {
+                        DumpLogicalLog.main( new String[] { file.getPath() } );
+                    }
                 }
-                else
-                {
-                    DumpLogicalLog.main( new String[] { file.getPath() } );
-                }
+            }
+            catch ( Exception e )
+            {
+                e.printStackTrace();
             }
         }
     }

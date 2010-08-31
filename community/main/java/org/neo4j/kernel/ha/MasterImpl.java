@@ -58,8 +58,8 @@ public class MasterImpl implements Master
     private final GraphDatabaseService graphDb;
     private final Config graphDbConfig;
     
-    private final Map<TxIdElement, Transaction> transactions =
-            Collections.synchronizedMap( new HashMap<TxIdElement, Transaction>() );
+    private final Map<SlaveContext, Transaction> transactions =
+            Collections.synchronizedMap( new HashMap<SlaveContext, Transaction>() );
 
     public MasterImpl( GraphDatabaseService db )
     {
@@ -73,10 +73,9 @@ public class MasterImpl implements Master
     }
 
     private <T extends PropertyContainer> Response<LockResult> acquireLock( SlaveContext context,
-            int eventIdentifier, LockGrabber lockGrabber, T... entities )
+            LockGrabber lockGrabber, T... entities )
     {
-        TxIdElement tx = new TxIdElement( context.machineId(), eventIdentifier );
-        Transaction otherTx = suspendOtherAndResumeThis( tx );
+        Transaction otherTx = suspendOtherAndResumeThis( context );
         try
         {
             LockManager lockManager = graphDbConfig.getLockManager();
@@ -97,21 +96,22 @@ public class MasterImpl implements Master
         }
         finally
         {
-            suspendThisAndResumeOther( otherTx );
+            suspendThisAndResumeOther( otherTx, context );
         }
     }
 
-    private Transaction getTx( TxIdElement txId )
+    private Transaction getTx( SlaveContext txId )
     {
         return transactions.get( txId );
     }
 
-    private Transaction beginTx( TxIdElement txId )
+    private Transaction beginTx( SlaveContext txId )
     {
         try
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.begin();
+            System.out.println( Thread.currentThread() + " begin tx " + txId );
             Transaction tx = txManager.getTransaction();
             transactions.put( txId, tx );
             return tx;
@@ -126,7 +126,7 @@ public class MasterImpl implements Master
         }
     }
 
-    Transaction suspendOtherAndResumeThis( TxIdElement txId )
+    Transaction suspendOtherAndResumeThis( SlaveContext txId )
     {
         try
         {
@@ -142,6 +142,7 @@ public class MasterImpl implements Master
                 if ( otherTx != null )
                 {
                     txManager.suspend();
+                    System.out.println( Thread.currentThread() + " suspended running tx" );
                 }
                 if ( transaction == null )
                 {
@@ -149,6 +150,7 @@ public class MasterImpl implements Master
                 }
                 else
                 {
+                    System.out.println( Thread.currentThread() + " resume tx " + txId );
                     txManager.resume( transaction );
                 }
                 return otherTx;
@@ -161,14 +163,16 @@ public class MasterImpl implements Master
         }
     }
 
-    void suspendThisAndResumeOther( Transaction otherTx )
+    void suspendThisAndResumeOther( Transaction otherTx, SlaveContext txId )
     {
         try
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.suspend();
+            System.out.println( Thread.currentThread() + " suspended tx " + txId );
             if ( otherTx != null )
             {
+                System.out.println( Thread.currentThread() + " resume tx " + txId );
                 txManager.resume( otherTx );
             }
         }
@@ -179,15 +183,17 @@ public class MasterImpl implements Master
         }
     }
 
-    void rollbackThisAndResumeOther( TxIdElement txId, Transaction otherTx )
+    void rollbackThisAndResumeOther( Transaction otherTx, SlaveContext txId )
     {
         try
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.rollback();
+            System.out.println( Thread.currentThread() + " rolled back " + txId );
             transactions.remove( txId );
             if ( otherTx != null )
             {
+                System.out.println( Thread.currentThread() + " resume " + txId );
                 txManager.resume( otherTx );
             }
         }
@@ -198,28 +204,26 @@ public class MasterImpl implements Master
         }
     }
 
-    public Response<LockResult> acquireNodeReadLock( SlaveContext context, int eventIdentifier,
-            long... nodes )
+    public Response<LockResult> acquireNodeReadLock( SlaveContext context, long... nodes )
     {
-        return acquireLock( context, eventIdentifier, READ_LOCK_GRABBER, nodesById( nodes ) );
+        return acquireLock( context, READ_LOCK_GRABBER, nodesById( nodes ) );
     }
 
-    public Response<LockResult> acquireNodeWriteLock( SlaveContext context, int eventIdentifier,
-            long... nodes )
+    public Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes )
     {
-        return acquireLock( context, eventIdentifier, WRITE_LOCK_GRABBER, nodesById(nodes) );
+        return acquireLock( context, WRITE_LOCK_GRABBER, nodesById(nodes) );
     }
 
-    public Response<LockResult> acquireRelationshipReadLock( SlaveContext context, int eventIdentifier,
+    public Response<LockResult> acquireRelationshipReadLock( SlaveContext context,
             long... relationships )
     {
-        return acquireLock( context, eventIdentifier, READ_LOCK_GRABBER, relationshipsById(relationships) );
+        return acquireLock( context, READ_LOCK_GRABBER, relationshipsById(relationships) );
     }
 
-    public Response<LockResult> acquireRelationshipWriteLock( SlaveContext context, int eventIdentifier,
+    public Response<LockResult> acquireRelationshipWriteLock( SlaveContext context,
             long... relationships )
     {
-        return acquireLock( context, eventIdentifier, WRITE_LOCK_GRABBER, relationshipsById(relationships) );
+        return acquireLock( context, WRITE_LOCK_GRABBER, relationshipsById(relationships) );
     }
 
     private Node[] nodesById( long[] ids )
@@ -263,10 +267,9 @@ public class MasterImpl implements Master
     }
 
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
-            int eventIdentifier, String resource, TransactionStream transactionStream )
+            String resource, TransactionStream transactionStream )
     {
-        TxIdElement tx = new TxIdElement( context.machineId(), eventIdentifier );
-        Transaction otherTx = suspendOtherAndResumeThis( tx );
+        Transaction otherTx = suspendOtherAndResumeThis( context );
         try
         {
             XaDataSource dataSource = graphDbConfig.getTxModule()
@@ -290,7 +293,7 @@ public class MasterImpl implements Master
         }
         finally
         {
-            suspendThisAndResumeOther( otherTx );
+            suspendThisAndResumeOther( otherTx, context );
             // Since the master-transaction carries no actual state, just locks
             // we would like to release the locks... and it's best done by just
             // rolling back the tx
@@ -298,11 +301,10 @@ public class MasterImpl implements Master
         }
     }
     
-    public Response<Void> doneCommitting( SlaveContext context, int eventIdentifier )
+    public Response<Void> doneCommitting( SlaveContext context )
     {
-        TxIdElement tx = new TxIdElement( context.machineId(), eventIdentifier );
-        Transaction otherTx = suspendOtherAndResumeThis( tx );
-        rollbackThisAndResumeOther( tx, otherTx );
+        Transaction otherTx = suspendOtherAndResumeThis( context );
+        rollbackThisAndResumeOther( otherTx, context );
         return packResponse( context, null, ALL );
     }
 
@@ -361,18 +363,18 @@ public class MasterImpl implements Master
         return packResponse( context, null, ALL );
     }
 
-    public Response<Void> rollbackTransaction( SlaveContext context, int eventIdentifier )
+    public Response<Void> rollbackTransaction( SlaveContext context )
     {
-        TxIdElement txId = new TxIdElement( context.machineId(), eventIdentifier );
-        Transaction otherTx = suspendOtherAndResumeThis( txId );
+        Transaction otherTx = suspendOtherAndResumeThis( context );
         try
         {
-            Transaction tx = transactions.remove( txId );
+            Transaction tx = transactions.remove( context );
             if ( tx == null )
             {
                 throw new RuntimeException( "Shouldn't happen" );
             }
             graphDbConfig.getTxModule().getTxManager().rollback();
+            System.out.println( Thread.currentThread() + " rolled back " + context );
             return packResponse( context, null, ALL );
         }
         catch ( IllegalStateException e )
@@ -389,60 +391,16 @@ public class MasterImpl implements Master
         }
         finally
         {
-            suspendThisAndResumeOther( otherTx );
+            suspendThisAndResumeOther( otherTx, context );
         }
     }
     
-    public void rollbackOngoingTransactions( SlaveContext context )
+    public void rollbackOngoingTransaction( SlaveContext context )
     {
-        int slaveMachineId = context.machineId();
-        Collection<TxIdElement> rolledbackTxs = new ArrayList<TxIdElement>();
-        for ( Map.Entry<TxIdElement, Transaction> entry : transactions.entrySet() )
+        if ( this.transactions.containsKey( context ) )
         {
-            if ( entry.getKey().machineId == slaveMachineId )
-            {
-                System.out.println( "Rolling back ongoing tx " + entry );
-                Transaction otherTx = suspendOtherAndResumeThis( entry.getKey() );
-                rollbackThisAndResumeOther( entry.getKey(), otherTx );
-                rolledbackTxs.add( entry.getKey() );
-            }
-        }
-        
-        for ( TxIdElement element : rolledbackTxs )
-        {
-            transactions.remove( element );
-        }
-    }
-
-    private static final class TxIdElement
-    {
-        private final int machineId;
-        private final int eventIdentifier;
-        private final int hashCode;
-
-        TxIdElement( int machineId, int eventIdentifier )
-        {
-            this.machineId = machineId;
-            this.eventIdentifier = eventIdentifier;
-            this.hashCode = calculateHashCode();
-        }
-
-        private int calculateHashCode()
-        {
-            return (machineId << 20) | eventIdentifier;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return hashCode;
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            TxIdElement other = (TxIdElement) obj;
-            return other.machineId == machineId && other.eventIdentifier == eventIdentifier;
+            Transaction otherTx = suspendOtherAndResumeThis( context );
+            rollbackThisAndResumeOther( otherTx, context );
         }
     }
 
@@ -474,18 +432,18 @@ public class MasterImpl implements Master
     // but exposed so that other tools can reach that information.
     // =====================================================================
     
-    public Map<Integer, Collection<Integer>> getOngoingTransactions()
+    public Map<Integer, Collection<SlaveContext>> getOngoingTransactions()
     {
-        Map<Integer, Collection<Integer>> result = new HashMap<Integer, Collection<Integer>>();
-        for ( TxIdElement txId : transactions.keySet() )
+        Map<Integer, Collection<SlaveContext>> result = new HashMap<Integer, Collection<SlaveContext>>();
+        for ( SlaveContext context : transactions.keySet() )
         {
-            Collection<Integer> identifiers = result.get( txId.machineId );
-            if ( identifiers == null )
+            Collection<SlaveContext> txs = result.get( context.machineId() );
+            if ( txs == null )
             {
-                identifiers = new ArrayList<Integer>();
-                result.put( txId.machineId, identifiers );
+                txs = new ArrayList<SlaveContext>();
+                result.put( context.machineId(), txs );
             }
-            identifiers.add( txId.eventIdentifier );
+            txs.add( context );
         }
         return result;
     }

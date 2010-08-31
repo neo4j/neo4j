@@ -3,10 +3,10 @@ package org.neo4j.kernel.ha;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -46,8 +46,8 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     private final Master realMaster;
     private final ChannelGroup channelGroup;
     private final ScheduledExecutorService deadConnectionsPoller;
-    private final Map<Integer, Collection<Channel>> channelsPerClient =
-            new HashMap<Integer, Collection<Channel>>();
+    private final Map<Channel, Set<SlaveContext>> ongoingTransactions =
+            new HashMap<Channel, Set<SlaveContext>>();
 
     public MasterServer( Master realMaster, final int port )
     {
@@ -96,8 +96,8 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             try
             {
                 ChannelBuffer message = (ChannelBuffer) e.getMessage();
-                Pair<ChannelBuffer, SlaveContext> result = handleRequest( realMaster, message );
-                rememberChannel( e.getChannel(), result.other() );
+                Pair<ChannelBuffer, SlaveContext> result = handleRequest( realMaster, message, 
+                        e.getChannel(), MasterServer.this );
                 e.getChannel().write( result.first() );
             }
             catch ( Exception e1 )
@@ -114,6 +114,27 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         }
     }
     
+    protected void mapSlave( Channel channel, SlaveContext slave )
+    {
+        channelGroup.add( channel );
+        if ( slave == null )
+        {
+            return;
+        }
+        
+        synchronized ( ongoingTransactions )
+        {
+            Set<SlaveContext> txs = ongoingTransactions.get( channel );
+            if ( txs == null )
+            {
+                txs = new HashSet<SlaveContext>();
+                ongoingTransactions.put( channel, txs );
+                System.out.println( "new transaction opened " + slave );
+            }
+            txs.add( slave );
+        }
+    }
+    
     public void shutdown()
     {
         // Close all open connections
@@ -122,67 +143,27 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         channelFactory.releaseExternalResources();
     }
 
-    private void rememberChannel( Channel channel, SlaveContext other )
-    {
-        channelGroup.add( channel );
-        if ( other == null )
-        {
-            return;
-        }
-        
-        int id = other.machineId();
-        synchronized ( channelsPerClient )
-        {
-            Collection<Channel> channels = channelsPerClient.get( id );
-            if ( channels == null )
-            {
-                channels = new HashSet<Channel>();
-                channelsPerClient.put( id, channels );
-                System.out.println( "new client connected " + id + ", " + channel );
-            }
-            channels.add( channel );
-        }
-    }
-
     private void checkForDeadConnections()
     {
-        synchronized ( channelsPerClient )
+        synchronized ( ongoingTransactions )
         {
-            Collection<Integer> clientsToRemove = new ArrayList<Integer>();
-            for ( Map.Entry<Integer, Collection<Channel>> entry : channelsPerClient.entrySet() )
+            Collection<Channel> channelsToRemove = new ArrayList<Channel>();
+            for ( Map.Entry<Channel, Set<SlaveContext>> entry : ongoingTransactions.entrySet() )
             {
-                if ( !entry.getValue().isEmpty() && !pruneDeadChannels( entry.getValue() ) )
+                if ( channelIsClosed( entry.getKey() ) )
                 {
-                    System.out.println( "Rolling back dead transaction from client " +
-                            entry.getKey() + " since it went down" );
-                    realMaster.rollbackOngoingTransactions( new SlaveContext( entry.getKey(),
-                            new Pair[0] ) );
-                    clientsToRemove.add( entry.getKey() );
+                    for ( SlaveContext tx : entry.getValue() )
+                    {
+                        ((MasterImpl) realMaster).rollbackOngoingTransaction( tx );
+                    }
                 }
+                channelsToRemove.add( entry.getKey() );
             }
-            
-            for ( Integer id : clientsToRemove )
+            for ( Channel channel : channelsToRemove )
             {
-                channelsPerClient.remove( id );
+                ongoingTransactions.remove( channel );
             }
         }
-    }
-
-    private boolean pruneDeadChannels( Collection<Channel> channels )
-    {
-        boolean anyoneAlive = false;
-        for ( Channel channel : channels.toArray( new Channel[channels.size()] ) )
-        {
-            if ( channel.isConnected() )
-            {
-                anyoneAlive = true;
-            }
-            else
-            {
-                channels.remove( channel );
-            }
-        }
-        return anyoneAlive;
     }
     
     // =====================================================================
@@ -190,28 +171,18 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     // but exposed so that other tools can reach that information.
     // =====================================================================
     
+    private boolean channelIsClosed( Channel channel )
+    {
+        return channel.isConnected() && channel.isOpen();
+    }
+
     /**
      * Returns pairs of:
      * key: machine ID
      * value: collection of ongoing transaction event identifiers
      */
-    public Iterable<Pair<Integer, Collection<Integer>>> getConnectedClients()
+    public Map<Integer, Collection<SlaveContext>> getOngoingTransactions()
     {
-        Collection<Integer> clients = null;
-        synchronized ( channelsPerClient )
-        {
-            clients = new ArrayList<Integer>( channelsPerClient.keySet() );
-        }
-        
-        Map<Integer, Collection<Integer>> txs = ((MasterImpl) realMaster).getOngoingTransactions();
-        Collection<Pair<Integer, Collection<Integer>>> result =
-                new ArrayList<Pair<Integer,Collection<Integer>>>();
-        for ( Integer id : clients )
-        {
-            Collection<Integer> ongoingTxs = txs.get( id );
-            result.add( new Pair<Integer, Collection<Integer>>( id, ongoingTxs != null ?
-                    ongoingTxs : Collections.<Integer>emptyList() ) );
-        }
-        return result;
+        return ((MasterImpl) realMaster).getOngoingTransactions();
     }
 }

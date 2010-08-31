@@ -43,7 +43,8 @@ import org.neo4j.kernel.impl.ha.TransactionStream;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
-public class HighlyAvailableGraphDatabase implements GraphDatabaseService, ResponseReceiver
+public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
+        implements GraphDatabaseService, ResponseReceiver
 {
     public static final String CONFIG_KEY_HA_MACHINE_ID = "ha.machine_id";
     public static final String CONFIG_KEY_HA_ZOO_KEEPER_SERVERS = "ha.zoo_keeper_servers";
@@ -168,7 +169,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     {
         try
         {
-            receive( broker.getMaster().pullUpdates( getSlaveContext() ) );
+            receive( broker.getMaster().pullUpdates( getSlaveContext( -1 ) ) );
         }
         catch ( ZooKeeperException e )
         {
@@ -185,6 +186,17 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
     public Config getConfig()
     {
         return this.localGraph.getConfig();
+    }
+    
+    public String getStoreDir()
+    {
+        return this.storeDir;
+    }
+    
+    @Override
+    public <T> T getManagementBean( Class<T> type )
+    {
+        return this.localGraph.getManagementBean( type );
     }
     
     protected void reevaluateMyself()
@@ -459,7 +471,7 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
         return localGraph.unregisterTransactionEventHandler( handler );
     }
     
-    public SlaveContext getSlaveContext()
+    public SlaveContext getSlaveContext( int eventIdentifier )
     {
         Collection<XaDataSource> dataSources = localDataSourceManager.getAllRegisteredDataSources();
         @SuppressWarnings("unchecked")
@@ -470,7 +482,8 @@ public class HighlyAvailableGraphDatabase implements GraphDatabaseService, Respo
             txs[i++] = new Pair<String, Long>( 
                     dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
-        return new SlaveContext( machineId, txs );
+//        int eventIdentifier = ((TxManager) localGraph.getConfig().getTxModule().getTxManager()).getEventIdentifier();
+        return new SlaveContext( machineId, eventIdentifier, txs );
     }
 
     public <T> T receive( Response<T> response )
