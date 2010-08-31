@@ -111,7 +111,7 @@ public class MasterImpl implements Master
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.begin();
-            System.out.println( Thread.currentThread() + " begin tx " + txId );
+            System.out.println( "begin tx " + txId );
             Transaction tx = txManager.getTransaction();
             transactions.put( txId, tx );
             return tx;
@@ -142,7 +142,7 @@ public class MasterImpl implements Master
                 if ( otherTx != null )
                 {
                     txManager.suspend();
-                    System.out.println( Thread.currentThread() + " suspended running tx" );
+                    System.out.println( "suspended running tx" );
                 }
                 if ( transaction == null )
                 {
@@ -150,7 +150,7 @@ public class MasterImpl implements Master
                 }
                 else
                 {
-                    System.out.println( Thread.currentThread() + " resume tx " + txId );
+                    System.out.println( "resume tx " + txId );
                     txManager.resume( transaction );
                 }
                 return otherTx;
@@ -169,10 +169,10 @@ public class MasterImpl implements Master
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.suspend();
-            System.out.println( Thread.currentThread() + " suspended tx " + txId );
+            System.out.println( "suspended tx " + txId );
             if ( otherTx != null )
             {
-                System.out.println( Thread.currentThread() + " resume tx " + txId );
+                System.out.println( "resume tx " + txId );
                 txManager.resume( otherTx );
             }
         }
@@ -189,11 +189,11 @@ public class MasterImpl implements Master
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.rollback();
-            System.out.println( Thread.currentThread() + " rolled back " + txId );
+            System.out.println( "rolled back " + txId );
             transactions.remove( txId );
             if ( otherTx != null )
             {
-                System.out.println( Thread.currentThread() + " resume " + txId );
+                System.out.println( "resume " + txId );
                 txManager.resume( otherTx );
             }
         }
@@ -374,7 +374,7 @@ public class MasterImpl implements Master
                 throw new RuntimeException( "Shouldn't happen" );
             }
             graphDbConfig.getTxModule().getTxManager().rollback();
-            System.out.println( Thread.currentThread() + " rolled back " + context );
+            System.out.println( "rolled back " + context );
             return packResponse( context, null, ALL );
         }
         catch ( IllegalStateException e )

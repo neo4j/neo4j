@@ -511,6 +511,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     
     public void somethingIsWrong( Exception e )
     {
+        e.printStackTrace();
         new Thread()
         {
             @Override
