@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -19,8 +22,10 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Pair;
 import org.neo4j.index.IndexService;
+import org.neo4j.index.impl.lucene.LuceneIndexProvider;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
@@ -59,11 +64,17 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private final BrokerFactory brokerFactory;
     private final Broker broker;
     private volatile EmbeddedGraphDbImpl localGraph;
-    private volatile IndexService localIndex;
+    private volatile IndexService localIndexService;
+    private volatile IndexProvider localIndexProvider;
     private final int machineId;
     private volatile MasterServer masterServer;
     private final AtomicBoolean reevaluatingMyself = new AtomicBoolean();
     private ScheduledExecutorService updatePuller;
+    
+    private final List<KernelEventHandler> kernelEventHandlers =
+            new CopyOnWriteArrayList<KernelEventHandler>();
+    private final Collection<TransactionEventHandler<?>> transactionEventHandlers =
+            new CopyOnWriteArraySet<TransactionEventHandler<?>>();
 
     // Just "cached" instances which are used internally here
     private XaDataSourceManager localDataSourceManager;
@@ -258,8 +269,21 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new SlaveTxIdGeneratorFactory( broker, this ),
                 new SlaveTxRollbackHook( broker, this ),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
+        graphDbStarted();
         instantiateIndexIfNeeded();
         instantiateAutoUpdatePullerIfConfigSaysSo();
+    }
+
+    private void graphDbStarted()
+    {
+        for ( TransactionEventHandler<?> handler : transactionEventHandlers )
+        {
+            this.localGraph.registerTransactionEventHandler( handler );
+        }
+        for ( KernelEventHandler handler : kernelEventHandlers )
+        {
+            this.localGraph.registerKernelEventHandler( handler );
+        }
     }
 
     private void startAsMaster()
@@ -272,6 +296,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 CommonFactories.defaultTxIdGeneratorFactory(),
                 CommonFactories.defaultTxFinishHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
+        graphDbStarted();
         markThatIAmMaster();
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         instantiateIndexIfNeeded();
@@ -360,7 +385,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         if ( Boolean.parseBoolean( config.get( "index" ) ) )
         {
-            this.localIndex = new LuceneIndexService( this );
+            this.localIndexService = new LuceneIndexService( this );
+            this.localIndexProvider = new LuceneIndexProvider( this );
         }
     }
 
@@ -416,12 +442,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     public KernelEventHandler registerKernelEventHandler( KernelEventHandler handler )
     {
+        this.kernelEventHandlers.add( handler );
         return localGraph.registerKernelEventHandler( handler );
     }
 
     public <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
+        this.transactionEventHandlers.add( handler );
         return localGraph.registerTransactionEventHandler( handler );
     }
 
@@ -438,10 +466,11 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             this.masterServer.shutdown();
             this.masterServer = null;
         }
-        if ( this.localIndex != null )
+        if ( this.localIndexService != null )
         {
-            this.localIndex.shutdown();
-            this.localIndex = null;
+            this.localIndexService.shutdown();
+            this.localIndexService = null;
+            this.localIndexProvider = null;
         }
         if ( this.localGraph != null )
         {
@@ -539,7 +568,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     
     public IndexService getIndexService()
     {
-        return this.localIndex;
+        return this.localIndexService;
+    }
+    
+    public IndexProvider getIndexProvider()
+    {
+        return this.localIndexProvider;
     }
     
     protected MasterServer getMasterServerIfMaster()

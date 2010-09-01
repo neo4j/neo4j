@@ -12,7 +12,10 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.index.IndexService;
+import org.neo4j.index.impl.lucene.LuceneIndexProvider;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -593,6 +596,41 @@ public abstract class CommonJobs
             Node node = db.createNode();
             node.setProperty( key, value );
             index.index( node, key, value );
+            tx.success();
+            return node.getId();
+        }
+    }
+    
+    public static class CreateNodeAndNewIndexJob extends TransactionalJob<Long>
+    {
+        private String key;
+        private Object value;
+        private final String indexName;
+        private final String key2;
+        private final Object value2;
+
+        public CreateNodeAndNewIndexJob( String indexName,
+                String key, Object value, String key2, Object value2 )
+        {
+            this.indexName = indexName;
+            this.key = key;
+            this.value = value;
+            this.key2 = key2;
+            this.value2 = value2;
+        }
+        
+        @Override
+        protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            IndexProvider provider = db instanceof HighlyAvailableGraphDatabase ?
+                    ((HighlyAvailableGraphDatabase) db).getIndexProvider() :
+                    new LuceneIndexProvider( db );
+            Node node = db.createNode();
+            node.setProperty( key, value );
+            node.setProperty( key2, value2 );
+            Index<Node> index = provider.nodeIndex( indexName, LuceneIndexProvider.EXACT_CONFIG );
+            index.add( node, key, value );
+            index.add( node, key2, value2 );
             tx.success();
             return node.getId();
         }
