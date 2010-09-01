@@ -351,7 +351,6 @@ public class LockReleaser
                         lockElement.resource + "]" );
                 }
             }
-            System.out.println( "released some locks for " + tx );
         }
     }
 
