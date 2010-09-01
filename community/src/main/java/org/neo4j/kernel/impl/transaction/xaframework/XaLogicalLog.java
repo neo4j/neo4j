@@ -466,6 +466,9 @@ public class XaLogicalLog
         xaTx.setRecovered();
         recoveredTxMap.put( identifier, xaTx );
         xaRm.injectStart( xid, xaTx );
+        // force to make sure done record is there if 2PC tx and global log
+        // marks tx as committed
+        fileChannel.force( false ); 
     }
 
 
