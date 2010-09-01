@@ -508,6 +508,9 @@ public class XaLogicalLog
         buffer.flip();
         fileChannel.write( buffer );
         xidIdentMap.remove( identifier );
+        // force to make sure done record is there if 2PC tx and global log
+        // marks tx as committed
+        fileChannel.force( false ); 
     }
 
     private boolean readDoneEntry() throws IOException
