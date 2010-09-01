@@ -243,10 +243,4 @@ public class SingleJvmTesting extends AbstractHaTest
             }
         };
     }
-    
-    @Override
-    public void indexingAndTwoSlaves() throws Exception
-    {
-        super.indexingAndTwoSlaves();
-    }
 }

@@ -269,7 +269,7 @@ public class MasterImpl implements Master
         }
     }
     
-    public Response<Void> doneCommitting( SlaveContext context )
+    public Response<Void> finishTransaction( SlaveContext context )
     {
         Transaction otherTx = suspendOtherAndResumeThis( context );
         rollbackThisAndResumeOther( otherTx, context );
@@ -329,46 +329,6 @@ public class MasterImpl implements Master
     public Response<Void> pullUpdates( SlaveContext context )
     {
         return packResponse( context, null, ALL );
-    }
-
-    public Response<Void> rollbackTransaction( SlaveContext context )
-    {
-        Transaction otherTx = suspendOtherAndResumeThis( context );
-        try
-        {
-            Transaction tx = transactions.remove( context );
-            if ( tx == null )
-            {
-                throw new RuntimeException( "Shouldn't happen" );
-            }
-            graphDbConfig.getTxModule().getTxManager().rollback();
-            return packResponse( context, null, ALL );
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( SecurityException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( SystemException e )
-        {
-            throw new RuntimeException( e );
-        }
-        finally
-        {
-            suspendThisAndResumeOther( otherTx, context );
-        }
-    }
-    
-    public void rollbackOngoingTransaction( SlaveContext context )
-    {
-        if ( this.transactions.containsKey( context ) )
-        {
-            Transaction otherTx = suspendOtherAndResumeThis( context );
-            rollbackThisAndResumeOther( otherTx, context );
-        }
     }
 
     private static interface LockGrabber
