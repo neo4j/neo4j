@@ -29,8 +29,6 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
-import org.neo4j.kernel.impl.ha.Master;
-import org.neo4j.kernel.impl.ha.SlaveContext;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via

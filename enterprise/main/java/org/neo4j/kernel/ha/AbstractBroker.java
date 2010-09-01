@@ -3,7 +3,6 @@ package org.neo4j.kernel.ha;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.impl.ha.Broker;
 
 public abstract class AbstractBroker implements Broker
 {
