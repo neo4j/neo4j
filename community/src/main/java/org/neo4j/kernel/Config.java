@@ -143,6 +143,7 @@ public class Config
         params.put( TxIdGenerator.class, txIdGenerator );
         params.put( TransactionManager.class, txModule.getTxManager() );
         params.put( LastCommittedTxIdSetter.class, lastCommittedTxIdSetter );
+        params.put( GraphDbModule.class, graphDbModule );
     }
 
     private static Map<Object, Object> getDefaultParams()
