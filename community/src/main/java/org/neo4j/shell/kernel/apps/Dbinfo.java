@@ -10,7 +10,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.management.Kernel;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
@@ -65,11 +65,11 @@ public class Dbinfo extends GraphDatabaseApp
     {
         GraphDatabaseService graphDb = getServer().getDb();
         Kernel kernel = null;
-        if ( graphDb instanceof EmbeddedGraphDatabase )
+        if ( graphDb instanceof AbstractGraphDatabase )
         {
             try
             {
-                kernel = ( (EmbeddedGraphDatabase) graphDb ).getManagementBean( Kernel.class );
+                kernel = ( (AbstractGraphDatabase) graphDb ).getManagementBean( Kernel.class );
             }
             catch ( Exception e )
             {
