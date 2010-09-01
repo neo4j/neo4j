@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
-import org.neo4j.kernel.impl.transaction.TxRollbackHook;
+import org.neo4j.kernel.impl.transaction.TxFinishHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 
 class EmbeddedGraphDbImpl
@@ -92,11 +92,11 @@ class EmbeddedGraphDbImpl
     public EmbeddedGraphDbImpl( String storeDir, Map<String, String> inputParams,
             GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
             IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator,
-            TxIdGeneratorFactory txIdFactory, TxRollbackHook rollbackHook,
+            TxIdGeneratorFactory txIdFactory, TxFinishHook finishHook,
             LastCommittedTxIdSetter lastCommittedTxIdSetter )
     {
         this.storeDir = storeDir;
-        TxModule txModule = newTxModule( inputParams, rollbackHook );
+        TxModule txModule = newTxModule( inputParams, finishHook );
         LockManager lockManager = lockManagerFactory.create( txModule );
         LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         Config config = new Config( graphDbService, storeDir, inputParams,
@@ -136,7 +136,7 @@ class EmbeddedGraphDbImpl
         extensions.startup( log );
     }
 
-    private TxModule newTxModule( Map<String, String> inputParams, TxRollbackHook rollbackHook )
+    private TxModule newTxModule( Map<String, String> inputParams, TxFinishHook rollbackHook )
     {
         return Boolean.parseBoolean( inputParams.get( Config.READ_ONLY ) ) ? new TxModule( true,
                 kernelPanicEventGenerator ) : new TxModule( this.storeDir,
