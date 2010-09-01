@@ -3,6 +3,7 @@ package org.neo4j.kernel;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
@@ -13,7 +14,7 @@ import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
-import org.neo4j.kernel.impl.transaction.TxRollbackHook;
+import org.neo4j.kernel.impl.transaction.TxFinishHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 
@@ -79,16 +80,16 @@ public class CommonFactories
         }; 
     }
     
-    public static TxRollbackHook defaultTxRollbackHook()
+    public static TxFinishHook defaultTxFinishHook()
     {
-        return new TxRollbackHook()
+        return new TxFinishHook()
         {
-            public void rollbackTransaction( int eventIdentifier )
+            public boolean hasAnyLocks( Transaction tx )
             {
-                // Do nothing from the ordinary here
+                return false;
             }
-
-            public void doneCommitting( int eventIdentifier )
+            
+            public void finishTransaction( int eventIdentifier )
             {
                 // Do nothing from the ordinary here
             }
