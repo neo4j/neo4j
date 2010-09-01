@@ -19,7 +19,7 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
-public class Dbinfo extends GraphDatabaseApp
+public class Dbinfo extends ReadOnlyGraphDatabaseApp
 {
     {
         addOptionDefinition( "l", new OptionDefinition( OptionValueType.MAY,

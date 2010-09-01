@@ -179,8 +179,8 @@ public abstract class GraphDatabaseApp extends AbstractApp
     {
         return this.getServer().getDb().getNodeById( id );
     }
-
-    public final String execute( AppCommandParser parser, Session session,
+    
+    public String execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {
         Transaction tx = getServer().getDb().beginTx();

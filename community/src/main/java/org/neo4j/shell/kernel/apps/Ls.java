@@ -48,7 +48,7 @@ import org.neo4j.shell.ShellException;
  * properties/relationships on a node or a relationship.
  */
 @Service.Implementation( App.class )
-public class Ls extends GraphDatabaseApp
+public class Ls extends ReadOnlyGraphDatabaseApp
 {
     /**
      * Constructs a new "ls" application.

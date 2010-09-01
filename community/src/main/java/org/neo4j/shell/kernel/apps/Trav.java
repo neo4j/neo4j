@@ -48,7 +48,7 @@ import org.neo4j.shell.ShellException;
  * Traverses the graph using {@link Traverser}.
  */
 @Service.Implementation( App.class )
-public class Trav extends GraphDatabaseApp
+public class Trav extends ReadOnlyGraphDatabaseApp
 {
     /**
      * Constructs a new command which can traverse the graph.

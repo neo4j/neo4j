@@ -34,7 +34,7 @@ import org.neo4j.shell.ShellException;
  * working directory "walked by" the "cd" application.
  */
 @Service.Implementation( App.class )
-public class Pwd extends GraphDatabaseApp
+public class Pwd extends ReadOnlyGraphDatabaseApp
 {
     @Override
     public String getDescription()
