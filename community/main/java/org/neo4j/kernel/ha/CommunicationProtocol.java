@@ -225,11 +225,7 @@ abstract class CommunicationProtocol
             context = readSlaveContext( buffer );
             server.mapSlave( channel, context );
         }
-        System.out.println( Thread.currentThread() + " Got request from slave: " + type + ", " + context );
         Response<?> response = type.caller.callMaster( realMaster, context, buffer );
-        System.out.println( Thread.currentThread() + " Handled request and got " + response.response() + 
-                " as response object" );
-        
         ChannelBuffer targetBuffer = ChannelBuffers.dynamicBuffer();
         type.serializer.write( response.response(), targetBuffer );
         if ( type.includesSlaveContext() )

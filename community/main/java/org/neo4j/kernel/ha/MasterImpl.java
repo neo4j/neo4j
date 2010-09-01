@@ -19,6 +19,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
@@ -64,7 +65,7 @@ public class MasterImpl implements Master
     public MasterImpl( GraphDatabaseService db )
     {
         this.graphDb = db;
-        this.graphDbConfig = getConfig( db );
+        this.graphDbConfig = ((AbstractGraphDatabase) db).getConfig();
     }
     
     public GraphDatabaseService getGraphDb()
@@ -111,7 +112,6 @@ public class MasterImpl implements Master
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.begin();
-            System.out.println( "begin tx " + txId );
             Transaction tx = txManager.getTransaction();
             transactions.put( txId, tx );
             return tx;
@@ -142,7 +142,6 @@ public class MasterImpl implements Master
                 if ( otherTx != null )
                 {
                     txManager.suspend();
-                    System.out.println( "suspended running tx" );
                 }
                 if ( transaction == null )
                 {
@@ -150,7 +149,6 @@ public class MasterImpl implements Master
                 }
                 else
                 {
-                    System.out.println( "resume tx " + txId );
                     txManager.resume( transaction );
                 }
                 return otherTx;
@@ -169,10 +167,8 @@ public class MasterImpl implements Master
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.suspend();
-            System.out.println( "suspended tx " + txId );
             if ( otherTx != null )
             {
-                System.out.println( "resume tx " + txId );
                 txManager.resume( otherTx );
             }
         }
@@ -189,11 +185,9 @@ public class MasterImpl implements Master
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.rollback();
-            System.out.println( "rolled back " + txId );
             transactions.remove( txId );
             if ( otherTx != null )
             {
-                System.out.println( "resume " + txId );
                 txManager.resume( otherTx );
             }
         }
@@ -246,19 +240,6 @@ public class MasterImpl implements Master
         return result;
     }
 
-    private static Config getConfig( GraphDatabaseService db )
-    {
-        try
-        {
-            // Quite ugly :)
-            return (Config) db.getClass().getDeclaredMethod( "getConfig" ).invoke( db );
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
     public IdAllocation allocateIds( IdType idType )
     {
         IdGenerator generator = graphDbConfig.getIdGeneratorFactory().get( idType );
@@ -294,10 +275,6 @@ public class MasterImpl implements Master
         finally
         {
             suspendThisAndResumeOther( otherTx, context );
-            // Since the master-transaction carries no actual state, just locks
-            // we would like to release the locks... and it's best done by just
-            // rolling back the tx
-//            rollbackThisAndResumeOther( otherTx );
         }
     }
     
@@ -374,7 +351,6 @@ public class MasterImpl implements Master
                 throw new RuntimeException( "Shouldn't happen" );
             }
             graphDbConfig.getTxModule().getTxManager().rollback();
-            System.out.println( "rolled back " + context );
             return packResponse( context, null, ALL );
         }
         catch ( IllegalStateException e )
