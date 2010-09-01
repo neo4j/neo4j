@@ -1,7 +1,6 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
-import org.neo4j.kernel.impl.ha.Broker;
 
 public class ZooKeeperLastCommittedTxIdSetter implements LastCommittedTxIdSetter
 {

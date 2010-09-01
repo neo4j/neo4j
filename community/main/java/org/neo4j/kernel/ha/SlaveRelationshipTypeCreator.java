@@ -5,8 +5,6 @@ import javax.transaction.TransactionManager;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
-import org.neo4j.kernel.impl.ha.Broker;
-import org.neo4j.kernel.impl.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.TxManager;
