@@ -91,19 +91,20 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     private class ServerHandler extends SimpleChannelHandler
     {
         @Override
-        public void messageReceived( ChannelHandlerContext ctx, MessageEvent e ) throws Exception
+        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
+                throws Exception
         {
             try
             {
-                ChannelBuffer message = (ChannelBuffer) e.getMessage();
+                ChannelBuffer message = (ChannelBuffer) event.getMessage();
                 ChannelBuffer result = handleRequest( realMaster, message, 
-                        e.getChannel(), MasterServer.this );
-                e.getChannel().write( result );
+                        event.getChannel(), MasterServer.this );
+                event.getChannel().write( result );
             }
-            catch ( Exception e1 )
+            catch ( Exception e )
             {
-                e1.printStackTrace();
-                throw e1;
+                e.printStackTrace();
+                throw e;
             }
         }
 
@@ -111,7 +112,6 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
         {
             e.getCause().printStackTrace();
-            // TODO
         }
     }
     
@@ -130,7 +130,6 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             {
                 txs = new HashSet<SlaveContext>();
                 ongoingTransactions.put( channel, txs );
-                System.out.println( "new transaction opened " + slave );
             }
             txs.add( slave );
         }

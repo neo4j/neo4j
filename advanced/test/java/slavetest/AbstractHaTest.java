@@ -305,6 +305,8 @@ public abstract class AbstractHaTest
         pullUpdates( 0, 2 );
     }
 
+    // This is difficult to test a.t.m. since you can't really bring down a master
+    // and expect it to be able to come up again without any work.
 //    @Test
 //    public void testMasterFailure() throws Exception
 //    {
