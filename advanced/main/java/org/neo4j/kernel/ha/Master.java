@@ -23,9 +23,7 @@ public interface Master
     Response<Long> commitSingleResourceTransaction( SlaveContext context,
             String resource, TransactionStream transactionStream );
     
-    Response<Void> doneCommitting( SlaveContext context );
-
-    Response<Void> rollbackTransaction( SlaveContext context );
+    Response<Void> finishTransaction( SlaveContext context );
     
     Response<Void> pullUpdates( SlaveContext context );
 }

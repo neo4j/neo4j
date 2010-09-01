@@ -1,9 +1,12 @@
 package org.neo4j.kernel.ha;
 
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
-import org.neo4j.kernel.impl.transaction.TxRollbackHook;
+import javax.transaction.Transaction;
 
-public class SlaveTxRollbackHook implements TxRollbackHook
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.transaction.TxFinishHook;
+
+public class SlaveTxRollbackHook implements TxFinishHook
 {
     private final Broker broker;
     private final ResponseReceiver receiver;
@@ -13,31 +16,17 @@ public class SlaveTxRollbackHook implements TxRollbackHook
         this.broker = broker;
         this.receiver = receiver;
     }
-
-    public void rollbackTransaction( int eventIdentifier )
+    
+    public boolean hasAnyLocks( Transaction tx )
     {
-        try
-        {
-            receiver.receive( broker.getMaster().rollbackTransaction(
-                    receiver.getSlaveContext( eventIdentifier ) ) );
-        }
-        catch ( ZooKeeperException e )
-        {
-            receiver.somethingIsWrong( e );
-            throw e;
-        }
-        catch ( HaCommunicationException e )
-        {
-            receiver.somethingIsWrong( e );
-            throw e;
-        }
+        return ((AbstractGraphDatabase) receiver).getConfig().getLockReleaser().hasLocks( tx );
     }
 
-    public void doneCommitting( int eventIdentifier )
+    public void finishTransaction( int eventIdentifier )
     {
         try
         {
-            receiver.receive( broker.getMaster().doneCommitting(
+            receiver.receive( broker.getMaster().finishTransaction(
                     receiver.getSlaveContext( eventIdentifier ) ) );
         }
         catch ( ZooKeeperException e )

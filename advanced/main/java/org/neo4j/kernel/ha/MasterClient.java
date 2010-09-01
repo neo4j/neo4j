@@ -216,11 +216,11 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         });
     }
     
-    public Response<Void> doneCommitting( SlaveContext context )
+    public Response<Void> finishTransaction( SlaveContext context )
     {
         try
         {
-            return sendRequest( RequestType.DONE_COMMITTING, context, new Serializer()
+            return sendRequest( RequestType.FINISH, context, new Serializer()
             {
                 public void write( ChannelBuffer buffer ) throws IOException
                 {
@@ -233,16 +233,6 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         }
     }
 
-    public Response<Void> rollbackTransaction( SlaveContext context )
-    {
-        return sendRequest( RequestType.ROLLBACK, context, new Serializer()
-        {
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-            }
-        }, VOID_DESERIALIZER );
-    }
-    
     public void rollbackOngoingTransactions( SlaveContext context )
     {
         throw new UnsupportedOperationException( "Should never be called from the client side" );

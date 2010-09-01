@@ -154,14 +154,6 @@ abstract class CommunicationProtocol
                 return master.commitSingleResourceTransaction( context, resource, transactionStream );
             }
         }, LONG_SERIALIZER ),
-        ROLLBACK( new MasterCaller<Void>()
-        {
-            public Response<Void> callMaster( Master master, SlaveContext context,
-                    ChannelBuffer input )
-            {
-                return master.rollbackTransaction( context );
-            }
-        }, VOID_SERIALIZER ),
         PULL_UPDATES( new MasterCaller<Void>()
         {
             public Response<Void> callMaster( Master master, SlaveContext context,
@@ -170,12 +162,12 @@ abstract class CommunicationProtocol
                 return master.pullUpdates( context );
             }
         }, VOID_SERIALIZER ),
-        DONE_COMMITTING( new MasterCaller<Void>()
+        FINISH( new MasterCaller<Void>()
         {
             public Response<Void> callMaster( Master master, SlaveContext context,
                     ChannelBuffer input )
             {
-                return master.doneCommitting( context );
+                return master.finishTransaction( context );
             }
         }, VOID_SERIALIZER );
 
