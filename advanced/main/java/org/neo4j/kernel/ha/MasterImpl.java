@@ -306,6 +306,10 @@ public class MasterImpl implements Master
                 String resourceName = txEntry.first();
                 XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
                         .getXaDataSource( resourceName );
+                if ( dataSource == null )
+                {
+                    throw new RuntimeException( "No data source '" + resourceName + "' found" );
+                }
                 long masterLastTx = dataSource.getLastCommittedTxId();
                 Collection<Pair<Long, ReadableByteChannel>> channels = new ArrayList<Pair<Long, ReadableByteChannel>>();
                 for ( long txId = txEntry.other()+1; txId <= masterLastTx; txId++ )
