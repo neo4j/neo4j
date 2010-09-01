@@ -14,14 +14,6 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.ha.IdAllocation;
-import org.neo4j.kernel.impl.ha.LockResult;
-import org.neo4j.kernel.impl.ha.LockStatus;
-import org.neo4j.kernel.impl.ha.Master;
-import org.neo4j.kernel.impl.ha.Response;
-import org.neo4j.kernel.impl.ha.SlaveContext;
-import org.neo4j.kernel.impl.ha.TransactionStream;
-import org.neo4j.kernel.impl.ha.TransactionStreams;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
 abstract class CommunicationProtocol

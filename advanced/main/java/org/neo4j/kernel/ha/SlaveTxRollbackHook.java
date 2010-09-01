@@ -1,8 +1,6 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
-import org.neo4j.kernel.impl.ha.Broker;
-import org.neo4j.kernel.impl.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.transaction.TxRollbackHook;
 
 public class SlaveTxRollbackHook implements TxRollbackHook

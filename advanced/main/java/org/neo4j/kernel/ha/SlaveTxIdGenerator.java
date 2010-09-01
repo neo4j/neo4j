@@ -8,10 +8,6 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
-import org.neo4j.kernel.impl.ha.Broker;
-import org.neo4j.kernel.impl.ha.Response;
-import org.neo4j.kernel.impl.ha.ResponseReceiver;
-import org.neo4j.kernel.impl.ha.TransactionStream;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;

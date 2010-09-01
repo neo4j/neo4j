@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.impl.ha.SlaveContext;
+import org.neo4j.kernel.ha.SlaveContext;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;

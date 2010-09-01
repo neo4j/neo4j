@@ -2,12 +2,12 @@ package org.neo4j.kernel.ha.zookeeper;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.ha.Broker;
+import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.impl.ha.Broker;
-import org.neo4j.kernel.impl.ha.Master;
-import org.neo4j.kernel.impl.ha.ResponseReceiver;
+import org.neo4j.kernel.ha.ResponseReceiver;
 
 public class ZooKeeperBroker implements Broker
 {

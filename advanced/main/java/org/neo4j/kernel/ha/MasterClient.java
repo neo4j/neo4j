@@ -23,13 +23,6 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.ha.IdAllocation;
-import org.neo4j.kernel.impl.ha.LockResult;
-import org.neo4j.kernel.impl.ha.Master;
-import org.neo4j.kernel.impl.ha.Response;
-import org.neo4j.kernel.impl.ha.SlaveContext;
-import org.neo4j.kernel.impl.ha.TransactionStream;
-import org.neo4j.kernel.impl.ha.TransactionStreams;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
