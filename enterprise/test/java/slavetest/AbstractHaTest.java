@@ -37,7 +37,8 @@ public abstract class AbstractHaTest
     private int relCount;
     private int nodePropCount;
     private int relPropCount;
-    private int nodeIndexPropCount;
+    private int nodeIndexServicePropCount;
+    private int nodeIndexProviderPropCount;
     
     protected static File dbPath( int num )
     {
@@ -58,7 +59,8 @@ public abstract class AbstractHaTest
             int vRelCount = 0;
             int vNodePropCount = 0;
             int vRelPropCount = 0;
-            int vNodeIndexPropCount = 0;
+            int vNodeIndexServicePropCount = 0;
+            int vNodeIndexProviderPropCount = 0;
             
             Set<Node> otherNodes = IteratorUtil.addToCollection( otherDb.db.getAllNodes().iterator(),
                     new HashSet<Node>() );
@@ -69,7 +71,8 @@ public abstract class AbstractHaTest
                 vRelCount += counts[0];
                 vNodePropCount += counts[1];
                 vRelPropCount += counts[2];
-                vNodeIndexPropCount += counts[3];
+                vNodeIndexServicePropCount += counts[3];
+                vNodeIndexProviderPropCount += counts[4];
                 otherNodes.remove( otherNode );
                 vNodeCount++;
             }
@@ -81,7 +84,8 @@ public abstract class AbstractHaTest
                 assertEquals( relCount, vRelCount );
                 assertEquals( nodePropCount, vNodePropCount );
                 assertEquals( relPropCount, vRelPropCount );
-                assertEquals( nodeIndexPropCount, vNodeIndexPropCount );
+                assertEquals( nodeIndexServicePropCount, vNodeIndexServicePropCount );
+                assertEquals( nodeIndexProviderPropCount, vNodeIndexProviderPropCount );
             }
         }
     }
@@ -90,7 +94,8 @@ public abstract class AbstractHaTest
             VerifyDbContext refDb, VerifyDbContext otherDb )
     {
         int vNodePropCount = verifyProperties( node, otherNode );
-        int vNodeIndexPropCount = verifyIndex( node, otherNode, refDb, otherDb );
+        int vNodeIndexServicePropCount = verifyIndexService( node, otherNode, refDb, otherDb );
+        int vNodeIndexProviderProCount = verifyIndexProvider( node, otherNode, refDb, otherDb );
         Set<Long> otherRelIds = new HashSet<Long>();
         for ( Relationship otherRel : otherNode.getRelationships( Direction.OUTGOING ) )
         {
@@ -124,14 +129,14 @@ public abstract class AbstractHaTest
             throw new RuntimeException( "Other node " + otherNode + " has more relationships " +
                     otherRelIds );
         }
-        return new int[] { vRelCount, vNodePropCount, vRelPropCount, vNodeIndexPropCount };
+        return new int[] { vRelCount, vNodePropCount, vRelPropCount, vNodeIndexServicePropCount, vNodeIndexProviderProCount };
     }
 
-    private static int verifyIndex( Node node, Node otherNode, VerifyDbContext refDb,
+    private static int verifyIndexService( Node node, Node otherNode, VerifyDbContext refDb,
             VerifyDbContext otherDb )
     {
         int count = 0;
-        if ( refDb.index == null || otherDb.index == null )
+        if ( refDb.indexService == null || otherDb.indexService == null )
         {
             return count;
         }
@@ -139,7 +144,7 @@ public abstract class AbstractHaTest
         Set<String> otherKeys = new HashSet<String>();
         for ( String key : otherNode.getPropertyKeys() )
         {
-            if ( isIndexed( otherNode, otherDb, key ) )
+            if ( isIndexedWithIndexService( otherNode, otherDb, key ) )
             {
                 otherKeys.add( key );
             }
@@ -148,7 +153,7 @@ public abstract class AbstractHaTest
         
         for ( String key : node.getPropertyKeys() )
         {
-            if ( otherKeys.remove( key ) != isIndexed( node, refDb, key ) )
+            if ( otherKeys.remove( key ) != isIndexedWithIndexService( node, refDb, key ) )
             {
                 throw new RuntimeException( "Index differs on " + node + ", " + key );
             }
@@ -161,11 +166,51 @@ public abstract class AbstractHaTest
         return count;
     }
 
-    private static boolean isIndexed( Node node, VerifyDbContext db, String key )
+    private static boolean isIndexedWithIndexService( Node node, VerifyDbContext db, String key )
     {
-        return db.index.getSingleNode( key, node.getProperty( key ) ) != null;
+        return db.indexService.getSingleNode( key, node.getProperty( key ) ) != null;
     }
 
+    private static int verifyIndexProvider( Node node, Node otherNode, VerifyDbContext refDb,
+            VerifyDbContext otherDb )
+    {
+        int count = 0;
+        if ( refDb.indexProvider == null || otherDb.indexProvider == null )
+        {
+            return count;
+        }
+        
+        Set<String> otherKeys = new HashSet<String>();
+        for ( String key : otherNode.getPropertyKeys() )
+        {
+            if ( isIndexedWithIndexProvider( otherNode, otherDb, key ) )
+            {
+                otherKeys.add( key );
+            }
+        }
+        System.out.println( "found indexing " + otherKeys );
+        count = otherKeys.size();
+        
+        for ( String key : node.getPropertyKeys() )
+        {
+            if ( otherKeys.remove( key ) != isIndexedWithIndexProvider( node, refDb, key ) )
+            {
+                throw new RuntimeException( "Index differs on " + node + ", " + key );
+            }
+        }
+        if ( !otherKeys.isEmpty() )
+        {
+            throw new RuntimeException( "Other node " + otherNode + " has more indexing: " +
+                    otherKeys );
+        }
+        return count;
+    }
+    
+    private static boolean isIndexedWithIndexProvider( Node node, VerifyDbContext db, String key )
+    {
+        return db.indexProvider.nodeIndex( "users", null ).get( key, node.getProperty( key ) ).getSingle() != null;
+    }
+    
     private static int verifyProperties( PropertyContainer entity, PropertyContainer otherEntity )
     {
         int count = 0;
@@ -277,20 +322,21 @@ public abstract class AbstractHaTest
     }
     
     protected void setExpectedResults( int nodeCount, int relCount,
-            int nodePropCount, int relPropCount, int nodeIndexPropCount )
+            int nodePropCount, int relPropCount, int nodeIndexServicePropCount, int nodeIndexProviderPropCount )
     {
         this.expectsResults = true;
         this.nodeCount = nodeCount;
         this.relCount = relCount;
         this.nodePropCount = nodePropCount;
         this.relPropCount = relPropCount;
-        this.nodeIndexPropCount = nodeIndexPropCount;
+        this.nodeIndexServicePropCount = nodeIndexServicePropCount;
+        this.nodeIndexProviderPropCount = nodeIndexProviderPropCount;
     }
     
     @Test
     public void slaveCreateNode() throws Exception
     {
-        setExpectedResults( 3, 2, 2, 2, 0 );
+        setExpectedResults( 3, 2, 2, 2, 0, 0 );
         initializeDbs( 1 );
         executeJob( new CommonJobs.CreateSomeEntitiesJob(), 0 );
     }
@@ -298,7 +344,7 @@ public abstract class AbstractHaTest
     @Test
     public void testMultipleSlaves() throws Exception
     {
-        setExpectedResults( 2, 1, 1, 1, 0 );
+        setExpectedResults( 2, 1, 1, 1, 0, 0 );
         initializeDbs( 3 );
         executeJob( new CommonJobs.CreateSubRefNodeJob( CommonJobs.REL_TYPE.name(), null, null ), 0 );
         executeJob( new CommonJobs.SetSubRefPropertyJob( "name", "Hello" ), 1 );
@@ -323,7 +369,7 @@ public abstract class AbstractHaTest
     @Test
     public void testSlaveConstraintViolation() throws Exception
     {
-        setExpectedResults( 2, 1, 0, 1, 0 );
+        setExpectedResults( 2, 1, 0, 1, 0, 0 );
         initializeDbs( 1 );
         
         Long nodeId = executeJob( new CommonJobs.CreateSubRefNodeJob(
@@ -336,7 +382,7 @@ public abstract class AbstractHaTest
     @Test
     public void testMasterConstrainViolation() throws Exception
     {
-        setExpectedResults( 2, 1, 1, 1, 0 );
+        setExpectedResults( 2, 1, 1, 1, 0, 0 );
         initializeDbs( 1 );
         
         Long nodeId = executeJob( new CommonJobs.CreateSubRefNodeJob( CommonJobs.REL_TYPE.name(),
@@ -350,7 +396,7 @@ public abstract class AbstractHaTest
     @Test
     public void testGetRelationships() throws Exception
     {
-        setExpectedResults( 3, 2, 0, 0, 0 );
+        setExpectedResults( 3, 2, 0, 0, 0, 0 );
         initializeDbs( 1 );
         
         assertEquals( (Integer) 1, executeJob( new CommonJobs.CreateSubRefNodeWithRelCountJob(
@@ -366,7 +412,7 @@ public abstract class AbstractHaTest
     @Test
     public void testNoTransaction() throws Exception
     {
-        setExpectedResults( 2, 1, 0, 1, 0 );
+        setExpectedResults( 2, 1, 0, 1, 0, 0 );
         initializeDbs( 1 );
         
         executeJobOnMaster( new CommonJobs.CreateSubRefNodeJob(
@@ -378,7 +424,7 @@ public abstract class AbstractHaTest
     @Test
     public void testNodeDeleted() throws Exception
     {
-        setExpectedResults( 1, 0, 0, 0, 0 );
+        setExpectedResults( 1, 0, 0, 0, 0, 0 );
         initializeDbs( 1 );
         
         Long nodeId = executeJobOnMaster( new CommonJobs.CreateNodeJob() );
@@ -416,7 +462,7 @@ public abstract class AbstractHaTest
     @Test
     public void createNodeAndIndex() throws Exception
     {
-        setExpectedResults( 2, 0, 1, 0, 1 );
+        setExpectedResults( 2, 0, 1, 0, 1, 0 );
         initializeDbs( 1, INDEX_CONFIG );
         executeJob( new CommonJobs.CreateNodeAndIndexJob( "name", "Neo" ), 0 );
     }
@@ -426,10 +472,20 @@ public abstract class AbstractHaTest
     {
         initializeDbs( 2, INDEX_CONFIG );
         long id = executeJobOnMaster( new CommonJobs.CreateNodeAndIndexJob( "name", "Morpheus" ) );
-//        pullUpdates();
+        pullUpdates();
         long id2 = executeJobOnMaster( new CommonJobs.CreateNodeAndIndexJob( "name", "Trinity" ) );
-//        executeJob( new CommonJobs.AddIndex( id, MapUtil.map( "key1",
-//                new String[] { "value1", "value2" }, "key 2", 105.43f ) ), 1 );
+        executeJob( new CommonJobs.AddIndex( id, MapUtil.map( "key1",
+                new String[] { "value1", "value2" }, "key 2", 105.43f ) ), 1 );
+        pullUpdates();
+    }
+    
+    @Test
+    public void testNewIndexFramework() throws Exception
+    {
+        setExpectedResults( 2, 0, 2, 0, 0, 2 );
+        initializeDbs( 2, INDEX_CONFIG );
+        long id = executeJobOnMaster( new CommonJobs.CreateNodeAndNewIndexJob( "users",
+                "name", "Morpheus", "rank", "Captain" ) );
         pullUpdates();
     }
 }
