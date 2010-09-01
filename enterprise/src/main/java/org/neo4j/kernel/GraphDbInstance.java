@@ -159,11 +159,6 @@ class GraphDbInstance
             Config.dumpConfiguration( params );
         }
 
-        if ( config.getTxModule().getXaDataSourceManager().hasDataSource( "lucene-index" ) )
-        {
-            config.getTxModule().getXaDataSourceManager().unregisterDataSource( "lucene-index" );
-        }
-
         started = true;
         return Collections.unmodifiableMap( params );
     }
