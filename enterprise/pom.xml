@@ -1,0 +1,66 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>parent-pom</artifactId>
+    <groupId>org.neo4j</groupId>
+    <version>7-SNAPSHOT</version>
+  </parent>
+  <groupId>org.neo4j</groupId>
+  <artifactId>neo4j-lucene-index</artifactId>
+  <name>Neo4j - Lucene Index</name>
+  <version>0.1-SNAPSHOT</version>
+  
+  <properties>
+    <bundle.namespace>org.neo4j.index</bundle.namespace>
+    <short-name>lucene-index</short-name>
+  </properties>
+
+  <packaging>bundle</packaging>
+
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/laboratory/components/${short-name}/trunk/</connection>
+    <url>https://trac.neo4j.org/browser/components/${short-name}</url>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>mattias</id>
+      <name>Mattias Persson</name>
+      <email>mattias [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
+  
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.2-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-shell</artifactId>
+      <version>1.2-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>3.0.1</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>-Xmx300m</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
