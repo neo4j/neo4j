@@ -152,7 +152,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 {
                     for ( SlaveContext tx : entry.getValue() )
                     {
-                        ((MasterImpl) realMaster).rollbackOngoingTransaction( tx );
+                        realMaster.finishTransaction( tx );
                     }
                 }
                 channelsToRemove.add( entry.getKey() );
