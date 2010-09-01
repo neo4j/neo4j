@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.transaction.Status;
@@ -57,7 +57,7 @@ public class LockReleaser
     private NodeManager nodeManager;
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
-    private PropertyIndexManager propertyIndexManager; 
+    private PropertyIndexManager propertyIndexManager;
     
     private static class PrimitiveElement
     {
@@ -165,9 +165,9 @@ public class LockReleaser
             lockElements = new ArrayList<LockElement>();
             lockMap.put( tx, lockElements );
             lockElements.add( new LockElement( resource, type ) );
-            // we have to have a syncrhonization hook for read only transaction,
+            // we have to have a synchronization hook for read only transaction,
             // write locks can be taken in read only transactions (ex: 
-            // transactions that peform write operations that cancel each other
+            // transactions that perform write operations that cancel each other
             // out). This sync hook will only release locks if they exist and 
             // tx was read only
             try
@@ -319,6 +319,12 @@ public class LockReleaser
         releaseLocks( tx );
     }
     
+    public boolean hasLocks( Transaction tx )
+    {
+        List<LockElement> lockElements = lockMap.get( tx );
+        return lockElements != null && !lockElements.isEmpty();
+    }
+    
     void releaseLocks( Transaction tx )
     {
         List<LockElement> lockElements = lockMap.remove( tx );
@@ -345,6 +351,7 @@ public class LockReleaser
                         lockElement.resource + "]" );
                 }
             }
+            System.out.println( "released some locks for " + tx );
         }
     }
 

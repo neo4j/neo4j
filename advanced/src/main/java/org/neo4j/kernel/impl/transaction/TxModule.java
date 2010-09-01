@@ -47,7 +47,7 @@ public class TxModule
     private final XaDataSourceManager xaDsManager;
     private final KernelPanicEventGenerator kpe;
 
-    public TxModule( String txLogDir, KernelPanicEventGenerator kpe, TxRollbackHook rollbackHook )
+    public TxModule( String txLogDir, KernelPanicEventGenerator kpe, TxFinishHook rollbackHook )
     {
         this.txLogDir = txLogDir;
         this.kpe = kpe;
