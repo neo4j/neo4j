@@ -69,7 +69,6 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 writeSlaveContext( buffer, slaveContext );
             }
             serializer.write( buffer );
-            System.out.println( "Sending request to master: " + type + ", " + slaveContext );
             Channel channel = getChannel();
             channel.write( buffer );
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
@@ -80,9 +79,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             {
                 throw new HaCommunicationException( "Channel has been closed" );
             }
-            System.out.println( "Got back response from master: " + type + ", " + slaveContext );
             T response = deserializer.read( message );
-            System.out.println( "...with response object " + response );
             TransactionStreams txStreams = type.includesSlaveContext() ?
                     readTransactionStreams( message ) : TransactionStreams.EMPTY;
             return new Response<T>( response, txStreams );
@@ -125,7 +122,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         }
     }
 
-    private void releaseChannel()
+   private void releaseChannel()
     {
         // Release channel for this thread
         synchronized ( channels )
@@ -139,7 +136,6 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 }
                 else
                 {
-                    new Exception( "close channel " + channel ).printStackTrace();
                     channel.close();
                 }
             }
@@ -281,13 +277,11 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         {
             for ( Channel channel : unusedChannels )
             {
-                new Exception( "close unused channel in shutdown " + channel ).printStackTrace();
                 channel.close();
             }
             
             for ( Channel channel : channels.values() )
             {
-                new Exception( "close channel in shutdown " + channel ).printStackTrace();
                 channel.close();
             }
         }
