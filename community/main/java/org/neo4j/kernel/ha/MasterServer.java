@@ -3,10 +3,12 @@ package org.neo4j.kernel.ha;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,7 +46,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     private final Master realMaster;
     private final ChannelGroup channelGroup;
     private final ScheduledExecutorService deadConnectionsPoller;
-    private final Map<Channel, Set<SlaveContext>> ongoingTransactions =
+    private final Map<Channel, Set<SlaveContext>> connectedSlaveChannels =
             new HashMap<Channel, Set<SlaveContext>>();
 
     public MasterServer( Master realMaster, final int port )
@@ -71,7 +73,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         {
             public void run()
             {
-                checkForDeadConnections();
+                checkForDeadChannels();
             }
         }, DEAD_CONNECTIONS_CHECK_INTERVAL, DEAD_CONNECTIONS_CHECK_INTERVAL, TimeUnit.SECONDS );
     }
@@ -121,13 +123,13 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             return;
         }
         
-        synchronized ( ongoingTransactions )
+        synchronized ( connectedSlaveChannels )
         {
-            Set<SlaveContext> txs = ongoingTransactions.get( channel );
+            Set<SlaveContext> txs = connectedSlaveChannels.get( channel );
             if ( txs == null )
             {
                 txs = new HashSet<SlaveContext>();
-                ongoingTransactions.put( channel, txs );
+                connectedSlaveChannels.put( channel, txs );
             }
             txs.add( slave );
         }
@@ -141,12 +143,12 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         channelFactory.releaseExternalResources();
     }
 
-    private void checkForDeadConnections()
+    private void checkForDeadChannels()
     {
-        synchronized ( ongoingTransactions )
+        synchronized ( connectedSlaveChannels )
         {
             Collection<Channel> channelsToRemove = new ArrayList<Channel>();
-            for ( Map.Entry<Channel, Set<SlaveContext>> entry : ongoingTransactions.entrySet() )
+            for ( Map.Entry<Channel, Set<SlaveContext>> entry : connectedSlaveChannels.entrySet() )
             {
                 if ( channelIsClosed( entry.getKey() ) )
                 {
@@ -159,9 +161,14 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             }
             for ( Channel channel : channelsToRemove )
             {
-                ongoingTransactions.remove( channel );
+                connectedSlaveChannels.remove( channel );
             }
         }
+    }
+    
+    private boolean channelIsClosed( Channel channel )
+    {
+        return channel.isConnected() && channel.isOpen();
     }
     
     // =====================================================================
@@ -169,18 +176,32 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     // but exposed so that other tools can reach that information.
     // =====================================================================
     
-    private boolean channelIsClosed( Channel channel )
+    public Map<Integer, Collection<SlaveContext>> getSlaveInformation()
     {
-        return channel.isConnected() && channel.isOpen();
-    }
-
-    /**
-     * Returns pairs of:
-     * key: machine ID
-     * value: collection of ongoing transaction event identifiers
-     */
-    public Map<Integer, Collection<SlaveContext>> getOngoingTransactions()
-    {
-        return ((MasterImpl) realMaster).getOngoingTransactions();
+        // Which slaves are connected a.t.m?
+        Set<Integer> machineIds = new HashSet<Integer>();
+        synchronized ( connectedSlaveChannels )
+        {
+            for ( Collection<SlaveContext> contextSet : this.connectedSlaveChannels.values() )
+            {
+                for ( SlaveContext context : contextSet )
+                {
+                    machineIds.add( context.machineId() );
+                }
+            }
+        }
+        
+        // Insert missing slaves into the map so that all connected slave
+        // are in the returned map
+        Map<Integer, Collection<SlaveContext>> ongoingTransactions =
+                ((MasterImpl) realMaster).getOngoingTransactions();
+        for ( Integer machineId : machineIds )
+        {
+            if ( !ongoingTransactions.containsKey( machineId ) )
+            {
+                ongoingTransactions.put( machineId, Collections.<SlaveContext>emptyList() );
+            }
+        }
+        return new TreeMap<Integer, Collection<SlaveContext>>( ongoingTransactions );
     }
 }
