@@ -71,11 +71,11 @@ public class PerformanceTests
         if ( doTest( "FULL_HA" ) )
         {
             MultiJvmWithZooKeeperTesting multiZoo = new MultiJvmWithZooKeeperTesting();
-            MultiJvmWithZooKeeperTesting.startZooKeeperCluster();
+            multiZoo.startZooKeeperCluster();
             multiZoo.initializeDbs( 1 );
             time( "Multi JVM HA with ZooKeeper", executeOnSlave( multiZoo, job ) );
             multiZoo.shutdownDbs();
-            MultiJvmWithZooKeeperTesting.shutdownZooKeeperCluster();
+            multiZoo.shutdownZooKeeperCluster();
         }
     }
 

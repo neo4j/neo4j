@@ -8,6 +8,8 @@ public interface Broker
     
     Master getMaster();
     
+    int getMasterMachineId();
+    
     void setLastCommittedTxId( long txId );
     
     boolean thisIsMaster();

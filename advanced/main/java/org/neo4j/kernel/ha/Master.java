@@ -26,4 +26,6 @@ public interface Master
     Response<Void> finishTransaction( SlaveContext context );
     
     Response<Void> pullUpdates( SlaveContext context );
+    
+    int getMasterIdForCommittedTx( long txId );
 }

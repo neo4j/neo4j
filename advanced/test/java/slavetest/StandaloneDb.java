@@ -61,8 +61,9 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
             {
                 boolean isMaster = args.getBoolean( "master", false ).booleanValue();
                 tempMachineId = args.getNumber( "id", null ).intValue();
-                AbstractBroker broker = isMaster ? new FakeMasterBroker() :
-                        new FakeSlaveBroker();
+                Number masterId = args.getNumber( "master-id", null );
+                AbstractBroker broker = isMaster ? new FakeMasterBroker( tempMachineId ) :
+                        new FakeSlaveBroker( masterId.intValue(), tempMachineId );
                 haDb = new HighlyAvailableGraphDatabase( storeDir, MapUtil.stringMap(
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + tempMachineId,
                         "index", args.get( "index", null ) ),
@@ -124,7 +125,9 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
     {
         println( "Shutdown initiated" );
         this.location.unbind( this );
+        println( "shutdown 1" );
         this.db.shutdown();
+        println( "shutdown 1" );
         this.shutdown = true;
         println( "Shutdown done" );
         try

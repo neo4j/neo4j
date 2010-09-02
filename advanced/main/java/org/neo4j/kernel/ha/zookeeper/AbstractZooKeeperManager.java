@@ -79,7 +79,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         Machine master = null;
         int lowestSeq = Integer.MAX_VALUE;
         long highestTxId = -1;
-        for ( Machine info : getAllMachines().values() )
+        for ( Machine info : machines )
         {
             debugData.put( info.getMachineId(),
                     new Pair<Long, Integer>( info.getLatestTxId(), info.getSequenceId() ) );

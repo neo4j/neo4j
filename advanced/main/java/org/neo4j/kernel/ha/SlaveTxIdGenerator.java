@@ -71,4 +71,9 @@ public class SlaveTxIdGenerator implements TxIdGenerator
             throw e;
         }
     }
+
+    public int getCurrentMasterId()
+    {
+        return this.broker.getMasterMachineId();
+    }
 }

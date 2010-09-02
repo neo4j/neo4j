@@ -335,6 +335,20 @@ public class MasterImpl implements Master
         return packResponse( context, null, ALL );
     }
 
+    public int getMasterIdForCommittedTx( long txId )
+    {
+        try
+        {
+            XaDataSource nioneoDataSource = graphDbConfig.getTxModule()
+                    .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+            return nioneoDataSource.getMasterForCommittedTx( nioneoDataSource.getLastCommittedTxId() );
+        }
+        catch ( IOException e )
+        {
+            return -1;
+        }
+    }
+    
     private static interface LockGrabber
     {
         void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity );

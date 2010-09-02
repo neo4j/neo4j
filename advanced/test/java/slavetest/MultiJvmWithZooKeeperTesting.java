@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.ClusterManager;
 
@@ -24,10 +24,9 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     
     private ClusterManager zooKeeperMasterFetcher;
     private Map<Integer, StandaloneDbCom> jvmByMachineId;
-//    private String haServersConfig;
     
-    @BeforeClass
-    public static void startZooKeeperCluster() throws Exception
+    @Before
+    public void startZooKeeperCluster() throws Exception
     {
         FileUtils.deleteDirectory( BASE_ZOO_KEEPER_DATA_DIR );
         zooKeeperCluster = new LocalZooKeeperCluster( ZOO_KEEPER_CLUSTER_SIZE,
@@ -41,7 +40,6 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     protected void initializeDbs( int numSlaves, Map<String,String> config ) throws Exception
     {
         this.jvmByMachineId = new HashMap<Integer, StandaloneDbCom>();
-//        haServersConfig = buildHaServersConfigValue( numSlaves+1 );
         super.initializeDbs( numSlaves, config );
         zooKeeperMasterFetcher = new ClusterManager(
                 buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ) );
@@ -89,16 +87,9 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
         return jvmByMachineId.get( masterMachineId ).executeJob( job );
     }
     
-    @AfterClass
-    public static void shutdownZooKeeperCluster()
+    @After
+    public void shutdownZooKeeperCluster()
     {
         zooKeeperCluster.shutdown();
-    }
-    
-    @Override
-    public void slaveCreateNode() throws Exception
-    {
-        // TODO Mattias Persson: Implement slaveCreateNode (26 aug 2010)
-        super.slaveCreateNode();
     }
 }

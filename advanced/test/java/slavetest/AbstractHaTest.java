@@ -339,6 +339,7 @@ public abstract class AbstractHaTest
         setExpectedResults( 3, 2, 2, 2, 0, 0 );
         initializeDbs( 1 );
         executeJob( new CommonJobs.CreateSomeEntitiesJob(), 0 );
+        System.out.println( "Test done" );
     }
     
     @Test

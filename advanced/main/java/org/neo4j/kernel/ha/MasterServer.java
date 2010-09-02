@@ -138,9 +138,13 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     public void shutdown()
     {
         // Close all open connections
+        System.out.println( "MasterServer.shutdown 1" );
         deadConnectionsPoller.shutdown();
+        System.out.println( "MasterServer.shutdown 2" );
         channelGroup.close().awaitUninterruptibly();
-        channelFactory.releaseExternalResources();
+        System.out.println( "MasterServer.shutdown 3" );
+//        channelFactory.releaseExternalResources();
+        System.out.println( "MasterServer.shutdown 4" );
     }
 
     private void checkForDeadChannels()
