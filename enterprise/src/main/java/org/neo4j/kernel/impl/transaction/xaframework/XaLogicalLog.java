@@ -342,7 +342,7 @@ public class XaLogicalLog
     }
     
     // [TX_1P_COMMIT][identifier]
-    public synchronized void commitOnePhase( int identifier, long txId )
+    public synchronized void commitOnePhase( int identifier, long txId, int masterId )
         throws XAException
     {
         assert xidIdentMap.get( identifier ) != null;
@@ -350,7 +350,7 @@ public class XaLogicalLog
         try
         {
             writeBuffer.put( LogEntry.TX_1P_COMMIT ).putInt( 
-                identifier ).putLong( txId );
+                identifier ).putLong( txId ).putInt( masterId );
             writeBuffer.force();
         }
         catch ( IOException e )
@@ -392,7 +392,7 @@ public class XaLogicalLog
     }
 
     // [TX_2P_COMMIT][identifier]
-    public synchronized void commitTwoPhase( int identifier, long txId ) 
+    public synchronized void commitTwoPhase( int identifier, long txId, int masterId ) 
         throws XAException
     {
         assert xidIdentMap.get( identifier ) != null;
@@ -400,7 +400,7 @@ public class XaLogicalLog
         try
         {
             writeBuffer.put( LogEntry.TX_2P_COMMIT ).putInt( 
-                identifier ).putLong( txId );
+                identifier ).putLong( txId ).putInt( masterId );
             writeBuffer.force();
         }
         catch ( IOException e )
@@ -1046,6 +1046,39 @@ public class XaLogicalLog
         return result;
     }
 
+    public synchronized int getMasterIdForCommittedTransaction( long txId ) throws IOException
+    {
+        // TODO: implement this if tx already extracted
+//        String name = fileName + ".tx_" + txId;
+//        File txFile = new File( name );
+//        if ( txFile.exists() )
+//        {
+//
+//        }
+
+        long version = findLogContainingTxId( txId );
+        System.out.println( "Found txId:" + txId + " in log version:" + version );
+        if ( version == -1 )
+        {
+            throw new RuntimeException( "txId:" + txId + " not found in any logical log " +
+                    "(starting at " + logVersion + " and searching backwards" );
+        }
+        
+        // extract transaction
+        ReadableByteChannel log = getLogicalLogOrMyself( version );
+        List<LogEntry> logEntryList = 
+            extractTransactionFromLog( txId, version, log );
+        for ( LogEntry entry : logEntryList )
+        {
+            if ( entry instanceof LogEntry.Commit )
+            {
+                return ((LogEntry.Commit) entry).getMasterId();
+            }
+        }
+        throw new RuntimeException( "Unable to find commit entry in for txId[" + 
+                txId + "] in log[" + version + "]" );
+    }
+    
     private ReadableByteChannel getLogicalLogOrMyself( long version ) throws IOException
     {
         if ( version < logVersion )
@@ -1208,7 +1241,7 @@ public class XaLogicalLog
     }
 
     public synchronized void applyTransactionWithoutTxId( ReadableByteChannel byteChannel, 
-            long nextTxId ) throws IOException
+            long nextTxId, int masterId ) throws IOException
     {
         if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
         {
@@ -1235,7 +1268,7 @@ public class XaLogicalLog
         }
 //        System.out.println( "applyTxWithoutTxId#before 1PC @ pos: " + writeBuffer.getFileChannelPosition() );
         LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit( 
-                xidIdent, nextTxId );
+                xidIdent, nextTxId, masterId );
         LogIoUtils.writeLogEntry( commit, writeBuffer );
         Xid xid = entry.getXid();
         try

@@ -404,9 +404,10 @@ public class XaResourceManager
                     
                     long txId = txIdGenerator.generate( dataSource,
                             xaTransaction.getIdentifier() );
+                    int masterId = txIdGenerator.getCurrentMasterId();
                     xaTransaction.setCommitTxId( txId );
                     log.commitOnePhase( xaTransaction.getIdentifier(), 
-                            xaTransaction.getCommitTxId() );
+                            xaTransaction.getCommitTxId(), masterId );
                 }
             }
             txStatus.markAsPrepared();
@@ -424,9 +425,10 @@ public class XaResourceManager
                 {
                     long txId = txIdGenerator.generate( dataSource,
                             xaTransaction.getIdentifier() );
+                    int masterId = txIdGenerator.getCurrentMasterId();
                     xaTransaction.setCommitTxId( txId );
                     log.commitTwoPhase( xaTransaction.getIdentifier(),
-                            xaTransaction.getCommitTxId() );
+                            xaTransaction.getCommitTxId(), masterId );
                 }
             }
             txStatus.markCommitStarted();
@@ -680,7 +682,8 @@ public class XaResourceManager
             ReadableByteChannel transaction ) throws IOException
     {
         long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
-        log.applyTransactionWithoutTxId( transaction, txId );
+        int masterId = TxIdGenerator.DEFAULT.getCurrentMasterId();
+        log.applyTransactionWithoutTxId( transaction, txId, masterId );
         return txId;
     }
 }
