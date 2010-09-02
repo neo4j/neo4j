@@ -71,7 +71,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         {
             public void run()
             {
-//                checkForDeadConnections();
+                checkForDeadConnections();
             }
         }, DEAD_CONNECTIONS_CHECK_INTERVAL, DEAD_CONNECTIONS_CHECK_INTERVAL, TimeUnit.SECONDS );
     }

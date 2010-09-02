@@ -381,6 +381,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
     
+    // This whole thing with instantiating indexes internally depending on config
+    // is obviously temporary
     private void instantiateIndexIfNeeded()
     {
         if ( Boolean.parseBoolean( config.get( "index" ) ) )
@@ -511,7 +513,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             txs[i++] = new Pair<String, Long>( 
                     dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
-//        int eventIdentifier = ((TxManager) localGraph.getConfig().getTxModule().getTxManager()).getEventIdentifier();
         return new SlaveContext( machineId, eventIdentifier, txs );
     }
 
