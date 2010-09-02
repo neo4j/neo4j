@@ -242,6 +242,17 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     {
         return sendRequest( RequestType.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
+    
+    public int getMasterIdForCommittedTx( final long txId )
+    {
+        return sendRequest( RequestType.GET_MASTER_ID_FOR_TX, null, new Serializer()
+        {
+            public void write( ChannelBuffer buffer ) throws IOException
+            {
+                buffer.writeLong( txId );
+            }
+        }, INTEGER_DESERIALIZER ).response();
+    }
 
     public ChannelPipeline getPipeline() throws Exception
     {

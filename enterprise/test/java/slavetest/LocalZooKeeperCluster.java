@@ -55,7 +55,7 @@ public class LocalZooKeeperCluster
     {
         try
         {
-            Thread.sleep( 10000 );
+            Thread.sleep( 50000 );
         }
         catch ( InterruptedException e )
         {

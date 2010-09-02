@@ -95,7 +95,8 @@ public class MultiJvmTesting extends AbstractHaTest
                 StandaloneDb.class.getName(),
                 "-path", path.getAbsolutePath(),
                 "-port", "" + port,
-                "-id", "" + machineId ) );
+                "-id", "" + machineId,
+                "-master-id", "0" ) );
         list.addAll( Arrays.asList( extraArgs ) );
         Runtime.getRuntime().exec( list.toArray( new String[list.size()] ) );
         StandaloneDbCom result = null;
