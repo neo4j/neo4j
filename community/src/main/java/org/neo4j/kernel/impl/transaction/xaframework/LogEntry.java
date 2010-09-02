@@ -93,24 +93,31 @@ public abstract class LogEntry
     public static abstract class Commit extends LogEntry
     {
         private final long txId;
+        private final int masterId;
         
-        Commit( int identifier, long txId )
+        Commit( int identifier, long txId, int masterId )
         {
             super( identifier );
             this.txId = txId;
+            this.masterId = masterId;
         }
         
         public long getTxId()
         {
             return txId;
         }
+        
+        public int getMasterId()
+        {
+            return masterId;
+        }
     }
     
     public static class OnePhaseCommit extends Commit
     {
-        OnePhaseCommit( int identifier, long txId )
+        OnePhaseCommit( int identifier, long txId, int masterId )
         {
-            super( identifier, txId );
+            super( identifier, txId, masterId );
         }
         
         public String toString()
@@ -134,9 +141,9 @@ public abstract class LogEntry
 
     public static class TwoPhaseCommit extends Commit
     {
-        TwoPhaseCommit( int identifier, long txId )
+        TwoPhaseCommit( int identifier, long txId, int masterId )
         {
-            super( identifier, txId );
+            super( identifier, txId, masterId );
         }
         
         public String toString()

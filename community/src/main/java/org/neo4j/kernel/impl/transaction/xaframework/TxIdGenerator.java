@@ -8,7 +8,14 @@ public interface TxIdGenerator
         {
             return dataSource.getLastCommittedTxId() + 1;
         }
+        
+        public int getCurrentMasterId()
+        {
+            throw new RuntimeException( "implement this" );
+        }
     };
     
     long generate( XaDataSource dataSource, int identifier );
+    
+    int getCurrentMasterId();
 }

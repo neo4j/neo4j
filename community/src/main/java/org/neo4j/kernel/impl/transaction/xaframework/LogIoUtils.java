@@ -88,7 +88,7 @@ public class LogIoUtils
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         return new LogEntry.OnePhaseCommit( readNextInt( buf, channel ),
-                readNextLong( buf, channel ) );
+                readNextLong( buf, channel ), readNextInt( buf, channel ) );
     }
     
     private static LogEntry.Done readTxDoneEntry( ByteBuffer buf, 
@@ -101,7 +101,7 @@ public class LogIoUtils
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         return new LogEntry.TwoPhaseCommit( readNextInt( buf, channel ),
-                readNextLong( buf, channel ) );
+                readNextLong( buf, channel ), readNextInt( buf, channel ) );
     }
     
     private static LogEntry.Command readTxCommandEntry( 
@@ -144,9 +144,10 @@ public class LogIoUtils
         }
         else if ( entry instanceof LogEntry.OnePhaseCommit )
         {
+            LogEntry.Commit commit = (LogEntry.Commit) entry;
             buffer.put( LogEntry.TX_1P_COMMIT ).putInt( 
-                    entry.getIdentifier() ).putLong( 
-                            ((LogEntry.Commit) entry).getTxId() );
+                    commit.getIdentifier() ).putLong( 
+                            commit.getTxId() ).putInt( commit.getMasterId() );
         }
         else if ( entry instanceof LogEntry.Prepare )
         {
@@ -154,9 +155,10 @@ public class LogIoUtils
         }
         else if ( entry instanceof LogEntry.TwoPhaseCommit )
         {
+            LogEntry.Commit commit = (LogEntry.Commit) entry;
             buffer.put( LogEntry.TX_2P_COMMIT ).putInt( 
-                    entry.getIdentifier() ).putLong( 
-                            ((LogEntry.Commit) entry).getTxId() );
+                    commit.getIdentifier() ).putLong( 
+                            commit.getTxId() ).putInt( commit.getMasterId() );
         }
     }
 

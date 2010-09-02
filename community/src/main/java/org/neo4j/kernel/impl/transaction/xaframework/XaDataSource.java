@@ -378,4 +378,9 @@ public abstract class XaDataSource
     {
         throw new UnsupportedOperationException();
     }
+    
+    public int getMasterForCommittedTx( long txId ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
 }

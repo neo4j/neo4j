@@ -112,4 +112,10 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     {
         return logicalLog.getPreparedTransaction( identifier );
     }
+
+    @Override
+    public int getMasterForCommittedTx( long txId ) throws IOException
+    {
+        return logicalLog.getMasterIdForCommittedTransaction( txId );
+    }
 }
