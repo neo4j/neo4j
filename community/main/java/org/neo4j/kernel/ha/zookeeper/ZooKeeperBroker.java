@@ -15,6 +15,7 @@ public class ZooKeeperBroker implements Broker
     private final int machineId;
     private final String haServer;
     private MasterClient masterClient;
+    private Machine master;
     
     public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
             String haServer, ResponseReceiver receiver )
@@ -42,18 +43,30 @@ public class ZooKeeperBroker implements Broker
             return masterClient;
         }
         
-        Machine master = zooClient.getMaster();
+        master = zooClient.getMaster();
         if ( master != null && master.getMachineId() == machineId )
         {
             throw new ZooKeeperException( "I am master, so can't call getMaster() here",
                     new Exception() );
         }
         invalidateMaster();
-        createMaster( master );
+        connectToMaster( master );
         return masterClient;
     }
+    
+    public int getMasterMachineId()
+    {
+        // Just to make sure it has gotten it
+        getMaster();
+        
+        if ( master == null )
+        {
+            throw new IllegalStateException( "No master elected" );
+        }
+        return master.getMachineId();
+    }
 
-    private void createMaster( Machine machine )
+    private void connectToMaster( Machine machine )
     {
         Pair<String, Integer> host = machine != null ? machine.getServer() :
                 new Pair<String, Integer>( null, -1 );
@@ -73,8 +86,7 @@ public class ZooKeeperBroker implements Broker
     
     public boolean thisIsMaster()
     {
-        Machine master = zooClient.getMaster();
-        return master != null && master.getMachineId() == machineId;
+        return zooClient.getMaster().getMachineId() == this.machineId;
     }
     
     public int getMyMachineId()

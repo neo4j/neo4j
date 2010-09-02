@@ -30,8 +30,10 @@ import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.ha.HaCommunicationException;
+import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
+import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.Response;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.ha.SlaveContext;
@@ -42,7 +44,6 @@ import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.TransactionStream;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
-import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -84,47 +85,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
     {
-//        config = makeDbCopyIfNoRecreationStrategySpecified( storeDir, config );
         this.storeDir = storeDir;
         this.config = config;
-        assertIWasntMasterWhenShutDown();
         this.brokerFactory = defaultBrokerFactory( storeDir, config );
         this.machineId = getMachineIdFromConfig( config );
         this.broker = brokerFactory.create( storeDir, config );
         reevaluateMyself();
     }
-
-//    /**
-//     * This is juuust for small data sets and should only be used when testing
-//     * it out. Ease of use on a n00b level.
-//     */
-//    private Map<String, String> makeDbCopyIfNoRecreationStrategySpecified( String storeDir,
-//            Map<String, String> config )
-//    {
-//        if ( config.containsKey( CONFIG_KEY_HA_SKELETON_DB_PATH ) ||
-//                !new File( storeDir ).exists() )
-//        {
-//            return config;
-//        }
-//        
-//        try
-//        {
-//            File tmpFile = File.createTempFile( "test", "test" );
-//            File tmpDir = tmpFile.getParentFile();
-//            tmpFile.delete();
-//            
-//            File tmpDbDir = new File( tmpDir, "hadb-" + System.currentTimeMillis() );
-//            FileUtils.copyDirectory( new File( storeDir ), tmpDbDir );
-//            Map<String, String> result = new HashMap<String, String>( config );
-//            result.put( CONFIG_KEY_HA_SKELETON_DB_PATH, tmpDbDir.getAbsolutePath() );
-//            System.out.println( "Made a tmp copy to " + tmpDbDir.getAbsolutePath() );
-//            return result;
-//        }
-//        catch ( IOException e )
-//        {
-//            throw new RuntimeException( e );
-//        }
-//    }
 
     /**
      * Only for testing
@@ -223,12 +190,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             boolean brokerSaysIAmMaster = brokerSaysIAmMaster();
             boolean iAmCurrentlyMaster = masterServer != null;
             boolean restarted = false;
+            
+            if ( brokerSaysIAmMaster != iAmCurrentlyMaster )
+            {
+                internalShutdown();
+            }
+            
             if ( brokerSaysIAmMaster )
             {
-                if ( !iAmCurrentlyMaster )
-                {
-                    internalShutdown();
-                }
                 if ( this.localGraph == null )
                 {
                     startAsMaster();
@@ -237,10 +206,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             }
             else
             {
-                if ( iAmCurrentlyMaster )
-                {
-                    internalShutdown();
-                }
                 if ( this.localGraph == null )
                 {
                     startAsSlave();
@@ -250,7 +215,17 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             
             if ( restarted )
             {
-                dbGotRestarted();
+                for ( TransactionEventHandler<?> handler : transactionEventHandlers )
+                {
+                    this.localGraph.registerTransactionEventHandler( handler );
+                }
+                for ( KernelEventHandler handler : kernelEventHandlers )
+                {
+                    this.localGraph.registerKernelEventHandler( handler );
+                }
+                this.localDataSourceManager =
+                        localGraph.getConfig().getTxModule().getXaDataSourceManager();
+                tryToEnsureIAmNotABrokenMachine();
             }
         }
         finally
@@ -261,7 +236,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private void startAsSlave()
     {
-        assertIWasntMasterWhenShutDown();
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 new SlaveLockManagerFactory( broker, this ),
                 new SlaveIdGeneratorFactory( broker, this ),
@@ -269,71 +243,85 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new SlaveTxIdGeneratorFactory( broker, this ),
                 new SlaveTxRollbackHook( broker, this ),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
-        graphDbStarted();
         instantiateIndexIfNeeded();
         instantiateAutoUpdatePullerIfConfigSaysSo();
     }
 
-    private void graphDbStarted()
-    {
-        for ( TransactionEventHandler<?> handler : transactionEventHandlers )
-        {
-            this.localGraph.registerTransactionEventHandler( handler );
-        }
-        for ( KernelEventHandler handler : kernelEventHandlers )
-        {
-            this.localGraph.registerKernelEventHandler( handler );
-        }
-    }
-
     private void startAsMaster()
     {
-        assertIWasntMasterWhenShutDown();
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 CommonFactories.defaultLockManagerFactory(),
                 new MasterIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
-                CommonFactories.defaultTxIdGeneratorFactory(),
+                new MasterTxIdGeneratorFactory( broker ),
                 CommonFactories.defaultTxFinishHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
-        graphDbStarted();
-        markThatIAmMaster();
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         instantiateIndexIfNeeded();
     }
     
-    private File getMasterMarkFile()
+    private void tryToEnsureIAmNotABrokenMachine()
     {
-        return new File( storeDir, "i-am-master" );
-    }
-
-    private void markThatIAmMaster()
-    {
-        File file = getMasterMarkFile();
+//        ClusterManager cluster = null;
+//        MasterClient client = null;
         try
         {
-            file.createNewFile();
+            if ( broker.thisIsMaster() )
+            {
+                return;
+            }
+            
+            // Get the master id I have for my latest commit
+            XaDataSource nioneoDataSource = this.localGraph.getConfig().getTxModule()
+                    .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+            long lastCommittedTx = nioneoDataSource.getLastCommittedTxId();
+            int masterForMyLastCommittedTx = nioneoDataSource.getMasterForCommittedTx( lastCommittedTx );
+            
+            // Ask zoo keeper who is master a.t.m.
+//            cluster = new ClusterManager( getZooKeeperServersFromConfig( config ) );
+//            Machine currentMaster = cluster.getMaster();
+            
+            // Ask the master for the master id for my latest commit
+//            client = new MasterClient( currentMaster.getServer().first(),
+//                    currentMaster.getServer().other() );
+            Master master = broker.getMaster();
+            int masterForMastersLastCommittedTx = master.getMasterIdForCommittedTx( machineId );
+            
+            // Compare those two, if equal -> good, start up as usual
+            if ( masterForMastersLastCommittedTx == masterForMyLastCommittedTx )
+            {
+                broker.setLastCommittedTxId( lastCommittedTx );
+                return;
+            }
+            // else -> recreate / destroy db
+            else
+            {
+                if ( !recreateDbSomehow() )
+                {
+                    throw new RuntimeException( "I was master the previous session, " +
+                            "so can't start up in this state (and no method specified how " +
+                            "I should replicate from another DB)" ); 
+                }
+            }
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
+//        finally
+//        {
+//            if ( client != null )
+//            {
+//                client.shutdown();
+//            }
+//            if ( cluster != null )
+//            {
+//                cluster.shutdown();
+//            }
+//        }
     }
     
-    private void assertIWasntMasterWhenShutDown()
-    {
-        if ( getMasterMarkFile().exists() )
-        {
-            if ( !recreateDb() )
-            {
-                throw new RuntimeException( "I was master the previous session, " +
-                        "so can't start up in this state (and no method specified how " +
-                        "I should replicate from another DB" ); 
-            }
-        }
-    }
-    
-    private boolean recreateDb()
+    private boolean recreateDbSomehow()
     {
         // This is temporary and shouldn't be used in production, but the
         // functionality is the same: I come to the conclusion that this db
@@ -354,14 +342,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             return true;
         }
         return false;
-    }
-
-    private void dbGotRestarted()
-    {
-        this.localDataSourceManager =
-            localGraph.getConfig().getTxModule().getXaDataSourceManager();
-        NeoStoreUtil store = new NeoStoreUtil( storeDir );
-        broker.setLastCommittedTxId( store.getLastCommittedTx() );
     }
 
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
@@ -460,23 +440,31 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         System.out.println( "Internal shutdown of HA db " + this );
         if ( this.updatePuller != null )
         {
+            System.out.println( "Internal shutdown updatePuller" );
             this.updatePuller.shutdown();
+            System.out.println( "Internal shutdown updatePuller DONE" );
             this.updatePuller = null;
         }
         if ( this.masterServer != null )
         {
+            System.out.println( "Internal shutdown masterServer" );
             this.masterServer.shutdown();
+            System.out.println( "Internal shutdown masterServer DONE" );
             this.masterServer = null;
         }
         if ( this.localIndexService != null )
         {
+            System.out.println( "Internal shutdown index" );
             this.localIndexService.shutdown();
+            System.out.println( "Internal shutdown index DONE" );
             this.localIndexService = null;
             this.localIndexProvider = null;
         }
         if ( this.localGraph != null )
         {
+            System.out.println( "Internal shutdown localGraph" );
             this.localGraph.shutdown();
+            System.out.println( "Internal shutdown localGraph DONE" );
             this.localGraph = null;
             this.localDataSourceManager = null;
         }
@@ -489,6 +477,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             this.broker.shutdown();
         }
         internalShutdown();
+        System.out.println( "Shutdown sucessful" );
     }
 
     public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )

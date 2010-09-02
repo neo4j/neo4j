@@ -64,6 +64,13 @@ abstract class CommunicationProtocol
                     status );
         }
     };
+    protected static final Deserializer<Integer> INTEGER_DESERIALIZER = new Deserializer<Integer>()
+    {
+        public Integer read( ChannelBuffer buffer ) throws IOException
+        {
+            return buffer.readInt();
+        }
+    };
     protected static final Deserializer<Void> VOID_DESERIALIZER = new Deserializer<Void>()
     {
         public Void read( ChannelBuffer buffer ) throws IOException
@@ -169,7 +176,16 @@ abstract class CommunicationProtocol
             {
                 return master.finishTransaction( context );
             }
-        }, VOID_SERIALIZER );
+        }, VOID_SERIALIZER ),
+        GET_MASTER_ID_FOR_TX( new MasterCaller<Integer>()
+        {
+            public Response<Integer> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input )
+            {
+                int masterId = master.getMasterIdForCommittedTx( input.readLong() );
+                return Response.wrapResponseObjectOnly( masterId );
+            }
+        }, INTEGER_SERIALIZER, false );
 
         @SuppressWarnings( "unchecked" )
         final MasterCaller caller;
