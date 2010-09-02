@@ -22,12 +22,16 @@ public class Hainfo extends GraphDatabaseApp
         if ( master != null )
         {
             out.println( "Connected slaves:" );
-            for ( Map.Entry<Integer, Collection<SlaveContext>> entry : master.getOngoingTransactions().entrySet() )
+            for ( Map.Entry<Integer, Collection<SlaveContext>> entry :
+                    master.getSlaveInformation().entrySet() )
             {
-                out.println( "\tMachine ID: " + entry.getKey() );
-                if ( entry.getValue() != null && !entry.getValue().isEmpty() )
+                out.println( "\tMachine ID " + entry.getKey() );
+                if ( entry.getValue() != null )
                 {
-                    out.println( "\t\tOngoing transactions: " + entry.getValue() );
+                    for ( SlaveContext tx : entry.getValue() )
+                    {
+                        out.println( "\t\tRunning tx: " + tx );
+                    }
                 }
             }
         }
