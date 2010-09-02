@@ -188,7 +188,6 @@ public abstract class AbstractHaTest
                 otherKeys.add( key );
             }
         }
-        System.out.println( "found indexing " + otherKeys );
         count = otherKeys.size();
         
         for ( String key : node.getPropertyKeys() )
@@ -339,7 +338,6 @@ public abstract class AbstractHaTest
         setExpectedResults( 3, 2, 2, 2, 0, 0 );
         initializeDbs( 1 );
         executeJob( new CommonJobs.CreateSomeEntitiesJob(), 0 );
-        System.out.println( "Test done" );
     }
     
     @Test
