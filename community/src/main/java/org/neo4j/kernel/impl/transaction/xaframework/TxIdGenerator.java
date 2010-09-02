@@ -11,7 +11,7 @@ public interface TxIdGenerator
         
         public int getCurrentMasterId()
         {
-            throw new RuntimeException( "implement this" );
+            return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
         }
     };
     
