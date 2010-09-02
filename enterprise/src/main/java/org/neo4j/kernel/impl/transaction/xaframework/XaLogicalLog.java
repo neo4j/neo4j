@@ -1045,9 +1045,16 @@ public class XaLogicalLog
         ReadableByteChannel result = new RandomAccessFile( name, "r" ).getChannel();
         return result;
     }
+    
+    public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
 
     public synchronized int getMasterIdForCommittedTransaction( long txId ) throws IOException
     {
+        if ( txId == 1 )
+        {
+            return MASTER_ID_REPRESENTING_NO_MASTER;
+        }
+        
         // TODO: implement this if tx already extracted
 //        String name = fileName + ".tx_" + txId;
 //        File txFile = new File( name );
@@ -1061,7 +1068,7 @@ public class XaLogicalLog
         if ( version == -1 )
         {
             throw new RuntimeException( "txId:" + txId + " not found in any logical log " +
-                    "(starting at " + logVersion + " and searching backwards" );
+                    "(starting at " + logVersion + " and searching backwards)" );
         }
         
         // extract transaction
