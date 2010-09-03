@@ -14,6 +14,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeper.States;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.ResponseReceiver;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 public class ZooClient extends AbstractZooKeeperManager
 {
@@ -31,11 +32,14 @@ public class ZooClient extends AbstractZooKeeperManager
     private final String rootPath;
     private final String haServer;
     private volatile boolean firstSyncConnected = true;
+
+    private final ZooKeeperBroker broker;
     
     public ZooClient( String servers, int machineId, long storeCreationTime, 
-        long storeId, long committedTx, ResponseReceiver receiver, String haServer )
+        long storeId, long committedTx, ResponseReceiver receiver, String haServer, ZooKeeperBroker broker )
     {
         super( servers );
+        this.broker = broker;
         this.rootPath = "/" + storeCreationTime + "_" + storeId;
         this.haServer = haServer;
         this.zooKeeper = instantiateZooKeeper();
@@ -73,7 +77,15 @@ public class ZooClient extends AbstractZooKeeperManager
         }
         else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
         {
+            // If my current master is the same as the master which this master-notify thingie
+            // says, just ignore it.
             System.out.println( "NodeDataChanged (most likely master-notify)" );
+            if ( broker.getCachedMasterMachineId() == getMasterNotifyId() )
+            {
+                System.out.println( "...but no change, so just chill" );
+                return;
+            }
+            
             receiver.somethingIsWrong( new Exception() );
         }
     }
@@ -118,6 +130,29 @@ public class ZooClient extends AbstractZooKeeperManager
                 throw new ZooKeeperTimedOutException( 
                         "Connection to ZooKeeper server timed out, keeper state=" + keeperState );
             }
+        }
+    }
+    
+    private int getMasterNotifyId()
+    {
+        try
+        {
+            String root = getRoot();
+            String path = root + "/" + MASTER_NOTIFY_CHILD;
+            byte[] data = zooKeeper.getData( path, false, null );
+            return ByteBuffer.wrap( data ).getInt();
+        }
+        catch ( KeeperException e )
+        {
+            if ( e.code() != KeeperException.Code.NONODE )
+            {
+                throw new ZooKeeperException( "Couldn't get master notify node", e );
+            }
+            return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( "Get interrupted", e );
         }
     }
     
