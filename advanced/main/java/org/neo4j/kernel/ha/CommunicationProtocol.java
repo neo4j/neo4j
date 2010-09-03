@@ -16,7 +16,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
-abstract class CommunicationProtocol
+public abstract class CommunicationProtocol
 {
     public static final int PORT = 8901;
     private static final int MEGA = 1024 * 1024;
