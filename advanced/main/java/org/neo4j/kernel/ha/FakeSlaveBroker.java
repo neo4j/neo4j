@@ -1,6 +1,7 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public class FakeSlaveBroker extends AbstractBroker
 {
@@ -24,9 +25,9 @@ public class FakeSlaveBroker extends AbstractBroker
         return false;
     }
 
-    public int getMasterMachineId()
+    public Machine getMasterMachine()
     {
-        return this.masterMachineId;
+        return new Machine( masterMachineId, 0, 1, null );
     }
 
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
