@@ -571,6 +571,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     {
                         e.printStackTrace();
                     }
+                    catch ( Throwable t )
+                    {
+                        t.printStackTrace();
+                        System.out.println( "Reevaluation ended in unknown exception " + t
+                                + " so shutting down" );
+                        shutdown();
+                    }
                 }
             }
         }.start();

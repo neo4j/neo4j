@@ -2,17 +2,18 @@ package org.neo4j.kernel.ha.zookeeper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 
 /**
  * Contains basic functionality for a ZooKeeper manager, f.ex. how to get
@@ -75,14 +76,15 @@ public abstract class AbstractZooKeeperManager implements Watcher
     
     protected Machine getMasterBasedOn( Collection<Machine> machines )
     {
-        Map<Integer, Pair<Long, Integer>> debugData = new TreeMap<Integer, Pair<Long, Integer>>();
+        Collection<Triplet<Integer, Long, Integer>> debugData =
+                new ArrayList<Triplet<Integer,Long,Integer>>();
         Machine master = null;
         int lowestSeq = Integer.MAX_VALUE;
         long highestTxId = -1;
         for ( Machine info : machines )
         {
-            debugData.put( info.getMachineId(),
-                    new Pair<Long, Integer>( info.getLatestTxId(), info.getSequenceId() ) );
+            debugData.add( new Triplet<Integer,Long,Integer>( info.getMachineId(),
+                    info.getLatestTxId(), info.getSequenceId() ) );
             if ( info.getLatestTxId() >= highestTxId )
             {
                 highestTxId = info.getLatestTxId();
