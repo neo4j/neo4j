@@ -18,7 +18,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 public class ZooClient extends AbstractZooKeeperManager
 {
-    private static final String MASTER_NOTIFY_CHILD = "master-notify";
+    static final String MASTER_NOTIFY_CHILD = "master-notify";
+    static final String MASTER_REBOUND_CHILD = "master-rebound";
     
     private ZooKeeper zooKeeper;
     private final int machineId;
@@ -74,16 +75,25 @@ public class ZooClient extends AbstractZooKeeperManager
         }
         else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
         {
-            // If my current master is the same as the master which this master-notify thingie
-            // says, just ignore it.
-//            System.out.println( "NodeDataChanged (most likely master-notify)" );
-//            Machine master = getMaster();
-//            if ( master != null && master.getMachineId() == getMasterNotifyId() )
-//            {
-//                System.out.println( "...but no change, so just chill" );
-//                return;
-//            }
-            
+            if ( path.contains( MASTER_NOTIFY_CHILD ) )
+            {
+                if ( super.getMaster().getMachineId() != machineId )
+                {
+                    return;
+                }
+            }
+            else if ( path.contains( MASTER_REBOUND_CHILD ) )
+            {
+                if ( super.getMaster().getMachineId() == machineId )
+                {
+                    return;
+                }
+            }
+            else
+            {
+                System.out.println( "Unrecognized data change " + path );
+                return;
+            }
             receiver.somethingIsWrong( new Exception() );
         }
     }
@@ -154,12 +164,12 @@ public class ZooClient extends AbstractZooKeeperManager
         }
     }
     
-    private void setMasterChangeWatcher( int currentMasterId )
+    protected void setDataChangeWatcher( String child, int currentMasterId )
     {
         try
         {
             String root = getRoot();
-            String path = root + "/" + MASTER_NOTIFY_CHILD;
+            String path = root + "/" + child;
             byte[] data = null;
             boolean exists = false;
             try
@@ -167,7 +177,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 data = zooKeeper.getData( path, true, null );
                 exists = true;
                 int id = ByteBuffer.wrap( data ).getInt();
-                if ( id == currentMasterId )
+                if ( currentMasterId == -1 || id == currentMasterId )
                 {
                     return;
                 }
@@ -190,11 +200,11 @@ public class ZooClient extends AbstractZooKeeperManager
                     zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
                             CreateMode.PERSISTENT );
                 }
-                else
+                else if ( currentMasterId != -1 )
                 {
                     zooKeeper.setData( path, data, -1 );
                 }
-                System.out.println( "master-notify set to " + currentMasterId );
+                System.out.println( child + " set to " + currentMasterId );
                 
                 // Add a watch for it
                 zooKeeper.getData( path, true, null );
@@ -381,7 +391,8 @@ public class ZooClient extends AbstractZooKeeperManager
         Machine result = super.getMaster();
         if ( result != null )
         {
-            setMasterChangeWatcher( result.getMachineId() );
+            setDataChangeWatcher( MASTER_NOTIFY_CHILD, result.getMachineId() );
+            setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
         }
         return result;
     }

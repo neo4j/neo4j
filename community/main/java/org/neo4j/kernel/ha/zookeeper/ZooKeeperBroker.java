@@ -15,11 +15,13 @@ public class ZooKeeperBroker extends AbstractBroker
     private final String haServer;
     private MasterClient masterClient;
     private Machine master;
+    private final int machineId;
     
     public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
             String haServer, ResponseReceiver receiver )
     {
         super( machineId );
+        this.machineId = machineId;
         this.haServer = haServer;
         NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
         this.zooClient = new ZooClient( zooKeeperServers, machineId, store.getCreationTime(),
@@ -74,8 +76,10 @@ public class ZooKeeperBroker extends AbstractBroker
     
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
-        return new MasterServer( new MasterImpl( graphDb ),
+        MasterServer server = new MasterServer( new MasterImpl( graphDb ),
                 Machine.splitIpAndPort( haServer ).other() );
+        zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, machineId );
+        return server;
     }
 
     public void setLastCommittedTxId( long txId )
