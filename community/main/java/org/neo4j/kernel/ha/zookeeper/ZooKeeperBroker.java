@@ -23,7 +23,7 @@ public class ZooKeeperBroker extends AbstractBroker
         this.haServer = haServer;
         NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
         this.zooClient = new ZooClient( zooKeeperServers, machineId, store.getCreationTime(),
-                store.getStoreId(), store.getLastCommittedTx(), receiver, haServer, this );
+                store.getStoreId(), store.getLastCommittedTx(), receiver, haServer );
     }
     
     public void invalidateMaster()
