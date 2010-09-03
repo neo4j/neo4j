@@ -26,17 +26,17 @@ public class SlaveTxRollbackHook implements TxFinishHook
     {
         try
         {
-            receiver.receive( broker.getMaster().finishTransaction(
+            receiver.receive( broker.getMaster().first().finishTransaction(
                     receiver.getSlaveContext( eventIdentifier ) ) );
         }
         catch ( ZooKeeperException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
     }

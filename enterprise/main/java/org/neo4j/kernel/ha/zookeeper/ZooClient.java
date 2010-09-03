@@ -11,10 +11,9 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.ZooKeeper.States;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 public class ZooClient extends AbstractZooKeeperManager
 {
@@ -32,7 +31,6 @@ public class ZooClient extends AbstractZooKeeperManager
     private final ResponseReceiver receiver;
     private final String rootPath;
     private final String haServer;
-    private volatile boolean firstSyncConnected = true;
 
     public ZooClient( String servers, int machineId, long storeCreationTime, 
         long storeId, long committedTx, ResponseReceiver receiver, String haServer )
@@ -47,6 +45,12 @@ public class ZooClient extends AbstractZooKeeperManager
         this.sequenceNr = "not initialized yet";
     }
     
+    @Override
+    protected int getMyMachineId()
+    {
+        return this.machineId;
+    }
+    
     public void process( WatchedEvent event )
     {
         String path = event.getPath();
@@ -58,15 +62,26 @@ public class ZooClient extends AbstractZooKeeperManager
         }
         else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
         {
+            Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
+            System.out.println( "Get master before write:" + masterBeforeIWrite );
             sequenceNr = setup();
+            System.out.println( "setup" );
             keeperState = KeeperState.SyncConnected;
-            if ( firstSyncConnected )
+            Pair<Master, Machine> currentMaster = getMasterFromZooKeeper( false );
+            System.out.println( "current master " + currentMaster );
+            
+            // Master has changed since last time I checked and it's not me
+            if ( currentMaster.other().getMachineId() != masterBeforeIWrite.other().getMachineId() &&
+                    currentMaster.other().getMachineId() != machineId )
             {
-                firstSyncConnected = false;
+                System.out.println( "Master changed and it's not me" );
+                setDataChangeWatcher( MASTER_NOTIFY_CHILD, currentMaster.other().getMachineId() );
             }
-            else
+            else if ( masterBeforeIWrite.other().getMachineId() == -1 &&
+                    currentMaster.other().getMachineId() == machineId )
             {
-                receiver.somethingIsWrong( new Exception() );
+                System.out.println( "2" );
+                receiver.newMaster( currentMaster, new Exception() );
             }
         }
         else if ( path == null && event.getState() == Watcher.Event.KeeperState.Disconnected )
@@ -75,30 +90,31 @@ public class ZooClient extends AbstractZooKeeperManager
         }
         else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
         {
+            Pair<Master, Machine> currentMaster = getMasterFromZooKeeper( true );
             if ( path.contains( MASTER_NOTIFY_CHILD ) )
             {
-                if ( super.getMaster().getMachineId() != machineId )
+                setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
+                if ( currentMaster.other().getMachineId() == machineId )
                 {
-                    return;
+                    receiver.newMaster( currentMaster, new Exception() );
                 }
             }
             else if ( path.contains( MASTER_REBOUND_CHILD ) )
             {
-                if ( super.getMaster().getMachineId() == machineId )
+                setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
+                if ( currentMaster.other().getMachineId() != machineId )
                 {
-                    return;
+                    receiver.newMaster( currentMaster, new Exception() );
                 }
             }
             else
             {
                 System.out.println( "Unrecognized data change " + path );
-                return;
             }
-            receiver.somethingIsWrong( new Exception() );
         }
     }
     
-    protected void waitForSyncConnected()
+    public void waitForSyncConnected()
     {
         if ( keeperState == KeeperState.SyncConnected )
         {
@@ -141,29 +157,6 @@ public class ZooClient extends AbstractZooKeeperManager
         }
     }
     
-    private int getMasterNotifyId()
-    {
-        try
-        {
-            String root = getRoot();
-            String path = root + "/" + MASTER_NOTIFY_CHILD;
-            byte[] data = zooKeeper.getData( path, false, null );
-            return ByteBuffer.wrap( data ).getInt();
-        }
-        catch ( KeeperException e )
-        {
-            if ( e.code() != KeeperException.Code.NONODE )
-            {
-                throw new ZooKeeperException( "Couldn't get master notify node", e );
-            }
-            return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( "Get interrupted", e );
-        }
-    }
-    
     protected void setDataChangeWatcher( String child, int currentMasterId )
     {
         try
@@ -179,6 +172,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 int id = ByteBuffer.wrap( data ).getInt();
                 if ( currentMasterId == -1 || id == currentMasterId )
                 {
+                    System.out.println( child + " not set, is already " + currentMasterId );
                     return;
                 }
             }
@@ -199,12 +193,13 @@ public class ZooClient extends AbstractZooKeeperManager
                 {
                     zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
                             CreateMode.PERSISTENT );
+                    System.out.println( child + " created with " + currentMasterId );
                 }
                 else if ( currentMasterId != -1 )
                 {
                     zooKeeper.setData( path, data, -1 );
+                    System.out.println( child + " set to " + currentMasterId );
                 }
-                System.out.println( child + " set to " + currentMasterId );
                 
                 // Add a watch for it
                 zooKeeper.getData( path, true, null );
@@ -226,8 +221,6 @@ public class ZooClient extends AbstractZooKeeperManager
     
     public String getRoot()
     {
-        States state = zooKeeper.getState();
-        
         // Make sure it exists
         byte[] rootData = null;
         do
@@ -321,6 +314,10 @@ public class ZooClient extends AbstractZooKeeperManager
             String path = root + "/" + machineId + "_";
             String created = zooKeeper.create( path, dataRepresentingMe( committedTx ), 
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
+            
+            // Add watches to our master notification nodes
+            setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
+            setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
             return created.substring( created.lastIndexOf( "_" ) + 1 );
         }
         catch ( KeeperException e )
@@ -385,27 +382,11 @@ public class ZooClient extends AbstractZooKeeperManager
         System.arraycopy( array, 0, actualArray, 0, actualArray.length );
         return actualArray;
     }
-
-    public synchronized Machine getMaster()
-    {
-        Machine result = super.getMaster();
-        if ( result != null )
-        {
-            setDataChangeWatcher( MASTER_NOTIFY_CHILD, result.getMachineId() );
-            setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
-        }
-        return result;
-    }
     
     public synchronized void setCommittedTx( long tx )
     {
         System.out.println( "Setting txId=" + tx + " for machine=" + machineId );
         waitForSyncConnected();
-//        if ( tx <= committedTx )
-//        {
-//            throw new IllegalArgumentException( "tx=" + tx + 
-//                " but committedTx is " + committedTx );
-//        }
         this.committedTx = tx;
         String root = getRoot();
         String path = root + "/" + machineId + "_" + sequenceNr;

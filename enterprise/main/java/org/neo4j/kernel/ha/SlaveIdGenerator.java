@@ -100,19 +100,19 @@ public class SlaveIdGenerator implements IdGenerator
             if ( nextId == VALUE_REPRESENTING_NULL )
             {
                 // If we dont have anymore grabbed ids from master, grab a bunch 
-                IdAllocation allocation = broker.getMaster().allocateIds( idType );
+                IdAllocation allocation = broker.getMaster().first().allocateIds( idType );
                 nextId = storeLocally( allocation );
             }
             return nextId;
         }
         catch ( ZooKeeperException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
     }

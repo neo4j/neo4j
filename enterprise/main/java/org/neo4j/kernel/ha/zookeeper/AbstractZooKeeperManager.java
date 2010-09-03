@@ -14,6 +14,8 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.ha.Master;
+import org.neo4j.kernel.ha.MasterClient;
 
 /**
  * Contains basic functionality for a ZooKeeper manager, f.ex. how to get
@@ -27,6 +29,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
     private final String servers;
     private final Map<Integer, String> haServersCache = Collections.synchronizedMap(
             new HashMap<Integer, String>() );
+    private Pair<Master, Machine> cachedMaster = new Pair<Master, Machine>( null, Machine.NO_MACHINE );
 
     public AbstractZooKeeperManager( String servers )
     {
@@ -69,9 +72,34 @@ public abstract class AbstractZooKeeperManager implements Watcher
         return buf.getLong();
     }
     
-    public Machine getMaster()
+    private void invalidateMaster()
     {
-        return getMasterBasedOn( getAllMachines().values() );
+        if ( cachedMaster != null )
+        {
+            MasterClient client = (MasterClient) cachedMaster.first();
+            if ( client != null )
+            {
+                client.shutdown();
+            }
+            cachedMaster = new Pair<Master, Machine>( null, Machine.NO_MACHINE );
+        }
+    }
+    
+    protected Pair<Master, Machine> getMasterFromZooKeeper( boolean wait )
+    {
+        Machine master = getMasterBasedOn( getAllMachines( wait ).values() );
+        invalidateMaster();
+        MasterClient masterClient = master == Machine.NO_MACHINE || master.getMachineId() == getMyMachineId() ? null :
+                new MasterClient( master );
+        cachedMaster = new Pair<Master, Machine>( masterClient, master );
+        return cachedMaster;
+    }
+    
+    protected abstract int getMyMachineId();
+
+    public Pair<Master, Machine> getCachedMaster()
+    {
+        return cachedMaster;
     }
     
     protected Machine getMasterBasedOn( Collection<Machine> machines )
@@ -97,12 +125,15 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
         System.out.println( "getMaster " + (master != null ? master.getMachineId() : "none") +
                 " based on " + debugData );
-        return master;
+        return master != null ? master : Machine.NO_MACHINE;
     }
 
-    protected synchronized Map<Integer, Machine> getAllMachines()
+    protected synchronized Map<Integer, Machine> getAllMachines( boolean wait )
     {
-        waitForSyncConnected();
+        if ( wait )
+        {
+            waitForSyncConnected();
+        }
         try
         {
             Map<Integer, Machine> result = new HashMap<Integer, Machine>();
@@ -188,9 +219,9 @@ public abstract class AbstractZooKeeperManager implements Watcher
     
     public void shutdown()
     {
-//        new Exception( "shutdown zookeeper" ).printStackTrace();
         try
         {
+            invalidateMaster();
             getZooKeeper().close();
         }
         catch ( InterruptedException e )
@@ -200,5 +231,5 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
     }
     
-    protected abstract void waitForSyncConnected();
+    public abstract void waitForSyncConnected();
 }

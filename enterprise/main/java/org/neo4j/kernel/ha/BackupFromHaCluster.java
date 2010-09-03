@@ -17,8 +17,9 @@ public class BackupFromHaCluster
                 !arguments.orphans().isEmpty() ? arguments.orphans().get( 0 ) : null );
         ClusterManager cluster = new ClusterManager( arguments.get(
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, null ) );
+        cluster.waitForSyncConnected();
         
-        final Machine master = cluster.getMaster();
+        final Machine master = cluster.getCachedMaster().other();
         System.out.println( "Master:" + master );
         Map<String, String> config = MapUtil.stringMap(
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID,

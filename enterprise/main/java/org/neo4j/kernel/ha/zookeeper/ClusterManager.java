@@ -22,7 +22,13 @@ public class ClusterManager extends AbstractZooKeeperManager
         this.zooKeeper = instantiateZooKeeper();
     }
     
-    protected void waitForSyncConnected()
+    @Override
+    protected int getMyMachineId()
+    {
+        throw new UnsupportedOperationException("Not implemented ClusterManager.getMyMachineId()");
+    }
+    
+    public void waitForSyncConnected()
     {
         long startTime = System.currentTimeMillis();
         while ( System.currentTimeMillis()-startTime < SESSION_TIME_OUT )
@@ -123,7 +129,7 @@ public class ClusterManager extends AbstractZooKeeperManager
      */
     public Machine[] getConnectedSlaves()
     {
-        Map<Integer, Machine> machines = getAllMachines();
+        Map<Integer, Machine> machines = getAllMachines( true );
         Machine master = getMasterBasedOn( machines.values() );
         Collection<Machine> result = new ArrayList<Machine>( machines.values() );
         result.remove( master );
