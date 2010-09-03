@@ -121,11 +121,34 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 // No unused channel found, create a new one
                 if ( channel == null )
                 {
-                    ChannelFuture channelFuture = bootstrap.connect(
-                            new InetSocketAddress( hostNameOrIp, port ) );
-                    channelFuture.awaitUninterruptibly();
-                    channel = channelFuture.getChannel();
-                    System.out.println( "Opened a new channel" );
+                    for ( int i = 0; i < 5; i++ )
+                    {
+                        ChannelFuture channelFuture = bootstrap.connect(
+                                new InetSocketAddress( hostNameOrIp, port ) );
+                        channelFuture.awaitUninterruptibly();
+                        if ( channelFuture.isSuccess() )
+                        {
+                            channel = channelFuture.getChannel();
+                            System.out.println( "Opened a new channel" );
+                        }
+                        else
+                        {
+                            System.out.println( "Retrying connect" );
+                            try
+                            {
+                                Thread.sleep( 500 );
+                            }
+                            catch ( InterruptedException e )
+                            {
+                                Thread.interrupted();
+                            }
+                        }
+                    }
+                }
+                
+                if ( channel == null )
+                {
+                    throw new IOException( "Not able to connect to master" );
                 }
                         
                 channels.put( thread, channel );
