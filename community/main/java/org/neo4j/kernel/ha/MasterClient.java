@@ -99,14 +99,33 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             Channel channel = channels.get( thread );
             if ( channel == null )
             {
-                // Get unused or create if no unused found
-                channel = unusedChannels.poll();
+                // Get unused channel from the channel pool
+                while ( channel == null )
+                {
+                    Channel unusedChannel = unusedChannels.poll();
+                    if ( unusedChannel == null )
+                    {
+                        break;
+                    }
+                    else if ( unusedChannel.isConnected() )
+                    {
+                        System.out.println( "Found unused (and still connected) channel" );
+                        channel = unusedChannel;
+                    }
+                    else
+                    {
+                        System.out.println( "Found unused stale channel, discarding it" );
+                    }
+                }
+
+                // No unused channel found, create a new one
                 if ( channel == null )
                 {
                     ChannelFuture channelFuture = bootstrap.connect(
                             new InetSocketAddress( hostNameOrIp, port ) );
                     channelFuture.awaitUninterruptibly();
                     channel = channelFuture.getChannel();
+                    System.out.println( "Opened a new channel" );
                 }
                         
                 channels.put( thread, channel );
