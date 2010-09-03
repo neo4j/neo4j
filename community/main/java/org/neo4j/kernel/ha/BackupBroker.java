@@ -1,10 +1,10 @@
 package org.neo4j.kernel.ha;
 
-public class BackupBroker extends FakeBroker
+public class BackupBroker extends FakeSlaveBroker
 {
     public BackupBroker( Master master )
     {
-        super( master );
+        super( master, -1, -1 );
     }
 
     @Override

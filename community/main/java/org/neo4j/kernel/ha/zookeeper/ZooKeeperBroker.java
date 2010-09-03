@@ -2,17 +2,16 @@ package org.neo4j.kernel.ha.zookeeper;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.ha.Broker;
+import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.ResponseReceiver;
 
-public class ZooKeeperBroker implements Broker
+public class ZooKeeperBroker extends AbstractBroker
 {
     private final ZooClient zooClient;
-    private final int machineId;
     private final String haServer;
     private MasterClient masterClient;
     private Machine master;
@@ -20,7 +19,7 @@ public class ZooKeeperBroker implements Broker
     public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
             String haServer, ResponseReceiver receiver )
     {
-        this.machineId = machineId;
+        super( machineId );
         this.haServer = haServer;
         NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
         this.zooClient = new ZooClient( zooKeeperServers, machineId, store.getCreationTime(),
@@ -44,7 +43,7 @@ public class ZooKeeperBroker implements Broker
         }
         
         master = zooClient.getMaster();
-        if ( master != null && master.getMachineId() == machineId )
+        if ( master != null && master.getMachineId() == getMyMachineId() )
         {
             throw new ZooKeeperException( "I am master, so can't call getMaster() here",
                     new Exception() );
@@ -86,12 +85,7 @@ public class ZooKeeperBroker implements Broker
     
     public boolean thisIsMaster()
     {
-        return zooClient.getMaster().getMachineId() == this.machineId;
-    }
-    
-    public int getMyMachineId()
-    {
-        return machineId;
+        return zooClient.getMaster().getMachineId() == getMyMachineId();
     }
     
     public void shutdown()

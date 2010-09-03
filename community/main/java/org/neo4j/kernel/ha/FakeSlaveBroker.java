@@ -6,38 +6,29 @@ public class FakeSlaveBroker extends AbstractBroker
 {
     private final Master master;
     private final int masterMachineId;
-    private final int machineId;
-    
-    public FakeSlaveBroker( int masterMachineId, int machineId )
+
+    public FakeSlaveBroker( Master master, int masterMachineId, int myMachineId )
     {
+        super( myMachineId );
         this.masterMachineId = masterMachineId;
-        this.machineId = machineId;
-        this.master = new MasterClient( "localhost", CommunicationProtocol.PORT );
+        this.master = master;
     }
-    
+
     public Master getMaster()
     {
         return master;
     }
-    
-    @Override
-    public int getMasterMachineId()
-    {
-        return this.masterMachineId;
-    }
-    
-    @Override
-    public int getMyMachineId()
-    {
-        return this.machineId;
-    }
-    
-    @Override
+
     public boolean thisIsMaster()
     {
         return false;
     }
-    
+
+    public int getMasterMachineId()
+    {
+        return this.masterMachineId;
+    }
+
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
         throw new UnsupportedOperationException();

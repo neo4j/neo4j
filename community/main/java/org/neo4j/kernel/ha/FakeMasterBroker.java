@@ -4,29 +4,14 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 public class FakeMasterBroker extends AbstractBroker
 {
-    private final int machineId;
-
-    public FakeMasterBroker( int machineId )
+    public FakeMasterBroker( int myMachineId )
     {
-        this.machineId = machineId;
+        super( myMachineId );
     }
     
-    @Override
-    public void setDb( GraphDatabaseService db )
-    {
-        super.setDb( db );
-    }
-    
-    @Override
     public int getMasterMachineId()
     {
-        return this.machineId;
-    }
-    
-    @Override
-    public int getMyMachineId()
-    {
-        return this.machineId;
+        return getMyMachineId();
     }
     
     public Master getMaster()
@@ -34,7 +19,6 @@ public class FakeMasterBroker extends AbstractBroker
         throw new UnsupportedOperationException( "I am master" );
     }
 
-    @Override
     public boolean thisIsMaster()
     {
         return true;
