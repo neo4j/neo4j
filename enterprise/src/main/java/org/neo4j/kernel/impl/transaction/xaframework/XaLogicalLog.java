@@ -952,6 +952,7 @@ public class XaLogicalLog
         }
         if ( logEntryList == null )
         {
+            msgLog.logMessage( "txId=" + txId + " not found in log=" + expectedVersion  );
             throw new IOException( "Transaction[" + txId + 
                     "] not found in log (" + expectedVersion + ", " + 
                     prevTxId + ")" );
