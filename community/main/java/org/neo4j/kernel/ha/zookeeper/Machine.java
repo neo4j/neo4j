@@ -6,14 +6,14 @@ public class Machine
 {
     private final int machineId;
     private final int sequenceId;
-    private final long latestTxId;
+    private final long lastCommittedTxId;
     private final Pair<String, Integer> server;
 
-    Machine( int machineId, int sequenceId, long lastestTxId, String server )
+    public Machine( int machineId, int sequenceId, long lastCommittedTxId, String server )
     {
         this.machineId = machineId;
         this.sequenceId = sequenceId;
-        this.latestTxId = lastestTxId;
+        this.lastCommittedTxId = lastCommittedTxId;
         this.server = server != null ? splitIpAndPort( server ) : null;
     }
 
@@ -22,9 +22,9 @@ public class Machine
         return machineId;
     }
 
-    public long getLatestTxId()
+    public long getLastCommittedTxId()
     {
-        return latestTxId;
+        return lastCommittedTxId;
     }
 
     public int getSequenceId()
@@ -41,7 +41,7 @@ public class Machine
     public String toString()
     {
         return "MachineInfo[ID:" + machineId + ", sequence:" + sequenceId +
-                ", latest tx id:" + latestTxId + ", server:" + server + "]";
+                ", last committed tx id:" + lastCommittedTxId + ", server:" + server + "]";
     }
     
     @Override

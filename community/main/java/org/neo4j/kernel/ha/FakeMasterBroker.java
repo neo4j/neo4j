@@ -1,6 +1,7 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public class FakeMasterBroker extends AbstractBroker
 {
@@ -9,9 +10,9 @@ public class FakeMasterBroker extends AbstractBroker
         super( myMachineId );
     }
     
-    public int getMasterMachineId()
+    public Machine getMasterMachine()
     {
-        return getMyMachineId();
+        return new Machine( getMyMachineId(), 0, 1, null );
     }
     
     public Master getMaster()

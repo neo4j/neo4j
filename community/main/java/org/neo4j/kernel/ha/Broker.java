@@ -1,6 +1,7 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public interface Broker
 {
@@ -8,7 +9,7 @@ public interface Broker
     
     Master getMaster();
     
-    int getMasterMachineId();
+    Machine getMasterMachine();
     
     void setLastCommittedTxId( long txId );
     

@@ -286,6 +286,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     
     public void shutdown()
     {
+        System.out.println( "MasterClient shutdown" );
         synchronized ( channels )
         {
             for ( Channel channel : unusedChannels )

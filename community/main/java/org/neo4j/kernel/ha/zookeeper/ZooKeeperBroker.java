@@ -53,7 +53,7 @@ public class ZooKeeperBroker extends AbstractBroker
         return masterClient;
     }
     
-    public int getMasterMachineId()
+    public Machine getMasterMachine()
     {
         // Just to make sure it has gotten it
         getMaster();
@@ -62,7 +62,7 @@ public class ZooKeeperBroker extends AbstractBroker
         {
             throw new IllegalStateException( "No master elected" );
         }
-        return master.getMachineId();
+        return master;
     }
 
     private void connectToMaster( Machine machine )
