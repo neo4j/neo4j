@@ -84,10 +84,10 @@ public abstract class AbstractZooKeeperManager implements Watcher
         for ( Machine info : machines )
         {
             debugData.add( new Triplet<Integer,Long,Integer>( info.getMachineId(),
-                    info.getLatestTxId(), info.getSequenceId() ) );
-            if ( info.getLatestTxId() >= highestTxId )
+                    info.getLastCommittedTxId(), info.getSequenceId() ) );
+            if ( info.getLastCommittedTxId() >= highestTxId )
             {
-                highestTxId = info.getLatestTxId();
+                highestTxId = info.getLastCommittedTxId();
                 if ( info.getSequenceId() < lowestSeq )
                 {
                     master = info;

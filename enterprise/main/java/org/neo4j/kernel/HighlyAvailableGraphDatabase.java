@@ -97,17 +97,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         reevaluateMyself();
     }
     
-    private void thisIsWhatItShouldDo()
-    {
-        // startup embedded graph db
-        // before registering in zoo keeper do:
-        // ask zookeeper who is master
-        //  check master id for my last committed tx
-        //  ask master for his master id for that committed tx
-        //  if equal good continue with zookeeper register and start as usual
-        //  if not equal throw exception (recreate)
-    }
-
     /**
      * Only for testing
      */
@@ -291,7 +280,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             XaDataSource nioneoDataSource = this.localGraph.getConfig().getTxModule()
                     .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
             long lastCommittedTx = nioneoDataSource.getLastCommittedTxId();
-            int masterForMyLastCommittedTx = nioneoDataSource.getMasterForCommittedTx( lastCommittedTx );
+            long lastCommonTxId = Math.min( lastCommittedTx, broker.getMasterMachine().getLastCommittedTxId() );
+            int masterForMyLastCommittedTx = nioneoDataSource.getMasterForCommittedTx( lastCommonTxId );
             
             // Ask zoo keeper who is master a.t.m.
 //            cluster = new ClusterManager( getZooKeeperServersFromConfig( config ) );
@@ -301,7 +291,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 //            client = new MasterClient( currentMaster.getServer().first(),
 //                    currentMaster.getServer().other() );
             Master master = broker.getMaster();
-            int masterForMastersLastCommittedTx = master.getMasterIdForCommittedTx( lastCommittedTx );
+            int masterForMastersLastCommittedTx = master.getMasterIdForCommittedTx( lastCommonTxId );
             
             // Compare those two, if equal -> good, start up as usual
             if ( masterForMastersLastCommittedTx == masterForMyLastCommittedTx )
@@ -324,8 +314,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 throw new RuntimeException( "I am broken" );
             }
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
+            e.printStackTrace();
+            shutdown();
             throw new RuntimeException( e );
         }
 //        finally
