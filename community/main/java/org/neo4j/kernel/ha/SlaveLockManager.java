@@ -69,9 +69,9 @@ public class SlaveLockManager extends LockManager
             {
                 int eventIdentifier = getLocalTxId();
                 result = node != null ?
-                        receiver.receive( broker.getMaster().acquireNodeReadLock(
+                        receiver.receive( broker.getMaster().first().acquireNodeReadLock(
                                 receiver.getSlaveContext( eventIdentifier ), node.getId() ) ) :
-                        receiver.receive( broker.getMaster().acquireRelationshipReadLock(
+                        receiver.receive( broker.getMaster().first().acquireRelationshipReadLock(
                                 receiver.getSlaveContext( eventIdentifier ), relationship.getId() ) );
                             
                 switch ( result.getStatus() )
@@ -87,12 +87,12 @@ public class SlaveLockManager extends LockManager
         }
         catch ( ZooKeeperException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
     }
@@ -119,9 +119,9 @@ public class SlaveLockManager extends LockManager
             {
                 int eventIdentifier = getLocalTxId();
                 result = node != null ?
-                        receiver.receive( broker.getMaster().acquireNodeWriteLock(
+                        receiver.receive( broker.getMaster().first().acquireNodeWriteLock(
                                 receiver.getSlaveContext( eventIdentifier ), node.getId() ) ) :
-                        receiver.receive( broker.getMaster().acquireRelationshipWriteLock(
+                        receiver.receive( broker.getMaster().first().acquireRelationshipWriteLock(
                                 receiver.getSlaveContext( eventIdentifier ), relationship.getId() ) );
                         
                 switch ( result.getStatus() )
@@ -137,12 +137,12 @@ public class SlaveLockManager extends LockManager
         }
         catch ( ZooKeeperException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
     }

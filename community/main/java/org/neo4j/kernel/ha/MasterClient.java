@@ -23,6 +23,7 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.ha.zookeeper.Machine;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -40,6 +41,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
 
     public MasterClient( String hostNameOrIp, int port )
     {
+        new Exception( "Bööööög" ).printStackTrace();
         this.hostNameOrIp = hostNameOrIp;
         this.port = port;
         ExecutorService executor = Executors.newCachedThreadPool();
@@ -47,6 +49,11 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 executor, executor ) );
         bootstrap.setPipelineFactory( this );
         System.out.println( "Client connected to " + hostNameOrIp + ":" + port );
+    }
+    
+    public MasterClient( Machine machine )
+    {
+        this( machine.getServer().first(), machine.getServer().other() );
     }
 
     private <T> Response<T> sendRequest( RequestType type,

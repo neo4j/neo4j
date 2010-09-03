@@ -8,7 +8,8 @@ public class DumpZooInfo
     public static void main( String[] args )
     {
         ClusterManager clusterManager = new ClusterManager( "localhost" );
-        System.out.println( "Master is " + clusterManager.getMaster() );
+        clusterManager.waitForSyncConnected();
+        System.out.println( "Master is " + clusterManager.getCachedMaster() );
         System.out.println( "Connected slaves" );
         for ( Machine info : clusterManager.getConnectedSlaves() )
         {

@@ -1,10 +1,11 @@
 package org.neo4j.kernel.ha.zookeeper;
 
+import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.Master;
-import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.ResponseReceiver;
@@ -13,8 +14,6 @@ public class ZooKeeperBroker extends AbstractBroker
 {
     private final ZooClient zooClient;
     private final String haServer;
-    private MasterClient masterClient;
-    private Machine master;
     private final int machineId;
     
     public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
@@ -28,57 +27,22 @@ public class ZooKeeperBroker extends AbstractBroker
                 store.getStoreId(), store.getLastCommittedTx(), receiver, haServer );
     }
     
-    public void invalidateMaster()
+    public Pair<Master, Machine> getMaster()
     {
-        if ( masterClient != null )
-        {
-            masterClient.shutdown();
-            masterClient = null;
-        }
-    }
-
-    public Master getMaster()
-    {
-        if ( masterClient != null )
-        {
-            return masterClient;
-        }
-        
-        master = zooClient.getMaster();
-        if ( master != null && master.getMachineId() == getMyMachineId() )
-        {
-            throw new ZooKeeperException( "I am master, so can't call getMaster() here",
-                    new Exception() );
-        }
-        invalidateMaster();
-        connectToMaster( master );
-        return masterClient;
+        return zooClient.getCachedMaster();
     }
     
-    public Machine getMasterMachine()
+    public Machine getMasterExceptMyself()
     {
-        // Just to make sure it has gotten it
-        getMaster();
-        
-        if ( master == null )
-        {
-            throw new IllegalStateException( "No master elected" );
-        }
-        return master;
-    }
-
-    private void connectToMaster( Machine machine )
-    {
-        Pair<String, Integer> host = machine != null ? machine.getServer() :
-                new Pair<String, Integer>( null, -1 );
-        masterClient = new MasterClient( host.first(), host.other() );
+        Map<Integer, Machine> machines = zooClient.getAllMachines( true );
+        machines.remove( this.machineId );
+        return zooClient.getMasterBasedOn( machines.values() );
     }
     
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
         MasterServer server = new MasterServer( new MasterImpl( graphDb ),
                 Machine.splitIpAndPort( haServer ).other() );
-        zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, machineId );
         return server;
     }
 
@@ -87,14 +51,18 @@ public class ZooKeeperBroker extends AbstractBroker
         zooClient.setCommittedTx( txId );
     }
     
-    public boolean thisIsMaster()
+    public boolean iAmMaster()
     {
-        return zooClient.getMaster().getMachineId() == getMyMachineId();
+        return zooClient.getCachedMaster().other().getMachineId() == getMyMachineId();
     }
     
     public void shutdown()
     {
-        invalidateMaster();
         zooClient.shutdown();
+    }
+    
+    public void rebindMaster()
+    {
+        zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, machineId );
     }
 }

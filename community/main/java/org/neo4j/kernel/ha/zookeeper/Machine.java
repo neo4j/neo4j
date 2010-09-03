@@ -4,6 +4,8 @@ import org.neo4j.helpers.Pair;
 
 public class Machine
 {
+    public static final Machine NO_MACHINE = new Machine( -1, -1, 1, null );
+    
     private final int machineId;
     private final int sequenceId;
     private final long lastCommittedTxId;

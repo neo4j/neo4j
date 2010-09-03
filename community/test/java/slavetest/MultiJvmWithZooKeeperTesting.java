@@ -83,7 +83,8 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     @Override
     protected <T> T executeJobOnMaster( Job<T> job ) throws Exception
     {
-        int masterMachineId = zooKeeperMasterFetcher.getMaster().getMachineId();
+        zooKeeperMasterFetcher.waitForSyncConnected();
+        int masterMachineId = zooKeeperMasterFetcher.getCachedMaster().other().getMachineId();
         return jvmByMachineId.get( masterMachineId ).executeJob( job );
     }
     
