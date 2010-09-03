@@ -130,6 +130,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                         {
                             channel = channelFuture.getChannel();
                             System.out.println( "Opened a new channel" );
+                            break;
                         }
                         else
                         {
