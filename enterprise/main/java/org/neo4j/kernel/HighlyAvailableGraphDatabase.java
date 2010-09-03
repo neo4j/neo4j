@@ -285,7 +285,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 //            client = new MasterClient( currentMaster.getServer().first(),
 //                    currentMaster.getServer().other() );
             Master master = broker.getMaster();
-            int masterForMastersLastCommittedTx = master.getMasterIdForCommittedTx( machineId );
+            int masterForMastersLastCommittedTx = master.getMasterIdForCommittedTx( lastCommittedTx );
             
             // Compare those two, if equal -> good, start up as usual
             if ( masterForMastersLastCommittedTx == masterForMyLastCommittedTx )

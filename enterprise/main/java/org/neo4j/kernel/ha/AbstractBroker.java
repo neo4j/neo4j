@@ -2,20 +2,13 @@ package org.neo4j.kernel.ha;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-
 public abstract class AbstractBroker implements Broker
 {
-    private GraphDatabaseService db;
-    
-    public void setDb( GraphDatabaseService db )
+    private final int myMachineId;
+
+    public AbstractBroker( int myMachineId )
     {
-        this.db = db;
-    }
-    
-    public GraphDatabaseService getDb()
-    {
-        return this.db;
+        this.myMachineId = myMachineId;
     }
     
     public void setLastCommittedTxId( long txId )
@@ -23,19 +16,9 @@ public abstract class AbstractBroker implements Broker
         // Do nothing
     }
     
-    public boolean thisIsMaster()
-    {
-        return false;
-    }
-    
-    public int getMasterMachineId()
-    {
-        return -1;
-    }
-    
     public int getMyMachineId()
     {
-        throw new UnsupportedOperationException();
+        return this.myMachineId;
     }
     
     public void shutdown()

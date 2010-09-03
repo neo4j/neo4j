@@ -16,11 +16,13 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
-import org.neo4j.kernel.ha.FakeBroker;
+import org.neo4j.kernel.ha.FakeMasterBroker;
+import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.MasterImpl;
 
 public class SingleJvmTesting extends AbstractHaTest
@@ -40,9 +42,9 @@ public class SingleJvmTesting extends AbstractHaTest
             createDeadDbs( numSlaves );
             haDbs = new ArrayList<GraphDatabaseService>();
             startUpMaster( config );
-            FakeBroker broker = new FakeBroker( master ); 
             for ( int i = 1; i <= numSlaves; i++ )
             {
+                FakeSlaveBroker broker = new FakeSlaveBroker( master, 0, i ); 
                 File slavePath = dbPath( i );
                 Map<String,String> cfg = new HashMap<String, String>(config);
                 cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(i) );
@@ -50,7 +52,6 @@ public class SingleJvmTesting extends AbstractHaTest
                 GraphDatabaseService db = new HighlyAvailableGraphDatabase(
                         slavePath.getAbsolutePath(), cfg, AbstractBroker.wrapSingleBroker( broker ) );
                 haDbs.add( db );
-                broker.setDb( db );
             }
         }
         catch ( IOException e )
@@ -60,9 +61,15 @@ public class SingleJvmTesting extends AbstractHaTest
     }
     
     @Override
-    protected void startUpMaster( Map<String, String> config )
+    protected void startUpMaster( Map<String, String> extraConfig )
     {
-        master = new MasterImpl( new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() ) );
+        int masterId = 0;
+        Map<String, String> config = MapUtil.stringMap( extraConfig,
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, String.valueOf( masterId ) );
+        FakeMasterBroker broker = new FakeMasterBroker( masterId );
+        GraphDatabaseService db = new HighlyAvailableGraphDatabase( dbPath( 0 ).getAbsolutePath(),
+                config, AbstractBroker.wrapSingleBroker( broker ) );
+        master = new MasterImpl( db );
     }
 
     protected MasterImpl getMaster()
