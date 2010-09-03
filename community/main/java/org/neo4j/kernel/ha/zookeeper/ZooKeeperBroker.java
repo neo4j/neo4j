@@ -8,6 +8,7 @@ import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.ResponseReceiver;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 public class ZooKeeperBroker extends AbstractBroker
 {
@@ -23,7 +24,7 @@ public class ZooKeeperBroker extends AbstractBroker
         this.haServer = haServer;
         NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
         this.zooClient = new ZooClient( zooKeeperServers, machineId, store.getCreationTime(),
-                store.getStoreId(), store.getLastCommittedTx(), receiver, haServer );
+                store.getStoreId(), store.getLastCommittedTx(), receiver, haServer, this );
     }
     
     public void invalidateMaster()
@@ -63,6 +64,11 @@ public class ZooKeeperBroker extends AbstractBroker
             throw new IllegalStateException( "No master elected" );
         }
         return master.getMachineId();
+    }
+    
+    public int getCachedMasterMachineId()
+    {
+        return master != null ? master.getMachineId() : XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
     }
 
     private void connectToMaster( Machine machine )
