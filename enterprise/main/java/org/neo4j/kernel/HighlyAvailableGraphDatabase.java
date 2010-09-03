@@ -48,6 +48,7 @@ import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
@@ -80,6 +81,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     // Just "cached" instances which are used internally here
     private XaDataSourceManager localDataSourceManager;
     
+    private final StringLogger msgLog;
+    
     /**
      * Will instantiate its own ZooKeeper broker
      */
@@ -90,7 +93,19 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.brokerFactory = defaultBrokerFactory( storeDir, config );
         this.machineId = getMachineIdFromConfig( config );
         this.broker = brokerFactory.create( storeDir, config );
+        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         reevaluateMyself();
+    }
+    
+    private void thisIsWhatItShouldDo()
+    {
+        // startup embedded graph db
+        // before registering in zoo keeper do:
+        // ask zookeeper who is master
+        //  check master id for my last committed tx
+        //  ask master for his master id for that committed tx
+        //  if equal good continue with zookeeper register and start as usual
+        //  if not equal throw exception (recreate)
     }
 
     /**
@@ -104,6 +119,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.brokerFactory = brokerFactory;
         this.machineId = getMachineIdFromConfig( config );
         this.broker = brokerFactory.create( storeDir, config );
+        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         reevaluateMyself();
     }
     
@@ -296,12 +312,16 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             // else -> recreate / destroy db
             else
             {
-                if ( !recreateDbSomehow() )
-                {
-                    throw new RuntimeException( "I was master the previous session, " +
-                            "so can't start up in this state (and no method specified how " +
-                            "I should replicate from another DB)" ); 
-                }
+                msgLog.logMessage( "Broken store, my last committed tx,machineId[" + 
+                        lastCommittedTx + "," + masterForMyLastCommittedTx + 
+                        "] but master says machine id for that txId is " + masterForMastersLastCommittedTx );
+//                if ( !recreateDbSomehow() )
+//                {
+//                    throw new RuntimeException( "I was master the previous session, " +
+//                            "so can't start up in this state (and no method specified how " +
+//                            "I should replicate from another DB)" ); 
+//                }
+                throw new RuntimeException( "I am broken" );
             }
         }
         catch ( IOException e )
