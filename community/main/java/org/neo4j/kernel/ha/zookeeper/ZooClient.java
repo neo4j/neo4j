@@ -80,7 +80,7 @@ public class ZooClient extends AbstractZooKeeperManager
             // If my current master is the same as the master which this master-notify thingie
             // says, just ignore it.
             System.out.println( "NodeDataChanged (most likely master-notify)" );
-            if ( broker.getCachedMasterMachineId() == getMasterNotifyId() )
+            if ( broker.getMasterMachineId() == getMasterNotifyId() )
             {
                 System.out.println( "...but no change, so just chill" );
                 return;
