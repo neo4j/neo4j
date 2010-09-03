@@ -8,7 +8,6 @@ import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.ResponseReceiver;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 public class ZooKeeperBroker extends AbstractBroker
 {
@@ -64,11 +63,6 @@ public class ZooKeeperBroker extends AbstractBroker
             throw new IllegalStateException( "No master elected" );
         }
         return master.getMachineId();
-    }
-    
-    public int getCachedMasterMachineId()
-    {
-        return master != null ? master.getMachineId() : XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
     }
 
     private void connectToMaster( Machine machine )
