@@ -33,13 +33,10 @@ public class ZooClient extends AbstractZooKeeperManager
     private final String haServer;
     private volatile boolean firstSyncConnected = true;
 
-    private final ZooKeeperBroker broker;
-    
     public ZooClient( String servers, int machineId, long storeCreationTime, 
-        long storeId, long committedTx, ResponseReceiver receiver, String haServer, ZooKeeperBroker broker )
+        long storeId, long committedTx, ResponseReceiver receiver, String haServer )
     {
         super( servers );
-        this.broker = broker;
         this.rootPath = "/" + storeCreationTime + "_" + storeId;
         this.haServer = haServer;
         this.zooKeeper = instantiateZooKeeper();
@@ -80,7 +77,8 @@ public class ZooClient extends AbstractZooKeeperManager
             // If my current master is the same as the master which this master-notify thingie
             // says, just ignore it.
             System.out.println( "NodeDataChanged (most likely master-notify)" );
-            if ( broker.getMasterMachineId() == getMasterNotifyId() )
+            Machine master = getMaster();
+            if ( master != null && master.getMachineId() == getMasterNotifyId() )
             {
                 System.out.println( "...but no change, so just chill" );
                 return;
