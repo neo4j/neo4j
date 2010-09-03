@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -341,11 +342,11 @@ public class MasterImpl implements Master
         {
             XaDataSource nioneoDataSource = graphDbConfig.getTxModule()
                     .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-            return nioneoDataSource.getMasterForCommittedTx( nioneoDataSource.getLastCommittedTxId() );
+            return nioneoDataSource.getMasterForCommittedTx( txId );
         }
         catch ( IOException e )
         {
-            return -1;
+            return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
         }
     }
     
