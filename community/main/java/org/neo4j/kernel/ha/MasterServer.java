@@ -1,7 +1,6 @@
 package org.neo4j.kernel.ha;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,8 +45,8 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     private final Master realMaster;
     private final ChannelGroup channelGroup;
     private final ScheduledExecutorService deadConnectionsPoller;
-    private final Map<Channel, Set<SlaveContext>> connectedSlaveChannels =
-            new HashMap<Channel, Set<SlaveContext>>();
+    private final Map<Channel, SlaveContext> connectedSlaveChannels =
+            new HashMap<Channel, SlaveContext>();
 
     public MasterServer( Master realMaster, final int port )
     {
@@ -73,7 +72,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         {
             public void run()
             {
-                checkForDeadChannels();
+//                checkForDeadChannels();
             }
         }, DEAD_CONNECTIONS_CHECK_INTERVAL, DEAD_CONNECTIONS_CHECK_INTERVAL, TimeUnit.SECONDS );
     }
@@ -118,57 +117,49 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     protected void mapSlave( Channel channel, SlaveContext slave )
     {
         channelGroup.add( channel );
-        if ( slave == null )
-        {
-            return;
-        }
-        
         synchronized ( connectedSlaveChannels )
         {
-            Set<SlaveContext> txs = connectedSlaveChannels.get( channel );
-            if ( txs == null )
-            {
-                txs = new HashSet<SlaveContext>();
-                connectedSlaveChannels.put( channel, txs );
-            }
-            txs.add( slave );
+            connectedSlaveChannels.put( channel, slave );
+        }
+    }
+    
+    protected void unmapSlave( Channel channel, SlaveContext slave )
+    {
+        synchronized ( connectedSlaveChannels )
+        {
+            connectedSlaveChannels.remove( channel );
         }
     }
     
     public void shutdown()
     {
         // Close all open connections
-        System.out.println( "MasterServer.shutdown 1" );
         deadConnectionsPoller.shutdown();
-        System.out.println( "MasterServer.shutdown 2" );
         channelGroup.close().awaitUninterruptibly();
-        System.out.println( "MasterServer.shutdown 3" );
+        
+        // TODO This should work, but blocks with busy wait sometimes
 //        channelFactory.releaseExternalResources();
-        System.out.println( "MasterServer.shutdown 4" );
     }
 
-    private void checkForDeadChannels()
-    {
-        synchronized ( connectedSlaveChannels )
-        {
-            Collection<Channel> channelsToRemove = new ArrayList<Channel>();
-            for ( Map.Entry<Channel, Set<SlaveContext>> entry : connectedSlaveChannels.entrySet() )
-            {
-                if ( channelIsClosed( entry.getKey() ) )
-                {
-                    for ( SlaveContext tx : entry.getValue() )
-                    {
-                        realMaster.finishTransaction( tx );
-                    }
-                }
-                channelsToRemove.add( entry.getKey() );
-            }
-            for ( Channel channel : channelsToRemove )
-            {
-                connectedSlaveChannels.remove( channel );
-            }
-        }
-    }
+//    private void checkForDeadChannels()
+//    {
+//        synchronized ( connectedSlaveChannels )
+//        {
+//            Collection<Channel> channelsToRemove = new ArrayList<Channel>();
+//            for ( Map.Entry<Channel, SlaveContext> entry : connectedSlaveChannels.entrySet() )
+//            {
+//                if ( channelIsClosed( entry.getKey() ) )
+//                {
+//                    realMaster.finishTransaction( entry.getValue() );
+//                }
+//                channelsToRemove.add( entry.getKey() );
+//            }
+//            for ( Channel channel : channelsToRemove )
+//            {
+//                connectedSlaveChannels.remove( channel );
+//            }
+//        }
+//    }
     
     private boolean channelIsClosed( Channel channel )
     {
@@ -186,12 +177,9 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         Set<Integer> machineIds = new HashSet<Integer>();
         synchronized ( connectedSlaveChannels )
         {
-            for ( Collection<SlaveContext> contextSet : this.connectedSlaveChannels.values() )
+            for ( SlaveContext context : this.connectedSlaveChannels.values() )
             {
-                for ( SlaveContext context : contextSet )
-                {
-                    machineIds.add( context.machineId() );
-                }
+                machineIds.add( context.machineId() );
             }
         }
         

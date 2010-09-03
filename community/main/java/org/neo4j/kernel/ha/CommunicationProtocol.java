@@ -226,6 +226,10 @@ public abstract class CommunicationProtocol
             server.mapSlave( channel, context );
         }
         Response<?> response = type.caller.callMaster( realMaster, context, buffer );
+        if ( type == RequestType.FINISH )
+        {
+            server.unmapSlave( channel, context );
+        }
         ChannelBuffer targetBuffer = ChannelBuffers.dynamicBuffer();
         type.serializer.write( response.response(), targetBuffer );
         if ( type.includesSlaveContext() )
