@@ -10,6 +10,6 @@ public class BackupBroker extends FakeSlaveBroker
     @Override
     public void shutdown()
     {
-        ((MasterClient) getMaster()).shutdown();
+        ((MasterClient) getMaster().first()).shutdown();
     }
 }

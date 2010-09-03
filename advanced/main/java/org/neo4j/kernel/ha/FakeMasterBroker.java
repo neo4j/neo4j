@@ -1,6 +1,7 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public class FakeMasterBroker extends AbstractBroker
@@ -15,12 +16,12 @@ public class FakeMasterBroker extends AbstractBroker
         return new Machine( getMyMachineId(), 0, 1, null );
     }
     
-    public Master getMaster()
+    public Pair<Master, Machine> getMaster()
     {
         throw new UnsupportedOperationException( "I am master" );
     }
 
-    public boolean thisIsMaster()
+    public boolean iAmMaster()
     {
         return true;
     }

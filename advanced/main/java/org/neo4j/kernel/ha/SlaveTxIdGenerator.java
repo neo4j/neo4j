@@ -51,7 +51,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
             int eventIdentifier = txManager.getEventIdentifier();
             Pair<Long, ReadableByteChannel> tx = new Pair<Long, ReadableByteChannel>( -1L,
                     dataSource.getPreparedTransaction( identifier ) );
-            Response<Long> response = broker.getMaster().commitSingleResourceTransaction(
+            Response<Long> response = broker.getMaster().first().commitSingleResourceTransaction(
                     receiver.getSlaveContext( eventIdentifier ),
                     dataSource.getName(), new TransactionStream( Arrays.asList( tx ) ) );
             return receiver.receive( response );
@@ -62,18 +62,18 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         }
         catch ( ZooKeeperException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
     }
 
     public int getCurrentMasterId()
     {
-        return this.broker.getMasterMachine().getMachineId();
+        return this.broker.getMaster().other().getMachineId();
     }
 }

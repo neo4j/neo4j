@@ -44,6 +44,7 @@ import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.TransactionStream;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
+import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -72,6 +73,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private volatile MasterServer masterServer;
     private final AtomicBoolean reevaluatingMyself = new AtomicBoolean();
     private ScheduledExecutorService updatePuller;
+    private volatile Machine cachedMaster = Machine.NO_MACHINE;
+    private volatile boolean started;
     
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -94,7 +97,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.machineId = getMachineIdFromConfig( config );
         this.broker = brokerFactory.create( storeDir, config );
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
-        reevaluateMyself();
+        startUp();
     }
     
     /**
@@ -109,9 +112,28 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.machineId = getMachineIdFromConfig( config );
         this.broker = brokerFactory.create( storeDir, config );
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
-        reevaluateMyself();
+//        this.broker.getMaster();
+        startUp();
     }
     
+    private void startUp()
+    {
+//        broker.getMaster();
+//        long startTime = System.currentTimeMillis();
+//        while ( !started && System.currentTimeMillis()-startTime < 10000 )
+//        {
+//            try
+//            {
+//                Thread.sleep( 100 );
+//            }
+//            catch ( InterruptedException e )
+//            {
+//                Thread.interrupted();
+//            }
+//        }
+//        reevaluateMyself();
+    }
+
     private BrokerFactory defaultBrokerFactory( final String storeDir,
             final Map<String, String> config )
     {
@@ -152,16 +174,16 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
-            receive( broker.getMaster().pullUpdates( getSlaveContext( -1 ) ) );
+            receive( broker.getMaster().first().pullUpdates( getSlaveContext( -1 ) ) );
         }
         catch ( ZooKeeperException e )
         {
-            somethingIsWrong( e );
+            newMaster( broker.getMaster(), e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            somethingIsWrong( e );
+            newMaster( broker.getMaster(), e );
             throw e;
         }
     }
@@ -182,40 +204,46 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return this.localGraph.getManagementBean( type );
     }
     
-    protected void reevaluateMyself()
+    protected synchronized void reevaluateMyself( Pair<Master, Machine> master )
     {
         if ( !reevaluatingMyself.compareAndSet( false, true ) )
         {
             return;
         }
-                
+        
         try
         {
-            broker.invalidateMaster();
-            boolean brokerSaysIAmMaster = brokerSaysIAmMaster();
             boolean iAmCurrentlyMaster = masterServer != null;
             boolean restarted = false;
-            
-            if ( brokerSaysIAmMaster != iAmCurrentlyMaster )
+            if ( cachedMaster.getMachineId() != master.other().getMachineId() )
             {
-                internalShutdown();
-            }
-            
-            if ( brokerSaysIAmMaster )
-            {
-                if ( this.localGraph == null )
+                // New master
+                if ( master.other().getMachineId() == machineId )
                 {
-                    startAsMaster();
-                    restarted = true;
+                    // The new master is me, make sure I run as master
+                    if ( !iAmCurrentlyMaster )
+                    {
+                        internalShutdown();
+                        startAsMaster();
+                        restarted = true;
+                    }
+                }
+                else
+                {
+                    // Someone else got to be master, make sure I run as slave
+                    // The correct MasterClient has been provided to me from the broker
+                    if ( iAmCurrentlyMaster )
+                    {
+                        internalShutdown();
+                        startAsSlave();
+                        tryToEnsureIAmNotABrokenMachine( master );
+                        restarted = true;
+                    }
                 }
             }
-            else
+            if ( masterServer != null )
             {
-                if ( this.localGraph == null )
-                {
-                    startAsSlave();
-                    restarted = true;
-                }
+                broker.rebindMaster();
             }
             
             if ( restarted )
@@ -230,8 +258,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 }
                 this.localDataSourceManager =
                         localGraph.getConfig().getTxModule().getXaDataSourceManager();
-                tryToEnsureIAmNotABrokenMachine();
+                tryToEnsureIAmNotABrokenMachine( master );
             }
+            cachedMaster = master.other();
+            started = true;
         }
         finally
         {
@@ -265,46 +295,33 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         instantiateIndexIfNeeded();
     }
     
-    private void tryToEnsureIAmNotABrokenMachine()
+    private void tryToEnsureIAmNotABrokenMachine( Pair<Master, Machine> master )
     {
-//        ClusterManager cluster = null;
-//        MasterClient client = null;
         try
         {
-            if ( broker.thisIsMaster() )
+            if ( master.other().getMachineId() == machineId )
             {
                 return;
             }
             
-            // Get the master id I have for my latest commit
             XaDataSource nioneoDataSource = this.localGraph.getConfig().getTxModule()
                     .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-            long lastCommittedTx = nioneoDataSource.getLastCommittedTxId();
-            long lastCommonTxId = Math.min( lastCommittedTx, broker.getMasterMachine().getLastCommittedTxId() );
-            int masterForMyLastCommittedTx = nioneoDataSource.getMasterForCommittedTx( lastCommonTxId );
+            long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
+            long highestCommonTxId = Math.min( myLastCommittedTx, master.other().getLastCommittedTxId() );
+            int masterForMyHighestCommonTxId = nioneoDataSource.getMasterForCommittedTx( highestCommonTxId );
+            int masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( highestCommonTxId );
             
-            // Ask zoo keeper who is master a.t.m.
-//            cluster = new ClusterManager( getZooKeeperServersFromConfig( config ) );
-//            Machine currentMaster = cluster.getMaster();
-            
-            // Ask the master for the master id for my latest commit
-//            client = new MasterClient( currentMaster.getServer().first(),
-//                    currentMaster.getServer().other() );
-            Master master = broker.getMaster();
-            int masterForMastersLastCommittedTx = master.getMasterIdForCommittedTx( lastCommonTxId );
-            
-            // Compare those two, if equal -> good, start up as usual
-            if ( masterForMastersLastCommittedTx == masterForMyLastCommittedTx )
+            // Compare those two, if equal -> good
+            if ( masterForMyHighestCommonTxId == masterForMastersHighestCommonTxId )
             {
-                broker.setLastCommittedTxId( lastCommittedTx );
                 return;
             }
             // else -> recreate / destroy db
             else
             {
                 msgLog.logMessage( "Broken store, my last committed tx,machineId[" + 
-                        lastCommittedTx + "," + masterForMyLastCommittedTx + 
-                        "] but master says machine id for that txId is " + masterForMastersLastCommittedTx );
+                        myLastCommittedTx + "," + masterForMyHighestCommonTxId + 
+                        "] but master says machine id for that txId is " + masterForMastersHighestCommonTxId );
 //                if ( !recreateDbSomehow() )
 //                {
 //                    throw new RuntimeException( "I was master the previous session, " +
@@ -320,17 +337,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             shutdown();
             throw new RuntimeException( e );
         }
-//        finally
-//        {
-//            if ( client != null )
-//            {
-//                client.shutdown();
-//            }
-//            if ( cluster != null )
-//            {
-//                cluster.shutdown();
-//            }
-//        }
     }
     
     private boolean recreateDbSomehow()
@@ -386,7 +392,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private boolean brokerSaysIAmMaster()
     {
-        return broker.thisIsMaster();
+        return broker.iAmMaster();
     }
 
     public Transaction beginTx()
@@ -535,33 +541,34 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         catch ( IOException e )
         {
-            somethingIsWrong( e );
+            newMaster( broker.getMaster(), e );
             throw new RuntimeException( e );
         }
     }
     
-    public void somethingIsWrong( Exception e )
+    public void newMaster( Pair<Master, Machine> master, Exception e )
     {
-        e.printStackTrace();
-        new Thread()
-        {
-            @Override
-            public void run()
-            {
+//        e.printStackTrace();
+//        new Thread()
+//        {
+//            @Override
+//            public void run()
+//            {
+        new Exception( "ReevaluateMyself" ).printStackTrace();
                 for ( int i = 0; i < 5; i++ )
                 {
                     try
                     {
-                        reevaluateMyself();
+                        reevaluateMyself( master );
                         break;
                     }
-                    catch ( ZooKeeperException e )
+                    catch ( ZooKeeperException ee )
                     {
-                        e.printStackTrace();
+                        ee.printStackTrace();
                     }
-                    catch ( HaCommunicationException e )
+                    catch ( HaCommunicationException ee )
                     {
-                        e.printStackTrace();
+                        ee.printStackTrace();
                     }
                     catch ( Throwable t )
                     {
@@ -571,8 +578,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                         shutdown();
                     }
                 }
-            }
-        }.start();
+//            }
+//        }.start();
     }
     
     public IndexService getIndexService()

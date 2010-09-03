@@ -26,17 +26,17 @@ public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
         try
         {
             int eventIdentifier = ((TxManager) txManager).getEventIdentifier();
-            return receiver.receive( broker.getMaster().createRelationshipType(
+            return receiver.receive( broker.getMaster().first().createRelationshipType(
                     receiver.getSlaveContext( eventIdentifier ), name ) );
         }
         catch ( ZooKeeperException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            receiver.somethingIsWrong( e );
+            receiver.newMaster( broker.getMaster(), e );
             throw e;
         }
     }
