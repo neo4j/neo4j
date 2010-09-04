@@ -35,16 +35,22 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
         super();
         
         storeDir = args.get( "path", null );
-        out = new PrintStream( new File( new File( storeDir ), "output" ) );
+        out = new PrintStream( new File( new File( storeDir ), "output" ) )
+        {
+            public void println(String x)
+            {
+                super.println( new SimpleDateFormat( "HH:mm:ss:SS" ).format( new Date() ) + ": " + x );
+            }
+        };
         System.setOut( out );
         System.setErr( out );
         try
         {
             int tempMachineId;
-            println( "About to start" );
+            System.out.println( "About to start" );
             
             HighlyAvailableGraphDatabase haDb = null;
-            println( args.asMap().toString() );
+            System.out.println( args.asMap().toString() );
             if ( args.has( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID ) )
             {
                 new EmbeddedGraphDatabase( storeDir ).shutdown();
@@ -58,7 +64,7 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
                         args.get( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, null ),
                         "index", args.get( "index", null ) );
                 haDb = new HighlyAvailableGraphDatabase( storeDir, config );
-                println( "Started HA db (w/ zoo keeper)" );
+                System.out.println( "Started HA db (w/ zoo keeper)" );
             }
             else
             {
@@ -72,14 +78,14 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + tempMachineId,
                         "index", args.get( "index", null ) ),
                         AbstractBroker.wrapSingleBroker( broker ) );
-                println( "Started HA db (w/o zoo keeper)" );
+                System.out.println( "Started HA db (w/o zoo keeper)" );
             }
             this.location = location;
             this.location.ensureRegistryCreated();
             this.location.bind( this );
             this.machineId = tempMachineId;
             this.db = haDb;
-            println( "RMI object bound" );
+            System.out.println( "RMI object bound" );
         }
         catch ( Exception e )
         {
@@ -90,16 +96,10 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
     
     private void println( String string, Throwable t )
     {
-        println( string );
-        t.printStackTrace( out );
+        System.out.println( string );
+        t.printStackTrace();
     }
     
-    private void println( String string )
-    {
-        out.println( new SimpleDateFormat( "HH:mm:ss:SS" ).format( new Date() ) +
-                ": " + string );
-    }
-
     public static void main( String[] args ) throws Exception
     {
         Args arguments = new Args( args );
@@ -126,13 +126,11 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
 
     public void initiateShutdown() throws RemoteException
     {
-        println( "Shutdown initiated" );
+        System.out.println( "Shutdown initiated" );
         this.location.unbind( this );
-        println( "shutdown 1" );
         this.db.shutdown();
-        println( "shutdown 1" );
         this.shutdown = true;
-        println( "Shutdown done" );
+        System.out.println( "Shutdown done" );
         try
         {
             new File( new File( storeDir ), "shutdown" ).createNewFile();
@@ -160,15 +158,15 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
     
     public <T> T executeJob( Job<T> job ) throws RemoteException
     {
-        println( "Executing job " + job );
+        System.out.println( "Executing job " + job );
         T result = job.execute( this.db );
-        println( "Job " + job + " executed" );
+        System.out.println( "Job " + job + " executed" );
         return result;
     }
 
     public void pullUpdates()
     {
-        println( "pullUpdates" );
+        System.out.println( "pullUpdates" );
         db.pullUpdates();
     }
     

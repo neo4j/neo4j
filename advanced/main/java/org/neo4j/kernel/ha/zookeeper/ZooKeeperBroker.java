@@ -32,6 +32,11 @@ public class ZooKeeperBroker extends AbstractBroker
         return zooClient.getCachedMaster();
     }
     
+    public Pair<Master, Machine> getMasterReally()
+    {
+        return zooClient.getMasterFromZooKeeper( true );
+    }
+    
     public Machine getMasterExceptMyself()
     {
         Map<Integer, Machine> machines = zooClient.getAllMachines( true );

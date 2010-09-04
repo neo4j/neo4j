@@ -21,6 +21,11 @@ public class FakeMasterBroker extends AbstractBroker
         throw new UnsupportedOperationException( "I am master" );
     }
 
+    public Pair<Master, Machine> getMasterReally()
+    {
+        throw new UnsupportedOperationException( "I am master" );
+    }
+    
     public boolean iAmMaster()
     {
         return true;
