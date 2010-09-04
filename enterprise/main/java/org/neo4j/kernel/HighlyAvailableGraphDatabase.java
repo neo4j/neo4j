@@ -112,7 +112,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.machineId = getMachineIdFromConfig( config );
         this.broker = brokerFactory.create( storeDir, config );
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
-//        this.broker.getMaster();
         startUp();
     }
     
@@ -178,12 +177,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         catch ( ZooKeeperException e )
         {
-            newMaster( broker.getMaster(), e );
+            newMaster( null, e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            newMaster( broker.getMaster(), e );
+            newMaster( null, e );
             throw e;
         }
     }
@@ -213,6 +212,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         
         try
         {
+            System.out.println( "reevaluateMyself " + master );
+            if ( master == null )
+            {
+                System.out.println( "looked up master " + master );
+                master = broker.getMasterReally();
+            }
             boolean iAmCurrentlyMaster = masterServer != null;
             boolean restarted = false;
             if ( cachedMaster.getMachineId() != master.other().getMachineId() )
@@ -221,7 +226,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 if ( master.other().getMachineId() == machineId )
                 {
                     // The new master is me, make sure I run as master
-                    if ( !iAmCurrentlyMaster )
+                    if ( this.localGraph == null || !iAmCurrentlyMaster )
                     {
                         internalShutdown();
                         startAsMaster();
@@ -232,7 +237,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 {
                     // Someone else got to be master, make sure I run as slave
                     // The correct MasterClient has been provided to me from the broker
-                    if ( iAmCurrentlyMaster )
+                    if ( this.localGraph == null || iAmCurrentlyMaster )
                     {
                         internalShutdown();
                         startAsSlave();
@@ -258,7 +263,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 }
                 this.localDataSourceManager =
                         localGraph.getConfig().getTxModule().getXaDataSourceManager();
-                tryToEnsureIAmNotABrokenMachine( master );
             }
             cachedMaster = master.other();
             started = true;
@@ -271,6 +275,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private void startAsSlave()
     {
+        System.out.println( "Starting as slave" );
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 new SlaveLockManagerFactory( broker, this ),
                 new SlaveIdGeneratorFactory( broker, this ),
@@ -280,10 +285,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
         instantiateIndexIfNeeded();
         instantiateAutoUpdatePullerIfConfigSaysSo();
+        System.out.println( "Started as slave" );
     }
 
     private void startAsMaster()
     {
+        System.out.println( "Starting as master" );
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 CommonFactories.defaultLockManagerFactory(),
                 new MasterIdGeneratorFactory(),
@@ -293,6 +300,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         instantiateIndexIfNeeded();
+        System.out.println( "Started as master" );
     }
     
     private void tryToEnsureIAmNotABrokenMachine( Pair<Master, Machine> master )
@@ -554,7 +562,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 //            @Override
 //            public void run()
 //            {
-        new Exception( "ReevaluateMyself" ).printStackTrace();
                 for ( int i = 0; i < 5; i++ )
                 {
                     try

@@ -21,6 +21,11 @@ public class FakeSlaveBroker extends AbstractBroker
         return new Pair<Master, Machine>( master, Machine.NO_MACHINE );
     }
     
+    public Pair<Master, Machine> getMasterReally()
+    {
+        return new Pair<Master, Machine>( master, Machine.NO_MACHINE );
+    }
+    
     public boolean iAmMaster()
     {
         return false;

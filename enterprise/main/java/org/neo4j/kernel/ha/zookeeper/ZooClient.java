@@ -53,64 +53,74 @@ public class ZooClient extends AbstractZooKeeperManager
     
     public void process( WatchedEvent event )
     {
-        String path = event.getPath();
-        System.out.println( this + ", " + new Date() + " Got event: " + event + "(path=" + path + ")" );
-        if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
+        try
         {
-            keeperState = KeeperState.Expired;
-            zooKeeper = instantiateZooKeeper();
-        }
-        else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
-        {
-            Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
-            System.out.println( "Get master before write:" + masterBeforeIWrite );
-            sequenceNr = setup();
-            System.out.println( "setup" );
-            keeperState = KeeperState.SyncConnected;
-            Pair<Master, Machine> currentMaster = getMasterFromZooKeeper( false );
-            System.out.println( "current master " + currentMaster );
-            
-            // Master has changed since last time I checked and it's not me
-            if ( currentMaster.other().getMachineId() != masterBeforeIWrite.other().getMachineId() &&
-                    currentMaster.other().getMachineId() != machineId )
+            String path = event.getPath();
+            System.out.println( this + ", " + new Date() + " Got event: " + event + "(path=" + path + ")" );
+            if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
             {
-                System.out.println( "Master changed and it's not me" );
-                setDataChangeWatcher( MASTER_NOTIFY_CHILD, currentMaster.other().getMachineId() );
+                keeperState = KeeperState.Expired;
+                zooKeeper = instantiateZooKeeper();
             }
-            else if ( masterBeforeIWrite.other().getMachineId() == -1 &&
-                    currentMaster.other().getMachineId() == machineId )
+            else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
             {
-                System.out.println( "2" );
-                receiver.newMaster( currentMaster, new Exception() );
-            }
-        }
-        else if ( path == null && event.getState() == Watcher.Event.KeeperState.Disconnected )
-        {
-            keeperState = KeeperState.Disconnected;
-        }
-        else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
-        {
-            Pair<Master, Machine> currentMaster = getMasterFromZooKeeper( true );
-            if ( path.contains( MASTER_NOTIFY_CHILD ) )
-            {
-                setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
-                if ( currentMaster.other().getMachineId() == machineId )
+                Pair<Master, Machine> cachedMaster = getCachedMaster();
+                Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
+                System.out.println( "Get master before write:" + masterBeforeIWrite );
+                sequenceNr = setup();
+                System.out.println( "did setup" );
+                keeperState = KeeperState.SyncConnected;
+                Pair<Master, Machine> currentMaster = getMasterFromZooKeeper( false );
+                System.out.println( "current master " + currentMaster );
+                
+                // Master has changed since last time I checked and it's not me
+                if ( (cachedMaster.other().getMachineId() == -1 || currentMaster.other().getMachineId() != masterBeforeIWrite.other().getMachineId()) &&
+                        currentMaster.other().getMachineId() != machineId )
                 {
+                    System.out.println( "Master changed and it's not me" );
+                    setDataChangeWatcher( MASTER_NOTIFY_CHILD, currentMaster.other().getMachineId() );
+                    receiver.newMaster( currentMaster, new Exception() );
+                }
+                else if ( /*masterBeforeIWrite.other().getMachineId() == -1  && */
+                        currentMaster.other().getMachineId() == machineId )
+                {
+                    System.out.println( "2" );
                     receiver.newMaster( currentMaster, new Exception() );
                 }
             }
-            else if ( path.contains( MASTER_REBOUND_CHILD ) )
+            else if ( path == null && event.getState() == Watcher.Event.KeeperState.Disconnected )
             {
-                setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
-                if ( currentMaster.other().getMachineId() != machineId )
+                keeperState = KeeperState.Disconnected;
+            }
+            else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
+            {
+                Pair<Master, Machine> currentMaster = getMasterFromZooKeeper( true );
+                if ( path.contains( MASTER_NOTIFY_CHILD ) )
                 {
-                    receiver.newMaster( currentMaster, new Exception() );
+                    setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
+                    if ( currentMaster.other().getMachineId() == machineId )
+                    {
+                        receiver.newMaster( currentMaster, new Exception() );
+                    }
+                }
+                else if ( path.contains( MASTER_REBOUND_CHILD ) )
+                {
+                    setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
+                    if ( currentMaster.other().getMachineId() != machineId )
+                    {
+                        receiver.newMaster( currentMaster, new Exception() );
+                    }
+                }
+                else
+                {
+                    System.out.println( "Unrecognized data change " + path );
                 }
             }
-            else
-            {
-                System.out.println( "Unrecognized data change " + path );
-            }
+        }
+        catch ( RuntimeException e )
+        {
+            e.printStackTrace();
+            throw e;
         }
     }
     
@@ -419,8 +429,8 @@ public class ZooClient extends AbstractZooKeeperManager
     }
     
     @Override
-    protected String getHaServer( int machineId )
+    protected String getHaServer( int machineId, boolean wait )
     {
-        return machineId == this.machineId ? haServer : super.getHaServer( machineId );
+        return machineId == this.machineId ? haServer : super.getHaServer( machineId, wait );
     }
 }
