@@ -115,11 +115,11 @@ public abstract class AbstractZooKeeperManager implements Watcher
                     info.getLastCommittedTxId(), info.getSequenceId() ) );
             if ( info.getLastCommittedTxId() >= highestTxId )
             {
-                highestTxId = info.getLastCommittedTxId();
-                if ( info.getSequenceId() < lowestSeq )
+                if ( info.getLastCommittedTxId() > highestTxId || info.getSequenceId() < lowestSeq )
                 {
                     master = info;
                     lowestSeq = info.getSequenceId();
+                    highestTxId = info.getLastCommittedTxId();
                 }
             }
         }
@@ -154,7 +154,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
                     long tx = readDataAsLong( root + "/" + child );
                     if ( !result.containsKey( id ) || seq > result.get( id ).getSequenceId() )
                     {
-                        result.put( id, new Machine( id, seq, tx, getHaServer( id ) ) );
+                        result.put( id, new Machine( id, seq, tx, getHaServer( id, wait ) ) );
                     }
                 }
                 catch ( KeeperException inner )
@@ -179,20 +179,23 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
     }
     
-    protected String getHaServer( int machineId )
+    protected String getHaServer( int machineId, boolean wait )
     {
         String result = haServersCache.get( machineId );
         if ( result == null )
         {
-            result = readHaServer( machineId );
+            result = readHaServer( machineId, wait );
             haServersCache.put( machineId, result );
         }
         return result;
     }
     
-    protected String readHaServer( int machineId )
+    protected String readHaServer( int machineId, boolean wait )
     {
-        waitForSyncConnected();
+        if ( wait )
+        {
+            waitForSyncConnected();
+        }
         String rootPath = getRoot();
         try
         {

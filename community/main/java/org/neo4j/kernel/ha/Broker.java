@@ -8,6 +8,8 @@ public interface Broker
 {
     Pair<Master, Machine> getMaster();
     
+    Pair<Master, Machine> getMasterReally();
+    
     Machine getMasterExceptMyself();
     
     void setLastCommittedTxId( long txId );
