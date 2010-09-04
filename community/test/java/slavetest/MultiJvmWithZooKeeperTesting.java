@@ -43,6 +43,10 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
         super.initializeDbs( numSlaves, config );
         zooKeeperMasterFetcher = new ClusterManager(
                 buildZooKeeperServersConfigValue( ZOO_KEEPER_CLUSTER_SIZE ) );
+        for ( StandaloneDbCom db : jvmByMachineId.values() )
+        {
+            db.awaitStarted();
+        }
     }
     
     @Override
@@ -59,8 +63,7 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
         myExtraArgs.addAll( Arrays.asList( extraArgs ) );
         StandaloneDbCom com = super.spawnJvm( path, port, machineId,
                 myExtraArgs.toArray( new String[myExtraArgs.size()] ) );
-        com.awaitStarted();
-        jvmByMachineId.put( com.getMachineId(), com );
+        jvmByMachineId.put( machineId+1, com );
         return com;
     }
     
@@ -83,9 +86,9 @@ public class MultiJvmWithZooKeeperTesting extends MultiJvmTesting
     @Override
     protected <T> T executeJobOnMaster( Job<T> job ) throws Exception
     {
-        zooKeeperMasterFetcher.waitForSyncConnected();
-        int masterMachineId = zooKeeperMasterFetcher.getCachedMaster().other().getMachineId();
-        return jvmByMachineId.get( masterMachineId ).executeJob( job );
+//        zooKeeperMasterFetcher.waitForSyncConnected();
+//        int masterMachineId = zooKeeperMasterFetcher.getCachedMaster().other().getMachineId();
+        return jvmByMachineId.get( 1 ).executeJob( job );
     }
     
     @After
