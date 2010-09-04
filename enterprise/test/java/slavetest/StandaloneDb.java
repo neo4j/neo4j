@@ -82,6 +82,7 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
             }
             this.location = location;
             this.location.ensureRegistryCreated();
+            Thread.sleep( 5000 );
             this.location.bind( this );
             this.machineId = tempMachineId;
             this.db = haDb;
