@@ -89,8 +89,12 @@ public abstract class AbstractZooKeeperManager implements Watcher
     {
         Machine master = getMasterBasedOn( getAllMachines( wait ).values() );
         invalidateMaster();
-        MasterClient masterClient = master == Machine.NO_MACHINE || master.getMachineId() == getMyMachineId() ? null :
-                new MasterClient( master );
+        MasterClient masterClient = null;
+        if ( master != Machine.NO_MACHINE && 
+                master.getMachineId() != getMyMachineId() )
+        {
+            masterClient = new MasterClient( master );
+        }
         cachedMaster = new Pair<Master, Machine>( masterClient, master );
         return cachedMaster;
     }
