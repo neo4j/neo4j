@@ -41,7 +41,6 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
 
     public MasterClient( String hostNameOrIp, int port )
     {
-        new Exception( "Bööööög" ).printStackTrace();
         this.hostNameOrIp = hostNameOrIp;
         this.port = port;
         ExecutorService executor = Executors.newCachedThreadPool();

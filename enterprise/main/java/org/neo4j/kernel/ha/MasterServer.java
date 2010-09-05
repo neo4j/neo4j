@@ -135,6 +135,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     {
         // Close all open connections
         deadConnectionsPoller.shutdown();
+        System.out.println( "Master server shutdown, closing all channels" );
         channelGroup.close().awaitUninterruptibly();
         
         // TODO This should work, but blocks with busy wait sometimes
