@@ -38,11 +38,11 @@ public class ZooClient extends AbstractZooKeeperManager
         super( servers );
         this.rootPath = "/" + storeCreationTime + "_" + storeId;
         this.haServer = haServer;
-        this.zooKeeper = instantiateZooKeeper();
         this.receiver = receiver;
         this.machineId = machineId;
         this.committedTx = committedTx;
         this.sequenceNr = "not initialized yet";
+        this.zooKeeper = instantiateZooKeeper();
     }
     
     @Override
@@ -64,29 +64,19 @@ public class ZooClient extends AbstractZooKeeperManager
             }
             else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
             {
-                Pair<Master, Machine> cachedMaster = getCachedMaster();
                 Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
                 System.out.println( "Get master before write:" + masterBeforeIWrite );
                 sequenceNr = setup();
                 System.out.println( "did setup" );
                 keeperState = KeeperState.SyncConnected;
-                Pair<Master, Machine> currentMaster = getMasterFromZooKeeper( false );
-                System.out.println( "current master " + currentMaster );
-                
-                // Master has changed since last time I checked and it's not me
-                if ( (cachedMaster.other().getMachineId() == -1 || currentMaster.other().getMachineId() != masterBeforeIWrite.other().getMachineId()) &&
-                        currentMaster.other().getMachineId() != machineId )
+                Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false );
+                System.out.println( "Get master after write:" + masterAfterIWrote );
+                int masterId = masterAfterIWrote.other().getMachineId();
+                if ( masterBeforeIWrite.other().getMachineId() != masterId && masterId != machineId )
                 {
-                    System.out.println( "Master changed and it's not me" );
-                    setDataChangeWatcher( MASTER_NOTIFY_CHILD, currentMaster.other().getMachineId() );
-                    receiver.newMaster( currentMaster, new Exception() );
+                    setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
                 }
-                else if ( /*masterBeforeIWrite.other().getMachineId() == -1  && */
-                        currentMaster.other().getMachineId() == machineId )
-                {
-                    System.out.println( "2" );
-                    receiver.newMaster( currentMaster, new Exception() );
-                }
+                receiver.newMaster( masterAfterIWrote, new Exception() );
             }
             else if ( path == null && event.getState() == Watcher.Event.KeeperState.Disconnected )
             {

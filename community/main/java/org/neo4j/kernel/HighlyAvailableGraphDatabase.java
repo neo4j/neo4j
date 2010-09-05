@@ -73,8 +73,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private volatile MasterServer masterServer;
     private final AtomicBoolean reevaluatingMyself = new AtomicBoolean();
     private ScheduledExecutorService updatePuller;
-    private volatile Machine cachedMaster = Machine.NO_MACHINE;
-    private volatile boolean started;
     
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -117,20 +115,17 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     
     private void startUp()
     {
-//        broker.getMaster();
-//        long startTime = System.currentTimeMillis();
-//        while ( !started && System.currentTimeMillis()-startTime < 10000 )
-//        {
-//            try
-//            {
-//                Thread.sleep( 100 );
-//            }
-//            catch ( InterruptedException e )
-//            {
-//                Thread.interrupted();
-//            }
-//        }
-//        reevaluateMyself();
+        for( int i = 0; i < 5 && localGraph == null; i++ )
+        {
+            try
+            {
+                Thread.sleep( 1000 );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+            }
+        }
     }
 
     private BrokerFactory defaultBrokerFactory( final String storeDir,
@@ -212,43 +207,36 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         
         try
         {
-            System.out.println( "reevaluateMyself " + master );
+            System.out.println( "reevaluateMyself machineId[" + machineId + "] with master[" + master + "]" );
             if ( master == null )
             {
                 System.out.println( "looked up master " + master );
                 master = broker.getMasterReally();
             }
-            boolean iAmCurrentlyMaster = masterServer != null;
+
             boolean restarted = false;
-            if ( cachedMaster.getMachineId() != master.other().getMachineId() )
+            boolean iAmCurrentlyMaster = masterServer != null;
+            if ( master.other().getMachineId() == machineId )
             {
-                // New master
-                if ( master.other().getMachineId() == machineId )
+                // I am master
+                if ( this.localGraph == null || !iAmCurrentlyMaster )
                 {
-                    // The new master is me, make sure I run as master
-                    if ( this.localGraph == null || !iAmCurrentlyMaster )
-                    {
-                        internalShutdown();
-                        startAsMaster();
-                        restarted = true;
-                    }
+                    internalShutdown();
+                    startAsMaster();
+                    restarted = true;
                 }
-                else
-                {
-                    // Someone else got to be master, make sure I run as slave
-                    // The correct MasterClient has been provided to me from the broker
-                    if ( this.localGraph == null || iAmCurrentlyMaster )
-                    {
-                        internalShutdown();
-                        startAsSlave();
-                        tryToEnsureIAmNotABrokenMachine( master );
-                        restarted = true;
-                    }
-                }
-            }
-            if ( masterServer != null )
-            {
+                // fire rebound event
                 broker.rebindMaster();
+            }
+            else
+            {
+                if ( this.localGraph == null || iAmCurrentlyMaster )
+                {
+                    internalShutdown();
+                    startAsSlave();
+                    tryToEnsureIAmNotABrokenMachine( master );
+                    restarted = true;
+                }
             }
             
             if ( restarted )
@@ -264,8 +252,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 this.localDataSourceManager =
                         localGraph.getConfig().getTxModule().getXaDataSourceManager();
             }
-            cachedMaster = master.other();
-            started = true;
         }
         finally
         {
@@ -556,37 +542,25 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     
     public void newMaster( Pair<Master, Machine> master, Exception e )
     {
-//        e.printStackTrace();
-//        new Thread()
-//        {
-//            @Override
-//            public void run()
-//            {
-                for ( int i = 0; i < 5; i++ )
-                {
-                    try
-                    {
-                        reevaluateMyself( master );
-                        break;
-                    }
-                    catch ( ZooKeeperException ee )
-                    {
-                        ee.printStackTrace();
-                    }
-                    catch ( HaCommunicationException ee )
-                    {
-                        ee.printStackTrace();
-                    }
-                    catch ( Throwable t )
-                    {
-                        t.printStackTrace();
-                        System.out.println( "Reevaluation ended in unknown exception " + t
-                                + " so shutting down" );
-                        shutdown();
-                    }
-                }
-//            }
-//        }.start();
+        try
+        {
+            reevaluateMyself( master );
+        }
+        catch ( ZooKeeperException ee )
+        {
+            ee.printStackTrace();
+        }
+        catch ( HaCommunicationException ee )
+        {
+            ee.printStackTrace();
+        }
+        catch ( Throwable t )
+        {
+            t.printStackTrace();
+            System.out.println( "Reevaluation ended in unknown exception " + t
+                    + " so shutting down" );
+            shutdown();
+        }
     }
     
     public IndexService getIndexService()
