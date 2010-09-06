@@ -14,6 +14,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ZooClient extends AbstractZooKeeperManager
 {
@@ -32,16 +33,19 @@ public class ZooClient extends AbstractZooKeeperManager
     private final String rootPath;
     private final String haServer;
 
+    private final StringLogger msgLog;
+    
     public ZooClient( String servers, int machineId, long storeCreationTime, 
-        long storeId, long committedTx, ResponseReceiver receiver, String haServer )
+        long storeId, long committedTx, ResponseReceiver receiver, String haServer, String storeDir )
     {
-        super( servers );
+        super( servers, storeDir );
         this.rootPath = "/" + storeCreationTime + "_" + storeId;
         this.haServer = haServer;
         this.receiver = receiver;
         this.machineId = machineId;
         this.committedTx = committedTx;
         this.sequenceNr = "not initialized yet";
+        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         this.zooKeeper = instantiateZooKeeper();
     }
     
@@ -56,7 +60,7 @@ public class ZooClient extends AbstractZooKeeperManager
         try
         {
             String path = event.getPath();
-            System.out.println( this + ", " + new Date() + " Got event: " + event + "(path=" + path + ")" );
+            msgLog.logMessage( this + ", " + new Date() + " Got event: " + event + "(path=" + path + ")" );
             if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
             {
                 keeperState = KeeperState.Expired;
@@ -65,12 +69,12 @@ public class ZooClient extends AbstractZooKeeperManager
             else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
             {
                 Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
-                System.out.println( "Get master before write:" + masterBeforeIWrite );
+                msgLog.logMessage( "Get master before write:" + masterBeforeIWrite );
                 sequenceNr = setup();
-                System.out.println( "did setup" );
+                msgLog.logMessage( "Did setup, seq=" + sequenceNr );
                 keeperState = KeeperState.SyncConnected;
                 Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false );
-                System.out.println( "Get master after write:" + masterAfterIWrote );
+                msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
                 int masterId = masterAfterIWrote.other().getMachineId();
                 if ( masterBeforeIWrite.other().getMachineId() != masterId && masterId != machineId )
                 {
@@ -103,12 +107,13 @@ public class ZooClient extends AbstractZooKeeperManager
                 }
                 else
                 {
-                    System.out.println( "Unrecognized data change " + path );
+                    msgLog.logMessage( "Unrecognized data change " + path );
                 }
             }
         }
         catch ( RuntimeException e )
         {
+            msgLog.logMessage( "Error in ZooClient.process", e );
             e.printStackTrace();
             throw e;
         }
@@ -172,7 +177,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 int id = ByteBuffer.wrap( data ).getInt();
                 if ( currentMasterId == -1 || id == currentMasterId )
                 {
-                    System.out.println( child + " not set, is already " + currentMasterId );
+                    //System.out.println( child + " not set, is already " + currentMasterId );
                     return;
                 }
             }
@@ -193,12 +198,12 @@ public class ZooClient extends AbstractZooKeeperManager
                 {
                     zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, 
                             CreateMode.PERSISTENT );
-                    System.out.println( child + " created with " + currentMasterId );
+                    msgLog.logMessage( child + " created with " + currentMasterId );
                 }
                 else if ( currentMasterId != -1 )
                 {
                     zooKeeper.setData( path, data, -1 );
-                    System.out.println( child + " set to " + currentMasterId );
+                    msgLog.logMessage( child + " set to " + currentMasterId );
                 }
                 
                 // Add a watch for it
@@ -369,7 +374,7 @@ public class ZooClient extends AbstractZooKeeperManager
             }
         }
         zooKeeper.setData( machinePath, data, -1 );
-        System.out.println( "Wrote HA server " + haServer + " to zoo keeper" );
+        msgLog.logMessage( "Wrote HA server " + haServer + " to zoo keeper" );
     }
 
     private byte[] haServerAsData()
@@ -385,7 +390,7 @@ public class ZooClient extends AbstractZooKeeperManager
     
     public synchronized void setCommittedTx( long tx )
     {
-        System.out.println( "Setting txId=" + tx + " for machine=" + machineId );
+        msgLog.logMessage( "ZooClient setting txId=" + tx + " for machine=" + machineId );
         waitForSyncConnected();
         this.committedTx = tx;
         String root = getRoot();

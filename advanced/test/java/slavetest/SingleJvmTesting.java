@@ -44,13 +44,14 @@ public class SingleJvmTesting extends AbstractHaTest
             startUpMaster( config );
             for ( int i = 1; i <= numSlaves; i++ )
             {
-                FakeSlaveBroker broker = new FakeSlaveBroker( master, 0, i ); 
                 File slavePath = dbPath( i );
+                FakeSlaveBroker broker = new FakeSlaveBroker( master, 0, i, slavePath.getAbsolutePath() ); 
                 Map<String,String> cfg = new HashMap<String, String>(config);
                 cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(i) );
                 cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
-                GraphDatabaseService db = new HighlyAvailableGraphDatabase(
+                HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
                         slavePath.getAbsolutePath(), cfg, AbstractBroker.wrapSingleBroker( broker ) );
+                // db.newMaster( null, new Exception() );
                 haDbs.add( db );
             }
         }
@@ -66,9 +67,10 @@ public class SingleJvmTesting extends AbstractHaTest
         int masterId = 0;
         Map<String, String> config = MapUtil.stringMap( extraConfig,
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, String.valueOf( masterId ) );
-        FakeMasterBroker broker = new FakeMasterBroker( masterId );
-        GraphDatabaseService db = new HighlyAvailableGraphDatabase( dbPath( 0 ).getAbsolutePath(),
+        FakeMasterBroker broker = new FakeMasterBroker( masterId, dbPath( 0 ).getAbsolutePath() );
+        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( dbPath( 0 ).getAbsolutePath(),
                 config, AbstractBroker.wrapSingleBroker( broker ) );
+        // db.newMaster( null, new Exception() );
         master = new MasterImpl( db );
     }
 

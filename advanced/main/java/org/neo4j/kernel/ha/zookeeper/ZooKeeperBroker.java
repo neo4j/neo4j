@@ -19,12 +19,12 @@ public class ZooKeeperBroker extends AbstractBroker
     public ZooKeeperBroker( String storeDir, int machineId, String zooKeeperServers, 
             String haServer, ResponseReceiver receiver )
     {
-        super( machineId );
+        super( machineId, storeDir );
         this.machineId = machineId;
         this.haServer = haServer;
         NeoStoreUtil store = new NeoStoreUtil( storeDir ); 
         this.zooClient = new ZooClient( zooKeeperServers, machineId, store.getCreationTime(),
-                store.getStoreId(), store.getLastCommittedTx(), receiver, haServer );
+                store.getStoreId(), store.getLastCommittedTx(), receiver, haServer, storeDir );
     }
     
     public Pair<Master, Machine> getMaster()
@@ -47,7 +47,7 @@ public class ZooKeeperBroker extends AbstractBroker
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
         MasterServer server = new MasterServer( new MasterImpl( graphDb ),
-                Machine.splitIpAndPort( haServer ).other() );
+                Machine.splitIpAndPort( haServer ).other(), getStoreDir() );
         return server;
     }
 

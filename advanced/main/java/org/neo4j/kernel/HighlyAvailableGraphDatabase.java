@@ -115,16 +115,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     
     private void startUp()
     {
-        for( int i = 0; i < 5 && localGraph == null; i++ )
+        newMaster( null, new Exception() );
+        if ( localGraph == null )
         {
-            try
-            {
-                Thread.sleep( 1000 );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-            }
+            throw new RuntimeException( "Failed to find a master" );
         }
     }
 
@@ -200,68 +194,67 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     
     protected synchronized void reevaluateMyself( Pair<Master, Machine> master )
     {
-        if ( !reevaluatingMyself.compareAndSet( false, true ) )
+//        if ( !reevaluatingMyself.compareAndSet( false, true ) )
+//        {
+//            return;
+//        }
+//        try
+//        {
+        if ( master == null )
         {
-            return;
+            master = broker.getMasterReally();
+        }
+
+        boolean restarted = false;
+        boolean iAmCurrentlyMaster = masterServer != null;
+        msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master + 
+                "] (I am master=" + iAmCurrentlyMaster + ")" );
+        if ( master.other().getMachineId() == machineId )
+        {
+            // I am master
+            if ( this.localGraph == null || !iAmCurrentlyMaster )
+            {
+                internalShutdown();
+                startAsMaster();
+                restarted = true;
+            }
+            // fire rebound event
+            broker.rebindMaster();
+        }
+        else
+        {
+            if ( this.localGraph == null || iAmCurrentlyMaster )
+            {
+                internalShutdown();
+                startAsSlave();
+                restarted = true;
+            }
+            tryToEnsureIAmNotABrokenMachine( master );
         }
         
-        try
+        if ( restarted )
         {
-            System.out.println( "reevaluateMyself machineId[" + machineId + "] with master[" + master + "]" );
-            if ( master == null )
+            for ( TransactionEventHandler<?> handler : transactionEventHandlers )
             {
-                System.out.println( "looked up master " + master );
-                master = broker.getMasterReally();
+                this.localGraph.registerTransactionEventHandler( handler );
             }
-
-            boolean restarted = false;
-            boolean iAmCurrentlyMaster = masterServer != null;
-            if ( master.other().getMachineId() == machineId )
+            for ( KernelEventHandler handler : kernelEventHandlers )
             {
-                // I am master
-                if ( this.localGraph == null || !iAmCurrentlyMaster )
-                {
-                    internalShutdown();
-                    startAsMaster();
-                    restarted = true;
-                }
-                // fire rebound event
-                broker.rebindMaster();
+                this.localGraph.registerKernelEventHandler( handler );
             }
-            else
-            {
-                if ( this.localGraph == null || iAmCurrentlyMaster )
-                {
-                    internalShutdown();
-                    startAsSlave();
-                    tryToEnsureIAmNotABrokenMachine( master );
-                    restarted = true;
-                }
-            }
-            
-            if ( restarted )
-            {
-                for ( TransactionEventHandler<?> handler : transactionEventHandlers )
-                {
-                    this.localGraph.registerTransactionEventHandler( handler );
-                }
-                for ( KernelEventHandler handler : kernelEventHandlers )
-                {
-                    this.localGraph.registerKernelEventHandler( handler );
-                }
-                this.localDataSourceManager =
-                        localGraph.getConfig().getTxModule().getXaDataSourceManager();
-            }
+            this.localDataSourceManager =
+                    localGraph.getConfig().getTxModule().getXaDataSourceManager();
         }
-        finally
-        {
-            reevaluatingMyself.set( false );
-        }
+//        }
+//        finally
+//        {
+//            reevaluatingMyself.set( false );
+//        }
     }
 
     private void startAsSlave()
     {
-        System.out.println( "Starting as slave" );
+        msgLog.logMessage( "Starting[" + machineId + "] as slave" );
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 new SlaveLockManagerFactory( broker, this ),
                 new SlaveIdGeneratorFactory( broker, this ),
@@ -271,12 +264,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
         instantiateIndexIfNeeded();
         instantiateAutoUpdatePullerIfConfigSaysSo();
-        System.out.println( "Started as slave" );
+        msgLog.logMessage( "Started as slave" );
     }
 
     private void startAsMaster()
     {
-        System.out.println( "Starting as master" );
+        msgLog.logMessage( "Starting[" + machineId + "] as master" );
         this.localGraph = new EmbeddedGraphDbImpl( storeDir, config, this,
                 CommonFactories.defaultLockManagerFactory(),
                 new MasterIdGeneratorFactory(),
@@ -286,7 +279,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         instantiateIndexIfNeeded();
-        System.out.println( "Started as master" );
+        msgLog.logMessage( "Started as master" );
     }
     
     private void tryToEnsureIAmNotABrokenMachine( Pair<Master, Machine> master )
@@ -313,16 +306,17 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             // else -> recreate / destroy db
             else
             {
-                msgLog.logMessage( "Broken store, my last committed tx,machineId[" + 
-                        myLastCommittedTx + "," + masterForMyHighestCommonTxId + 
-                        "] but master says machine id for that txId is " + masterForMastersHighestCommonTxId );
+                String msg = "Broken store, my last committed tx,machineId[" + 
+                    myLastCommittedTx + "," + masterForMyHighestCommonTxId + 
+                    "] but master says machine id for that txId is " + masterForMastersHighestCommonTxId;
+                msgLog.logMessage( msg );
+                throw new RuntimeException( msg );
 //                if ( !recreateDbSomehow() )
 //                {
 //                    throw new RuntimeException( "I was master the previous session, " +
 //                            "so can't start up in this state (and no method specified how " +
 //                            "I should replicate from another DB)" ); 
 //                }
-                throw new RuntimeException( "I am broken" );
             }
         }
         catch ( Exception e )
@@ -350,7 +344,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 throw new RuntimeException( e );
             }
-            System.out.println( "=== RECREATED DB from " + recreateFrom + " ===" );
+            msgLog.logMessage( "=== RECREATED DB from " + recreateFrom + " ===" );
             return true;
         }
         return false;
@@ -449,34 +443,34 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     public synchronized void internalShutdown()
     {
-        System.out.println( "Internal shutdown of HA db " + this );
+        msgLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this );
         if ( this.updatePuller != null )
         {
-            System.out.println( "Internal shutdown updatePuller" );
+            msgLog.logMessage( "Internal shutdown updatePuller" );
             this.updatePuller.shutdown();
-            System.out.println( "Internal shutdown updatePuller DONE" );
+            msgLog.logMessage( "Internal shutdown updatePuller DONE" );
             this.updatePuller = null;
         }
         if ( this.masterServer != null )
         {
-            System.out.println( "Internal shutdown masterServer" );
+            msgLog.logMessage( "Internal shutdown masterServer" );
             this.masterServer.shutdown();
-            System.out.println( "Internal shutdown masterServer DONE" );
+            msgLog.logMessage( "Internal shutdown masterServer DONE" );
             this.masterServer = null;
         }
         if ( this.localIndexService != null )
         {
-            System.out.println( "Internal shutdown index" );
+            msgLog.logMessage( "Internal shutdown index" );
             this.localIndexService.shutdown();
-            System.out.println( "Internal shutdown index DONE" );
+            msgLog.logMessage( "Internal shutdown index DONE" );
             this.localIndexService = null;
             this.localIndexProvider = null;
         }
         if ( this.localGraph != null )
         {
-            System.out.println( "Internal shutdown localGraph" );
+            msgLog.logMessage( "Internal shutdown localGraph" );
             this.localGraph.shutdown();
-            System.out.println( "Internal shutdown localGraph DONE" );
+            msgLog.logMessage( "Internal shutdown localGraph DONE" );
             this.localGraph = null;
             this.localDataSourceManager = null;
         }
@@ -484,12 +478,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     
     public synchronized void shutdown()
     {
+        msgLog.logMessage( "Shutdown[" + machineId + "], " + this );         
         if ( this.broker != null )
         {
             this.broker.shutdown();
         }
         internalShutdown();
-        System.out.println( "Shutdown sucessful" );
     }
 
     public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
@@ -557,7 +551,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         catch ( Throwable t )
         {
             t.printStackTrace();
-            System.out.println( "Reevaluation ended in unknown exception " + t
+            msgLog.logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down" );
             shutdown();
         }

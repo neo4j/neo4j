@@ -30,6 +30,7 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -48,9 +49,12 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     private final Map<Channel, SlaveContext> connectedSlaveChannels =
             new HashMap<Channel, SlaveContext>();
 
-    public MasterServer( Master realMaster, final int port )
+    private final StringLogger msgLog;
+    
+    public MasterServer( Master realMaster, final int port, String storeDir )
     {
         this.realMaster = realMaster;
+        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         ExecutorService executor = Executors.newCachedThreadPool();
         channelFactory = new NioServerSocketChannelFactory(
                 executor, executor, MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
@@ -64,7 +68,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
                 Channel channel = bootstrap.bind( new InetSocketAddress( port ) );
                 // Add the "server" channel
                 channelGroup.add( channel );
-                System.out.println( "Master server bound to " + port );
+                msgLog.logMessage( "Master server bound to " + port );
             }
         } );
         deadConnectionsPoller = new ScheduledThreadPoolExecutor( 1 );
@@ -135,7 +139,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     {
         // Close all open connections
         deadConnectionsPoller.shutdown();
-        System.out.println( "Master server shutdown, closing all channels" );
+        msgLog.logMessage( "Master server shutdown, closing all channels" );
         channelGroup.close().awaitUninterruptibly();
         
         // TODO This should work, but blocks with busy wait sometimes
