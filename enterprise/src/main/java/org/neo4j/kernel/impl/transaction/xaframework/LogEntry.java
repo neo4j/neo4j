@@ -122,7 +122,7 @@ public abstract class LogEntry
         
         public String toString()
         {
-            return "1PC[" + getIdentifier() + ", txId=" + getTxId() + "]";
+            return "1PC[" + getIdentifier() + ", txId=" + getTxId() + ", masterId=" + getMasterId() + "]";
         }
     }
 
@@ -148,7 +148,7 @@ public abstract class LogEntry
         
         public String toString()
         {
-            return "2PC[" + getIdentifier() + ", txId=" + getTxId() + "]";
+            return "2PC[" + getIdentifier() + ", txId=" + getTxId() + ", machineId=" + getMasterId() + "]";
         }
     }
 
