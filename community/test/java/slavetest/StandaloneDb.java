@@ -71,9 +71,9 @@ public class StandaloneDb extends UnicastRemoteObject implements StandaloneDbCom
                 boolean isMaster = args.getBoolean( "master", false ).booleanValue();
                 tempMachineId = args.getNumber( "id", null ).intValue();
                 Number masterId = args.getNumber( "master-id", null );
-                Master master = new MasterClient( "localhost", CommunicationProtocol.PORT );
-                AbstractBroker broker = isMaster ? new FakeMasterBroker( tempMachineId ) :
-                        new FakeSlaveBroker( master, masterId.intValue(), tempMachineId );
+                Master master = new MasterClient( "localhost", CommunicationProtocol.PORT, storeDir );
+                AbstractBroker broker = isMaster ? new FakeMasterBroker( tempMachineId, storeDir ) :
+                        new FakeSlaveBroker( master, masterId.intValue(), tempMachineId, storeDir );
                 haDb = new HighlyAvailableGraphDatabase( storeDir, MapUtil.stringMap(
                         HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + tempMachineId,
                         "index", args.get( "index", null ) ),

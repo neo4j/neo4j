@@ -24,6 +24,7 @@ import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.zookeeper.Machine;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -39,7 +40,9 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     private final String hostNameOrIp;
     private final int port;
 
-    public MasterClient( String hostNameOrIp, int port )
+    private final StringLogger msgLog;
+    
+    public MasterClient( String hostNameOrIp, int port, String storeDir )
     {
         this.hostNameOrIp = hostNameOrIp;
         this.port = port;
@@ -47,12 +50,13 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
                 executor, executor ) );
         bootstrap.setPipelineFactory( this );
-        System.out.println( "Client connected to " + hostNameOrIp + ":" + port );
+        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
+        msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port );
     }
     
-    public MasterClient( Machine machine )
+    public MasterClient( Machine machine, String storeDir )
     {
-        this( machine.getServer().first(), machine.getServer().other() );
+        this( machine.getServer().first(), machine.getServer().other(), storeDir );
     }
 
     private <T> Response<T> sendRequest( RequestType type,
@@ -115,12 +119,12 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                     }
                     else if ( unusedChannel.isConnected() )
                     {
-                        System.out.println( "Found unused (and still connected) channel" );
+                        msgLog.logMessage( "Found unused (and still connected) channel" );
                         channel = unusedChannel;
                     }
                     else
                     {
-                        System.out.println( "Found unused stale channel, discarding it" );
+                        msgLog.logMessage( "Found unused stale channel, discarding it" );
                     }
                 }
 
@@ -135,12 +139,12 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                         if ( channelFuture.isSuccess() )
                         {
                             channel = channelFuture.getChannel();
-                            System.out.println( "Opened a new channel" );
+                            msgLog.logMessage( "Opened a new channel to " + hostNameOrIp + ":" + port );
                             break;
                         }
                         else
                         {
-                            System.out.println( "Retrying connect" );
+                            msgLog.logMessage( "Retrying connect to " + hostNameOrIp + ":" + port );
                             try
                             {
                                 Thread.sleep( 500 );
@@ -316,7 +320,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     
     public void shutdown()
     {
-        System.out.println( "MasterClient shutdown" );
+        msgLog.logMessage( "MasterClient shutdown" );
         synchronized ( channels )
         {
             for ( Channel channel : unusedChannels )

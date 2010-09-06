@@ -6,9 +6,9 @@ import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public class FakeMasterBroker extends AbstractBroker
 {
-    public FakeMasterBroker( int myMachineId )
+    public FakeMasterBroker( int myMachineId, String storeDir )
     {
-        super( myMachineId );
+        super( myMachineId, storeDir );
     }
     
     public Machine getMasterMachine()
@@ -18,21 +18,22 @@ public class FakeMasterBroker extends AbstractBroker
     
     public Pair<Master, Machine> getMaster()
     {
-        throw new UnsupportedOperationException( "I am master" );
+        return new Pair<Master,Machine>( null, new Machine( getMyMachineId(), 0, 1, null ) );
+        // throw new UnsupportedOperationException( "I am master" );
     }
 
     public Pair<Master, Machine> getMasterReally()
     {
-        throw new UnsupportedOperationException( "I am master" );
+        return new Pair<Master,Machine>( null, new Machine( getMyMachineId(), 0, 1, null ) );
     }
     
     public boolean iAmMaster()
     {
-        return true;
+        return getMyMachineId() == 0;
     }
     
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
-        return new MasterServer( new MasterImpl( graphDb ), CommunicationProtocol.PORT );
+        return new MasterServer( new MasterImpl( graphDb ), CommunicationProtocol.PORT, getStoreDir() );
     }
 }

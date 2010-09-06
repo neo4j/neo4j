@@ -15,7 +15,7 @@ public class StartHaDb
 {
     public static final File PATH = new File( "var/hadb" );
 
-    static final String HA_SERVER = "172.16.1.242:5559";
+    static final String HA_SERVER = "172.16.2.33:5559";
         
 //            "1", "172.16.2.33:5559", // JS
 //            "2", "172.16.1.242:5559", // MP
@@ -27,12 +27,27 @@ public class StartHaDb
         System.out.println( "Starting store: createTime=" + new Date( store.getCreationTime() ) +
                 " identifier=" + store.getStoreId() + " last committed tx=" + store.getLastCommittedTx() );
         final GraphDatabaseService db = new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "2",
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "1",
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( StartZooKeeperServer.ZOO_KEEPER_SERVERS, "," ),
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, HA_SERVER,
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SKELETON_DB_PATH, figureOutNiceTmpDir(),
                 Config.ENABLE_REMOTE_SHELL, "true",
                 Config.KEEP_LOGICAL_LOGS, "true" ) );
+        
+        
+//        Transaction tx = db.beginTx();
+//        try
+//        {
+//            Node node = db.createNode();
+//            while ( true )
+//            {
+//                Thread.sleep( 5000 );
+//            }
+//        }
+//        finally
+//        {
+//            tx.finish();
+//        }
 //        Runtime.getRuntime().addShutdownHook( new Thread()
 //        {
 //            public void run()

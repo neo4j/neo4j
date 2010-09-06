@@ -16,6 +16,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Contains basic functionality for a ZooKeeper manager, f.ex. how to get
@@ -31,9 +32,14 @@ public abstract class AbstractZooKeeperManager implements Watcher
             new HashMap<Integer, String>() );
     private Pair<Master, Machine> cachedMaster = new Pair<Master, Machine>( null, Machine.NO_MACHINE );
 
-    public AbstractZooKeeperManager( String servers )
+    private final String storeDir;
+    private final StringLogger msgLog;
+    
+    public AbstractZooKeeperManager( String servers, String storeDir )
     {
         this.servers = servers;
+        this.storeDir = storeDir;
+        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
     }
     
     protected ZooKeeper instantiateZooKeeper()
@@ -93,7 +99,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         if ( master != Machine.NO_MACHINE && 
                 master.getMachineId() != getMyMachineId() )
         {
-            masterClient = new MasterClient( master );
+            masterClient = new MasterClient( master, storeDir );
         }
         cachedMaster = new Pair<Master, Machine>( masterClient, master );
         return cachedMaster;
@@ -127,12 +133,12 @@ public abstract class AbstractZooKeeperManager implements Watcher
                 }
             }
         }
-        System.out.println( "getMaster " + (master != null ? master.getMachineId() : "none") +
+        msgLog.logMessage( "getMaster " + (master != null ? master.getMachineId() : "none") +
                 " based on " + debugData );
         return master != null ? master : Machine.NO_MACHINE;
     }
 
-    protected synchronized Map<Integer, Machine> getAllMachines( boolean wait )
+    protected Map<Integer, Machine> getAllMachines( boolean wait )
     {
         if ( wait )
         {
@@ -210,7 +216,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
             char[] chars = new char[length];
             buffer.asCharBuffer().get( chars );
             String result = String.valueOf( chars );
-            System.out.println( "Read HA server:" + result + " (for machineID " + machineId +
+            msgLog.logMessage( "Read HA server:" + result + " (for machineID " + machineId +
                     ") from zoo keeper" );
             return result;
         }

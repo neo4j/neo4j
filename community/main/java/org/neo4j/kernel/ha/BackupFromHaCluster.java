@@ -26,7 +26,7 @@ public class BackupFromHaCluster
                 String.valueOf( master.getMachineId() ) );
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir, config,
                 AbstractBroker.wrapSingleBroker( new BackupBroker( new MasterClient(
-                        master.getServer().first(), master.getServer().other() ) ) ) );
+                        master.getServer().first(), master.getServer().other(), storeDir ), storeDir ) ) );
         System.out.println( "Leaching backup from master " + master );
         try
         {

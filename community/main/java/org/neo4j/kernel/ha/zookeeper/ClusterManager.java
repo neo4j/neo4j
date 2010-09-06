@@ -18,7 +18,7 @@ public class ClusterManager extends AbstractZooKeeperManager
     
     public ClusterManager( String zooKeeperServers )
     {
-        super( zooKeeperServers );
+        super( zooKeeperServers, null );
         this.zooKeeper = instantiateZooKeeper();
     }
     
@@ -51,7 +51,7 @@ public class ClusterManager extends AbstractZooKeeperManager
 
     public void process( WatchedEvent event )
     {
-        System.out.println( "Got event: " + event );
+        // System.out.println( "Got event: " + event );
         String path = event.getPath();
         if ( path == null )
         {
