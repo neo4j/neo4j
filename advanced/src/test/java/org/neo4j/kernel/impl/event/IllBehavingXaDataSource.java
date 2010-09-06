@@ -1,11 +1,10 @@
 package org.neo4j.kernel.impl.event;
 
-import java.util.HashMap;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -15,7 +14,7 @@ public class IllBehavingXaDataSource extends XaDataSource
 {
     IllBehavingXaDataSource() throws InstantiationException
     {
-        super( new HashMap<Object,Object>() );
+        super( MapUtil.stringMap( "store_dir", "target/var" ) );
     }
     
     @Override
