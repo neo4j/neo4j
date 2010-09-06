@@ -1001,7 +1001,7 @@ public class XaLogicalLog
             String tmpNameHint ) throws IOException
     {
         String tmpName = generateUniqueName( tmpNameHint );
-        System.out.println( "tmpName:" + tmpName );
+        msgLog.logMessage( "write out log entry list to tmpName:" + tmpName );
         FileChannel txLog = new RandomAccessFile( tmpName, "rw" ).getChannel();
         LogBuffer buf = new DirectMappedLogBuffer( txLog );
         for ( LogEntry entry : logEntryList )
@@ -1029,7 +1029,8 @@ public class XaLogicalLog
         }
 
         long version = findLogContainingTxId( txId );
-        System.out.println( "Found txId:" + txId + " in log version:" + version );
+        msgLog.logMessage( "Get committed transaction txId:" + txId + 
+                " found in log version:" + version );
         if ( version == -1 )
         {
             throw new RuntimeException( "txId:" + txId + " not found in any logical log " +
@@ -1065,7 +1066,7 @@ public class XaLogicalLog
 //        }
 
         long version = findLogContainingTxId( txId );
-        System.out.println( "Found txId:" + txId + " in log version:" + version );
+        msgLog.logMessage( "Get master id for txId:" + txId + " found in log version:" + version );
         if ( version == -1 )
         {
             throw new RuntimeException( "txId:" + txId + " not found in any logical log " +
