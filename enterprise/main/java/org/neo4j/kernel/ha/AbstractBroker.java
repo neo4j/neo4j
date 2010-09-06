@@ -7,10 +7,12 @@ import org.neo4j.kernel.ha.zookeeper.Machine;
 public abstract class AbstractBroker implements Broker
 {
     private final int myMachineId;
+    private final String storeDir;
 
-    public AbstractBroker( int myMachineId )
+    public AbstractBroker( int myMachineId, String storeDir )
     {
         this.myMachineId = myMachineId;
+        this.storeDir = storeDir;
     }
     
     public void setLastCommittedTxId( long txId )
@@ -21,6 +23,11 @@ public abstract class AbstractBroker implements Broker
     public int getMyMachineId()
     {
         return this.myMachineId;
+    }
+    
+    public String getStoreDir()
+    {
+        return storeDir;
     }
     
     public void shutdown()
