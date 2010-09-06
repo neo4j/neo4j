@@ -24,6 +24,8 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import org.neo4j.kernel.impl.util.StringLogger;
+
 /**
  * <CODE>XaDataSource</CODE> is as a factory for creating
  * {@link XaConnection XaConnections}.
@@ -64,6 +66,7 @@ public abstract class XaDataSource
     private byte[] branchId = null;
     private String name = null;
     
+    private final StringLogger msgLog;
     /**
      * Constructor used by the Neo4j kernel to create datasources.
      * 
@@ -72,6 +75,8 @@ public abstract class XaDataSource
      */
     public XaDataSource( Map<?,?> params ) throws InstantiationException
     {
+        String storeDir = (String) params.get( "store_dir" );
+        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
     }
 
     /**
@@ -359,7 +364,7 @@ public abstract class XaDataSource
         }
         else
         {
-            System.out.println( "Tried to apply transaction with txId=" + txId + 
+            msgLog.logMessage( "Tried to apply transaction with txId=" + txId + 
                     " but last committed txId=" + getLastCommittedTxId() );
         }
     }

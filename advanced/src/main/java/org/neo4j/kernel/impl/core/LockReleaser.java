@@ -408,7 +408,8 @@ public class LockReleaser
         cowMap.remove( cowTxId );
     }
 
-    public synchronized void dumpLocks()
+    // non thread safe but let exception be thrown instead of risking deadlock
+    public void dumpLocks()
     {
         System.out.print( "Locks held: " );
         java.util.Iterator<?> itr = lockMap.keySet().iterator();
