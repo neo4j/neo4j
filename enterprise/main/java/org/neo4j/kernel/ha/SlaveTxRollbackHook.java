@@ -31,12 +31,12 @@ public class SlaveTxRollbackHook implements TxFinishHook
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( broker.getMaster(), e );
+            receiver.newMaster( null, e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            receiver.newMaster( broker.getMaster(), e );
+            receiver.newMaster( null, e );
             throw e;
         }
     }

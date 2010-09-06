@@ -87,12 +87,12 @@ public class SlaveLockManager extends LockManager
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( broker.getMaster(), e );
+            receiver.newMaster( null, e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            receiver.newMaster( broker.getMaster(), e );
+            receiver.newMaster( null, e );
             throw e;
         }
     }
@@ -137,12 +137,12 @@ public class SlaveLockManager extends LockManager
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( broker.getMaster(), e );
+            receiver.newMaster( null, e );
             throw e;
         }
         catch ( HaCommunicationException e )
         {
-            receiver.newMaster( broker.getMaster(), e );
+            receiver.newMaster( null, e );
             throw e;
         }
     }
