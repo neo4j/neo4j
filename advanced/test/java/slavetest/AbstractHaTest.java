@@ -219,7 +219,10 @@ public abstract class AbstractHaTest
         {
             Object value1 = entity.getProperty( key );
             Object value2 = otherEntity.getProperty( key );
-            if ( !value1.equals( value2 ) )
+            if ( value1.getClass().isArray() && value2.getClass().isArray() )
+            {
+            }
+            else if ( !value1.equals( value2 ) )
             {
                 throw new RuntimeException( entity + " not equals property '" + key + "': " +
                         value1 + ", " + value2 );
@@ -486,5 +489,12 @@ public abstract class AbstractHaTest
         long id = executeJobOnMaster( new CommonJobs.CreateNodeAndNewIndexJob( "users",
                 "name", "Morpheus", "rank", "Captain" ) );
         pullUpdates();
+    }
+    
+    @Test
+    public void testVeryLargeTransaction() throws Exception
+    {
+        initializeDbs( 1 );
+        executeJob( new CommonJobs.LargeTransactionJob(), 0 );
     }
 }

@@ -660,4 +660,35 @@ public abstract class CommonJobs
             return null;
         }
     }
+
+    public static class LargeTransactionJob extends TransactionalJob<Boolean>
+    {
+        public LargeTransactionJob()
+        {
+        }
+        
+        @Override
+        protected Boolean executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            byte[] largeArray = new byte[1*1024*1024];
+            for ( int i = 0; i < largeArray.length; i++ )
+            {
+                largeArray[i] = (byte) (i % 256);
+            }
+            try
+            {
+                for ( int i = 0; i < 10; i++ )
+                {
+                    Node node = db.createNode();
+                    node.setProperty( "data", largeArray );
+                }
+                tx.success();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            return true;
+        }
+    }
 }

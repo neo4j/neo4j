@@ -8,7 +8,7 @@ public class DumpLogs
 {
     public static void main( String[] args ) throws Exception
     {
-        for ( File file : new File( "target/havar/dbs/0" ).listFiles() )
+        for ( File file : new File( "var/hadb1" ).listFiles() )
         {
             if ( !file.getName().contains( ".1" ) ) continue;
             
