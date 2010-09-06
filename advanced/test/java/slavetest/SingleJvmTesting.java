@@ -21,6 +21,7 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
+import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.MasterImpl;
@@ -29,12 +30,13 @@ public class SingleJvmTesting extends AbstractHaTest
 {
     private MasterImpl master;
     private List<GraphDatabaseService> haDbs;
-    
+
     protected GraphDatabaseService getSlave( int nr )
     {
         return haDbs.get( nr );
     }
-    
+
+    @Override
     protected void initializeDbs( int numSlaves, Map<String,String> config )
     {
         try
@@ -45,7 +47,7 @@ public class SingleJvmTesting extends AbstractHaTest
             for ( int i = 1; i <= numSlaves; i++ )
             {
                 File slavePath = dbPath( i );
-                FakeSlaveBroker broker = new FakeSlaveBroker( master, 0, i, slavePath.getAbsolutePath() ); 
+                Broker broker = makeSlaveBroker( master, 0, i, slavePath.getAbsolutePath() );
                 Map<String,String> cfg = new HashMap<String, String>(config);
                 cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(i) );
                 cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
@@ -60,25 +62,36 @@ public class SingleJvmTesting extends AbstractHaTest
             throw new RuntimeException( e );
         }
     }
-    
+
     @Override
     protected void startUpMaster( Map<String, String> extraConfig )
     {
         int masterId = 0;
         Map<String, String> config = MapUtil.stringMap( extraConfig,
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, String.valueOf( masterId ) );
-        FakeMasterBroker broker = new FakeMasterBroker( masterId, dbPath( 0 ).getAbsolutePath() );
+        Broker broker = makeMasterBroker( master, masterId, dbPath( 0 ).getAbsolutePath() );
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( dbPath( 0 ).getAbsolutePath(),
                 config, AbstractBroker.wrapSingleBroker( broker ) );
         // db.newMaster( null, new Exception() );
         master = new MasterImpl( db );
     }
 
+    protected Broker makeMasterBroker( MasterImpl master, int masterId, String path )
+    {
+        return new FakeMasterBroker( masterId, path );
+    }
+
+    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, String path )
+    {
+        return new FakeSlaveBroker( master, masterId, id, path );
+    }
+
     protected MasterImpl getMaster()
     {
         return master;
     }
-    
+
+    @Override
     protected void shutdownDbs()
     {
         for ( GraphDatabaseService haDb : haDbs )
@@ -93,7 +106,7 @@ public class SingleJvmTesting extends AbstractHaTest
     {
         verify( new VerifyDbContext( master.getGraphDb() ), getVerifyDbArray() );
         shutdownDbs();
-        
+
         VerifyDbContext masterOfflineDb =
                 new VerifyDbContext( new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() ) );
         VerifyDbContext[] slaveOfflineDbs = new VerifyDbContext[haDbs.size()];
@@ -108,7 +121,7 @@ public class SingleJvmTesting extends AbstractHaTest
             db.db.shutdown();
         }
     }
-    
+
     private VerifyDbContext[] getVerifyDbArray()
     {
         VerifyDbContext[] contexts = new VerifyDbContext[haDbs.size()];
@@ -119,16 +132,19 @@ public class SingleJvmTesting extends AbstractHaTest
         return contexts;
     }
 
+    @Override
     protected <T> T executeJob( Job<T> job, int slave ) throws Exception
     {
         return job.execute( haDbs.get( slave ) );
     }
-    
+
+    @Override
     protected <T> T executeJobOnMaster( Job<T> job ) throws Exception
     {
         return job.execute( master.getGraphDb() );
     }
-    
+
+    @Override
     protected void pullUpdates( int... ids )
     {
         if ( ids.length == 0 )
@@ -146,14 +162,14 @@ public class SingleJvmTesting extends AbstractHaTest
             }
         }
     }
-    
+
     @Test
     public void testMixingEntitiesFromWrongDbs() throws Exception
     {
         initializeDbs( 1 );
         GraphDatabaseService haDb1 = haDbs.get( 0 );
         GraphDatabaseService mDb = master.getGraphDb();
-        
+
         Transaction tx = mDb.beginTx();
         Node masterNode;
         try
@@ -166,7 +182,7 @@ public class SingleJvmTesting extends AbstractHaTest
         {
             tx.finish();
         }
-        
+
         tx = haDb1.beginTx();
         // try throw in node that does not exist and no tx on mdb
         try
@@ -184,7 +200,7 @@ public class SingleJvmTesting extends AbstractHaTest
             tx.finish();
         }
     }
-    
+
     @Override
     protected Job<Void> getMasterShutdownDispatcher()
     {
@@ -197,7 +213,7 @@ public class SingleJvmTesting extends AbstractHaTest
             }
         };
     }
-    
+
     @Override
     protected Fetcher<DoubleLatch> getDoubleLatch()
     {
@@ -207,27 +223,27 @@ public class SingleJvmTesting extends AbstractHaTest
             {
                 private final CountDownLatch first = new CountDownLatch( 1 );
                 private final CountDownLatch second = new CountDownLatch( 1 );
-                
+
                 public void countDownSecond()
                 {
                     second.countDown();
                 }
-                
+
                 public void countDownFirst()
                 {
                     first.countDown();
                 }
-                
+
                 public void awaitSecond()
                 {
                     await( second );
                 }
-                
+
                 public void awaitFirst()
                 {
                     await( first );
                 }
-                
+
                 private void await( CountDownLatch latch )
                 {
                     try
@@ -246,7 +262,7 @@ public class SingleJvmTesting extends AbstractHaTest
             {
                 return latch;
             }
-            
+
             public void close()
             {
             }
