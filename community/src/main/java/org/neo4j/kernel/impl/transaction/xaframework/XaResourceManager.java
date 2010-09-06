@@ -682,7 +682,7 @@ public class XaResourceManager
             ReadableByteChannel transaction ) throws IOException
     {
         long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
-        int masterId = TxIdGenerator.DEFAULT.getCurrentMasterId();
+        int masterId = txIdGenerator.getCurrentMasterId();
         log.applyTransactionWithoutTxId( transaction, txId, masterId );
         return txId;
     }
