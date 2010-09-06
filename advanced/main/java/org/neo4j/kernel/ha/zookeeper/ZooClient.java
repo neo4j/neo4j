@@ -76,10 +76,10 @@ public class ZooClient extends AbstractZooKeeperManager
                 Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false );
                 msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
                 int masterId = masterAfterIWrote.other().getMachineId();
-                if ( masterBeforeIWrite.other().getMachineId() != masterId && masterId != machineId )
-                {
+//                if ( masterBeforeIWrite.other().getMachineId() != masterId && masterId != machineId )
+//                {
                     setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
-                }
+//                }
                 receiver.newMaster( masterAfterIWrote, new Exception() );
             }
             else if ( path == null && event.getState() == Watcher.Event.KeeperState.Disconnected )

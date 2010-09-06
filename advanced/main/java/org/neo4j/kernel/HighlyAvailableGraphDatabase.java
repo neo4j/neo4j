@@ -538,6 +538,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
+            msgLog.logMessage( "newMaster( " + master + ") called", e );
             reevaluateMyself( master );
         }
         catch ( ZooKeeperException ee )
