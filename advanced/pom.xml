@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>7</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j</groupId>
+  <artifactId>neo4j-udc</artifactId>
+  <name>Neo4j Usage Data Collection</name>
+  <version>1.0-SNAPSHOT</version>
+  <description>Collects simple statistics about server deployment.</description>
+  
+  <properties>
+    <bundle.namespace>org.neo4j.ext.udc</bundle.namespace>
+    <short-name>udc</short-name>
+  </properties>
+  
+  <packaging>bundle</packaging>
+  
+  <url>http://components.neo4j.org/neo4j-udc/</url>
+  <scm>
+    <connection>
+      scm:svn:https://svn.neo4j.org/laboratory/components/udc
+    </connection>
+    <url>https://trac.neo4j.org/browser/laboratory/components/udc</url>
+  </scm>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.ops4j</groupId>
+        <artifactId>maven-pax-plugin</artifactId>
+        <version>1.4</version>
+        <configuration>
+          <framework>felix</framework>
+          <provision>
+            <param>mvn:org.apache.geronimo.specs/geronimo-jta_1.1_spec/1.1.1</param>
+          </provision>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>  
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.2-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.7</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.15</version>
+      <exclusions>
+      	<exclusion>
+      	  <groupId>com.sun.jdmk</groupId>
+      	  <artifactId>jmxtools</artifactId>
+      	</exclusion>
+      	<exclusion>
+      	  <groupId>com.sun.jmx</groupId>
+      	  <artifactId>jmxri</artifactId>
+      	</exclusion>
+      	<exclusion>
+      	  <groupId>javax.jms</groupId>
+      	  <artifactId>jms</artifactId>
+      	</exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+</project>
