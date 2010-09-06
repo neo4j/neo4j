@@ -51,10 +51,12 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         TxModule txModule = getEmbeddedGraphDb().getConfig().getTxModule();
         tm = txModule.getTxManager();
         xaDsMgr = txModule.getXaDataSourceManager();
-        java.util.Map<String,FakeXAResource> map1 = new java.util.HashMap<String,FakeXAResource>();
+        java.util.Map<String,Object> map1 = new java.util.HashMap<String,Object>();
         map1.put( "xa_resource", new FakeXAResource( "XAResource1" ) );
-        java.util.Map<String,FakeXAResource> map2 = new java.util.HashMap<String,FakeXAResource>();
+        map1.put( "store_dir", "target/var" );
+        java.util.Map<String,Object> map2 = new java.util.HashMap<String,Object>();
         map2.put( "xa_resource", new FakeXAResource( "XAResource2" ) );
+        map2.put( "store_dir", "target/var" );
         try
         {
             xaDsMgr.registerDataSource( "fakeRes1",
