@@ -29,7 +29,7 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
-import org.jboss.netty.handler.stream.ChunkedWriteHandler;
+import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -40,7 +40,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
 {
     private final static int DEAD_CONNECTIONS_CHECK_INTERVAL = 10;
     private final static int MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
-
+    
     private final ChannelFactory channelFactory;
     private final ServerBootstrap bootstrap;
     private final Master realMaster;
@@ -84,10 +84,9 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
-        pipeline.addLast( "chunkedWriter", new ChunkedWriteHandler() );
         pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( MAX_FRAME_LENGTH,
                 0, 4, 0, 4 ) );
-        // pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
+        pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
         pipeline.addLast( "serverHandler", new ServerHandler() );
         return pipeline;
     }
@@ -101,16 +100,9 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             try
             {
                 ChannelBuffer message = (ChannelBuffer) event.getMessage();
-                RequestType type = RequestType.values()[message.readByte()];
-                Channel channel = event.getChannel();
-                SlaveContext context = null;
-                if ( type.includesSlaveContext() )
-                {
-                    context = CommunicationProtocol.readSlaveContext( message );
-                    mapSlave( channel, context );
-                }
-                channel.write( new ChunkedResponse( type.caller.callMaster( realMaster, context,
-                        message ), type.serializer, type.includesSlaveContext() ) );
+                ChannelBuffer result = handleRequest( realMaster, message, 
+                        event.getChannel(), MasterServer.this );
+                event.getChannel().write( result );
             }
             catch ( Exception e )
             {
@@ -125,7 +117,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             e.getCause().printStackTrace();
         }
     }
-
+    
     protected void mapSlave( Channel channel, SlaveContext slave )
     {
         channelGroup.add( channel );
@@ -142,7 +134,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
             connectedSlaveChannels.remove( channel );
         }
     }
-
+    
     public void shutdown()
     {
         // Close all open connections
@@ -178,12 +170,12 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     {
         return channel.isConnected() && channel.isOpen();
     }
-
+    
     // =====================================================================
     // Just some methods which aren't really used when running a HA cluster,
     // but exposed so that other tools can reach that information.
     // =====================================================================
-
+    
     public Map<Integer, Collection<SlaveContext>> getSlaveInformation()
     {
         // Which slaves are connected a.t.m?
