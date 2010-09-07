@@ -1,4 +1,4 @@
-package org.neo4j.ext.udc.org.neo4j.ext.udc.impl;
+package org.neo4j.ext.udc.impl;
 
 import java.io.*;
 import java.net.*;
