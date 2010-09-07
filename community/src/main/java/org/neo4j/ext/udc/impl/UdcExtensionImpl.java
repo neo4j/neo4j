@@ -1,4 +1,4 @@
-package org.neo4j.ext.udc.org.neo4j.ext.udc.impl;
+package org.neo4j.ext.udc.impl;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelExtension;
@@ -15,6 +15,6 @@ public class UdcExtensionImpl extends KernelExtension {
 
   @Override
   protected void load(KernelData kernel) {
-    System.out.println("UDC extension loaded!");
+    System.err.println("UDC extension loaded!");
   }
 }
