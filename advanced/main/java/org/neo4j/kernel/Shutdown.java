@@ -11,6 +11,6 @@ public class Shutdown extends GraphDatabaseApp
     protected String exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
         getServer().getDb().shutdown();
-        return "exit";
+        return null;
     }
 }

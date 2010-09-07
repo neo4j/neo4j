@@ -10,6 +10,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.Channel;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
@@ -19,11 +21,11 @@ public abstract class CommunicationProtocol
     public static final int PORT = 8901;
     private static final int MEGA = 1024 * 1024;
     static final int MAX_FRAME_LENGTH = 1000000;
-
+    
     static final ObjectSerializer<Integer> INTEGER_SERIALIZER = new ObjectSerializer<Integer>()
     {
         @SuppressWarnings( "boxing" )
-        public void write( Integer responseObject, ChannelBuffer result )
+        public void write( Integer responseObject, ChannelBuffer result ) throws IOException
         {
             result.writeInt( responseObject );
         }
@@ -31,20 +33,20 @@ public abstract class CommunicationProtocol
     static final ObjectSerializer<Long> LONG_SERIALIZER = new ObjectSerializer<Long>()
     {
         @SuppressWarnings( "boxing" )
-        public void write( Long responseObject, ChannelBuffer result )
+        public void write( Long responseObject, ChannelBuffer result ) throws IOException
         {
             result.writeLong( responseObject );
         }
     };
     static final ObjectSerializer<Void> VOID_SERIALIZER = new ObjectSerializer<Void>()
     {
-        public void write( Void responseObject, ChannelBuffer result )
+        public void write( Void responseObject, ChannelBuffer result ) throws IOException
         {
         }
     };
     static final ObjectSerializer<LockResult> LOCK_SERIALIZER = new ObjectSerializer<LockResult>()
     {
-        public void write( LockResult responseObject, ChannelBuffer result )
+        public void write( LockResult responseObject, ChannelBuffer result ) throws IOException
         {
             result.writeByte( responseObject.getStatus().ordinal() );
             if ( responseObject.getStatus().hasMessage() )
@@ -55,7 +57,7 @@ public abstract class CommunicationProtocol
     };
     protected static final Deserializer<LockResult> LOCK_RESULT_DESERIALIZER = new Deserializer<LockResult>()
     {
-        public LockResult read( ChannelBuffer buffer )
+        public LockResult read( ChannelBuffer buffer ) throws IOException
         {
             LockStatus status = LockStatus.values()[buffer.readByte()];
             return status.hasMessage() ? new LockResult( readString( buffer ) ) : new LockResult(
@@ -64,14 +66,14 @@ public abstract class CommunicationProtocol
     };
     protected static final Deserializer<Integer> INTEGER_DESERIALIZER = new Deserializer<Integer>()
     {
-        public Integer read( ChannelBuffer buffer )
+        public Integer read( ChannelBuffer buffer ) throws IOException
         {
             return buffer.readInt();
         }
     };
     protected static final Deserializer<Void> VOID_DESERIALIZER = new Deserializer<Void>()
     {
-        public Void read( ChannelBuffer buffer )
+        public Void read( ChannelBuffer buffer ) throws IOException
         {
             return null;
         }
@@ -95,7 +97,7 @@ public abstract class CommunicationProtocol
             }
         }, new ObjectSerializer<IdAllocation>()
         {
-            public void write( IdAllocation idAllocation, ChannelBuffer result )
+            public void write( IdAllocation idAllocation, ChannelBuffer result ) throws IOException
             {
                 IdRange idRange = idAllocation.getIdRange();
                 result.writeInt( idRange.getDefragIds().length );
@@ -198,19 +200,18 @@ public abstract class CommunicationProtocol
             this.serializer = serializer;
             this.includesSlaveContext = includesSlaveContext;
         }
-
+        
         private <T> RequestType( MasterCaller<T> caller, ObjectSerializer<T> serializer )
         {
             this( caller, serializer, true );
         }
-
+        
         public boolean includesSlaveContext()
         {
             return this.includesSlaveContext;
         }
     }
 
-    /*
     @SuppressWarnings( "unchecked" )
     protected static ChannelBuffer handleRequest( Master realMaster,
             ChannelBuffer buffer, Channel channel, MasterServer server ) throws IOException
@@ -224,6 +225,7 @@ public abstract class CommunicationProtocol
             context = readSlaveContext( buffer );
             server.mapSlave( channel, context );
         }
+        Response<?> response = type.caller.callMaster( realMaster, context, buffer );
         if ( type == RequestType.FINISH )
         {
             server.unmapSlave( channel, context );
@@ -236,8 +238,7 @@ public abstract class CommunicationProtocol
         }
         return targetBuffer;
     }
-    */
-
+    
     private static <T> void writeTransactionStreams( TransactionStreams txStreams,
             ChannelBuffer buffer ) throws IOException
     {
@@ -371,14 +372,9 @@ public abstract class CommunicationProtocol
         @SuppressWarnings( "hiding" )
         ByteData( ReadableByteChannel channel ) throws IOException
         {
-            this( channel, 1 * MEGA );
-        }
-
-        public ByteData( ReadableByteChannel channel, int chopSize ) throws IOException
-        {
             int size = 0, chunk = 0;
             List<byte[]> data = new LinkedList<byte[]>();
-            ByteBuffer buffer = ByteBuffer.allocateDirect( chopSize );
+            ByteBuffer buffer = ByteBuffer.allocateDirect( 1 * MEGA );
             while ( ( chunk = channel.read( buffer ) ) >= 0 )
             {
                 size += chunk;
@@ -410,12 +406,12 @@ public abstract class CommunicationProtocol
 
     protected static interface Deserializer<T>
     {
-        T read( ChannelBuffer buffer );
+        T read( ChannelBuffer buffer ) throws IOException;
     }
 
     protected interface ObjectSerializer<T>
     {
-        void write( T responseObject, ChannelBuffer result );
+        void write( T responseObject, ChannelBuffer result ) throws IOException;
     }
 
     protected interface MasterCaller<T>
@@ -477,7 +473,7 @@ public abstract class CommunicationProtocol
     }
 
     @SuppressWarnings( "boxing" )
-    static SlaveContext readSlaveContext( ChannelBuffer buffer )
+    private static SlaveContext readSlaveContext( ChannelBuffer buffer )
     {
         int machineId = buffer.readInt();
         int eventIdentifier = buffer.readInt();

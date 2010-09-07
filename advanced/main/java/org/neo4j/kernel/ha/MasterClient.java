@@ -19,6 +19,7 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.kernel.IdType;
@@ -40,7 +41,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     private final int port;
 
     private final StringLogger msgLog;
-
+    
     public MasterClient( String hostNameOrIp, int port, String storeDir )
     {
         this.hostNameOrIp = hostNameOrIp;
@@ -52,7 +53,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port );
     }
-
+    
     public MasterClient( Machine machine, String storeDir )
     {
         this( machine.getServer().first(), machine.getServer().other(), storeDir );
@@ -72,17 +73,19 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             }
             serializer.write( buffer );
             Channel channel = getChannel();
-            ( (InputReader) channel.getPipeline().get( "transactionReader" ) ).setDeserializer( deserializer );
             channel.write( buffer );
-            @SuppressWarnings( "unchecked" ) BlockingReadHandler<Response<T>> reader = (BlockingReadHandler<Response<T>>)
+            BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
 
-            Response<T> result = reader.read( 20, TimeUnit.SECONDS );
-            if ( result == null )
+            ChannelBuffer message = reader.read( 20, TimeUnit.SECONDS );
+            if ( message == null )
             {
                 throw new HaCommunicationException( "Channel has been closed" );
             }
-            return result;
+            T response = deserializer.read( message );
+            TransactionStreams txStreams = type.includesSlaveContext() ?
+                    readTransactionStreams( message ) : TransactionStreams.EMPTY;
+            return new Response<T>( response, txStreams );
         }
         catch ( IOException e )
         {
@@ -153,12 +156,12 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                         }
                     }
                 }
-
+                
                 if ( channel == null )
                 {
                     throw new IOException( "Not able to connect to master" );
                 }
-
+                        
                 channels.put( thread, channel );
             }
             return channel;
@@ -184,7 +187,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             }
         }
     }
-
+    
     public IdAllocation allocateIds( final IdType idType )
     {
         return sendRequest( RequestType.ALLOCATE_IDS, null, new Serializer()
@@ -195,7 +198,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             }
         }, new Deserializer<IdAllocation>()
         {
-            public IdAllocation read( ChannelBuffer buffer )
+            public IdAllocation read( ChannelBuffer buffer ) throws IOException
             {
                 return readIdAllocation( buffer );
             }
@@ -213,7 +216,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         }, new Deserializer<Integer>()
         {
             @SuppressWarnings( "boxing" )
-            public Integer read( ChannelBuffer buffer )
+            public Integer read( ChannelBuffer buffer ) throws IOException
             {
                 return buffer.readInt();
             }
@@ -259,13 +262,13 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         }, new Deserializer<Long>()
         {
             @SuppressWarnings( "boxing" )
-            public Long read( ChannelBuffer buffer )
+            public Long read( ChannelBuffer buffer ) throws IOException
             {
                 return buffer.readLong();
             }
         });
     }
-
+    
     public Response<Void> finishTransaction( SlaveContext context )
     {
         try
@@ -292,7 +295,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     {
         return sendRequest( RequestType.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
-
+    
     public int getMasterIdForCommittedTx( final long txId )
     {
         return sendRequest( RequestType.GET_MASTER_ID_FOR_TX, null, new Serializer()
@@ -307,16 +310,14 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
-        /*
         pipeline.addLast( "frameDecoder", new LengthFieldBasedFrameDecoder( MAX_FRAME_LENGTH,
                 0, 4, 0, 4 ) );
-        */
         pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
-        pipeline.addLast( "transactionReader", new InputReader() );
-        pipeline.addLast( "blockingHandler", new BlockingReadHandler<Response<?>>() );
+        BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<ChannelBuffer>();
+        pipeline.addLast( "blockingHandler", reader );
         return pipeline;
     }
-
+    
     public void shutdown()
     {
         msgLog.logMessage( "MasterClient shutdown" );
@@ -326,7 +327,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             {
                 channel.close();
             }
-
+            
             for ( Channel channel : channels.values() )
             {
                 channel.close();

@@ -7,7 +7,7 @@ import java.util.Collection;
 import org.neo4j.helpers.Pair;
 
 /**
- * Represents a stream of the data of one or more consecutive transactions.
+ * Represents a stream of the data of one or more consecutive transactions. 
  */
 public final class TransactionStream
 {
@@ -18,7 +18,7 @@ public final class TransactionStream
         this.channels = channels;
     }
 
-    public Collection<Pair<Long/*txId*/, ReadableByteChannel>> getChannels()
+    public Collection<Pair<Long, ReadableByteChannel>> getChannels()
     {
         return channels;
     }
