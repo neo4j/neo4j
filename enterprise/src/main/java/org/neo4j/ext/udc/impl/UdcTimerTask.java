@@ -1,6 +1,5 @@
 package org.neo4j.ext.udc.impl;
 
-import org.neo4j.ext.udc.org.neo4j.ext.udc.impl.Pinger;
 
 import java.io.IOException;
 import java.util.TimerTask;
