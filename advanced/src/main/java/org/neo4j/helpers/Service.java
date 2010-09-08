@@ -105,6 +105,8 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  */
 public abstract class Service
 {
+    public static ExtensionLoader osgiExtensionLoader;
+
     /**
      * Designates that a class implements the specified service and should be
      * added to the services listings file (META-INF/services/[service-name]).
@@ -261,8 +263,10 @@ public abstract class Service
 
     private static <T> Iterable<T> osgiLoader( Class<T> type )
     {
-        // TODO: implement loading services in an OSGi environment
-        return null;
+      if (osgiExtensionLoader != null) {
+        return osgiExtensionLoader.loadExtensionsOfType(type);
+      }
+      return null;
     }
 
     private static <T> Iterable<T> java6Loader( Class<T> type )
