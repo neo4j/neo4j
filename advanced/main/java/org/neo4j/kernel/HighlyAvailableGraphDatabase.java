@@ -1,6 +1,5 @@
 package org.neo4j.kernel;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.ReadableByteChannel;
@@ -14,7 +13,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -33,17 +31,17 @@ import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
-import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.Response;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.ha.SlaveContext;
-import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
-import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.TransactionStream;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
+import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
+import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
@@ -111,6 +109,11 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.broker = brokerFactory.create( storeDir, config );
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         startUp();
+    }
+    
+    public static Map<String,String> loadConfigurations( String file )
+    {
+        return EmbeddedGraphDatabase.loadConfigurations( file );
     }
     
     private void startUp()
@@ -332,22 +335,23 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         // This is temporary and shouldn't be used in production, but the
         // functionality is the same: I come to the conclusion that this db
         // is void and should be recreated from some source.
-        String recreateFrom = this.config.get( CONFIG_KEY_HA_SKELETON_DB_PATH );
-        if ( recreateFrom != null )
-        {
-            try
-            {
-                FileUtils.cleanDirectory( new File( storeDir ) );
-                FileUtils.copyDirectory( new File( recreateFrom ), new File( storeDir ) );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-            msgLog.logMessage( "=== RECREATED DB from " + recreateFrom + " ===" );
-            return true;
-        }
-        return false;
+//        String recreateFrom = this.config.get( CONFIG_KEY_HA_SKELETON_DB_PATH );
+//        if ( recreateFrom != null )
+//        {
+//            try
+//            {
+//                FileUtils.cleanDirectory( new File( storeDir ) );
+//                FileUtils.copyDirectory( new File( recreateFrom ), new File( storeDir ) );
+//            }
+//            catch ( IOException e )
+//            {
+//                throw new RuntimeException( e );
+//            }
+//            msgLog.logMessage( "=== RECREATED DB from " + recreateFrom + " ===" );
+//            return true;
+//        }
+//        return false;
+        throw new UnsupportedOperationException();
     }
 
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
