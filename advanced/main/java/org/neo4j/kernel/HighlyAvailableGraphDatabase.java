@@ -22,9 +22,7 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Pair;
-import org.neo4j.index.IndexService;
 import org.neo4j.index.impl.lucene.LuceneIndexProvider;
-import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.ha.HaCommunicationException;
@@ -65,7 +63,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private final BrokerFactory brokerFactory;
     private final Broker broker;
     private volatile EmbeddedGraphDbImpl localGraph;
-    private volatile IndexService localIndexService;
+//    private volatile IndexService localIndexService;
     private volatile IndexProvider localIndexProvider;
     private final int machineId;
     private volatile MasterServer masterServer;
@@ -377,7 +375,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         if ( Boolean.parseBoolean( config.get( "index" ) ) )
         {
-            this.localIndexService = new LuceneIndexService( this );
+//            this.localIndexService = new LuceneIndexService( this );
             this.localIndexProvider = new LuceneIndexProvider( this );
         }
     }
@@ -462,14 +460,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             msgLog.logMessage( "Internal shutdown masterServer DONE" );
             this.masterServer = null;
         }
-        if ( this.localIndexService != null )
-        {
-            msgLog.logMessage( "Internal shutdown index" );
-            this.localIndexService.shutdown();
-            msgLog.logMessage( "Internal shutdown index DONE" );
-            this.localIndexService = null;
-            this.localIndexProvider = null;
-        }
+//        if ( this.localIndexService != null )
+//        {
+//            msgLog.logMessage( "Internal shutdown index" );
+//            this.localIndexService.shutdown();
+//            msgLog.logMessage( "Internal shutdown index DONE" );
+//            this.localIndexService = null;
+//            this.localIndexProvider = null;
+//        }
         if ( this.localGraph != null )
         {
             msgLog.logMessage( "Internal shutdown localGraph" );
@@ -562,10 +560,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
     
-    public IndexService getIndexService()
-    {
-        return this.localIndexService;
-    }
+//    public IndexService getIndexService()
+//    {
+//        return this.localIndexService;
+//    }
     
     public IndexProvider getIndexProvider()
     {

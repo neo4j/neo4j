@@ -14,9 +14,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.index.IndexService;
 import org.neo4j.index.impl.lucene.LuceneIndexProvider;
-import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
@@ -281,14 +279,14 @@ public abstract class CommonJobs
             try
             {
                 Node node = db.getNodeById( id );
-                if ( deleteIndexing )
-                {
-                    IndexService index = ((HighlyAvailableGraphDatabase) db).getIndexService();
-                    for ( String key : node.getPropertyKeys() )
-                    {
-                        index.removeIndex( node, key, node.getProperty( key ) );
-                    }
-                }
+//                if ( deleteIndexing )
+//                {
+//                    IndexService index = ((HighlyAvailableGraphDatabase) db).getIndexService();
+//                    for ( String key : node.getPropertyKeys() )
+//                    {
+//                        index.removeIndex( node, key, node.getProperty( key ) );
+//                    }
+//                }
                 node.delete();
                 tx.success();
             }
@@ -590,12 +588,12 @@ public abstract class CommonJobs
         @Override
         protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
-            IndexService index = db instanceof HighlyAvailableGraphDatabase ?
-                    ((HighlyAvailableGraphDatabase) db).getIndexService() :
-                    new LuceneIndexService( db );
+//            IndexService index = db instanceof HighlyAvailableGraphDatabase ?
+//                    ((HighlyAvailableGraphDatabase) db).getIndexService() :
+//                    new LuceneIndexService( db );
             Node node = db.createNode();
             node.setProperty( key, value );
-            index.index( node, key, value );
+//            index.index( node, key, value );
             tx.success();
             return node.getId();
         }
@@ -650,11 +648,11 @@ public abstract class CommonJobs
         @Override
         protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
-            IndexService index = ((HighlyAvailableGraphDatabase) db).getIndexService();
+//            IndexService index = ((HighlyAvailableGraphDatabase) db).getIndexService();
             Node node = db.getNodeById( nodeId );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
-                index.index( node, entry.getKey(), entry.getValue() );
+//                index.index( node, entry.getKey(), entry.getValue() );
             }
             tx.success();
             return null;
