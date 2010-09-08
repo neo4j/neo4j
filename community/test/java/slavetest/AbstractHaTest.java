@@ -135,7 +135,8 @@ public abstract class AbstractHaTest
     private static int verifyIndexService( Node node, Node otherNode, VerifyDbContext refDb,
             VerifyDbContext otherDb )
     {
-        int count = 0;
+        return 0;
+/*        int count = 0;
         if ( refDb.indexService == null || otherDb.indexService == null )
         {
             return count;
@@ -163,12 +164,13 @@ public abstract class AbstractHaTest
             throw new RuntimeException( "Other node " + otherNode + " has more indexing: " +
                     otherKeys );
         }
-        return count;
+        return count;*/
     }
 
     private static boolean isIndexedWithIndexService( Node node, VerifyDbContext db, String key )
     {
-        return db.indexService.getSingleNode( key, node.getProperty( key ) ) != null;
+        return false;
+        // return db.indexService.getSingleNode( key, node.getProperty( key ) ) != null;
     }
 
     private static int verifyIndexProvider( Node node, Node otherNode, VerifyDbContext refDb,
