@@ -26,6 +26,11 @@ public class StringLogger
         }
     }
     
+    private StringLogger( PrintWriter writer )
+    {
+        this.out = writer;
+    }
+    
     private static final Map<String,StringLogger> loggers = 
         new HashMap<String, StringLogger>();
     
@@ -34,7 +39,14 @@ public class StringLogger
         StringLogger logger = loggers.get( filename );
         if ( logger == null )
         {
-            logger = new StringLogger( filename );
+            if ( filename == null || filename.startsWith( "null" ) )
+            {
+                logger = new StringLogger( new PrintWriter( System.out ) );
+            }
+            else
+            {
+                logger = new StringLogger( filename );
+            }
             loggers.put( filename, logger );
         }
         return logger;
