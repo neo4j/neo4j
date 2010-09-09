@@ -54,10 +54,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public static final String CONFIG_KEY_HA_ZOO_KEEPER_SERVERS = "ha.zoo_keeper_servers";
     public static final String CONFIG_KEY_HA_SERVER = "ha.server";
     public static final String CONFIG_KEY_HA_PULL_INTERVAL = "ha.pull_interval";
-    
+
     // Temporary name
     public static final String CONFIG_KEY_HA_SKELETON_DB_PATH = "ha.skeleton_db_path";
-    
+
     private final String storeDir;
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
@@ -69,7 +69,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private volatile MasterServer masterServer;
     private final AtomicBoolean reevaluatingMyself = new AtomicBoolean();
     private ScheduledExecutorService updatePuller;
-    
+
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
     private final Collection<TransactionEventHandler<?>> transactionEventHandlers =
@@ -77,9 +77,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     // Just "cached" instances which are used internally here
     private XaDataSourceManager localDataSourceManager;
-    
+
     private final StringLogger msgLog;
-    
+
     /**
      * Will instantiate its own ZooKeeper broker
      */
@@ -98,7 +98,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         startUp();
     }
-    
+
     /**
      * Only for testing
      */
@@ -114,12 +114,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         startUp();
     }
-    
+
     public static Map<String,String> loadConfigurations( String file )
     {
         return EmbeddedGraphDatabase.loadConfigurations( file );
     }
-    
+
     private void startUp()
     {
         newMaster( null, new Exception() );
@@ -164,7 +164,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         return this.broker;
     }
-    
+
     public void pullUpdates()
     {
         try
@@ -182,23 +182,25 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             throw e;
         }
     }
-    
+
+    @Override
     public Config getConfig()
     {
         return this.localGraph.getConfig();
     }
-    
+
+    @Override
     public String getStoreDir()
     {
         return this.storeDir;
     }
-    
+
     @Override
     public <T> T getManagementBean( Class<T> type )
     {
         return this.localGraph.getManagementBean( type );
     }
-    
+
     protected synchronized void reevaluateMyself( Pair<Master, Machine> master )
     {
 //        if ( !reevaluatingMyself.compareAndSet( false, true ) )
@@ -214,7 +216,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
         boolean restarted = false;
         boolean iAmCurrentlyMaster = masterServer != null;
-        msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master + 
+        msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
                 "] (I am master=" + iAmCurrentlyMaster + ")" );
         if ( master.other().getMachineId() == machineId )
         {
@@ -238,7 +240,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             }
             tryToEnsureIAmNotABrokenMachine( master );
         }
-        
+
         if ( restarted )
         {
             for ( TransactionEventHandler<?> handler : transactionEventHandlers )
@@ -288,7 +290,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         instantiateIndexIfNeeded();
         msgLog.logMessage( "Started as master" );
     }
-    
+
     private void tryToEnsureIAmNotABrokenMachine( Pair<Master, Machine> master )
     {
         try
@@ -297,14 +299,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 return;
             }
-            
+
             XaDataSource nioneoDataSource = this.localGraph.getConfig().getTxModule()
                     .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
             long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
             long highestCommonTxId = Math.min( myLastCommittedTx, master.other().getLastCommittedTxId() );
             int masterForMyHighestCommonTxId = nioneoDataSource.getMasterForCommittedTx( highestCommonTxId );
             int masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( highestCommonTxId );
-            
+
             // Compare those two, if equal -> good
             if ( masterForMyHighestCommonTxId == masterForMastersHighestCommonTxId )
             {
@@ -313,8 +315,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             // else -> recreate / destroy db
             else
             {
-                String msg = "Broken store, my last committed tx,machineId[" + 
-                    myLastCommittedTx + "," + masterForMyHighestCommonTxId + 
+                String msg = "Broken store, my last committed tx,machineId[" +
+                    myLastCommittedTx + "," + masterForMyHighestCommonTxId +
                     "] but master says machine id for that txId is " + masterForMastersHighestCommonTxId;
                 msgLog.logMessage( msg );
                 throw new RuntimeException( msg );
@@ -322,7 +324,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 //                {
 //                    throw new RuntimeException( "I was master the previous session, " +
 //                            "so can't start up in this state (and no method specified how " +
-//                            "I should replicate from another DB)" ); 
+//                            "I should replicate from another DB)" );
 //                }
             }
         }
@@ -333,7 +335,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             throw new RuntimeException( e );
         }
     }
-    
+
     private boolean recreateDbSomehow()
     {
         // This is temporary and shouldn't be used in production, but the
@@ -374,7 +376,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             }, timeMillis, timeMillis, TimeUnit.SECONDS );
         }
     }
-    
+
     // This whole thing with instantiating indexes internally depending on config
     // is obviously temporary
     private void instantiateIndexIfNeeded()
@@ -483,10 +485,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             this.localDataSourceManager = null;
         }
     }
-    
+
     public synchronized void shutdown()
     {
-        msgLog.logMessage( "Shutdown[" + machineId + "], " + this );         
+        msgLog.logMessage( "Shutdown[" + machineId + "], " + this );
         if ( this.broker != null )
         {
             this.broker.shutdown();
@@ -504,7 +506,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         return localGraph.unregisterTransactionEventHandler( handler );
     }
-    
+
     public SlaveContext getSlaveContext( int eventIdentifier )
     {
         Collection<XaDataSource> dataSources = localDataSourceManager.getAllRegisteredDataSources();
@@ -513,7 +515,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         int i = 0;
         for ( XaDataSource dataSource : dataSources )
         {
-            txs[i++] = new Pair<String, Long>( 
+            txs[i++] = new Pair<String, Long>(
                     dataSource.getName(), dataSource.getLastCommittedTxId() );
         }
         return new SlaveContext( machineId, eventIdentifier, txs );
@@ -541,7 +543,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             throw new RuntimeException( e );
         }
     }
-    
+
     public void newMaster( Pair<Master, Machine> master, Exception e )
     {
         try
@@ -565,19 +567,24 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             shutdown();
         }
     }
-    
+
 //    public IndexService getIndexService()
 //    {
 //        return this.localIndexService;
 //    }
-    
+
     public IndexProvider getIndexProvider()
     {
         return this.localIndexProvider;
     }
-    
+
     protected MasterServer getMasterServerIfMaster()
     {
         return masterServer;
+    }
+
+    int getMachineId()
+    {
+        return machineId;
     }
 }
