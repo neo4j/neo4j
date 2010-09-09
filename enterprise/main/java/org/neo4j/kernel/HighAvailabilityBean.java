@@ -13,6 +13,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.SlaveContext;
+import org.neo4j.kernel.impl.management.Description;
 import org.neo4j.kernel.impl.management.ManagementBeanProvider;
 import org.neo4j.kernel.impl.management.Neo4jMBean;
 import org.neo4j.kernel.management.HighAvailability;
@@ -39,6 +40,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
         return new HaManager( this, kernel, true );
     }
 
+    @Description( "Information about an instance participating in a HA cluster" )
     private static class HaManager extends Neo4jMBean implements HighAvailability
     {
         private final HighlyAvailableGraphDatabase haDb;
@@ -56,16 +58,20 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             this.haDb = (HighlyAvailableGraphDatabase) kernel.graphDatabase();
         }
 
+        @Description( "The identifier used to identify this machine in the HA cluster" )
         public String getMachineId()
         {
             return Integer.toString( haDb.getMachineId() );
         }
 
+        @Description( "Whether this instance is master or not" )
         public boolean isMaster()
         {
             return haDb.getMasterServerIfMaster() != null;
         }
 
+        @Description( "(If this is a master) Information about "
+                      + "the instances connected to this instance" )
         public SlaveInfo[] getConnectedSlaves()
         {
             MasterServer master = haDb.getMasterServerIfMaster();
@@ -78,6 +84,8 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             return result.toArray( new SlaveInfo[result.size()] );
         }
 
+        @Description( "(If this is a slave) Update the database on this "
+                      + "instance with the latest transactions from the master" )
         public String update()
         {
             long time = System.currentTimeMillis();
