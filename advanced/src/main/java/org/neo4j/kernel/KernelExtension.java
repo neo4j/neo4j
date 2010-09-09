@@ -5,10 +5,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class KernelExtension extends Service
 {
@@ -114,22 +114,23 @@ public abstract class KernelExtension extends Service
 
         private final Map<KernelExtension, Object> state = new HashMap<KernelExtension, Object>();
 
-        void startup( Logger log )
+        void startup( StringLogger msgLog )
         {
             for ( KernelExtension extension : Service.load( KernelExtension.class ) )
             {
                 try
                 {
                     extension.load( this );
+                    msgLog.logMessage( "Extension " + extension + " loaded ok" );
                 }
                 catch ( Exception ex )
                 {
-                    log.warning( "Error loading " + extension + ": " + ex );
+                    msgLog.logMessage( "Failed to load extension " + extension, ex );
                 }
             }
         }
 
-        synchronized void shutdown( Logger log )
+        synchronized void shutdown( StringLogger msgLog )
         {
             for ( KernelExtension loaded : state.keySet() )
             {
@@ -139,7 +140,7 @@ public abstract class KernelExtension extends Service
                 }
                 catch ( Exception ex )
                 {
-                    log.warning( "Error unloading " + loaded + ": " + ex );
+                    msgLog.logMessage( "Error unloading " + loaded, ex );
                 }
             }
             removeInstance( instanceId );
