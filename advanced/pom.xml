@@ -45,34 +45,35 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi_R4_core</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi_R4_compendium</artifactId>
+      <optional>true</optional>
+    </dependency>    
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>1.2-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.7</version>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <classifier>tests</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.15</version>
-      <exclusions>
-      	<exclusion>
-      	  <groupId>com.sun.jdmk</groupId>
-      	  <artifactId>jmxtools</artifactId>
-      	</exclusion>
-      	<exclusion>
-      	  <groupId>com.sun.jmx</groupId>
-      	  <artifactId>jmxri</artifactId>
-      	</exclusion>
-      	<exclusion>
-      	  <groupId>javax.jms</groupId>
-      	  <artifactId>jms</artifactId>
-      	</exclusion>
-      </exclusions>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <scope>test</scope>
     </dependency>
-  </dependencies>
+    
+ </dependencies>
 </project>
