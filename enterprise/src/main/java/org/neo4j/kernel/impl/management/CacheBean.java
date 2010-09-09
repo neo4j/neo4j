@@ -5,43 +5,59 @@ import java.security.AccessControlException;
 import javax.management.MBeanOperationInfo;
 import javax.management.NotCompliantMBeanException;
 
+import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.management.Cache;
 
-@Description( "Information about the caching in Neo4j" )
-class CacheBean extends Neo4jMBean implements Cache
+public class CacheBean extends ManagementBeanProvider
 {
-    private final NodeManager nodeManager;
-
-    CacheBean( String instanceId, NodeManager nodeManager ) throws NotCompliantMBeanException
+    public CacheBean()
     {
-        super( instanceId, Cache.class );
-        this.nodeManager = nodeManager;
+        super( Cache.class );
     }
 
-    @Description( "The type of cache used by Neo4j" )
-    public String getCacheType()
+    @Override
+    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
     {
-        return nodeManager.isUsingSoftReferenceCache() ? "soft reference cache" : "lru cache";
+        return new CacheManager( this, kernel );
     }
 
-    @Description( "The number of Nodes currently in cache" )
-    public int getNodeCacheSize()
+    @Description( "Information about the caching in Neo4j" )
+    private class CacheManager extends Neo4jMBean implements Cache
     {
-        return nodeManager.getNodeCacheSize();
-    }
+        CacheManager( ManagementBeanProvider provider, KernelData kernel )
+                throws NotCompliantMBeanException
+        {
+            super( provider, kernel );
+            this.nodeManager = kernel.getConfig().getGraphDbModule().getNodeManager();
+        }
 
-    @Description( "The number of Relationships currently in cache" )
-    public int getRelationshipCacheSize()
-    {
-        return nodeManager.getRelationshipCacheSize();
-    }
+        private final NodeManager nodeManager;
 
-    @Description( value = "Clears the Neo4j caches", impact = MBeanOperationInfo.ACTION )
-    public void clear()
-    {
-        if ( true )
-            throw new AccessControlException( "Clearing cache through JMX not permitted." );
-        nodeManager.clearCache();
+        @Description( "The type of cache used by Neo4j" )
+        public String getCacheType()
+        {
+            return nodeManager.isUsingSoftReferenceCache() ? "soft reference cache" : "lru cache";
+        }
+
+        @Description( "The number of Nodes currently in cache" )
+        public int getNodeCacheSize()
+        {
+            return nodeManager.getNodeCacheSize();
+        }
+
+        @Description( "The number of Relationships currently in cache" )
+        public int getRelationshipCacheSize()
+        {
+            return nodeManager.getRelationshipCacheSize();
+        }
+
+        @Description( value = "Clears the Neo4j caches", impact = MBeanOperationInfo.ACTION )
+        public void clear()
+        {
+            if ( true )
+                throw new AccessControlException( "Clearing cache through JMX not permitted." );
+            nodeManager.clearCache();
+        }
     }
 }
