@@ -253,7 +253,7 @@ public abstract class KernelExtension extends Service
         try
         {
             method = getClass().getMethod( name, parameters );
-            if ( !result.isAssignableFrom( method.getReturnType() ) ) return null;
+            /* if ( !result.isAssignableFrom( method.getReturnType() ) ) return null; */
             if ( !Modifier.isPublic( method.getModifiers() ) ) return null;
         }
         catch ( Exception e )

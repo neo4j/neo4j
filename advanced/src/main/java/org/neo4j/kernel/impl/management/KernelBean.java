@@ -7,7 +7,9 @@ import java.util.Date;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
+import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.management.Kernel;
 
 @Description( "Information about the Neo4j kernel" )
@@ -22,13 +24,13 @@ class KernelBean extends Neo4jMBean implements Kernel
     private final String storeDir;
     private final ObjectName query;
 
-    KernelBean( String instanceId, String kernelVersion, NeoStoreXaDataSource datasource,
-            ObjectName query )
+    KernelBean( KernelData kernel )
             throws NotCompliantMBeanException
     {
-        super( instanceId, Kernel.class );
-        this.kernelVersion = kernelVersion;
-        this.query = query;
+        super( Kernel.class, kernel );
+        NeoStoreXaDataSource datasource = getNeoDataSource( kernel );
+        this.kernelVersion = kernel.version();
+        this.query = JmxExtension.getObjectName( kernel, null, null );
         storeCreationDate = datasource.getCreationTime();
         storeLogVersion = datasource.getCurrentLogVersion();
         isReadOnly = datasource.isReadOnly();
@@ -46,6 +48,12 @@ class KernelBean extends Neo4jMBean implements Kernel
         this.storeDir = storeDir;
 
         kernelStartTime = new Date().getTime();
+    }
+
+    static NeoStoreXaDataSource getNeoDataSource( KernelData kernel )
+    {
+        XaDataSourceManager mgr = kernel.getConfig().getTxModule().getXaDataSourceManager();
+        return (NeoStoreXaDataSource) mgr.getXaDataSource( "nioneodb" );
     }
 
     @Description( "An ObjectName that can be used as a query for getting all management "
