@@ -27,10 +27,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
@@ -56,9 +56,10 @@ import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.TxFinishHook;
+import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 class EmbeddedGraphDbImpl
 {
@@ -80,6 +81,7 @@ class EmbeddedGraphDbImpl
             new KernelPanicEventGenerator( kernelEventHandlers );
 
     private final KernelExtension.KernelData extensions;
+    private final StringLogger msgLog;
 
     /**
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
@@ -107,6 +109,7 @@ class EmbeddedGraphDbImpl
         final Map<Object, Object> params = graphDbInstance.start( graphDbService );
         nodeManager = config.getGraphDbModule().getNodeManager();
         this.graphDbService = graphDbService;
+        this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         this.extensions = new KernelExtension.KernelData()
         {
             @Override
@@ -133,7 +136,7 @@ class EmbeddedGraphDbImpl
                 return EmbeddedGraphDbImpl.this.graphDbService;
             }
         };
-        extensions.startup( log );
+        extensions.startup( msgLog );
     }
 
     private TxModule newTxModule( Map<String, String> inputParams, TxFinishHook rollbackHook )
@@ -250,7 +253,7 @@ class EmbeddedGraphDbImpl
             if ( graphDbInstance.started() )
             {
                 sendShutdownEvent();
-                extensions.shutdown( log );
+                extensions.shutdown( msgLog );
             }
             graphDbInstance.shutdown();
         }
