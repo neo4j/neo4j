@@ -85,8 +85,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
      */
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
     {
+        if ( config == null )
+        {
+            throw new IllegalArgumentException( "null config, proper configuration required" );
+        }
         this.storeDir = storeDir;
         this.config = config;
+        config.put( Config.KEEP_LOGICAL_LOGS, "true" );
         this.brokerFactory = defaultBrokerFactory( storeDir, config );
         this.machineId = getMachineIdFromConfig( config );
         this.broker = brokerFactory.create( storeDir, config );
@@ -102,6 +107,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         this.storeDir = storeDir;
         this.config = config;
+        config.put( Config.KEEP_LOGICAL_LOGS, "true" );
         this.brokerFactory = brokerFactory;
         this.machineId = getMachineIdFromConfig( config );
         this.broker = brokerFactory.create( storeDir, config );
@@ -365,7 +371,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 {
                     pullUpdates();
                 }
-            }, timeMillis, timeMillis, TimeUnit.MILLISECONDS );
+            }, timeMillis, timeMillis, TimeUnit.SECONDS );
         }
     }
     
