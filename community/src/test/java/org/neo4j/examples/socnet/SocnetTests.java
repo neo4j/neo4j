@@ -1,5 +1,6 @@
 package org.neo4j.examples.socnet;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,6 +11,7 @@ import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -20,21 +22,24 @@ public class SocnetTests {
     private static final Random r = new Random(System.currentTimeMillis());
     private GraphDatabaseService graphDb;
     private IndexService index;
-    private PersonFactory personFactory;
+    private PersonRepository personRepository;
+    private int nrOfPersons;
 
     @Before
     public void setup() {
         graphDb = new EmbeddedGraphDatabase("target/socnetdb");
         index = new LuceneIndexService(graphDb);
-        personFactory = new PersonFactory(graphDb, index);
+        personRepository = new PersonRepository(graphDb, index);
 
-        setupSocialNetwork(1000, 10);
+        nrOfPersons = 1000;
+        createPersons();
+        setupFriendsBetweenPeople(10);
     }
 
     @After
     public void teardown() {
         try {
-            deleteSocialGraph(graphDb, personFactory);
+            deleteSocialGraph(graphDb, personRepository);
         }
         finally {
             index.shutdown();
@@ -44,35 +49,89 @@ public class SocnetTests {
     }
 
     @Test
+    public void retrieveStatusUpdatesInDateOrder() throws Exception {
+        Person person = getRandomPersonWithFriends();
+
+        for(int i = 0; i<20; i++) {
+            Person friend = getRandomFriendOf(person);
+            personRepository.addStatusToPerson(friend, "Dum-deli-dum...");
+        }
+
+        ArrayList<StatusUpdate> updates = new ArrayList<StatusUpdate>();
+        //IteratorUtil.addToCollection(person.friendStatuses(5).iterator(), updates);
+
+        //assertUpdatesAreSortedByDate(update);
+    }
+
+    @Test
+    public void addStatusAndRetrieveIt() throws Exception {
+        Person person = getRandomPerson();
+        personRepository.addStatusToPerson(person, "Testing!");
+
+        StatusUpdate update = person.getStatus().iterator().next();
+
+        assertThat(update, CoreMatchers.<Object>notNullValue());
+        assertThat(update.getStatusText(), equalTo("Testing!"));
+        assertThat(update.getPerson(), equalTo(person));
+    }
+
+    @Test
+    public void multipleStatusesComeOutInTheRightOrder() throws Exception {
+        ArrayList<String> statuses = new ArrayList<String>();
+        statuses.add("Test1");
+        statuses.add("Test2");
+        statuses.add("Test3");
+
+        Person person = getRandomPerson();
+        for(String status : statuses) {
+            personRepository.addStatusToPerson(person, status);
+        }
+
+        int i = statuses.size();
+        for(StatusUpdate update : person.getStatus()){
+            i--;
+            assertThat(update.getStatusText(), equalTo(statuses.get(i)));            
+        }
+    }
+
+
+    private Person getRandomFriendOf(Person p) {
+        ArrayList<Person> friends = new ArrayList<Person>();
+        IteratorUtil.addToCollection(p.getFriends().iterator(), friends);
+        return friends.get(r.nextInt(friends.size()));
+    }
+
+
+
+    private Person getRandomPersonWithFriends() {
+        Person p;
+        do {
+            p = getRandomPerson();
+        } while (p.getNrOfFriends() == 0);
+        return p;
+    }
+
+    @Test
     public void removingOneFriendIsHandledCleanly()
     {
-        Person person1 = personFactory.getPersonByName("person#1");
-        Person person2 = personFactory.getPersonByName("person#2");
+        Person person1 = personRepository.getPersonByName("person#1");
+        Person person2 = personRepository.getPersonByName("person#2");
         person1.addFriend(person2);
 
-        int noOfFriends = IteratorUtil.count(person1.getFriends().iterator());
+        int noOfFriends = person1.getNrOfFriends();
 
         person1.removeFriend(person2);
 
-        int noOfFriendsAfterChange = IteratorUtil.count(person1.getFriends().iterator());
+        int noOfFriendsAfterChange = person1.getNrOfFriends();
 
         assertThat(noOfFriends, equalTo(noOfFriendsAfterChange+1));
     }
 
-    
-
-    private void setupSocialNetwork(int nrOfPersons, int maxNrOfFriendsEach) {
+    private void createPersons() {
         Transaction tx = graphDb.beginTx();
         try {
-            for (int i = 0; i < 1000; i++) {
-                personFactory.createPerson("person#" + i);
-            }
-            for (Person person : personFactory.getAllPersons()) {
-                int nrOfFriends = r.nextInt(maxNrOfFriendsEach) + 1;
-                for (int j = 0; j < nrOfFriends; j++) {
-                    person.addFriend(personFactory.getPersonByName("person#" +
-                            r.nextInt(nrOfPersons)));
-                }
+            for (int i = 0; i < nrOfPersons; i++) {
+                personRepository.createPerson("person#" + i);
             }
             tx.success();
         }
@@ -81,12 +140,33 @@ public class SocnetTests {
         }
     }
 
+    private void setupFriendsBetweenPeople(int maxNrOfFriendsEach) {
+        Transaction tx = graphDb.beginTx();
+
+        try {
+            for (Person person : personRepository.getAllPersons()) {
+                int nrOfFriends = r.nextInt(maxNrOfFriendsEach) + 1;
+                for (int j = 0; j < nrOfFriends; j++) {
+                    person.addFriend(getRandomPerson());
+                }
+            }            tx.success();
+        }
+        finally {
+            tx.finish();
+        }
+    }
+
+    private Person getRandomPerson() {
+        return personRepository.getPersonByName("person#" +
+                r.nextInt(nrOfPersons));
+    }
+
     private static void deleteSocialGraph(GraphDatabaseService graphDb,
-                                          PersonFactory personFactory) {
+                                          PersonRepository personRepository) {
         Transaction tx = graphDb.beginTx();
         try {
-            for (Person person : personFactory.getAllPersons()) {
-                personFactory.deletePerson(person);
+            for (Person person : personRepository.getAllPersons()) {
+                personRepository.deletePerson(person);
             }
             tx.success();
         }
