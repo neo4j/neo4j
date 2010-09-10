@@ -7,7 +7,7 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
-enum Version
+public enum Version
 {
     VERSION;
     private final String title;
@@ -25,7 +25,12 @@ enum Version
         return title + " " + getVersion();
     }
 
-    private String getVersion()
+    /**
+     * Gets the version of the running neo4j kernel.
+     *
+     * @return
+     */
+    public String getVersion()
     {
         if ( version == null )
         {
@@ -39,6 +44,16 @@ enum Version
         {
             return version;
         }
+    }
+
+    /**
+     * Returns the build revision of the running neo4j kernel.
+     *
+     * @return build revision
+     */
+    public String getRevision()
+    {
+        return revision;
     }
 
     private Version()
