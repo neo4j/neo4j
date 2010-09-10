@@ -371,7 +371,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 public void run()
                 {
-                    pullUpdates();
+                    try
+                    {
+                        pullUpdates();
+                    }
+                    catch ( Exception e )
+                    {
+                        e.printStackTrace();
+                    }
                 }
             }, timeMillis, timeMillis, TimeUnit.SECONDS );
         }
