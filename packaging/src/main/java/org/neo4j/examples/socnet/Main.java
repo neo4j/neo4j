@@ -1,12 +1,12 @@
 package org.neo4j.examples.socnet;
 
-import java.util.Random;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+import java.util.Random;
 
 public class Main
 {
@@ -18,16 +18,16 @@ public class Main
         IndexService index = new LuceneIndexService( graphDb );
         try
         {
-            PersonFactory personFactory = new PersonFactory( graphDb, index );
+            PersonRepository personRepository = new PersonRepository( graphDb, index );
 
             System.out.println( "Setup, creating social network..." );
             // create 1000 persons named "person#0", "person#1"...
             // each person will have random 1-10 (outgoing) friends
-            setupSocialNetwork( graphDb, personFactory, 1000, 10 );
+            setupSocialNetwork( graphDb, personRepository, 1000, 10 );
 
             // play around
             String name = "person#" + r.nextInt( 1000 );
-            Person person1 = personFactory.getPersonByName( name );
+            Person person1 = personRepository.getPersonByName( name );
             System.out.println( "\n" + person1 + " friends:" );
             for ( Person friend : person1.getFriends() )
             {
@@ -45,7 +45,7 @@ public class Main
             do
             {
                 name = "person#" + r.nextInt( 1000 );
-                person2 = personFactory.getPersonByName( name );
+                person2 = personRepository.getPersonByName( name );
             }
             while ( person1.equals( person2 ) );
 
@@ -77,7 +77,7 @@ public class Main
             }
 
             System.out.print( "\ncleanup, deleting social network..." );
-            deleteSocialGraph( graphDb, personFactory );
+            deleteSocialGraph( graphDb, personRepository);
             System.out.println( " done" );
         }
         finally
@@ -88,21 +88,21 @@ public class Main
     }
 
     private static void setupSocialNetwork( GraphDatabaseService graphDb,
-            PersonFactory personFactory, int nrOfPersons, int maxNrOfFriendsEach )
+            PersonRepository personRepository, int nrOfPersons, int maxNrOfFriendsEach )
     {
         Transaction tx = graphDb.beginTx();
         try
         {
             for ( int i = 0; i < 1000; i++ )
             {
-                personFactory.createPerson( "person#" + i );
+                personRepository.createPerson( "person#" + i );
             }
-            for ( Person person : personFactory.getAllPersons() )
+            for ( Person person : personRepository.getAllPersons() )
             {
                 int nrOfFriends = r.nextInt( maxNrOfFriendsEach ) + 1;
                 for ( int j = 0; j < nrOfFriends; j++ )
                 {
-                    person.addFriend( personFactory.getPersonByName( "person#" + 
+                    person.addFriend( personRepository.getPersonByName( "person#" +
                             r.nextInt( nrOfPersons ) ) );
                 }
             }
@@ -115,14 +115,14 @@ public class Main
     }
 
     private static void deleteSocialGraph( GraphDatabaseService graphDb,
-            PersonFactory personFactory )
+            PersonRepository personRepository)
     {
         Transaction tx = graphDb.beginTx();
         try
         {
-            for ( Person person : personFactory.getAllPersons() )
+            for ( Person person : personRepository.getAllPersons() )
             {
-                personFactory.deletePerson( person );
+                personRepository.deletePerson( person );
             }
             tx.success();
         }
