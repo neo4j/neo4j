@@ -11,3 +11,4 @@ Implementation-Version: ${project.version}
 Implementation-Vendor-Id: ${project.groupId}
 Implementation-Revision: ${vcs.committedRevision}
 Implementation-Revision-Status: revision=${vcs.revision};status=${vcs.status};path=${vcs.path}
+Bundle-Activator: ${bundle.namespace}.kernel.impl.osgi.OSGiActivator
