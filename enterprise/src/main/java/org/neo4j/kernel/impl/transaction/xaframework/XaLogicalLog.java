@@ -957,6 +957,7 @@ public class XaLogicalLog
                     "] not found in log (" + expectedVersion + ", " + 
                     prevTxId + ")" );
         }
+        logEntryList.add( new LogEntry.Done( logEntryList.get( 0 ).getIdentifier() ) );
         return logEntryList;
     }
 
@@ -982,27 +983,32 @@ public class XaLogicalLog
     public synchronized ReadableByteChannel getPreparedTransaction( long identifier )
             throws IOException
     {
-        String name = fileName + ".ptx_" + identifier;
-        File txFile = new File( name );
-        if ( txFile.exists() )
+        File file = new File( storeDir + "/tmp-write-outs" );
+        if ( !file.exists() )
         {
-            return new RandomAccessFile( name, "r" ).getChannel();
+            file.mkdir();
         }
+        //String name = fileName + ".ptx_" + identifier;
+        // File txFile = new File( name );
+        File txFile = File.createTempFile( "temp-write-out-", "-" + identifier , new File( storeDir + "/tmp-write-outs" ) );
+//        if ( txFile.exists() )
+//        {
+//            return new RandomAccessFile( txFile, "r" ).getChannel();
+//        }
         
         ReadableByteChannel log = getLogicalLogOrMyself( logVersion );
         List<LogEntry> logEntryList = extractPreparedTransactionFromLog( identifier, log );
         log.close();
         
-        writeOutLogEntryList( logEntryList, name, "temporary-ptx-write-out-" + identifier );
-        return new RandomAccessFile( name, "r" ).getChannel();
+        writeOutLogEntryList( logEntryList, txFile ); // name, "temporary-ptx-write-out-" + identifier );
+        return new RandomAccessFile( txFile, "r" ).getChannel();
     }
 
-    private void writeOutLogEntryList( List<LogEntry> logEntryList, String name,
-            String tmpNameHint ) throws IOException
+    private void writeOutLogEntryList( List<LogEntry> logEntryList, File txFile ) throws IOException
     {
-        String tmpName = generateUniqueName( tmpNameHint );
-        msgLog.logMessage( "write out log entry list to tmpName:" + tmpName );
-        FileChannel txLog = new RandomAccessFile( tmpName, "rw" ).getChannel();
+//        String tmpName = generateUniqueName( tmpNameHint );
+        msgLog.logMessage( "write out log entry list to tmpName:" + txFile );
+        FileChannel txLog = new RandomAccessFile( txFile, "rw" ).getChannel();
         LogBuffer buf = new DirectMappedLogBuffer( txLog );
         for ( LogEntry entry : logEntryList )
         {
@@ -1010,11 +1016,11 @@ public class XaLogicalLog
         }
         buf.force();
         txLog.close();
-        if ( !new File( tmpName ).renameTo( new File( name ) ) )
-        {
-            throw new IOException( "Failed to rename " + tmpName + " to " + 
-                name );
-        }
+//        if ( !new File( tmpName ).renameTo( new File( name ) ) )
+//        {
+//            throw new IOException( "Failed to rename " + tmpName + " to " + 
+//                name );
+//        }
     }
 
     public synchronized ReadableByteChannel getCommittedTransaction( long txId )
@@ -1043,8 +1049,8 @@ public class XaLogicalLog
             extractTransactionFromLog( txId, version, log );
         log.close();
         
-        writeOutLogEntryList( logEntryList, name, "temporary-tx-write-out-" + txId );
-        ReadableByteChannel result = new RandomAccessFile( name, "r" ).getChannel();
+        writeOutLogEntryList( logEntryList, txFile ); // name, "temporary-tx-write-out-" + txId );
+        ReadableByteChannel result = new RandomAccessFile( txFile, "r" ).getChannel();
         return result;
     }
     
@@ -1178,7 +1184,7 @@ public class XaLogicalLog
             return entry != null;
         }
 
-        boolean readAndApplyAndWriteEntry( int newXidIdentifier ) throws IOException
+        boolean readAndWriteAndApplyEntry( int newXidIdentifier ) throws IOException
         {
             LogEntry entry = LogIoUtils.readEntry( buffer, byteChannel, cf );
             if ( entry != null )
@@ -1187,19 +1193,14 @@ public class XaLogicalLog
                 if ( entry instanceof LogEntry.Commit )
                 {
                     // hack to get done record written after commit record
-                    LogIoUtils.writeLogEntry( entry, writeBuffer );
-                    applyEntry( entry );
                     msgLog.logMessage( "Applying external tx: " + ((LogEntry.Commit) entry).getTxId() );
                 }
-                else
+                else if ( entry instanceof LogEntry.Start )
                 {
-                    if ( entry instanceof LogEntry.Start )
-                    {
-                        startEntry = (LogEntry.Start) entry;
-                    }
-                    applyEntry( entry );
-                    LogIoUtils.writeLogEntry( entry, writeBuffer );
+                    startEntry = (LogEntry.Start) entry;
                 }
+                LogIoUtils.writeLogEntry( entry, writeBuffer );
+                applyEntry( entry );
                 return true;
             }
             return false;
@@ -1265,7 +1266,7 @@ public class XaLogicalLog
         scanIsComplete = false;
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
-        while ( logApplier.readAndApplyAndWriteEntry( xidIdent ) )
+        while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
         {
             logEntriesFound++;
         }
@@ -1311,7 +1312,7 @@ public class XaLogicalLog
         scanIsComplete = false;
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
-        while ( logApplier.readAndApplyAndWriteEntry( xidIdent ) )
+        while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
         {
             logEntriesFound++;
         }
