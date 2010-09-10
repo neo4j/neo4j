@@ -49,13 +49,14 @@ public abstract class IteratorUtil
         }
         return collection;
     }
-    
+
     /**
      * Exposes {@code iterator} as an {@link Iterable}. It breaks the contract
-     * of {@link Iterable} in that it returns the supplied iterator instance
-     * for each call to {@code iterable()} on the returned {@link Iterable}
+     * of {@link Iterable} in that it returns the supplied iterator instance for
+     * each call to {@code iterator()} on the returned {@link Iterable}
      * instance. This method mostly exists to make it easy to use an
      * {@link Iterator} in a for-loop.
+     * 
      * @param <T> the type of items in the iterator.
      * @param iterator the iterator to expose as an {@link Iterable}.
      * @return the supplied iterator posing as an {@link Iterable}.
@@ -87,5 +88,17 @@ public abstract class IteratorUtil
             result++;
         }
         return result;
+    }
+
+    /**
+     * Counts the number of items in the {@code iterable} by looping through it.
+     * 
+     * @param <T> the type of items in the iterator.
+     * @param iterable the {@link Iterable} to count items in.
+     * @return the number of found in {@code iterator}.
+     */
+    public static <T> int count( Iterable<T> iterable )
+    {
+        return count( iterable.iterator() );
     }
 }
