@@ -6,6 +6,22 @@ MAINCLASS=org.neo4j.ha.StartLocalHaDb
 
 $SCRIPTDIR/shutdown.sh $MAINCLASS pid/ha
 
+COUNT=1
+OPTIONS=()
+for OPT in "$@"; do
+    case "$OPT" in
+        -*)
+            OPTIONS=(${OPTIONS[@]} $OPT)
+            ;;
+        [0-9])
+            COUNT=$OPT
+            ;;
+        *)
+            echo UNKNOWN PARAMETER $OPT
+            ;;
+    esac
+done
+
 EXISTING=()
 for HA in data/ha?; do
     EXISTING=(${EXISTING[@]} $(basename $HA | cut -b3-))
@@ -23,7 +39,7 @@ if [ $# -lt 1 ]; then
     fi
 else
     INSTANCES=()
-    for ((HA=1; HA <= $1 ; HA++)); do
+    for ((HA=1; HA <= $COUNT ; HA++)); do
         INSTANCES=(${INSTANCES[@]} $HA)
     done
 fi
@@ -76,6 +92,15 @@ for HA in "${INSTANCES[@]}"; do
         echo enable_remote_shell = port=133$HA  >>$HACONF
     fi
 
-    java -cp $CLASSPATH $MAINCLASS data/ha$HA $HACONF &
+    VMOPTIONS=
+    for OPT in "${OPTIONS[@]}"; do
+        case "$OPT" in
+            -debug)
+                VMOPTIONS="$VMOPTIONS -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=144$HA"
+                ;;
+        esac
+    done
+
+    java -cp $CLASSPATH $VMOPTIONS $MAINCLASS data/ha$HA $HACONF &
     echo $! >> pid/ha
 done
