@@ -625,9 +625,9 @@ public class XaResourceManager
 
     private void checkIfRecoveryComplete()
     {
-        msgLog.logMessage( "XaResourceManager[" + name + "] checkRecoveryComplete " + xidMap.size() + " xids" );
         if ( log.scanIsComplete() && recoveredTxCount == 0 )
         {
+            msgLog.logMessage( "XaResourceManager[" + name + "] checkRecoveryComplete " + xidMap.size() + " xids" );
             // log.makeNewLog();
             tf.recoveryComplete();
             try
@@ -643,11 +643,6 @@ public class XaResourceManager
                 e.printStackTrace();
             }
             msgLog.logMessage( "XaResourceManager[" + name + "] recovery completed." );
-        }
-        else
-        {
-            msgLog.logMessage( "XaResourceManager[" + name + 
-                    "] recovery not completed, xidCount=" + recoveredTxCount + " waiting for global tm" );
         }
     }
 
