@@ -2,17 +2,14 @@ package org.neo4j.examples.socnet;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
+
+import java.util.Collections;
 
 public class Person
 {
@@ -90,6 +87,10 @@ public class Person
         }
     }
 
+    public int getNrOfFriends(){
+        return IteratorUtil.count(getFriends());
+    }
+
     public Iterable<Person> getFriends()
     {
         return new IterableWrapper<Person, Relationship>(
@@ -142,22 +143,14 @@ public class Person
     public Iterable<Person> getFriendsOfFriends()
     {
         // return all my friends and their friends using new traversal API
-        TraversalDescription travDesc = Traversal.description().depthFirst().relationships(
-                FRIEND ).uniqueness( Uniqueness.NODE_GLOBAL ).prune(
-                Traversal.pruneAfterDepth( 2 ) ).filter(
-                Traversal.returnAllButStartNode() );
-        /* 
-           // old traverser api would be something like:
-           Traverser trav = underlyingNode.traverse( Order.DEPTH_FIRST, new
-               StopEvaluator()
-               {
-                   public boolean isStopNode( TraversalPosition currentPos )
-                   {
-                       return currentPos.depth() == 2;
-                   }
-               }, ReturnableEvaluator.ALL_BUT_START_NODE, FRIEND, Direction.BOTH );
-        */
-        
+        TraversalDescription travDesc = 
+                Traversal.description().
+                        depthFirst().
+                        relationships(FRIEND ).
+                        uniqueness( Uniqueness.NODE_GLOBAL ).
+                        prune(Traversal.pruneAfterDepth( 2 ) )
+                        .filter(Traversal.returnAllButStartNode() );
+
         return new IterableWrapper<Person, Path>(
                 travDesc.traverse( underlyingNode ) )
         {
@@ -172,8 +165,9 @@ public class Person
     public Iterable<Person> getPersonsFromMeTo( Person otherPerson, int maxDepth )
     {
         // use graph algo to calculate a shortest path
-        PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
-                Traversal.expanderForTypes( FRIEND, Direction.BOTH ), maxDepth );
+        PathFinder<Path> finder = GraphAlgoFactory.
+                shortestPath(Traversal.expanderForTypes( FRIEND, Direction.BOTH ), maxDepth );
+
         Path path = finder.findSinglePath( underlyingNode, 
                 otherPerson.getUnderlyingNode() );
         return new IterableWrapper<Person,Node>(
@@ -183,6 +177,29 @@ public class Person
             protected Person underlyingObjectToObject( Node node )
             {
                 return new Person( node );
+            }
+        };
+    }
+
+    public Iterable<StatusUpdate> getStatus() {
+        Relationship firstStatus = underlyingNode.getSingleRelationship(PersonRepository.STATUS, Direction.OUTGOING);
+        if(firstStatus == null)
+            return Collections.emptyList();
+
+
+        TraversalDescription traversal = Traversal.
+                description().
+                depthFirst().
+                relationships(PersonRepository.NEXT).
+                filter(Traversal.returnAll());
+
+        return new IterableWrapper<StatusUpdate, Path>(
+                traversal.traverse( firstStatus.getEndNode() ) )
+        {
+            @Override
+            protected StatusUpdate underlyingObjectToObject( Path path )
+            {
+                return new StatusUpdate( path.endNode() );
             }
         };
     }
