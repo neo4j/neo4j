@@ -12,6 +12,7 @@ public class NeoStoreUtil
     private final long creationTime;
     private final long storeId;
     private final long txId;
+    private final long version;
     
     public NeoStoreUtil( String storeDir )
     {
@@ -28,7 +29,8 @@ public class NeoStoreUtil
             creationTime = buf.getLong();
             buf.get(); // in use byte
             storeId = buf.getLong();
-            buf.get(); buf.getLong(); // skip log version
+            buf.get(); 
+            version = buf.getLong(); // skip log version
             buf.get(); // in use byte
             txId = buf.getLong();
             fileChannel.close();
@@ -52,5 +54,10 @@ public class NeoStoreUtil
     public long getLastCommittedTx()
     {
         return txId;
+    }
+    
+    public long getVersion()
+    {
+        return version;
     }
 }
