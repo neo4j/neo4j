@@ -23,6 +23,12 @@
       <version>1.2-SNAPSHOT</version>
       <type>pom</type>
     </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>1.1</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <licenses>
