@@ -115,11 +115,11 @@ public class SocnetTest {
     @Test
     public void friendsOfFriendsWorks() throws Exception {
         Person person = getRandomPerson();
-        Person randomFriendOf = getRandomFriendOf(person);
+        Person friend = getRandomFriendOf(person);
 
-        for(Person friend : randomFriendOf.getFriends()) {
-            if(!friend.equals(person)) { // You can't be friends with yourself.
-                assertThat(person.getFriendsOfFriends(),  hasItems(friend));
+        for(Person friendOfFriend : friend.getFriends()) {
+            if(!friendOfFriend.equals(person)) { // You can't be friends with yourself.
+                assertThat(person.getFriendsOfFriends(), hasItems(friendOfFriend));
             }
         }
     }
