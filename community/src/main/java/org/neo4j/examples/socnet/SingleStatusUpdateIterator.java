@@ -2,32 +2,40 @@ package org.neo4j.examples.socnet;
 
 import java.util.Iterator;
 
-class SingleStatusUpdateIterator implements Iterator<StatusUpdate> {
-    private Iterator inner;
+class SingleStatusUpdateIterator implements Iterator<StatusUpdate>
+{
+    private Iterator<? extends StatusUpdate> inner;
     private StatusUpdate current;
     private Boolean initiated = false;
 
-    public SingleStatusUpdateIterator(Iterator iterator) {
+    public SingleStatusUpdateIterator( Iterator<? extends StatusUpdate> iterator )
+    {
         inner = iterator;
     }
 
-    public boolean hasNext() {
+    public boolean hasNext()
+    {
         return inner.hasNext();
     }
 
-    public StatusUpdate next() {
+    public StatusUpdate next()
+    {
         initiated = true;
-        current = (StatusUpdate) inner.next();
+        current = inner.next();
         return current;
     }
 
-    public void remove() {
+    public void remove()
+    {
         inner.remove();
     }
 
-    public StatusUpdate current() {
-        if(!initiated)
+    public StatusUpdate current()
+    {
+        if ( !initiated )
+        {
             return next();
+        }
 
         return current;
     }
