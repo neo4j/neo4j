@@ -6,10 +6,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-/**
- * Created by IntelliJ IDEA. User: ata Date: Sep 13, 2010 Time: 10:21:52 AM To
- * change this template use File | Settings | File Templates.
- */
 class FriendsStatusUpdateIterator implements Iterator<StatusUpdate>
 {
     private ArrayList<SingleStatusUpdateIterator> statuses = new ArrayList<SingleStatusUpdateIterator>();
@@ -68,7 +64,7 @@ class FriendsStatusUpdateIterator implements Iterator<StatusUpdate>
     }
 
     private class StatusUpdateComparator implements
-    Comparator<SingleStatusUpdateIterator>
+            Comparator<SingleStatusUpdateIterator>
     {
         public int compare( SingleStatusUpdateIterator a,
                 SingleStatusUpdateIterator b )
