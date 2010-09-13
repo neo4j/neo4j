@@ -20,7 +20,7 @@ public abstract class CommunicationProtocol
 {
     public static final int PORT = 8901;
     private static final int MEGA = 1024 * 1024;
-    static final int MAX_FRAME_LENGTH = 1000000;
+    static final int MAX_FRAME_LENGTH = 16*MEGA;
     
     static final ObjectSerializer<Integer> INTEGER_SERIALIZER = new ObjectSerializer<Integer>()
     {
@@ -226,15 +226,15 @@ public abstract class CommunicationProtocol
             server.mapSlave( channel, context );
         }
         Response<?> response = type.caller.callMaster( realMaster, context, buffer );
-        if ( type == RequestType.FINISH )
-        {
-            server.unmapSlave( channel, context );
-        }
         ChannelBuffer targetBuffer = ChannelBuffers.dynamicBuffer();
         type.serializer.write( response.response(), targetBuffer );
         if ( type.includesSlaveContext() )
         {
             writeTransactionStreams( response.transactions(), targetBuffer );
+        }
+        if ( type == RequestType.FINISH || type == RequestType.PULL_UPDATES )
+        {
+            server.unmapSlave( channel, context );
         }
         return targetBuffer;
     }
