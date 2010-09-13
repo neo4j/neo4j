@@ -12,13 +12,15 @@ import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.hamcrest.collection.IsCollectionContaining.hasItems;
 
 
-public class SocnetTests {
+public class SocnetTest {
     private static final Random r = new Random(System.currentTimeMillis());
     private GraphDatabaseService graphDb;
     private IndexService index;
@@ -31,7 +33,7 @@ public class SocnetTests {
         index = new LuceneIndexService(graphDb);
         personRepository = new PersonRepository(graphDb, index);
 
-        nrOfPersons = 1000;
+        nrOfPersons = 20;
         createPersons();
         setupFriendsBetweenPeople(10);
     }
@@ -45,22 +47,6 @@ public class SocnetTests {
             index.shutdown();
             graphDb.shutdown();
         }
-
-    }
-
-    @Test
-    public void retrieveStatusUpdatesInDateOrder() throws Exception {
-        Person person = getRandomPersonWithFriends();
-
-        for(int i = 0; i<20; i++) {
-            Person friend = getRandomFriendOf(person);
-            personRepository.addStatusToPerson(friend, "Dum-deli-dum...");
-        }
-
-        ArrayList<StatusUpdate> updates = new ArrayList<StatusUpdate>();
-        //IteratorUtil.addToCollection(person.friendStatuses(5).iterator(), updates);
-
-        //assertUpdatesAreSortedByDate(update);
     }
 
     @Test
@@ -90,25 +76,8 @@ public class SocnetTests {
         int i = statuses.size();
         for(StatusUpdate update : person.getStatus()){
             i--;
-            assertThat(update.getStatusText(), equalTo(statuses.get(i)));            
+            assertThat(update.getStatusText(), equalTo(statuses.get(i)));
         }
-    }
-
-
-    private Person getRandomFriendOf(Person p) {
-        ArrayList<Person> friends = new ArrayList<Person>();
-        IteratorUtil.addToCollection(p.getFriends().iterator(), friends);
-        return friends.get(r.nextInt(friends.size()));
-    }
-
-
-
-    private Person getRandomPersonWithFriends() {
-        Person p;
-        do {
-            p = getRandomPerson();
-        } while (p.getNrOfFriends() == 0);
-        return p;
     }
 
     @Test
@@ -127,16 +96,31 @@ public class SocnetTests {
         assertThat(noOfFriends, equalTo(noOfFriendsAfterChange+1));
     }
 
-    private void createPersons() {
-        Transaction tx = graphDb.beginTx();
-        try {
-            for (int i = 0; i < nrOfPersons; i++) {
-                personRepository.createPerson("person#" + i);
-            }
-            tx.success();
+    @Test
+    public void retrieveStatusUpdatesInDateOrder() throws Exception {
+        Person person = getRandomPersonWithFriends();
+        int numberOfStatuses = 20;
+
+        for(int i = 0; i<numberOfStatuses; i++) {
+            Person friend = getRandomFriendOf(person);
+            personRepository.addStatusToPerson(friend, "Dum-deli-dum...");
         }
-        finally {
-            tx.finish();
+
+        ArrayList<StatusUpdate> updates = new ArrayList<StatusUpdate>();
+        IteratorUtil.addToCollection(person.friendStatuses(), updates);
+        assertThat(updates.size(), equalTo(numberOfStatuses));
+        assertUpdatesAreSortedByDate(updates);
+    }
+
+    @Test
+    public void friendsOfFriendsWorks() throws Exception {
+        Person person = getRandomPerson();
+        Person randomFriendOf = getRandomFriendOf(person);
+
+        for(Person friend : randomFriendOf.getFriends()) {
+            if(!friend.equals(person)) { // You can't be friends with yourself.
+                assertThat(person.getFriendsOfFriends(),  hasItems(friend));
+            }
         }
     }
 
@@ -149,7 +133,8 @@ public class SocnetTests {
                 for (int j = 0; j < nrOfFriends; j++) {
                     person.addFriend(getRandomPerson());
                 }
-            }            tx.success();
+            }
+            tx.success();
         }
         finally {
             tx.finish();
@@ -175,4 +160,37 @@ public class SocnetTests {
         }
     }
 
+    private Person getRandomFriendOf(Person p) {
+        ArrayList<Person> friends = new ArrayList<Person>();
+        IteratorUtil.addToCollection(p.getFriends().iterator(), friends);
+        return friends.get(r.nextInt(friends.size()));
+    }
+
+    private Person getRandomPersonWithFriends() {
+        Person p;
+        do {
+            p = getRandomPerson();
+        } while (p.getNrOfFriends() == 0);
+        return p;
+    }
+
+    private void createPersons() {
+        Transaction tx = graphDb.beginTx();
+        try {
+            for (int i = 0; i < nrOfPersons; i++) {
+                personRepository.createPerson("person#" + i);
+            }
+            tx.success();
+        }
+        finally {
+            tx.finish();
+        }
+    }
+
+    private void assertUpdatesAreSortedByDate(ArrayList<StatusUpdate> statusUpdates) {
+        Date date = new Date(0);
+        for(StatusUpdate update : statusUpdates) {
+            org.junit.Assert.assertTrue(date.getTime() < update.getDate().getTime()); //TODO: Should be assertThat(date, lessThan(update.getDate));
+        }
+    }
 }
