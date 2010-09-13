@@ -48,6 +48,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     private final ScheduledExecutorService deadConnectionsPoller;
     private final Map<Channel, SlaveContext> connectedSlaveChannels =
             new HashMap<Channel, SlaveContext>();
+    private final ExecutorService executor;
 
     private final StringLogger msgLog;
     
@@ -55,7 +56,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     {
         this.realMaster = realMaster;
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
-        ExecutorService executor = Executors.newCachedThreadPool();
+        executor = Executors.newCachedThreadPool();
         channelFactory = new NioServerSocketChannelFactory(
                 executor, executor, MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
         bootstrap = new ServerBootstrap( channelFactory );
@@ -141,7 +142,7 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         deadConnectionsPoller.shutdown();
         msgLog.logMessage( "Master server shutdown, closing all channels" );
         channelGroup.close().awaitUninterruptibly();
-        
+        executor.shutdown();
         // TODO This should work, but blocks with busy wait sometimes
 //        channelFactory.releaseExternalResources();
     }

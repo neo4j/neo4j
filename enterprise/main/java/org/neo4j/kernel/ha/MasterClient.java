@@ -41,12 +41,14 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     private final int port;
 
     private final StringLogger msgLog;
+
+    private final ExecutorService executor;
     
     public MasterClient( String hostNameOrIp, int port, String storeDir )
     {
         this.hostNameOrIp = hostNameOrIp;
         this.port = port;
-        ExecutorService executor = Executors.newCachedThreadPool();
+        executor = Executors.newCachedThreadPool();
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
                 executor, executor ) );
         bootstrap.setPipelineFactory( this );
@@ -332,6 +334,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             {
                 channel.close();
             }
+            executor.shutdown();
         }
     }
 }
