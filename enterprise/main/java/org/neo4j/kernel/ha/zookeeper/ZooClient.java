@@ -154,6 +154,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 currentTime = System.currentTimeMillis();
             }
             while ( (currentTime - startTime) < SESSION_TIME_OUT );
+
             if ( keeperState != KeeperState.SyncConnected )
             {
                 throw new ZooKeeperTimedOutException( 

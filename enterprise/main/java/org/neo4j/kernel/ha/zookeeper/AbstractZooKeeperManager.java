@@ -94,14 +94,17 @@ public abstract class AbstractZooKeeperManager implements Watcher
     protected Pair<Master, Machine> getMasterFromZooKeeper( boolean wait )
     {
         Machine master = getMasterBasedOn( getAllMachines( wait ).values() );
-        invalidateMaster();
         MasterClient masterClient = null;
-        if ( master != Machine.NO_MACHINE && 
-                master.getMachineId() != getMyMachineId() )
+        if ( cachedMaster.other().getMachineId() != master.getMachineId() )
         {
-            masterClient = new MasterClient( master, storeDir );
+            invalidateMaster();
+            if ( master != Machine.NO_MACHINE && 
+                    master.getMachineId() != getMyMachineId() )
+            {
+                masterClient = new MasterClient( master, storeDir );
+            }
+            cachedMaster = new Pair<Master, Machine>( masterClient, master );
         }
-        cachedMaster = new Pair<Master, Machine>( masterClient, master );
         return cachedMaster;
     }
     
@@ -207,9 +210,9 @@ public abstract class AbstractZooKeeperManager implements Watcher
             waitForSyncConnected();
         }
         String rootPath = getRoot();
+        String haServerPath = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId;
         try
         {
-            String haServerPath = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId;
             byte[] serverData = getZooKeeper().getData( haServerPath, false, null );
             ByteBuffer buffer = ByteBuffer.wrap( serverData );
             byte length = buffer.get();
@@ -222,7 +225,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
         catch ( KeeperException e )
         {
-            throw new ZooKeeperException( "Couldn't find the HA servers root node", e );
+            throw new ZooKeeperException( "Couldn't find the HA server: " + rootPath, e );
         }
         catch ( InterruptedException e )
         {
@@ -235,6 +238,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         try
         {
             invalidateMaster();
+            cachedMaster = new Pair<Master, Machine>( null, Machine.NO_MACHINE );
             getZooKeeper().close();
         }
         catch ( InterruptedException e )

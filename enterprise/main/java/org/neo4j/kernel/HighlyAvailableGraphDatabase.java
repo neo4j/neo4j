@@ -169,7 +169,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
-            receive( broker.getMaster().first().pullUpdates( getSlaveContext( -1 ) ) );
+            if ( masterServer == null )
+            {
+                receive( broker.getMaster().first().pullUpdates( getSlaveContext( -1 ) ) );
+            }
         }
         catch ( ZooKeeperException e )
         {
@@ -238,7 +241,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 startAsSlave();
                 restarted = true;
             }
-            tryToEnsureIAmNotABrokenMachine( master );
+            tryToEnsureIAmNotABrokenMachine( broker.getMaster() );
         }
 
         if ( restarted )
@@ -312,25 +315,18 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 return;
             }
-            // else -> recreate / destroy db
             else
             {
                 String msg = "Broken store, my last committed tx,machineId[" +
                     myLastCommittedTx + "," + masterForMyHighestCommonTxId +
                     "] but master says machine id for that txId is " + masterForMastersHighestCommonTxId;
                 msgLog.logMessage( msg );
+                shutdown();
                 throw new RuntimeException( msg );
-//                if ( !recreateDbSomehow() )
-//                {
-//                    throw new RuntimeException( "I was master the previous session, " +
-//                            "so can't start up in this state (and no method specified how " +
-//                            "I should replicate from another DB)" );
-//                }
             }
         }
-        catch ( Exception e )
+        catch ( IOException e )
         {
-            e.printStackTrace();
             shutdown();
             throw new RuntimeException( e );
         }
@@ -365,7 +361,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         String pullInterval = this.config.get( CONFIG_KEY_HA_PULL_INTERVAL );
         if ( pullInterval != null )
         {
-            long timeMillis = TimeUtil.parseTimeMillis( pullInterval );
+            long timeSeconds = TimeUtil.parseTimeMillis( pullInterval );
             updatePuller = new ScheduledThreadPoolExecutor( 1 );
             updatePuller.scheduleWithFixedDelay( new Runnable()
             {
@@ -377,10 +373,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     }
                     catch ( Exception e )
                     {
-                        e.printStackTrace();
+                        msgLog.logMessage( "Pull updates failed", e  );
                     }
                 }
-            }, timeMillis, timeMillis, TimeUnit.SECONDS );
+            }, timeSeconds, timeSeconds, TimeUnit.SECONDS );
         }
     }
 
