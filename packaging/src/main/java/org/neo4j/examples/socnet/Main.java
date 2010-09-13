@@ -1,12 +1,12 @@
 package org.neo4j.examples.socnet;
 
+import java.util.Random;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-
-import java.util.Random;
 
 public class Main
 {
@@ -14,11 +14,13 @@ public class Main
 
     public static void main( String args[] )
     {
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "target/socnetdb" );
+        GraphDatabaseService graphDb = new EmbeddedGraphDatabase(
+                "target/socnetdb" );
         IndexService index = new LuceneIndexService( graphDb );
         try
         {
-            PersonRepository personRepository = new PersonRepository( graphDb, index );
+            PersonRepository personRepository = new PersonRepository( graphDb,
+                    index );
 
             System.out.println( "Setup, creating social network..." );
             // create 1000 persons named "person#0", "person#1"...
@@ -59,14 +61,14 @@ public class Main
             }
             if ( personCount == 2 )
             {
-                System.out.println( "\nRemoving friendship between " + person1 + 
-                        " and " + person2 );
+                System.out.println( "\nRemoving friendship between " + person1
+                                    + " and " + person2 );
                 person1.removeFriend( person2 );
             }
             else
             {
-                System.out.println( "\nCreating friendship between " + person1 + 
-                        " and " + person2 );
+                System.out.println( "\nCreating friendship between " + person1
+                                    + " and " + person2 );
                 person1.addFriend( person2 );
             }
             System.out.println( "\nAnd now " + person1 + " is connected to "
@@ -77,7 +79,7 @@ public class Main
             }
 
             System.out.print( "\ncleanup, deleting social network..." );
-            deleteSocialGraph( graphDb, personRepository);
+            deleteSocialGraph( graphDb, personRepository );
             System.out.println( " done" );
         }
         finally
@@ -88,7 +90,8 @@ public class Main
     }
 
     private static void setupSocialNetwork( GraphDatabaseService graphDb,
-            PersonRepository personRepository, int nrOfPersons, int maxNrOfFriendsEach )
+            PersonRepository personRepository, int nrOfPersons,
+            int maxNrOfFriendsEach )
     {
         Transaction tx = graphDb.beginTx();
         try
@@ -102,8 +105,8 @@ public class Main
                 int nrOfFriends = r.nextInt( maxNrOfFriendsEach ) + 1;
                 for ( int j = 0; j < nrOfFriends; j++ )
                 {
-                    person.addFriend( personRepository.getPersonByName( "person#" +
-                            r.nextInt( nrOfPersons ) ) );
+                    person.addFriend( personRepository.getPersonByName( "person#"
+                                                                        + r.nextInt( nrOfPersons ) ) );
                 }
             }
             tx.success();
@@ -115,7 +118,7 @@ public class Main
     }
 
     private static void deleteSocialGraph( GraphDatabaseService graphDb,
-            PersonRepository personRepository)
+            PersonRepository personRepository )
     {
         Transaction tx = graphDb.beginTx();
         try
