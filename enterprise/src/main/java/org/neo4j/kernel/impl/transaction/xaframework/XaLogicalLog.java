@@ -1288,6 +1288,8 @@ public class XaLogicalLog
             xaRm.commit( xid, true );
             LogEntry doneEntry = new LogEntry.Done( entry.getIdentifier() );
             LogIoUtils.writeLogEntry( doneEntry, writeBuffer );
+            xidIdentMap.remove( entry.getIdentifier() );
+            recoveredTxMap.remove( entry.getIdentifier() );
         }
         catch ( XAException e )
         {
@@ -1299,7 +1301,7 @@ public class XaLogicalLog
 //        LogIoUtils.writeLogEntry( done, writeBuffer );
         // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
         scanIsComplete = true;
-        log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
+//        log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
         msgLog.logMessage( "Applied external tx and generated tx id=" + nextTxId );
 //        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
