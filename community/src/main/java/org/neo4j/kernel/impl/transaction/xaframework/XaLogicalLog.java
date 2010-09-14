@@ -999,12 +999,7 @@ public class XaLogicalLog
     public synchronized ReadableByteChannel getPreparedTransaction( int identifier )
             throws IOException
     {
-        File writeOutDir = new File( storeDir, "tmp-write-outs" );
-        if ( !writeOutDir.exists() )
-        {
-            writeOutDir.mkdir();
-        }
-        File txFile = File.createTempFile( "temp-write-out-", "-" + identifier , writeOutDir );
+        File txFile = createTempFile( "temp-write-out", "-" + identifier );
         FileChannel log = (FileChannel) getLogicalLogOrMyself( logVersion, 0 );
         List<LogEntry> logEntryList = extractPreparedTransactionFromLog( identifier, log );
         log.close();
@@ -1016,7 +1011,7 @@ public class XaLogicalLog
     private void writeOutLogEntryList( List<LogEntry> logEntryList, File txFile, boolean tempWriteOutFirst ) throws IOException
     {
         int identifier = logEntryList.get( 0 ).getIdentifier();
-        File tempFile = tempWriteOutFirst ? File.createTempFile( "extracted-tx-", "-" + identifier ) : txFile;
+        File tempFile = tempWriteOutFirst ? createTempFile( "extracted-tx-", "-" + identifier ) : txFile;
         msgLog.logMessage( "write out log entry list to file:" + tempFile );
         FileChannel txLog = new RandomAccessFile( tempFile, "rw" ).getChannel();
         LogBuffer buf = new DirectMappedLogBuffer( txLog );
@@ -1034,6 +1029,16 @@ public class XaLogicalLog
                 throw new IOException( "Failed to rename " + tempFile + " to " + txFile );
             }
         }
+    }
+
+    private File createTempFile( String prefix, String suffix ) throws IOException
+    {
+        File writeOutDir = new File( storeDir, "tmp-write-outs" );
+        if ( !writeOutDir.exists() )
+        {
+            writeOutDir.mkdir();
+        }
+        return File.createTempFile( prefix, suffix, writeOutDir );
     }
     
     private List<LogEntry> extractLogEntryList( long txId ) throws IOException
@@ -1083,7 +1088,7 @@ public class XaLogicalLog
         throws IOException
     {
         String name = fileName + ".tx_" + txId;
-        File txFile = new File( storeDir, name );
+        File txFile = new File( name );
         List<LogEntry> logEntryList = extractLogEntryList( txId );
         writeOutLogEntryList( logEntryList, txFile, true );
         ReadableByteChannel result = new RandomAccessFile( txFile, "r" ).getChannel();
