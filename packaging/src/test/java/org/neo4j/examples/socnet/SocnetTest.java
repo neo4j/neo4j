@@ -5,7 +5,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
@@ -33,7 +32,7 @@ public class SocnetTest
         graphDb = new EmbeddedGraphDatabase( "target/socnetdb" );
         index = new LuceneIndexService( graphDb );
         personRepository = new PersonRepository( graphDb, index );
-        deleteSocialGraph( graphDb, personRepository );
+        deleteSocialGraph( personRepository );
 
         nrOfPersons = 20;
         createPersons();
@@ -45,7 +44,7 @@ public class SocnetTest
     {
         try
         {
-            deleteSocialGraph( graphDb, personRepository );
+            deleteSocialGraph( personRepository );
         }
         finally
         {
@@ -133,32 +132,51 @@ public class SocnetTest
         {
             if ( !friendOfFriend.equals( person ) )
             { // You can't be friends with yourself.
-                assertThat( person.getFriendsOfFriends(),
-                        hasItems( friendOfFriend ) );
-
+                assertThat( person.getFriendsOfFriends(), hasItems( friendOfFriend ) );
             }
+        }
+    }
+
+    @Test
+    public void getPathBetweenFriends() throws Exception
+    {
+        deleteSocialGraph( personRepository );
+        Person start = personRepository.createPerson( "start" );
+        Person middleMan1 = personRepository.createPerson( "middle1" );
+        Person middleMan2 = personRepository.createPerson( "middle2" );
+        Person endMan = personRepository.createPerson( "endMan" );
+
+        // Start -> middleMan1 -> middleMan2 -> endMan
+
+        start.addFriend( middleMan1 );
+        middleMan1.addFriend( middleMan2 );
+        middleMan2.addFriend( endMan );
+
+        Iterable<Person> path = start.getPersonsFromMeTo( endMan, 4 );
+        assertPathsAreEquals( path, start, middleMan1, middleMan2, endMan );
+    }
+
+    private void assertPathsAreEquals( Iterable<Person> path,
+                                       Person... expectedPath )
+    {
+        ArrayList<Person> pathArray = new ArrayList<Person>();
+        IteratorUtil.addToCollection( path, pathArray );
+        assertThat( pathArray.size(), equalTo( expectedPath.length ) );
+        for ( int i = 0; i < expectedPath.length; i++ )
+        {
+            assertThat( pathArray.get( i ), equalTo( expectedPath[ i ] ) );
         }
     }
 
     private void setupFriendsBetweenPeople( int maxNrOfFriendsEach )
     {
-        Transaction tx = graphDb.beginTx();
-
-        try
+        for ( Person person : personRepository.getAllPersons() )
         {
-            for ( Person person : personRepository.getAllPersons() )
+            int nrOfFriends = r.nextInt( maxNrOfFriendsEach ) + 1;
+            for ( int j = 0; j < nrOfFriends; j++ )
             {
-                int nrOfFriends = r.nextInt( maxNrOfFriendsEach ) + 1;
-                for ( int j = 0; j < nrOfFriends; j++ )
-                {
-                    person.addFriend( getRandomPerson() );
-                }
+                person.addFriend( getRandomPerson() );
             }
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -168,21 +186,11 @@ public class SocnetTest
                 + r.nextInt( nrOfPersons ) );
     }
 
-    private static void deleteSocialGraph( GraphDatabaseService graphDb,
-                                           PersonRepository personRepository )
+    private static void deleteSocialGraph( PersonRepository personRepository )
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        for ( Person person : personRepository.getAllPersons() )
         {
-            for ( Person person : personRepository.getAllPersons() )
-            {
-                personRepository.deletePerson( person );
-            }
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
+            personRepository.deletePerson( person );
         }
     }
 
@@ -206,18 +214,9 @@ public class SocnetTest
 
     private void createPersons()
     {
-        Transaction tx = graphDb.beginTx();
-        try
+        for ( int i = 0; i < nrOfPersons; i++ )
         {
-            for ( int i = 0; i < nrOfPersons; i++ )
-            {
-                personRepository.createPerson( "person#" + i );
-            }
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
+            personRepository.createPerson( "person#" + i );
         }
     }
 
@@ -227,11 +226,8 @@ public class SocnetTest
         Date date = new Date( 0 );
         for ( StatusUpdate update : statusUpdates )
         {
-            org.junit.Assert.assertTrue( date.getTime() < update.getDate().getTime() ); // TODO:
-            // Should
-            // be
-            // assertThat(date,
-            // lessThan(update.getDate));
+            org.junit.Assert.assertTrue( date.getTime() < update.getDate().getTime() );
+            // TODO: Should be assertThat(date, lessThan(update.getDate));
         }
     }
 }
