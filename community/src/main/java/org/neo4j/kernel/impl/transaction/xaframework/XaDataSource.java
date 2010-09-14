@@ -346,7 +346,7 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException();
     }
     
-    public ReadableByteChannel getPreparedTransaction( long identifier ) throws IOException
+    public ReadableByteChannel getPreparedTransaction( int identifier ) throws IOException
     {
         throw new UnsupportedOperationException();
     }

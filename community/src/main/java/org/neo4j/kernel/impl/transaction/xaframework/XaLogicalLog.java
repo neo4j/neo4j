@@ -876,18 +876,30 @@ public class XaLogicalLog
         return new RandomAccessFile( name, "r" ).getChannel();
     }
     
-    private List<LogEntry> extractPreparedTransactionFromLog( long identifier, 
-            ReadableByteChannel log ) throws IOException
+    private List<LogEntry> extractPreparedTransactionFromLog( int identifier, 
+            FileChannel log ) throws IOException
     {
-        readLogHeader( buffer, log, false );
+        LogEntry.Start startEntry = xidIdentMap.get( identifier );
+//        if ( startEntry != null )
+//        {
+            log.position( startEntry.getStartPosition() );
+//        }
+//        else
+//        {
+//            readLogHeader( buffer, log, false );
+//        }
         List<LogEntry> logEntryList = new ArrayList<LogEntry>();
         LogEntry entry;
         while ( (entry = LogIoUtils.readEntry( buffer, log, cf )) != null )
         {
             // TODO For now just skip Prepare entries
-            if ( entry.getIdentifier() != identifier || entry instanceof LogEntry.Prepare )
+            if ( entry.getIdentifier() != identifier )
             {
                 continue;
+            }
+            if ( entry instanceof LogEntry.Prepare )
+            {
+                break;
             }
             if ( entry instanceof LogEntry.Start || entry instanceof LogEntry.Command )
             {
@@ -980,7 +992,7 @@ public class XaLogicalLog
         return tmpFile.getPath();
     }
     
-    public synchronized ReadableByteChannel getPreparedTransaction( long identifier )
+    public synchronized ReadableByteChannel getPreparedTransaction( int identifier )
             throws IOException
     {
         File file = new File( storeDir + "/tmp-write-outs" );
@@ -996,7 +1008,7 @@ public class XaLogicalLog
 //            return new RandomAccessFile( txFile, "r" ).getChannel();
 //        }
         
-        ReadableByteChannel log = getLogicalLogOrMyself( logVersion );
+        FileChannel log = (FileChannel) getLogicalLogOrMyself( logVersion );
         List<LogEntry> logEntryList = extractPreparedTransactionFromLog( identifier, log );
         log.close();
         
