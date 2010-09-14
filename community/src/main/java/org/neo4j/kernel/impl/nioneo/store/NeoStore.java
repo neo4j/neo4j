@@ -386,17 +386,12 @@ public class NeoStore extends AbstractStore
         }
         if ( version.equals( "NeoStore v0.9.5" ) )
         {
-            ByteBuffer buffer = ByteBuffer.wrap( new byte[ 4 * RECORD_SIZE ] );
-            long time = System.currentTimeMillis();
-            long random = r.nextLong();
-            buffer.put( Record.IN_USE.byteValue() ).putLong( time );
-            buffer.put( Record.IN_USE.byteValue() ).putLong( random );
-            buffer.put( Record.IN_USE.byteValue() ).putLong( 0 );
-            buffer.put( Record.IN_USE.byteValue() ).putLong( 0 );
+            ByteBuffer buffer = ByteBuffer.wrap( new byte[ RECORD_SIZE ] );
+            buffer.put( Record.IN_USE.byteValue() ).putLong( 1 );
             buffer.flip();
             try
             {
-                getFileChannel().write( buffer, 0 );
+                getFileChannel().write( buffer, 3*RECORD_SIZE );
             }
             catch ( IOException e )
             {
@@ -404,7 +399,7 @@ public class NeoStore extends AbstractStore
             }
             rebuildIdGenerator();
             closeIdGenerator();
-            return true;
+            return false;
         }
         throw new IllegalStoreVersionException( "Store version [" + version  + 
             "]. Please make sure you are not running old Neo4j kernel " + 
