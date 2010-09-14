@@ -1,13 +1,5 @@
 package org.neo4j.examples.socnet;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.collection.IsCollectionContaining.hasItems;
-import static org.junit.Assert.assertThat;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Random;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
@@ -18,6 +10,14 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Random;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.collection.IsCollectionContaining.hasItems;
+import static org.junit.Assert.assertThat;
 
 public class SocnetTest
 {
@@ -33,6 +33,7 @@ public class SocnetTest
         graphDb = new EmbeddedGraphDatabase( "target/socnetdb" );
         index = new LuceneIndexService( graphDb );
         personRepository = new PersonRepository( graphDb, index );
+        deleteSocialGraph( graphDb, personRepository );
 
         nrOfPersons = 20;
         createPersons();
@@ -57,7 +58,7 @@ public class SocnetTest
     public void addStatusAndRetrieveIt() throws Exception
     {
         Person person = getRandomPerson();
-        personRepository.addStatusToPerson( person, "Testing!" );
+        person.addStatus( "Testing!" );
 
         StatusUpdate update = person.getStatus().iterator().next();
 
@@ -77,7 +78,7 @@ public class SocnetTest
         Person person = getRandomPerson();
         for ( String status : statuses )
         {
-            personRepository.addStatusToPerson( person, status );
+            person.addStatus( status );
         }
 
         int i = statuses.size();
@@ -113,7 +114,7 @@ public class SocnetTest
         for ( int i = 0; i < numberOfStatuses; i++ )
         {
             Person friend = getRandomFriendOf( person );
-            personRepository.addStatusToPerson( friend, "Dum-deli-dum..." );
+            friend.addStatus( "Dum-deli-dum..." );
         }
 
         ArrayList<StatusUpdate> updates = new ArrayList<StatusUpdate>();
@@ -134,6 +135,7 @@ public class SocnetTest
             { // You can't be friends with yourself.
                 assertThat( person.getFriendsOfFriends(),
                         hasItems( friendOfFriend ) );
+
             }
         }
     }
@@ -163,11 +165,11 @@ public class SocnetTest
     private Person getRandomPerson()
     {
         return personRepository.getPersonByName( "person#"
-                                                 + r.nextInt( nrOfPersons ) );
+                + r.nextInt( nrOfPersons ) );
     }
 
     private static void deleteSocialGraph( GraphDatabaseService graphDb,
-            PersonRepository personRepository )
+                                           PersonRepository personRepository )
     {
         Transaction tx = graphDb.beginTx();
         try
@@ -226,10 +228,10 @@ public class SocnetTest
         for ( StatusUpdate update : statusUpdates )
         {
             org.junit.Assert.assertTrue( date.getTime() < update.getDate().getTime() ); // TODO:
-                                                                                        // Should
-                                                                                        // be
-                                                                                        // assertThat(date,
-                                                                                        // lessThan(update.getDate));
+            // Should
+            // be
+            // assertThat(date,
+            // lessThan(update.getDate));
         }
     }
 }

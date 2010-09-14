@@ -1,24 +1,19 @@
 package org.neo4j.examples.socnet;
 
-import static org.neo4j.examples.socnet.RelTypes.FRIEND;
-import static org.neo4j.examples.socnet.RelTypes.NEXT;
-import static org.neo4j.examples.socnet.RelTypes.STATUS;
-
-import java.util.Collections;
-import java.util.Iterator;
-
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
+
+import java.util.Collections;
+import java.util.Date;
+import java.util.Iterator;
+
+import static org.neo4j.examples.socnet.RelTypes.*;
 
 public class Person
 {
@@ -42,7 +37,7 @@ public class Person
     // START SNIPPET: delegate-to-the-node
     public String getName()
     {
-        return (String) underlyingNode.getProperty( NAME );
+        return (String)underlyingNode.getProperty( NAME );
     }
 
     // END SNIPPET: delegate-to-the-node
@@ -59,7 +54,7 @@ public class Person
     {
         if ( o instanceof Person )
         {
-            return underlyingNode.equals( ( (Person) o ).getUnderlyingNode() );
+            return underlyingNode.equals( ( (Person)o ).getUnderlyingNode() );
         }
         return false;
     }
@@ -85,8 +80,7 @@ public class Person
             Relationship friendRel = getFriendRelationshipTo( otherPerson );
             if ( friendRel == null )
             {
-                underlyingNode.createRelationshipTo(
-                        otherPerson.getUnderlyingNode(), FRIEND );
+                underlyingNode.createRelationshipTo( otherPerson.getUnderlyingNode(), FRIEND );
             }
             tx.success();
         }
@@ -103,15 +97,7 @@ public class Person
 
     public Iterable<Person> getFriends()
     {
-        return new IterableWrapper<Person, Relationship>(
-                underlyingNode.getRelationships( FRIEND ) )
-        {
-            @Override
-            protected Person underlyingObjectToObject( Relationship friendRel )
-            {
-                return new Person( friendRel.getOtherNode( underlyingNode ) );
-            }
-        };
+        return getFriendsByDepth( 1 );
     }
 
     public void removeFriend( Person otherPerson )
@@ -152,10 +138,15 @@ public class Person
 
     public Iterable<Person> getFriendsOfFriends()
     {
+        return getFriendsByDepth( 2 );
+    }
+
+    private Iterable<Person> getFriendsByDepth( int depth )
+    {
         // return all my friends and their friends using new traversal API
-        TraversalDescription travDesc = Traversal.description().depthFirst().relationships(
+        TraversalDescription travDesc = Traversal.description().breadthFirst().relationships(
                 FRIEND ).uniqueness( Uniqueness.NODE_GLOBAL ).prune(
-                Traversal.pruneAfterDepth( 2 ) ).filter(
+                Traversal.pruneAfterDepth( depth ) ).filter(
                 Traversal.returnAllButStartNode() );
 
         return new IterableWrapper<Person, Path>(
@@ -169,7 +160,8 @@ public class Person
         };
     }
 
-    public Iterable<Person> getPersonsFromMeTo( Person otherPerson, int maxDepth )
+    public Iterable<Person> getPersonsFromMeTo( Person otherPerson,
+                                                int maxDepth )
     {
         // use graph algo to calculate a shortest path
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
@@ -213,6 +205,51 @@ public class Person
     public Iterator<StatusUpdate> friendStatuses()
     {
         return new FriendsStatusUpdateIterator( this );
+    }
 
+
+    public void addStatus( String text )
+    {
+        Transaction tx = graphDb().beginTx();
+        try
+        {
+            StatusUpdate oldStatus;
+            if ( getStatus().iterator().hasNext() )
+            {
+                oldStatus = getStatus().iterator().next();
+            } else
+            {
+                oldStatus = null;
+            }
+
+            Node newStatus = createNewStatusNode( text );
+
+            if ( oldStatus != null )
+            {
+                underlyingNode.getSingleRelationship( RelTypes.STATUS, Direction.OUTGOING ).delete();
+                newStatus.createRelationshipTo( oldStatus.getUnderlyingNode(), RelTypes.NEXT );
+            }
+
+            underlyingNode.createRelationshipTo( newStatus, RelTypes.STATUS );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    private GraphDatabaseService graphDb()
+    {
+        return underlyingNode.getGraphDatabase();
+    }
+
+    private Node createNewStatusNode( String text )
+    {
+        Node newStatus = graphDb().createNode();
+        newStatus.setProperty( StatusUpdate.TEXT, text );
+        newStatus.setProperty( StatusUpdate.DATE, new Date().getTime() );
+        newStatus.createRelationshipTo( underlyingNode, RelTypes.PERSON );
+        return newStatus;
     }
 }
