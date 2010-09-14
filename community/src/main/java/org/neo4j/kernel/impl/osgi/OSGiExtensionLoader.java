@@ -21,6 +21,7 @@ public class OSGiExtensionLoader implements ExtensionLoader {
 
     public <T> Iterable<T> loadExtensionsOfType(Class<T> type) {
         try {
+            System.out.println("Kernel: attempting to load extensions of type " + type.getName());
             ServiceReference[] services = bc.getServiceReferences(type.getName(), null);
             if (services != null) {
                 Vector<T> serviceCollection = new Vector<T>();
