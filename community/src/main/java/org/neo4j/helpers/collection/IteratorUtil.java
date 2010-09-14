@@ -51,6 +51,21 @@ public abstract class IteratorUtil
     }
 
     /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param <T> the type of items in the collection and iterator.
+     * @param iterable the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<T>,T> C addToCollection( Iterable<T> iterable,
+            C collection )
+    {
+        return addToCollection(iterable.iterator(), collection);
+    }
+
+    /**
      * Exposes {@code iterator} as an {@link Iterable}. It breaks the contract
      * of {@link Iterable} in that it returns the supplied iterator instance for
      * each call to {@code iterator()} on the returned {@link Iterable}
