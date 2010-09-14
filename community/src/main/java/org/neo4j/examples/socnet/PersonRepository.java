@@ -1,20 +1,11 @@
 package org.neo4j.examples.socnet;
 
-import static org.neo4j.examples.socnet.RelTypes.A_PERSON;
-import static org.neo4j.examples.socnet.RelTypes.NEXT;
-import static org.neo4j.examples.socnet.RelTypes.PERSON;
-import static org.neo4j.examples.socnet.RelTypes.REF_PERSONS;
-import static org.neo4j.examples.socnet.RelTypes.STATUS;
-
-import java.util.Date;
-
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.index.IndexService;
+
+import static org.neo4j.examples.socnet.RelTypes.A_PERSON;
+import static org.neo4j.examples.socnet.RelTypes.REF_PERSONS;
 
 public class PersonRepository
 {
@@ -141,49 +132,5 @@ public class PersonRepository
                 return new Person( personRel.getEndNode() );
             }
         };
-    }
-
-    public void addStatusToPerson( Person p, String text )
-    {
-        Transaction tx = graphDb.beginTx();
-        try
-        {
-            Node personNode = p.getUnderlyingNode();
-
-            StatusUpdate oldStatus;
-            if ( p.getStatus().iterator().hasNext() )
-            {
-                oldStatus = p.getStatus().iterator().next();
-            }
-            else
-            {
-                oldStatus = null;
-            }
-
-            Node newStatus = createNewStatusNode( text, personNode );
-
-            if ( oldStatus != null )
-            {
-                personNode.getSingleRelationship( STATUS, Direction.OUTGOING ).delete();
-                newStatus.createRelationshipTo( oldStatus.getUnderlyingNode(),
-                        NEXT );
-            }
-
-            personNode.createRelationshipTo( newStatus, STATUS );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
-    private Node createNewStatusNode( String text, Node personNode )
-    {
-        Node newStatus = graphDb.createNode();
-        newStatus.setProperty( StatusUpdate.TEXT, text );
-        newStatus.setProperty( StatusUpdate.DATE, new Date().getTime() );
-        newStatus.createRelationshipTo( personNode, PERSON );
-        return newStatus;
     }
 }
