@@ -98,6 +98,12 @@ for HA in "${INSTANCES[@]}"; do
             -debug)
                 VMOPTIONS="$VMOPTIONS -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=144$HA"
                 ;;
+            -empty)
+                if [ "${INSTANCES[*]}" == "${EXISTING[*]}" ]; then
+                    rm -rf data/ha$HA
+                    cp -R data/empty data/ha$HA
+                fi
+                ;;
         esac
     done
 
