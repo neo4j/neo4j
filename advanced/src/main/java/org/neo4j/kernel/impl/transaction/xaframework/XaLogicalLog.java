@@ -36,7 +36,9 @@ import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -95,6 +97,9 @@ public class XaLogicalLog
     private final String storeDir;
 
     private final StringLogger msgLog;
+    
+    private final LruCache<Long, Pair<Long, Long>> txStartPositionCache =
+        new LruCache<Long, Pair<Long,Long>>( "Tx start position cache", 1000, null );
     
     XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
         XaTransactionFactory xaTf, Map<Object,Object> config )
@@ -328,7 +333,8 @@ public class XaLogicalLog
     // [TX_PREPARE][identifier]
     public synchronized void prepare( int identifier ) throws XAException
     {
-        assert xidIdentMap.get( identifier ) != null;
+        LogEntry.Start startEntry = xidIdentMap.get( identifier );
+        assert startEntry != null;
         try
         {
             writeBuffer.put( LogEntry.TX_PREPARE ).putInt( identifier );
@@ -345,13 +351,15 @@ public class XaLogicalLog
     public synchronized void commitOnePhase( int identifier, long txId, int masterId )
         throws XAException
     {
-        assert xidIdentMap.get( identifier ) != null;
+        LogEntry.Start startEntry = xidIdentMap.get( identifier );
+        assert startEntry != null;
         assert txId != -1;
         try
         {
             writeBuffer.put( LogEntry.TX_1P_COMMIT ).putInt( 
                 identifier ).putLong( txId ).putInt( masterId );
             writeBuffer.force();
+            cacheTxStartPosition( txId, startEntry );
         }
         catch ( IOException e )
         {
@@ -360,7 +368,12 @@ public class XaLogicalLog
         }
     }
 
-    
+    private synchronized void cacheTxStartPosition( long txId, LogEntry.Start startEntry )
+    {
+        txStartPositionCache.put( txId, new Pair<Long, Long>(
+                logVersion, startEntry.getStartPosition() ) );
+    }
+
     // [DONE][identifier]
     public synchronized void done( int identifier ) throws XAException
     {
@@ -395,13 +408,15 @@ public class XaLogicalLog
     public synchronized void commitTwoPhase( int identifier, long txId, int masterId ) 
         throws XAException
     {
-        assert xidIdentMap.get( identifier ) != null;
+        LogEntry.Start startEntry = xidIdentMap.get( identifier );
+        assert startEntry != null;
         assert txId != -1;
         try
         {
             writeBuffer.put( LogEntry.TX_2P_COMMIT ).putInt( 
                 identifier ).putLong( txId ).putInt( masterId );
             writeBuffer.force();
+            cacheTxStartPosition( txId, startEntry );
         }
         catch ( IOException e )
         {
@@ -495,17 +510,18 @@ public class XaLogicalLog
     {
         int identifier = commit.getIdentifier();
         long txId = commit.getTxId();
-        LogEntry.Start entry = xidIdentMap.get( identifier );
-        if ( entry == null )
+        LogEntry.Start startEntry = xidIdentMap.get( identifier );
+        if ( startEntry == null )
         {
             throw new IOException( "Unknown xid for identifier " + identifier );
         }
-        Xid xid = entry.getXid();
+        Xid xid = startEntry.getXid();
         try
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectOnePhaseCommit( xid );
+            cacheTxStartPosition( txId, startEntry );
             msgLog.logMessage( "Injected one phase commit, txId=" + commit.getTxId() );
         }
         catch ( XAException e )
@@ -534,12 +550,12 @@ public class XaLogicalLog
     {
         int identifier = commit.getIdentifier();
         long txId = commit.getTxId();
-        LogEntry.Start entry = xidIdentMap.get( identifier );
-        if ( entry == null )
+        LogEntry.Start startEntry = xidIdentMap.get( identifier );
+        if ( startEntry == null )
         {
             throw new IOException( "Unknown xid for identifier " + identifier );
         }
-        Xid xid = entry.getXid();
+        Xid xid = startEntry.getXid();
         if ( xid == null )
         {
             throw new IOException( "Xid null for identifier " + identifier );
@@ -549,6 +565,7 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectTwoPhaseCommit( xid );
+            cacheTxStartPosition( txId, startEntry );
             msgLog.logMessage( "Injected two phase commit, txId=" + commit.getTxId() );
         }
         catch ( XAException e )
@@ -868,26 +885,26 @@ public class XaLogicalLog
 
     public ReadableByteChannel getLogicalLog( long version ) throws IOException
     {
+        return getLogicalLog( version, 0 );
+    }
+    
+    public ReadableByteChannel getLogicalLog( long version, long position ) throws IOException
+    {
         String name = getFileName( version );
         if ( !new File( name ).exists() )
         {
             throw new IOException( "No such log version:" + version );
         }
-        return new RandomAccessFile( name, "r" ).getChannel();
+        FileChannel channel = new RandomAccessFile( name, "r" ).getChannel();
+        channel.position( position );
+        return channel;
     }
     
     private List<LogEntry> extractPreparedTransactionFromLog( int identifier, 
             FileChannel log ) throws IOException
     {
         LogEntry.Start startEntry = xidIdentMap.get( identifier );
-//        if ( startEntry != null )
-//        {
-            log.position( startEntry.getStartPosition() );
-//        }
-//        else
-//        {
-//            readLogHeader( buffer, log, false );
-//        }
+        log.position( startEntry.getStartPosition() );
         List<LogEntry> logEntryList = new ArrayList<LogEntry>();
         LogEntry entry;
         while ( (entry = LogIoUtils.readEntry( buffer, log, cf )) != null )
@@ -921,9 +938,7 @@ public class XaLogicalLog
     private List<LogEntry> extractTransactionFromLog( long txId, 
             long expectedVersion, ReadableByteChannel log ) throws IOException
     {
-        long[] header = readAndAssertLogHeader( buffer, log, expectedVersion );
-        long prevTxId = header[1];
-        assertLogCanContainTx( txId, prevTxId );
+        // Assertions in read?
         List<LogEntry> logEntryList = null;
         Map<Integer,List<LogEntry>> transactions = 
             new HashMap<Integer,List<LogEntry>>();
@@ -966,8 +981,7 @@ public class XaLogicalLog
         {
             msgLog.logMessage( "txId=" + txId + " not found in log=" + expectedVersion  );
             throw new IOException( "Transaction[" + txId + 
-                    "] not found in log (" + expectedVersion + ", " + 
-                    prevTxId + ")" );
+                    "] not found in log (" + expectedVersion/* + ", " + prevTxId*/ + ")" );
         }
         logEntryList.add( new LogEntry.Done( logEntryList.get( 0 ).getIdentifier() ) );
         return logEntryList;
@@ -981,46 +995,30 @@ public class XaLogicalLog
                     " can not exist in this log (prev tx id=" + prevTxId + ")" );
         }
     }
-
-    private String generateUniqueName( String baseName )
-    {
-        File tmpFile = null;
-        while ( tmpFile == null || tmpFile.exists() )
-        {
-            tmpFile = new File( storeDir, baseName + "-" + System.currentTimeMillis() );
-        }
-        return tmpFile.getPath();
-    }
     
     public synchronized ReadableByteChannel getPreparedTransaction( int identifier )
             throws IOException
     {
-        File file = new File( storeDir + "/tmp-write-outs" );
-        if ( !file.exists() )
+        File writeOutDir = new File( storeDir, "tmp-write-outs" );
+        if ( !writeOutDir.exists() )
         {
-            file.mkdir();
+            writeOutDir.mkdir();
         }
-        //String name = fileName + ".ptx_" + identifier;
-        // File txFile = new File( name );
-        File txFile = File.createTempFile( "temp-write-out-", "-" + identifier , new File( storeDir + "/tmp-write-outs" ) );
-//        if ( txFile.exists() )
-//        {
-//            return new RandomAccessFile( txFile, "r" ).getChannel();
-//        }
-        
-        FileChannel log = (FileChannel) getLogicalLogOrMyself( logVersion );
+        File txFile = File.createTempFile( "temp-write-out-", "-" + identifier , writeOutDir );
+        FileChannel log = (FileChannel) getLogicalLogOrMyself( logVersion, 0 );
         List<LogEntry> logEntryList = extractPreparedTransactionFromLog( identifier, log );
         log.close();
         
-        writeOutLogEntryList( logEntryList, txFile ); // name, "temporary-ptx-write-out-" + identifier );
+        writeOutLogEntryList( logEntryList, txFile, false );
         return new RandomAccessFile( txFile, "r" ).getChannel();
     }
 
-    private void writeOutLogEntryList( List<LogEntry> logEntryList, File txFile ) throws IOException
+    private void writeOutLogEntryList( List<LogEntry> logEntryList, File txFile, boolean tempWriteOutFirst ) throws IOException
     {
-//        String tmpName = generateUniqueName( tmpNameHint );
-        msgLog.logMessage( "write out log entry list to tmpName:" + txFile );
-        FileChannel txLog = new RandomAccessFile( txFile, "rw" ).getChannel();
+        int identifier = logEntryList.get( 0 ).getIdentifier();
+        File tempFile = tempWriteOutFirst ? File.createTempFile( String.valueOf( identifier ), "tx" ) : txFile;
+        msgLog.logMessage( "write out log entry list to file:" + tempFile );
+        FileChannel txLog = new RandomAccessFile( tempFile, "rw" ).getChannel();
         LogBuffer buf = new DirectMappedLogBuffer( txLog );
         for ( LogEntry entry : logEntryList )
         {
@@ -1028,40 +1026,66 @@ public class XaLogicalLog
         }
         buf.force();
         txLog.close();
-//        if ( !new File( tmpName ).renameTo( new File( name ) ) )
-//        {
-//            throw new IOException( "Failed to rename " + tmpName + " to " + 
-//                name );
-//        }
+        
+        if ( tempWriteOutFirst )
+        {
+            if ( !tempFile.renameTo( txFile ) )
+            {
+                throw new IOException( "Failed to rename " + tempFile + " to " + txFile );
+            }
+        }
+    }
+    
+    private List<LogEntry> extractLogEntryList( long txId ) throws IOException
+    {
+        String name = fileName + ".tx_" + txId;
+        File txFile = new File( name );
+        List<LogEntry> logEntryList = null;
+        if ( txFile.exists() )
+        {
+            // It was already written out to file?
+            FileChannel channel = new RandomAccessFile( name, "r" ).getChannel();
+            logEntryList = extractTransactionFromLog( txId, -1, channel );
+            channel.close();
+            return logEntryList;
+        }
+        Pair<Long, Long> cachedInfo = this.txStartPositionCache.get( txId );
+        if ( cachedInfo != null )
+        {
+            // We have log version and start position cached
+            long version = cachedInfo.first();
+            ReadableByteChannel log = getLogicalLogOrMyself( version, cachedInfo.other() );
+            logEntryList = extractTransactionFromLog( txId, version, log );
+            log.close();
+        }
+        else
+        {
+            // We have to look backwards in log files
+            long version = findLogContainingTxId( txId )[0];
+            if ( version == -1 )
+            {
+                throw new RuntimeException( "txId:" + txId + " not found in any logical log "
+                                            + "(starting at " + logVersion
+                                            + " and searching backwards" );
+            }
+
+            ReadableByteChannel log = getLogicalLogOrMyself( version, 0 );
+            long[] header = readAndAssertLogHeader( buffer, log, version );
+            long prevTxId = header[1];
+            assertLogCanContainTx( txId, prevTxId );
+            logEntryList = extractTransactionFromLog( txId, version, log );
+            log.close();
+        }
+        return logEntryList;
     }
 
     public synchronized ReadableByteChannel getCommittedTransaction( long txId )
         throws IOException
     {
-        // check if written out
         String name = fileName + ".tx_" + txId;
         File txFile = new File( name );
-        if ( txFile.exists() )
-        {
-            return new RandomAccessFile( name, "r" ).getChannel();
-        }
-
-        long version = findLogContainingTxId( txId );
-        msgLog.logMessage( "Get committed transaction txId:" + txId + 
-                " found in log version:" + version );
-        if ( version == -1 )
-        {
-            throw new RuntimeException( "txId:" + txId + " not found in any logical log " +
-            		"(starting at " + logVersion + " and searching backwards" );
-        }
-        
-        // extract transaction
-        ReadableByteChannel log = getLogicalLogOrMyself( version );
-        List<LogEntry> logEntryList = 
-            extractTransactionFromLog( txId, version, log );
-        log.close();
-        
-        writeOutLogEntryList( logEntryList, txFile ); // name, "temporary-tx-write-out-" + txId );
+        List<LogEntry> logEntryList = extractLogEntryList( txId );
+        writeOutLogEntryList( logEntryList, txFile, true );
         ReadableByteChannel result = new RandomAccessFile( txFile, "r" ).getChannel();
         return result;
     }
@@ -1075,26 +1099,7 @@ public class XaLogicalLog
             return MASTER_ID_REPRESENTING_NO_MASTER;
         }
         
-        // TODO: implement this if tx already extracted
-//        String name = fileName + ".tx_" + txId;
-//        File txFile = new File( name );
-//        if ( txFile.exists() )
-//        {
-//
-//        }
-
-        long version = findLogContainingTxId( txId );
-        msgLog.logMessage( "Get master id for txId:" + txId + " found in log version:" + version );
-        if ( version == -1 )
-        {
-            throw new RuntimeException( "txId:" + txId + " not found in any logical log " +
-                    "(starting at " + logVersion + " and searching backwards)" );
-        }
-        
-        // extract transaction
-        ReadableByteChannel log = getLogicalLogOrMyself( version );
-        List<LogEntry> logEntryList = 
-            extractTransactionFromLog( txId, version, log );
+        List<LogEntry> logEntryList = extractLogEntryList( txId );
         for ( LogEntry entry : logEntryList )
         {
             if ( entry instanceof LogEntry.Commit )
@@ -1103,19 +1108,22 @@ public class XaLogicalLog
             }
         }
         throw new RuntimeException( "Unable to find commit entry in for txId[" + 
-                txId + "] in log[" + version + "]" );
+                txId + "]" );// in log[" + version + "]" );
     }
     
-    private ReadableByteChannel getLogicalLogOrMyself( long version ) throws IOException
+    private ReadableByteChannel getLogicalLogOrMyself( long version, long position )
+            throws IOException
     {
         if ( version < logVersion )
         {
-            return getLogicalLog( version );
+            return getLogicalLog( version, position );
         }
         else if ( version == logVersion )
         {
             String currentLogName = getCurrentLogFileName();
-            return new RandomAccessFile( currentLogName, "r" ).getChannel();
+            FileChannel channel = new RandomAccessFile( currentLogName, "r" ).getChannel();
+            channel.position( position );
+            return channel;
         }
         else
         {
@@ -1129,13 +1137,13 @@ public class XaLogicalLog
         return currentLog == LOG1 ? getLog1FileName() : getLog2FileName();
     }
 
-    private long findLogContainingTxId( long txId ) throws IOException
+    private long[] findLogContainingTxId( long txId ) throws IOException
     {
         long version = logVersion;
         long committedTx = previousLogLastCommittedTx;
         while ( version >= 0 )
         {
-            ReadableByteChannel log = getLogicalLogOrMyself( version );
+            ReadableByteChannel log = getLogicalLogOrMyself( version, 0 );
             ByteBuffer buf = ByteBuffer.allocate( 16 );
             long[] header = readAndAssertLogHeader( buf, log, version );
             committedTx = header[1];
@@ -1146,7 +1154,7 @@ public class XaLogicalLog
             }
             version--;
         }
-        return version;
+        return new long[] { version, committedTx };
     }
     
     public long getLogicalLogLength( long version )
@@ -1278,30 +1286,33 @@ public class XaLogicalLog
         scanIsComplete = false;
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
+        long startEntryPosition = writeBuffer.getFileChannelPosition();
         while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
         {
             logEntriesFound++;
         }
         byteChannel.close();
-        LogEntry.Start entry = logApplier.startEntry;
-        if ( entry == null )
+        LogEntry.Start startEntry = logApplier.startEntry;
+        if ( startEntry == null )
         {
             throw new IOException( "Unable to find start entry" );
         }
+        startEntry.setStartPosition( startEntryPosition );
 //        System.out.println( "applyTxWithoutTxId#before 1PC @ pos: " + writeBuffer.getFileChannelPosition() );
         LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit( 
                 xidIdent, nextTxId, masterId );
         LogIoUtils.writeLogEntry( commit, writeBuffer );
-        Xid xid = entry.getXid();
+        Xid xid = startEntry.getXid();
         try
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( nextTxId );
             xaRm.commit( xid, true );
-            LogEntry doneEntry = new LogEntry.Done( entry.getIdentifier() );
+            LogEntry doneEntry = new LogEntry.Done( startEntry.getIdentifier() );
             LogIoUtils.writeLogEntry( doneEntry, writeBuffer );
-            xidIdentMap.remove( entry.getIdentifier() );
-            recoveredTxMap.remove( entry.getIdentifier() );
+            xidIdentMap.remove( startEntry.getIdentifier() );
+            recoveredTxMap.remove( startEntry.getIdentifier() );
+            cacheTxStartPosition( nextTxId, startEntry );
         }
         catch ( XAException e )
         {
