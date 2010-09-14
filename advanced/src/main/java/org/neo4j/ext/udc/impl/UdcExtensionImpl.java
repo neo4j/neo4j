@@ -51,14 +51,14 @@ public class UdcExtensionImpl extends KernelExtension {
      *
      * Defaults to 10 minutes.
      */
-    private int firstDelay = 10 * 1000 * 60;
+    private int firstDelay = 10000; // 10 * 1000 * 60;
 
     /**
      * Millisecond interval for subsequent updates.
      *
      * Defaults to 24 hours.
      */
-    private int interval = 24 * 1000 * 60 * 60 * 24;
+    private int interval = 2000; // 24 * 1000 * 60 * 60 * 24;
 
     /**
      * Host address to which UDC updates will be sent.
@@ -93,6 +93,8 @@ public class UdcExtensionImpl extends KernelExtension {
     @Override
     protected void load(KernelData kernel) {
         configure(kernel.getConfig());
+
+        kernel.setState(this, new Object());
 
         if (!disabled) {
             Timer timer = new Timer();

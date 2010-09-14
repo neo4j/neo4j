@@ -34,7 +34,6 @@ public class UdcTimerTask extends TimerTask {
         try {
             pinger.ping(host, storeId, version);
             incrementSuccessCount(storeId);
-            System.out.println("UDC update to " + host + " worked!");
         } catch (IOException e) {
             System.err.println("UDC update to " + host + " failed, because: " + e);
             incrementFailureCount(storeId);
@@ -45,13 +44,11 @@ public class UdcTimerTask extends TimerTask {
         Integer currentCount = successCounts.get(storeId);
         currentCount++;
         successCounts.put(storeId, currentCount);
-        System.out.println("successful update to host " + host);
     }
 
     private void incrementFailureCount(String storeId) {
         Integer currentCount = failureCounts.get(storeId);
         currentCount++;
         failureCounts.put(storeId, currentCount);
-        System.out.println("failure update to host " + host);
     }
 }
