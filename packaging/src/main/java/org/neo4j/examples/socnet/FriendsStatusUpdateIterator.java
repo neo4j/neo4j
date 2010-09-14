@@ -1,14 +1,11 @@
 package org.neo4j.examples.socnet;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import org.neo4j.helpers.collection.PositionedIterator;
 
-class FriendsStatusUpdateIterator implements Iterator<StatusUpdate>
-{
-    private ArrayList<SingleStatusUpdateIterator> statuses = new ArrayList<SingleStatusUpdateIterator>();
+import java.util.*;
+
+class FriendsStatusUpdateIterator implements Iterator<StatusUpdate> {
+    private ArrayList<PositionedIterator<StatusUpdate>> statuses = new ArrayList<PositionedIterator<StatusUpdate>>();
     private StatusUpdateComparator comparator = new StatusUpdateComparator();
 
     public FriendsStatusUpdateIterator( Person person )
@@ -16,9 +13,8 @@ class FriendsStatusUpdateIterator implements Iterator<StatusUpdate>
         for ( Person friend : person.getFriends() )
         {
             Iterator<StatusUpdate> iterator = friend.getStatus().iterator();
-            if ( iterator.hasNext() )
-            {
-                statuses.add( new SingleStatusUpdateIterator( iterator ) );
+            if (iterator.hasNext()) {
+                statuses.add(new PositionedIterator<StatusUpdate>(iterator));
             }
         }
 
@@ -37,7 +33,7 @@ class FriendsStatusUpdateIterator implements Iterator<StatusUpdate>
             throw new NoSuchElementException();
         }
 
-        SingleStatusUpdateIterator first = statuses.get( 0 );
+        PositionedIterator<StatusUpdate> first = statuses.get(0);
         StatusUpdate returnVal = first.current();
 
         if ( !first.hasNext() )
@@ -63,13 +59,9 @@ class FriendsStatusUpdateIterator implements Iterator<StatusUpdate>
         throw new UnsupportedOperationException( "Don't know how to do that..." );
     }
 
-    private class StatusUpdateComparator implements
-            Comparator<SingleStatusUpdateIterator>
-    {
-        public int compare( SingleStatusUpdateIterator a,
-                SingleStatusUpdateIterator b )
-        {
-            return a.current().getDate().compareTo( b.current().getDate() );
+    private class StatusUpdateComparator implements Comparator<PositionedIterator<StatusUpdate>> {
+        public int compare(PositionedIterator<StatusUpdate> a, PositionedIterator<StatusUpdate> b) {
+            return a.current().getDate().compareTo(b.current().getDate());
         }
     }
 }
