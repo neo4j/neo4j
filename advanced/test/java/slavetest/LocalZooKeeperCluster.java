@@ -17,6 +17,7 @@ public class LocalZooKeeperCluster
     private final PortPolicy serverSecondPortPolicy;
     private final Collection<ZooKeeperServerWrapper> wrappers =
             new ArrayList<ZooKeeperServerWrapper>();
+    private Collection<String> serversConfig;
 
     public LocalZooKeeperCluster( int size, DataDirectoryPolicy dataDirectoryPolicy,
             PortPolicy clientPortPolicy, PortPolicy serverFirstPortPolicy,
@@ -39,6 +40,7 @@ public class LocalZooKeeperCluster
             servers.add( "localhost:" + serverFirstPortPolicy.getPort( id ) + ":" +
                     serverSecondPortPolicy.getPort( id ) );
         }
+        this.serversConfig = servers;
         
         for ( int i = 0; i < size; i++ )
         {
@@ -49,6 +51,11 @@ public class LocalZooKeeperCluster
             wrappers.add( wrapper );
         }
         waitForClusterToBeFullyStarted();
+    }
+    
+    public Collection<String> getZooKeeperServersConfig()
+    {
+        return serversConfig;
     }
     
     private void waitForClusterToBeFullyStarted()
