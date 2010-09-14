@@ -449,11 +449,12 @@ class WriteTransaction extends XaTransaction
             {
                 command.execute();
             }
+            
+            neoStore.setLastCommittedTx( getCommitTxId() );
             if ( !isRecovered() )
             {
                 lockReleaser.commit();
             }
-            neoStore.setLastCommittedTx( getCommitTxId() );
         }
         finally
         {
