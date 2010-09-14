@@ -12,6 +12,8 @@ import java.util.*;
 
 import static junit.framework.Assert.assertFalse;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -37,6 +39,7 @@ public class UdcExtensionImplTest {
     /**
      * Sanity check to make sure a database can be created
      * and destroyed.
+     * @throws java.io.IOException
      */
     @Test
     public void shouldNotCrashNormalGraphdbCreation() throws IOException {
@@ -67,6 +70,7 @@ public class UdcExtensionImplTest {
         EmbeddedGraphDatabase graphdb2 = createTempDatabase(null);
         Set<String> successCountValues = UdcTimerTask.successCounts.keySet();
         assertThat(successCountValues.size(), equalTo(2));
+        assertThat("this", is(not("that")));
         destroy(graphdb1);
         destroy(graphdb2);
     }

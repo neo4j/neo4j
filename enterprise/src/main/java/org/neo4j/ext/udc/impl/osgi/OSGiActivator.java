@@ -20,16 +20,10 @@ public final class OSGiActivator
      */
     public void start(BundleContext bc)
         throws Exception {
-        System.out.println("STARTING neo4j-kernel");
-
         // register the UdcExtenionImpl
         Dictionary props = new Properties();
-
-        System.out.println("REGISTER foo.ExampleService");
-
         // Register our example service implementation in the OSGi service registry
         bc.registerService(KernelExtension.class.getName(), new UdcExtensionImpl(), props);
-
     }
 
     /**
@@ -37,8 +31,6 @@ public final class OSGiActivator
      */
     public void stop(BundleContext bc)
         throws Exception {
-        System.out.println("STOPPING neo4j-kernel");
-
         // no need to unregister our service - the OSGi framework handles it for us
     }
 
