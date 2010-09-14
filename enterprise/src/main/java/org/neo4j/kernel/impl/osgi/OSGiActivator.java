@@ -16,8 +16,6 @@ public final class OSGiActivator implements BundleActivator
      */
     public void start( BundleContext bc ) throws Exception
     {
-        System.out.println( "STARTING neo4j-kernel" );
-
         // start the extension listener
         Service.osgiExtensionLoader = new OSGiExtensionLoader( bc );
     }
@@ -27,8 +25,6 @@ public final class OSGiActivator implements BundleActivator
      */
     public void stop( BundleContext bc ) throws Exception
     {
-        System.out.println( "STOPPING neo4j-kernel" );
-
         // no need to unregister our service - the OSGi framework handles it for
         // us
     }

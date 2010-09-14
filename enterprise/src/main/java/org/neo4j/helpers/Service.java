@@ -263,10 +263,11 @@ public abstract class Service
 
     private static <T> Iterable<T> osgiLoader( Class<T> type )
     {
-      if (osgiExtensionLoader != null) {
-        return osgiExtensionLoader.loadExtensionsOfType(type);
-      }
-      return null;
+        if (osgiExtensionLoader != null)
+        {
+            return osgiExtensionLoader.loadExtensionsOfType(type);
+        }
+        return null;
     }
 
     private static <T> Iterable<T> java6Loader( Class<T> type )
