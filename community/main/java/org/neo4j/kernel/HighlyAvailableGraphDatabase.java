@@ -391,11 +391,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
     }
 
-    private boolean brokerSaysIAmMaster()
-    {
-        return broker.iAmMaster();
-    }
-
     public Transaction beginTx()
     {
         return localGraph.beginTx();
@@ -589,5 +584,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     int getMachineId()
     {
         return machineId;
+    }
+    
+    public boolean isMaster()
+    {
+        return broker.iAmMaster();
     }
 }
