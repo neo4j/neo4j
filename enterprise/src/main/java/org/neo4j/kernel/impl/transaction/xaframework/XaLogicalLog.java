@@ -1016,7 +1016,7 @@ public class XaLogicalLog
     private void writeOutLogEntryList( List<LogEntry> logEntryList, File txFile, boolean tempWriteOutFirst ) throws IOException
     {
         int identifier = logEntryList.get( 0 ).getIdentifier();
-        File tempFile = tempWriteOutFirst ? File.createTempFile( String.valueOf( identifier ), "tx" ) : txFile;
+        File tempFile = tempWriteOutFirst ? File.createTempFile( "extracted-tx-", "-" + identifier ) : txFile;
         msgLog.logMessage( "write out log entry list to file:" + tempFile );
         FileChannel txLog = new RandomAccessFile( tempFile, "rw" ).getChannel();
         LogBuffer buf = new DirectMappedLogBuffer( txLog );
