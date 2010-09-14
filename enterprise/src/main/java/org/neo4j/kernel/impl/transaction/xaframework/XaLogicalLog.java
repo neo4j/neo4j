@@ -1083,7 +1083,7 @@ public class XaLogicalLog
         throws IOException
     {
         String name = fileName + ".tx_" + txId;
-        File txFile = new File( name );
+        File txFile = new File( storeDir, name );
         List<LogEntry> logEntryList = extractLogEntryList( txId );
         writeOutLogEntryList( logEntryList, txFile, true );
         ReadableByteChannel result = new RandomAccessFile( txFile, "r" ).getChannel();
