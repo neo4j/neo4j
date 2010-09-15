@@ -3,7 +3,6 @@ package org.neo4j.index.impl.lucene;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.Hits;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
