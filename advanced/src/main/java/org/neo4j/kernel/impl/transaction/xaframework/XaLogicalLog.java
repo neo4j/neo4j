@@ -370,6 +370,10 @@ public class XaLogicalLog
 
     private synchronized void cacheTxStartPosition( long txId, LogEntry.Start startEntry )
     {
+        if ( startEntry.getStartPosition() == -1 )
+        {
+            throw new RuntimeException( "StartEntry.position is " + startEntry.getStartPosition() );
+        }
         txStartPositionCache.put( txId, new Pair<Long, Long>(
                 logVersion, startEntry.getStartPosition() ) );
     }
@@ -521,7 +525,6 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectOnePhaseCommit( xid );
-            cacheTxStartPosition( txId, startEntry );
             msgLog.logMessage( "Injected one phase commit, txId=" + commit.getTxId() );
         }
         catch ( XAException e )
@@ -565,7 +568,6 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectTwoPhaseCommit( xid );
-            cacheTxStartPosition( txId, startEntry );
             msgLog.logMessage( "Injected two phase commit, txId=" + commit.getTxId() );
         }
         catch ( XAException e )
@@ -981,7 +983,8 @@ public class XaLogicalLog
         {
             msgLog.logMessage( "txId=" + txId + " not found in log=" + expectedVersion  );
             throw new IOException( "Transaction[" + txId + 
-                    "] not found in log (" + expectedVersion/* + ", " + prevTxId*/ + ")" );
+                    "] not found in log (" + expectedVersion/* + ", " + prevTxId*/ + ") " +
+                    "current version is (" + this.logVersion + ")" );
         }
         logEntryList.add( new LogEntry.Done( logEntryList.get( 0 ).getIdentifier() ) );
         return logEntryList;
@@ -1217,6 +1220,7 @@ public class XaLogicalLog
         private final ReadableByteChannel byteChannel;
         
         private LogEntry.Start startEntry;
+        private LogEntry.Commit commitEntry;
         
         LogApplier( ReadableByteChannel byteChannel )
         {
@@ -1241,7 +1245,7 @@ public class XaLogicalLog
                 entry.setIdentifier( newXidIdentifier );
                 if ( entry instanceof LogEntry.Commit )
                 {
-                    // hack to get done record written after commit record
+                    commitEntry = (LogEntry.Commit) entry;
                     msgLog.logMessage( "Applying external tx: " + ((LogEntry.Commit) entry).getTxId() );
                 }
                 else if ( entry instanceof LogEntry.Start )
@@ -1316,7 +1320,6 @@ public class XaLogicalLog
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
-        ;
         while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
         {
             logEntriesFound++;
@@ -1367,12 +1370,20 @@ public class XaLogicalLog
         scanIsComplete = false;
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
+        long startEntryPosition = writeBuffer.getFileChannelPosition();
         while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
         {
             logEntriesFound++;
         }
         byteChannel.close();
         scanIsComplete = true;
+        LogEntry.Start startEntry = logApplier.startEntry;
+        if ( startEntry == null )
+        {
+            throw new IOException( "Unable to find start entry" );
+        }
+        startEntry.setStartPosition( startEntryPosition );
+        cacheTxStartPosition( logApplier.commitEntry.getTxId(), startEntry );
 //        System.out.println( "applyFullTx#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
     
@@ -1445,6 +1456,13 @@ public class XaLogicalLog
                     xidIdentMap.put( startEntry.getIdentifier(), startEntry );
                     // startEntriesWritten.add( entry.getIdentifier() );
                 }
+                else if ( entry instanceof LogEntry.Commit )
+                {
+                    LogEntry.Start startEntry = xidIdentMap.get( entry.getIdentifier() );
+                    cacheTxStartPosition( ( (LogEntry.Commit) entry ).getTxId(), startEntry );
+                    System.out.println( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() + " with " +
+                            startEntry.getStartPosition() );
+                }
 //                if ( !startEntriesWritten.contains( entry.getIdentifier() ) )
 //                {
 //                    throw new IOException( "Unable to rotate log since start entry for identifier[" +
@@ -1469,6 +1487,7 @@ public class XaLogicalLog
             deleteCurrentLogFile( currentLogFile );
             xaTf.getAndSetNewVersion();
         }
+        this.logVersion = xaTf.getCurrentVersion();
         if ( xaTf.getCurrentVersion() != ( currentVersion + 1 ) )
         {
             throw new IOException( "version change failed" );
@@ -1476,8 +1495,7 @@ public class XaLogicalLog
         fileChannel = newLog;
         instantiateCorrectWriteBuffer();
         msgLog.logMessage( "Log rotated, newLog @ pos=" + 
-                writeBuffer.getFileChannelPosition() + " and version " + 
-                (currentVersion + 1) ); 
+                writeBuffer.getFileChannelPosition() + " and version " + logVersion ); 
     }
 
     private void assertFileDoesntExist( String file, String description ) throws IOException
