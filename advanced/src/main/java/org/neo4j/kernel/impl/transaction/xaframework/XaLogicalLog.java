@@ -999,13 +999,26 @@ public class XaLogicalLog
     public synchronized ReadableByteChannel getPreparedTransaction( int identifier )
             throws IOException
     {
-        File txFile = createTempFile( "temp-write-out", "-" + identifier );
         FileChannel log = (FileChannel) getLogicalLogOrMyself( logVersion, 0 );
         List<LogEntry> logEntryList = extractPreparedTransactionFromLog( identifier, log );
         log.close();
         
+//        return wrapInMemoryLogEntryRepresentation( logEntryList );
+        
+        File txFile = createTempFile( "temp-write-out", "-" + identifier );
         writeOutLogEntryList( logEntryList, txFile, false );
         return new RandomAccessFile( txFile, "r" ).getChannel();
+    }
+    
+    private ReadableByteChannel wrapInMemoryLogEntryRepresentation( List<LogEntry> entries )
+            throws IOException
+    {
+        InMemoryLogBuffer buffer = new InMemoryLogBuffer();
+        for ( LogEntry entry : entries )
+        {
+            LogIoUtils.writeLogEntry( entry, buffer );
+        }
+        return buffer;
     }
 
     private void writeOutLogEntryList( List<LogEntry> logEntryList, File txFile, boolean tempWriteOutFirst ) throws IOException
@@ -1043,7 +1056,7 @@ public class XaLogicalLog
     
     private List<LogEntry> extractLogEntryList( long txId ) throws IOException
     {
-        String name = fileName + ".tx_" + txId;
+        String name = getExtractedTxFileName( txId );
         File txFile = new File( name );
         List<LogEntry> logEntryList = null;
         if ( txFile.exists() )
@@ -1084,15 +1097,26 @@ public class XaLogicalLog
         return logEntryList;
     }
 
+    private String getExtractedTxFileName( long txId )
+    {
+        return fileName + ".tx_" + txId;
+    }
+
     public synchronized ReadableByteChannel getCommittedTransaction( long txId )
         throws IOException
     {
-        String name = fileName + ".tx_" + txId;
+        String name = getExtractedTxFileName( txId );
         File txFile = new File( name );
+        if ( txFile.exists() )
+        {
+            return new RandomAccessFile( txFile, "r" ).getChannel();
+        }
+        
         List<LogEntry> logEntryList = extractLogEntryList( txId );
+        
+//        return wrapInMemoryLogEntryRepresentation( logEntryList );
         writeOutLogEntryList( logEntryList, txFile, true );
-        ReadableByteChannel result = new RandomAccessFile( txFile, "r" ).getChannel();
-        return result;
+        return new RandomAccessFile( txFile, "r" ).getChannel();
     }
     
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
@@ -1292,6 +1316,7 @@ public class XaLogicalLog
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
+        ;
         while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
         {
             logEntriesFound++;
