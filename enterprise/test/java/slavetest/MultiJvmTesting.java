@@ -34,6 +34,7 @@ public class MultiJvmTesting extends AbstractHaTest
                         buildExtraArgs( config ) );
                 jvms.add( slaveJvm );
             }
+            Thread.sleep( 1000 );
         }
         catch ( IOException e )
         {
@@ -99,10 +100,15 @@ public class MultiJvmTesting extends AbstractHaTest
                 "-master-id", "0" ) );
         list.addAll( Arrays.asList( extraArgs ) );
         Runtime.getRuntime().exec( list.toArray( new String[list.size()] ) );
-        StandaloneDbCom result = null;
+        return awaitJvmStarted( port );
+    }
+
+    private StandaloneDbCom awaitJvmStarted( int port ) throws RemoteException
+    {
         long startTime = System.currentTimeMillis();
         RmiLocation location = RmiLocation.location( "localhost", port, "interface" );
         RemoteException latestException = null;
+        StandaloneDbCom result = null;
         while ( result == null && (System.currentTimeMillis() - startTime) < 1000*10 )
         {
             try
@@ -166,7 +172,6 @@ public class MultiJvmTesting extends AbstractHaTest
         Map<String, String> newConfig = new HashMap<String, String>( config );
         newConfig.put( "master", "true" );
         StandaloneDbCom com = spawnJvm( dbPath( 0 ), MASTER_PORT, 0, buildExtraArgs( newConfig ) );
-        com.awaitStarted();
         if ( jvms.isEmpty() )
         {
             jvms.add( com );
@@ -175,6 +180,7 @@ public class MultiJvmTesting extends AbstractHaTest
         {
             jvms.set( 0, com );
         }
+        Thread.sleep( 1000 );
     }
     
     @Override
