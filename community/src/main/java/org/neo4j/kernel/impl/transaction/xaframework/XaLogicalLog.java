@@ -1066,8 +1066,7 @@ public class XaLogicalLog
         return File.createTempFile( prefix, suffix, writeOutDir );
     }
     
-    // Pair: first: the log entries, other: was it hard to extract it?
-    private Pair<List<LogEntry>, Boolean> extractLogEntryList( long txId ) throws IOException
+    private List<LogEntry> extractLogEntryList( long txId ) throws IOException
     {
         String name = getExtractedTxFileName( txId );
         File txFile = new File( name );
@@ -1078,10 +1077,9 @@ public class XaLogicalLog
             FileChannel channel = new RandomAccessFile( name, "r" ).getChannel();
             logEntryList = extractTransactionFromLog( txId, -1, channel );
             channel.close();
-            return new Pair<List<LogEntry>, Boolean>( logEntryList, false );
+            return logEntryList;
         }
         Pair<Long, Long> cachedInfo = this.txStartPositionCache.get( txId );
-        boolean foundInCache = false;
         if ( cachedInfo != null )
         {
             // We have log version and start position cached
@@ -1089,7 +1087,6 @@ public class XaLogicalLog
             ReadableByteChannel log = getLogicalLogOrMyself( version, cachedInfo.other() );
             logEntryList = extractTransactionFromLog( txId, version, log );
             log.close();
-            foundInCache = true;
         }
         else
         {
@@ -1109,7 +1106,7 @@ public class XaLogicalLog
             logEntryList = extractTransactionFromLog( txId, version, log );
             log.close();
         }
-        return new Pair<List<LogEntry>, Boolean>( logEntryList, !foundInCache );
+        return logEntryList;
     }
 
     private String getExtractedTxFileName( long txId )
@@ -1127,22 +1124,8 @@ public class XaLogicalLog
             return new RandomAccessFile( txFile, "r" ).getChannel();
         }
         
-        Pair<List<LogEntry>, Boolean> logEntryList = extractLogEntryList( txId );
-        
-        if ( logEntryList.other() )
-        {
-            // It was apparently hard to find (linear search in log(s)), perhaps
-            // a request from a slave which was way behind (more than the
-            // start-position-cache capacity). So store it cached on disk.
-            writeOutLogEntryList( logEntryList.first(), txFile, true );
-            return new RandomAccessFile( txFile, "r" ).getChannel();
-        }
-        else
-        {
-            // It was found easily with a start position from the start-position-cache
-            // so just make an in-memory byte representation of it and send.
-            return wrapInMemoryLogEntryRepresentation( logEntryList.first() );
-        }
+        List<LogEntry> logEntryList = extractLogEntryList( txId );
+        return wrapInMemoryLogEntryRepresentation( logEntryList );
     }
     
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
@@ -1154,7 +1137,7 @@ public class XaLogicalLog
             return MASTER_ID_REPRESENTING_NO_MASTER;
         }
         
-        List<LogEntry> logEntryList = extractLogEntryList( txId ).first();
+        List<LogEntry> logEntryList = extractLogEntryList( txId );
         for ( LogEntry entry : logEntryList )
         {
             if ( entry instanceof LogEntry.Commit )
