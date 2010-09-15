@@ -170,12 +170,12 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
 
     public IndexHits<Long> query( String key, Object queryOrQueryObject )
     {
-        return query( type.query( key, queryOrQueryObject ) );
+        return query( type.query( key, queryOrQueryObject, null ) );
     }
 
     public IndexHits<Long> query( Object queryOrQueryObject )
     {
-        return query( type.query( null, queryOrQueryObject ) );
+        return query( type.query( null, queryOrQueryObject, null ) );
     }
 
     public void shutdown()

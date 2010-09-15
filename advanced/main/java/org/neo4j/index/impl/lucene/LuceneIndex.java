@@ -133,7 +133,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         QueryContext context = queryOrQueryObject instanceof QueryContext ?
                 (QueryContext) queryOrQueryObject : null;
         return query( type.query( key, context != null ?
-                context.queryOrQueryObject : queryOrQueryObject ), null, null, context );
+                context.queryOrQueryObject : queryOrQueryObject, context ), null, null, context );
     }
 
     /**
@@ -396,7 +396,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
                     (context == null && queryOrQueryObjectOrNull != null ) )
             {
                 query.add( type.query( key, context != null ?
-                        context.queryOrQueryObject : queryOrQueryObjectOrNull ), Occur.MUST );
+                        context.queryOrQueryObject : queryOrQueryObjectOrNull, context ), Occur.MUST );
             }
             addIfNotNull( query, startNodeOrNull, KEY_START_NODE_ID );
             addIfNotNull( query, endNodeOrNull, KEY_END_NODE_ID );
