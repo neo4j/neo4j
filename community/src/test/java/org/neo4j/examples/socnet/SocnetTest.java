@@ -117,7 +117,7 @@ public class SocnetTest
             friend.addStatus( "Dum-deli-dum..." );
         }
 
-        ArrayList<StatusUpdate> updates = getArrayList( person.friendStatuses() );
+        ArrayList<StatusUpdate> updates = fromIterableToArrayList( person.friendStatuses() );
         assertThat( updates.size(), equalTo( numberOfStatuses ) );
         assertUpdatesAreSortedByDate( updates );
     }
@@ -153,7 +153,7 @@ public class SocnetTest
         middleMan2.addFriend( endMan );
 
         Iterable<Person> path = start.getPersonsFromMeTo( endMan, 4 );
-        assertPathsAreEquals( path, start, middleMan1, middleMan2, endMan );
+        assertPathIs( path, start, middleMan1, middleMan2, endMan );
     }
 
     @Test
@@ -206,20 +206,20 @@ public class SocnetTest
         f.addFriend( c );
         f.addFriend( d );
 
-        ArrayList<Person> recommendations = getArrayList( a.getFriendRecommendation( 2 ).iterator() );
+        ArrayList<Person> recommendations = fromIterableToArrayList( a.getFriendRecommendation( 2 ).iterator() );
 
         assertThat( recommendations.get( 0 ), equalTo( f ));
         assertThat( recommendations.get( 1 ), equalTo( e ));
     }
 
-    private <T> ArrayList<T> getArrayList( Iterator<T> iterable )
+    private <T> ArrayList<T> fromIterableToArrayList( Iterator<T> iterable )
     {
         ArrayList<T> collection = new ArrayList<T>();
         IteratorUtil.addToCollection( iterable, collection );
         return collection;
     }
 
-    private void assertPathsAreEquals( Iterable<Person> path,
+    private void assertPathIs( Iterable<Person> path,
                                        Person... expectedPath )
     {
         ArrayList<Person> pathArray = new ArrayList<Person>();
