@@ -1460,8 +1460,8 @@ public class XaLogicalLog
                 {
                     LogEntry.Start startEntry = xidIdentMap.get( entry.getIdentifier() );
                     cacheTxStartPosition( ( (LogEntry.Commit) entry ).getTxId(), startEntry );
-                    System.out.println( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() + " with " +
-                            startEntry.getStartPosition() );
+                    msgLog.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
+                            " with " + startEntry.getStartPosition() );
                 }
 //                if ( !startEntriesWritten.contains( entry.getIdentifier() ) )
 //                {
