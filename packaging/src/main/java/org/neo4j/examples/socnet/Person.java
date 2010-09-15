@@ -35,7 +35,7 @@ import static org.neo4j.examples.socnet.RelTypes.*;
 
 public class Person
 {
-    static final String NAME = "person_name";
+    private static final String NAME = "person_name";
 
     // START SNIPPET: the-node
     private final Node underlyingNode;
@@ -90,17 +90,15 @@ public class Person
         Transaction tx = underlyingNode.getGraphDatabase().beginTx();
         try
         {
-            if ( this.equals( otherPerson ) )
+            if ( !this.equals( otherPerson ) )
             {
-                // ignore
-                return;
+                Relationship friendRel = getFriendRelationshipTo( otherPerson );
+                if ( friendRel == null )
+                {
+                    underlyingNode.createRelationshipTo( otherPerson.getUnderlyingNode(), FRIEND );
+                }
+                tx.success();
             }
-            Relationship friendRel = getFriendRelationshipTo( otherPerson );
-            if ( friendRel == null )
-            {
-                underlyingNode.createRelationshipTo( otherPerson.getUnderlyingNode(), FRIEND );
-            }
-            tx.success();
         }
         finally
         {
@@ -123,17 +121,15 @@ public class Person
         Transaction tx = underlyingNode.getGraphDatabase().beginTx();
         try
         {
-            if ( this.equals( otherPerson ) )
+            if ( !this.equals( otherPerson ) )
             {
-                // ignore
-                return;
+                Relationship friendRel = getFriendRelationshipTo( otherPerson );
+                if ( friendRel != null )
+                {
+                    friendRel.delete();
+                }
+                tx.success();
             }
-            Relationship friendRel = getFriendRelationshipTo( otherPerson );
-            if ( friendRel != null )
-            {
-                friendRel.delete();
-            }
-            tx.success();
         }
         finally
         {
@@ -162,10 +158,12 @@ public class Person
     private Iterable<Person> getFriendsByDepth( int depth )
     {
         // return all my friends and their friends using new traversal API
-        TraversalDescription travDesc = Traversal.description().breadthFirst().relationships(
-                FRIEND ).uniqueness( Uniqueness.NODE_GLOBAL ).prune(
-                Traversal.pruneAfterDepth( depth ) ).filter(
-                Traversal.returnAllButStartNode() );
+        TraversalDescription travDesc = Traversal.description()
+                .breadthFirst()
+                .relationships( FRIEND )
+                .uniqueness( Uniqueness.NODE_GLOBAL )
+                .prune( Traversal.pruneAfterDepth( depth ) )
+                .filter( Traversal.returnAllButStartNode() );
 
         return new IterableWrapper<Person, Path>(
                 travDesc.traverse( underlyingNode ) )
@@ -181,7 +179,7 @@ public class Person
     private int getPathsToPerson( Person otherPerson )
     {
         PathFinder<Path> finder = GraphAlgoFactory.allPaths( Traversal.expanderForTypes( FRIEND, Direction.BOTH ), 2 );
-        Iterable<Path> paths = finder.findAllPaths ( getUnderlyingNode(), otherPerson.getUnderlyingNode() );
+        Iterable<Path> paths = finder.findAllPaths( getUnderlyingNode(), otherPerson.getUnderlyingNode() );
         return IteratorUtil.count( paths );
     }
 
@@ -314,31 +312,38 @@ public class Person
         HashSet<Person> friends = new HashSet<Person>();
         IteratorUtil.addToCollection( getFriends(), friends );
 
-        HashSet<Person> friendsOfFriens = new HashSet<Person>();
-        IteratorUtil.addToCollection( getFriendsOfFriends(), friendsOfFriens );
+        HashSet<Person> friendsOfFriends = new HashSet<Person>();
+        IteratorUtil.addToCollection( getFriendsOfFriends(), friendsOfFriends );
 
-        friendsOfFriens.removeAll( friends );
+        friendsOfFriends.removeAll( friends );
 
         ArrayList<RankedPerson> rankedFriends = new ArrayList<RankedPerson>();
-        for ( Person friend : friendsOfFriens )
+        for ( Person friend : friendsOfFriends )
         {
             int rank = getPathsToPerson( friend );
             rankedFriends.add( new RankedPerson( friend, rank ) );
         }
 
         Collections.sort( rankedFriends, new RankedComparer() );
+        trimTo( rankedFriends, numberOfFriendsToReturn );
+
+        return onlyFriend( rankedFriends );
+    }
+
+    private void trimTo( ArrayList<RankedPerson> rankedFriends,
+                         int numberOfFriendsToReturn
+    )
+    {
         while ( rankedFriends.size() > numberOfFriendsToReturn )
         {
             rankedFriends.remove( rankedFriends.size() - 1 );
         }
-
-        return onlyFriend(rankedFriends);
     }
 
     private Iterable<Person> onlyFriend( Iterable<RankedPerson> rankedFriends )
     {
         ArrayList<Person> retVal = new ArrayList<Person>();
-        for(RankedPerson person : rankedFriends)
+        for ( RankedPerson person : rankedFriends )
         {
             retVal.add( person.getPerson() );
         }
