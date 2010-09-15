@@ -64,6 +64,11 @@ public class SlaveLockManager extends LockManager
                 return;
             }
             
+//            if ( hasAlreadyGotLock() )
+//            {
+//                return;
+//            }
+            
             LockResult result = null;
             do
             {
@@ -113,6 +118,11 @@ public class SlaveLockManager extends LockManager
                 super.getWriteLock( resource );
                 return;
             }
+            
+//          if ( hasAlreadyGotLock() )
+//          {
+//              return;
+//          }
             
             LockResult result = null;
             do
