@@ -51,7 +51,7 @@ ZKCLUSTER=$(grep clientPort etc/zk?.cfg \
 
 if rebuild; then
     MAIN_CLASS_PATH=$HADIR/target/test-classes
-    if [ ! -f "$HADIR/target/neo4j-ha-0.5.zip" ]; then
+    if [ ! -f "$HAZIP" ]; then
         cd $HADIR
         ant
         cd -
@@ -63,7 +63,7 @@ if rebuild; then
     
     mkdir $LIBDIR
     cd $LIBDIR
-    unzip -o $HADIR/target/neo4j-ha-0.5.zip
+    unzip -o $HAZIP
     cd -
 fi
 
