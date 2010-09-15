@@ -478,27 +478,7 @@ class WriteTransaction extends XaTransaction
         {
             committed = true;
             CommandSorter sorter = new CommandSorter();
-            // reltypes
-            java.util.Collections.sort( relTypeCommands, sorter );
-            for ( Command.RelationshipTypeCommand command : relTypeCommands )
-            {
-                command.execute();
-                addRelationshipType( command.getKey() );
-            }
-            // nodes
-            java.util.Collections.sort( nodeCommands, sorter );
-            for ( Command.NodeCommand command : nodeCommands )
-            {
-                command.execute();
-                removeNodeFromCache( command.getKey() );
-            }
-            // relationships
-            java.util.Collections.sort( relCommands, sorter );
-            for ( Command.RelationshipCommand command : relCommands )
-            {
-                command.execute();
-                removeRelationshipFromCache( command.getKey() );
-            }
+            // property index
             java.util.Collections.sort( propIndexCommands, sorter );
             for ( Command.PropertyIndexCommand command : propIndexCommands )
             {
@@ -511,6 +491,27 @@ class WriteTransaction extends XaTransaction
             {
                 command.execute();
                 removePropertyFromCache( command );
+            }
+            // reltypes
+            java.util.Collections.sort( relTypeCommands, sorter );
+            for ( Command.RelationshipTypeCommand command : relTypeCommands )
+            {
+                command.execute();
+                addRelationshipType( command.getKey() );
+            }
+            // relationships
+            java.util.Collections.sort( relCommands, sorter );
+            for ( Command.RelationshipCommand command : relCommands )
+            {
+                command.execute();
+                removeRelationshipFromCache( command.getKey() );
+            }
+            // nodes
+            java.util.Collections.sort( nodeCommands, sorter );
+            for ( Command.NodeCommand command : nodeCommands )
+            {
+                command.execute();
+                removeNodeFromCache( command.getKey() );
             }
             neoStore.setRecoveredStatus( true );
             try

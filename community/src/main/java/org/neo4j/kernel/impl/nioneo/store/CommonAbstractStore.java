@@ -338,7 +338,13 @@ public abstract class CommonAbstractStore
      */
     public long getHighId()
     {
-        return idGenerator != null ? idGenerator.getHighId() : -1;
+        long genHighId = idGenerator != null ? idGenerator.getHighId() : -1;
+        long updateHighId = highestUpdateRecordId;
+        if ( updateHighId > genHighId )
+        {
+            return updateHighId;
+        }
+        return genHighId;
     }
 
     /**
@@ -468,12 +474,11 @@ public abstract class CommonAbstractStore
     {
         long position = makeUnsignedInt( sPosition );
         if ( !isInRecoveryMode()
-            && ( position > idGenerator.getHighId() || !storeOk) )
+            && ( position > getHighId() || !storeOk) )
         {
             throw new InvalidRecordException( "Position[" + position
                 + "] requested for operation is high id["
-                + idGenerator.getHighId() + "] or store is flagged as dirty["
-                + storeOk + "]" );
+                + getHighId() + "], store is ok[" + storeOk + "]" );
         }
         return windowPool.acquire( position, type );
     }
