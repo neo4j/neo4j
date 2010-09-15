@@ -8,6 +8,7 @@ import static org.neo4j.index.Neo4jTestCase.assertCollection;
 import java.io.File;
 import java.util.Random;
 
+import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.Sort;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -376,10 +377,14 @@ public class TestLuceneIndex
         index.add( trinity, "sex", "female" );
         
         assertCollection( index.query( "username:*@matrix AND sex:male" ), neo );
+        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), neo );
         assertCollection( index.query( "username:*@matrix OR sex:male" ), neo, trinity );
+        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), neo, trinity );
         restartTx();
         assertCollection( index.query( "username:*@matrix AND sex:male" ), neo );
+        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), neo );
         assertCollection( index.query( "username:*@matrix OR sex:male" ), neo, trinity );
+        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), neo, trinity );
         index.clear();
     }
     

@@ -196,7 +196,7 @@ abstract class IndexType
     
     abstract TxData newTxData( LuceneIndex index );
     
-    Query query( String keyOrNull, Object value )
+    Query query( String keyOrNull, Object value, QueryContext contextOrNull )
     {
         if ( value instanceof Query )
         {
@@ -206,6 +206,10 @@ abstract class IndexType
         QueryParser parser = new QueryParser( Version.LUCENE_30, keyOrNull, analyzer );
         parser.setAllowLeadingWildcard( true );
         parser.setLowercaseExpandedTerms( false );
+        if ( contextOrNull != null && contextOrNull.defaultOperator != null )
+        {
+            parser.setDefaultOperator( contextOrNull.defaultOperator );
+        }
         try
         {
             return parser.parse( value.toString() );
