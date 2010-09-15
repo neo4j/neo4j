@@ -152,7 +152,7 @@ public class SocnetTest
         middleMan1.addFriend( middleMan2 );
         middleMan2.addFriend( endMan );
 
-        Iterable<Person> path = start.getPersonsFromMeTo( endMan, 4 );
+        Iterable<Person> path = start.getShortestPathTo( endMan, 4 );
         assertPathIs( path, start, middleMan1, middleMan2, endMan );
     }
 
