@@ -251,6 +251,31 @@ public class Traversal
     {
         return RETURN_ALL;
     }
+    
+    /**
+     * Returns a filter which accepts items accepted by at least one of the
+     * supplied filters.
+     * 
+     * @param filters
+     * @return
+     */
+    public static Predicate<Path> returnAcceptedByAny( final Predicate<Path>... filters )
+    {
+        return new Predicate<Path>()
+        {
+            public boolean accept( Path item )
+            {
+                for ( Predicate<Path> filter : filters )
+                {
+                    if ( filter.accept( item ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+    }
 
     /**
      * A traversal return filter which returns all {@link Path}s except the

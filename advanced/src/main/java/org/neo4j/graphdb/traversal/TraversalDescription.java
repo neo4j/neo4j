@@ -6,6 +6,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
 /**
@@ -68,12 +69,16 @@ public interface TraversalDescription
     TraversalDescription prune( PruneEvaluator pruning );
 
     /**
-     * Sets the return filter to use, that is which positions are OK to return.
+     * Adds {@code filter} to the list of filters to use, i.e. a filter to
+     * decide which positions are OK to return or not.
      * Each position is represented by a {@link Path} from the start node of the
      * traversal to the current node. The current node is the
-     * {@link Path#endNode()} of the path.
+     * {@link Path#endNode()} of the path. Each {@link Path} must be accepted
+     * by all added filter for it to be returned from the traverser. For adding
+     * a filter which returns paths accepted by any filters, see
+     * {@link Traversal#returnAcceptedByAny(Predicate...)} for convenience.
      *
-     * @param filter the {@link Predicate} to use as filter.
+     * @param filter the {@link Predicate} to add to the list of filters.
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription filter( Predicate<Path> filter );
