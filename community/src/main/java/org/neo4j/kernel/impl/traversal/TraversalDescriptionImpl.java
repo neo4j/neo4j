@@ -130,9 +130,29 @@ public final class TraversalDescriptionImpl implements TraversalDescription
             		"use " + Traversal.class.getSimpleName() + ".returnAll() instead." );
         }
         return new TraversalDescriptionImpl( expander, uniqueness,
-                uniquenessParameter, pruning, filter, branchSelector );
+                uniquenessParameter, pruning, addFilter( filter ), branchSelector );
     }
 
+    private Predicate<Path> addFilter( Predicate<Path> filter )
+    {
+        if ( this.filter instanceof MultiFilter )
+        {
+            return ((MultiFilter) this.pruning).add( filter );
+        }
+        else
+        {
+            if ( this.filter == Traversal.returnAll() )
+            {
+                return filter;
+            }
+            else
+            {
+                return new MultiFilter( new Predicate[] {
+                        this.filter, filter } );
+            }
+        }
+    }
+    
     private static <T> void nullCheck( T parameter, Class<T> parameterType,
             String defaultName )
     {
