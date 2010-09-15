@@ -968,7 +968,16 @@ public class XaLogicalLog
             }
             else if ( entry instanceof LogEntry.Command || entry instanceof LogEntry.Prepare )
             {
-                transactions.get( entry.getIdentifier() ).add( entry );
+                List<LogEntry> list = transactions.get( entry.getIdentifier() );
+                
+                // Since we can start reading at any position in the log it might be the case
+                // that we come across a record which corresponding start record resides
+                // before the position we started reading from. If that should be the case
+                // then skip it since it isn't an important record for us here.
+                if ( list != null )
+                {
+                    list.add( entry );
+                }
             }
             else if ( entry instanceof LogEntry.Done )
             {
