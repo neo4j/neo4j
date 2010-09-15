@@ -64,6 +64,18 @@ public class ZooClient extends AbstractZooKeeperManager
             if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
             {
                 keeperState = KeeperState.Expired;
+                if ( zooKeeper != null )
+                {
+                    try
+                    {
+                        zooKeeper.close();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        e.printStackTrace();
+                        Thread.interrupted();
+                    }
+                }
                 zooKeeper = instantiateZooKeeper();
             }
             else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
