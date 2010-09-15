@@ -23,7 +23,8 @@ package org.neo4j.examples.socnet;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.*;
-import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.*;
+import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
@@ -70,11 +71,8 @@ public class Person
     @Override
     public boolean equals( Object o )
     {
-        if ( o instanceof Person )
-        {
-            return underlyingNode.equals( ( (Person)o ).getUnderlyingNode() );
-        }
-        return false;
+        return o instanceof Person &&
+                underlyingNode.equals( ( (Person)o ).getUnderlyingNode() );
     }
 
     @Override
@@ -137,54 +135,13 @@ public class Person
         }
     }
 
-    private Relationship getFriendRelationshipTo( Person otherPerson )
-    {
-        Node otherNode = otherPerson.getUnderlyingNode();
-        for ( Relationship rel : underlyingNode.getRelationships( FRIEND ) )
-        {
-            if ( rel.getOtherNode( underlyingNode ).equals( otherNode ) )
-            {
-                return rel;
-            }
-        }
-        return null;
-    }
-
     public Iterable<Person> getFriendsOfFriends()
     {
         return getFriendsByDepth( 2 );
     }
 
-    private Iterable<Person> getFriendsByDepth( int depth )
-    {
-        // return all my friends and their friends using new traversal API
-        TraversalDescription travDesc = Traversal.description()
-                .breadthFirst()
-                .relationships( FRIEND )
-                .uniqueness( Uniqueness.NODE_GLOBAL )
-                .prune( Traversal.pruneAfterDepth( depth ) )
-                .filter( Traversal.returnAllButStartNode() );
-
-        return new IterableWrapper<Person, Path>(
-                travDesc.traverse( underlyingNode ) )
-        {
-            @Override
-            protected Person underlyingObjectToObject( Path path )
-            {
-                return new Person( path.endNode() );
-            }
-        };
-    }
-
-    private int getPathsToPerson( Person otherPerson )
-    {
-        PathFinder<Path> finder = GraphAlgoFactory.allPaths( Traversal.expanderForTypes( FRIEND, Direction.BOTH ), 2 );
-        Iterable<Path> paths = finder.findAllPaths( getUnderlyingNode(), otherPerson.getUnderlyingNode() );
-        return IteratorUtil.count( paths );
-    }
-
-    public Iterable<Person> getPersonsFromMeTo( Person otherPerson,
-                                                int maxDepth )
+    public Iterable<Person> getShortestPathTo( Person otherPerson,
+                                               int maxDepth )
     {
         // use graph algo to calculate a shortest path
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
@@ -192,14 +149,31 @@ public class Person
 
         Path path = finder.findSinglePath( underlyingNode,
                 otherPerson.getUnderlyingNode() );
-        return new IterableWrapper<Person, Node>( path.nodes() )
+        return createPersonsFromNodes( path );
+    }
+
+    public Iterable<Person> getFriendRecommendation(
+            int numberOfFriendsToReturn )
+    {
+        HashSet<Person> friends = new HashSet<Person>();
+        IteratorUtil.addToCollection( getFriends(), friends );
+
+        HashSet<Person> friendsOfFriends = new HashSet<Person>();
+        IteratorUtil.addToCollection( getFriendsOfFriends(), friendsOfFriends );
+
+        friendsOfFriends.removeAll( friends );
+
+        ArrayList<RankedPerson> rankedFriends = new ArrayList<RankedPerson>();
+        for ( Person friend : friendsOfFriends )
         {
-            @Override
-            protected Person underlyingObjectToObject( Node node )
-            {
-                return new Person( node );
-            }
-        };
+            int rank = getPathsToPerson( friend );
+            rankedFriends.add( new RankedPerson( friend, rank ) );
+        }
+
+        Collections.sort( rankedFriends, new RankedComparer() );
+        trimTo( rankedFriends, numberOfFriendsToReturn );
+
+        return onlyFriend( rankedFriends );
     }
 
     public Iterable<StatusUpdate> getStatus()
@@ -278,6 +252,7 @@ public class Person
     private final class RankedPerson
     {
         final Person person;
+
         final int rank;
 
         private RankedPerson( Person person, int rank )
@@ -291,11 +266,11 @@ public class Person
         {
             return person;
         }
-
         public int getRank()
         {
             return rank;
         }
+
     }
 
     private class RankedComparer implements Comparator<RankedPerson>
@@ -304,35 +279,11 @@ public class Person
         {
             return b.getRank() - a.getRank();
         }
-    }
 
-    public Iterable<Person> getFriendRecommendation(
-            int numberOfFriendsToReturn )
-    {
-        HashSet<Person> friends = new HashSet<Person>();
-        IteratorUtil.addToCollection( getFriends(), friends );
-
-        HashSet<Person> friendsOfFriends = new HashSet<Person>();
-        IteratorUtil.addToCollection( getFriendsOfFriends(), friendsOfFriends );
-
-        friendsOfFriends.removeAll( friends );
-
-        ArrayList<RankedPerson> rankedFriends = new ArrayList<RankedPerson>();
-        for ( Person friend : friendsOfFriends )
-        {
-            int rank = getPathsToPerson( friend );
-            rankedFriends.add( new RankedPerson( friend, rank ) );
-        }
-
-        Collections.sort( rankedFriends, new RankedComparer() );
-        trimTo( rankedFriends, numberOfFriendsToReturn );
-
-        return onlyFriend( rankedFriends );
     }
 
     private void trimTo( ArrayList<RankedPerson> rankedFriends,
-                         int numberOfFriendsToReturn
-    )
+                         int numberOfFriendsToReturn )
     {
         while ( rankedFriends.size() > numberOfFriendsToReturn )
         {
@@ -349,4 +300,63 @@ public class Person
         }
         return retVal;
     }
+
+    private Relationship getFriendRelationshipTo( Person otherPerson )
+    {
+        Node otherNode = otherPerson.getUnderlyingNode();
+        for ( Relationship rel : underlyingNode.getRelationships( FRIEND ) )
+        {
+            if ( rel.getOtherNode( underlyingNode ).equals( otherNode ) )
+            {
+                return rel;
+            }
+        }
+        return null;
+    }
+
+    private Iterable<Person> getFriendsByDepth( int depth )
+    {
+        // return all my friends and their friends using new traversal API
+        TraversalDescription travDesc = Traversal.description()
+                .breadthFirst()
+                .relationships( FRIEND )
+                .uniqueness( Uniqueness.NODE_GLOBAL )
+                .prune( Traversal.pruneAfterDepth( depth ) )
+                .filter( Traversal.returnAllButStartNode() );
+
+        return createPersonsFromPath( travDesc.traverse( underlyingNode ) );
+    }
+
+    private IterableWrapper<Person, Path> createPersonsFromPath(
+            Traverser iterableToWrap )
+    {
+        return new IterableWrapper<Person, Path>( iterableToWrap )
+        {
+            @Override
+            protected Person underlyingObjectToObject( Path path )
+            {
+                return new Person( path.endNode() );
+            }
+        };
+    }
+
+    private int getPathsToPerson( Person otherPerson )
+    {
+        PathFinder<Path> finder = GraphAlgoFactory.allPaths( Traversal.expanderForTypes( FRIEND, Direction.BOTH ), 2 );
+        Iterable<Path> paths = finder.findAllPaths( getUnderlyingNode(), otherPerson.getUnderlyingNode() );
+        return IteratorUtil.count( paths );
+    }
+
+    private Iterable<Person> createPersonsFromNodes( final Path path )
+    {
+        return new IterableWrapper<Person, Node>( path.nodes() )
+        {
+            @Override
+            protected Person underlyingObjectToObject( Node node )
+            {
+                return new Person( node );
+            }
+        };
+    }
+
 }
