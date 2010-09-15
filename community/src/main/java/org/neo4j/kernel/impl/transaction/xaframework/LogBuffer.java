@@ -24,7 +24,6 @@ import java.nio.channels.FileChannel;
 
 public interface LogBuffer
 {
-
     public LogBuffer put( byte b ) throws IOException;
 
     public LogBuffer putInt( int i ) throws IOException;
