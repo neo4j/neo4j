@@ -1015,11 +1015,11 @@ public class XaLogicalLog
         List<LogEntry> logEntryList = extractPreparedTransactionFromLog( identifier, log );
         log.close();
         
-//        return wrapInMemoryLogEntryRepresentation( logEntryList );
+        return wrapInMemoryLogEntryRepresentation( logEntryList );
         
-        File txFile = createTempFile( "temp-write-out", "-" + identifier );
-        writeOutLogEntryList( logEntryList, txFile, false );
-        return new RandomAccessFile( txFile, "r" ).getChannel();
+//        File txFile = createTempFile( "temp-write-out", "-" + identifier );
+//        writeOutLogEntryList( logEntryList, txFile, false );
+//        return new RandomAccessFile( txFile, "r" ).getChannel();
     }
     
     private ReadableByteChannel wrapInMemoryLogEntryRepresentation( List<LogEntry> entries )
@@ -1066,7 +1066,8 @@ public class XaLogicalLog
         return File.createTempFile( prefix, suffix, writeOutDir );
     }
     
-    private List<LogEntry> extractLogEntryList( long txId ) throws IOException
+    // Pair: first: the log entries, other: was it hard to extract it?
+    private Pair<List<LogEntry>, Boolean> extractLogEntryList( long txId ) throws IOException
     {
         String name = getExtractedTxFileName( txId );
         File txFile = new File( name );
@@ -1077,9 +1078,10 @@ public class XaLogicalLog
             FileChannel channel = new RandomAccessFile( name, "r" ).getChannel();
             logEntryList = extractTransactionFromLog( txId, -1, channel );
             channel.close();
-            return logEntryList;
+            return new Pair<List<LogEntry>, Boolean>( logEntryList, false );
         }
         Pair<Long, Long> cachedInfo = this.txStartPositionCache.get( txId );
+        boolean foundInCache = false;
         if ( cachedInfo != null )
         {
             // We have log version and start position cached
@@ -1087,6 +1089,7 @@ public class XaLogicalLog
             ReadableByteChannel log = getLogicalLogOrMyself( version, cachedInfo.other() );
             logEntryList = extractTransactionFromLog( txId, version, log );
             log.close();
+            foundInCache = true;
         }
         else
         {
@@ -1106,7 +1109,7 @@ public class XaLogicalLog
             logEntryList = extractTransactionFromLog( txId, version, log );
             log.close();
         }
-        return logEntryList;
+        return new Pair<List<LogEntry>, Boolean>( logEntryList, !foundInCache );
     }
 
     private String getExtractedTxFileName( long txId )
@@ -1124,11 +1127,22 @@ public class XaLogicalLog
             return new RandomAccessFile( txFile, "r" ).getChannel();
         }
         
-        List<LogEntry> logEntryList = extractLogEntryList( txId );
+        Pair<List<LogEntry>, Boolean> logEntryList = extractLogEntryList( txId );
         
-//        return wrapInMemoryLogEntryRepresentation( logEntryList );
-        writeOutLogEntryList( logEntryList, txFile, true );
-        return new RandomAccessFile( txFile, "r" ).getChannel();
+        if ( logEntryList.other() )
+        {
+            // It was apparently hard to find (linear search in log(s)), perhaps
+            // a request from a slave which was way behind (more than the
+            // start-position-cache capacity). So store it cached on disk.
+            writeOutLogEntryList( logEntryList.first(), txFile, true );
+            return new RandomAccessFile( txFile, "r" ).getChannel();
+        }
+        else
+        {
+            // It was found easily with a start position from the start-position-cache
+            // so just make an in-memory byte representation of it and send.
+            return wrapInMemoryLogEntryRepresentation( logEntryList.first() );
+        }
     }
     
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
@@ -1140,7 +1154,7 @@ public class XaLogicalLog
             return MASTER_ID_REPRESENTING_NO_MASTER;
         }
         
-        List<LogEntry> logEntryList = extractLogEntryList( txId );
+        List<LogEntry> logEntryList = extractLogEntryList( txId ).first();
         for ( LogEntry entry : logEntryList )
         {
             if ( entry instanceof LogEntry.Commit )
