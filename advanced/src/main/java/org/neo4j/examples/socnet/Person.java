@@ -36,7 +36,7 @@ import static org.neo4j.examples.socnet.RelTypes.*;
 
 public class Person
 {
-    private static final String NAME = "person_name";
+    static final String NAME = "person_name";
 
     // START SNIPPET: the-node
     private final Node underlyingNode;
