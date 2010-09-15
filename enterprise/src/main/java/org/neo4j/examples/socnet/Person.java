@@ -1,3 +1,23 @@
+/*
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.neo4j.examples.socnet;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -9,9 +29,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
+import java.util.*;
 
 import static org.neo4j.examples.socnet.RelTypes.*;
 
@@ -160,6 +178,13 @@ public class Person
         };
     }
 
+    private int getPathsToPerson( Person otherPerson )
+    {
+        PathFinder<Path> finder = GraphAlgoFactory.allPaths( Traversal.expanderForTypes( FRIEND, Direction.BOTH ), 2 );
+        Iterable<Path> paths = finder.findAllPaths ( getUnderlyingNode(), otherPerson.getUnderlyingNode() );
+        return IteratorUtil.count( paths );
+    }
+
     public Iterable<Person> getPersonsFromMeTo( Person otherPerson,
                                                 int maxDepth )
     {
@@ -207,7 +232,6 @@ public class Person
         return new FriendsStatusUpdateIterator( this );
     }
 
-
     public void addStatus( String text )
     {
         Transaction tx = graphDb().beginTx();
@@ -251,5 +275,73 @@ public class Person
         newStatus.setProperty( StatusUpdate.DATE, new Date().getTime() );
         newStatus.createRelationshipTo( underlyingNode, RelTypes.PERSON );
         return newStatus;
+    }
+
+    private final class RankedPerson
+    {
+        final Person person;
+        final int rank;
+
+        private RankedPerson( Person person, int rank )
+        {
+
+            this.person = person;
+            this.rank = rank;
+        }
+
+        public Person getPerson()
+        {
+            return person;
+        }
+
+        public int getRank()
+        {
+            return rank;
+        }
+    }
+
+    private class RankedComparer implements Comparator<RankedPerson>
+    {
+        public int compare( RankedPerson a, RankedPerson b )
+        {
+            return b.getRank() - a.getRank();
+        }
+    }
+
+    public Iterable<Person> getFriendRecommendation(
+            int numberOfFriendsToReturn )
+    {
+        HashSet<Person> friends = new HashSet<Person>();
+        IteratorUtil.addToCollection( getFriends(), friends );
+
+        HashSet<Person> friendsOfFriens = new HashSet<Person>();
+        IteratorUtil.addToCollection( getFriendsOfFriends(), friendsOfFriens );
+
+        friendsOfFriens.removeAll( friends );
+
+        ArrayList<RankedPerson> rankedFriends = new ArrayList<RankedPerson>();
+        for ( Person friend : friendsOfFriens )
+        {
+            int rank = getPathsToPerson( friend );
+            rankedFriends.add( new RankedPerson( friend, rank ) );
+        }
+
+        Collections.sort( rankedFriends, new RankedComparer() );
+        while ( rankedFriends.size() > numberOfFriendsToReturn )
+        {
+            rankedFriends.remove( rankedFriends.size() - 1 );
+        }
+
+        return onlyFriend(rankedFriends);
+    }
+
+    private Iterable<Person> onlyFriend( Iterable<RankedPerson> rankedFriends )
+    {
+        ArrayList<Person> retVal = new ArrayList<Person>();
+        for(RankedPerson person : rankedFriends)
+        {
+            retVal.add( person.getPerson() );
+        }
+        return retVal;
     }
 }
