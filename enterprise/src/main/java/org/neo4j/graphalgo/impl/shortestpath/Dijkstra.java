@@ -130,7 +130,7 @@ public class Dijkstra<CostType> implements
      * @param startCost Starting cost for both the start node and the end node
      * @param startNode the start node
      * @param endNode the end node
-     * @param costRelationType the relationship that should be included in the
+     * @param costRelationTypes the relationship that should be included in the
      *            path
      * @param relationDirection relationship direction to follow
      * @param costEvaluator the cost function per relationship
