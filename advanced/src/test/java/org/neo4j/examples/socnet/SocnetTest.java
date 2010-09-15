@@ -12,6 +12,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -32,7 +33,7 @@ public class SocnetTest
         graphDb = new EmbeddedGraphDatabase( "target/socnetdb" );
         index = new LuceneIndexService( graphDb );
         personRepository = new PersonRepository( graphDb, index );
-        deleteSocialGraph( personRepository );
+        deleteSocialGraph();
 
         nrOfPersons = 20;
         createPersons();
@@ -44,7 +45,7 @@ public class SocnetTest
     {
         try
         {
-            deleteSocialGraph( personRepository );
+            deleteSocialGraph();
         }
         finally
         {
@@ -116,8 +117,7 @@ public class SocnetTest
             friend.addStatus( "Dum-deli-dum..." );
         }
 
-        ArrayList<StatusUpdate> updates = new ArrayList<StatusUpdate>();
-        IteratorUtil.addToCollection( person.friendStatuses(), updates );
+        ArrayList<StatusUpdate> updates = getArrayList( person.friendStatuses() );
         assertThat( updates.size(), equalTo( numberOfStatuses ) );
         assertUpdatesAreSortedByDate( updates );
     }
@@ -140,7 +140,7 @@ public class SocnetTest
     @Test
     public void getPathBetweenFriends() throws Exception
     {
-        deleteSocialGraph( personRepository );
+        deleteSocialGraph();
         Person start = personRepository.createPerson( "start" );
         Person middleMan1 = personRepository.createPerson( "middle1" );
         Person middleMan2 = personRepository.createPerson( "middle2" );
@@ -154,6 +154,69 @@ public class SocnetTest
 
         Iterable<Person> path = start.getPersonsFromMeTo( endMan, 4 );
         assertPathsAreEquals( path, start, middleMan1, middleMan2, endMan );
+    }
+
+    @Test
+    public void singleFriendRecommendation() throws Exception
+    {
+        deleteSocialGraph();
+        Person a = personRepository.createPerson( "a" );
+        Person b = personRepository.createPerson( "b" );
+        Person c = personRepository.createPerson( "c" );
+        Person d = personRepository.createPerson( "d" );
+        Person e = personRepository.createPerson( "e" );
+
+        // A is friends with B,C and D
+        a.addFriend( b );
+        a.addFriend( c );
+        a.addFriend( d );
+
+        // E is also friend with B, C and D
+        e.addFriend( b );
+        e.addFriend( c );
+        e.addFriend( d );
+
+        Person recommendation = IteratorUtil.singleValueOrNull( a.getFriendRecommendation( 1 ).iterator() );
+
+        assertThat( recommendation, equalTo( e ) );
+    }
+
+    @Test
+    public void weightedFriendRecommendation() throws Exception
+    {
+        deleteSocialGraph();
+        Person a = personRepository.createPerson( "a" );
+        Person b = personRepository.createPerson( "b" );
+        Person c = personRepository.createPerson( "c" );
+        Person d = personRepository.createPerson( "d" );
+        Person e = personRepository.createPerson( "e" );
+        Person f = personRepository.createPerson( "f" );
+
+
+        // A is friends with B,C and D
+        a.addFriend( b );
+        a.addFriend( c );
+        a.addFriend( d );
+
+        // E is only friend with B
+        e.addFriend( b );
+
+        // F is friend with B, C, D
+        f.addFriend( b );
+        f.addFriend( c );
+        f.addFriend( d );
+
+        ArrayList<Person> recommendations = getArrayList( a.getFriendRecommendation( 2 ).iterator() );
+
+        assertThat( recommendations.get( 0 ), equalTo( f ));
+        assertThat( recommendations.get( 1 ), equalTo( e ));
+    }
+
+    private <T> ArrayList<T> getArrayList( Iterator<T> iterable )
+    {
+        ArrayList<T> collection = new ArrayList<T>();
+        IteratorUtil.addToCollection( iterable, collection );
+        return collection;
     }
 
     private void assertPathsAreEquals( Iterable<Person> path,
@@ -186,7 +249,7 @@ public class SocnetTest
                 + r.nextInt( nrOfPersons ) );
     }
 
-    private static void deleteSocialGraph( PersonRepository personRepository )
+    private void deleteSocialGraph()
     {
         for ( Person person : personRepository.getAllPersons() )
         {
