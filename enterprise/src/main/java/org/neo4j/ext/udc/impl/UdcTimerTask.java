@@ -35,7 +35,8 @@ public class UdcTimerTask extends TimerTask {
             pinger.ping(host, storeId, version);
             incrementSuccessCount(storeId);
         } catch (IOException e) {
-            System.err.println("UDC update to " + host + " failed, because: " + e);
+            // ABK: commenting out to not annoy people
+            // System.err.println("UDC update to " + host + " failed, because: " + e);
             incrementFailureCount(storeId);
         }
     }

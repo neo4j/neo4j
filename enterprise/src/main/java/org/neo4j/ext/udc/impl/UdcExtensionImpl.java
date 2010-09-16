@@ -58,12 +58,12 @@ public class UdcExtensionImpl extends KernelExtension {
      *
      * Defaults to 24 hours.
      */
-    private int interval = 24 * 1000 * 60 * 60 * 24;
+    private int interval = 1000 * 60 * 60 * 24;
 
     /**
      * Host address to which UDC updates will be sent.
      */
-    private String hostAddress = "127.0.0.1:80";
+    private String hostAddress = "udc.neo4j.org";
 
     /**
      * Disable the extension.
