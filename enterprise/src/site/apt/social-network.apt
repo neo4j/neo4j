@@ -20,7 +20,7 @@ Simple Social Model
 * <<<StatusUpdate>>>
 
     * <<<person>>>: connects back to the owning <<<Person>>>
-    * <<<next>>>: points to the next <<<StatusUpdate>>> in the list  
+    * <<<previous>>>: points to the previous <<<StatusUpdate>>>  
 
 Path finding example
 
