@@ -4,9 +4,9 @@ import static org.junit.Assert.assertFalse;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
@@ -106,11 +106,6 @@ public class SmallestGraphEverTest extends AbstractTestBase
     {
         Traverser traverser = traversal.uniqueness( uniqueness ).traverse(
                 referenceNode() );
-        int count = 0;
-        for ( Path position : traverser )
-        {
-            count++;
-        }
-        assertFalse( "empty traversal", count == 0 );
+        assertFalse( "empty traversal", IteratorUtil.count( traverser ) == 0 );
     }
 }
