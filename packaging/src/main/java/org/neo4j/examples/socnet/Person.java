@@ -32,7 +32,9 @@ import org.neo4j.kernel.Uniqueness;
 
 import java.util.*;
 
-import static org.neo4j.examples.socnet.RelTypes.*;
+import static org.neo4j.examples.socnet.RelTypes.STATUS;
+import static org.neo4j.examples.socnet.RelTypes.FRIEND;
+import static org.neo4j.examples.socnet.RelTypes.NEXT;
 
 public class Person
 {
@@ -185,8 +187,10 @@ public class Person
             return Collections.emptyList();
         }
 
-        TraversalDescription traversal = Traversal.description().depthFirst().relationships(
-                NEXT ).filter( Traversal.returnAll() );
+        TraversalDescription traversal = Traversal.description().
+                depthFirst().
+                relationships( NEXT ).
+                filter( Traversal.returnAll() );
 
         return new IterableWrapper<StatusUpdate, Path>(
                 traversal.traverse( firstStatus.getEndNode() ) )
@@ -245,7 +249,6 @@ public class Person
         Node newStatus = graphDb().createNode();
         newStatus.setProperty( StatusUpdate.TEXT, text );
         newStatus.setProperty( StatusUpdate.DATE, new Date().getTime() );
-        newStatus.createRelationshipTo( underlyingNode, RelTypes.PERSON );
         return newStatus;
     }
 
