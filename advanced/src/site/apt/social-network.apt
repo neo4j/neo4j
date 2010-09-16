@@ -1,4 +1,26 @@
-Social network
+Social Network
+
+    Social networks (know as social graphs out on the web) are natural to
+    model with a graph. This example shows a very simple social model
+    that connects friends and keeps track of status updates.
+
+Simple Social Model
+
+[./images/social-uml.png] Social Domain Model 
+
+    The domain model for a social network is pretty simple: <<<Persons>>> with names
+    and <<<StatusUpdates>>> with timestamped text. These entities are then connected
+    by specific relationships.
+
+* <<<Person>>>
+
+    * <<<friend>>>: relates two distinct <<<Person>>> instances (no self-reference)
+    * <<<status>>>: connects to the most recent <<<StatusUpdate>>>
+
+* <<<StatusUpdate>>>
+
+    * <<<person>>>: connects back to the owning <<<Person>>>
+    * <<<next>>>: points to the next <<<StatusUpdate>>> in the list  
 
 Path finding example
 
