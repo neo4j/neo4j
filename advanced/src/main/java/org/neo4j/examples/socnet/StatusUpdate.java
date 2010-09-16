@@ -1,14 +1,18 @@
 package org.neo4j.examples.socnet;
 
-import static org.neo4j.examples.socnet.RelTypes.NEXT;
-import static org.neo4j.examples.socnet.RelTypes.PERSON;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.kernel.Traversal;
 
 import java.util.Date;
 
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.collection.IterableWrapper;
+import static org.neo4j.examples.socnet.RelTypes.NEXT;
+import static org.neo4j.examples.socnet.RelTypes.STATUS;
 
 public class StatusUpdate
 {
@@ -29,20 +33,40 @@ public class StatusUpdate
 
     public Person getPerson()
     {
-        return new Person( underlyingNode.getSingleRelationship( PERSON,
-                Direction.OUTGOING ).getEndNode() );
+        Node statusMessage = GetLastStatusMessage();
+        Relationship relationship = statusMessage.getSingleRelationship( STATUS, Direction.INCOMING );
+        Node personNode = relationship.getStartNode();
+        return new Person( personNode );
+    }
+
+    private Node GetLastStatusMessage()
+    {
+        TraversalDescription traversalDescription = Traversal.description().
+                depthFirst().
+                relationships( NEXT, Direction.BOTH ).
+                filter( Traversal.returnAll() );
+
+        Traverser traverser = traversalDescription.traverse( getUnderlyingNode() );
+
+        Node lastStatus = null;
+        for ( Path i : traverser )
+        {
+            lastStatus = i.endNode();
+        }
+
+        return lastStatus;
     }
 
     public String getStatusText()
     {
-        return (String) underlyingNode.getProperty( TEXT );
+        return (String)underlyingNode.getProperty( TEXT );
     }
 
     public Date getDate()
     {
-        Long l = (Long) underlyingNode.getProperty( DATE );
+        Long l = (Long)underlyingNode.getProperty( DATE );
 
-        return new Date( l.longValue() );
+        return new Date( l );
     }
 
     public StatusUpdate next()
