@@ -8,6 +8,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
 
 public class TestMultipleFilters extends AbstractTestBase
@@ -56,13 +57,7 @@ public class TestMultipleFilters extends AbstractTestBase
         {
             public boolean accept( Path item )
             {
-                int counter = 0;
-                String name = (String) item.endNode().getProperty( "name", null );
-                for ( Relationship rel : item.endNode().getRelationships( Direction.OUTGOING ) )
-                {
-                    counter++;
-                }
-                return counter <= 2;
+                return IteratorUtil.count( item.endNode().getRelationships( Direction.OUTGOING ) ) <= 2;
             }
         };
         
@@ -77,11 +72,11 @@ public class TestMultipleFilters extends AbstractTestBase
         Predicate<Path> mustBeConnectedToC = new MustBeConnectedToNodeFilter( getNodeWithName( "c" ) );
         Predicate<Path> mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( "e" ) );
         
-        // Nodes connected (OUTGOING) to c
+        // Nodes connected (OUTGOING) to c (which "a" is)
         expectNodes( Traversal.description().filter( mustBeConnectedToC ).traverse( referenceNode() ), "a" );
-        // Nodes connected (OUTGOING) to c AND e
+        // Nodes connected (OUTGOING) to c AND e (which none is)
         expectNodes( Traversal.description().filter( mustBeConnectedToC ).filter( mustBeConnectedToE ).traverse( referenceNode() ) );
-        // Nodes connected (OUTGOING) to c OR e
+        // Nodes connected (OUTGOING) to c OR e (which "a" and "b" is)
         expectNodes( Traversal.description().filter( Traversal.returnAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) ).traverse( referenceNode() ), "a", "b" );
     }
 }

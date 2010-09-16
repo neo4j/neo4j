@@ -4,16 +4,15 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
 
 public class TestMultiPruneEvaluators extends AbstractTestBase
@@ -37,14 +36,8 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
                 {
                     public boolean pruneAfter( Path position )
                     {
-                        int counter = 0;
-                        for ( Iterator<Relationship> rels = position.endNode().getRelationships(
-                                Direction.OUTGOING ).iterator(); rels.hasNext(); )
-                        {
-                            counter++;
-                            rels.next();
-                        }
-                        return counter < 3;
+                        return IteratorUtil.count( position.endNode().getRelationships(
+                                Direction.OUTGOING ).iterator() ) < 3;
                     }
                 } );
         Set<String> expectedNodes = new HashSet<String>(
