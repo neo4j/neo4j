@@ -8,6 +8,5 @@ public enum RelTypes implements RelationshipType
     A_PERSON,
     STATUS,
     NEXT,
-    PERSON,
     FRIEND
 }
