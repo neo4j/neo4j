@@ -6,7 +6,7 @@ Social Network
 
 Simple Social Model
 
-[./images/social-uml.png] Social Domain Model 
+[./images/social-uml.png] Social network domain model 
 
     The domain model for a social network is pretty simple: <<<Persons>>> with names
     and <<<StatusUpdates>>> with timestamped text. These entities are then connected
@@ -21,6 +21,19 @@ Simple Social Model
 
     * <<<person>>>: connects back to the owning <<<Person>>>
     * <<<previous>>>: points to the previous <<<StatusUpdate>>>  
+
+Status Graph Instance
+
+    The <<<StatusUpdate>>> list for a <<<Person>>> is a linked list. The head
+    of the list (the most recent status) is found by following <<<status>>>.
+    Each subsequent <<<StatusUpdate>>> is connected by <<<previous>>>. Every
+    <<<StatusUpdate>>> connects directy back to <<<Person>>> through a <<<person>>>,
+    making it efficient to get back to the owner when the list gets large.
+
+    Here's an example where Andreas Kollegger micro-blogged his way to work 
+    in the morning:
+
+[./images/social_status.png] Andreas Kollegger's status updates
 
 Path finding example
 
