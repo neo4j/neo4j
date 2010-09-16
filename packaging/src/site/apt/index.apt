@@ -16,3 +16,5 @@ Neo4j Apoc examples
     * {{{./graphalgo.html}Graph algorithms}}
     
     * {{{./management.html}Management features}}    
+
+    * {{{./social-network.html}Social Network Example}}
