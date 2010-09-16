@@ -79,6 +79,7 @@ public class UdcExtensionImplTest {
     public void shouldRecordFailuresWhenThereIsNoServer() throws InterruptedException, IOException {
         Map<String, String> config = new HashMap<String, String>();
         config.put(UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100"); // first delay must be long enough to allow class initialization to complete
+        config.put(UdcExtensionImpl.UDC_HOST_ADDRESS, "127.0.0.1:1"); // first delay must be long enough to allow class initialization to complete
         EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase("should-record-failures", config);
         Thread.sleep(200);
         Collection<Integer> failureCountValues = UdcTimerTask.failureCounts.values();
