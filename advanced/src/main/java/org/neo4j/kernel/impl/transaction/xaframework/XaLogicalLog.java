@@ -36,7 +36,7 @@ import java.util.logging.Logger;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -92,14 +92,14 @@ public class XaLogicalLog
     private boolean autoRotate = true;
     private long rotateAtSize = 10*1024*1024; // 10MB
     private boolean backupSlave = false;
-    private boolean slave = false;
+//    private boolean slave = false;
     private boolean useMemoryMapped = true;
     private final String storeDir;
 
     private final StringLogger msgLog;
     
-    private final LruCache<Long, Pair<Long, Long>> txStartPositionCache =
-        new LruCache<Long, Pair<Long,Long>>( "Tx start position cache", 1000, null );
+    private final LruCache<Long, Triplet<Long, Integer, Long>> txStartPositionCache =
+        new LruCache<Long, Triplet<Long, Integer, Long>>( "Tx start position cache", 1000, null );
     
     XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
         XaTransactionFactory xaTf, Map<Object,Object> config )
@@ -359,7 +359,7 @@ public class XaLogicalLog
             writeBuffer.put( LogEntry.TX_1P_COMMIT ).putInt( 
                 identifier ).putLong( txId ).putInt( masterId );
             writeBuffer.force();
-            cacheTxStartPosition( txId, startEntry );
+            cacheTxStartPosition( txId, masterId, startEntry );
         }
         catch ( IOException e )
         {
@@ -368,14 +368,14 @@ public class XaLogicalLog
         }
     }
 
-    private synchronized void cacheTxStartPosition( long txId, LogEntry.Start startEntry )
+    private synchronized void cacheTxStartPosition( long txId, int masterId,
+            LogEntry.Start startEntry )
     {
         if ( startEntry.getStartPosition() == -1 )
         {
             throw new RuntimeException( "StartEntry.position is " + startEntry.getStartPosition() );
         }
-        txStartPositionCache.put( txId, new Pair<Long, Long>(
-                logVersion, startEntry.getStartPosition() ) );
+        txStartPositionCache.put( txId, Triplet.of( logVersion, masterId, startEntry.getStartPosition() ) );
     }
 
     // [DONE][identifier]
@@ -420,7 +420,7 @@ public class XaLogicalLog
             writeBuffer.put( LogEntry.TX_2P_COMMIT ).putInt( 
                 identifier ).putLong( txId ).putInt( masterId );
             writeBuffer.force();
-            cacheTxStartPosition( txId, startEntry );
+            cacheTxStartPosition( txId, masterId, startEntry );
         }
         catch ( IOException e )
         {
@@ -1033,38 +1033,38 @@ public class XaLogicalLog
         return buffer;
     }
 
-    private void writeOutLogEntryList( List<LogEntry> logEntryList, File txFile, boolean tempWriteOutFirst ) throws IOException
-    {
-        int identifier = logEntryList.get( 0 ).getIdentifier();
-        File tempFile = tempWriteOutFirst ? createTempFile( "extracted-tx-", "-" + identifier ) : txFile;
-        msgLog.logMessage( "write out log entry list to file:" + tempFile );
-        FileChannel txLog = new RandomAccessFile( tempFile, "rw" ).getChannel();
-        LogBuffer buf = new DirectMappedLogBuffer( txLog );
-        for ( LogEntry entry : logEntryList )
-        {
-            LogIoUtils.writeLogEntry( entry, buf );
-        }
-        buf.force();
-        txLog.close();
-        
-        if ( tempWriteOutFirst )
-        {
-            if ( !tempFile.renameTo( txFile ) )
-            {
-                throw new IOException( "Failed to rename " + tempFile + " to " + txFile );
-            }
-        }
-    }
+//    private void writeOutLogEntryList( List<LogEntry> logEntryList, File txFile, boolean tempWriteOutFirst ) throws IOException
+//    {
+//        int identifier = logEntryList.get( 0 ).getIdentifier();
+//        File tempFile = tempWriteOutFirst ? createTempFile( "extracted-tx-", "-" + identifier ) : txFile;
+//        msgLog.logMessage( "write out log entry list to file:" + tempFile );
+//        FileChannel txLog = new RandomAccessFile( tempFile, "rw" ).getChannel();
+//        LogBuffer buf = new DirectMappedLogBuffer( txLog );
+//        for ( LogEntry entry : logEntryList )
+//        {
+//            LogIoUtils.writeLogEntry( entry, buf );
+//        }
+//        buf.force();
+//        txLog.close();
+//        
+//        if ( tempWriteOutFirst )
+//        {
+//            if ( !tempFile.renameTo( txFile ) )
+//            {
+//                throw new IOException( "Failed to rename " + tempFile + " to " + txFile );
+//            }
+//        }
+//    }
 
-    private File createTempFile( String prefix, String suffix ) throws IOException
-    {
-        File writeOutDir = new File( storeDir, "tmp-write-outs" );
-        if ( !writeOutDir.exists() )
-        {
-            writeOutDir.mkdir();
-        }
-        return File.createTempFile( prefix, suffix, writeOutDir );
-    }
+//    private File createTempFile( String prefix, String suffix ) throws IOException
+//    {
+//        File writeOutDir = new File( storeDir, "tmp-write-outs" );
+//        if ( !writeOutDir.exists() )
+//        {
+//            writeOutDir.mkdir();
+//        }
+//        return File.createTempFile( prefix, suffix, writeOutDir );
+//    }
     
     private List<LogEntry> extractLogEntryList( long txId ) throws IOException
     {
@@ -1079,12 +1079,12 @@ public class XaLogicalLog
             channel.close();
             return logEntryList;
         }
-        Pair<Long, Long> cachedInfo = this.txStartPositionCache.get( txId );
+        Triplet<Long, Integer, Long> cachedInfo = this.txStartPositionCache.get( txId );
         if ( cachedInfo != null )
         {
             // We have log version and start position cached
             long version = cachedInfo.first();
-            ReadableByteChannel log = getLogicalLogOrMyself( version, cachedInfo.other() );
+            ReadableByteChannel log = getLogicalLogOrMyself( version, cachedInfo.third() );
             logEntryList = extractTransactionFromLog( txId, version, log );
             log.close();
         }
@@ -1135,6 +1135,12 @@ public class XaLogicalLog
         if ( txId == 1 )
         {
             return MASTER_ID_REPRESENTING_NO_MASTER;
+        }
+        
+        Triplet<Long, Integer, Long> cache = this.txStartPositionCache.get( txId );
+        if ( cache != null )
+        {
+            return cache.other();
         }
         
         List<LogEntry> logEntryList = extractLogEntryList( txId );
@@ -1351,7 +1357,7 @@ public class XaLogicalLog
             LogIoUtils.writeLogEntry( doneEntry, writeBuffer );
             xidIdentMap.remove( startEntry.getIdentifier() );
             recoveredTxMap.remove( startEntry.getIdentifier() );
-            cacheTxStartPosition( nextTxId, startEntry );
+            cacheTxStartPosition( nextTxId, masterId, startEntry );
         }
         catch ( XAException e )
         {
@@ -1389,7 +1395,7 @@ public class XaLogicalLog
             throw new IOException( "Unable to find start entry" );
         }
         startEntry.setStartPosition( startEntryPosition );
-        cacheTxStartPosition( logApplier.commitEntry.getTxId(), startEntry );
+        cacheTxStartPosition( logApplier.commitEntry.getTxId(), logApplier.commitEntry.getMasterId(), startEntry );
 //        System.out.println( "applyFullTx#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
     
@@ -1443,7 +1449,7 @@ public class XaLogicalLog
             throw new IOException( "Unable to write log version to new" );
         }
         fileChannel.position( 0 );
-        long[] header =  readAndAssertLogHeader( buffer, fileChannel, currentVersion );
+        readAndAssertLogHeader( buffer, fileChannel, currentVersion );
         if ( xidIdentMap.size() > 0 )
         {
             fileChannel.position( getFirstStartEntry( endPosition ) );
@@ -1465,7 +1471,8 @@ public class XaLogicalLog
                 else if ( entry instanceof LogEntry.Commit )
                 {
                     LogEntry.Start startEntry = xidIdentMap.get( entry.getIdentifier() );
-                    cacheTxStartPosition( ( (LogEntry.Commit) entry ).getTxId(), startEntry );
+                    LogEntry.Commit commitEntry = (LogEntry.Commit) entry;
+                    cacheTxStartPosition( commitEntry.getTxId(), commitEntry.getMasterId(), startEntry );
                     msgLog.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
                             " with " + startEntry.getStartPosition() );
                 }
