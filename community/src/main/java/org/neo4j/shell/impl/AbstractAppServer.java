@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
@@ -114,9 +115,19 @@ public abstract class AbstractAppServer extends AbstractServer
 
         try
         {
-            line = replaceAlias( line, session );
-            AppCommandParser parser = new AppCommandParser( this, line );
-            return parser.app().execute( parser, session, out );
+            String result = null;
+            for ( String command : line.split( Pattern.quote( "&&" ) ) )
+            {
+                command = command.trim();
+                command = replaceAlias( command, session );
+                AppCommandParser parser = new AppCommandParser( this, command );
+                String commandResult = parser.app().execute( parser, session, out );
+                if ( commandResult != null )
+                {
+                    result = commandResult;
+                }
+            }
+            return result;
         }
         catch ( Exception e )
         {

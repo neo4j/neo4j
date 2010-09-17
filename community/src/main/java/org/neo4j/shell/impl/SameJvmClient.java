@@ -57,4 +57,8 @@ public class SameJvmClient extends AbstractClient
 	{
 		return this.session;
 	}
+	
+	public void shutdown()
+	{
+	}
 }

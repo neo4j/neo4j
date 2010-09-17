@@ -102,13 +102,14 @@ public abstract class AbstractApp implements App
 	    return Collections.emptyList();
 	}
 
-	protected void printMany( Output out, String string, int count )
-		throws RemoteException
+	protected String multiply( String string, int count ) throws RemoteException
 	{
+	    StringBuilder builder = new StringBuilder();
 		for ( int i = 0; i < count; i++ )
 		{
-			out.print( string );
+			builder.append( string );
 		}
+		return builder.toString();
 	}
 
 	protected static Serializable safeGet( Session session, String key )

@@ -50,6 +50,7 @@ public class StartClient
     public static final String ARG_PORT = "port";
     public static final String ARG_NAME = "name";
     public static final String ARG_PID = "pid";
+    public static final String ARG_COMMAND = "c";
 
     private StartClient()
     {
@@ -249,7 +250,7 @@ public class StartClient
             dbPath + "'" );
         ShellClient client = new SameJvmClient( server );
         setSessionVariablesFromArgs( client, args );
-        client.grabPrompt();
+        grabPromptOrJustExecuteCommand( client, args );
         shutdownIfNecessary( server );
     }
 
@@ -296,11 +297,25 @@ public class StartClient
             System.out.println( "NOTE: Remote Neo4j graph database service '" + name +
                     "' at port " + port );
             setSessionVariablesFromArgs( client, args );
-            client.grabPrompt();
+            grabPromptOrJustExecuteCommand( client, args );
         }
         catch ( Exception e )
         {
             handleException( e, args );
+        }
+    }
+
+    private static void grabPromptOrJustExecuteCommand( ShellClient client, Args args ) throws Exception
+    {
+        String command = args.get( ARG_COMMAND, null );
+        if ( command != null )
+        {
+            client.getServer().interpretLine( command, client.session(), client.getOutput() );
+            client.shutdown();
+        }
+        else
+        {
+            client.grabPrompt();
         }
     }
 

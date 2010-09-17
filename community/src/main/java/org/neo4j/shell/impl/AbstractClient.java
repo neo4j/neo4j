@@ -79,9 +79,7 @@ public abstract class AbstractClient implements ShellClient
                 }
                 
                 line = expandLine( line );
-
-                String result = this.getServer().interpretLine(
-                    line, this.session(), this.getOutput() );
+                String result = this.getServer().interpretLine( line, session(), getOutput() );
                 if ( result == null || result.trim().length() == 0 )
                 {
                     continue;
@@ -129,10 +127,6 @@ public abstract class AbstractClient implements ShellClient
             result = ( String ) getSessionVariable( PROMPT_KEY, null, false );
         }
         return result;
-    }
-
-    protected void shutdown()
-    {
     }
 
     private boolean shouldPrintStackTraces()

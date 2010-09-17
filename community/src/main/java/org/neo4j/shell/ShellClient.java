@@ -58,4 +58,9 @@ public interface ShellClient
 	 * to the master.
 	 */
 	long timeForMostRecentConnection();
+	
+	/**
+	 * Shuts down any resource needing to shut down.
+	 */
+	void shutdown();
 }

@@ -125,8 +125,7 @@ public class RemoteClient extends AbstractClient
 		return this.session;
 	}
 
-	@Override
-	protected void shutdown()
+	public void shutdown()
 	{
 		this.tryUnexport( this.out );
         if ( session.writer != null ) this.tryUnexport( session.writer );

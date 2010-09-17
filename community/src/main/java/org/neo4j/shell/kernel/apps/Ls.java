@@ -221,14 +221,15 @@ public class Ls extends ReadOnlyGraphDatabaseApp
             count++;
             if ( !brief )
             {
-                out.print( "*" + key );
-                this.printMany( out, " ", longestKey - key.length() + 1 );
-                out.print( "=" + format( value, true ) );
+                StringBuilder builder = new StringBuilder();
+                builder.append( "*" + key );
+                builder.append( multiply( " ", longestKey - key.length() + 1 ) );
+                builder.append( "=" + format( value, true ) );
                 if ( verbose )
                 {
-                    out.print( " (" + getNiceType( value ) + ")" );
+                    builder.append( " (" + getNiceType( value ) + ")" );
                 }
-                out.println( "" );
+                out.println( builder.toString() );
             }
         }
         if ( brief )
