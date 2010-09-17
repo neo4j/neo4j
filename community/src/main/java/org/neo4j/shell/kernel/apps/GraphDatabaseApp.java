@@ -266,8 +266,8 @@ public abstract class GraphDatabaseApp extends AbstractApp
 
         String title = findTitle( server, session, node );
         StringBuilder result = new StringBuilder( "(" );
+        result.append( (title != null ? title + "," : "" ) );
         result.append( node.getId() );
-        result.append( (title != null ? "," + title : "" ) );
         result.append( ")" );
         return result.toString();
     }
