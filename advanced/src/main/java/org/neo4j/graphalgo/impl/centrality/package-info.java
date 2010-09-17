@@ -19,7 +19,7 @@
  */
 
 /**
- * Scalable graph algorithms like shortest path and others for Neo4j which
- * can be easily accessed via {@link org.neo4j.graphalgo.GraphAlgoFactory}.
+ * Centrality graph algorithms which are allright to use, but doesn't scale
+ * to bigger graphs.
  */
-package org.neo4j.graphalgo;
+package org.neo4j.graphalgo.impl.centrality;
