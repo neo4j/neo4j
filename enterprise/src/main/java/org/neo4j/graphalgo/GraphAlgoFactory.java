@@ -12,7 +12,8 @@ import org.neo4j.graphdb.RelationshipExpander;
 
 /**
  * Static factory methods for the recommended implementations of common
- * graph algorithms for Neo4j.
+ * graph algorithms for Neo4j. The algorithms exposed here are implementations
+ * which are tested extensively and also scale on bigger graphs.
  * 
  * @author Mattias Persson
  */
