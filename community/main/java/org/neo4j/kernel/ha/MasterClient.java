@@ -2,10 +2,8 @@ package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +20,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -38,24 +35,49 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
 {
     public static final int MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT = 20;
     public static final int READ_RESPONSE_TIMEOUT_SECONDS = 20;
-    
-    private final LinkedList<Triplet<Channel, ChannelBuffer, ByteBuffer>> unusedChannels =
-            new LinkedList<Triplet<Channel,ChannelBuffer,ByteBuffer>>();
-    private int activeChannels;
-    private final Map<Thread, Triplet<Channel, ChannelBuffer, ByteBuffer>> channels =
-            new HashMap<Thread, Triplet<Channel,ChannelBuffer,ByteBuffer>>();
+    private static final int MAX_NUMBER_OF_UNUSED_CHANNELS = 5;
+
     private final ClientBootstrap bootstrap;
-    private final String hostNameOrIp;
-    private final int port;
-
+    private final SocketAddress address;
     private final StringLogger msgLog;
-
     private final ExecutorService executor;
-    
+    private final ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool =
+        new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
+            MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT, MAX_NUMBER_OF_UNUSED_CHANNELS )
+    {
+        @Override
+        protected Triplet<Channel, ChannelBuffer, ByteBuffer> create()
+        {
+            ChannelFuture channelFuture = bootstrap.connect( address );
+            channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
+            Triplet<Channel, ChannelBuffer, ByteBuffer> channel = null;
+            if ( channelFuture.isSuccess() )
+            {
+                channel = Triplet.of( channelFuture.getChannel(),
+                                      ChannelBuffers.dynamicBuffer(),
+                                      ByteBuffer.allocateDirect( 1024 * 1024 ) );
+                msgLog.logMessage( "Opened a new channel to " + address );
+            }
+            return channel;
+        }
+
+        @Override
+        protected boolean isAlive( Triplet<Channel, ChannelBuffer, ByteBuffer> resource )
+        {
+            return resource.first().isConnected();
+        }
+
+        @Override
+        protected void dispose( Triplet<Channel, ChannelBuffer, ByteBuffer> resource )
+        {
+            Channel channel = resource.first();
+            if ( channel.isConnected() ) channel.close();
+        }
+    };
+
     public MasterClient( String hostNameOrIp, int port, String storeDir )
     {
-        this.hostNameOrIp = hostNameOrIp;
-        this.port = port;
+        this.address = new InetSocketAddress( hostNameOrIp, port );
         executor = Executors.newCachedThreadPool();
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
                 executor, executor ) );
@@ -63,7 +85,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port );
     }
-    
+
     public MasterClient( Machine machine, String storeDir )
     {
         this( machine.getServer().first(), machine.getServer().other(), storeDir );
@@ -115,88 +137,14 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
 
     private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel() throws Exception
     {
-        Thread thread = Thread.currentThread();
-        synchronized ( channels )
-        {
-            Triplet<Channel, ChannelBuffer, ByteBuffer> channel = channels.get( thread );
-            while ( channel == null )
-            {
-                // Get unused channel from the channel pool
-                while ( channel == null )
-                {
-                    Triplet<Channel, ChannelBuffer, ByteBuffer> unusedChannel = unusedChannels.poll();
-                    if ( unusedChannel == null )
-                    {
-                        break;
-                    }
-                    else if ( unusedChannel.first().isConnected() )
-                    {
-                        msgLog.logMessage( "Found unused (and still connected) channel" );
-                        channel = unusedChannel;
-                    }
-                    else
-                    {
-                        msgLog.logMessage( "Found unused stale channel, discarding it" );
-                        activeChannels--;
-                        channels.notify();
-                    }
-                }
-
-                // No unused channel found, create a new one
-                if ( channel == null )
-                {
-                    if ( activeChannels >= MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT )
-                    {
-                        channels.wait();
-                        continue;
-                    }
-                    
-                    ChannelFuture channelFuture = bootstrap.connect(
-                            new InetSocketAddress( hostNameOrIp, port ) );
-                    channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
-                    if ( channelFuture.isSuccess() )
-                    {
-                        channel = Triplet.of( channelFuture.getChannel(), ChannelBuffers.dynamicBuffer(),
-                                ByteBuffer.allocateDirect( 1024*1024 ) );
-                        msgLog.logMessage( "Opened a new channel to " + hostNameOrIp + ":" + port );
-                        activeChannels++;
-                    }
-                }
-                
-                if ( channel == null )
-                {
-                    throw new IOException( "Not able to connect to master" );
-                }
-                        
-                channels.put( thread, channel );
-                activeChannels++;
-            }
-            return channel;
-        }
+        return channelPool.acquire();
     }
 
     private void releaseChannel()
     {
-        // Release channel for this thread
-        synchronized ( channels )
-        {
-            Triplet<Channel, ChannelBuffer, ByteBuffer> channel = channels.remove( Thread.currentThread() );
-            if ( channel != null )
-            {
-                if ( unusedChannels.size() < 5 )
-                {
-                    unusedChannels.push( channel );
-                }
-                else
-                {
-                    channel.first().close();
-                    activeChannels--;
-                }
-                channels.notify();
-            }
-        }
+        channelPool.release();
     }
-    
+
     public IdAllocation allocateIds( final IdType idType )
     {
         return sendRequest( RequestType.ALLOCATE_IDS, null, new Serializer()
@@ -277,7 +225,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             }
         });
     }
-    
+
     public Response<Void> finishTransaction( SlaveContext context )
     {
         try
@@ -304,7 +252,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     {
         return sendRequest( RequestType.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
-    
+
     public int getMasterIdForCommittedTx( final long txId )
     {
         return sendRequest( RequestType.GET_MASTER_ID_FOR_TX, null, new Serializer()
@@ -326,22 +274,10 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         pipeline.addLast( "blockingHandler", reader );
         return pipeline;
     }
-    
+
     public void shutdown()
     {
         msgLog.logMessage( "MasterClient shutdown" );
-        synchronized ( channels )
-        {
-            for ( Pair<Channel, ChannelBuffer> channel : unusedChannels )
-            {
-                channel.first().close();
-            }
-            
-            for ( Pair<Channel, ChannelBuffer> channel : channels.values() )
-            {
-                channel.first().close();
-            }
-            executor.shutdown();
-        }
+        channelPool.close( true );
     }
 }
