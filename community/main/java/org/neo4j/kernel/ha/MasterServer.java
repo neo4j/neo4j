@@ -1,6 +1,7 @@
 package org.neo4j.kernel.ha;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -30,6 +32,7 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -48,6 +51,8 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
     private final ScheduledExecutorService deadConnectionsPoller;
     private final Map<Channel, SlaveContext> connectedSlaveChannels =
             new HashMap<Channel, SlaveContext>();
+    private final Map<Channel, Pair<ChannelBuffer, ByteBuffer>> channelBuffers =
+            new HashMap<Channel, Pair<ChannelBuffer,ByteBuffer>>();
     private final ExecutorService executor;
 
     private final StringLogger msgLog;
@@ -119,13 +124,24 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
         }
     }
     
-    protected void mapSlave( Channel channel, SlaveContext slave )
+    protected Pair<ChannelBuffer, ByteBuffer> mapSlave( Channel channel, SlaveContext slave )
     {
         channelGroup.add( channel );
+        Pair<ChannelBuffer, ByteBuffer> buffer = null;
         synchronized ( connectedSlaveChannels )
         {
-            connectedSlaveChannels.put( channel, slave );
+            if ( slave != null )
+            {
+                connectedSlaveChannels.put( channel, slave );
+            }
+            buffer = channelBuffers.get( channel );
+            if ( buffer == null )
+            {
+                buffer = Pair.of( ChannelBuffers.dynamicBuffer(), ByteBuffer.allocateDirect( 1*1024*1024 ) );
+                channelBuffers.put( channel, buffer );
+            }
         }
+        return buffer;
     }
     
     protected void unmapSlave( Channel channel, SlaveContext slave )
@@ -163,17 +179,18 @@ public class MasterServer extends CommunicationProtocol implements ChannelPipeli
 //            for ( Channel channel : channelsToRemove )
 //            {
 //                connectedSlaveChannels.remove( channel );
+//                channelBuffers.remove( channel );
 //            }
 //        }
 //    }
     
-    private boolean channelIsClosed( Channel channel )
-    {
-        return channel.isConnected() && channel.isOpen();
-    }
+//    private boolean channelIsClosed( Channel channel )
+//    {
+//        return channel.isConnected() && channel.isOpen();
+//    }
     
     // =====================================================================
-    // Just some methods which aren't really used when running a HA cluster,
+    // Just some methods which aren't really used when running an HA cluster,
     // but exposed so that other tools can reach that information.
     // =====================================================================
     

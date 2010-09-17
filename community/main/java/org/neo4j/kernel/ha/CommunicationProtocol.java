@@ -10,7 +10,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
@@ -80,7 +79,7 @@ public abstract class CommunicationProtocol
     };
     protected static final Serializer EMPTY_SERIALIZER = new Serializer()
     {
-        public void write( ChannelBuffer buffer ) throws IOException
+        public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
         {
         }
     };
@@ -223,31 +222,31 @@ public abstract class CommunicationProtocol
         if ( type.includesSlaveContext() )
         {
             context = readSlaveContext( buffer );
-            server.mapSlave( channel, context );
         }
+        Pair<ChannelBuffer, ByteBuffer> targetBuffers = server.mapSlave( channel, context );
+        targetBuffers.first().clear();
         Response<?> response = type.caller.callMaster( realMaster, context, buffer );
-        ChannelBuffer targetBuffer = ChannelBuffers.dynamicBuffer();
-        type.serializer.write( response.response(), targetBuffer );
+        type.serializer.write( response.response(), targetBuffers.first() );
         if ( type.includesSlaveContext() )
         {
-            writeTransactionStreams( response.transactions(), targetBuffer );
+            writeTransactionStreams( response.transactions(), targetBuffers.first(), targetBuffers.other() );
         }
         if ( type == RequestType.FINISH || type == RequestType.PULL_UPDATES )
         {
             server.unmapSlave( channel, context );
         }
-        return targetBuffer;
+        return targetBuffers.first();
     }
     
     private static <T> void writeTransactionStreams( TransactionStreams txStreams,
-            ChannelBuffer buffer ) throws IOException
+            ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
     {
         Collection<Pair<String, TransactionStream>> streams = txStreams.getStreams();
         buffer.writeByte( streams.size() );
         for ( Pair<String, TransactionStream> streamPair : streams )
         {
             writeString( buffer, streamPair.first() );
-            writeTransactionStream( buffer, streamPair.other() );
+            writeTransactionStream( buffer, readBuffer, streamPair.other() );
         }
         txStreams.close();
     }
@@ -264,7 +263,7 @@ public abstract class CommunicationProtocol
         return result;
     }
 
-    protected static void writeTransactionStream( ChannelBuffer dest,
+    protected static void writeTransactionStream( ChannelBuffer dest, ByteBuffer readBuffer,
             TransactionStream transactionStream ) throws IOException
     {
         Collection<Pair<Long, ReadableByteChannel>> channels = transactionStream.getChannels();
@@ -272,7 +271,7 @@ public abstract class CommunicationProtocol
         for ( Pair<Long, ReadableByteChannel> channel : channels )
         {
             dest.writeLong( channel.first() );
-            ByteData data = new ByteData( channel.other() );
+            ByteData data = new ByteData( channel.other(), readBuffer );
             dest.writeInt( data.size() );
             for ( byte[] bytes : data )
             {
@@ -338,7 +337,7 @@ public abstract class CommunicationProtocol
             this.entities = entities;
         }
 
-        public void write( ChannelBuffer buffer ) throws IOException
+        public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
         {
             buffer.writeInt( entities.length );
             for ( long entity : entities )
@@ -370,18 +369,17 @@ public abstract class CommunicationProtocol
         private final int size;
 
         @SuppressWarnings( "hiding" )
-        ByteData( ReadableByteChannel channel ) throws IOException
+        ByteData( ReadableByteChannel channel, ByteBuffer readBuffer ) throws IOException
         {
             int size = 0, chunk = 0;
             List<byte[]> data = new LinkedList<byte[]>();
-            ByteBuffer buffer = ByteBuffer.allocateDirect( 1 * MEGA );
-            while ( ( chunk = channel.read( buffer ) ) >= 0 )
+            while ( ( chunk = channel.read( readBuffer ) ) >= 0 )
             {
                 size += chunk;
                 byte[] bytes = new byte[chunk];
-                buffer.flip();
-                buffer.get( bytes );
-                buffer.clear();
+                readBuffer.flip();
+                readBuffer.get( bytes );
+                readBuffer.clear();
                 data.add( bytes );
             }
             this.data = data;
@@ -401,7 +399,7 @@ public abstract class CommunicationProtocol
 
     protected static interface Serializer
     {
-        void write( ChannelBuffer buffer ) throws IOException;
+        void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException;
     }
 
     protected static interface Deserializer<T>
