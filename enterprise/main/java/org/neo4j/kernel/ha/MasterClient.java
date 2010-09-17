@@ -2,7 +2,7 @@ package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Deque;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -22,6 +22,8 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -34,8 +36,14 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class MasterClient extends CommunicationProtocol implements Master, ChannelPipelineFactory
 {
-    private final Deque<Channel> unusedChannels = new LinkedList<Channel>();
-    private final Map<Thread, Channel> channels = new HashMap<Thread, Channel>();
+    public static final int MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT = 20;
+    public static final int READ_RESPONSE_TIMEOUT_SECONDS = 20;
+    
+    private final LinkedList<Triplet<Channel, ChannelBuffer, ByteBuffer>> unusedChannels =
+            new LinkedList<Triplet<Channel,ChannelBuffer,ByteBuffer>>();
+    private int activeChannels;
+    private final Map<Thread, Triplet<Channel, ChannelBuffer, ByteBuffer>> channels =
+            new HashMap<Thread, Triplet<Channel,ChannelBuffer,ByteBuffer>>();
     private final ClientBootstrap bootstrap;
     private final String hostNameOrIp;
     private final int port;
@@ -67,19 +75,21 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         try
         {
             // Send 'em over the wire
-            ChannelBuffer buffer = ChannelBuffers.dynamicBuffer();
+            Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = getChannel();
+            Channel channel = channelContext.first();
+            ChannelBuffer buffer = channelContext.other();
+            buffer.clear();
             buffer.writeByte( type.ordinal() );
             if ( type.includesSlaveContext() )
             {
                 writeSlaveContext( buffer, slaveContext );
             }
-            serializer.write( buffer );
-            Channel channel = getChannel();
+            serializer.write( buffer, channelContext.third() );
             channel.write( buffer );
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
 
-            ChannelBuffer message = reader.read( 20, TimeUnit.SECONDS );
+            ChannelBuffer message =  reader.read( READ_RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS );
             if ( message == null )
             {
                 throw new HaCommunicationException( "Channel has been closed" );
@@ -103,23 +113,23 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         }
     }
 
-    private Channel getChannel() throws Exception
+    private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel() throws Exception
     {
         Thread thread = Thread.currentThread();
         synchronized ( channels )
         {
-            Channel channel = channels.get( thread );
-            if ( channel == null )
+            Triplet<Channel, ChannelBuffer, ByteBuffer> channel = channels.get( thread );
+            while ( channel == null )
             {
                 // Get unused channel from the channel pool
                 while ( channel == null )
                 {
-                    Channel unusedChannel = unusedChannels.poll();
+                    Triplet<Channel, ChannelBuffer, ByteBuffer> unusedChannel = unusedChannels.poll();
                     if ( unusedChannel == null )
                     {
                         break;
                     }
-                    else if ( unusedChannel.isConnected() )
+                    else if ( unusedChannel.first().isConnected() )
                     {
                         msgLog.logMessage( "Found unused (and still connected) channel" );
                         channel = unusedChannel;
@@ -127,35 +137,29 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                     else
                     {
                         msgLog.logMessage( "Found unused stale channel, discarding it" );
+                        activeChannels--;
+                        channels.notify();
                     }
                 }
 
                 // No unused channel found, create a new one
                 if ( channel == null )
                 {
-                    for ( int i = 0; i < 5; i++ )
+                    if ( activeChannels >= MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT )
                     {
-                        ChannelFuture channelFuture = bootstrap.connect(
-                                new InetSocketAddress( hostNameOrIp, port ) );
-                        channelFuture.awaitUninterruptibly();
-                        if ( channelFuture.isSuccess() )
-                        {
-                            channel = channelFuture.getChannel();
-                            msgLog.logMessage( "Opened a new channel to " + hostNameOrIp + ":" + port );
-                            break;
-                        }
-                        else
-                        {
-                            msgLog.logMessage( "Retrying connect to " + hostNameOrIp + ":" + port );
-                            try
-                            {
-                                Thread.sleep( 500 );
-                            }
-                            catch ( InterruptedException e )
-                            {
-                                Thread.interrupted();
-                            }
-                        }
+                        channels.wait();
+                        continue;
+                    }
+                    
+                    ChannelFuture channelFuture = bootstrap.connect(
+                            new InetSocketAddress( hostNameOrIp, port ) );
+                    channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
+                    if ( channelFuture.isSuccess() )
+                    {
+                        channel = Triplet.of( channelFuture.getChannel(), ChannelBuffers.dynamicBuffer(),
+                                ByteBuffer.allocateDirect( 1024*1024 ) );
+                        msgLog.logMessage( "Opened a new channel to " + hostNameOrIp + ":" + port );
+                        activeChannels++;
                     }
                 }
                 
@@ -165,17 +169,18 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 }
                         
                 channels.put( thread, channel );
+                activeChannels++;
             }
             return channel;
         }
     }
 
-   private void releaseChannel()
+    private void releaseChannel()
     {
         // Release channel for this thread
         synchronized ( channels )
         {
-            Channel channel = channels.remove( Thread.currentThread() );
+            Triplet<Channel, ChannelBuffer, ByteBuffer> channel = channels.remove( Thread.currentThread() );
             if ( channel != null )
             {
                 if ( unusedChannels.size() < 5 )
@@ -184,8 +189,10 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 }
                 else
                 {
-                    channel.close();
+                    channel.first().close();
+                    activeChannels--;
                 }
+                channels.notify();
             }
         }
     }
@@ -194,7 +201,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     {
         return sendRequest( RequestType.ALLOCATE_IDS, null, new Serializer()
         {
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 buffer.writeByte( idType.ordinal() );
             }
@@ -211,7 +218,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     {
         return sendRequest( RequestType.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
         {
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 writeString( buffer, name );
             }
@@ -256,10 +263,10 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     {
         return sendRequest( RequestType.COMMIT, context, new Serializer()
         {
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 writeString( buffer, resource );
-                writeTransactionStream(buffer, transactionStream);
+                writeTransactionStream(buffer, readBuffer, transactionStream);
             }
         }, new Deserializer<Long>()
         {
@@ -277,7 +284,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         {
             return sendRequest( RequestType.FINISH, context, new Serializer()
             {
-                public void write( ChannelBuffer buffer ) throws IOException
+                public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                 {
                 }
             }, VOID_DESERIALIZER );
@@ -302,7 +309,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     {
         return sendRequest( RequestType.GET_MASTER_ID_FOR_TX, null, new Serializer()
         {
-            public void write( ChannelBuffer buffer ) throws IOException
+            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 buffer.writeLong( txId );
             }
@@ -325,14 +332,14 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
         msgLog.logMessage( "MasterClient shutdown" );
         synchronized ( channels )
         {
-            for ( Channel channel : unusedChannels )
+            for ( Pair<Channel, ChannelBuffer> channel : unusedChannels )
             {
-                channel.close();
+                channel.first().close();
             }
             
-            for ( Channel channel : channels.values() )
+            for ( Pair<Channel, ChannelBuffer> channel : channels.values() )
             {
-                channel.close();
+                channel.first().close();
             }
             executor.shutdown();
         }
