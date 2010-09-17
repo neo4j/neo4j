@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -176,6 +177,7 @@ public class ArrayMap<K,V>
                 arrayCount--;
                 System.arraycopy( arrayEntries, i + 1, arrayEntries, i,
                     arrayCount - i );
+                arrayEntries[arrayCount] = null;
                 return removedProperty;
             }
         }
@@ -212,6 +214,7 @@ public class ArrayMap<K,V>
                 arrayCount--;
                 System.arraycopy( arrayEntries, i + 1, arrayEntries, i,
                     arrayCount - i );
+                arrayEntries[arrayCount] = null;
                 return removedProperty;
             }
         }
@@ -321,8 +324,27 @@ public class ArrayMap<K,V>
 
     public void clear()
     {
+        if ( useThreadSafeMap )
+        {
+            synchronizedClear();
+            return;
+        }
         if ( arrayCount != -1 )
         {
+            Arrays.fill( arrayEntries, null );
+            arrayCount = 0;
+        }
+        else
+        {
+            propertyMap.clear();
+        }
+    }
+
+    private synchronized void synchronizedClear()
+    {
+        if ( arrayCount != -1 )
+        {
+            Arrays.fill( arrayEntries, null );
             arrayCount = 0;
         }
         else
