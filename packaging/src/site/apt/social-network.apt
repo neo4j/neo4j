@@ -6,7 +6,7 @@ Social Network
 
 Simple Social Model
 
-[./images/social-uml.png] Social network domain model 
+[./images/social_uml.png] Social network domain model 
 
     The domain model for a social network is pretty simple: <<<Persons>>> with names
     and <<<StatusUpdates>>> with timestamped text. These entities are then connected
