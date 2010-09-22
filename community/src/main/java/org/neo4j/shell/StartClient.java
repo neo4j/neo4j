@@ -169,7 +169,8 @@ public class StartClient
 
         try
         {
-            boolean readOnly = args.getBoolean( ARG_READONLY, false );
+            boolean readOnly = (args.has( ARG_READONLY ) && args.get( ARG_READONLY, null ) == null)
+                    || args.getBoolean( ARG_READONLY, false );
             tryStartLocalServerAndClient( dbPath, readOnly, args );
         }
         catch ( Exception e )
