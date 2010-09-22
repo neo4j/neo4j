@@ -51,6 +51,7 @@ public class StartClient
     public static final String ARG_NAME = "name";
     public static final String ARG_PID = "pid";
     public static final String ARG_COMMAND = "c";
+    public static final String ARG_CONFIG = "config";
 
     private StartClient()
     {
@@ -235,8 +236,8 @@ public class StartClient
     private void tryStartLocalServerAndClient( String dbPath,
         boolean readOnly, Args args ) throws Exception
     {
-
-        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( dbPath, readOnly );
+        String configFile = args.get( ARG_CONFIG, null );
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( dbPath, readOnly, configFile );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
             @Override
@@ -246,8 +247,7 @@ public class StartClient
             }
         } );
 
-        System.out.println( "NOTE: Local Neo4j graph database service at '" +
-            dbPath + "'" );
+        System.out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
         ShellClient client = new SameJvmClient( server );
         setSessionVariablesFromArgs( client, args );
         grabPromptOrJustExecuteCommand( client, args );
@@ -392,19 +392,15 @@ public class StartClient
     {
         int port = AbstractServer.DEFAULT_PORT;
         String name = AbstractServer.DEFAULT_NAME;
-        String pathArg = StartClient.ARG_PATH;
-        String hostArg = StartClient.ARG_HOST;
-        String portArg = StartClient.ARG_PORT;
-        String nameArg = StartClient.ARG_NAME;
         System.out.println(
             "Example arguments for remote:\n" +
-                "\t-" + portArg + " " + port + "\n" +
-                "\t-" + hostArg + " " + "192.168.1.234" + " -" + portArg + " " + port +
-                    " -" + nameArg + " " + name + "\n" +
-                "\t...or no arguments\n" +
+                "\t-" + ARG_PORT + " " + port + "\n" +
+                "\t-" + ARG_HOST + " " + "192.168.1.234" + " -" + ARG_PORT + " " + port +
+                    " -" + ARG_NAME + " " + name + "\n" +
+                "\t...or no arguments for default values\n" +
             "Example arguments for local:\n" +
-                "\t-" + pathArg + " /path/to/db" + "\n" +
-                "\t-" + pathArg + " /path/to/db -readonly"
+                "\t-" + ARG_PATH + " /path/to/db" + "\n" +
+                "\t-" + ARG_PATH + " /path/to/db -" + ARG_READONLY + " -" + ARG_CONFIG + " /path/to/config.properties"
         );
     }
 }

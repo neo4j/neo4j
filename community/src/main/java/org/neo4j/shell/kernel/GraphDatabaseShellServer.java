@@ -21,6 +21,8 @@ package org.neo4j.shell.kernel;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -49,10 +51,10 @@ public class GraphDatabaseShellServer extends SimpleAppServer
      * shell server.
      * @throws RemoteException if an RMI error occurs.
      */
-    public GraphDatabaseShellServer( String path, boolean readOnly )
+    public GraphDatabaseShellServer( String path, boolean readOnly, String configFileOrNull )
             throws RemoteException
     {
-        this( instantiateGraphDb( path, readOnly ) );
+        this( instantiateGraphDb( path, readOnly, configFileOrNull ) );
         this.graphDbCreatedHere = true;
     }
     
@@ -70,12 +72,24 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         this.graphDbCreatedHere = false;
     }
 
-    private static GraphDatabaseService instantiateGraphDb( String path, boolean readOnly )
+    private static GraphDatabaseService instantiateGraphDb( String path, boolean readOnly,
+            String configFileOrNull )
     {
-        return readOnly ? new EmbeddedReadOnlyGraphDatabase( path ) :
-                new EmbeddedGraphDatabase( path );
+        Map<String, String> config = loadConfigFile( path, configFileOrNull );
+        return readOnly ? new EmbeddedReadOnlyGraphDatabase( path, config ) :
+                new EmbeddedGraphDatabase( path, config );
     }
 
+    private static Map<String, String> loadConfigFile( String path, String configFileOrNull )
+    {
+        Map<String, String> result = null;
+        if ( configFileOrNull != null )
+        {
+            result = EmbeddedGraphDatabase.loadConfigurations( configFileOrNull );
+        }
+        return result != null ? result : new HashMap<String, String>();
+    }
+    
     protected String getShellPrompt()
     {
         String name = "neo4j-sh";
