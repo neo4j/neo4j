@@ -71,6 +71,17 @@ class Args
         return value != null ? Boolean.parseBoolean( value ) : defaultValue;
     }
     
+    public Boolean getBoolean( String key, Boolean defaultValueIfNotFound,
+            Boolean defaultValueIfNoValue )
+    {
+        String value = this.map.get( key );
+        if ( value != null )
+        {
+            return Boolean.parseBoolean( value );
+        }
+        return this.map.containsKey( key ) ? defaultValueIfNoValue : defaultValueIfNotFound;
+    }
+    
     public List<String> orphans()
     {
         return new ArrayList<String>( this.orphans );
