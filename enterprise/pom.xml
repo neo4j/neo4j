@@ -17,34 +17,12 @@
   </properties>
 
   <dependencies>
-    <!--
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-apoc</artifactId>
       <version>1.2-SNAPSHOT</version>
       <type>pom</type>
     </dependency>
-    -->
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-kernel</artifactId>
-          <version>1.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-index</artifactId>
-          <version>1.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-algo</artifactId>
-          <version>0.7-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-shell</artifactId>
-          <version>1.2-SNAPSHOT</version>
-      </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
@@ -77,15 +55,6 @@
   
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>license-report</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin
