@@ -3,7 +3,9 @@ package org.neo4j.graphalgo.path;
 import org.junit.Test;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
+import org.neo4j.graphalgo.impl.path.ShortestPath;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.kernel.Traversal;
@@ -111,5 +113,32 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ), 4 );
         assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "j" ) ),
                 "a,g,h,i,j" );
+    }
+    
+    @Test
+    public void testExactDepthFinder()
+    {
+        // Layout (a to k):
+        //
+        //     (a)--(c)--(g)--(k)
+        //    /                /
+        //  (b)-----(d)------(j)
+        //   |        \      /
+        //  (e)--(f)--(h)--(i)
+        // 
+        graph.makeEdgeChain( "a,c,g,k" );
+        graph.makeEdgeChain( "a,b,d,j,k" );
+        graph.makeEdgeChain( "b,e,f,h,i,j" );
+        graph.makeEdgeChain( "d,h" );
+        
+        RelationshipExpander expander = Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING );
+        Node a = graph.getNode( "a" );
+        Node k = graph.getNode( "k" );
+        assertPaths( new ShortestPath( 3, expander, true ).findAllPaths( a, k ), "a,c,g,k" );
+        assertPaths( new ShortestPath( 4, expander, true ).findAllPaths( a, k ), "a,b,d,j,k" );
+        assertPaths( new ShortestPath( 5, expander, true ).findAllPaths( a, k ) );
+        assertPaths( new ShortestPath( 6, expander, true ).findAllPaths( a, k ), "a,b,d,h,i,j,k" );
+        assertPaths( new ShortestPath( 7, expander, true ).findAllPaths( a, k ), "a,b,e,f,h,i,j,k" );
+        assertPaths( new ShortestPath( 8, expander, true ).findAllPaths( a, k ) );
     }
 }
