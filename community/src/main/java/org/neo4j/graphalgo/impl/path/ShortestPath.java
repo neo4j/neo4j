@@ -38,6 +38,7 @@ public class ShortestPath implements PathFinder<Path>
 {
     private final int maxDepth;
     private final RelationshipExpander relExpander;
+    private final HitDecider hitDecider;
     
     /**
      * Constructs a new stortest path algorithm.
@@ -48,8 +49,23 @@ public class ShortestPath implements PathFinder<Path>
      */
     public ShortestPath( int maxDepth, RelationshipExpander relExpander )
     {
+        this( maxDepth, relExpander, false );
+    }
+    
+    /**
+     * Constructs a new stortest path algorithm.
+     * @param maxDepth the maximum depth for the traversal. Returned paths
+     * will never have a greater {@link Path#length()} than {@code maxDepth}.
+     * @param relExpander the {@link RelationshipExpander} to use for deciding
+     * which relationships to expand for each {@link Node}.
+     * @param findPathsOnMaxDepthOnly if {@code true} then it will only try to
+     * find paths on that particular depth ({@code maxDepth}).
+     */
+    public ShortestPath( int maxDepth, RelationshipExpander relExpander, boolean findPathsOnMaxDepthOnly )
+    {
         this.maxDepth = maxDepth;
         this.relExpander = relExpander;
+        this.hitDecider = findPathsOnMaxDepthOnly ? new DepthHitDecider( maxDepth ) : YES_HIT_DECIDER;
     }
     
     public Iterable<Path> findAllPaths( Node start, Node end )
@@ -134,6 +150,11 @@ public class ShortestPath implements PathFinder<Path>
         {
             // This is a hit
             int depth = directionData.currentDepth + otherSideHit.depth;
+            if ( !hitDecider.isHit( depth ) )
+            {
+                return;
+            }
+            
             if ( directionData.sharedFrozenDepth.value == MutableInteger.NULL )
             {
                 directionData.sharedFrozenDepth.value = depth;
@@ -466,5 +487,33 @@ public class ShortestPath implements PathFinder<Path>
             builder = builder.push( rel );
         }
         return builder;
+    }
+    
+    private static interface HitDecider
+    {
+        boolean isHit( int depth );
+    }
+    
+    private static final HitDecider YES_HIT_DECIDER = new HitDecider()
+    {
+        public boolean isHit( int depth )
+        {
+            return true;
+        }
+    };
+    
+    private static class DepthHitDecider implements HitDecider
+    {
+        private final int depth;
+
+        DepthHitDecider( int depth )
+        {
+            this.depth = depth;
+        }
+        
+        public boolean isHit( int depth )
+        {
+            return this.depth == depth;
+        }
     }
 }
