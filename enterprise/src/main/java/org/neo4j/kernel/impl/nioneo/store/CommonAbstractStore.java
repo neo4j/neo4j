@@ -25,6 +25,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -246,6 +247,12 @@ public abstract class CommonAbstractStore
         {
             throw new UnderlyingStorageException( "Unable to lock store["
                 + storageFileName + "]" );
+        }
+        catch ( OverlappingFileLockException e )
+        {
+            throw new IllegalStateException( "Unable to lock store [" + storageFileName +
+                    "], this is usually caused by another Neo4j kernel already running in " +
+                    "this JVM for this particular store" );
         }
     }
 
