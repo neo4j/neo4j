@@ -292,7 +292,7 @@ public class Traversal
      * Returns a "preorder depth first" ordering policy. A depth first selector
      * always tries to select positions (from the current position) which are
      * deeper than the current position.
-     * 
+     *
      * @return a {@link BranchOrderingPolicy} for a preorder depth first
      *         selector.
      */
@@ -306,7 +306,7 @@ public class Traversal
      * always tries to select positions (from the current position) which are
      * deeper than the current position. A postorder depth first selector
      * selects deeper position before the shallower ones.
-     * 
+     *
      * @return a {@link BranchOrderingPolicy} for a postorder depth first
      *         selector.
      */
@@ -319,7 +319,7 @@ public class Traversal
      * Returns a "preorder breadth first" ordering policy. A breadth first
      * selector always selects all positions on the current depth before
      * advancing to the next depth.
-     * 
+     *
      * @return a {@link BranchOrderingPolicy} for a preorder breadth first
      *         selector.
      */
@@ -333,7 +333,7 @@ public class Traversal
      * selector always selects all positions on the current depth before
      * advancing to the next depth. A postorder breadth first selector selects
      * the levels in the reversed order, starting with the deepest.
-     * 
+     *
      * @return a {@link BranchOrderingPolicy} for a postorder breadth first
      *         selector.
      */
@@ -394,7 +394,7 @@ public class Traversal
             {
                 suffix = "-->";
             }
-            return prefix + "<" + relationship.getType().name() + "," +
+            return prefix + "[" + relationship.getType().name() + "," +
                     relationship.getId() + "]" + suffix;
         }
     }
