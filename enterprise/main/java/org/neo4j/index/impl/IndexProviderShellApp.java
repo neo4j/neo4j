@@ -4,7 +4,6 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -199,6 +198,6 @@ public class IndexProviderShellApp extends GraphDatabaseApp
 
     private static Map<String, String> emptyConfig()
     {
-        return Collections.emptyMap();
+        return null;
     }
 }
