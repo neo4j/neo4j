@@ -99,9 +99,9 @@ public class ExactTxData extends TxData
     }
 
     @Override
-    Pair<Set<Long>, TxData> query( Query query )
+    Pair<Collection<Long>, TxData> query( Query query, QueryContext contextOrNull )
     {
-        return toFullTxData().query( query );
+        return toFullTxData().query( query, contextOrNull );
     }
 
     @Override
@@ -126,14 +126,14 @@ public class ExactTxData extends TxData
     }
 
     @Override
-    Pair<Set<Long>, TxData> get( String key, Object value )
+    Pair<Collection<Long>, TxData> get( String key, Object value )
     {
         Set<Long> ids = idCollection( key, value, false );
         if ( ids == null )
         {
-            return new Pair<Set<Long>, TxData>( Collections.<Long>emptySet(), this );
+            return new Pair<Collection<Long>, TxData>( Collections.<Long>emptySet(), this );
         }
-        return new Pair<Set<Long>, TxData>( ids, this );
+        return new Pair<Collection<Long>, TxData>( ids, this );
     }
     
     @Override
