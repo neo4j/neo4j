@@ -1,6 +1,6 @@
 package org.neo4j.index.impl.lucene;
 
-import java.util.Set;
+import java.util.Collection;
 
 import org.apache.lucene.search.Query;
 import org.neo4j.helpers.Pair;
@@ -39,16 +39,16 @@ class TxDataHolder
         this.data = this.data.remove( query );
     }
 
-    Set<Long> query( Query query )
+    Collection<Long> query( Query query, QueryContext contextOrNull )
     {
-        Pair<Set<Long>, TxData> entry = this.data.query( query );
+        Pair<Collection<Long>, TxData> entry = this.data.query( query, contextOrNull );
         this.data = entry.other();
         return entry.first();
     }
 
-    Set<Long> get( String key, Object value )
+    Collection<Long> get( String key, Object value )
     {
-        Pair<Set<Long>, TxData> entry = this.data.get( key, value );
+        Pair<Collection<Long>, TxData> entry = this.data.get( key, value );
         this.data = entry.other();
         return entry.first();
     }

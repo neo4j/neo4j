@@ -7,14 +7,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -79,9 +78,10 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
      */
     public void add( T entity, String key, Object value )
     {
+        LuceneXaConnection connection = getConnection();
         for ( Object oneValue : PrimitiveUtils.asArray( value ) )
         {
-            getConnection().add( this, entity, key, oneValue );
+            connection.add( this, entity, key, oneValue );
         }
     }
 
@@ -103,9 +103,10 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
      */
     public void remove( T entity, String key, Object value )
     {
+        LuceneXaConnection connection = getConnection();
         for ( Object oneValue : PrimitiveUtils.asArray( value ) )
         {
-            getConnection().remove( this, entity, key, oneValue );
+            connection.remove( this, entity, key, oneValue );
         }
     }
     
@@ -156,15 +157,15 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         {
             luceneTx = getReadOnlyConnection().getLuceneTx();
         }
-        Set<Long> addedIds = Collections.emptySet();
-        Set<Long> removedIds = Collections.emptySet();
+        Collection<Long> addedIds = Collections.emptySet();
+        Collection<Long> removedIds = Collections.emptySet();
         Query excludeQuery = null;
         boolean isRemoveAll = false;
         if ( luceneTx != null )
         {
             addedIds = keyForDirectLookup != null ?
                     luceneTx.getAddedIds( this, keyForDirectLookup, valueForDirectLookup ) :
-                    luceneTx.getAddedIds( this, query );
+                    luceneTx.getAddedIds( this, query, additionalParametersOrNull );
             ids.addAll( addedIds );
             removedIds = keyForDirectLookup != null ?
                     luceneTx.getRemovedIds( this, keyForDirectLookup, valueForDirectLookup ) :
@@ -260,7 +261,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     private boolean fillFromCache(
             LruCache<String, Collection<Long>> cachedNodesMap,
             List<Long> nodeIds, String key, String valueAsString,
-            Set<Long> deletedNodes )
+            Collection<Long> deletedNodes )
     {
         boolean found = false;
         if ( cachedNodesMap != null )
@@ -328,7 +329,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     protected abstract long getEntityId( T entity );
     
     protected abstract LuceneCommand newAddCommand( PropertyContainer entity,
-            String key, String value );
+            String key, Object value );
     
     static class NodeIndex extends LuceneIndex<Node>
     {
@@ -351,7 +352,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         }
 
         @Override
-        protected LuceneCommand newAddCommand( PropertyContainer entity, String key, String value )
+        protected LuceneCommand newAddCommand( PropertyContainer entity, String key, Object value )
         {
             return new LuceneCommand.AddCommand( identifier, ((Node) entity).getId(), key, value );
         }
@@ -419,7 +420,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         }
 
         @Override
-        protected LuceneCommand newAddCommand( PropertyContainer entity, String key, String value )
+        protected LuceneCommand newAddCommand( PropertyContainer entity, String key, Object value )
         {
             Relationship rel = (Relationship) entity;
             return new LuceneCommand.AddRelationshipCommand( identifier, rel.getId(),

@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.util.BufferNumberPutter;
 
 abstract class LuceneCommand extends XaCommand
 {
@@ -38,13 +39,19 @@ abstract class LuceneCommand extends XaCommand
     private static final byte NODE = (byte) 1;
     private static final byte RELATIONSHIP = (byte) 2;
     
+    private static final byte VALUE_TYPE_INT = (byte) 1;
+    private static final byte VALUE_TYPE_LONG = (byte) 2;
+    private static final byte VALUE_TYPE_FLOAT = (byte) 3;
+    private static final byte VALUE_TYPE_DOUBLE = (byte) 4;
+    private static final byte VALUE_TYPE_STRING = (byte) 5;
+    
     final IndexIdentifier indexId;
     final long entityId;
     final String key;
-    final String value;
+    final Object value;
     final byte type;
     
-    LuceneCommand( IndexIdentifier indexId, long entityId, String key, String value, byte type )
+    LuceneCommand( IndexIdentifier indexId, long entityId, String key, Object value, byte type )
     {
         this.indexId = indexId;
         this.entityId = entityId;
@@ -82,17 +89,56 @@ abstract class LuceneCommand extends XaCommand
         buffer.putLong( entityId );
         char[] key = this.key.toCharArray();
         buffer.putInt( key.length );
-        char[] value = this.value.toCharArray();
-        buffer.putInt( value.length );
+        
+        byte valueType = 0;
+        BufferNumberPutter putter = null;
+        if ( value instanceof Number )
+        {
+            if ( value instanceof Float )
+            {
+                valueType = VALUE_TYPE_FLOAT;
+                putter = BufferNumberPutter.FLOAT;
+            }
+            else if ( value instanceof Double )
+            {
+                valueType = VALUE_TYPE_DOUBLE;
+                putter = BufferNumberPutter.DOUBLE;
+            }
+            else if ( value instanceof Long )
+            {
+                valueType = VALUE_TYPE_LONG;
+                putter = BufferNumberPutter.LONG;
+            }
+            else
+            {
+                valueType = VALUE_TYPE_INT;
+                putter = BufferNumberPutter.INT;
+            }
+        }
+        else
+        {
+            valueType = VALUE_TYPE_STRING;
+            
+        }
+        buffer.put( valueType );
         
         buffer.put( indexName );
         buffer.put( key );
-        buffer.put( value );
+        if ( valueType == VALUE_TYPE_STRING )
+        {
+            char[] charValue = value.toString().toCharArray();
+            buffer.putInt( charValue.length );
+            buffer.put( charValue );
+        }
+        else
+        {
+            putter.put( buffer, (Number) value );
+        }
     }
     
     static class AddCommand extends LuceneCommand
     {
-        AddCommand( IndexIdentifier indexId, long entityId, String key, String value )
+        AddCommand( IndexIdentifier indexId, long entityId, String key, Object value )
         {
             super( indexId, entityId, key, value, ADD_COMMAND );
         }
@@ -104,7 +150,7 @@ abstract class LuceneCommand extends XaCommand
         private final long endNodeId;
 
         AddRelationshipCommand( IndexIdentifier indexId, long entityId, String key,
-                String value, long startNodeId, long endNodeId )
+                Object value, long startNodeId, long endNodeId )
         {
             super( indexId, entityId, key, value, ADD_COMMAND );
             this.startNodeId = startNodeId;
@@ -122,7 +168,7 @@ abstract class LuceneCommand extends XaCommand
     
     static class RemoveCommand extends LuceneCommand
     {
-        RemoveCommand( IndexIdentifier indexId, long nodeId, String key, String value )
+        RemoveCommand( IndexIdentifier indexId, long nodeId, String key, Object value )
         {
             super( indexId, nodeId, key, value, REMOVE_COMMAND );
         }
@@ -149,7 +195,7 @@ abstract class LuceneCommand extends XaCommand
         byte commandType = buffer.get();
         
         // Read the command data
-        buffer.clear(); buffer.limit( 21 );
+        buffer.clear(); buffer.limit( 18 );
         if ( channel.read( buffer ) != buffer.limit() )
         {
             return null;
@@ -157,16 +203,7 @@ abstract class LuceneCommand extends XaCommand
         buffer.flip();
         
         byte cls = buffer.get();
-        Class<?> itemsClass = null;
-        if ( cls == NODE )
-        {
-            itemsClass = Node.class;
-        }
-        else if ( cls == RELATIONSHIP )
-        {
-            itemsClass = Relationship.class;
-        }
-        else
+        if ( cls != NODE && cls != RELATIONSHIP )
         {
             return null;
         }
@@ -174,7 +211,7 @@ abstract class LuceneCommand extends XaCommand
         int indexNameLength = buffer.getInt();
         long entityId = buffer.getLong();
         int keyCharLength = buffer.getInt();
-        int valueCharLength = buffer.getInt();
+        byte valueType = buffer.get();
 
         String indexName = PrimitiveUtils.readString( channel, buffer, indexNameLength );
         if ( indexName == null )
@@ -188,7 +225,21 @@ abstract class LuceneCommand extends XaCommand
             return null;
         }
 
-        String value = PrimitiveUtils.readString( channel, buffer, valueCharLength );
+        Object value = null;
+        if ( valueType >= VALUE_TYPE_INT && valueType <= VALUE_TYPE_DOUBLE )
+        {
+            switch ( valueType )
+            {
+            case VALUE_TYPE_INT: value = buffer.getInt(); break;
+            case VALUE_TYPE_LONG: value = buffer.getLong(); break;
+            case VALUE_TYPE_FLOAT: value = buffer.getFloat(); break;
+            case VALUE_TYPE_DOUBLE: value = buffer.getDouble(); break;
+            }
+        }
+        else if ( valueType == VALUE_TYPE_STRING )
+        {
+            value = PrimitiveUtils.readLengthAndString( channel, buffer );
+        }
         if ( value == null )
         {
             return null;

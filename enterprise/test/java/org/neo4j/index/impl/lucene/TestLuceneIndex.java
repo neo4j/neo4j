@@ -4,11 +4,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.index.Neo4jTestCase.assertCollection;
+import static org.neo4j.index.Neo4jTestCase.assertOrderedCollection;
 
 import java.io.File;
 import java.util.Random;
 
 import org.apache.lucene.queryParser.QueryParser.Operator;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -596,6 +598,96 @@ public class TestLuceneIndex
             }
         }
         System.out.println( "get:" + (double)(System.currentTimeMillis() - t)/(double)count );
+    }
+    
+    @Test
+    public void testSorting()
+    {
+        Index<Node> index = provider.nodeIndex( "sort", LuceneIndexProvider.EXACT_CONFIG );
+        String name = "name";
+        String title = "title";
+        String other = "other";
+        String sex = "sex";
+        Node adam = graphDb.createNode();
+        Node adam2 = graphDb.createNode();
+        Node jack = graphDb.createNode();
+        Node eva = graphDb.createNode();
+        
+        index.add( adam, name, "Adam" );
+        index.add( adam, title, "Software developer" );
+        index.add( adam, sex, "male" );
+        index.add( adam, other, "aaa" );
+        index.add( adam2, name, "Adam" );
+        index.add( adam2, title, "Blabla" );
+        index.add( adam2, sex, "male" );
+        index.add( adam2, other, "bbb" );
+        index.add( jack, name, "Jack" );
+        index.add( jack, title, "Apple sales guy" );
+        index.add( jack, sex, "male" );
+        index.add( jack, other, "ccc" );
+        index.add( eva, name, "Eva" );
+        index.add( eva, title, "Secretary" );
+        index.add( eva, sex, "female" );
+        index.add( eva, other, "ddd" );
+        
+        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
+        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
+        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+        
+        restartTx();
+        
+        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
+        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
+        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+    }
+    
+    @Test
+    public void testNumericValues()
+    {
+        Index<Node> index = provider.nodeIndex( "numeric", LuceneIndexProvider.EXACT_CONFIG );
+        
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        Node node3 = graphDb.createNode();
+        
+        String key = "key";
+        index.add( node1, key, new ValueContext( 10 ).indexNumeric() );
+        index.add( node2, key, new ValueContext( 6 ).indexNumeric() );
+        index.add( node3, key, new ValueContext( 31 ).indexNumeric() );
+        
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), node1, node2, node3 );
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), node1, node2 );
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), node1 );
+        restartTx();
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), node1, node2, node3 );
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), node1, node2 );
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), node1 );
+    }
+    
+    @Test
+    public void testRemoveNumericValues()
+    {
+        Index<Node> index = provider.nodeIndex( "numeric2", LuceneIndexProvider.EXACT_CONFIG );
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        String key = "key";
+        index.add( node1, key, new ValueContext( 15 ).indexNumeric() );
+        index.add( node2, key, new ValueContext( 5 ).indexNumeric() );
+        index.remove( node1, key, new ValueContext( 15 ).indexNumeric() );
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
+        index.remove( node2, key, new ValueContext( 5 ).indexNumeric() );
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ) );
+        restartTx();
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ) );
+
+        index.add( node1, key, new ValueContext( 15 ).indexNumeric() );
+        index.add( node2, key, new ValueContext( 5 ).indexNumeric() );
+        restartTx();
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node1, node2 );
+        index.remove( node1, key, new ValueContext( 15 ).indexNumeric() );
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
+        restartTx();
+        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
     }
     
     @Ignore
