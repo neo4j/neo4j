@@ -21,34 +21,21 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-class RelationshipImpl extends Primitive implements Relationship,
-    Comparable<Relationship>
+class RelationshipImpl extends Primitive
 {
     private final int startNodeId;
     private final int endNodeId;
     private final RelationshipType type;
 
-    // Dummy constructor for NodeManager to acquire read lock on relationship
-    // when loading from PL.
-    RelationshipImpl( int id, NodeManager nodeManager )
+    RelationshipImpl( int id, int startNodeId, int endNodeId, RelationshipType type, boolean newRel )
     {
-        super( id, nodeManager );
-        this.startNodeId = -1;
-        this.endNodeId = -1;
-        this.type = null;
-    }
-
-    RelationshipImpl( int id, int startNodeId, int endNodeId,
-        RelationshipType type, boolean newRel, NodeManager nodeManager )
-    {
-        super( id, newRel, nodeManager );
+        super( id, newRel );
         if ( type == null )
         {
             throw new IllegalArgumentException( "Null type" );
@@ -63,33 +50,50 @@ class RelationshipImpl extends Primitive implements Relationship,
         this.type = type;
     }
 
-    protected void changeProperty( int propertyId, Object value )
+    @Override
+    public int hashCode()
+    {
+        return id;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        return this == obj
+               || ( obj instanceof RelationshipImpl && ( (RelationshipImpl) obj ).id == id );
+    }
+
+    @Override
+    protected void changeProperty( NodeManager nodeManager, int propertyId, Object value )
     {
         nodeManager.relChangeProperty( this, propertyId, value );
     }
 
-    protected int addProperty( PropertyIndex index, Object value )
+    @Override
+    protected int addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
     {
         return nodeManager.relAddProperty( this, index, value );
     }
 
-    protected void removeProperty( int propertyId )
+    @Override
+    protected void removeProperty( NodeManager nodeManager, int propertyId )
     {
         nodeManager.relRemoveProperty( this, propertyId );
     }
 
-    protected ArrayMap<Integer,PropertyData> loadProperties( boolean light )
+    @Override
+    protected ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager, boolean light )
     {
         return nodeManager.loadProperties( this, light );
     }
 
-    public Node[] getNodes()
+    public Node[] getNodes( NodeManager nodeManager )
     {
         return new Node[] { new NodeProxy( startNodeId, nodeManager ),
             new NodeProxy( endNodeId, nodeManager ) };
     }
 
-    public Node getOtherNode( Node node )
+    public Node getOtherNode( NodeManager nodeManager, Node node )
     {
         if ( startNodeId == (int) node.getId() )
         {
@@ -103,7 +107,7 @@ class RelationshipImpl extends Primitive implements Relationship,
             + "] not connected to this relationship[" + getId() + "]" );
     }
 
-    public Node getStartNode()
+    public Node getStartNode( NodeManager nodeManager )
     {
         return new NodeProxy( startNodeId, nodeManager );
     }
@@ -113,7 +117,7 @@ class RelationshipImpl extends Primitive implements Relationship,
         return startNodeId;
     }
 
-    public Node getEndNode()
+    public Node getEndNode( NodeManager nodeManager )
     {
         return new NodeProxy( endNodeId, nodeManager );
     }
@@ -134,7 +138,7 @@ class RelationshipImpl extends Primitive implements Relationship,
             && otherType.name().equals( this.getType().name() );
     }
 
-    public void delete()
+    public void delete( NodeManager nodeManager )
     {
         NodeImpl startNode = null;
         NodeImpl endNode = null;
@@ -173,11 +177,11 @@ class RelationshipImpl extends Primitive implements Relationship,
             success = true;
             if ( startNode != null )
             {
-                startNode.removeRelationship( type, id );
+                startNode.removeRelationship( nodeManager, type, id );
             }
             if ( endNode != null )
             {
-                endNode.removeRelationship( type, id );
+                endNode.removeRelationship( nodeManager, type, id );
             }
             success = true;
         }
@@ -211,7 +215,7 @@ class RelationshipImpl extends Primitive implements Relationship,
             nodeManager.releaseLock( this, LockType.WRITE );
             if ( !success )
             {
-                setRollbackOnly();
+                nodeManager.setRollbackOnly();
             }
             if ( releaseFailed )
             {
@@ -222,58 +226,10 @@ class RelationshipImpl extends Primitive implements Relationship,
         }
     }
 
+    @Override
     public String toString()
     {
         return "RelationshipImpl #" + this.getId() + " of type " + type
             + " between Node[" + startNodeId + "] and Node[" + endNodeId + "]";
-    }
-
-    public int compareTo( Relationship r )
-    {
-        int ourId = (int) this.getId(), theirId = (int) r.getId();
-
-        if ( ourId < theirId )
-        {
-            return -1;
-        }
-        else if ( ourId > theirId )
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
-    }
-
-    /**
-     * Returns true if object <CODE>o</CODE> is a relationship with the same
-     * id as <CODE>this</CODE>.
-     * 
-     * @param o
-     *            the object to compare
-     * @return true if equal, else false
-     */
-    public boolean equals( Object o )
-    {
-        // verify type and not null, should use Node inteface
-        if ( !(o instanceof Relationship) )
-        {
-            return false;
-        }
-
-        // The equals contract:
-        // o reflexive: x.equals(x)
-        // o symmetric: x.equals(y) == y.equals(x)
-        // o transitive: ( x.equals(y) && y.equals(z) ) == true
-        // then x.equals(z) == true
-        // o consistent: the nodeId never changes
-        return this.getId() == ((Relationship) o).getId();
-
-    }
-
-    public int hashCode()
-    {
-        return id;
     }
 }
