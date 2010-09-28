@@ -40,22 +40,21 @@ import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.IntArray;
 
-class NodeImpl extends Primitive implements Node, Comparable<Node>
+class NodeImpl extends Primitive
 {
     private ArrayMap<String,IntArray> relationshipMap = null;
     // private RelationshipGrabber relationshipGrabber = null;
     private RelationshipChainPosition relChainPosition = null;
 
-
-    NodeImpl( int id, NodeManager nodeManager )
+    NodeImpl( int id )
     {
-        super( id, nodeManager );
+        super( id );
     }
 
     // newNode will only be true for NodeManager.createNode
-    NodeImpl( int id, boolean newNode, NodeManager nodeManager )
+    NodeImpl( int id, boolean newNode )
     {
-        super( id, newNode, nodeManager );
+        super( id, newNode );
         if ( newNode )
         {
             relationshipMap = new ArrayMap<String,IntArray>();
@@ -65,32 +64,44 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
     }
 
     @Override
-    protected void changeProperty( int propertyId, Object value )
+    public int hashCode()
+    {
+        return id;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        return this == obj || ( obj instanceof NodeImpl && ( (NodeImpl) obj ).id == id );
+    }
+
+    @Override
+    protected void changeProperty( NodeManager nodeManager, int propertyId, Object value )
     {
         nodeManager.nodeChangeProperty( this, propertyId, value );
     }
 
     @Override
-    protected int addProperty( PropertyIndex index, Object value )
+    protected int addProperty( NodeManager nodeManager, PropertyIndex index, Object value )
     {
         return nodeManager.nodeAddProperty( this, index, value );
     }
 
     @Override
-    protected void removeProperty( int propertyId )
+    protected void removeProperty( NodeManager nodeManager, int propertyId )
     {
         nodeManager.nodeRemoveProperty( this, propertyId );
     }
 
     @Override
-    protected ArrayMap<Integer,PropertyData> loadProperties( boolean light )
+    protected ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager, boolean light )
     {
         return nodeManager.loadProperties( this, light );
     }
 
-    List<RelTypeElementIterator> getAllRelationships()
+    List<RelTypeElementIterator> getAllRelationships( NodeManager nodeManager )
     {
-        ensureFullRelationships();
+        ensureFullRelationships( nodeManager );
         List<RelTypeElementIterator> relTypeList =
             new LinkedList<RelTypeElementIterator>();
         ArrayMap<String,IntArray> addMap =
@@ -107,8 +118,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
             }
             if ( src != null || add != null )
             {
-                relTypeList.add( RelTypeElement.create( type, this, src, add,
-                    remove ) );
+                relTypeList.add( RelTypeElement.create( type, this, src, add, remove ) );
             }
         }
         if ( addMap != null )
@@ -120,18 +130,17 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
                     IntArray remove = nodeManager.getCowRelationshipRemoveMap(
                         this, type );
                     IntArray add = addMap.get( type );
-                    relTypeList.add( RelTypeElement.create( type, this, null,
-                        add, remove ) );
+                    relTypeList.add( RelTypeElement.create( type, this, null, add, remove ) );
                 }
             }
         }
         return relTypeList;
     }
 
-    List<RelTypeElementIterator> getAllRelationshipsOfType(
+    List<RelTypeElementIterator> getAllRelationshipsOfType( NodeManager nodeManager,
         RelationshipType... types)
     {
-        ensureFullRelationships();
+        ensureFullRelationships( nodeManager );
         List<RelTypeElementIterator> relTypeList =
             new LinkedList<RelTypeElementIterator>();
         for ( RelationshipType type : types )
@@ -143,46 +152,44 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
                 type.name() );
             if ( src != null || add != null )
             {
-                relTypeList.add( RelTypeElement.create( type.name(), this, src,
-                    add, remove ) );
+                relTypeList.add( RelTypeElement.create( type.name(), this, src, add, remove ) );
             }
         }
         return relTypeList;
     }
 
-    public Iterable<Relationship> getRelationships()
+    public Iterable<Relationship> getRelationships( NodeManager nodeManager )
     {
-        return new IntArrayIterator( getAllRelationships(), this,
+        return new IntArrayIterator( getAllRelationships( nodeManager ), this,
             Direction.BOTH, nodeManager, new RelationshipType[0] );
     }
 
-    public Iterable<Relationship> getRelationships( Direction dir )
+    public Iterable<Relationship> getRelationships( NodeManager nodeManager, Direction dir )
     {
-        return new IntArrayIterator( getAllRelationships(), this, dir,
+        return new IntArrayIterator( getAllRelationships( nodeManager ), this, dir,
             nodeManager, new RelationshipType[0] );
     }
 
-    public Iterable<Relationship> getRelationships( RelationshipType type )
+    public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type )
     {
         RelationshipType types[] = new RelationshipType[] { type };
-        return new IntArrayIterator(
-            getAllRelationshipsOfType( types ),
+        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, types ),
             this, Direction.BOTH, nodeManager, types );
     }
 
-    public Iterable<Relationship> getRelationships( RelationshipType... types )
+    public Iterable<Relationship> getRelationships( NodeManager nodeManager,
+            RelationshipType... types )
     {
-        return new IntArrayIterator(
-            getAllRelationshipsOfType(types ),
+        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, types ),
             this, Direction.BOTH, nodeManager, types );
     }
 
-    public Relationship getSingleRelationship( RelationshipType type,
+    public Relationship getSingleRelationship( NodeManager nodeManager, RelationshipType type,
         Direction dir )
     {
         RelationshipType types[] = new RelationshipType[] { type };
-        Iterator<Relationship> rels = new IntArrayIterator(
-            getAllRelationshipsOfType( types ),
+        Iterator<Relationship> rels = new IntArrayIterator( getAllRelationshipsOfType( nodeManager,
+                types ),
             this, dir, nodeManager, types );
         if ( !rels.hasNext() )
         {
@@ -197,16 +204,15 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         return rel;
     }
 
-    public Iterable<Relationship> getRelationships( RelationshipType type,
+    public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type,
         Direction dir )
     {
         RelationshipType types[] = new RelationshipType[] { type };
-        return new IntArrayIterator(
-            getAllRelationshipsOfType( types ),
+        return new IntArrayIterator( getAllRelationshipsOfType( nodeManager, types ),
             this, dir, nodeManager, types );
     }
 
-    public void delete()
+    public void delete( NodeManager nodeManager )
     {
         nodeManager.acquireLock( this, LockType.WRITE );
         boolean success = false;
@@ -230,71 +236,9 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
             nodeManager.releaseLock( this, LockType.WRITE );
             if ( !success )
             {
-                setRollbackOnly();
+                nodeManager.setRollbackOnly();
             }
         }
-    }
-
-    /**
-     * If object <CODE>node</CODE> is a node, 0 is returned if <CODE>this</CODE>
-     * node id equals <CODE>node's</CODE> node id, 1 if <CODE>this</CODE>
-     * node id is greater and -1 else.
-     * <p>
-     * If <CODE>node</CODE> isn't a node a ClassCastException will be thrown.
-     *
-     * @param node
-     *            the node to compare this node with
-     * @return 0 if equal id, 1 if this id is greater else -1
-     */
-    public int compareTo( Node n )
-    {
-        long ourId = this.getId(), theirId = n.getId();
-
-        if ( ourId < theirId )
-        {
-            return -1;
-        }
-        else if ( ourId > theirId )
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
-    }
-
-    /**
-     * Returns true if object <CODE>o</CODE> is a node with the same id as
-     * <CODE>this</CODE>.
-     *
-     * @param o
-     *            the object to compare
-     * @return true if equal, else false
-     */
-    @Override
-    public boolean equals( Object o )
-    {
-        // verify type and not null, should use Node inteface
-        if ( !(o instanceof Node) )
-        {
-            return false;
-        }
-
-        // The equals contract:
-        // o reflexive: x.equals(x)
-        // o symmetric: x.equals(y) == y.equals(x)
-        // o transitive: ( x.equals(y) && y.equals(z) ) == true
-        // then x.equals(z) == true
-        // o consistent: the nodeId never changes
-        return this.getId() == ((Node) o).getId();
-
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return id;
     }
 
     /**
@@ -311,7 +255,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
     // caller is responsible for acquiring lock
     // this method is only called when a relationship is created or
     // a relationship delete is undone or when the full node is loaded
-    void addRelationship( RelationshipType type, int relId )
+    void addRelationship( NodeManager nodeManager, RelationshipType type, int relId )
     {
         IntArray relationshipSet = nodeManager.getCowRelationshipAddMap(
             this, type.name(), true );
@@ -321,27 +265,27 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
     // caller is responsible for acquiring lock
     // this method is only called when a undo create relationship or
     // a relationship delete is invoked.
-    void removeRelationship( RelationshipType type, int relId )
+    void removeRelationship( NodeManager nodeManager, RelationshipType type, int relId )
     {
         IntArray relationshipSet = nodeManager.getCowRelationshipRemoveMap(
             this, type.name(), true );
         relationshipSet.add( relId );
     }
 
-    private synchronized boolean ensureFullRelationships()
+    private synchronized boolean ensureFullRelationships( NodeManager nodeManager )
     {
         if ( relationshipMap == null )
         {
             this.relChainPosition =
                 nodeManager.getRelationshipChainPosition( this );
             this.relationshipMap = new ArrayMap<String,IntArray>();
-            getMoreRelationships();
+            getMoreRelationships( nodeManager );
             return true;
         }
         return false;
     }
 
-    synchronized boolean getMoreRelationships()
+    synchronized boolean getMoreRelationships( NodeManager nodeManager )
     {
         if ( !relChainPosition.hasMore() )
         {
@@ -369,7 +313,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
         return true;
     }
 
-    public Relationship createRelationshipTo( Node otherNode,
+    public Relationship createRelationshipTo( NodeManager nodeManager, Node otherNode,
         RelationshipType type )
     {
         return nodeManager.createRelationship( this, otherNode, type );
@@ -404,7 +348,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
     }
     */
 
-    public Traverser traverse( Order traversalOrder,
+    public Traverser traverse( NodeManager nodeManager, Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType relationshipType, Direction direction )
     {
@@ -413,7 +357,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
                 returnableEvaluator, relationshipType, direction );
     }
 
-    public Traverser traverse( Order traversalOrder,
+    public Traverser traverse( NodeManager nodeManager, Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType firstRelationshipType, Direction firstDirection,
         RelationshipType secondRelationshipType, Direction secondDirection )
@@ -424,7 +368,7 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
                 secondRelationshipType, secondDirection );
     }
 
-    public Traverser traverse( Order traversalOrder,
+    public Traverser traverse( NodeManager nodeManager, Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         Object... relationshipTypesAndDirections )
     {
@@ -433,24 +377,24 @@ class NodeImpl extends Primitive implements Node, Comparable<Node>
                 returnableEvaluator, relationshipTypesAndDirections );
     }
 
-    public boolean hasRelationship()
+    public boolean hasRelationship( NodeManager nodeManager )
     {
-        return getRelationships().iterator().hasNext();
+        return getRelationships( nodeManager ).iterator().hasNext();
     }
 
-    public boolean hasRelationship( RelationshipType... types )
+    public boolean hasRelationship( NodeManager nodeManager, RelationshipType... types )
     {
-        return getRelationships( types ).iterator().hasNext();
+        return getRelationships( nodeManager, types ).iterator().hasNext();
     }
 
-    public boolean hasRelationship( Direction dir )
+    public boolean hasRelationship( NodeManager nodeManager, Direction dir )
     {
-        return getRelationships( dir ).iterator().hasNext();
+        return getRelationships( nodeManager, dir ).iterator().hasNext();
     }
 
-    public boolean hasRelationship( RelationshipType type, Direction dir )
+    public boolean hasRelationship( NodeManager nodeManager, RelationshipType type, Direction dir )
     {
-        return getRelationships( type, dir ).iterator().hasNext();
+        return getRelationships( nodeManager, type, dir ).iterator().hasNext();
     }
 
     protected void commitRelationshipMaps(

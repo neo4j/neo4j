@@ -29,7 +29,7 @@ class FastRelTypeElement extends RelTypeElementIterator
 
     private int position = 0;
     private Integer nextElement = null;
-    
+
     FastRelTypeElement( String type, NodeImpl node, IntArray src )
     {
         super( type, node );
@@ -43,7 +43,8 @@ class FastRelTypeElement extends RelTypeElementIterator
         }
     }
 
-    public boolean hasNext()
+    @Override
+    public boolean hasNext( NodeManager nodeManager )
     {
         if ( nextElement != null )
         {
@@ -51,7 +52,7 @@ class FastRelTypeElement extends RelTypeElementIterator
         }
         if ( position >= src.length() )
         {
-            while ( getNode().getMoreRelationships() && 
+            while ( getNode().getMoreRelationships( nodeManager ) &&
                 position >= src.length() );
         }
         while ( position < src.length() )
@@ -62,9 +63,10 @@ class FastRelTypeElement extends RelTypeElementIterator
         return false;
     }
 
-    public Integer next()
+    @Override
+    public int next( NodeManager nodeManager )
     {
-        hasNext();
+        hasNext( nodeManager );
         if ( nextElement != null )
         {
             Integer elementToReturn = nextElement;
@@ -72,10 +74,5 @@ class FastRelTypeElement extends RelTypeElementIterator
             return elementToReturn;
         }
         throw new NoSuchElementException();
-    }
-
-    public void remove()
-    {
-        throw new UnsupportedOperationException();
     }
 }

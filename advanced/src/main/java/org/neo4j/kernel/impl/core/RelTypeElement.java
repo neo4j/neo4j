@@ -35,8 +35,8 @@ class RelTypeElement extends RelTypeElementIterator
     private boolean addTraversed = false;
     private int position = 0;
     private Integer nextElement = null;
-    
-    static RelTypeElementIterator create( String type, NodeImpl node, 
+
+    static RelTypeElementIterator create( String type, NodeImpl node,
         IntArray src, IntArray add, IntArray remove )
     {
         if ( add == null && remove == null )
@@ -45,8 +45,8 @@ class RelTypeElement extends RelTypeElementIterator
         }
         return new RelTypeElement( type, node, src, add, remove );
     }
-    
-    private RelTypeElement( String type, NodeImpl node, IntArray src, 
+
+    private RelTypeElement( String type, NodeImpl node, IntArray src,
         IntArray add, IntArray remove )
     {
         super( type, node );
@@ -69,7 +69,7 @@ class RelTypeElement extends RelTypeElementIterator
         }
     }
 
-    public boolean hasNext()
+    public boolean hasNext( NodeManager nodeManager )
     {
         if ( nextElement != null )
         {
@@ -93,7 +93,7 @@ class RelTypeElement extends RelTypeElementIterator
         {
             if ( position >= src.length() )
             {
-                while ( getNode().getMoreRelationships() && 
+                while ( getNode().getMoreRelationships( nodeManager ) &&
                     position >= src.length() );
                 if ( position >= src.length() )
                 {
@@ -112,9 +112,9 @@ class RelTypeElement extends RelTypeElementIterator
         return false;
     }
 
-    public Integer next()
+    public int next( NodeManager nodeManager )
     {
-        hasNext();
+        hasNext( nodeManager );
         if ( nextElement != null )
         {
             Integer elementToReturn = nextElement;

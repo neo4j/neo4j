@@ -47,27 +47,27 @@ class RelationshipProxy implements Relationship
 
     public void delete()
     {
-        nm.getRelForProxy( relId ).delete();
+        nm.getRelForProxy( relId ).delete( nm );
     }
 
     public Node[] getNodes()
     {
-        return nm.getRelForProxy( relId ).getNodes();
+        return nm.getRelForProxy( relId ).getNodes( nm );
     }
 
     public Node getOtherNode( Node node )
     {
-        return nm.getRelForProxy( relId ).getOtherNode( node );
+        return nm.getRelForProxy( relId ).getOtherNode( nm, node );
     }
 
     public Node getStartNode()
     {
-        return nm.getRelForProxy( relId ).getStartNode();
+        return nm.getRelForProxy( relId ).getStartNode( nm );
     }
 
     public Node getEndNode()
     {
-        return nm.getRelForProxy( relId ).getEndNode();
+        return nm.getRelForProxy( relId ).getEndNode( nm );
     }
 
     public RelationshipType getType()
@@ -77,37 +77,37 @@ class RelationshipProxy implements Relationship
 
     public Iterable<String> getPropertyKeys()
     {
-        return nm.getRelForProxy( relId ).getPropertyKeys();
+        return nm.getRelForProxy( relId ).getPropertyKeys( nm );
     }
 
     public Iterable<Object> getPropertyValues()
     {
-        return nm.getRelForProxy( relId ).getPropertyValues();
+        return nm.getRelForProxy( relId ).getPropertyValues( nm );
     }
 
     public Object getProperty( String key )
     {
-        return nm.getRelForProxy( relId ).getProperty( key );
+        return nm.getRelForProxy( relId ).getProperty( nm, key );
     }
 
     public Object getProperty( String key, Object defaultValue )
     {
-        return nm.getRelForProxy( relId ).getProperty( key, defaultValue );
+        return nm.getRelForProxy( relId ).getProperty( nm, key, defaultValue );
     }
 
     public boolean hasProperty( String key )
     {
-        return nm.getRelForProxy( relId ).hasProperty( key );
+        return nm.getRelForProxy( relId ).hasProperty( nm, key );
     }
 
     public void setProperty( String key, Object property )
     {
-        nm.getRelForProxy( relId ).setProperty( key, property );
+        nm.getRelForProxy( relId ).setProperty( nm, key, property );
     }
 
     public Object removeProperty( String key )
     {
-        return nm.getRelForProxy( relId ).removeProperty( key );
+        return nm.getRelForProxy( relId ).removeProperty( nm, key );
     }
 
     public boolean isType( RelationshipType type )
@@ -134,6 +134,7 @@ class RelationshipProxy implements Relationship
         }
     }
 
+    @Override
     public boolean equals( Object o )
     {
         if ( !(o instanceof Relationship) )
@@ -141,14 +142,15 @@ class RelationshipProxy implements Relationship
             return false;
         }
         return this.getId() == ((Relationship) o).getId();
-
     }
 
+    @Override
     public int hashCode()
     {
         return relId;
     }
 
+    @Override
     public String toString()
     {
         return "Relationship[" + this.getId() + "]";

@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Iterator;
-
-public abstract class RelTypeElementIterator implements Iterator<Integer>
+public abstract class RelTypeElementIterator
 {
     private final String type;
     private final NodeImpl node;
@@ -41,4 +39,8 @@ public abstract class RelTypeElementIterator implements Iterator<Integer>
     {
         return type;
     }
+
+    public abstract boolean hasNext( NodeManager nodeManager );
+
+    public abstract int next( NodeManager nodeManager );
 }
