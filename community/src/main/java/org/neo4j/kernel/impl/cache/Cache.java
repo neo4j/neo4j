@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import java.util.Map;
+
 /**
  * Simple cache interface with add, remove, get, clear and size methods. If null
  * is passed as parameter an {@link IllegalArgumentException} is thrown.
@@ -93,4 +95,6 @@ public interface Cache<K,V>
     public boolean isAdaptive();
 
     public void setAdaptiveStatus( boolean status );
+    
+    public void putAll( Map<K,V> map );
 }

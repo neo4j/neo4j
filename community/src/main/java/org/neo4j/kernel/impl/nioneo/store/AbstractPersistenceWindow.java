@@ -44,8 +44,8 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         this.recordSize = recordSize;
         this.totalSize = totalSize;
         this.windowSize = totalSize / recordSize;
-        this.buffer = new Buffer( this );
-        this.buffer.setByteBuffer( byteBuffer );
+        this.buffer = new Buffer( this, byteBuffer );
+        // this.buffer.setByteBuffer( byteBuffer );
     }
 
     public Buffer getBuffer()

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,8 +37,8 @@ class RelationshipTypeHolder
 {
     private ArrayMap<String,Integer> relTypes = 
         new ArrayMap<String,Integer>( 5, true, true );
-    private Map<Integer,String> relTranslation = 
-        new ConcurrentHashMap<Integer,String>();
+    private Map<Integer,RelationshipTypeImpl> relTranslation = 
+        new ConcurrentHashMap<Integer,RelationshipTypeImpl>();
 
     private final TransactionManager transactionManager;
     private final PersistenceManager persistenceManager;
@@ -57,34 +56,41 @@ class RelationshipTypeHolder
     {
         for ( int i = 0; i < types.length; i++ )
         {
+            RelationshipTypeImpl relType = new RelationshipTypeImpl( types[i].getName() );
             relTypes.put( types[i].getName(), types[i].getId() );
-            relTranslation.put( types[i].getId(), types[i].getName() );
+            relTranslation.put( types[i].getId(), relType );
         }
     }
     
     void addRawRelationshipType( RelationshipTypeData type )
     {
+        RelationshipTypeImpl relType = new RelationshipTypeImpl( type.getName() );
         relTypes.put( type.getName(), type.getId() );
-        relTranslation.put( type.getId(), type.getName() );
+        relTranslation.put( type.getId(), relType );
     }
 
     public RelationshipType addValidRelationshipType( String name,
         boolean create )
     {
-        if ( relTypes.get( name ) == null )
+        Integer id = relTypes.get( name );
+        if ( id == null )
         {
             if ( !create )
             {
                 return null;
             }
-            int id = createRelationshipType( name );
-            relTranslation.put( id, name );
+            id = createRelationshipType( name );
+            RelationshipTypeImpl type = new RelationshipTypeImpl( name );
+            relTranslation.put( id, type );
+            return type;
         }
-        else
+        RelationshipTypeImpl relType = relTranslation.get( id );
+        if ( relType == null )
         {
-            relTranslation.put( relTypes.get( name ), name );
+            relType = new RelationshipTypeImpl( name );
+            relTranslation.put( id, relType );
         }
-        return new RelationshipTypeImpl( name );
+        return relType;
     }
 
     boolean isValidRelationshipType( RelationshipType type )
@@ -223,10 +229,10 @@ class RelationshipTypeHolder
 
     void removeRelType( int id )
     {
-        String name = relTranslation.remove( id );
-        if ( name != null )
+        RelationshipTypeImpl relType = relTranslation.remove( id );
+        if ( relType != null )
         {
-            relTypes.remove( name );
+            relTypes.remove( relType.name );
         }
     }
 
@@ -237,12 +243,7 @@ class RelationshipTypeHolder
 
     RelationshipType getRelationshipType( int id )
     {
-        String name = relTranslation.get( id );
-        if ( name != null )
-        {
-            return new RelationshipTypeImpl( name );
-        }
-        return null;
+        return relTranslation.get( id );
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()
@@ -258,6 +259,6 @@ class RelationshipTypeHolder
     void clear()
     {
         relTypes = new ArrayMap<String,Integer>();
-        relTranslation = new HashMap<Integer,String>();
+        relTranslation = new ConcurrentHashMap<Integer,RelationshipTypeImpl>();
     }
 }

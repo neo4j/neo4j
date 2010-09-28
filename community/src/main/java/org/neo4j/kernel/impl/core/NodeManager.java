@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LruCache;
@@ -74,7 +76,7 @@ public class NodeManager
     private int maxNodeCacheSize = 1500;
     private int maxRelCacheSize = 3500;
 
-    private static final int LOCK_STRIPE_COUNT = 5;
+    private static final int LOCK_STRIPE_COUNT = 32;
     private final ReentrantLock loadLocks[] =
         new ReentrantLock[LOCK_STRIPE_COUNT];
 
@@ -362,7 +364,7 @@ public class NodeManager
 
     private ReentrantLock lockId( int id )
     {
-        int stripe = id % LOCK_STRIPE_COUNT;
+        int stripe = (id / 32768) % LOCK_STRIPE_COUNT;
         if ( stripe < 0 )
         {
             stripe *= -1;
@@ -581,7 +583,7 @@ public class NodeManager
             (int) node.getId() );
     }
 
-    ArrayMap<String,IntArray> getMoreRelationships( NodeImpl node )
+    Pair<ArrayMap<String,IntArray>,Map<Integer,RelationshipImpl>> getMoreRelationships( NodeImpl node )
     {
         int nodeId = (int) node.getId();
         RelationshipChainPosition position = node.getRelChainPosition();
@@ -589,6 +591,7 @@ public class NodeManager
             persistenceManager.getMoreRelationships( nodeId, position );
         ArrayMap<String,IntArray> newRelationshipMap =
             new ArrayMap<String,IntArray>();
+        Map<Integer,RelationshipImpl> relsMap = new HashMap<Integer,RelationshipImpl>( 150 );
         for ( RelationshipData rel : rels )
         {
             int relId = rel.getId();
@@ -600,7 +603,8 @@ public class NodeManager
                 assert type != null;
                 relImpl = new RelationshipImpl( relId, rel.firstNode(), rel.secondNode(), type,
                         false );
-                relCache.put( relId, relImpl );
+                relsMap.put( relId, relImpl );
+                // relCache.put( relId, relImpl );
             }
             else
             {
@@ -615,7 +619,14 @@ public class NodeManager
             }
             relationshipSet.add( relId );
         }
-        return newRelationshipMap;
+        // relCache.putAll( relsMap );
+        return new Pair<ArrayMap<String,IntArray>,Map<Integer,RelationshipImpl>>( 
+                newRelationshipMap, relsMap );
+    }
+    
+    void putAllInRelCache( Map<Integer,RelationshipImpl> map )
+    {
+        relCache.putAll( map );
     }
 
     ArrayMap<Integer,PropertyData> loadProperties( NodeImpl node,

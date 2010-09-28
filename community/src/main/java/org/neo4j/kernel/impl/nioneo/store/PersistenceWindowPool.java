@@ -39,12 +39,12 @@ import java.util.logging.Logger;
  */
 class PersistenceWindowPool
 {
-    private static final int MAX_BRICK_COUNT = 10000;
+    private static final int MAX_BRICK_COUNT = 100000;
 
     private final String storeName;
     private final int blockSize;
     private FileChannel fileChannel;
-    private Map<Integer,PersistenceRow> activeRowWindows = 
+    private final Map<Integer,PersistenceRow> activeRowWindows = 
         new HashMap<Integer,PersistenceRow>();
     private long availableMem = 0;
     private long memUsed = 0;
@@ -55,7 +55,7 @@ class PersistenceWindowPool
 
     private static Logger log = Logger.getLogger( PersistenceWindowPool.class
         .getName() );
-    private static final int REFRESH_BRICK_COUNT = 5000;
+    private static final int REFRESH_BRICK_COUNT = 50000;
     private final FileChannel.MapMode mapMode;
 
     private int hit = 0;
@@ -114,11 +114,12 @@ class PersistenceWindowPool
     PersistenceWindow acquire( long position, OperationType operationType )
     {
         LockableWindow window = null;
-        synchronized ( activeRowWindows )
-        {
+        boolean readPos = false;
+//        synchronized ( activeRowWindows )
+//        {
             if ( brickMiss >= REFRESH_BRICK_COUNT )
             {
-                brickMiss = 0;
+//                brickMiss = 0;
                 refreshBricks();
             }
             if ( brickSize > 0 )
@@ -126,7 +127,14 @@ class PersistenceWindowPool
                 int brickIndex = (int) (position * blockSize / brickSize);
                 if ( brickIndex < brickArray.length )
                 {
-                    window = brickArray[brickIndex].getWindow();
+                    synchronized ( this )
+                    {
+                        window = brickArray[brickIndex].getWindow();
+                        if ( window != null )
+                        {
+                            window.mark();
+                        }
+                    }
                     // assert window == null || window.encapsulates( position );
                     brickArray[brickIndex].setHit();
                 }
@@ -138,30 +146,37 @@ class PersistenceWindowPool
             }
             if ( window == null )
             {
-                miss++;
-                brickMiss++;
-                
-                PersistenceRow dpw = activeRowWindows.get( (int) position ); 
-                
-                if ( dpw == null )
+                synchronized ( this )
                 {
-                    dpw = new PersistenceRow( position, blockSize, 
-                        fileChannel );
-                    if ( operationType == OperationType.READ )
+                    miss++;
+                    brickMiss++;
+                    
+                    PersistenceRow dpw = activeRowWindows.get( (int) position ); 
+                    
+                    if ( dpw == null )
                     {
-                        dpw.readPosition();
+                        dpw = new PersistenceRow( position, blockSize, 
+                            fileChannel );
+                        if ( operationType == OperationType.READ )
+                        {
+                            readPos = true;
+                        }
                     }
+                    window = dpw;
+                    activeRowWindows.put( (int) position, dpw );
+                    window.mark();
                 }
-                window = dpw;
-                activeRowWindows.put( (int) position, dpw );
             }
             else
             {
                 hit++;
             }
-            window.mark();
-        }
+//        }
         window.lock();
+        if ( readPos )
+        {
+            ((PersistenceRow) window).readPosition();
+        }
         window.setOperationType( operationType );
         return window;
     }
@@ -183,28 +198,31 @@ class PersistenceWindowPool
      */
     void release( PersistenceWindow window )
     {
-        synchronized ( activeRowWindows )
+        if ( window instanceof PersistenceRow )
         {
-            if ( window instanceof PersistenceRow )
+            PersistenceRow dpw = (PersistenceRow) window;
+            dpw.writeOut();
+            synchronized ( this )
             {
-                PersistenceRow dpw = (PersistenceRow) window;
-                // will only write if operation was write
-                dpw.writeOut();
                 if ( dpw.getWaitingThreadsCount() == 0 && !dpw.isMarked() )
                 {
                     int key = (int) dpw.position();
                     activeRowWindows.remove( key );
                 }
             }
+            dpw.unLock();
+        }
+        else
+        {
             ((LockableWindow) window).unLock();
         }
     }
 
-    void close()
+    synchronized void close()
     {
         flushAll();
-        synchronized ( activeRowWindows )
-        {
+//        synchronized ( activeRowWindows )
+//        {
             for ( BrickElement element : brickArray )
             {
                 if ( element.getWindow() != null )
@@ -215,15 +233,15 @@ class PersistenceWindowPool
             }
             fileChannel = null;
             activeRowWindows.clear();
-        }
-        activeRowWindows = null;
+//        }
+        // activeRowWindows = null;
         dumpStatistics();
     }
 
-    void flushAll()
+    synchronized void flushAll()
     {
-        synchronized ( activeRowWindows )
-        {
+//        synchronized ( activeRowWindows )
+//        {
             for ( BrickElement element : brickArray )
             {
                 if ( element.getWindow() != null )
@@ -231,7 +249,7 @@ class PersistenceWindowPool
                     element.getWindow().force();
                 }
             }
-        }
+//        }
         try
         {
             fileChannel.force( false );
@@ -333,7 +351,7 @@ class PersistenceWindowPool
             double ratio = (availableMem + 0.0d) / fileSize;
             if ( ratio >= 1 )
             {
-                brickSize = (int) (availableMem / 100 );
+                brickSize = (int) (availableMem / 1000 );
                 if ( brickSize < 0 )
                 {
                     brickSize = Integer.MAX_VALUE;
@@ -343,7 +361,7 @@ class PersistenceWindowPool
             }
             else
             {
-                brickCount = (int) (100.0d / ratio);
+                brickCount = (int) (1000.0d / ratio);
                 if ( brickCount > MAX_BRICK_COUNT )
                 {
                     brickCount = MAX_BRICK_COUNT;
@@ -390,8 +408,13 @@ class PersistenceWindowPool
         }
     }
 
-    private void refreshBricks()
+    private synchronized void refreshBricks()
     {
+        if ( brickMiss < REFRESH_BRICK_COUNT )
+        {
+            return;
+        }
+        brickMiss = 0;
         if ( brickSize <= 0 )
         {
             // memory mapped turned off
@@ -489,7 +512,7 @@ class PersistenceWindowPool
         }
     }
 
-    private void expandBricks( int newBrickCount )
+    private synchronized void expandBricks( int newBrickCount )
     {
         if ( newBrickCount > brickCount )
         {
@@ -538,6 +561,7 @@ class PersistenceWindowPool
         dpw.readPosition();
         return dpw;
     }
+    
     static class BrickSorter implements Comparator<BrickElement>, Serializable
     {
         public int compare( BrickElement o1, BrickElement o2 )
