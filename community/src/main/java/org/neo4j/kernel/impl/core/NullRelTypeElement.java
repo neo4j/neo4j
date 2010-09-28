@@ -28,18 +28,15 @@ class NullRelTypeElement extends RelTypeElementIterator
         super( null, null );
     }
 
-    public boolean hasNext()
+    @Override
+    public boolean hasNext( NodeManager nodeManager )
     {
         return false;
     }
 
-    public Integer next()
+    @Override
+    public int next( NodeManager nodeManager )
     {
         throw new NoSuchElementException();
-    }
-
-    public void remove()
-    {
-        throw new UnsupportedOperationException();
     }
 }

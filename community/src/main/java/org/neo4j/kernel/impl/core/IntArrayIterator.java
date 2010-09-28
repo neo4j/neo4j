@@ -36,19 +36,18 @@ import org.neo4j.graphdb.RelationshipType;
 class IntArrayIterator implements Iterable<Relationship>,
     Iterator<Relationship>
 {
-    private Logger log = Logger
-        .getLogger( IntArrayIterator.class.getName() );
+    private static final Logger log = Logger.getLogger( IntArrayIterator.class.getName() );
 
     private Iterator<RelTypeElementIterator> typeIterator;
     private RelTypeElementIterator currentTypeIterator = null;
-    private NodeImpl fromNode;
-    private Direction direction = null;
+    private final NodeImpl fromNode;
+    private final Direction direction;
     private Relationship nextElement = null;
     private final NodeManager nodeManager;
     private final RelationshipType types[];
 
-    private Set<String> visitedTypes = new HashSet<String>();
-    
+    private final Set<String> visitedTypes = new HashSet<String>();
+
     IntArrayIterator( List<RelTypeElementIterator> rels, NodeImpl fromNode,
         Direction direction, NodeManager nodeManager, RelationshipType[] types )
     {
@@ -90,21 +89,21 @@ class IntArrayIterator implements Iterable<Relationship>,
         }
         do
         {
-            if ( currentTypeIterator.hasNext() )
+            if ( currentTypeIterator.hasNext( nodeManager ) )
             {
-                int nextId = currentTypeIterator.next();
+                int nextId = currentTypeIterator.next( nodeManager );
                 try
                 {
                     Relationship possibleElement = nodeManager
                         .getRelationshipById( nextId );
                     if ( direction == Direction.INCOMING
-                        && possibleElement.getEndNode().equals( fromNode ) )
+                         && possibleElement.getEndNode().getId() == fromNode.id )
                     {
                         nextElement = possibleElement;
                         return true;
                     }
                     else if ( direction == Direction.OUTGOING
-                        && possibleElement.getStartNode().equals( fromNode ) )
+                              && possibleElement.getStartNode().getId() == fromNode.id )
                     {
                         nextElement = possibleElement;
                         return true;
@@ -121,7 +120,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                         "Unable to get relationship " + nextId, e );
                 }
             }
-            while ( !currentTypeIterator.hasNext() )
+            while ( !currentTypeIterator.hasNext( nodeManager ) )
             {
                 if ( typeIterator.hasNext() )
                 {
@@ -130,15 +129,15 @@ class IntArrayIterator implements Iterable<Relationship>,
                 }
                 else 
                 {
-                    boolean gotMore = fromNode.getMoreRelationships();
+                    boolean gotMore = fromNode.getMoreRelationships( nodeManager );
                     List<RelTypeElementIterator> list = Collections.EMPTY_LIST;
                     if ( types.length == 0 )
                     {
-                        list = fromNode.getAllRelationships();
+                        list = fromNode.getAllRelationships( nodeManager );
                     }
                     else
                     {
-                        list = fromNode.getAllRelationshipsOfType( types );
+                        list = fromNode.getAllRelationshipsOfType( nodeManager, types );
                     }
                     Iterator<RelTypeElementIterator> itr = list.iterator();
                     while ( itr.hasNext() )
@@ -161,7 +160,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                     }
                 }
             }
-         } while ( currentTypeIterator.hasNext() );
+         } while ( currentTypeIterator.hasNext( nodeManager ) );
         // no next element found
         return false;
     }
