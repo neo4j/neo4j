@@ -1,6 +1,6 @@
 package org.neo4j.index.impl.lucene;
 
-import java.util.Set;
+import java.util.Collection;
 
 import org.apache.lucene.search.Query;
 import org.neo4j.helpers.Pair;
@@ -26,9 +26,9 @@ abstract class TxData
 
     abstract TxData remove( Query query );
 
-    abstract Pair<Set<Long>, TxData> query( Query query );
+    abstract Pair<Collection<Long>, TxData> query( Query query, QueryContext contextOrNull );
 
-    abstract Pair<Set<Long>, TxData> get( String key, Object value );
+    abstract Pair<Collection<Long>, TxData> get( String key, Object value );
     
     abstract void close();
 

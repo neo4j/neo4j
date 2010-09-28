@@ -21,11 +21,11 @@ package org.neo4j.index.impl.lucene;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
@@ -61,9 +61,10 @@ class LuceneTransaction extends XaTransaction
     <T extends PropertyContainer> void add( LuceneIndex<T> index, T entity,
             String key, Object value )
     {
+        value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value;
         TxDataBoth data = getTxData( index, true );
         insert( index, entity, key, value, data.added( true ), data.removed( false ) );
-        queueCommand( index.newAddCommand( entity, key, value.toString() ) ).addCount++;
+        queueCommand( index.newAddCommand( entity, key, value ) ).addCount++;
     }
     
     private long getEntityId( PropertyContainer entity )
@@ -88,10 +89,11 @@ class LuceneTransaction extends XaTransaction
     <T extends PropertyContainer> void remove( LuceneIndex<T> index, T entity,
             String key, Object value )
     {
+        value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value;
         TxDataBoth data = getTxData( index, true );
         insert( index, entity, key, value, data.removed( true ), data.added( false ) );
         queueCommand( new RemoveCommand( index.identifier,
-                getEntityId( entity ), key, value.toString() ) ).removeCount++;
+                getEntityId( entity ), key, value ) ).removeCount++;
     }
     
     <T extends PropertyContainer> void clear( LuceneIndex<T> index )
@@ -135,15 +137,14 @@ class LuceneTransaction extends XaTransaction
         insertInto.add( id, key, value );
     }
 
-    <T extends PropertyContainer> Set<Long> getRemovedIds( LuceneIndex<T> index,
-            Query query )
+    <T extends PropertyContainer> Collection<Long> getRemovedIds( LuceneIndex<T> index, Query query )
     {
         TxDataHolder removed = removedTxDataOrNull( index );
         if ( removed == null )
         {
             return Collections.emptySet();
         }
-        Set<Long> ids = removed.query( query );
+        Collection<Long> ids = removed.query( query, null );
         return ids != null ? ids : Collections.<Long>emptySet();
     }
     
@@ -153,7 +154,7 @@ class LuceneTransaction extends XaTransaction
         return removed != null ? removed.getExtraQuery() : null;
     }
     
-    <T extends PropertyContainer> Set<Long> getRemovedIds( LuceneIndex<T> index,
+    <T extends PropertyContainer> Collection<Long> getRemovedIds( LuceneIndex<T> index,
             String key, Object value )
     {
         TxDataHolder removed = removedTxDataOrNull( index );
@@ -161,23 +162,23 @@ class LuceneTransaction extends XaTransaction
         {
             return Collections.emptySet();
         }
-        Set<Long> ids = removed.get( key, value );
+        Collection<Long> ids = removed.get( key, value );
         return ids != null ? ids : Collections.<Long>emptySet();
     }
     
-    <T extends PropertyContainer> Set<Long> getAddedIds( LuceneIndex<T> index,
-            Query query )
+    <T extends PropertyContainer> Collection<Long> getAddedIds( LuceneIndex<T> index,
+            Query query, QueryContext contextOrNull )
     {
         TxDataHolder added = addedTxDataOrNull( index );
         if ( added == null )
         {
             return Collections.emptySet();
         }
-        Set<Long> ids = added.query( query );
+        Collection<Long> ids = added.query( query, contextOrNull );
         return ids != null ? ids : Collections.<Long>emptySet();
     }
     
-    <T extends PropertyContainer> Set<Long> getAddedIds( LuceneIndex<T> index,
+    <T extends PropertyContainer> Collection<Long> getAddedIds( LuceneIndex<T> index,
             String key, Object value )
     {
         TxDataHolder added = addedTxDataOrNull( index );
@@ -185,7 +186,7 @@ class LuceneTransaction extends XaTransaction
         {
             return Collections.emptySet();
         }
-        Set<Long> ids = added.get( key, value );
+        Collection<Long> ids = added.get( key, value );
         return ids != null ? ids : Collections.<Long>emptySet();
     }
     
@@ -265,7 +266,7 @@ class LuceneTransaction extends XaTransaction
                         documents.put( entityId, context );
                     }
                     String key = command.key;
-                    String value = command.value;
+                    Object value = command.value;
                     if ( command instanceof AddCommand ||
                             command instanceof AddRelationshipCommand )
                     {

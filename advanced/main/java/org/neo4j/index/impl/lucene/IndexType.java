@@ -9,15 +9,17 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.Version;
 
 abstract class IndexType
@@ -42,7 +44,7 @@ abstract class IndexType
         @Override
         public void addToDocument( Document document, String key, Object value )
         {
-            document.add( new Field( key, value.toString(), Store.YES, Index.NOT_ANALYZED ) );
+            document.add( instantiateField( key, value, Index.NOT_ANALYZED ) );
         }
         
         @Override
@@ -98,10 +100,8 @@ abstract class IndexType
         @Override
         public void addToDocument( Document document, String key, Object value )
         {
-            String stringValue = value.toString();
-            document.add( new Field( exactKey( key ), stringValue, Store.YES,
-                    Index.NOT_ANALYZED ) );
-            document.add( new Field( key, stringValue, Store.YES, Index.ANALYZED ) );
+            document.add( new Field( exactKey( key ), value.toString(), Store.YES, Index.NOT_ANALYZED ) );
+            document.add( instantiateField( key, value.toString(), Index.ANALYZED ) );
         }
         
         @Override
@@ -221,6 +221,42 @@ abstract class IndexType
     }
     
     abstract void addToDocument( Document document, String key, Object value );
+    
+    Fieldable instantiateField( String key, Object value, Index analyzed )
+    {
+//        NumericField f = new NumericField( key );
+//        f.setIntValue( ((Number) value).intValue() );
+//        return f;
+        
+        Fieldable field = null;
+        if ( value instanceof Number )
+        {
+            Number number = (Number) value;
+            NumericField numberField = new NumericField( key, Store.YES, true );
+            if ( value instanceof Long )
+            {
+                numberField.setLongValue( number.longValue() );
+            }
+            else if ( value instanceof Float )
+            {
+                numberField.setFloatValue( number.floatValue() );
+            }
+            else if ( value instanceof Double )
+            {
+                numberField.setDoubleValue( number.doubleValue() );
+            }
+            else
+            {
+                numberField.setIntValue( number.intValue() );
+            }
+            field = numberField;
+        }
+        else
+        {
+            field = new Field( key, value.toString(), Store.YES, analyzed );
+        }
+        return field;
+    }
     
     abstract void removeFromDocument( Document document, String key, Object value );
     

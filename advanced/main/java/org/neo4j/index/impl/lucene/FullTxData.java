@@ -1,17 +1,18 @@
 package org.neo4j.index.impl.lucene;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.neo4j.helpers.Pair;
@@ -117,28 +118,29 @@ class FullTxData extends TxData
         return this;
     }
     
-    Pair<Set<Long>, TxData> query( Query query )
+    Pair<Collection<Long>, TxData> query( Query query, QueryContext contextOrNull )
     {
-        return internalQuery( query );
+        return internalQuery( query, contextOrNull );
     }
     
-    private Pair<Set<Long>, TxData> internalQuery( Query query )
+    private Pair<Collection<Long>, TxData> internalQuery( Query query, QueryContext contextOrNull )
     {
         if ( this.directory == null )
         {
-            return new Pair<Set<Long>, TxData>( Collections.<Long>emptySet(), this );
+            return new Pair<Collection<Long>, TxData>( Collections.<Long>emptySet(), this );
         }
         
         try
         {
-            Hits hits = new Hits( searcher(), query, null );
-            HashSet<Long> result = new HashSet<Long>();
+            Sort sorting = contextOrNull != null ? contextOrNull.sorting : null;
+            Hits hits = new Hits( searcher(), query, null, sorting );
+            Collection<Long> result = new ArrayList<Long>();
             for ( int i = 0; i < hits.length(); i++ )
             {
                 result.add( Long.parseLong( hits.doc( i ).getField(
                     LuceneIndex.KEY_DOC_ID ).stringValue() ) );
             }
-            return new Pair<Set<Long>, TxData>( result, this );
+            return new Pair<Collection<Long>, TxData>( result, this );
         }
         catch ( IOException e )
         {
@@ -200,9 +202,9 @@ class FullTxData extends TxData
     }
 
     @Override
-    Pair<Set<Long>, TxData> get( String key, Object value )
+    Pair<Collection<Long>, TxData> get( String key, Object value )
     {
-        return internalQuery( this.index.type.get( key, value ) );
+        return internalQuery( this.index.type.get( key, value ), null );
     }
     
     @Override

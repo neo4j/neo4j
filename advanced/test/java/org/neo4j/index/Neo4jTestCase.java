@@ -172,6 +172,24 @@ public abstract class Neo4jTestCase
         assertCollection( asCollection( items ), expectedItems );
     }
     
+    public static <T> void assertOrderedCollection( Collection<T> collection,
+            T... expectedItems )
+    {
+        String collectionString = join( ", ", collection.toArray() );
+        assertEquals( collectionString, expectedItems.length, collection.size() );
+        Iterator<T> itr = collection.iterator();
+        for ( int i = 0; itr.hasNext(); i++ )
+        {
+            assertEquals( expectedItems[i], itr.next() );
+        }
+    }
+    
+    public static <T> void assertOrderedCollection( Iterable<T> collection,
+            T... expectedItems )
+    {
+        assertOrderedCollection( asCollection( collection ), expectedItems );
+    }
+    
     public static <T> Collection<T> asCollection( Iterable<T> iterable )
     {
         List<T> list = new ArrayList<T>();

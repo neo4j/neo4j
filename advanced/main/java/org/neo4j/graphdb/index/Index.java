@@ -29,6 +29,8 @@ public interface Index<T extends PropertyContainer>
      */
     void add( T entity, String key, Object value );
     
+//    void put( T entity, Map<String, Object> values );
+    
     /**
      * Removes a key/value pair for {@code entity} from the index. If that
      * key/value pair isn't associated with {@code entity} in this index this
