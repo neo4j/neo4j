@@ -47,11 +47,12 @@ class MappedPersistenceWindow extends LockableWindow
         windowSize = totalSize / recordSize;
         this.recordSize = recordSize;
         this.position = position;
-        buffer = new Buffer( this );
         try
         {
-            buffer.setByteBuffer( channel.map( mapMode,
-                position * recordSize, totalSize ) );
+            buffer = new Buffer( this, channel.map( mapMode,
+                    position * recordSize, totalSize ) );
+//            buffer.setByteBuffer( channel.map( mapMode,
+//                position * recordSize, totalSize ) );
         }
         catch ( IOException e )
         {

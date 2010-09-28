@@ -25,8 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
@@ -36,7 +34,8 @@ import org.neo4j.graphdb.RelationshipType;
 class IntArrayIterator implements Iterable<Relationship>,
     Iterator<Relationship>
 {
-    private static final Logger log = Logger.getLogger( IntArrayIterator.class.getName() );
+//    private Logger log = Logger
+//        .getLogger( IntArrayIterator.class.getName() );
 
     private Iterator<RelTypeElementIterator> typeIterator;
     private RelTypeElementIterator currentTypeIterator = null;
@@ -116,8 +115,8 @@ class IntArrayIterator implements Iterable<Relationship>,
                 }
                 catch ( NotFoundException e )
                 {
-                    log.log( Level.FINE,
-                        "Unable to get relationship " + nextId, e );
+//                    log.log( Level.FINE,
+//                        "Unable to get relationship " + nextId, e );
                 }
             }
             while ( !currentTypeIterator.hasNext( nodeManager ) )

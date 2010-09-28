@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
@@ -42,7 +44,7 @@ import org.neo4j.kernel.impl.util.IntArray;
 
 class NodeImpl extends Primitive
 {
-    private ArrayMap<String,IntArray> relationshipMap = null;
+    private volatile ArrayMap<String,IntArray> relationshipMap = null;
     // private RelationshipGrabber relationshipGrabber = null;
     private RelationshipChainPosition relChainPosition = null;
 
@@ -101,7 +103,7 @@ class NodeImpl extends Primitive
 
     List<RelTypeElementIterator> getAllRelationships( NodeManager nodeManager )
     {
-        ensureFullRelationships( nodeManager );
+        ensureRelationshipMapNotNull( nodeManager );
         List<RelTypeElementIterator> relTypeList =
             new LinkedList<RelTypeElementIterator>();
         ArrayMap<String,IntArray> addMap =
@@ -140,7 +142,7 @@ class NodeImpl extends Primitive
     List<RelTypeElementIterator> getAllRelationshipsOfType( NodeManager nodeManager,
         RelationshipType... types)
     {
-        ensureFullRelationships( nodeManager );
+        ensureRelationshipMapNotNull( nodeManager );
         List<RelTypeElementIterator> relTypeList =
             new LinkedList<RelTypeElementIterator>();
         for ( RelationshipType type : types )
@@ -272,46 +274,101 @@ class NodeImpl extends Primitive
         relationshipSet.add( relId );
     }
 
-    private synchronized boolean ensureFullRelationships( NodeManager nodeManager )
+    private void ensureRelationshipMapNotNull( NodeManager nodeManager )
     {
         if ( relationshipMap == null )
         {
-            this.relChainPosition =
-                nodeManager.getRelationshipChainPosition( this );
-            this.relationshipMap = new ArrayMap<String,IntArray>();
-            getMoreRelationships( nodeManager );
-            return true;
+            loadInitialRelationships( nodeManager );
         }
-        return false;
     }
 
-    synchronized boolean getMoreRelationships( NodeManager nodeManager )
+    private void loadInitialRelationships( NodeManager nodeManager )
+    {
+        Map<Integer,RelationshipImpl> map = null;
+        synchronized ( this )
+        {
+            if ( relationshipMap == null )
+            {
+                this.relChainPosition =
+                    nodeManager.getRelationshipChainPosition( this );
+                ArrayMap<String,IntArray> tmpRelMap = new ArrayMap<String,IntArray>();
+                map = getMoreRelationships( nodeManager, tmpRelMap );
+                this.relationshipMap = tmpRelMap;
+            }
+        }
+        if ( map != null )
+        {
+            nodeManager.putAllInRelCache( map );
+        }
+    }
+
+    private Map<Integer,RelationshipImpl> getMoreRelationships( NodeManager nodeManager, 
+            ArrayMap<String,IntArray> tmpRelMap )
     {
         if ( !relChainPosition.hasMore() )
         {
-            return false;
+            return null;
         }
-        ArrayMap<String,IntArray> addMap = nodeManager.getMoreRelationships(
-            this );
+        Pair<ArrayMap<String,IntArray>,Map<Integer,RelationshipImpl>> pair = 
+            nodeManager.getMoreRelationships( this );
+        ArrayMap<String,IntArray> addMap = pair.first();
         if ( addMap.size() == 0 )
         {
-            return false;
+            return null;
         }
         for ( String type : addMap.keySet() )
         {
             IntArray addRels = addMap.get( type );
-            IntArray srcRels = relationshipMap.get( type );
+            IntArray srcRels = tmpRelMap.get( type );
             if ( srcRels == null )
             {
-                relationshipMap.put( type, addRels );
+                tmpRelMap.put( type, addRels );
             }
             else
             {
                 srcRels.addAll( addRels );
             }
         }
+        return pair.other();
+        // nodeManager.putAllInRelCache( pair.other() );
+    }
+    
+    boolean getMoreRelationships( NodeManager nodeManager )
+    {
+        // ArrayMap<String, IntArray> tmpRelMap = relationshipMap;
+        Pair<ArrayMap<String,IntArray>,Map<Integer,RelationshipImpl>> pair;
+        synchronized ( this )
+        {
+            if ( !relChainPosition.hasMore() )
+            {
+                return false;
+            }
+            
+            pair = nodeManager.getMoreRelationships( this );
+            ArrayMap<String,IntArray> addMap = pair.first();
+            if ( addMap.size() == 0 )
+            {
+                return false;
+            }
+            for ( String type : addMap.keySet() )
+            {
+                IntArray addRels = addMap.get( type );
+                // IntArray srcRels = tmpRelMap.get( type );
+                IntArray srcRels = relationshipMap.get( type );
+                if ( srcRels == null )
+                {
+                    relationshipMap.put( type, addRels );
+                }
+                else
+                {
+                    srcRels.addAll( addRels );
+                }
+            }
+        }
+        nodeManager.putAllInRelCache( pair.other() );
         return true;
     }
+        
 
     public Relationship createRelationshipTo( NodeManager nodeManager, Node otherNode,
         RelationshipType type )
