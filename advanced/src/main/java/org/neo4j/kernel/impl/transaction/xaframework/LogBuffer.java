@@ -24,13 +24,16 @@ import java.nio.channels.FileChannel;
 
 public interface LogBuffer
 {
-
     public LogBuffer put( byte b ) throws IOException;
 
     public LogBuffer putInt( int i ) throws IOException;
 
     public LogBuffer putLong( long l ) throws IOException;
 
+    public LogBuffer putFloat( float f ) throws IOException;
+    
+    public LogBuffer putDouble( double d ) throws IOException;
+    
     public LogBuffer put( byte[] bytes ) throws IOException;
 
     public LogBuffer put( char[] chars ) throws IOException;
