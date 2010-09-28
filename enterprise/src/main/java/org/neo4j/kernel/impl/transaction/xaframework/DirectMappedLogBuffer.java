@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.neo4j.kernel.impl.util.BufferNumberPutter;
+
 class DirectMappedLogBuffer implements LogBuffer
 {
     private static final int BUFFER_SIZE = 1024 * 1024 * 2;
@@ -47,39 +49,42 @@ class DirectMappedLogBuffer implements LogBuffer
         byteBuffer.clear();
     }
 
-    public LogBuffer put( byte b ) throws IOException
+    private LogBuffer putNumber( Number number, BufferNumberPutter putter ) throws IOException
     {
         if ( byteBuffer == null || 
-            (BUFFER_SIZE - byteBuffer.position()) < 1 )
+            (BUFFER_SIZE - byteBuffer.position()) < putter.size() )
         {
             getNewDirectBuffer();
         }
-        byteBuffer.put( b );
+        putter.put( byteBuffer, number );
         return this;
+    }
+    
+    public LogBuffer put( byte b ) throws IOException
+    {
+        return putNumber( b, BufferNumberPutter.BYTE );
     }
 
     public LogBuffer putInt( int i ) throws IOException
     {
-        if ( byteBuffer == null || 
-            (BUFFER_SIZE - byteBuffer.position()) < 4 )
-        {
-            getNewDirectBuffer();
-        }
-        byteBuffer.putInt( i );
-        return this;
+        return putNumber( i, BufferNumberPutter.INT );
     }
 
     public LogBuffer putLong( long l ) throws IOException
     {
-        if ( byteBuffer == null || 
-            (BUFFER_SIZE - byteBuffer.position()) < 8 )
-        {
-            getNewDirectBuffer();
-        }
-        byteBuffer.putLong( l );
-        return this;
+        return putNumber( l, BufferNumberPutter.LONG );
     }
 
+    public LogBuffer putFloat( float f ) throws IOException
+    {
+        return putNumber( f, BufferNumberPutter.FLOAT );
+    }
+    
+    public LogBuffer putDouble( double d ) throws IOException
+    {
+        return putNumber( d, BufferNumberPutter.DOUBLE );
+    }
+    
     public LogBuffer put( byte[] bytes ) throws IOException
     {
         put( bytes, 0 );
