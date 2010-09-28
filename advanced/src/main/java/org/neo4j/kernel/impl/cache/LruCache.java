@@ -223,4 +223,9 @@ public class LruCache<K,E> implements Cache<K,E>
     {
         this.adaptive = status;
     }
+
+    public void putAll( Map<K, E> map )
+    {
+        cache.putAll( map );
+    }
 }

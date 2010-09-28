@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
@@ -72,7 +73,7 @@ public class IdGeneratorImpl implements IdGenerator
 
     // number of defragged ids to grab form file in batch (also used for write)
     private int grabSize = -1;
-    private long nextFreeId = -1;
+    private AtomicLong nextFreeId = new AtomicLong( -1 );
     // total bytes read from file, used in writeIdBatch() and close()
     private long totalBytesRead = 0;
     // true if more defragged ids can be read from file
@@ -155,11 +156,11 @@ public class IdGeneratorImpl implements IdGenerator
             defraggedIdCount--;
             return id;
         }
-        if ( nextFreeId >= OVERFLOW_ID || nextFreeId < 0  )
+        if ( nextFreeId.get() >= OVERFLOW_ID || nextFreeId.get() < 0  )
         {
             throw new UnderlyingStorageException( "Id capacity exceeded" );
         }
-        return nextFreeId++;
+        return nextFreeId.getAndIncrement();
     }
 
     /**
@@ -169,9 +170,9 @@ public class IdGeneratorImpl implements IdGenerator
      * @param id
      *            The next free id
      */
-    public synchronized void setHighId( long id )
+    public void setHighId( long id )
     {
-        nextFreeId = id;
+        nextFreeId.set( id );
     }
 
     /**
@@ -180,9 +181,9 @@ public class IdGeneratorImpl implements IdGenerator
      * 
      * @return The next free "high" id
      */
-    public synchronized long getHighId()
+    public long getHighId()
     {
-        return nextFreeId;
+        return nextFreeId.get();
     }
 
     /**
@@ -202,7 +203,7 @@ public class IdGeneratorImpl implements IdGenerator
      */
     public synchronized void freeId( long id )
     {
-        if ( id < 0 || id >= nextFreeId )
+        if ( id < 0 || id >= nextFreeId.get() )
         {
             throw new IllegalArgumentException( "Illegal id[" + id + "]" );
         }
@@ -232,7 +233,7 @@ public class IdGeneratorImpl implements IdGenerator
      */
     public synchronized void close()
     {
-        if ( nextFreeId == -1 )
+        if ( nextFreeId.get() == -1 )
         {
             return;
         }
@@ -256,7 +257,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             fileChannel.position( 0 );
             ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
-            buffer.put( STICKY_GENERATOR ).putLong( nextFreeId );
+            buffer.put( STICKY_GENERATOR ).putLong( nextFreeId.get() );
             buffer.flip();
             fileChannel.write( buffer );
             // move data to remove fragmentation in file
@@ -297,7 +298,7 @@ public class IdGeneratorImpl implements IdGenerator
             fileChannel.close();
             fileChannel = null;
             // make this generator unusable
-            nextFreeId = -1;
+            nextFreeId.set( -1 );
         }
         catch ( IOException e )
         {
@@ -377,7 +378,7 @@ public class IdGeneratorImpl implements IdGenerator
                     + fileName
                     + "] delete this id generator and build a new one" );
             }
-            this.nextFreeId = buffer.getLong();
+            this.nextFreeId.set( buffer.getLong() );
             buffer.flip();
             buffer.put( STICKY_GENERATOR ).limit( 1 ).flip();
             fileChannel.position( 0 );
@@ -494,6 +495,6 @@ public class IdGeneratorImpl implements IdGenerator
 
     public synchronized long getNumberOfIdsInUse()
     {
-        return nextFreeId - defraggedIdCount;
+        return nextFreeId.get() - defraggedIdCount;
     }
 }

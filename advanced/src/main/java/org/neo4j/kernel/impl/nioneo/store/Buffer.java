@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.nio.ByteBuffer;
-import java.util.logging.Logger;
 
 /**
  * Wraps a <CODE>ByteBuffer</CODE> and is tied to a {@link PersistenceWindow}.
@@ -34,20 +33,25 @@ import java.util.logging.Logger;
  */
 public class Buffer
 {
-    private static Logger logger = Logger.getLogger( Buffer.class.getName() );
+//    private static Logger logger = Logger.getLogger( Buffer.class.getName() );
 
-    private ByteBuffer buf = null;
+    private final ByteBuffer buf;
     private final PersistenceWindow persistenceWindow;
 
-    Buffer( PersistenceWindow persistenceWindow )
+    Buffer( PersistenceWindow persistenceWindow, ByteBuffer buf )
     {
         this.persistenceWindow = persistenceWindow;
+        if ( buf == null )
+        {
+            throw new IllegalArgumentException( "null buf" );
+        }
+        this.buf = buf;
     }
 
-    void setByteBuffer( ByteBuffer byteBuffer )
-    {
-        this.buf = byteBuffer;
-    }
+//    void setByteBuffer( ByteBuffer byteBuffer )
+//    {
+//        this.buf = byteBuffer;
+//    }
 
     /**
      * Returns the position of the persistence window tied to this buffer.
@@ -85,8 +89,8 @@ public class Buffer
         }
         catch ( java.lang.IllegalArgumentException e )
         {
-            logger.severe( "Illegal buffer position: Pos=" + position()
-                + " off=" + offset + " capacity=" + buf.capacity() );
+//            logger.severe( "Illegal buffer position: Pos=" + position()
+//                + " off=" + offset + " capacity=" + buf.capacity() );
             throw e;
         }
         return this;
@@ -233,7 +237,7 @@ public class Buffer
 
     public void close()
     {
-        buf = null;
+        buf.limit( 0 );
     }
 
     public String toString()
