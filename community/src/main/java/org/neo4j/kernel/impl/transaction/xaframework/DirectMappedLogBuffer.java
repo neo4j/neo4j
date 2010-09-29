@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import org.neo4j.kernel.impl.util.BufferNumberPutter;
-
 class DirectMappedLogBuffer implements LogBuffer
 {
     private static final int BUFFER_SIZE = 1024 * 1024 * 2;
@@ -49,40 +47,48 @@ class DirectMappedLogBuffer implements LogBuffer
         byteBuffer.clear();
     }
 
-    private LogBuffer putNumber( Number number, BufferNumberPutter putter ) throws IOException
+    private void ensureCapacity( int plusSize ) throws IOException
     {
         if ( byteBuffer == null || 
-            (BUFFER_SIZE - byteBuffer.position()) < putter.size() )
+                (BUFFER_SIZE - byteBuffer.position()) < plusSize )
         {
             getNewDirectBuffer();
         }
-        putter.put( byteBuffer, number );
-        return this;
     }
     
     public LogBuffer put( byte b ) throws IOException
     {
-        return putNumber( b, BufferNumberPutter.BYTE );
+        ensureCapacity( 1 );
+        byteBuffer.put( b );
+        return this;
     }
 
     public LogBuffer putInt( int i ) throws IOException
     {
-        return putNumber( i, BufferNumberPutter.INT );
+        ensureCapacity( 4 );
+        byteBuffer.putInt( i );
+        return this;
     }
 
     public LogBuffer putLong( long l ) throws IOException
     {
-        return putNumber( l, BufferNumberPutter.LONG );
+        ensureCapacity( 8 );
+        byteBuffer.putLong( l );
+        return this;
     }
 
     public LogBuffer putFloat( float f ) throws IOException
     {
-        return putNumber( f, BufferNumberPutter.FLOAT );
+        ensureCapacity( 4 );
+        byteBuffer.putFloat( f );
+        return this;
     }
     
     public LogBuffer putDouble( double d ) throws IOException
     {
-        return putNumber( d, BufferNumberPutter.DOUBLE );
+        ensureCapacity( 8 );
+        byteBuffer.putDouble( d );
+        return this;
     }
     
     public LogBuffer put( byte[] bytes ) throws IOException
@@ -98,11 +104,7 @@ class DirectMappedLogBuffer implements LogBuffer
         {
             bytesToWrite = BUFFER_SIZE;
         }
-        if ( byteBuffer == null || 
-                (BUFFER_SIZE - byteBuffer.position()) < bytesToWrite )
-        {
-            getNewDirectBuffer();
-        }
+        ensureCapacity( bytesToWrite );
         byteBuffer.put( bytes, offset, bytesToWrite );
         offset += bytesToWrite;
         if ( offset < bytes.length )
@@ -124,11 +126,7 @@ class DirectMappedLogBuffer implements LogBuffer
         {
             charsToWrite = BUFFER_SIZE / 2;
         }
-        if ( byteBuffer == null || 
-                (BUFFER_SIZE - byteBuffer.position()) < (charsToWrite * 2 ) )
-        {
-            getNewDirectBuffer();
-        }
+        ensureCapacity( charsToWrite*2 );
         int oldPos = byteBuffer.position();
         byteBuffer.asCharBuffer().put( chars, offset, charsToWrite );
         byteBuffer.position( oldPos + (charsToWrite * 2) );

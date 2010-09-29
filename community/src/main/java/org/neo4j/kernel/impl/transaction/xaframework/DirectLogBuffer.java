@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import org.neo4j.kernel.impl.util.BufferNumberPutter;
-
 class DirectLogBuffer implements LogBuffer
 {
     private final FileChannel fileChannel;
@@ -44,38 +42,46 @@ class DirectLogBuffer implements LogBuffer
         this.buffer = buffer;
     }
 
-    public LogBuffer putNumber( Number number, BufferNumberPutter putter ) throws IOException
-    {
-        buffer.clear();
-        putter.put( buffer, number );
-        buffer.flip();
-        fileChannel.write( buffer );
-        return this;
-    }
-    
     public LogBuffer put( byte b ) throws IOException
     {
-        return putNumber( b, BufferNumberPutter.BYTE );
+        buffer.clear();
+        buffer.put( b );
+        return flipAndWrite();
     }
 
     public LogBuffer putInt( int i ) throws IOException
     {
-        return putNumber( i, BufferNumberPutter.INT );
+        buffer.clear();
+        buffer.putInt( i );
+        return flipAndWrite();
     }
 
     public LogBuffer putLong( long l ) throws IOException
     {
-        return putNumber( l, BufferNumberPutter.LONG );
+        buffer.clear();
+        buffer.putLong( l );
+        return flipAndWrite();
     }
 
     public LogBuffer putFloat( float f ) throws IOException
     {
-        return putNumber( f, BufferNumberPutter.FLOAT );
+        buffer.clear();
+        buffer.putFloat( f );
+        return flipAndWrite();
     }
     
     public LogBuffer putDouble( double d ) throws IOException
     {
-        return putNumber( d, BufferNumberPutter.DOUBLE );
+        buffer.clear();
+        buffer.putDouble( d );
+        return flipAndWrite();
+    }
+    
+    private LogBuffer flipAndWrite() throws IOException
+    {
+        buffer.flip();
+        fileChannel.write( buffer );
+        return this;
     }
     
     public LogBuffer put( byte[] bytes ) throws IOException
