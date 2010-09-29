@@ -16,7 +16,7 @@ class TxDataHolder
         this.data = initialData;
     }
 
-    void add( Long entityId, String key, Object value )
+    void add( Object entityId, String key, Object value )
     {
         this.data = this.data.add( entityId, key, value );
     }
@@ -29,7 +29,7 @@ class TxDataHolder
         this.data = this.data.add( query );
     }
 
-    void remove( Long entityId, String key, Object value )
+    void remove( Object entityId, String key, Object value )
     {
         this.data = this.data.remove( entityId, key, value );
     }

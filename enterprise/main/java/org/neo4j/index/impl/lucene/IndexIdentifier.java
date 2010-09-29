@@ -7,10 +7,12 @@ class IndexIdentifier
     final String indexName;
     final Map<String, String> config;
     final EntityType entityType;
+    final byte entityTypeByte;
     
-    public IndexIdentifier( EntityType entityType, String indexName,
+    public IndexIdentifier( byte entityTypeByte, EntityType entityType, String indexName,
             Map<String, String> customConfig )
     {
+        this.entityTypeByte = entityTypeByte;
         this.entityType = entityType;
         this.indexName = indexName;
         this.config = customConfig;
@@ -24,15 +26,14 @@ class IndexIdentifier
             return false;
         }
         IndexIdentifier i = (IndexIdentifier) o;
-        return entityType.getType().equals( i.entityType.getType() ) &&
-                indexName.equals( i.indexName );
+        return entityTypeByte == i.entityTypeByte && indexName.equals( i.indexName );
     }
     
     @Override
     public int hashCode()
     {
         int code = 17;
-        code += 7*entityType.getType().hashCode();
+        code += 7*entityTypeByte;
         code += 7*indexName.hashCode();
         return code;
     }

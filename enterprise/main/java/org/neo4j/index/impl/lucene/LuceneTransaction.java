@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.index.impl.lucene.LuceneCommand.AddCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.AddRelationshipCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.ClearCommand;
+import org.neo4j.index.impl.lucene.LuceneCommand.CreateIndexCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.RemoveCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -67,10 +68,10 @@ class LuceneTransaction extends XaTransaction
         queueCommand( index.newAddCommand( entity, key, value ) ).addCount++;
     }
     
-    private long getEntityId( PropertyContainer entity )
+    private Object getEntityId( PropertyContainer entity )
     {
         return entity instanceof Node ? ((Node) entity).getId() :
-                ((Relationship) entity).getId();
+                RelationshipId.of( (Relationship) entity );
     }
     
     <T extends PropertyContainer> TxDataBoth getTxData( LuceneIndex<T> index,
@@ -92,8 +93,7 @@ class LuceneTransaction extends XaTransaction
         value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value;
         TxDataBoth data = getTxData( index, true );
         insert( index, entity, key, value, data.removed( true ), data.added( false ) );
-        queueCommand( new RemoveCommand( index.identifier,
-                getEntityId( entity ), key, value ) ).removeCount++;
+        queueCommand( index.newRemoveCommand( entity, key, value ) ).removeCount++;
     }
     
     <T extends PropertyContainer> void clear( LuceneIndex<T> index )
@@ -129,7 +129,7 @@ class LuceneTransaction extends XaTransaction
     private <T extends PropertyContainer> void insert( LuceneIndex<T> index,
             T entity, String key, Object value, TxDataHolder insertInto, TxDataHolder removeFrom )
     {
-        long id = getEntityId( entity );
+        Object id = getEntityId( entity );
         if ( removeFrom != null )
         {
             removeFrom.remove( id, key, value );
@@ -231,13 +231,22 @@ class LuceneTransaction extends XaTransaction
                 this.commandMap.entrySet() )
             {
                 IndexIdentifier identifier = entry.getKey();
-                IndexType type = dataSource.getType( identifier );
+                IndexType type = identifier == LuceneCommand.CreateIndexCommand.FAKE_IDENTIFIER ? null :
+                        dataSource.getType( identifier );
                 IndexWriter writer = null;
                 IndexSearcher searcher = null;
                 CommandList commandList = entry.getValue();
                 Map<Long, DocumentContext> documents = new HashMap<Long, DocumentContext>();
                 for ( LuceneCommand command : commandList.commands )
                 {
+                    if ( command instanceof CreateIndexCommand )
+                    {
+                        CreateIndexCommand createCommand = (CreateIndexCommand) command;
+                        dataSource.indexStore.setIfNecessary( createCommand.getName(),
+                                createCommand.getConfig() );
+                        continue;
+                    }
+                    
                     if ( writer == null )
                     {
                         writer = dataSource.getIndexWriter( identifier );
@@ -255,15 +264,16 @@ class LuceneTransaction extends XaTransaction
                         continue;
                     }
                     
-                    long entityId = command.entityId;
-                    DocumentContext context = documents.get( entityId );
+                    Object entityId = command.entityId;
+                    long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
+                    DocumentContext context = documents.get( id );
                     if ( context == null )
                     {
-                        Document document = LuceneDataSource.findDocument( type, searcher, entityId );
+                        Document document = LuceneDataSource.findDocument( type, searcher, id );
                         context = document == null ?
-                                new DocumentContext( identifier.entityType.newDocument( entityId ) /*type.newDocument( entityId )*/, false, entityId ) :
-                                new DocumentContext( document, true, entityId );
-                        documents.put( entityId, context );
+                                new DocumentContext( identifier.entityType.newDocument( entityId ) /*type.newDocument( entityId )*/, false, id ) :
+                                new DocumentContext( document, true, id );
+                        documents.put( id, context );
                     }
                     String key = command.key;
                     Object value = command.value;
@@ -292,6 +302,9 @@ class LuceneTransaction extends XaTransaction
                 }
                 dataSource.invalidateIndexSearcher( identifier );
             }
+            
+            // TODO Set last committed txId
+//            dataSource.setLastCommittedTxId( getCommitTxId() );
             closeTxData();
         }
         catch ( IOException e )
@@ -450,5 +463,10 @@ class LuceneTransaction extends XaTransaction
     {
         TxDataHolder removed = removedTxDataOrNull( index );
         return removed != null ? removed.isRemoveAll() : false;
+    }
+
+    void createIndex( String name, Map<String, String> config )
+    {
+        queueCommand( new CreateIndexCommand( name, config ) );
     }
 }

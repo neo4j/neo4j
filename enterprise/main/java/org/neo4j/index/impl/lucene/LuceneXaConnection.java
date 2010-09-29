@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.util.Map;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
@@ -104,5 +106,10 @@ class LuceneXaConnection extends XaConnectionHelpImpl
     <T extends PropertyContainer> void clear( LuceneIndex<T> index )
     {
         getLuceneTx().clear( index );
+    }
+    
+    void createIndex( String name, Map<String, String> config )
+    {
+        getLuceneTx().createIndex( name, config );
     }
 }
