@@ -19,22 +19,69 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
+import java.util.Map;
 
-public class SoftValue<K,V> extends SoftReference<V> 
+public class NoCache<K,V> implements Cache<K,V>
 {
-    public final K key;
+    private final String name;
     
-    public SoftValue( K key, V value, ReferenceQueue<? super V> queue )
+    public NoCache( String name )
     {
-        super( value, queue );
-        this.key = key;
+        this.name = name;
+    }
+    
+    public void put( K key, V value )
+    {
+    }
+    
+    public void putAll( Map<K,V> map )
+    {
+    }
+    
+    public V get( K key )
+    {
+        return null;
+    }
+    
+    public V remove( K key )
+    {
+        return null;
+    }
+    
+    
+    public int size()
+    {
+        return 0;
+    }
+    
+    public void clear()
+    {
     }
 
-    public SoftValue( K key, V value )
+    public void elementCleaned( V value )
     {
-        super( value );
-        this.key = key;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public boolean isAdaptive()
+    {
+        return true;
+    }
+
+    public int maxSize()
+    {
+        return -1;
+    }
+
+    public void resize( int newSize )
+    {
+    }
+
+    public void setAdaptiveStatus( boolean status )
+    {
     }
 }

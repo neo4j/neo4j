@@ -89,18 +89,24 @@ public class GraphDbModule
         {
             useNewCache = false;
         }
+        boolean useNoCache = false;
+        if ( params.containsKey( "use_no_cache" ) && 
+            params.get( "use_no_cache" ).equals( "true" ) )
+        {
+            useNoCache = true;
+        }
         if ( !readOnly )
         {
             nodeManager = new NodeManager( graphDbService, cacheManager,
                     lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, useNewCache );
+                    persistenceManager, idGenerator, useNewCache, useNoCache );
         }
         else
         {
             nodeManager = new ReadOnlyNodeManager( graphDbService,
                     cacheManager, lockManager, lockReleaser,
                     transactionManager, persistenceManager, idGenerator,
-                    useNewCache );
+                    useNewCache, useNoCache );
         }
         // load and verify from PS
         RelationshipTypeData relTypes[] = null;

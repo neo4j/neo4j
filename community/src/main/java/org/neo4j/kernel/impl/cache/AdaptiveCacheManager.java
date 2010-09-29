@@ -38,8 +38,8 @@ public class AdaptiveCacheManager
     private final List<AdaptiveCacheElement> caches = 
         new LinkedList<AdaptiveCacheElement>();
 
-    private final List<SoftLruCache<?,?>> softCaches = 
-        new ArrayList<SoftLruCache<?,?>>();
+    private final List<ReferenceCache<?,?>> referenceCaches = 
+        new ArrayList<ReferenceCache<?,?>>();
     
     private AdaptiveCacheWorker workerThread;
 
@@ -52,9 +52,9 @@ public class AdaptiveCacheManager
                 + ratio + " minSize=" + minSize );
         }
         
-        if ( cache instanceof SoftLruCache<?,?> )
+        if ( cache instanceof ReferenceCache<?,?> )
         {
-            softCaches.add( (SoftLruCache<?,?>) cache );
+            referenceCaches.add( (ReferenceCache<?,?>) cache );
             return;
         }
         
@@ -84,7 +84,7 @@ public class AdaptiveCacheManager
         }
         if ( cache instanceof SoftLruCache<?,?> )
         {
-            softCaches.remove( cache );
+            referenceCaches.remove( cache );
             return;
         }
         Iterator<AdaptiveCacheElement> itr = caches.iterator();
@@ -215,8 +215,8 @@ public class AdaptiveCacheManager
             {
                 try
                 {
+                    adaptReferenceCaches();
                     adaptCaches();
-                    adaptSoftCaches();
                     this.wait( sleepTime );
                 }
                 catch ( InterruptedException e )
@@ -246,11 +246,11 @@ public class AdaptiveCacheManager
         }
     }
 
-    public synchronized void adaptSoftCaches()
+    public synchronized void adaptReferenceCaches()
     {
-        for ( SoftLruCache<?,?> cache : softCaches )
+        for ( ReferenceCache<?,?> cache : referenceCaches )
         {
-            cache.pollAll();
+            cache.pollClearedValues();
         }
     }
     

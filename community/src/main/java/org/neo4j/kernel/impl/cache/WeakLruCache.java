@@ -20,41 +20,41 @@
 package org.neo4j.kernel.impl.cache;
 
 import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class SoftLruCache<K,V> extends ReferenceCache<K,V>
+public class WeakLruCache<K,V> extends ReferenceCache<K,V>
 {
-    private final ConcurrentHashMap<K,SoftValue<K,V>> cache =
-        new ConcurrentHashMap<K,SoftValue<K,V>>();
+    private final ConcurrentHashMap<K,WeakValue<K,V>> cache =
+        new ConcurrentHashMap<K,WeakValue<K,V>>();
     
-    private final SoftReferenceQueue<K,V> refQueue = 
-        new SoftReferenceQueue<K,V>();
+    private final WeakReferenceQueue<K,V> refQueue = 
+        new WeakReferenceQueue<K,V>();
     
     private final String name;
     
-    public SoftLruCache( String name )
+    public WeakLruCache( String name )
     {
         this.name = name;
     }
     
     public void put( K key, V value )
     {
-        SoftValue<K,V> ref = 
-            new SoftValue<K,V>( key, value, (ReferenceQueue<V>) refQueue ); 
+        WeakValue<K,V> ref = 
+            new WeakValue<K,V>( key, value, (ReferenceQueue<V>) refQueue ); 
         cache.put( key, ref );
         pollClearedValues();
     }
     
     public void putAll( Map<K,V> map )
     {
-        Map<K,SoftValue<K,V>> softMap = new HashMap<K,SoftValue<K,V>>( map.size() * 2 );
+        Map<K,WeakValue<K,V>> softMap = new HashMap<K,WeakValue<K,V>>( map.size() * 2 );
         for ( Map.Entry<K, V> entry : map.entrySet() )
         {
-            SoftValue<K,V> ref = 
-                new SoftValue<K,V>( entry.getKey(), entry.getValue(), (ReferenceQueue<V>) refQueue );
+            WeakValue<K,V> ref = 
+                new WeakValue<K,V>( entry.getKey(), entry.getValue(), (ReferenceQueue<V>) refQueue );
             softMap.put( entry.getKey(), ref );
         }
         cache.putAll( softMap );
@@ -63,7 +63,7 @@ public class SoftLruCache<K,V> extends ReferenceCache<K,V>
     
     public V get( K key )
     {
-        SoftReference<V> ref = cache.get( key );
+        WeakReference<V> ref = cache.get( key );
         if ( ref != null )
         {
             if ( ref.get() == null )
@@ -77,17 +77,17 @@ public class SoftLruCache<K,V> extends ReferenceCache<K,V>
     
     public V remove( K key )
     {
-        SoftReference<V> ref = cache.remove( key );
+        WeakReference<V> ref = cache.remove( key );
         if ( ref != null )
         {
             return ref.get();
         }
         return null;
     }
-    
+
     protected void pollClearedValues()
     {
-        SoftValue<K,V> clearedValue = refQueue.safePoll();
+        WeakValue<K,V> clearedValue = refQueue.safePoll();
         while ( clearedValue != null )
         {
             cache.remove( clearedValue.key );
