@@ -28,7 +28,6 @@ import java.nio.channels.FileChannel.MapMode;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.util.BufferNumberPutter;
 
 class MemoryMappedLogBuffer implements LogBuffer
 {
@@ -85,49 +84,104 @@ class MemoryMappedLogBuffer implements LogBuffer
         }
     }
 
-    private LogBuffer putNumber( Number value, BufferNumberPutter putter ) throws IOException
-    {
-        if ( mappedBuffer == null || 
-                (MAPPED_SIZE - mappedBuffer.position()) < putter.size() )
-            {
-                getNewMappedBuffer();
-                if ( mappedBuffer == null )
-                {
-                    fallbackBuffer.clear();
-                    putter.put( fallbackBuffer, value );
-                    fallbackBuffer.flip();
-                    fileChannel.write( fallbackBuffer, mappedStartPosition );
-                    mappedStartPosition += putter.size();
-                    return this;
-                }
-            }
-            putter.put( mappedBuffer, value );
-            return this;
-    }
-    
     public LogBuffer put( byte b ) throws IOException
     {
-        return putNumber( b, BufferNumberPutter.BYTE );
+        if ( mappedBuffer == null || 
+                (MAPPED_SIZE - mappedBuffer.position()) < 1 )
+        {
+            getNewMappedBuffer();
+            if ( mappedBuffer == null )
+            {
+                fallbackBuffer.clear();
+                fallbackBuffer.put( b );
+                fallbackBuffer.flip();
+                fileChannel.write( fallbackBuffer, mappedStartPosition );
+                mappedStartPosition += 1;
+                return this;
+            }
+        }
+        mappedBuffer.put( b );
+        return this;
     }
     
     public LogBuffer putInt( int i ) throws IOException
     {
-        return putNumber( i, BufferNumberPutter.INT );
+        if ( mappedBuffer == null || 
+                (MAPPED_SIZE - mappedBuffer.position()) < 4 )
+        {
+            getNewMappedBuffer();
+            if ( mappedBuffer == null )
+            {
+                fallbackBuffer.clear();
+                fallbackBuffer.putInt( i );
+                fallbackBuffer.flip();
+                fileChannel.write( fallbackBuffer, mappedStartPosition );
+                mappedStartPosition += 4;
+                return this;
+            }
+        }
+        mappedBuffer.putInt( i );
+        return this;
     }
 
     public LogBuffer putLong( long l ) throws IOException
     {
-        return putNumber( l, BufferNumberPutter.LONG );
+        if ( mappedBuffer == null || 
+                (MAPPED_SIZE - mappedBuffer.position()) < 8 )
+        {
+            getNewMappedBuffer();
+            if ( mappedBuffer == null )
+            {
+                fallbackBuffer.clear();
+                fallbackBuffer.putLong( l );
+                fallbackBuffer.flip();
+                fileChannel.write( fallbackBuffer, mappedStartPosition );
+                mappedStartPosition += 8;
+                return this;
+            }
+        }
+        mappedBuffer.putLong( l );
+        return this;
     }
 
     public LogBuffer putFloat( float f ) throws IOException
     {
-        return putNumber( f, BufferNumberPutter.FLOAT );
+        if ( mappedBuffer == null || 
+                (MAPPED_SIZE - mappedBuffer.position()) < 4 )
+        {
+            getNewMappedBuffer();
+            if ( mappedBuffer == null )
+            {
+                fallbackBuffer.clear();
+                fallbackBuffer.putFloat( f );
+                fallbackBuffer.flip();
+                fileChannel.write( fallbackBuffer, mappedStartPosition );
+                mappedStartPosition += 4;
+                return this;
+            }
+        }
+        mappedBuffer.putFloat( f );
+        return this;
     }
     
     public LogBuffer putDouble( double d ) throws IOException
     {
-        return putNumber( d, BufferNumberPutter.DOUBLE );
+        if ( mappedBuffer == null || 
+                (MAPPED_SIZE - mappedBuffer.position()) < 8 )
+        {
+            getNewMappedBuffer();
+            if ( mappedBuffer == null )
+            {
+                fallbackBuffer.clear();
+                fallbackBuffer.putDouble( d );
+                fallbackBuffer.flip();
+                fileChannel.write( fallbackBuffer, mappedStartPosition );
+                mappedStartPosition += 8;
+                return this;
+            }
+        }
+        mappedBuffer.putDouble( d );
+        return this;
     }
     
     public LogBuffer put( byte[] bytes ) throws IOException
