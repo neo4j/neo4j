@@ -23,18 +23,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
+import javax.transaction.xa.XAResource;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.impl.transaction.TxModule;
 
@@ -59,8 +59,6 @@ public class LuceneIndexProvider extends IndexProvider
     final LuceneDataSource dataSource;
     final int lazynessThreshold = DEFAULT_LAZY_THRESHOLD;
     final GraphDatabaseService graphDb;
-    final EntityType relationshipEntityType;
-    final EntityType nodeEntityType;
     
     public LuceneIndexProvider( final GraphDatabaseService graphDb )
     {
@@ -81,36 +79,6 @@ public class LuceneIndexProvider extends IndexProvider
         broker = isReadOnly ?
                 new ReadOnlyConnectionBroker( txModule.getTxManager(), dataSource ) :
                 new ConnectionBroker( txModule.getTxManager(), dataSource );
-        nodeEntityType = new EntityType()
-        {
-            public Document newDocument( long entityId )
-            {
-                return IndexType.newBaseDocument( entityId );
-            }
-            
-            public Class<?> getType()
-            {
-                return Node.class;
-            }
-        };
-        relationshipEntityType = new EntityType()
-        {
-            public Document newDocument( long entityId )
-            {
-                Document doc = IndexType.newBaseDocument( entityId );
-                Relationship rel = graphDb.getRelationshipById( entityId );
-                doc.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + rel.getStartNode().getId(),
-                        Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
-                doc.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + rel.getEndNode().getId(),
-                        Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
-                return doc;
-            }
-
-            public Class<?> getType()
-            {
-                return Relationship.class;
-            }
-        };
     }
     
     private static boolean isReadOnly( GraphDatabaseService graphDb )
@@ -120,26 +88,68 @@ public class LuceneIndexProvider extends IndexProvider
     
     private Config getGraphDbConfig()
     {
-        return isReadOnly( graphDb ) ?
-                ((EmbeddedReadOnlyGraphDatabase) graphDb).getConfig() :
-                ((EmbeddedGraphDatabase) graphDb).getConfig();
+        return ((AbstractGraphDatabase) graphDb).getConfig();
     }
     
     public Index<Node> nodeIndex( String indexName, Map<String, String> config )
     {
-        return new LuceneIndex.NodeIndex( this, new IndexIdentifier(
-                nodeEntityType, indexName, config( indexName, config ) ) );
+        return new LuceneIndex.NodeIndex( this, new IndexIdentifier( LuceneCommand.NODE,
+                dataSource.nodeEntityType, indexName, config( indexName, config ) ) );
     }
     
-    private Map<String, String> config( String indexName, Map<String, String> config )
+    private Map<String, String> config( final String indexName, Map<String, String> config )
     {
-        return dataSource.indexStore.getIndexConfig( indexName,
+        final Pair<Map<String, String>, Boolean> result = dataSource.indexStore.getIndexConfig( indexName,
                 config, null, LuceneConfigDefaultsFiller.INSTANCE );
+        if ( result.other() )
+        {
+            Thread creator = new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    Transaction tx = graphDb.beginTx();
+                    try
+                    {
+                        LuceneXaConnection connection = (LuceneXaConnection) dataSource.getXaConnection();
+                        javax.transaction.Transaction javaxTx = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getTxManager().getTransaction();
+                        javaxTx.enlistResource( connection.getXaResource() );
+                        try
+                        {
+                            connection.getLuceneTx().createIndex( indexName, result.first() );
+                        }
+                        finally
+                        {
+                            javaxTx.delistResource( connection.getXaResource(), XAResource.TMSUCCESS );
+                        }
+                        tx.success();
+                    }
+                    catch ( Exception e )
+                    {
+                        e.printStackTrace();
+                    }
+                    finally
+                    {
+                        tx.finish();
+                    }
+                }
+            };
+            creator.start();
+            try
+            {
+                creator.join();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+            }
+        }
+        return result.first();
     }
 
     public RelationshipIndex relationshipIndex( String indexName, Map<String, String> config )
     {
-        return new LuceneIndex.RelationshipIndex( this, new IndexIdentifier(
-                relationshipEntityType, indexName, config( indexName, config ) ) );
+        return new LuceneIndex.RelationshipIndex( this, new IndexIdentifier( LuceneCommand.RELATIONSHIP,
+                dataSource.relationshipEntityType, indexName, config( indexName, config ) ) );
     }
 }

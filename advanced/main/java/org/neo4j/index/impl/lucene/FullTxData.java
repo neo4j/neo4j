@@ -29,16 +29,17 @@ class FullTxData extends TxData
         super( index );
     }
     
-    TxData add( Long entityId, String key, Object value )
+    TxData add( Object entityId, String key, Object value )
     {
         try
         {
             ensureLuceneDataInstantiated();
-            Document document = LuceneDataSource.findDocument( index.type, searcher(), entityId );
+            long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
+            Document document = LuceneDataSource.findDocument( index.type, searcher(), id );
             if ( document != null )
             {
                 index.type.addToDocument( document, key, value );
-                writer.updateDocument( index.type.idTerm( entityId ), document );
+                writer.updateDocument( index.type.idTerm( id ), document );
             }
             else
             {
@@ -83,22 +84,23 @@ class FullTxData extends TxData
         }
     }
 
-    TxData remove( Long entityId, String key, Object value )
+    TxData remove( Object entityId, String key, Object value )
     {
         try
         {
             ensureLuceneDataInstantiated();
-            Document document = LuceneDataSource.findDocument( index.type, searcher(), entityId );
+            long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
+            Document document = LuceneDataSource.findDocument( index.type, searcher(), id );
             if ( document != null )
             {
                 index.type.removeFromDocument( document, key, value );
                 if ( LuceneDataSource.documentIsEmpty( document ) )
                 {
-                    writer.deleteDocuments( index.type.idTerm( entityId ) );
+                    writer.deleteDocuments( index.type.idTerm( id ) );
                 }
                 else
                 {
-                    writer.updateDocument( index.type.idTerm( entityId ), document );
+                    writer.updateDocument( index.type.idTerm( id ), document );
                 }
             }
             invalidateSearcher();

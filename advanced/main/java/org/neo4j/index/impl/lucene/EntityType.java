@@ -4,7 +4,7 @@ import org.apache.lucene.document.Document;
 
 interface EntityType
 {
-    Document newDocument( long entityId );
+    Document newDocument( Object entityId );
     
     Class<?> getType();
 }

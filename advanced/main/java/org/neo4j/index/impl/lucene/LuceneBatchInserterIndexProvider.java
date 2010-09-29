@@ -14,7 +14,6 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.impl.IndexStore;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
-import org.neo4j.kernel.impl.batchinsert.SimpleRelationship;
 
 /**
  * The {@link BatchInserter} version of {@link LuceneIndexProvider}. Indexes
@@ -38,9 +37,9 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
         this.typeCache = new IndexTypeCache();
         this.nodeEntityType = new EntityType()
         {
-            public Document newDocument( long entityId )
+            public Document newDocument( Object entityId )
             {
-                return IndexType.newBaseDocument( entityId );
+                return IndexType.newBaseDocument( (Long) entityId );
             }
             
             public Class<?> getType()
@@ -50,13 +49,13 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
         };
         this.relationshipEntityType = new EntityType()
         {
-            public Document newDocument( long entityId )
+            public Document newDocument( Object entityId )
             {
-                Document doc = IndexType.newBaseDocument( entityId );
-                SimpleRelationship rel = inserter.getRelationshipById( entityId );
-                doc.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + rel.getStartNode(),
+                RelationshipId relId = (RelationshipId) entityId;
+                Document doc = IndexType.newBaseDocument( relId.id );
+                doc.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + relId.startNode,
                         Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
-                doc.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + rel.getEndNode(),
+                doc.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + relId.endNode,
                         Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
                 return doc;
             }
@@ -70,20 +69,20 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
     
     public BatchInserterIndex nodeIndex( String indexName, Map<String, String> config )
     {
-        return index( new IndexIdentifier( nodeEntityType, indexName,
+        return index( new IndexIdentifier( LuceneCommand.NODE, nodeEntityType, indexName,
                 config( indexName, config ) ) );
     }
 
     private Map<String, String> config( String indexName, Map<String, String> config )
     {
         return indexStore.getIndexConfig( indexName, config, null,
-                LuceneConfigDefaultsFiller.INSTANCE );
+                LuceneConfigDefaultsFiller.INSTANCE ).first();
     }
 
     public BatchInserterIndex relationshipIndex( String indexName, Map<String, String> config )
     {
-        return index( new IndexIdentifier( relationshipEntityType, indexName,
-                config( indexName, config ) ) );
+        return index( new IndexIdentifier( LuceneCommand.RELATIONSHIP, relationshipEntityType,
+                indexName, config( indexName, config ) ) );
     }
 
     private BatchInserterIndex index( IndexIdentifier identifier )

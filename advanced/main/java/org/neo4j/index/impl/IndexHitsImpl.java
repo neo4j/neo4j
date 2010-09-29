@@ -19,6 +19,7 @@ package org.neo4j.index.impl;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -30,7 +31,7 @@ import org.neo4j.graphdb.index.IndexHits;
  *
  * @param <T> the type of items.
  */
-public class SimpleIndexHits<T> implements IndexHits<T>
+public class IndexHitsImpl<T> implements IndexHits<T>
 {
     private final Iterator<T> hits;
     private final int size;
@@ -41,7 +42,7 @@ public class SimpleIndexHits<T> implements IndexHits<T>
      * @param hits the hits to iterate through.
      * @param size the size of the iteration.
      */
-    public SimpleIndexHits( Iterable<T> hits, int size )
+    public IndexHitsImpl( Iterable<T> hits, int size )
     {
         this( hits.iterator(), size );
     }
@@ -52,7 +53,7 @@ public class SimpleIndexHits<T> implements IndexHits<T>
      * @param hits the hits to iterate through.
      * @param size the size of the iteration.
      */
-    public SimpleIndexHits( Iterator<T> hits, int size )
+    public IndexHitsImpl( Iterator<T> hits, int size )
     {
         this.hits = hits;
         this.size = size;

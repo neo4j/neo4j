@@ -8,6 +8,7 @@ import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 
 public class IndexStore
@@ -127,14 +128,15 @@ public class IndexStore
         }
     }
     
-    public synchronized void setIfNecessary( String name, Map<String, String> config )
+    public synchronized boolean setIfNecessary( String name, Map<String, String> config )
     {
         if ( this.config.containsKey( name ) )
         {
-            return;
+            return false;
         }
         this.config.put( name, config );
         write();
+        return true;
     }
     
     private void write()
@@ -182,7 +184,7 @@ public class IndexStore
         PrimitiveUtils.writeLengthAndString( channel, buffer( 200 ), value );
     }
     
-    public Map<String, String> getIndexConfig( String indexName,
+    public Pair<Map<String, String>, Boolean> getIndexConfig( String indexName,
             Map<String, String> userConfig, Map<?, ?> dbConfig, DefaultsFiller defaultsFiller )
     {
         // 1. Check stored config
@@ -227,7 +229,7 @@ public class IndexStore
             configToUse = defaultsFiller.fill( MapUtil.stringMap( "provider", provider ) );
         }
         
-        setIfNecessary( indexName, configToUse );
-        return configToUse;
+        boolean created = setIfNecessary( indexName, configToUse );
+        return new Pair<Map<String, String>, Boolean>( configToUse, created );
     }
 }

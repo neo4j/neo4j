@@ -15,14 +15,14 @@ abstract class TxData
         this.index = index;
     }
 
-    abstract TxData add( Long entityId, String key, Object value );
+    abstract TxData add( Object entityId, String key, Object value );
     
     /**
      * Only for the {@link TxData} representing removal.
      */
     abstract TxData add( Query query );
 
-    abstract TxData remove( Long entityId, String key, Object value );
+    abstract TxData remove( Object entityId, String key, Object value );
 
     abstract TxData remove( Query query );
 

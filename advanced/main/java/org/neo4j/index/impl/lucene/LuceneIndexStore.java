@@ -28,23 +28,15 @@ import java.util.Random;
 
 class LuceneIndexStore
 {
-    private static final int SIZEOF_ID_DATA = 24;
+    private static final int FILE_LENGTH = 8*4;
     
     private long creationTime;
     private long randomIdentifier;
     private long version;
     
     private final FileChannel fileChannel;
-    private ByteBuffer dontUseBuffer = ByteBuffer.allocate( SIZEOF_ID_DATA );
-    
-    private ByteBuffer buffer( int size )
-    {
-        if ( dontUseBuffer.capacity() < size )
-        {
-            dontUseBuffer = ByteBuffer.allocate( size*2 );
-        }
-        return dontUseBuffer;
-    }
+    private final ByteBuffer buf = ByteBuffer.allocate( FILE_LENGTH );
+    private long lastCommittedTx;
     
     public LuceneIndexStore( String store )
     {
@@ -55,23 +47,25 @@ class LuceneIndexStore
         try
         {
             fileChannel = new RandomAccessFile( store, "rw" ).getChannel();
-            ByteBuffer buffer = buffer( SIZEOF_ID_DATA );
-            if ( fileChannel.read( buffer ) != SIZEOF_ID_DATA )
+            int bytesRead = fileChannel.read( buf );
+            if ( bytesRead != FILE_LENGTH && bytesRead != FILE_LENGTH-8 )
             {
-                throw new RuntimeException( "Expected to read " + SIZEOF_ID_DATA + " bytes" );
+                throw new RuntimeException( "Expected to read " + FILE_LENGTH +
+                        " or " + (FILE_LENGTH-8) + " bytes" );
             }
-            buffer.flip();
-            creationTime = buffer.getLong();
-            randomIdentifier = buffer.getLong();
-            version = buffer.getLong();
+            buf.flip();
+            creationTime = buf.getLong();
+            randomIdentifier = buf.getLong();
+            version = buf.getLong();
+            lastCommittedTx = bytesRead == FILE_LENGTH ? buf.getLong() : 1;
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
     }
-
-    void create( String store )
+    
+    static void create( String store )
     {
         if ( new File( store ).exists() )
         {
@@ -81,12 +75,12 @@ class LuceneIndexStore
         {
             FileChannel fileChannel = 
                 new RandomAccessFile( store, "rw" ).getChannel();
-            ByteBuffer buf = ByteBuffer.allocate( SIZEOF_ID_DATA );
+            ByteBuffer buf = ByteBuffer.allocate( FILE_LENGTH );
             long time = System.currentTimeMillis();
             long identifier = new Random( time ).nextLong();
-            buf.putLong( time ).putLong( identifier ).putLong( 0 );
+            buf.putLong( time ).putLong( identifier ).putLong( 0 ).putLong( 1 );
             buf.flip();
-            writeIdData( fileChannel, buf );
+            writeBuffer( fileChannel, buf );
             fileChannel.close();
         }
         catch ( IOException e )
@@ -95,11 +89,11 @@ class LuceneIndexStore
         }
     }
 
-    private static void writeIdData( FileChannel channel, ByteBuffer buffer ) throws IOException
+    private static void writeBuffer( FileChannel fileChannel, ByteBuffer buf ) throws IOException
     {
-        if ( channel.write( buffer, 0 ) != SIZEOF_ID_DATA )
+        if ( fileChannel.write( buf ) != FILE_LENGTH )
         {
-            throw new RuntimeException( "Expected to write " + SIZEOF_ID_DATA + " bytes" );
+            throw new RuntimeException( "Expected to write " + FILE_LENGTH + " bytes" );
         }
     }
 
@@ -132,15 +126,27 @@ class LuceneIndexStore
         writeOut();
     }
     
+    public synchronized void setLastCommittedTx( long txId )
+    {
+        this.lastCommittedTx = txId;
+//        writeOut();
+    }
+    
+    public long getLastCommittedTx()
+    {
+        return this.lastCommittedTx;
+    }
+    
     private void writeOut()
     {
-        ByteBuffer buffer = buffer( SIZEOF_ID_DATA );
-        buffer.clear();
-        buffer.putLong( creationTime ).putLong( randomIdentifier ).putLong( version );
-        buffer.flip();
+        buf.clear();
+        buf.putLong( creationTime ).putLong( randomIdentifier ).putLong( 
+            version ).putLong( lastCommittedTx );
+        buf.flip();
         try
         {
-            writeIdData( fileChannel, buffer );
+            fileChannel.position( 0 );
+            writeBuffer( fileChannel, buf );
         }
         catch ( IOException e )
         {
