@@ -35,6 +35,8 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -47,6 +49,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.index.impl.IndexStore;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -115,6 +118,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private final IndexTypeCache typeCache;
     private boolean closed;
     private final Cache caching;
+    EntityType nodeEntityType;
+    EntityType relationshipEntityType;
 
     /**
      * Constructs this data source.
@@ -141,7 +146,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             XaCommandFactory cf = new LuceneCommandFactory();
             XaTransactionFactory tf = new LuceneTransactionFactory( store );
-            xaContainer = XaContainer.create( this.baseStorePath + "/lucene.log", cf, tf, params );
+            xaContainer = XaContainer.create( this.baseStorePath + "/lucene.log", cf,
+                    tf, params );
             try
             {
                 xaContainer.openLogicalLog();
@@ -153,13 +159,44 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
             
             xaContainer.getLogicalLog().setKeepLogs(
-                    shouldKeepLog( (String) params.get( "keep_logical_logs" ), DEFAULT_NAME ) );
+                    shouldKeepLog( (String) params.get( Config.KEEP_LOGICAL_LOGS ), DEFAULT_NAME ) );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
         }
         else
         {
             xaContainer = null;
         }
+        
+        nodeEntityType = new EntityType()
+        {
+            public Document newDocument( Object entityId )
+            {
+                return IndexType.newBaseDocument( (Long) entityId );
+            }
+            
+            public Class<?> getType()
+            {
+                return Node.class;
+            }
+        };
+        relationshipEntityType = new EntityType()
+        {
+            public Document newDocument( Object entityId )
+            {
+                RelationshipId relId = (RelationshipId) entityId;
+                Document doc = IndexType.newBaseDocument( relId.id );
+                doc.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + relId.startNode,
+                        Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
+                doc.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + relId.endNode,
+                        Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
+                return doc;
+            }
+
+            public Class<?> getType()
+            {
+                return Relationship.class;
+            }
+        };
     }
     
     IndexType getType( IndexIdentifier identifier )
@@ -289,6 +326,12 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             return store.incrementVersion();
         }
+//
+//        @Override
+//        public long getLastCommittedTx()
+//        {
+//            return store.getLastCommittedTx();
+//        }
     }
     
     void getReadLock()
@@ -347,11 +390,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         File path = new File( storeDir, "lucene" );
         String extra = null;
-        if ( identifier.entityType.getType().equals( Node.class ) )
+        if ( identifier.entityTypeByte == LuceneCommand.NODE )
         {
             extra = "node";
         }
-        else if ( identifier.entityType.getType().equals( Relationship.class ) )
+        else if ( identifier.entityTypeByte == LuceneCommand.RELATIONSHIP )
         {
             extra = "relationship";
         }
@@ -596,4 +639,21 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         return store.getVersion();
     }
+    
+//    @Override
+//    public long getLastCommittedTxId()
+//    {
+//        return store.getLastCommittedTx();
+//    }
+
+    public void setLastCommittedTxId( long txId )
+    {
+        store.setLastCommittedTx( txId );
+    }
+    
+//    @Override
+//    public XaContainer getXaContainer()
+//    {
+//        return this.xaContainer;
+//    }
 }

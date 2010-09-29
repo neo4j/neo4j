@@ -24,7 +24,7 @@ import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.impl.IdToEntityIterator;
 import org.neo4j.index.impl.PrimitiveUtils;
-import org.neo4j.index.impl.SimpleIndexHits;
+import org.neo4j.index.impl.IndexHitsImpl;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
@@ -242,7 +242,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
             idIteratorSize = ids.size();
         }
         idIterator = FilteringIterator.noDuplicates( idIterator );
-        IndexHits<T> hits = new SimpleIndexHits<T>(
+        IndexHits<T> hits = new IndexHitsImpl<T>(
                 IteratorUtil.asIterable( new IdToEntityIterator<T>( idIterator )
                 {
                     @Override
@@ -331,6 +331,9 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     protected abstract LuceneCommand newAddCommand( PropertyContainer entity,
             String key, Object value );
     
+    protected abstract LuceneCommand newRemoveCommand( PropertyContainer entity,
+            String key, Object value );
+    
     static class NodeIndex extends LuceneIndex<Node>
     {
         NodeIndex( LuceneIndexProvider service,
@@ -354,7 +357,15 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         @Override
         protected LuceneCommand newAddCommand( PropertyContainer entity, String key, Object value )
         {
-            return new LuceneCommand.AddCommand( identifier, ((Node) entity).getId(), key, value );
+            return new LuceneCommand.AddCommand( identifier, LuceneCommand.NODE,
+                    ((Node) entity).getId(), key, value );
+        }
+
+        @Override
+        protected LuceneCommand newRemoveCommand( PropertyContainer entity, String key, Object value )
+        {
+            return new LuceneCommand.RemoveCommand( identifier, LuceneCommand.NODE,
+                    ((Node) entity).getId(), key, value );
         }
     }
     
@@ -423,8 +434,16 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         protected LuceneCommand newAddCommand( PropertyContainer entity, String key, Object value )
         {
             Relationship rel = (Relationship) entity;
-            return new LuceneCommand.AddRelationshipCommand( identifier, rel.getId(),
-                    key, value, rel.getStartNode().getId(), rel.getEndNode().getId() );
+            return new LuceneCommand.AddRelationshipCommand( identifier, LuceneCommand.RELATIONSHIP,
+                    RelationshipId.of( rel ), key, value );
+        }
+
+        @Override
+        protected LuceneCommand newRemoveCommand( PropertyContainer entity, String key, Object value )
+        {
+            Relationship rel = (Relationship) entity;
+            return new LuceneCommand.RemoveCommand( identifier, LuceneCommand.RELATIONSHIP,
+                    rel.getId(), key, value );
         }
     }
 }

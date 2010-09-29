@@ -13,7 +13,7 @@ import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.index.impl.PrimitiveUtils;
-import org.neo4j.index.impl.SimpleIndexHits;
+import org.neo4j.index.impl.IndexHitsImpl;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 
@@ -155,7 +155,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             Hits hits = new Hits( searcher(), query, null );
             SearchResult result = new SearchResult( new HitsIterator( hits ), hits.length() );
             DocToIdIterator itr = new DocToIdIterator( result, null, null );
-            return new SimpleIndexHits<Long>( FilteringIterator.noDuplicates( itr ), result.size );
+            return new IndexHitsImpl<Long>( FilteringIterator.noDuplicates( itr ), result.size );
         }
         catch ( IOException e )
         {
