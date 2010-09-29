@@ -79,6 +79,18 @@
           </archive>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.ops4j</groupId>
+        <artifactId>maven-pax-plugin</artifactId>
+        <version>1.4</version>
+        <configuration>
+          <framework>felix</framework>
+          <provision>
+            <param>mvn:org.apache.geronimo.specs/geronimo-jta_1.1_spec/1.1.1</param>
+            <param>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.jline/0.9.94_1</param>
+          </provision>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
