@@ -157,10 +157,10 @@ class PersistenceWindowPool
                     {
                         dpw = new PersistenceRow( position, blockSize, 
                             fileChannel );
-                        if ( operationType == OperationType.READ )
-                        {
-                            readPos = true;
-                        }
+                    }
+                    if ( operationType == OperationType.READ )
+                    {
+                        readPos = true;
                     }
                     window = dpw;
                     activeRowWindows.put( (int) position, dpw );
@@ -238,15 +238,16 @@ class PersistenceWindowPool
         dumpStatistics();
     }
 
-    synchronized void flushAll()
+    void flushAll()
     {
 //        synchronized ( activeRowWindows )
 //        {
             for ( BrickElement element : brickArray )
             {
-                if ( element.getWindow() != null )
+                PersistenceWindow window = element.getWindow();
+                if ( window != null )
                 {
-                    element.getWindow().force();
+                    window.force();
                 }
             }
 //        }

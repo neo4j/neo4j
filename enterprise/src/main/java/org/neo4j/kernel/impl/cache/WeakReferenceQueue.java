@@ -20,21 +20,16 @@
 package org.neo4j.kernel.impl.cache;
 
 import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
 
-public class SoftValue<K,V> extends SoftReference<V> 
+public class WeakReferenceQueue<K,V> extends ReferenceQueue<WeakValue>
 {
-    public final K key;
-    
-    public SoftValue( K key, V value, ReferenceQueue<? super V> queue )
+    public WeakReferenceQueue()
     {
-        super( value, queue );
-        this.key = key;
+        super();
     }
-
-    public SoftValue( K key, V value )
+    
+    public WeakValue<K,V> safePoll()
     {
-        super( value );
-        this.key = key;
+        return (WeakValue) poll();
     }
 }

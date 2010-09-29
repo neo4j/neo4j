@@ -184,7 +184,7 @@
           <groups>
             <group>
               <title>Graph database</title>
-              <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*
+              <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*:org.apache.*
                   </packages>
             </group>
             <group>

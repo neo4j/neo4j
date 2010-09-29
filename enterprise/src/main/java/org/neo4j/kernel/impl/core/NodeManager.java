@@ -37,7 +37,9 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.cache.NoCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
+import org.neo4j.kernel.impl.cache.WeakLruCache;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
@@ -69,7 +71,9 @@ public class NodeManager
     private final PersistenceManager persistenceManager;
     private final IdGenerator idGenerator;
 
-    private boolean useAdaptiveCache = true;
+    private boolean useAdaptiveCache = false;
+    private boolean useNewCache = true;
+    private boolean useNoCache = false;
     private float adaptiveCacheHeapRatio = 0.77f;
     private int minNodeCacheSize = 0;
     private int minRelCacheSize = 0;
@@ -84,7 +88,7 @@ public class NodeManager
             AdaptiveCacheManager cacheManager, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, IdGenerator idGenerator,
-            boolean useNewCaches )
+            boolean useNewCache, boolean useNoCache )
     {
         this.graphDbService = graphDb;
         this.cacheManager = cacheManager;
@@ -99,12 +103,26 @@ public class NodeManager
         this.idGenerator = idGenerator;
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator );
-        if ( useNewCaches )
+        this.useNewCache = useNewCache;
+        this.useNoCache = useNoCache;
+        if ( this.useNoCache )
         {
-            nodeCache = new SoftLruCache<Integer,NodeImpl>(
+            nodeCache = new NoCache<Integer,NodeImpl>(
                 "NodeCache" );
-            relCache = new SoftLruCache<Integer,RelationshipImpl>(
+            relCache = new NoCache<Integer,RelationshipImpl>(
                 "RelationshipCache" );
+            
+        }
+        else if ( useNewCache )
+        {
+            nodeCache = new WeakLruCache<Integer,NodeImpl>(
+                "NodeCache" );
+            relCache = new WeakLruCache<Integer,RelationshipImpl>(
+                "RelationshipCache" );
+//            nodeCache = new SoftLruCache<Integer,NodeImpl>(
+//                "NodeCache" );
+//            relCache = new SoftLruCache<Integer,RelationshipImpl>(
+//                "RelationshipCache" );
         }
         else
         {
@@ -225,7 +243,7 @@ public class NodeManager
         parseParams( params );
         nodeCache.resize( maxNodeCacheSize );
         relCache.resize( maxRelCacheSize );
-        if ( useAdaptiveCache )
+        if ( useAdaptiveCache && !useNewCache )
         {
             cacheManager.registerCache( nodeCache, adaptiveCacheHeapRatio,
                 minNodeCacheSize );
@@ -237,7 +255,7 @@ public class NodeManager
 
     public void stop()
     {
-        if ( useAdaptiveCache )
+        if ( useAdaptiveCache && !useNewCache )
         {
             cacheManager.stop();
             cacheManager.unregisterCache( nodeCache );

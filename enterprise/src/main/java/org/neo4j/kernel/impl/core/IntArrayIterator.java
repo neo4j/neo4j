@@ -34,9 +34,6 @@ import org.neo4j.graphdb.RelationshipType;
 class IntArrayIterator implements Iterable<Relationship>,
     Iterator<Relationship>
 {
-//    private Logger log = Logger
-//        .getLogger( IntArrayIterator.class.getName() );
-
     private Iterator<RelTypeElementIterator> typeIterator;
     private RelTypeElementIterator currentTypeIterator = null;
     private final NodeImpl fromNode;
@@ -66,15 +63,6 @@ class IntArrayIterator implements Iterable<Relationship>,
         this.types = types;
     }
 
-//    IntArrayIterator( Iterator<RelTypeElementIterator> rels, NodeImpl fromNode,
-//        Direction direction, NodeManager nodeManager )
-//    {
-//        this.typeIterator = rels;
-//        this.fromNode = fromNode;
-//        this.direction = direction;
-//        this.nodeManager = nodeManager;
-//    }
-    
     public Iterator<Relationship> iterator()
     {
         return this;
@@ -114,9 +102,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                     }
                 }
                 catch ( NotFoundException e )
-                {
-//                    log.log( Level.FINE,
-//                        "Unable to get relationship " + nextId, e );
+                { // ok deleted 
                 }
             }
             while ( !currentTypeIterator.hasNext( nodeManager ) )

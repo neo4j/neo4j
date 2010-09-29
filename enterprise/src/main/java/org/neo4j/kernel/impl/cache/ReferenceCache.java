@@ -19,22 +19,7 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
-
-public class SoftValue<K,V> extends SoftReference<V> 
+public abstract class ReferenceCache<K,V> implements Cache<K,V>
 {
-    public final K key;
-    
-    public SoftValue( K key, V value, ReferenceQueue<? super V> queue )
-    {
-        super( value, queue );
-        this.key = key;
-    }
-
-    public SoftValue( K key, V value )
-    {
-        super( value );
-        this.key = key;
-    }
+    protected abstract void pollClearedValues();
 }
