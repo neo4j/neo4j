@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>7</version>
+    <artifactId>parent-central</artifactId>
+    <version>1-SNAPSHOT</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-online-backup</artifactId>
   <version>0.7-SNAPSHOT</version>
   <name>Onlinebackup</name>
-  <description>Backup of resources using the XA framework</description>
+  <description>Backup of resources using the XA framework.</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
   <properties>
@@ -18,17 +18,15 @@
   </properties>
 
   <scm>
-    <connection>
-            scm:svn:https://svn.neo4j.org/components/online-backup/trunk/
-        </connection>
-    <url>https://trac.neo4j.org/browser/components/online-backup
-        </url>
+    <connection>scm:svn:https://svn.neo4j.org/components/online-backup/trunk/</connection>
+    <developerConnection>${project.scm.connection}</developerConnection>
+    <url>https://trac.neo4j.org/browser/components/online-backup</url>
   </scm>
+
   <licenses>
     <license>
       <name>GNU Affero General Public License, Version 3</name>
-      <url>https://svn.neo4j.org/components/${short-name}/trunk/LICENSE.txt
-            </url>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
     </license>
   </licenses>
 
@@ -66,3 +64,4 @@
     </dependency>
   </dependencies>
 </project>
+
