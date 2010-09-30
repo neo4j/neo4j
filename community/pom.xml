@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>8-SNAPSHOT</version>
+    <artifactId>neo4j</artifactId>
+    <version>1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -27,8 +27,16 @@
 
   <scm>
     <connection>scm:svn:https://svn.neo4j.org/components/kernel/trunk/</connection>
+    <developerConnection>${project.scm.connection}</developerConnection>
     <url>https://trac.neo4j.org/browser/components/kernel</url>
   </scm>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
 
   <issueManagement>
     <system>Trac</system>
