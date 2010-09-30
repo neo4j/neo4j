@@ -33,8 +33,8 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.impl.transaction.TxModule;
 
@@ -88,7 +88,19 @@ public class LuceneIndexProvider extends IndexProvider
     
     private Config getGraphDbConfig()
     {
-        return ((AbstractGraphDatabase) graphDb).getConfig();
+        if ( graphDb instanceof EmbeddedGraphDatabase )
+        {
+            return ( (EmbeddedGraphDatabase) graphDb ).getConfig();
+        }
+        else if ( graphDb instanceof EmbeddedReadOnlyGraphDatabase )
+        {
+            return ( (EmbeddedReadOnlyGraphDatabase) graphDb ).getConfig();
+        }
+        else
+        {
+            throw new IllegalStateException( "Unsupported Graph Database implementation: "
+                                             + graphDb.getClass() );
+        }
     }
     
     public Index<Node> nodeIndex( String indexName, Map<String, String> config )
@@ -112,7 +124,7 @@ public class LuceneIndexProvider extends IndexProvider
                     try
                     {
                         LuceneXaConnection connection = (LuceneXaConnection) dataSource.getXaConnection();
-                        javax.transaction.Transaction javaxTx = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getTxManager().getTransaction();
+                        javax.transaction.Transaction javaxTx = getGraphDbConfig().getTxModule().getTxManager().getTransaction();
                         javaxTx.enlistResource( connection.getXaResource() );
                         try
                         {

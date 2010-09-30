@@ -28,7 +28,6 @@ import java.util.Map;
 import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.util.BufferNumberPutter;
 
 abstract class LuceneCommand extends XaCommand
 {
@@ -87,28 +86,23 @@ abstract class LuceneCommand extends XaCommand
         buffer.putInt( key.length );
         
         byte valueType = 0;
-        BufferNumberPutter putter = null;
         if ( value instanceof Number )
         {
             if ( value instanceof Float )
             {
                 valueType = VALUE_TYPE_FLOAT;
-                putter = BufferNumberPutter.FLOAT;
             }
             else if ( value instanceof Double )
             {
                 valueType = VALUE_TYPE_DOUBLE;
-                putter = BufferNumberPutter.DOUBLE;
             }
             else if ( value instanceof Long )
             {
                 valueType = VALUE_TYPE_LONG;
-                putter = BufferNumberPutter.LONG;
             }
             else
             {
                 valueType = VALUE_TYPE_INT;
-                putter = BufferNumberPutter.INT;
             }
         }
         else
@@ -128,7 +122,24 @@ abstract class LuceneCommand extends XaCommand
         }
         else
         {
-            putter.put( buffer, (Number) value );
+            Number number = (Number) value;
+            switch ( valueType )
+            {
+            case VALUE_TYPE_FLOAT:
+                buffer.put( number.byteValue() );
+                break;
+            case VALUE_TYPE_DOUBLE:
+                buffer.putLong( Double.doubleToRawLongBits( number.doubleValue() ) );
+                break;
+            case VALUE_TYPE_LONG:
+                buffer.putLong( number.longValue() );
+                break;
+            case VALUE_TYPE_INT:
+                buffer.putInt( number.intValue() );
+                break;
+            default:
+                throw new Error( "Should not reach here." );
+            }
         }
     }
     
