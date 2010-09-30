@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>7</version>
+    <artifactId>parent-central</artifactId>
+    <version>1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -12,15 +12,21 @@
   <version>1.2-SNAPSHOT</version>
   <name>Neo4j - Generic shell</name>
   <description>
-		A generic command shell with a client and server part
+		A generic command shell with a client and server part.
 	</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
   <properties>
-    <jline.version>0.9.94</jline.version>
-    <jta.version>1.1</jta.version>
+    <sun.jta.version>1.1</sun.jta.version>
     <neo4j.version>${project.version}</neo4j.version>
-    <lucene.version>2.9.1</lucene.version>
+    <lucene.groupId>org.apache.servicemix.bundles</lucene.groupId>
+    <lucene.artifactId>org.apache.servicemix.bundles.lucene</lucene.artifactId>
+    <lucene.version>3.0.1_2</lucene.version>
+    <lucene.main.version>3.0.1</lucene.main.version>
+    <jline.groupId>org.apache.servicemix.bundles</jline.groupId>
+    <jline.artifactId>org.apache.servicemix.bundles.jline</jline.artifactId>
+    <jline.version>0.9.94_1</jline.version>
+    <jline.main.version>0.9.94</jline.main.version>
     <bundle.namespace>org.neo4j.shell</bundle.namespace>
     <short-name>shell</short-name>
   </properties>
@@ -28,12 +34,17 @@
   <packaging>bundle</packaging>
 
   <scm>
-    <connection>
-			scm:svn:https://svn.neo4j.org/components/shell/trunk/
-		</connection>
-    <url>https://trac.neo4j.org/browser/components/shell
-		</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/shell/trunk/</connection>
+    <developerConnection>${project.scm.connection}</developerConnection>
+    <url>https://trac.neo4j.org/browser/components/shell</url>
   </scm>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
 
   <issueManagement>
     <system>Trac</system>
@@ -73,7 +84,7 @@
             </manifest>
             <manifestEntries>
               <url>http://neo4j.org</url>
-              <Class-Path>neo4j-kernel-${neo4j.version}.jar neo4j-index-${neo4j.version}.jar neo4j-commons-${neo4j.version}.jar lucene-core-${lucene.version}.jar jta-${jta.version}.jar geronimo-jta_${jta.version}_spec-1.1.1.jar jline-${jline.version}.jar</Class-Path>
+              <Class-Path>neo4j-kernel-${neo4j.version}.jar neo4j-index-${neo4j.version}.jar lucene-core-${lucene.main.version}.jar ${lucene.artifactId}-${lucene.version}.jar jta-${sun.jta.version}.jar ${jta.artifactId}-${jta.version}.jar jline-${jline.main.version}.jar ${jline.artifactId}-${jline.version}.jar</Class-Path>
               <Agent-Class>org.neo4j.shell.StartClient</Agent-Class>
             </manifestEntries>
           </archive>
@@ -82,12 +93,11 @@
       <plugin>
         <groupId>org.ops4j</groupId>
         <artifactId>maven-pax-plugin</artifactId>
-        <version>1.4</version>
         <configuration>
           <framework>felix</framework>
           <provision>
-            <param>mvn:org.apache.geronimo.specs/geronimo-jta_1.1_spec/1.1.1</param>
-            <param>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.jline/0.9.94_1</param>
+            <param>mvn:${jta.groupId}/${jta.artifactId}/${jta.version}</param>
+            <param>mvn:${jline.groupId}/${jline.artifactId}/${jline.version}</param>
           </provision>
         </configuration>
       </plugin>
@@ -107,8 +117,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>jline</groupId>
-      <artifactId>jline</artifactId>
+      <groupId>${jline.groupId}</groupId>
+      <artifactId>${jline.artifactId}</artifactId>
       <version>${jline.version}</version>
       <!--scope>provided</scope-->
       <exclusions>
@@ -121,3 +131,4 @@
 
   </dependencies>
 </project>
+
