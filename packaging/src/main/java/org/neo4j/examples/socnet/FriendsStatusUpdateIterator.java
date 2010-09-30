@@ -32,7 +32,7 @@ class FriendsStatusUpdateIterator implements Iterator<StatusUpdate> {
         {
             throw new NoSuchElementException();
         }
-
+        // START SNIPPET: getActivityStream
         PositionedIterator<StatusUpdate> first = statuses.get(0);
         StatusUpdate returnVal = first.current();
 
@@ -47,6 +47,7 @@ class FriendsStatusUpdateIterator implements Iterator<StatusUpdate> {
         }
 
         return returnVal;
+        // END SNIPPET: getActivityStream
     }
 
     private void sort()
