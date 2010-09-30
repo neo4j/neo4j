@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>7</version>
+    <artifactId>parent-central</artifactId>
+    <version>1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -11,7 +11,7 @@
   <artifactId>neo4j-remote-graphdb</artifactId>
   <version>0.8-SNAPSHOT</version>
   <name>Neo4j - Remote Graph Database</name>
-  <description />
+  <description>Remote Graph Database is a tool for introspecting a running Neo4j Graph Database instance from a different process.</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
   <properties>
@@ -24,6 +24,7 @@
 
   <scm>
     <connection>scm:svn:https://svn.neo4j.org/components/remote-graphdb/trunk</connection>
+    <developerConnection>${project.scm.connection}</developerConnection>
     <url>https://trac.neo4j.org/browser/components/remote-graphdb</url>
   </scm>
 
@@ -60,12 +61,6 @@
       <artifactId>protobuf-java</artifactId>
       <version>2.3.0</version>
     </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.7</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -88,7 +83,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>idlj-maven-plugin</artifactId>
-        <version>1.1</version>
         <executions>
           <execution>
             <goals>
@@ -142,7 +136,6 @@
     <plugins>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.6.1</version>
         <configuration>
           <!-- exclude broken inspect API from JavaDoc until fixed -->
           <excludePackageNames>org.neo4j.remote.inspect:*.impl.*</excludePackageNames>
