@@ -45,34 +45,29 @@ public class NeoStore extends AbstractStore
     private PropertyStore propStore;
     private RelationshipStore relStore;
     private RelationshipTypeStore relTypeStore;
+    private static final int DEFAULT_REL_GRAB_SIZE = 100;
     
     private final int REL_GRAB_SIZE;
 
     public NeoStore( Map<?,?> config )
     {
         super( (String) config.get( "neo_store" ), config );
+        int relGrabSize = DEFAULT_REL_GRAB_SIZE;
         if ( getConfig() != null )
         {
             String grabSize = (String) getConfig().get( "relationship_grab_size" );
             if ( grabSize != null )
             {
-                REL_GRAB_SIZE = Integer.parseInt( grabSize ); 
-            }
-            else
-            {
-                REL_GRAB_SIZE = 100;
+                relGrabSize = Integer.parseInt( grabSize ); 
             }
         }
-        else
-        {
-            REL_GRAB_SIZE = 100;
-        }
+        REL_GRAB_SIZE = relGrabSize;
     }
 
     public NeoStore( String fileName )
     {
         super( fileName );
-        REL_GRAB_SIZE = 100;
+        REL_GRAB_SIZE = DEFAULT_REL_GRAB_SIZE;
     }
 
     /**
