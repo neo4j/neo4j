@@ -690,6 +690,23 @@ public class TestLuceneIndex
         assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
     }
     
+    @Test
+    public void testIndexNumberAsString()
+    {
+        Index<Node> index = provider.nodeIndex( "nums", LuceneIndexProvider.EXACT_CONFIG );
+        Node node1 = graphDb.createNode();
+        index.add( node1, "key", 10 );
+        assertEquals( node1, index.get( "key", 10 ).getSingle() );
+        assertEquals( node1, index.get( "key", "10" ).getSingle() );
+        assertEquals( node1, index.query( "key", 10 ).getSingle() );
+        assertEquals( node1, index.query( "key", "10" ).getSingle() );
+        restartTx();
+        assertEquals( node1, index.get( "key", 10 ).getSingle() );
+        assertEquals( node1, index.get( "key", "10" ).getSingle() );
+        assertEquals( node1, index.query( "key", 10 ).getSingle() );
+        assertEquals( node1, index.query( "key", "10" ).getSingle() );
+    }
+    
     @Ignore
     @Test
     public void testNodeInsertionSpeed()

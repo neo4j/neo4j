@@ -25,4 +25,10 @@ public class ValueContext
     {
         return this.indexNumeric ? this.value : this.value.toString();
     }
+    
+    @Override
+    public String toString()
+    {
+        return value.toString();
+    }
 }
