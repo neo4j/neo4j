@@ -62,7 +62,7 @@ class LuceneTransaction extends XaTransaction
     <T extends PropertyContainer> void add( LuceneIndex<T> index, T entity,
             String key, Object value )
     {
-        value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value;
+        value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value.toString();
         TxDataBoth data = getTxData( index, true );
         insert( index, entity, key, value, data.added( true ), data.removed( false ) );
         queueCommand( index.newAddCommand( entity, key, value ) ).addCount++;
@@ -90,7 +90,7 @@ class LuceneTransaction extends XaTransaction
     <T extends PropertyContainer> void remove( LuceneIndex<T> index, T entity,
             String key, Object value )
     {
-        value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value;
+        value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value.toString();
         TxDataBoth data = getTxData( index, true );
         insert( index, entity, key, value, data.removed( true ), data.added( false ) );
         queueCommand( index.newRemoveCommand( entity, key, value ) ).removeCount++;
