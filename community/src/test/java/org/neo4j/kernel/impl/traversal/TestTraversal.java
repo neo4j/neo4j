@@ -603,8 +603,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
             {
                 // Stop when we got here by traversing a clone relationship
                 Relationship rel = position.lastRelationshipTraversed();
-                return rel != null
-                    && rel.getType() == MyRelTypes.TEST_TRAVERSAL;
+                return rel != null && rel.isType( MyRelTypes.TEST_TRAVERSAL );
             }
         };
 
