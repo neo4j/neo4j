@@ -129,6 +129,7 @@ public class ExactTxData extends TxData
     @Override
     Pair<Collection<Long>, TxData> get( String key, Object value )
     {
+        value = value instanceof ValueContext ? ((ValueContext) value).getCorrectValue() : value.toString();
         Set<Object> ids = idCollection( key, value, false );
         if ( ids == null || ids.isEmpty() )
         {
