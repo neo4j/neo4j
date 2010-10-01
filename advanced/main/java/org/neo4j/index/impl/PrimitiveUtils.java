@@ -56,30 +56,38 @@ public abstract class PrimitiveUtils
         return charArray;
     }
 
-    public static Integer readInt( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    private static boolean readAndFlip( ReadableByteChannel channel, ByteBuffer buffer, int bytes )
+            throws IOException
     {
         buffer.clear();
-        buffer.limit( 4 );
+        buffer.limit( bytes );
         int read = channel.read( buffer );
-        if ( read < 4 )
+        if ( read < bytes )
         {
-            return null;
+            return false;
         }
         buffer.flip();
-        return buffer.getInt();
+        return true;
+    }
+
+    public static Integer readInt( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        return readAndFlip( channel, buffer, 4 ) ? buffer.getInt() : null;
     }
 
     public static Long readLong( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
     {
-        buffer.clear();
-        buffer.limit( 8 );
-        int read = channel.read( buffer );
-        if ( read < 8 )
-        {
-            return null;
-        }
-        buffer.flip();
-        return buffer.getLong();
+        return readAndFlip( channel, buffer, 8 ) ? buffer.getLong() : null;
+    }
+    
+    public static Float readFloat( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        return readAndFlip( channel, buffer, 4 ) ? buffer.getFloat() : null;
+    }
+    
+    public static Double readDouble( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        return readAndFlip( channel, buffer, 8 ) ? buffer.getDouble() : null;
     }
     
     public static void writeLengthAndString( FileChannel channel, ByteBuffer buffer, String value )

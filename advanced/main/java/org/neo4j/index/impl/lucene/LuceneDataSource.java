@@ -25,6 +25,7 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -107,6 +108,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
     
     public static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
     
+    private final Map<IndexIdentifier, IndexWriter> recoveryWriters =
+        new HashMap<IndexIdentifier, IndexWriter>();
     private final ArrayMap<IndexIdentifier,IndexSearcherRef> indexSearchers = 
         new ArrayMap<IndexIdentifier,IndexSearcherRef>( 6, true, true );
 
@@ -142,31 +145,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
         boolean isReadOnly = params.containsKey( "read_only" ) ?
                 (Boolean) params.get( "read_only" ) : false;
                 
-        if ( !isReadOnly )
-        {
-            XaCommandFactory cf = new LuceneCommandFactory();
-            XaTransactionFactory tf = new LuceneTransactionFactory( store );
-            xaContainer = XaContainer.create( this.baseStorePath + "/lucene.log", cf,
-                    tf, params );
-            try
-            {
-                xaContainer.openLogicalLog();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( "Unable to open lucene log in " +
-                        this.baseStorePath, e );
-            }
-            
-            xaContainer.getLogicalLog().setKeepLogs(
-                    shouldKeepLog( (String) params.get( Config.KEEP_LOGICAL_LOGS ), DEFAULT_NAME ) );
-            setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
-        }
-        else
-        {
-            xaContainer = null;
-        }
-        
         nodeEntityType = new EntityType()
         {
             public Document newDocument( Object entityId )
@@ -197,6 +175,31 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return Relationship.class;
             }
         };
+                
+        if ( !isReadOnly )
+        {
+            XaCommandFactory cf = new LuceneCommandFactory();
+            XaTransactionFactory tf = new LuceneTransactionFactory( store );
+            xaContainer = XaContainer.create( this.baseStorePath + "/lucene.log", cf,
+                    tf, params );
+            try
+            {
+                xaContainer.openLogicalLog();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "Unable to open lucene log in " +
+                        this.baseStorePath, e );
+            }
+            
+            xaContainer.getLogicalLog().setKeepLogs(
+                    shouldKeepLog( (String) params.get( Config.KEEP_LOGICAL_LOGS ), DEFAULT_NAME ) );
+            setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
+        }
+        else
+        {
+            xaContainer = null;
+        }
     }
     
     IndexType getType( IndexIdentifier identifier )
@@ -326,6 +329,17 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             return store.incrementVersion();
         }
+        
+        @Override
+        public void recoveryComplete()
+        {
+            for ( Map.Entry<IndexIdentifier, IndexWriter> entry : recoveryWriters.entrySet() )
+            {
+                closeWriter( entry.getValue() );
+                invalidateIndexSearcher( entry.getKey() );
+            }
+            recoveryWriters.clear();
+        }        
 //
 //        @Override
 //        public long getLastCommittedTx()
@@ -520,6 +534,22 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             throw new RuntimeException( e );
         }
+    }
+    
+    synchronized IndexWriter getRecoveryIndexWriter( IndexIdentifier identifier )
+    {
+        IndexWriter writer = recoveryWriters.get( identifier );
+        if ( writer == null )
+        {
+            writer = getIndexWriter( identifier );
+            recoveryWriters.put( identifier, writer );
+        }
+        return writer;
+    }
+    
+    synchronized void removeRecoveryIndexWriter( IndexIdentifier identifier )
+    {
+        recoveryWriters.remove( identifier );
     }
     
     private boolean directoryExists( Directory dir )
