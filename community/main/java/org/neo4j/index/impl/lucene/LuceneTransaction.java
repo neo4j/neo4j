@@ -230,6 +230,11 @@ class LuceneTransaction extends XaTransaction
             for ( Map.Entry<IndexIdentifier, CommandList> entry :
                 this.commandMap.entrySet() )
             {
+                if ( entry.getValue().isEmpty() )
+                {
+                    continue;
+                }
+                boolean isRecovery = entry.getValue().isRecovery();
                 IndexIdentifier identifier = entry.getKey();
                 IndexType type = identifier == LuceneCommand.CreateIndexCommand.FAKE_IDENTIFIER ? null :
                         dataSource.getType( identifier );
@@ -249,9 +254,16 @@ class LuceneTransaction extends XaTransaction
                     
                     if ( writer == null )
                     {
-                        writer = dataSource.getIndexWriter( identifier );
-                        writer.setMaxBufferedDocs( commandList.addCount + 100 );
-                        writer.setMaxBufferedDeleteTerms( commandList.removeCount + 100 );
+                        if ( isRecovery )
+                        {
+                            writer = dataSource.getRecoveryIndexWriter( identifier );
+                        }
+                        else
+                        {
+                            writer = dataSource.getIndexWriter( identifier );
+                            writer.setMaxBufferedDocs( commandList.addCount + 100 );
+                            writer.setMaxBufferedDeleteTerms( commandList.removeCount + 100 );
+                        }
                         searcher = dataSource.getIndexSearcher( identifier ).getSearcher();
                     }
                     if ( command instanceof ClearCommand )
@@ -261,6 +273,10 @@ class LuceneTransaction extends XaTransaction
                         writer = null;
                         dataSource.deleteIndex( identifier );
                         dataSource.invalidateCache( identifier );
+                        if ( isRecovery )
+                        {
+                            dataSource.removeRecoveryIndexWriter( identifier );
+                        }
                         continue;
                     }
                     
@@ -296,11 +312,11 @@ class LuceneTransaction extends XaTransaction
                 }
                 
                 applyDocuments( writer, type, documents );
-                if ( writer != null )
+                if ( writer != null && !isRecovery )
                 {
                     dataSource.closeWriter( writer );
+                    dataSource.invalidateIndexSearcher( identifier );
                 }
-                dataSource.invalidateIndexSearcher( identifier );
             }
             
             // TODO Set last committed txId
@@ -442,6 +458,16 @@ class LuceneTransaction extends XaTransaction
             {
                 this.removeCount++;
             }
+        }
+        
+        boolean isEmpty()
+        {
+            return commands.isEmpty();
+        }
+        
+        boolean isRecovery()
+        {
+            return commands.get( 0 ).isRecovered();
         }
     }
     

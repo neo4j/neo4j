@@ -126,7 +126,7 @@ abstract class LuceneCommand extends XaCommand
             switch ( valueType )
             {
             case VALUE_TYPE_FLOAT:
-                buffer.put( number.byteValue() );
+                buffer.putInt( Float.floatToRawIntBits( number.floatValue() ) );
                 break;
             case VALUE_TYPE_DOUBLE:
                 buffer.putLong( Double.doubleToRawLongBits( number.doubleValue() ) );
@@ -310,10 +310,10 @@ abstract class LuceneCommand extends XaCommand
             {
                 switch ( valueType )
                 {
-                case VALUE_TYPE_INT: value = buffer.getInt(); break;
-                case VALUE_TYPE_LONG: value = buffer.getLong(); break;
-                case VALUE_TYPE_FLOAT: value = buffer.getFloat(); break;
-                case VALUE_TYPE_DOUBLE: value = buffer.getDouble(); break;
+                case VALUE_TYPE_INT: value = PrimitiveUtils.readInt( channel, buffer ); break;
+                case VALUE_TYPE_LONG: value = PrimitiveUtils.readLong( channel, buffer ); break;
+                case VALUE_TYPE_FLOAT: value = PrimitiveUtils.readFloat( channel, buffer ); break;
+                case VALUE_TYPE_DOUBLE: value = PrimitiveUtils.readDouble( channel, buffer ); break;
                 }
             }
             else if ( valueType == VALUE_TYPE_STRING )
@@ -337,7 +337,6 @@ abstract class LuceneCommand extends XaCommand
                 }
             }
             
-            // TODO
             IndexIdentifier identifier = new IndexIdentifier( cls, entityType, indexName,
                     dataSource.indexStore.get( indexName ) );
             
