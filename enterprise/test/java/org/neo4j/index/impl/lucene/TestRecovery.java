@@ -112,4 +112,19 @@ public class TestRecovery
             // Ok
         }
     }
+    
+    @Test
+    public void testHardCoreRecovery() throws Exception
+    {
+    	String path = "target/hcdb";
+        Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
+    	Process process = Runtime.getRuntime().exec( new String[] {
+    			"java", "-cp", System.getProperty( "java.class.path" ),
+    			getClass().getPackage().getName() + ".Inserter", path
+    	} );
+    	Thread.sleep( 7000 );
+    	process.destroy();
+    	Thread.sleep( 3000 );
+    	new EmbeddedGraphDatabase( path ).shutdown();
+    }
 }
