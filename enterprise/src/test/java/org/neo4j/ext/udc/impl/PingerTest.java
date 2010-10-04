@@ -19,6 +19,8 @@ import org.neo4j.ext.udc.impl.PingerHandler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Unit tests for the UDC statistics pinger.
@@ -70,10 +72,15 @@ public class PingerTest {
 
     @Test
     public void shouldPingServer() {
-        Pinger p = new Pinger();
+        final String hostURL = hostname + ":" + server.getServicePort();
+        final Map<String,String> udcFields = new HashMap<String, String>();
+        udcFields.put("id", EXPECTED_STORE_ID);
+        udcFields.put("v", EXPTECTED_KERNEL_VERSION);
+
+        Pinger p = new Pinger(hostURL, udcFields);
         Exception thrownException = null;
         try {
-            p.ping(hostname + ":" + server.getServicePort(), EXPECTED_STORE_ID, EXPTECTED_KERNEL_VERSION);
+            p.ping();
         } catch (IOException e) {
             thrownException = e;
             e.printStackTrace();

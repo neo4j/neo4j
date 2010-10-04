@@ -25,14 +25,19 @@ public class UdcTimerTask extends TimerTask {
         this.host = host;
         this.version = version;
         this.storeId = storeId;
-        pinger = new Pinger();
+
+        Map<String,String> udcFields = new HashMap<String, String>();
+        udcFields.put("id", storeId);
+        udcFields.put("v", version);
+
+        pinger = new Pinger(host, udcFields);
     }
 
     @Override
     public void run()
     {
         try {
-            pinger.ping(host, storeId, version);
+            pinger.ping();
             incrementSuccessCount(storeId);
         } catch (IOException e) {
             // ABK: commenting out to not annoy people
