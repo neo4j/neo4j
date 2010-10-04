@@ -17,36 +17,36 @@ public class PersonRepository
     {
         this.graphDb = graphDb;
         this.index = index;
+
+        personRefNode = getPersonsRootNode( graphDb );
+    }
+
+    private Node getPersonsRootNode( GraphDatabaseService graphDb )
+    {
         Relationship rel = graphDb.getReferenceNode().getSingleRelationship(
                 REF_PERSONS, Direction.OUTGOING );
         if ( rel != null )
         {
-            personRefNode = rel.getEndNode();
-        }
-        else
+            return rel.getEndNode();
+        } else
         {
-            personRefNode = createPersonReferenceNode();
+            Transaction tx = this.graphDb.beginTx();
+            try
+            {
+                Node refNode = this.graphDb.createNode();
+                this.graphDb.getReferenceNode().createRelationshipTo( refNode,
+                        REF_PERSONS );
+                tx.success();
+                return refNode;
+            }
+            finally
+            {
+                tx.finish();
+            }
         }
     }
 
-    private Node createPersonReferenceNode()
-    {
-        Transaction tx = graphDb.beginTx();
-        try
-        {
-            Node refNode = graphDb.createNode();
-            graphDb.getReferenceNode().createRelationshipTo( refNode,
-                    REF_PERSONS );
-            tx.success();
-            return refNode;
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
-    public Person createPerson( String name )
+    public Person createPerson( String name ) throws Exception
     {
         // to guard against duplications we use the lock grabbed on ref node
         // when
@@ -55,17 +55,13 @@ public class PersonRepository
         try
         {
             Node newPersonNode = graphDb.createNode();
-            Relationship rel = personRefNode.createRelationshipTo(
-                    newPersonNode, A_PERSON );
-            // lock now taken, we can check if already exist in index
+            personRefNode.createRelationshipTo( newPersonNode, A_PERSON );
+            // lock now taken, we can check if  already exist in index
             Node alreadyExist = index.getSingleNode( Person.NAME, name );
             if ( alreadyExist != null )
             {
-                // clean up and return existing
-                rel.delete();
-                newPersonNode.delete();
-                tx.success();
-                return new Person( alreadyExist );
+                tx.failure();
+                throw new Exception( "Person with this name already exists " );
             }
             newPersonNode.setProperty( Person.NAME, name );
             index.index( newPersonNode, Person.NAME, name );
@@ -84,7 +80,7 @@ public class PersonRepository
         if ( personNode == null )
         {
             throw new IllegalArgumentException( "Person[" + name
-                                                + "] not found" );
+                    + "] not found" );
         }
         return new Person( personNode );
     }
