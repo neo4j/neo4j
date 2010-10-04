@@ -1,22 +1,12 @@
 package org.neo4j.kernel;
 
-import java.util.Iterator;
-
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expander;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
-import org.neo4j.graphdb.traversal.BranchSelector;
-import org.neo4j.graphdb.traversal.PruneEvaluator;
-import org.neo4j.graphdb.traversal.TraversalBranch;
-import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.traversal.*;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.traversal.FinalTraversalBranch;
 import org.neo4j.kernel.impl.traversal.TraversalDescriptionImpl;
+
+import java.util.Iterator;
 
 /**
  * A factory for objects regarding traversal of the graph. F.ex. it has a
@@ -251,11 +241,11 @@ public class Traversal
     {
         return RETURN_ALL;
     }
-    
+
     /**
      * Returns a filter which accepts items accepted by at least one of the
      * supplied filters.
-     * 
+     *
      * @param filters
      * @return
      */
@@ -478,5 +468,36 @@ public class Traversal
                 return relationship.getStartNode().equals( from ) ? "-->" : "<--";
             }
         } );
+    }
+
+    public static Predicate<Path> returnWhereLastRelationshipTypeIs( final RelationshipType firstRelationship,
+                                       final RelationshipType... relationships )
+    {
+        return new Predicate<Path>()
+        {
+            public boolean accept( Path p )
+            {
+                Relationship lastRel = p.lastRelationship();
+                if ( lastRel == null )
+                {
+                    return false;
+                }
+
+                if ( lastRel.isType( firstRelationship ) )
+                {
+                    return true;
+                }
+
+                for ( RelationshipType currentType : relationships )
+                {
+                    if ( lastRel.isType( currentType ) )
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        };
     }
 }
