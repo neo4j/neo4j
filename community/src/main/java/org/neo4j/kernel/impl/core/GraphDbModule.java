@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -34,7 +35,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
+import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.IdGenerator;
@@ -43,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 
 public class GraphDbModule
 {
+    private static final CacheType DEFAULT_CACHE_TYPE = CacheType.weak;
     private static Logger log = Logger.getLogger( GraphDbModule.class.getName() );
 
     private boolean startIsOk = true;
@@ -83,30 +87,31 @@ public class GraphDbModule
         {
             return;
         }
-        boolean useNewCache = true;
-        if ( params.containsKey( "use_old_cache" ) && 
-            params.get( "use_old_cache" ).equals( "true" ) )
+        
+        String cacheTypeName = (String) params.get( Config.CACHE_TYPE );
+        CacheType cacheType = null;
+        try
         {
-            useNewCache = false;
+            cacheType = cacheTypeName != null ? CacheType.valueOf( cacheTypeName ) : DEFAULT_CACHE_TYPE;
         }
-        boolean useNoCache = false;
-        if ( params.containsKey( "use_no_cache" ) && 
-            params.get( "use_no_cache" ).equals( "true" ) )
+        catch ( IllegalArgumentException e )
         {
-            useNoCache = true;
+            throw new IllegalArgumentException( "Invalid cache type, please use one of: " +
+                    Arrays.asList( CacheType.values() ) + " or keep empty for default (" +
+                    DEFAULT_CACHE_TYPE + ")", e.getCause() );
         }
+        
         if ( !readOnly )
         {
             nodeManager = new NodeManager( graphDbService, cacheManager,
                     lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, useNewCache, useNoCache );
+                    persistenceManager, idGenerator, cacheType );
         }
         else
         {
             nodeManager = new ReadOnlyNodeManager( graphDbService,
                     cacheManager, lockManager, lockReleaser,
-                    transactionManager, persistenceManager, idGenerator,
-                    useNewCache, useNoCache );
+                    transactionManager, persistenceManager, idGenerator, cacheType );
         }
         // load and verify from PS
         RelationshipTypeData relTypes[] = null;

@@ -63,6 +63,7 @@ public class NodeManager
     private final Cache<Integer,NodeImpl> nodeCache;
     private final Cache<Integer,RelationshipImpl> relCache;
     private final AdaptiveCacheManager cacheManager;
+    private final CacheType cacheType;
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
     private final LockReleaser lockReleaser;
@@ -72,8 +73,6 @@ public class NodeManager
     private final IdGenerator idGenerator;
 
     private boolean useAdaptiveCache = false;
-    private boolean useNewCache = true;
-    private boolean useNoCache = false;
     private float adaptiveCacheHeapRatio = 0.77f;
     private int minNodeCacheSize = 0;
     private int minRelCacheSize = 0;
@@ -87,8 +86,7 @@ public class NodeManager
     NodeManager( GraphDatabaseService graphDb,
             AdaptiveCacheManager cacheManager, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
-            PersistenceManager persistenceManager, IdGenerator idGenerator,
-            boolean useNewCache, boolean useNoCache )
+            PersistenceManager persistenceManager, IdGenerator idGenerator, CacheType cacheType )
     {
         this.graphDbService = graphDb;
         this.cacheManager = cacheManager;
@@ -103,34 +101,10 @@ public class NodeManager
         this.idGenerator = idGenerator;
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator );
-        this.useNewCache = useNewCache;
-        this.useNoCache = useNoCache;
-        if ( this.useNoCache )
-        {
-            nodeCache = new NoCache<Integer,NodeImpl>(
-                "NodeCache" );
-            relCache = new NoCache<Integer,RelationshipImpl>(
-                "RelationshipCache" );
-            
-        }
-        else if ( useNewCache )
-        {
-            nodeCache = new WeakLruCache<Integer,NodeImpl>(
-                "NodeCache" );
-            relCache = new WeakLruCache<Integer,RelationshipImpl>(
-                "RelationshipCache" );
-//            nodeCache = new SoftLruCache<Integer,NodeImpl>(
-//                "NodeCache" );
-//            relCache = new SoftLruCache<Integer,RelationshipImpl>(
-//                "RelationshipCache" );
-        }
-        else
-        {
-            nodeCache = new LruCache<Integer,NodeImpl>( "NodeCache", 1500,
-                this.cacheManager );
-            relCache = new LruCache<Integer,RelationshipImpl>(
-                "RelationshipCache", 3500, this.cacheManager );
-        }
+        
+        this.cacheType = cacheType;
+        this.nodeCache = cacheType.node( cacheManager );
+        this.relCache = cacheType.relationship( cacheManager );
         for ( int i = 0; i < loadLocks.length; i++ )
         {
             loadLocks[i] = new ReentrantLock();
@@ -142,9 +116,9 @@ public class NodeManager
         return graphDbService;
     }
 
-    public boolean isUsingSoftReferenceCache()
+    public CacheType getCacheType()
     {
-        return nodeCache instanceof SoftLruCache;
+        return this.cacheType;
     }
 
     private void parseParams( Map<Object,Object> params )
@@ -243,7 +217,7 @@ public class NodeManager
         parseParams( params );
         nodeCache.resize( maxNodeCacheSize );
         relCache.resize( maxRelCacheSize );
-        if ( useAdaptiveCache && !useNewCache )
+        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
         {
             cacheManager.registerCache( nodeCache, adaptiveCacheHeapRatio,
                 minNodeCacheSize );
@@ -255,7 +229,7 @@ public class NodeManager
 
     public void stop()
     {
-        if ( useAdaptiveCache && !useNewCache )
+        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
         {
             cacheManager.stop();
             cacheManager.unregisterCache( nodeCache );
@@ -958,5 +932,87 @@ public class NodeManager
     {
         int keyId = persistenceManager.getKeyIdForProperty( propertyId );
         return propertyIndexManager.getIndexFor( keyId ).getKey();
+    }
+    
+    public static enum CacheType
+    {
+        weak( false, "weak reference cache" )
+        {
+            @Override
+            Cache<Integer, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            {
+                return new WeakLruCache<Integer,NodeImpl>( NODE_CACHE_NAME );
+            }
+
+            @Override
+            Cache<Integer, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            {
+                return new WeakLruCache<Integer,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+            }
+        },
+        soft( false, "soft reference cache" )
+        {
+            @Override
+            Cache<Integer, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            {
+                return new SoftLruCache<Integer,NodeImpl>( NODE_CACHE_NAME );
+            }
+
+            @Override
+            Cache<Integer, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            {
+                return new SoftLruCache<Integer,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+            }
+        },
+        old( true, "lru cache" )
+        {
+            @Override
+            Cache<Integer, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            {
+                return new LruCache<Integer,NodeImpl>( NODE_CACHE_NAME, 1500, cacheManager );
+            }
+
+            @Override
+            Cache<Integer, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            {
+                return new LruCache<Integer,RelationshipImpl>(
+                        RELATIONSHIP_CACHE_NAME, 3500, cacheManager );
+            }
+        },
+        none( false, "no cache" )
+        {
+            @Override
+            Cache<Integer, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            {
+                return new NoCache<Integer, NodeImpl>( NODE_CACHE_NAME );
+            }
+
+            @Override
+            Cache<Integer, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            {
+                return new NoCache<Integer, RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+            }
+        };
+        
+        private static final String NODE_CACHE_NAME = "NodeCache";
+        private static final String RELATIONSHIP_CACHE_NAME = "RelationshipCache";
+        
+        final boolean needsCacheManagerRegistration;
+        private final String description;
+        
+        private CacheType( boolean needsCacheManagerRegistration, String description )
+        {
+            this.needsCacheManagerRegistration = needsCacheManagerRegistration;
+            this.description = description;
+        }
+        
+        abstract Cache<Integer,NodeImpl> node( AdaptiveCacheManager cacheManager );
+        
+        abstract Cache<Integer,RelationshipImpl> relationship( AdaptiveCacheManager cacheManager );
+        
+        public String getDescription()
+        {
+            return this.description;
+        }
     }
 }

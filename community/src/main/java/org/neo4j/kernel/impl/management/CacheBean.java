@@ -22,7 +22,7 @@ class CacheBean extends Neo4jMBean implements Cache
     @Description( "The type of cache used by Neo4j" )
     public String getCacheType()
     {
-        return nodeManager.isUsingSoftReferenceCache() ? "soft reference cache" : "lru cache";
+        return nodeManager.getCacheType().getDescription();
     }
 
     @Description( "The number of Nodes currently in cache" )
