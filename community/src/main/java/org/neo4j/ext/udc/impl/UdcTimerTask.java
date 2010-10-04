@@ -2,9 +2,7 @@ package org.neo4j.ext.udc.impl;
 
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimerTask;
+import java.util.*;
 
 public class UdcTimerTask extends TimerTask {
 
@@ -30,7 +28,21 @@ public class UdcTimerTask extends TimerTask {
         udcFields.put("id", storeId);
         udcFields.put("v", version);
 
-        pinger = new Pinger(host, udcFields);
+        pinger = new Pinger(host, mergeSystemPropertiesWith(udcFields));
+    }
+
+    private Map<String, String> mergeSystemPropertiesWith(Map<String, String> udcFields) {
+        Map<String, String> mergedMap = new HashMap<String, String>();
+        mergedMap.putAll(udcFields);
+        Properties sysProps = System.getProperties();
+        Enumeration sysPropsNames = sysProps.propertyNames();
+        while (sysPropsNames.hasMoreElements()) {
+            String sysPropName = (String) sysPropsNames.nextElement();
+            if (sysPropName.startsWith("neo4j.ext.udc")) {
+                mergedMap.put(sysPropName.substring("neo4j.ext.udc".length()+1), sysProps.get(sysPropName).toString());
+            }
+        }
+        return mergedMap;
     }
 
     @Override

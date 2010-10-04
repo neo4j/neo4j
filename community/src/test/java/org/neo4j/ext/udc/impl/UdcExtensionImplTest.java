@@ -2,9 +2,7 @@ package org.neo4j.ext.udc.impl;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
@@ -80,7 +78,7 @@ public class UdcExtensionImplTest {
     public void shouldRecordFailuresWhenThereIsNoServer() throws InterruptedException, IOException {
         Map<String, String> config = new HashMap<String, String>();
         config.put(UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100"); // first delay must be long enough to allow class initialization to complete
-        config.put(UdcExtensionImpl.UDC_HOST_ADDRESS, "127.0.0.1:1"); // first delay must be long enough to allow class initialization to complete
+        config.put(UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, "127.0.0.1:1"); // first delay must be long enough to allow class initialization to complete
         EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase("should-record-failures", config);
         Thread.sleep(200);
         Collection<Integer> failureCountValues = UdcTimerTask.failureCounts.values();
@@ -102,7 +100,7 @@ public class UdcExtensionImplTest {
 
         Map<String, String> config = new HashMap<String, String>();
         config.put(UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100");
-        config.put(UdcExtensionImpl.UDC_HOST_ADDRESS, serverAddress);
+        config.put(UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress);
 
         EmbeddedGraphDatabase graphdb = createTempDatabase(config);
         Thread.sleep(200);

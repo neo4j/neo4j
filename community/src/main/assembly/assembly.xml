@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly xmlns="http://maven.apache.org/xsd/assembly"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/xsd/assembly http://maven.apache.org/xsd/assembly-1.1.1.xsd">
+  <id></id>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <directory>${basedir}/src/main/filtered-resources</directory>
+      <filtered>true</filtered>
+      <includes>
+        <include>**/*.properties</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>${project.build.outputDirectory}</directory>
+      <outputDirectory>/</outputDirectory>
+    </fileSet>
+  </fileSets>
+</assembly>
+

@@ -1,11 +1,14 @@
 package org.neo4j.ext.udc.impl;
 
+import org.neo4j.ext.udc.UdcProperties;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
+import java.io.IOException;
+import java.util.Properties;
 import java.util.Timer;
 
 /**
@@ -19,32 +22,9 @@ import java.util.Timer;
  *
  */
 @Service.Implementation(KernelExtension.class)
-public class UdcExtensionImpl extends KernelExtension {
+public class UdcExtensionImpl extends KernelExtension implements UdcProperties {
 
-    /**
-     * Configuration key for the first delay, expressed
-     * in milliseconds.
-     */
-    public static final String FIRST_DELAY_CONFIG_KEY = "neo4j.ext.udc.first_delay";
-
-    /**
-     * Configuration key for the interval for regular updates,
-     * expressed in milliseconds.
-     */
-    public static final String INTERVAL_CONFIG_KEY = "neo4j.ext.udc.interval";
-
-    /**
-     * Configuration key for disabling the UDC extension. Set to "true"
-     * to disable; any other value is considered false.
-     */
-    public static final String UDC_DISABLE_KEY = "neo4j.ext.udc.disable";
-
-
-    /**
-     * The host address to which UDC updates will be sent.
-     * Should be of the form hostname[:port].
-     */
-    public static final String UDC_HOST_ADDRESS = "neo4j.ext.udc.host";
+    public static final String UDC_SOURCE_DISTRIBUTION_KEY = "neo4j.ext.udc.host";
 
     /**
      * Delay, in milliseconds, before the first UDC update is sent.
@@ -94,6 +74,8 @@ public class UdcExtensionImpl extends KernelExtension {
     protected void load(KernelData kernel) {
         configure(kernel.getConfig());
 
+        // ABK: a hack to register this extension with the kernel, which
+        // only knows about extensions that have a saved state
         kernel.setState(this, new Object());
 
         if (!disabled) {
@@ -107,28 +89,59 @@ public class UdcExtensionImpl extends KernelExtension {
 
     /**
      * Attempt to retrieve configuration provided by user.
-     * If not found, the defaults will be used.
      *
+     * Configuration precedence is in this order:
+     *
+     * <ol>
+     *   <li>value from config</li>
+     *   <li>system property</li>
+     *   <li>hard-coded default value</li>
+     * <ol>
+     * 
      * @param config user defined configuration parameters
      */
     private void configure(Config config) {
+        Properties props = loadSystemProperties();
         try {
-            firstDelay = Integer.parseInt((String) config.getParams().get(FIRST_DELAY_CONFIG_KEY));
+            String firstDelayAsString = (String) config.getParams().get(FIRST_DELAY_CONFIG_KEY);
+            if (firstDelayAsString == null) {
+                firstDelayAsString = (String)props.getProperty(FIRST_DELAY_CONFIG_KEY, "600000");
+            }
+            firstDelay = Integer.parseInt(firstDelayAsString);
+        } catch (Exception e) {
+           ; 
+        }
+        try {
+            String intervalAsString = (String) config.getParams().get(INTERVAL_CONFIG_KEY);
+            if (intervalAsString == null) {
+                intervalAsString = (String)props.getProperty(INTERVAL_CONFIG_KEY, "86400000");
+            }
+            interval = Integer.parseInt(intervalAsString);
         } catch (Exception e) {
             ;
         }
         try {
-            interval = Integer.parseInt((String)config.getParams().get(INTERVAL_CONFIG_KEY));
-        } catch (Exception e) {
-            ;
-        }
-        try {
-            String possibleHost = (String)config.getParams().get(UDC_HOST_ADDRESS);
+            String possibleHost = (String)config.getParams().get(UDC_HOST_ADDRESS_KEY);
             if (null != possibleHost) hostAddress = possibleHost;
         } catch (Exception e) {
             ;
         }
 
-        disabled = Boolean.valueOf((String)config.getParams().get(UDC_DISABLE_KEY));
+        String disabledAsString = (String)config.getParams().get(UDC_DISABLE_KEY);
+        if (disabledAsString == null) {
+            disabledAsString = props.getProperty(UDC_DISABLE_KEY, "false");
+        }
+        disabled = Boolean.valueOf(disabledAsString);
     }
+
+   private Properties loadSystemProperties() {
+       Properties sysProps = System.getProperties();
+       try {
+           sysProps.load(getClass().getResourceAsStream("/org/neo4j/ext/udc/udc.properties"));
+       } catch (Exception e) {
+           System.err.println("failed to load udc.properties, because: " + e);
+           ; // fail silently, 
+       }
+       return sysProps;
+   }
 }
