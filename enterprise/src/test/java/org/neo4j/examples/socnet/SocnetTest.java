@@ -48,7 +48,7 @@ public class SocnetTest
     private int nrOfPersons;
 
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
         graphDb = new EmbeddedGraphDatabase( "target/socnetdb" );
         index = new LuceneIndexService( graphDb );
@@ -311,7 +311,7 @@ public class SocnetTest
         return p;
     }
 
-    private void createPersons()
+    private void createPersons() throws Exception
     {
         for ( int i = 0; i < nrOfPersons; i++ )
         {
