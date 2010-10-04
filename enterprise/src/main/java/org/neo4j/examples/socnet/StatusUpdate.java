@@ -2,10 +2,9 @@ package org.neo4j.examples.socnet;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
 
 import java.util.Date;
@@ -32,28 +31,20 @@ public class StatusUpdate
 
     public Person getPerson()
     {
-        Node statusMessage = getLastStatusMessage();
-        Relationship relationship = statusMessage.getSingleRelationship( STATUS, Direction.INCOMING );
-        Node personNode = relationship.getStartNode();
-        return new Person( personNode );
+        return new Person( getPersonNode() );
     }
 
-    private Node getLastStatusMessage()
+    private Node getPersonNode()
     {
         TraversalDescription traversalDescription = Traversal.description().
                 depthFirst().
-                relationships( NEXT, Direction.BOTH ).
-                filter( Traversal.returnAll() );
+                relationships( NEXT, Direction.INCOMING ).
+                relationships( STATUS, Direction.INCOMING ).
+                filter( Traversal.returnWhereLastRelationshipTypeIs( STATUS ));
 
         Traverser traverser = traversalDescription.traverse( getUnderlyingNode() );
 
-        Node lastStatus = null;
-        for ( Path i : traverser )
-        {
-            lastStatus = i.endNode();
-        }
-
-        return lastStatus;
+        return IteratorUtil.singleValueOrNull( traverser.iterator() ).endNode();
     }
 
     public String getStatusText()
