@@ -212,7 +212,7 @@ public class SocnetTest
         e.addFriend( c );
         e.addFriend( d );
 
-        Person recommendation = IteratorUtil.singleValueOrNull( a.getFriendRecommendation( 1 ).iterator() );
+        Person recommendation = IteratorUtil.singleOrNull( a.getFriendRecommendation( 1 ).iterator() );
 
         assertThat( recommendation, equalTo( e ) );
     }
