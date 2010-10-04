@@ -40,6 +40,47 @@
           </provision>
         </configuration>
       </plugin>
+        <plugin>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>2.2-beta-5</version>
+          <executions>
+            <execution>
+              <id>forCentral</id>
+              <goals>
+                <goal>single</goal>
+              </goals>
+              <configuration>
+                <filters>
+                  <filter>${project.basedir}/src/main/assembly/forMavenCentral.properties</filter>
+                </filters>
+                <finalName>${artifactId}-${version}</finalName>
+                <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
+                <descriptors>
+                  <descriptor>src/main/assembly/assembly.xml</descriptor>
+                </descriptors>
+              </configuration>
+              <phase>package</phase>
+            </execution>
+            <execution>
+              <id>forZip</id>
+              <goals>
+                <goal>single</goal>
+              </goals>
+              <configuration>
+                <filters>
+                  <filter>${project.basedir}/src/main/assembly/forPackaged.properties</filter>
+                </filters>
+                <finalName>${artifactId}-${version}-download</finalName>
+                <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
+                <descriptors>
+                  <descriptor>src/main/assembly/assembly.xml</descriptor>
+                </descriptors>
+              </configuration>
+              <phase>package</phase>
+            </execution>
+          </executions>
+        </plugin>
+        
     </plugins>
   </build>  
 
