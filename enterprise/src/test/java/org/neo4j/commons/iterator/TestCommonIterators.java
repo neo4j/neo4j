@@ -2,6 +2,7 @@ package org.neo4j.commons.iterator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -13,6 +14,7 @@ import java.util.NoSuchElementException;
 import org.junit.Test;
 import org.neo4j.helpers.collection.CachingIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PagingIterator;
 import org.neo4j.helpers.collection.RangeIterator;
 
@@ -161,5 +163,34 @@ public class TestCommonIterators
             assertEquals( (Integer) (i+plus), page.next() );
         }
         assertFalse( page.hasNext() );
+    }
+    
+    @Test
+    public void testSingleValues()
+    {
+        Object object = new Object();
+        Object object2 = new Object();
+        assertEquals( object, IteratorUtil.singleValue( Arrays.asList( object ).iterator() ) );
+        try
+        {
+            IteratorUtil.singleValue( Arrays.asList().iterator() );
+            fail( "Should fail" );
+        }
+        catch ( Exception e ) { /* Good */ }
+        try
+        {
+            IteratorUtil.singleValue( Arrays.asList( object, object2 ).iterator() );
+            fail( "Should fail" );
+        }
+        catch ( Exception e ) { /* Good */ }
+        
+        assertEquals( object, IteratorUtil.singleValueOrNull( Arrays.asList( object ).iterator() ) );
+        assertNull( IteratorUtil.singleValueOrNull( Arrays.asList().iterator() ) );
+        try
+        {
+            IteratorUtil.singleValueOrNull( Arrays.asList( object, object2 ).iterator() );
+            fail( "Should fail" );
+        }
+        catch ( Exception e ) { /* Good */ }
     }
 }
