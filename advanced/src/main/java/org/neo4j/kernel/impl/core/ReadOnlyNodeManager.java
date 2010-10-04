@@ -38,11 +38,10 @@ class ReadOnlyNodeManager extends NodeManager
             AdaptiveCacheManager cacheManager, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, IdGenerator idGenerator,
-            boolean useNewCaches, boolean useNoCache )
+            CacheType cacheType )
     {
         super( graphDbService, cacheManager, lockManager, lockReleaser,
-                transactionManager, persistenceManager, idGenerator,
-                useNewCaches, useNoCache );
+                transactionManager, persistenceManager, idGenerator, cacheType );
     }
 
     @Override

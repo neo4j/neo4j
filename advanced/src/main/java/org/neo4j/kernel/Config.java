@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.TxModule;
  */
 public class Config
 {
-
     static final String NIO_NEO_DB_CLASS =
         "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
@@ -78,7 +77,8 @@ public class Config
     public static final String LOGICAL_LOG = "logical_log";
     @Description( "Relative path for where the Neo4j storage information file is located" )
     public static final String NEO_STORE = "neo_store";
-
+    @Description( "The type of cache to use for nodes and relationships, one of [weak, soft, none]" )
+    public static final String CACHE_TYPE = "cache_type";
 
     private AdaptiveCacheManager cacheManager;
     private TxModule txModule;
@@ -92,15 +92,12 @@ public class Config
     private String storeDir;
     private final Map<Object, Object> params;
 
-    private final KernelPanicEventGenerator kpe;
-
     private final boolean readOnly;
     private final boolean backupSlave;
 
     Config( GraphDatabaseService graphDb, String storeDir, Map<Object, Object> params,
             KernelPanicEventGenerator kpe )
     {
-        this.kpe = kpe;
         this.storeDir = storeDir;
         this.params = params;
         String readOnlyStr = (String) params.get( READ_ONLY );
