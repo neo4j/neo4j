@@ -2,7 +2,9 @@ package org.neo4j.ext.udc.impl;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
@@ -34,7 +36,6 @@ public class UdcExtensionImplTest {
         UdcTimerTask.successCounts.clear();
         UdcTimerTask.failureCounts.clear();
     }
-
 
     /**
      * Sanity check to make sure a database can be created
@@ -111,7 +112,7 @@ public class UdcExtensionImplTest {
         Collection<Integer> failureCountValues = UdcTimerTask.failureCounts.values();
         Integer failures = failureCountValues.iterator().next();
         assertTrue(failures == 0);
-        graphdb.shutdown();
+        destroy(graphdb);
     }
 
 
