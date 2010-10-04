@@ -3,6 +3,7 @@ package org.neo4j.ext.udc.impl;
 import java.io.*;
 import java.net.*;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -19,6 +20,15 @@ public class Pinger {
 
     public void ping() throws IOException {
         StringBuffer uri = new StringBuffer("http://" + address + "/" + "?");
+
+        Iterator<String> keyIt = usageDataMap.keySet().iterator();
+        while (keyIt.hasNext()) {
+            String key = keyIt.next();
+            uri.append(key);
+            uri.append("=");
+            uri.append(usageDataMap.get(key));
+            if (keyIt.hasNext()) uri.append("+");
+        }
 
         URL url = new URL(uri.toString());
         URLConnection con = url.openConnection();
