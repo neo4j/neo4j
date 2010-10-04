@@ -2,54 +2,122 @@ package org.neo4j.helpers.collection;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
- * Contains common functionality regarding {@link Iterator}s.
+ * Contains common functionality regarding {@link Iterator}s and
+ * {@link Iterable}s.
  */
 public abstract class IteratorUtil
 {
     /**
-     * Returns the given iterator's only value or {@code null} if there was no
-     * items in the iterator. If there is more than one value in the iterator
-     * an {@link IllegalArgumentException} will be thrown.
+     * Returns the given iterator's first element or {@code null} if no
+     * element found.
      * 
-     * @param <T> the type of items in {@code iterator}.
-     * @param iterator the {@link Iterator} to get items from.
-     * @return the only value in the {@code iterator}, or {@code null} if no
-     * value was found. Throws {@link IllegalArgumentException} if more than
-     * one value was found.
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get elements from.
+     * @return the first element in the {@code iterator}, or {@code null} if no
+     * element found.
      */
-    public static <T> T singleValueOrNull( Iterator<T> iterator )
+    public static <T> T firstOrNull( Iterator<T> iterator )
     {
-        T value = iterator.hasNext() ? iterator.next() : null;
-        if ( iterator.hasNext() )
-        {
-            throw new IllegalArgumentException( "More than one item in " +
-                iterator + ". First value is '" + value +
-                "' and the second value is '" + iterator.next() + "'" );
-        }
-        return value;
+        return iterator.hasNext() ? iterator.next() : null;
     }
     
     /**
-     * Returns the given iterator's only value. If there are no values or more
-     * than one value in the iterator an {@link IllegalArgumentException} will
-     * be thrown.
+     * Returns the given iterator's first element. If no element is found a
+     * {@link NoSuchElementException} is thrown.
      * 
-     * @param <T> the type of items in {@code iterator}.
-     * @param iterator the {@link Iterator} to get items from.
-     * @return the only value in the {@code iterator}. Throws
-     * {@link IllegalArgumentException} if there are no values or more than
-     * one value was found.
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get elements from.
+     * @return the first element in the {@code iterator}.
+     * @throws {@link NoSuchElementException} if no element found.
      */
-    public static <T> T singleValue( Iterator<T> iterator )
+    public static <T> T first( Iterator<T> iterator )
     {
-        T value = singleValueOrNull( iterator );
-        if ( value == null )
+        return assertNotNull( iterator, firstOrNull( iterator ) );
+    }
+    
+    /**
+     * Returns the given iterator's last element or {@code null} if no
+     * element found.
+     * 
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get elements from.
+     * @return the last element in the {@code iterator}, or {@code null} if no
+     * element found.
+     */
+    public static <T> T lastOrNull( Iterator<T> iterator )
+    {
+        T result = null;
+        while ( iterator.hasNext() )
         {
-            throw new IllegalArgumentException( "No item found in " + iterator );
+            result = iterator.next();
         }
-        return value;
+        return result;
+    }
+    
+    /**
+     * Returns the given iterator's last element. If no element is found a
+     * {@link NoSuchElementException} is thrown.
+     * 
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get elements from.
+     * @return the last element in the {@code iterator}.
+     * @throws {@link NoSuchElementException} if no element found.
+     */
+    public static <T> T last( Iterator<T> iterator )
+    {
+        return assertNotNull( iterator, lastOrNull( iterator ) );
+    }
+    
+    /**
+     * Returns the given iterator's single element or {@code null} if no
+     * element found. If there is more than one element in the iterator a
+     * {@link NoSuchElementException} will be thrown.
+     * 
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get elements from.
+     * @return the single element in {@code iterator}, or {@code null} if no
+     * element found.
+     * @throws {@link NoSuchElementException} if more than one element was
+     * found.
+     */
+    public static <T> T singleOrNull( Iterator<T> iterator )
+    {
+        T result = iterator.hasNext() ? iterator.next() : null;
+        if ( iterator.hasNext() )
+        {
+            throw new NoSuchElementException( "More than one element in " +
+                iterator + ". First element is '" + result +
+                "' and the element value is '" + iterator.next() + "'" );
+        }
+        return result;
+    }
+    
+    /**
+     * Returns the given iterator's single element. If there are no elements
+     * or more than one element in the iterator a {@link NoSuchElementException}
+     * will be thrown.
+     * 
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get ele,ents from.
+     * @return the single element in the {@code iterator}.
+     * @throws {@link NoSuchElementException} if there isn't exactly one
+     * element.
+     */
+    public static <T> T single( Iterator<T> iterator )
+    {
+        return assertNotNull( iterator, singleOrNull( iterator ) );
+    }
+
+    private static <T> T assertNotNull( Iterator<T> iterator, T result )
+    {
+        if ( result == null )
+        {
+            throw new NoSuchElementException( "No element found in " + iterator );
+        }
+        return result;
     }
     
     /**
