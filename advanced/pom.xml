@@ -50,6 +50,7 @@
   
   <scm>
     <connection>scm:svn:https://svn.neo4j.org/examples/${short-name}/trunk</connection>
+    <developerConnection>${project.scm.connection}</developerConnection>
     <url>https://trac.neo4j.org/browser/examples/${short-name}/trunk</url>
   </scm>
   
