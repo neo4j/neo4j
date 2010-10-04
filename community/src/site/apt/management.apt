@@ -4,7 +4,7 @@ Reading a management attribute
 
 	The {{{./apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html}EmbeddedGraphDatabase}}
 	class includes a 
-	{{{./apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html#getManagementBean%36java.lang.Class%37}convenience method}}
+	{{{./apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html#getManagementBean(java.lang.Class)}convenience method}}
 	to get instances of Neo4j management beans.
 	The common JMX service can be used as well, but from your code you probably rather
 	want to use the approach outlined here.
