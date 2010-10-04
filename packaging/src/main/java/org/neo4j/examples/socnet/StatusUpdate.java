@@ -6,7 +6,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.Traversal;
 
 import java.util.Date;
@@ -33,13 +32,13 @@ public class StatusUpdate
 
     public Person getPerson()
     {
-        Node statusMessage = GetLastStatusMessage();
+        Node statusMessage = getLastStatusMessage();
         Relationship relationship = statusMessage.getSingleRelationship( STATUS, Direction.INCOMING );
         Node personNode = relationship.getStartNode();
         return new Person( personNode );
     }
 
-    private Node GetLastStatusMessage()
+    private Node getLastStatusMessage()
     {
         TraversalDescription traversalDescription = Traversal.description().
                 depthFirst().
@@ -69,24 +68,4 @@ public class StatusUpdate
         return new Date( l );
     }
 
-    public StatusUpdate next()
-    {
-        IterableWrapper<StatusUpdate, Relationship> statusIterator = new IterableWrapper<StatusUpdate, Relationship>(
-                underlyingNode.getRelationships( NEXT ) )
-        {
-            @Override
-            protected StatusUpdate underlyingObjectToObject(
-                    Relationship nextRel )
-            {
-                return new StatusUpdate( nextRel.getOtherNode( underlyingNode ) );
-            }
-        };
-
-        if ( !statusIterator.iterator().hasNext() )
-        {
-            return null;
-        }
-
-        return statusIterator.iterator().next();
-    }
 }
