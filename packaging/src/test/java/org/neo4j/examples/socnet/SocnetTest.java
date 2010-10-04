@@ -158,6 +158,20 @@ public class SocnetTest
     }
 
     @Test
+    public void shouldReturnTheCorrectPersonFromAnyStatusUpdate() throws Exception
+    {
+        Person person = getRandomPerson();
+        person.addStatus( "Foo" );
+        person.addStatus( "Bar" );
+        person.addStatus( "Baz" );
+
+        for(StatusUpdate status : person.getStatus())
+        {
+            assertThat(status.getPerson(), equalTo( person ));
+        }
+    }
+
+    @Test
     public void getPathBetweenFriends() throws Exception
     {
         deleteSocialGraph();
