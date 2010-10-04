@@ -32,6 +32,27 @@ public abstract class IteratorUtil
     }
     
     /**
+     * Returns the given iterator's only value. If there are no values or more
+     * than one value in the iterator an {@link IllegalArgumentException} will
+     * be thrown.
+     * 
+     * @param <T> the type of items in {@code iterator}.
+     * @param iterator the {@link Iterator} to get items from.
+     * @return the only value in the {@code iterator}. Throws
+     * {@link IllegalArgumentException} if there are no values or more than
+     * one value was found.
+     */
+    public static <T> T singleValue( Iterator<T> iterator )
+    {
+        T value = singleValueOrNull( iterator );
+        if ( value == null )
+        {
+            throw new IllegalArgumentException( "No item found in " + iterator );
+        }
+        return value;
+    }
+    
+    /**
      * Adds all the items in {@code iterator} to {@code collection}.
      * @param <C> the type of {@link Collection} to add to items to.
      * @param <T> the type of items in the collection and iterator.
