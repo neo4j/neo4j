@@ -187,10 +187,13 @@ public class Person
             return Collections.emptyList();
         }
 
+        // START SNIPPET: getStatusTraversal
         TraversalDescription traversal = Traversal.description().
                 depthFirst().
                 relationships( NEXT ).
                 filter( Traversal.returnAll() );
+        // END SNIPPET: getStatusTraversal
+
 
         return new IterableWrapper<StatusUpdate, Path>(
                 traversal.traverse( firstStatus.getEndNode() ) )
