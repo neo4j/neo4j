@@ -5,6 +5,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.localserver.LocalTestServer;
+import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HttpRequestHandler;
 import org.junit.After;
 import org.junit.Before;
@@ -33,10 +34,11 @@ public class PingerTest {
 
     private LocalTestServer server = null;
 
-    HttpRequestHandler handler = new PingerHandler();
+    PingerHandler handler;
 
     @Before
     public void setUp() throws Exception {
+        handler = new PingerHandler();
         server = new LocalTestServer(null, null);
         server.register("/*", handler);
         server.start();
@@ -86,6 +88,11 @@ public class PingerTest {
             e.printStackTrace();
         }
         assertThat(thrownException, nullValue());
+
+        Map<String, String> actualQueryMap = handler.getQueryMap();
+        assertThat(actualQueryMap, notNullValue());
+        assertThat(actualQueryMap.get("id"), is(EXPECTED_STORE_ID));
+
     }
 
     @After
