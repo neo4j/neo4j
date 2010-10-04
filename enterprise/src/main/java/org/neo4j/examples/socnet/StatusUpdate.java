@@ -44,7 +44,7 @@ public class StatusUpdate
 
         Traverser traverser = traversalDescription.traverse( getUnderlyingNode() );
 
-        return IteratorUtil.singleValueOrNull( traverser.iterator() ).endNode();
+        return IteratorUtil.singleOrNull( traverser.iterator() ).endNode();
     }
 
     public String getStatusText()
