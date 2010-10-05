@@ -170,6 +170,18 @@ public class TestCommonIterators
     {
         Object object = new Object();
         Object object2 = new Object();
+        
+        // first Iterable
+        assertEquals( object, IteratorUtil.first( Arrays.asList( object, object2 ) ) );
+        assertEquals( object, IteratorUtil.first( Arrays.asList( object ) ) );
+        try
+        {
+            IteratorUtil.first( Arrays.asList() );
+            fail( "Should fail" );
+        }
+        catch ( NoSuchElementException e ) { /* Good */ }
+        
+        // first Iterator
         assertEquals( object, IteratorUtil.first( Arrays.asList( object, object2 ).iterator() ) );
         assertEquals( object, IteratorUtil.first( Arrays.asList( object ).iterator() ) );
         try
@@ -179,6 +191,12 @@ public class TestCommonIterators
         }
         catch ( NoSuchElementException e ) { /* Good */ }
 
+        // firstOrNull Iterable
+        assertEquals( object, IteratorUtil.firstOrNull( Arrays.asList( object, object2 ) ) );
+        assertEquals( object, IteratorUtil.firstOrNull( Arrays.asList( object ) ) );
+        assertNull( IteratorUtil.firstOrNull( Arrays.asList() ) );
+        
+        // firstOrNull Iterator
         assertEquals( object, IteratorUtil.firstOrNull( Arrays.asList( object, object2 ).iterator() ) );
         assertEquals( object, IteratorUtil.firstOrNull( Arrays.asList( object ).iterator() ) );
         assertNull( IteratorUtil.firstOrNull( Arrays.asList().iterator() ) );
@@ -189,6 +207,18 @@ public class TestCommonIterators
     {
         Object object = new Object();
         Object object2 = new Object();
+        
+        // last Iterable
+        assertEquals( object2, IteratorUtil.last( Arrays.asList( object, object2 ) ) );
+        assertEquals( object, IteratorUtil.last( Arrays.asList( object ) ) );
+        try
+        {
+            IteratorUtil.last( Arrays.asList() );
+            fail( "Should fail" );
+        }
+        catch ( NoSuchElementException e ) { /* Good */ }
+        
+        // last Iterator
         assertEquals( object2, IteratorUtil.last( Arrays.asList( object, object2 ).iterator() ) );
         assertEquals( object, IteratorUtil.last( Arrays.asList( object ).iterator() ) );
         try
@@ -198,6 +228,12 @@ public class TestCommonIterators
         }
         catch ( NoSuchElementException e ) { /* Good */ }
 
+        // lastOrNull Iterable
+        assertEquals( object2, IteratorUtil.lastOrNull( Arrays.asList( object, object2 ) ) );
+        assertEquals( object, IteratorUtil.lastOrNull( Arrays.asList( object ) ) );
+        assertNull( IteratorUtil.lastOrNull( Arrays.asList() ) );
+        
+        // lastOrNull Iterator
         assertEquals( object2, IteratorUtil.lastOrNull( Arrays.asList( object, object2 ).iterator() ) );
         assertEquals( object, IteratorUtil.lastOrNull( Arrays.asList( object ).iterator() ) );
         assertNull( IteratorUtil.lastOrNull( Arrays.asList().iterator() ) );
@@ -208,6 +244,23 @@ public class TestCommonIterators
     {
         Object object = new Object();
         Object object2 = new Object();
+        
+        // single Iterable
+        assertEquals( object, IteratorUtil.single( Arrays.asList( object ) ) );
+        try
+        {
+            IteratorUtil.single( Arrays.asList() );
+            fail( "Should fail" );
+        }
+        catch ( Exception e ) { /* Good */ }
+        try
+        {
+            IteratorUtil.single( Arrays.asList( object, object2 ) );
+            fail( "Should fail" );
+        }
+        catch ( Exception e ) { /* Good */ }
+        
+        // single Iterator
         assertEquals( object, IteratorUtil.single( Arrays.asList( object ).iterator() ) );
         try
         {
@@ -222,6 +275,17 @@ public class TestCommonIterators
         }
         catch ( Exception e ) { /* Good */ }
         
+        // singleOrNull Iterable
+        assertEquals( object, IteratorUtil.singleOrNull( Arrays.asList( object ) ) );
+        assertNull( IteratorUtil.singleOrNull( Arrays.asList() ) );
+        try
+        {
+            IteratorUtil.singleOrNull( Arrays.asList( object, object2 ) );
+            fail( "Should fail" );
+        }
+        catch ( Exception e ) { /* Good */ }
+        
+        // singleOrNull Iterator
         assertEquals( object, IteratorUtil.singleOrNull( Arrays.asList( object ).iterator() ) );
         assertNull( IteratorUtil.singleOrNull( Arrays.asList().iterator() ) );
         try
