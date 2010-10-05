@@ -61,15 +61,3 @@ Activity Stream
 	The code looks like: 
 	
 %{source-code|snippet=getActivityStream|file=src/main/java/org/neo4j/examples/socnet/FriendsStatusUpdateIterator.java}
-		
-Friend Graph Instance
-
-    The social network connects <<<Person>>>s together through <<<friend>>>
-    relationships. Looking at the following instance of friends in Andreas
-    Kollegger's extended network, you can easily deduce that Peter is a 
-    more likely recommended friend, sharing 2 direct friends, while Rocco
-    is less likely recommended friend for Andreas since there is only 1
-    direct friend in common. 
-
-[./images/social_friends.png] Friends of friends
-
