@@ -63,6 +63,7 @@ public abstract class AbstractClient implements ShellClient
 
     private Console console;
     private long timeConnection;
+    private final Set<String> grabbedKeysFromServer = new HashSet<String>();
 
     public void grabPrompt()
     {
@@ -176,6 +177,7 @@ public abstract class AbstractClient implements ShellClient
         {
             if ( this.session().get( key ) == null )
             {
+                grabbedKeysFromServer.add( key );
                 Serializable value = this.getServer().getProperty( key );
                 if ( value == null )
                 {
@@ -190,6 +192,15 @@ public abstract class AbstractClient implements ShellClient
         catch ( RemoteException e )
         {
             throw new RuntimeException( e );
+        }
+    }
+    
+    protected void regrabVariablesFromServer()
+    {
+        for ( String key : grabbedKeysFromServer )
+        {
+            Serializable value = this.session().remove( key );
+            possiblyGrabDefaultVariableFromServer( key, value );
         }
     }
 
