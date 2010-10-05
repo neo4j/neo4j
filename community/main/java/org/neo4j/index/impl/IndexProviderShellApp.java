@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
@@ -18,6 +19,7 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.kernel.ReadOnlyGraphDatabaseProxy;
 import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
 
 @Service.Implementation( App.class )
@@ -30,9 +32,23 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         IndexProvider result = indexProvider;
         if ( result == null )
         {
-            result = indexProvider = new LuceneIndexProvider( getServer().getDb() );
+            result = indexProvider = startProvider( getServer().getDb() );
         }
         return result;
+    }
+
+    private static IndexProvider startProvider( GraphDatabaseService graphDb )
+    {
+        if ( graphDb instanceof ReadOnlyGraphDatabaseProxy )
+        {
+            ReadOnlyGraphDatabaseProxy proxy = (ReadOnlyGraphDatabaseProxy) graphDb;
+            return new ReadOnlyIndexProviderProxy( proxy, new LuceneIndexProvider(
+                    proxy.getActualGraphDb() ) );
+        }
+        else
+        {
+            return new LuceneIndexProvider( graphDb );
+        }
     }
 
     {
