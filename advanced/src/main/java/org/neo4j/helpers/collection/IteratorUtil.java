@@ -101,7 +101,7 @@ public abstract class IteratorUtil
      * will be thrown.
      * 
      * @param <T> the type of elements in {@code iterator}.
-     * @param iterator the {@link Iterator} to get ele,ents from.
+     * @param iterator the {@link Iterator} to get elements from.
      * @return the single element in the {@code iterator}.
      * @throws {@link NoSuchElementException} if there isn't exactly one
      * element.
@@ -118,6 +118,95 @@ public abstract class IteratorUtil
             throw new NoSuchElementException( "No element found in " + iterator );
         }
         return result;
+    }
+    
+    /**
+     * Returns the given iterable's first element or {@code null} if no
+     * element found.
+     * 
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the first element in the {@code iterable}, or {@code null} if no
+     * element found.
+     */
+    public static <T> T firstOrNull( Iterable<T> iterable )
+    {
+        return firstOrNull( iterable.iterator() );
+    }
+    
+    /**
+     * Returns the given iterable's first element. If no element is found a
+     * {@link NoSuchElementException} is thrown.
+     * 
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the first element in the {@code iterable}.
+     * @throws {@link NoSuchElementException} if no element found.
+     */
+    public static <T> T first( Iterable<T> iterable )
+    {
+        return first( iterable.iterator() );
+    }
+    
+    /**
+     * Returns the given iterable's last element or {@code null} if no
+     * element found.
+     * 
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the last element in the {@code iterable}, or {@code null} if no
+     * element found.
+     */
+    public static <T> T lastOrNull( Iterable<T> iterable )
+    {
+        return lastOrNull( iterable.iterator() );
+    }
+    
+    /**
+     * Returns the given iterable's last element. If no element is found a
+     * {@link NoSuchElementException} is thrown.
+     * 
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the last element in the {@code iterable}.
+     * @throws {@link NoSuchElementException} if no element found.
+     */
+    public static <T> T last( Iterable<T> iterable )
+    {
+        return last( iterable.iterator() );
+    }
+    
+    /**
+     * Returns the given iterable's single element or {@code null} if no
+     * element found. If there is more than one element in the iterable a
+     * {@link NoSuchElementException} will be thrown.
+     * 
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the single element in {@code iterable}, or {@code null} if no
+     * element found.
+     * @throws {@link NoSuchElementException} if more than one element was
+     * found.
+     */
+    public static <T> T singleOrNull( Iterable<T> iterable )
+    {
+        return singleOrNull( iterable.iterator() );
+    }
+    
+    /**
+     * Returns the given iterable's single element. If there are no elements
+     * or more than one element in the iterable a {@link NoSuchElementException}
+     * will be thrown.
+     * 
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the single element in the {@code iterable}.
+     * @throws {@link NoSuchElementException} if there isn't exactly one
+     * element.
+     */
+    public static <T> T single( Iterable<T> iterable )
+    {
+        return single( iterable.iterator() );
     }
     
     /**
