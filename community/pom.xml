@@ -46,6 +46,7 @@
           <executions>
             <execution>
               <id>forCentral</id>
+              <!-- to be deployed to maven central (the default jar build) -->
               <goals>
                 <goal>single</goal>
               </goals>
@@ -62,15 +63,16 @@
               <phase>package</phase>
             </execution>
             <execution>
-              <id>forZip</id>
+              <id>forNeo4j</id>
+              <!-- to be used for downloading from Neo4j.org -->
               <goals>
                 <goal>single</goal>
               </goals>
               <configuration>
                 <filters>
-                  <filter>${project.basedir}/src/main/assembly/forPackaged.properties</filter>
+                  <filter>${project.basedir}/src/main/assembly/forNeo4j.properties</filter>
                 </filters>
-                <finalName>${artifactId}-${version}-download</finalName>
+                <finalName>${artifactId}-${version}-neo4j</finalName>
                 <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
                 <descriptors>
                   <descriptor>src/main/assembly/assembly.xml</descriptor>
