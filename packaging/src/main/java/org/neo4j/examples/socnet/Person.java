@@ -168,7 +168,7 @@ public class Person
         ArrayList<RankedPerson> rankedFriends = new ArrayList<RankedPerson>();
         for ( Person friend : friendsOfFriends )
         {
-            int rank = getPathsToPerson( friend );
+            int rank = getNumberOfPathsToPerson( friend );
             rankedFriends.add( new RankedPerson( friend, rank ) );
         }
 
@@ -346,7 +346,7 @@ public class Person
         };
     }
 
-    private int getPathsToPerson( Person otherPerson )
+    private int getNumberOfPathsToPerson( Person otherPerson )
     {
         PathFinder<Path> finder = GraphAlgoFactory.allPaths( Traversal.expanderForTypes( FRIEND, Direction.BOTH ), 2 );
         Iterable<Path> paths = finder.findAllPaths( getUnderlyingNode(), otherPerson.getUnderlyingNode() );
