@@ -22,7 +22,13 @@ package org.neo4j.examples.apoc;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -35,7 +41,7 @@ public class CalculateShortestPath
     private static final String DB_PATH = "neo4j-shortest-path";
     private static final String NAME_KEY = "name";
     private static RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
-    
+
     private static GraphDatabaseService graphDb;
     private static IndexService indexService;
 
@@ -67,7 +73,7 @@ public class CalculateShortestPath
         {
             tx.finish();
         }
-        
+
         // So let's find the shortest path between Neo and Agent Smith
         Node neo = getOrCreateNode( "Neo" );
         Node agentSmith = getOrCreateNode( "Agent Smith" );
@@ -78,7 +84,7 @@ public class CalculateShortestPath
         System.out.println( "Path from Neo to Agent Smith: " +
                 Traversal.simplePathToString( foundPath, NAME_KEY ) );
         // END SNIPPET: shortestPathUsage
-        
+
         System.out.println( "Shutting down database ..." );
         indexService.shutdown();
         graphDb.shutdown();
@@ -86,10 +92,10 @@ public class CalculateShortestPath
 
     private static void createChain( String... names )
     {
-        for ( int i = 0; i < names.length-1; i++ )
+        for ( int i = 0; i < names.length - 1; i++ )
         {
-            Node firstNode = getOrCreateNode( names[i] );
-            Node secondNode = getOrCreateNode( names[i+1] );
+            Node firstNode = getOrCreateNode( names[ i ] );
+            Node secondNode = getOrCreateNode( names[ i + 1 ] );
             firstNode.createRelationshipTo( secondNode, KNOWS );
         }
     }
