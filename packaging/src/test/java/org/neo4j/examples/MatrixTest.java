@@ -16,10 +16,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
 
 public class MatrixTest
 {
@@ -76,6 +74,7 @@ public class MatrixTest
             Node cypher = graphDb.createNode();
             cypher.setProperty( "name", "Cypher" );
             cypher.setProperty( "last name", "Reagan" );
+            trinity.createRelationshipTo( cypher, RelTypes.KNOWS );
             rel = morpheus.createRelationshipTo( cypher, RelTypes.KNOWS );
             rel.setProperty( "disclosure", "public" );
             Node smith = graphDb.createNode();
@@ -159,36 +158,10 @@ public class MatrixTest
         TraversalDescription td = Traversal.description().breadthFirst().relationships(
                 RelTypes.CODED_BY, Direction.OUTGOING ).relationships(
                 RelTypes.KNOWS, Direction.OUTGOING ).filter(
-                new Predicate<Path>()
-                {
-                    public boolean accept( final Path path )
-                    {
-                        Relationship rel = path.lastRelationship();
-                        return rel != null && rel.isType( RelTypes.CODED_BY );
-                    }
-                } );
+                Traversal.returnWhereLastRelationshipTypeIs( RelTypes.CODED_BY ) );
         return td.traverse( startNode );
     }
     // END SNIPPET: find-hackers
-
-    @Test
-    public void depthTwoTraversal()
-    {
-        // work in progress
-        TraversalDescription td = Traversal.description().depthFirst().relationships(
-                RelTypes.KNOWS ).uniqueness( Uniqueness.NONE ).prune(
-                Traversal.pruneAfterDepth( 2 ) ).filter( new Predicate<Path>()
-        {
-            public boolean accept( Path item )
-            {
-                return item.length() > 1;
-            }
-        } );
-        for ( Path path : td.traverse( getNeoNode() ) )
-        {
-            System.out.println( path );
-        }
-    }
 
     private static void registerShutdownHook()
     {
