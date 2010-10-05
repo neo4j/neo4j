@@ -37,7 +37,7 @@ Status Graph Instance
 
 %{source-code|snippet=getStatusTraversal|file=src/main/java/org/neo4j/examples/socnet/Person.java}
 
-	This gives us a traverser that will start at one StatusUpdate, and will follow the link 
+	This gives us a traverser that will start at one StatusUpdate, and will follow the chain 
 	of updates until they run out. Traversers are lazy loading, so it's performant even when
 	dealing with thousands of statuses - they are not loaded until we actually consume them.
 
@@ -73,9 +73,3 @@ Friend Graph Instance
 
 [./images/social_friends.png] Friends of friends
 
-Path finding example
-
-    What we want to achieve here is to create a network between friends.
-    So the basic structure of our data goes like this:
-
-[./images/social-network.png] Node space view
