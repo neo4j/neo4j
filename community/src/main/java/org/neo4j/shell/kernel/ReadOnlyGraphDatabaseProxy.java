@@ -88,12 +88,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService
 
     public Node getNodeById( long id )
     {
-        return new ReadOnlyNodeProxy( getNodeById( id ) );
+        return new ReadOnlyNodeProxy( actual.getNodeById( id ) );
     }
 
     public Node getReferenceNode()
     {
-        return new ReadOnlyNodeProxy( getReferenceNode() );
+        return new ReadOnlyNodeProxy( actual.getReferenceNode() );
     }
 
     public Relationship getRelationshipById( long id )
