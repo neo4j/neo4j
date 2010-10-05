@@ -1,7 +1,6 @@
 package org.neo4j.shell.impl;
 
 import java.io.Serializable;
-import java.rmi.RemoteException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,7 +52,8 @@ public final class ShellServerExtension extends KernelExtension
         if ( config == null ) config = Collections.<String, Serializable>emptyMap();
         try
         {
-            server = new GraphDatabaseShellServer( kernel.graphDatabase() );
+            server = new GraphDatabaseShellServer( kernel.graphDatabase(), (Boolean) getConfig(
+                    config, StartClient.ARG_READONLY, Boolean.FALSE ) );
             int port = (Integer) getConfig( config, StartClient.ARG_PORT,
                     AbstractServer.DEFAULT_PORT );
             String name = (String) getConfig( config, StartClient.ARG_NAME,
@@ -91,7 +91,7 @@ public final class ShellServerExtension extends KernelExtension
                         "Invalid shell configuration '" + shellConfig
                                 + "' should be '<key1>=<value1>,<key2>=<value2>...' where key can"
                                 + " be any of [" + StartClient.ARG_PORT + ", " +
-                                StartClient.ARG_NAME + "]" );
+                                StartClient.ARG_NAME + ", " + StartClient.ARG_READONLY + "]" );
             }
             String key = splitted[0].trim();
             Serializable value = splitted[1];
@@ -99,13 +99,17 @@ public final class ShellServerExtension extends KernelExtension
             {
                 value = Integer.parseInt( splitted[1] );
             }
+            else if ( key.equals( StartClient.ARG_READONLY ) )
+            {
+                value = Boolean.parseBoolean( splitted[1] );
+            }
             map.put( key, value );
         }
         return map;
     }
 
     private Serializable getConfig( Map<String, Serializable> config, String key,
-            Serializable defaultValue ) throws RemoteException
+            Serializable defaultValue )
     {
         Serializable result = config.get( key );
         return result != null ? result : defaultValue;

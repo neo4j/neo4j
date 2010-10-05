@@ -42,8 +42,8 @@ import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
  */
 public class GraphDatabaseShellServer extends SimpleAppServer
 {
-    private GraphDatabaseService graphDb;
-    private BashVariableInterpreter bashInterpreter;
+    private final GraphDatabaseService graphDb;
+    private final BashVariableInterpreter bashInterpreter;
     private boolean graphDbCreatedHere;
 
     /**
@@ -54,15 +54,21 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     public GraphDatabaseShellServer( String path, boolean readOnly, String configFileOrNull )
             throws RemoteException
     {
-        this( instantiateGraphDb( path, readOnly, configFileOrNull ) );
+        this( instantiateGraphDb( path, readOnly, configFileOrNull ), readOnly );
         this.graphDbCreatedHere = true;
     }
-    
+
     public GraphDatabaseShellServer( GraphDatabaseService graphDb )
             throws RemoteException
     {
+        this( graphDb, false );
+    }
+
+    public GraphDatabaseShellServer( GraphDatabaseService graphDb, boolean readOnly )
+            throws RemoteException
+    {
         super();
-        this.graphDb = graphDb;
+        this.graphDb = readOnly ? new ReadOnlyGraphDatabaseProxy( graphDb ) : graphDb;
         this.bashInterpreter = new BashVariableInterpreter();
         this.bashInterpreter.addReplacer( "W", new WorkingDirReplacer() );
         this.setProperty( AbstractClient.PROMPT_KEY, getShellPrompt() );
@@ -89,11 +95,11 @@ public class GraphDatabaseShellServer extends SimpleAppServer
         }
         return result != null ? result : new HashMap<String, String>();
     }
-    
+
     protected String getShellPrompt()
     {
         String name = "neo4j-sh";
-        if ( this.graphDb instanceof EmbeddedReadOnlyGraphDatabase )
+        if ( this.graphDb instanceof ReadOnlyGraphDatabaseProxy )
         {
             name += "[readonly]";
         }
@@ -145,7 +151,8 @@ public class GraphDatabaseShellServer extends SimpleAppServer
                     false ).toString();
         }
     }
-    
+
+    @Override
     public void shutdown()
     {
         if ( graphDbCreatedHere )
