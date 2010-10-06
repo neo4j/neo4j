@@ -710,7 +710,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             count++;
         }
         assertEquals( 3, count );
-        assertEquals( 2, rStore.getProperties( rel, false ).size() );
+        assertEquals( 3, rStore.getProperties( rel, false ).size() );
         RelationshipData relData = rStore.getRelationship( rel );
         assertEquals( firstNode, relData.firstNode() );
         assertEquals( secondNode, relData.secondNode() );
@@ -726,8 +726,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         Iterator<RelationshipData> second = 
             rStore.getMoreRelationships( secondNode, secondPos ).iterator();
         second.next();
-        assertTrue( !first.hasNext() );
-        assertTrue( !second.hasNext() );
+        assertTrue( first.hasNext() );
+        assertTrue( second.hasNext() );
     }
 
     private void deleteRel2( int rel, int prop1, int prop2, int prop3,
@@ -767,7 +767,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             count++;
         }
         assertEquals( 3, count );
-        assertEquals( 2, rStore.getProperties( rel, false ).size() );
+        assertEquals( 3, rStore.getProperties( rel, false ).size() );
         RelationshipData relData = rStore.getRelationship( rel );
         assertEquals( firstNode, relData.firstNode() );
         assertEquals( secondNode, relData.secondNode() );
@@ -781,8 +781,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             rStore.getRelationshipChainPosition( secondNode );
         Iterator<RelationshipData> second = 
             rStore.getMoreRelationships( secondNode, secondPos ).iterator();
-        assertTrue( !first.hasNext() );
-        assertTrue( !second.hasNext() );
+        assertTrue( first.hasNext() );
+        assertTrue( second.hasNext() );
     }
 
     private void deleteNode1( int node, int prop1, int prop2, int prop3 )
@@ -822,13 +822,12 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             count++;
         }
         assertEquals( 3, count );
-        assertEquals( 2, nStore.getProperties( node, false ).size() );
-
+        assertEquals( 3, nStore.getProperties( node, false ).size() );
         RelationshipChainPosition pos = 
             rStore.getRelationshipChainPosition( node );
         Iterator<RelationshipData> rels = 
             rStore.getMoreRelationships( node, pos ).iterator();
-        assertTrue( !rels.hasNext() );
+        assertTrue( rels.hasNext() );
         nStore.deleteNode( node );
     }
 
@@ -868,13 +867,13 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             }
             count++;
         }
-        assertEquals( 3, count );
-        assertEquals( 2, nStore.getProperties( node, false ).size() );
+        assertEquals( 3, count );        
+        assertEquals( 3, nStore.getProperties( node, false ).size() );
         RelationshipChainPosition pos = 
             rStore.getRelationshipChainPosition( node );
         Iterator<RelationshipData> rels = 
             rStore.getMoreRelationships( node, pos ).iterator();
-        assertTrue( !rels.hasNext() );
+        assertTrue( rels.hasNext() );
         nStore.deleteNode( node );
     }
 
@@ -908,7 +907,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         }
         commitTx();
         startTx();
-        for ( int i = 0; i < 3; i++ )
+        for ( int i = 0; i < 3; i+=2 )
         {
             RelationshipChainPosition pos = 
                 rStore.getRelationshipChainPosition( nodeIds[i] );
