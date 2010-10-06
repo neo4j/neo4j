@@ -1,6 +1,6 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
  *
@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.shell.apps;
 
 import java.rmi.RemoteException;
