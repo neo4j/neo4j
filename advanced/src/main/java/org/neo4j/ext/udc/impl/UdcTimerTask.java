@@ -10,8 +10,6 @@ public class UdcTimerTask extends TimerTask {
     public static final Map<String, Integer> successCounts = new HashMap<String, Integer>();
     public static final Map<String, Integer> failureCounts = new HashMap<String, Integer>();
     
-    private String host;
-    private String version;
     private String storeId;
     private Pinger pinger;
 
@@ -20,8 +18,6 @@ public class UdcTimerTask extends TimerTask {
         successCounts.put(storeId, 0);
         failureCounts.put(storeId, 0);
 
-        this.host = host;
-        this.version = version;
         this.storeId = storeId;
 
         Map<String,String> udcFields = new HashMap<String, String>();
