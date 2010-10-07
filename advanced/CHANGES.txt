@@ -1,0 +1,15 @@
+1.1 (2010-07-29)
+----------------
+
+-New components
+o Graph-algo
+o Online-backup
+
+1.0 (2010-02-16)
+----------------
+
+-Initial components
+o Kernel
+o Index
+o Remote-graphdb
+o Shell
