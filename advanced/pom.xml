@@ -22,10 +22,9 @@
   
   <url>http://components.neo4j.org/neo4j-udc/</url>
   <scm>
-    <connection>
-      scm:svn:https://svn.neo4j.org/laboratory/components/udc
-    </connection>
-    <url>https://trac.neo4j.org/browser/laboratory/components/udc</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/udc</connection>
+    <developerConnection>${project.scm.connection}</developerConnection>
+    <url>https://trac.neo4j.org/browser/components/udc</url>
   </scm>
 
   <build>
@@ -36,52 +35,51 @@
         <configuration>
           <framework>felix</framework>
           <provision>
-            <param>mvn:org.apache.geronimo.specs/geronimo-jta_1.1_spec/1.1.1</param>
+            <param>mvn:${jta.groupId}/${jta.artifactId}/${jta.version}</param>
           </provision>
         </configuration>
       </plugin>
-        <plugin>
-          <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.2-beta-5</version>
-          <executions>
-            <execution>
-              <id>forCentral</id>
-              <!-- to be deployed to maven central (the default jar build) -->
-              <goals>
-                <goal>single</goal>
-              </goals>
-              <configuration>
-                <filters>
-                  <filter>${project.basedir}/src/main/assembly/forMavenCentral.properties</filter>
-                </filters>
-                <finalName>${artifactId}-${version}</finalName>
-                <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
-                <descriptors>
-                  <descriptor>src/main/assembly/assembly.xml</descriptor>
-                </descriptors>
-              </configuration>
-              <phase>package</phase>
-            </execution>
-            <execution>
-              <id>forNeo4j</id>
-              <!-- to be used for downloading from Neo4j.org -->
-              <goals>
-                <goal>single</goal>
-              </goals>
-              <configuration>
-                <filters>
-                  <filter>${project.basedir}/src/main/assembly/forNeo4j.properties</filter>
-                </filters>
-                <finalName>${artifactId}-${version}-neo4j</finalName>
-                <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
-                <descriptors>
-                  <descriptor>src/main/assembly/assembly.xml</descriptor>
-                </descriptors>
-              </configuration>
-              <phase>package</phase>
-            </execution>
-          </executions>
-        </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>forCentral</id>
+            <!-- to be deployed to maven central (the default jar build) -->
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <filters>
+                <filter>${project.basedir}/src/main/assembly/forMavenCentral.properties</filter>
+              </filters>
+              <finalName>${artifactId}-${version}</finalName>
+              <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
+              <descriptors>
+                <descriptor>src/main/assembly/assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <phase>package</phase>
+          </execution>
+          <execution>
+            <id>forNeo4j</id>
+            <!-- to be used for downloading from Neo4j.org -->
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <filters>
+                <filter>${project.basedir}/src/main/assembly/forNeo4j.properties</filter>
+              </filters>
+              <finalName>${artifactId}-${version}-neo4j</finalName>
+              <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
+              <descriptors>
+                <descriptor>src/main/assembly/assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <phase>package</phase>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
         <artifactId>maven-license-plugin</artifactId>
