@@ -20,12 +20,13 @@
 
 package org.neo4j.ext.udc.impl.osgi;
 
-import java.util.*;
+import java.util.Dictionary;
+import java.util.Properties;
 
 import org.neo4j.ext.udc.impl.UdcExtensionImpl;
-import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelExtension;
-import org.osgi.framework.*;
+import org.osgi.framework.BundleActivator;
+import org.osgi.framework.BundleContext;
 
 
 /**

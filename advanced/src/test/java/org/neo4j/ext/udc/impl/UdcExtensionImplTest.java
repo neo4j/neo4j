@@ -20,22 +20,25 @@
 
 package org.neo4j.ext.udc.impl;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-
-import static junit.framework.Assert.assertFalse;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Unit testing for the UDC kernel extension.
@@ -70,13 +73,10 @@ public class UdcExtensionImplTest {
      * Expect the counts to be initialized.
      */
     @Test
-    public void shouldLoadWhenNormalGraphdbIsCreated() throws IOException {
+    public void shouldLoadWhenNormalGraphdbIsCreated() throws Exception {
         EmbeddedGraphDatabase graphdb = createTempDatabase(null);
         // when the UDC extension successfully loads, it initializes the attempts count to 0
-        Collection<Integer> successCountValues = UdcTimerTask.successCounts.values();
-        assertFalse(successCountValues.isEmpty());
-        Integer count = successCountValues.iterator().next();
-        assertThat(count, equalTo(new Integer(0)));
+        assertGotSuccessWithRetry( IS_ZERO );
         destroy(graphdb);
     }
 
@@ -95,15 +95,12 @@ public class UdcExtensionImplTest {
     }
 
     @Test
-    public void shouldRecordFailuresWhenThereIsNoServer() throws InterruptedException, IOException {
+    public void shouldRecordFailuresWhenThereIsNoServer() throws Exception {
         Map<String, String> config = new HashMap<String, String>();
         config.put(UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100"); // first delay must be long enough to allow class initialization to complete
         config.put(UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, "127.0.0.1:1"); // first delay must be long enough to allow class initialization to complete
         EmbeddedGraphDatabase graphdb = new EmbeddedGraphDatabase("should-record-failures", config);
-        Thread.sleep(200);
-        Collection<Integer> failureCountValues = UdcTimerTask.failureCounts.values();
-        Integer count = failureCountValues.iterator().next();
-        assertTrue(count > 0);
+        assertGotFailureWithRetry( IS_GREATER_THAN_ZERO );
         destroy(graphdb);
     }
 
@@ -123,16 +120,56 @@ public class UdcExtensionImplTest {
         config.put(UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress);
 
         EmbeddedGraphDatabase graphdb = createTempDatabase(config);
-        Thread.sleep(200);
-        Collection<Integer> successCountValues = UdcTimerTask.successCounts.values();
-        Integer successes = successCountValues.iterator().next();
-        assertTrue(successes > 0);
-        Collection<Integer> failureCountValues = UdcTimerTask.failureCounts.values();
-        Integer failures = failureCountValues.iterator().next();
-        assertTrue(failures == 0);
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertGotFailureWithRetry( IS_ZERO );
         destroy(graphdb);
     }
+    
+    private static interface Condition<T>
+    {
+        boolean isTrue( T value );
+    }
+    
+    private static final Condition<Integer> IS_ZERO = new Condition<Integer>()
+    {
+        public boolean isTrue( Integer value )
+        {
+            return value == 0;
+        }
+    };
 
+    private static final Condition<Integer> IS_GREATER_THAN_ZERO = new Condition<Integer>()
+    {
+        public boolean isTrue( Integer value )
+        {
+            return value > 0;
+        }
+    };
+    
+    private void assertGotSuccessWithRetry( Condition<Integer> condition ) throws Exception
+    {
+        assertGotPingWithRetry( UdcTimerTask.successCounts, condition );
+    }
+
+    private void assertGotFailureWithRetry( Condition<Integer> condition ) throws Exception
+    {
+        assertGotPingWithRetry( UdcTimerTask.failureCounts, condition );
+    }
+    
+    private void assertGotPingWithRetry( Map<String, Integer> counts, Condition<Integer> condition ) throws Exception
+    {
+        for ( int i = 0; i < 10; i++ )
+        {
+            Thread.sleep(200);
+            Collection<Integer> countValues = counts.values();
+            Integer count = countValues.iterator().next();
+            if ( condition.isTrue( count ) )
+            {
+                return;
+            }
+        }
+        fail();
+    }
 
     private EmbeddedGraphDatabase createTempDatabase(Map<String,String> config) throws IOException {
         EmbeddedGraphDatabase tempdb = null;
