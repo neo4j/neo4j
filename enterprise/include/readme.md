@@ -1,9 +1,12 @@
 neo4j-release include
 =====================
 
-The artifacts listed in this dependency pom define the 
-standard contents of a Neo4j release. There are other
-released components (like RDF) which are not included.
+A release submodule for dependency poms.
 
+Dependency Poms
+---------------
+
+* neo4j - standard set of Neo4j release components
+* neo4j-superset - every released component. Not for general use
 
 

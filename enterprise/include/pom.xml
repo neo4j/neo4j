@@ -9,46 +9,17 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.neo4j</groupId>
-  <artifactId>neo4j</artifactId>
+  <groupId>org.neo4j.release</groupId>
+  <artifactId>include</artifactId>
+  <version>1.0-SNAPSHOT</version>
 
-  <name>Neo4j Release</name>
-  <description>Dependency pom for components included in a release.</description>
-  <version>1.2-M1-SNAPSHOT</version>
+  <name>Neo4j Include</name>
 
   <packaging>pom</packaging>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${neo4j-kernel.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-index</artifactId>
-      <version>${neo4j-index.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-shell</artifactId>
-      <version>${neo4j-shell.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-remote-graphdb</artifactId>
-      <version>${neo4j-remote-graphdb.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-online-backup</artifactId>
-      <version>${neo4j-online-backup.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-udc</artifactId>
-      <version>${neo4j-udc.version}</version>
-    </dependency>
-  </dependencies>
+  <modules>
+    <module>neo4j</module>
+    <module>neo4j-superset</module>
+  </modules>
 
 </project>
