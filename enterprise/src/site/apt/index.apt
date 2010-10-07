@@ -1,7 +1,7 @@
-Neo4j Apoc examples
+Neo4j Examples
 
-    Neo4j apoc-examples contains code examples using the different components
-    included in the Apoc package.
+    Neo4j examples contains code examples using the different components
+    included in the Neo4j package.
 
     * {{{./basic.html}Basic usage}}
     
