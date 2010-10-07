@@ -16,7 +16,8 @@ class RemoteGraphdbSpec extends SpecificationWithJUnit {
   "neo4j remote graphdb" should {
 
     "attach to a remote graph database" in {
-      skip("needs to start RMI, spawn neo4j server in a jvm.") 
+      skip("needs to start RMI, spawn neo4j server in a jvm.")
+      // TODO: implement this integration test
     }
 
   }
