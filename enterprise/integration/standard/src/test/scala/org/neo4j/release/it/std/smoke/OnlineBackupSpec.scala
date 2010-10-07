@@ -34,7 +34,6 @@ class OnlineBackupSpec extends SpecificationWithJUnit {
       tx.finish
       graphdb.shutdown
 
-      // TODO: copy the database to the backup dir, as in: new File(dbname).copyAll(expected_backupdir)
       FileUtils.copyDirectory(new File(dbname), expected_backupdir);
       
       graphdb = new EmbeddedGraphDatabase( dbname, dbconfig )
