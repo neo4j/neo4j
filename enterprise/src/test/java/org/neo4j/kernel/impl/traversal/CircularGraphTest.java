@@ -20,6 +20,11 @@
 
 package org.neo4j.kernel.impl.traversal;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import java.util.Iterator;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -61,7 +66,6 @@ public class CircularGraphTest extends AbstractTestBase
                 if ( last != null && last.isType( type ) )
                 {
                     Node node = position.currentNode();
-                    if ( !node.hasProperty( "timestamp" ) ) new Exception().printStackTrace();
                     long currentTime = (Long) node.getProperty( "timestamp" );
                     return currentTime >= timestamp;
                 }
@@ -79,9 +83,9 @@ public class CircularGraphTest extends AbstractTestBase
                 return false;
             }
         }, type, Direction.OUTGOING );
-        for ( Node node : t )
-        {
-            System.out.println( node );
-        }
+        Iterator<Node> nodes = t.iterator();
+        assertEquals( "2", nodes.next().getProperty( "name" ) );
+        assertEquals( "3", nodes.next().getProperty( "name" ) );
+        assertFalse( nodes.hasNext() );
     }
 }
