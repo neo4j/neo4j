@@ -1,27 +1,35 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.examples</groupId>
-  <artifactId>neo4j-apoc-examples</artifactId>
-  <name>Neo4j Apoc Examples</name>
+  <artifactId>neo4j-examples</artifactId>
+  <name>Neo4j Examples</name>
   <version>1.2-SNAPSHOT</version>
   <description>Basic Neo4j examples</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>2</version>
+    <version>3-SNAPSHOT</version>
   </parent>
-
-  <properties>
-    <short-name>apoc-examples</short-name>
-  </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-apoc</artifactId>
+      <artifactId>neo4j</artifactId>
       <version>1.2-SNAPSHOT</version>
       <type>pom</type>
+      <exclusions>
+        <exclusion>
+          <artifactId>neo4j-udc</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-udc</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <classifier>neo4j</classifier>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
@@ -45,13 +53,13 @@
 
   <issueManagement>
     <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=apoc</url>
+    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=neo4j</url>
   </issueManagement>
   
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/examples/${short-name}/trunk</connection>
+    <connection>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/trunk</connection>
     <developerConnection>${project.scm.connection}</developerConnection>
-    <url>https://trac.neo4j.org/browser/examples/${short-name}/trunk</url>
+    <url>https://trac.neo4j.org/browser/examples/neo4j-examples/</url>
   </scm>
   
   <build>
@@ -129,7 +137,7 @@
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
-          <finalName>neo4j-apoc-${project.version}</finalName>
+          <finalName>neo4j-${project.version}</finalName>
           <descriptors>
             <descriptor>src/main/assembly/apoc-assembly.xml
                         </descriptor>
