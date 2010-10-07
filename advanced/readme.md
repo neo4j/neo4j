@@ -9,6 +9,6 @@ Sub-modules
 
 * integration - component integration tests
 * assembly - build assemblies for packaged products
-* include - org.neo4j:neo4j dependency pom, defining all released artifacts
+* include - org.neo4j:neo4j dependency pom, defining the standard artifact set
 * build - parent for any compilable artifacts
 
