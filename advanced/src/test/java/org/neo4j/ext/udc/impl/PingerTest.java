@@ -20,9 +20,7 @@
 
 package org.neo4j.ext.udc.impl;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
@@ -111,6 +109,23 @@ public class PingerTest {
         assertThat(actualQueryMap, notNullValue());
         assertThat(actualQueryMap.get("id"), is(EXPECTED_STORE_ID));
 
+    }
+
+    @Test
+    public void shouldIncludePingCountInURI() throws IOException {
+        final int EXPECTED_PING_COUNT = 16;
+        final String hostURL = hostname + ":" + server.getServicePort();
+        final Map<String,String> udcFields = new HashMap<String, String>();
+
+        Pinger p = new Pinger(hostURL, udcFields);
+        for (int i=0; i<EXPECTED_PING_COUNT; i++) {
+            p.ping();
+        }
+
+        assertThat(p.getPingCount(), is(equalTo(EXPECTED_PING_COUNT)));
+
+        Map<String, String> actualQueryMap = handler.getQueryMap();
+        assertThat(actualQueryMap.get("p"), is(Integer.toString(EXPECTED_PING_COUNT)));
     }
 
     @After
