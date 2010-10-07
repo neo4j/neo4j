@@ -174,7 +174,8 @@ public class UdcExtensionImplTest {
     private EmbeddedGraphDatabase createTempDatabase(Map<String,String> config) throws IOException {
         EmbeddedGraphDatabase tempdb = null;
         String randomDbName = "tmpdb-" + rnd.nextInt();
-        File possibleDirectory = new File(randomDbName);
+        File possibleDirectory = new File( "target" + File.separator
+                                           + randomDbName );
         if (possibleDirectory.exists()) {
             FileUtils.deleteDirectory(possibleDirectory);
         }
