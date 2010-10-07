@@ -58,9 +58,9 @@
   </dependencies>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/apoc/trunk/</connection>
+    <connection>scm:svn:https://svn.neo4j.org/release/trunk/include/neo4j</connection>
     <developerConnection>${project.scm.connection}</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/apoc</url>
+    <url>https://trac.neo4j.org/browser/release/trunk/include/neo4j</url>
   </scm>
 
   <licenses>
