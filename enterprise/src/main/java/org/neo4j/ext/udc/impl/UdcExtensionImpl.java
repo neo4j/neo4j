@@ -20,16 +20,15 @@
 
 package org.neo4j.ext.udc.impl;
 
+import java.util.Properties;
+import java.util.Timer;
+
 import org.neo4j.ext.udc.UdcProperties;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelExtension;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-
-import java.io.IOException;
-import java.util.Properties;
-import java.util.Timer;
 
 /**
  * Kernel extension for UDC, the Usage Data Collector. The UDC runs as a background

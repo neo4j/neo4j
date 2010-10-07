@@ -20,12 +20,11 @@
 
 package org.neo4j.ext.udc.impl;
 
-import java.io.*;
-import java.net.*;
-import java.util.HashMap;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class Pinger {
     
