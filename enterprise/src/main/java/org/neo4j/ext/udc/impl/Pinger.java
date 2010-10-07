@@ -30,6 +30,7 @@ public class Pinger {
     
     private String address;
     private Map<String, String> usageDataMap;
+    private int pingCount = 0;
 
     public Pinger(String address, Map<String, String> usageDataMap) {
         this.address = address;
@@ -38,16 +39,19 @@ public class Pinger {
 
 
     public void ping() throws IOException {
+        pingCount++;
+
         StringBuffer uri = new StringBuffer("http://" + address + "/" + "?");
 
-        Iterator<String> keyIt = usageDataMap.keySet().iterator();
-        while (keyIt.hasNext()) {
-            String key = keyIt.next();
+        for (String key : usageDataMap.keySet()) {
             uri.append(key);
             uri.append("=");
             uri.append(usageDataMap.get(key));
-            if (keyIt.hasNext()) uri.append("+");
+            uri.append("+");
         }
+
+        // append counts
+        uri.append("p=").append(pingCount);
 
         URL url = new URL(uri.toString());
         URLConnection con = url.openConnection();
@@ -60,4 +64,7 @@ public class Pinger {
         con.getInputStream();
     }
 
+   public Integer getPingCount() {
+        return pingCount;
+    }
 }
