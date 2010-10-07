@@ -3,7 +3,8 @@ package org.neo4j.release.it.std.smoke
 import org.specs._
 
 import org.neo4j.kernel.EmbeddedGraphDatabase
-import java.util.HashMap;
+import java.util.HashMap
+import org.apache.commons.io.FileUtils;
 import org.neo4j.onlinebackup.Neo4jBackup
 
 import org.neo4j.release.it.std.io.FileHelper._
@@ -34,12 +35,13 @@ class OnlineBackupSpec extends SpecificationWithJUnit {
       graphdb.shutdown
 
       // TODO: copy the database to the backup dir, as in: new File(dbname).copyAll(expected_backupdir)
+      FileUtils.copyDirectory(new File(dbname), expected_backupdir);
       
       graphdb = new EmbeddedGraphDatabase( dbname, dbconfig )
     }
 
     doAfter {
-      new File(dbname).deleteAll
+      FileUtils.deleteDirectory(new File(dbname))
     }
 
     "backup graph database" in {
@@ -49,7 +51,7 @@ class OnlineBackupSpec extends SpecificationWithJUnit {
 
       expected_backupdir must exist
 
-      expected_backupdir.deleteAll
+      FileUtils.deleteDirectory(expected_backupdir)
 
     }
 
