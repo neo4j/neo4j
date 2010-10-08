@@ -1,0 +1,5 @@
+0.1-1.2.M1 (2010-10-08)
+-----------------------
+
+o Added a "pinger" as a kernel extension which pings to a server about its existence.
+o System properties can control behaviour (ping frequency and data).
