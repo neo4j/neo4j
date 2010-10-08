@@ -13,23 +13,23 @@ User database
 
     To begin with, we define the relationship types we want to use:
 	
-%{source-code|snippet=createRelTypes|file=src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4jWithIndexing.java}
+%{source-code|snippet=createRelTypes|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
 
     Then we have created two helper methods to handle user names and
     adding users to the database:
     
-%{source-code|snippet=helperMethods|file=src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4jWithIndexing.java}
+%{source-code|snippet=helperMethods|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
 
     The next step is to start the database server:
 
-%{source-code|snippet=startDb|file=src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4jWithIndexing.java}
+%{source-code|snippet=startDb|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
 
     It's time to add the users:
     
-%{source-code|snippet=addUsers|file=src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4jWithIndexing.java}
+%{source-code|snippet=addUsers|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
 
     And here's how to find a user by Id:
 
-%{source-code|snippet=findUser|file=src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4jWithIndexing.java}
+%{source-code|snippet=findUser|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
 
-    Full source code: {{{https://trac.neo4j.org/browser/examples/apoc-examples/trunk/src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4jWithIndexing.java}browser}} {{{https://svn.neo4j.org/examples/apoc-examples/trunk/src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4jWithIndexing.java}svn}}
+    Full source code: {{{https://trac.neo4j.org/browser/examples/neo4j-examples/trunk/src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}browser}} {{{https://svn.neo4j.org/examples/neo4j-examples/trunk/src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}svn}}

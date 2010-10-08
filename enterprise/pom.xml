@@ -71,19 +71,19 @@
         <configuration>
           <programs>
             <program>
-              <mainClass>org.neo4j.examples.apoc.EmbeddedNeo4j
+              <mainClass>org.neo4j.examples.EmbeddedNeo4j
               </mainClass>
               <name>embedded-neo4j</name>
             </program>
             <program>
               <mainClass>
-                org.neo4j.examples.apoc.EmbeddedNeo4jWithIndexing
+                org.neo4j.examples.EmbeddedNeo4jWithIndexing
               </mainClass>
               <name>embedded-neo4j-with-indexing</name>
             </program>
             <program>
               <mainClass>
-                org.neo4j.examples.apoc.Neo4jShell
+                org.neo4j.examples.Neo4jShell
               </mainClass>
               <name>neo4j-shell</name>
             </program>
@@ -139,8 +139,7 @@
         <configuration>
           <finalName>neo4j-${project.version}</finalName>
           <descriptors>
-            <descriptor>src/main/assembly/apoc-assembly.xml
-                        </descriptor>
+            <descriptor>src/main/assembly/apoc-assembly.xml</descriptor>
           </descriptors>
         </configuration>
         <executions>
