@@ -15,6 +15,10 @@
   <url>http://components.neo4j.org/${project.artifactId}/</url>
   <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>
 
+  <properties>
+    <short-name>neo4j</short-name>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
