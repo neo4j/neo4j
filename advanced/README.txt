@@ -16,17 +16,17 @@ Included in this release of Neo4j is:
    neo4j-udc:            usage data collection
    
 You can run the examples from the Unix and Windows start scripts in the bin/
-directory. The shell-client script starts an neo4j-shell instance.
+directory. The shell-client script starts a neo4j-shell instance.
 
 You'll find the source code to the examples in the examples/ directory.
 
 The components are found in the lib/ directory, and the javadocs for the
-Apoc components are found in the site/apidocs directory.
+included components are found in the site/apidocs directory.
 
 For documentation, see also:
 http://components.neo4j.org/
 http://wiki.neo4j.org
 
-Various licenses apply, please refer to the LICENSE and NOTICE files for more
+Various licenses apply. Please refer to the LICENSE and NOTICE files for more
 detailed information. A full report regarding the licenses of all included
 dependencies is found in site/dependencies.html.
