@@ -10,7 +10,7 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-udc</artifactId>
   <name>Neo4j Usage Data Collection</name>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.1-SNAPSHOT</version>
   <description>Collects simple statistics about server deployment.</description>
   
   <properties>
