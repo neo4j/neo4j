@@ -91,6 +91,22 @@ public abstract class GraphAlgoFactory
     }
 
     /**
+     * Returns an algorithm which can find all paths of a certain length between
+     * two nodes. These returned paths cannot contain loops (i.e. a node cannot
+     * occur more than once in any returned path).
+     * 
+     * @see ShortestPath
+     * @param expander the {@link RelationshipExpander} to use for expanding
+     *            {@link Relationship}s for each {@link Node}.
+     * @param length the {@link Path#length()} returned paths are must have.
+     * @return an algorithm which finds paths of a certain length between two nodes.
+     */
+    public static PathFinder<Path> pathsWithLength( RelationshipExpander expander, int length )
+    {
+        return new ShortestPath( length, expander, true );
+    }
+    
+    /**
      * Returns an {@link PathFinder} which uses the A* algorithm to find the
      * cheapest path between two nodes. The definition of "cheap" is the lowest
      * possible cost to get from the start node to the end node, where the cost
