@@ -1,0 +1,35 @@
+1.2-1.2.M1 (2010-10-08)
+-----------------------
+
+-New components
+o Udc
+
+-Important changes
+o Index:
+   - Lucene version upgraded to 3.0.1
+o Shell:
+   - Apps discoverable with service locator
+   - Added read-only mode on server
+   - 'host' and 'config' options
+o Graph-algo:
+   - Find paths of certain length
+o Kernel:
+   - Lower memory footprint
+   - Higher throughput/concurrency for reads
+   - Common interface for loading kernel extensions (f.ex. shell)
+
+1.1 (2010-07-29)
+----------------
+
+-New components
+o Graph-algo
+o Online-backup
+
+1.0 (2010-02-16)
+----------------
+
+-Initial components
+o Kernel
+o Index
+o Remote-graphdb
+o Shell
