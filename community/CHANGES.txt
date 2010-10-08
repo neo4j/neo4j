@@ -1,3 +1,16 @@
+1.2-1.2.M1 (2010-10-08)
+-----------------------
+
+o Added -host as option when connecting a remote client.
+o Remote client optimizations (less communication with server).
+o Apps are discovered using service locator.
+o Better decoupling from kernel.
+o Read-only apps doesn't start transaction.
+o Added app for exposing kernel JMX beans.
+o Added -config option for when starting a local database.
+o Ability to make a graph database remotely available in read-only mode.
+o Some bugfixes regarding shutdown and connections.
+
 1.1 (2010-07-29)
 ----------------
 
