@@ -1,4 +1,10 @@
-1.1 (2010-07-29)
+0.7-1.2.M1 (2010-10-08)
+-----------------------
+
+o Better documentation about which algorithms are considered well-tested and scalable.
+o Added ability to find paths of a certain length using ShortestPath algo.
+
+0.6 (2010-07-29)
 ----------------
 
 o Added a new shortest path algorithm which is very memory efficient and is
