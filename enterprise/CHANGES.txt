@@ -1,0 +1,8 @@
+0.8-1.2.M1 (2010-10-08)
+-----------------------
+
+0.7 (2010-07-29)
+----------------
+
+o Added protobuffers as protocol in addition to RMI (work in progress).
+o Fixes some issues with resuming transactions.
