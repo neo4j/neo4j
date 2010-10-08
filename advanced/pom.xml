@@ -138,7 +138,6 @@
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
-          <comparisonVersion>1.0</comparisonVersion>
         </configuration>
       </plugin>
       <plugin>
