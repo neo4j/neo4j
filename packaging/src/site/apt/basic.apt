@@ -6,18 +6,18 @@ Hello world
 
     To begin with, we define the relationship types we want to use:
 	
-%{source-code|snippet=createReltype|file=src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4j.java}
+%{source-code|snippet=createReltype|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
 
     The next step is to start the database server:
 
-%{source-code|snippet=startDb|file=src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4j.java}
+%{source-code|snippet=startDb|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
 
     As seen, we register a shutdown hook that will make sure the database
     shuts down when the JVM exits.
     
     Now it's time to interact with the database:
 
-%{source-code|snippet=operationsInATransaction|file=src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4j.java}
+%{source-code|snippet=operationsInATransaction|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
 
     At this point this is how the database looks:
 
@@ -25,10 +25,10 @@ Hello world
 
     In this case we'll remove the data before committing:
 
-%{source-code|snippet=removingData|file=src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4j.java}
+%{source-code|snippet=removingData|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
 
     Finally, shut down the database server <when the application finishes>:
 
-%{source-code|snippet=shutdownServer|file=src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4j.java}
+%{source-code|snippet=shutdownServer|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
 
-    Full source code: {{{https://trac.neo4j.org/browser/examples/apoc-examples/trunk/src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4j.java}browser}} {{{https://svn.neo4j.org/examples/apoc-examples/trunk/src/main/java/org/neo4j/examples/apoc/EmbeddedNeo4j.java}svn}}
+    Full source code: {{{https://trac.neo4j.org/browser/examples/neo4j-examples/trunk/src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}browser}} {{{https://svn.neo4j.org/examples/neo4j-examples/trunk/src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}svn}}
