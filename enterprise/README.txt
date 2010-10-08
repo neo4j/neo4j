@@ -16,7 +16,8 @@ Included in this release of Neo4j is:
    neo4j-udc:            usage data collection
    
 You can run the examples from the Unix and Windows start scripts in the bin/
-directory. The shell-client script starts a neo4j-shell instance.
+directory. The shell-client script starts a neo4j-shell instance, an interactive
+environment for exploring and manipulating a graph.
 
 You'll find the source code to the examples in the examples/ directory.
 
