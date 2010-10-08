@@ -1,0 +1,11 @@
+0.7-1.2.M1 (2010-10-08)
+-----------------------
+
+0.6 (2010-07-29)
+----------------
+
+o Fixed a file renaming issue where partition boundaries were crossed.
+o Better support for index backup.
+o Added ability to do a manual backup after copying the logical logs yourself.
+o Fixed several issues with writing and closing of logical logs.
+o Easier to do backups of all data sources.
