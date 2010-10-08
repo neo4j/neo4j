@@ -1,4 +1,4 @@
-APOC examples - Basic Neo4j examples
+Neo4j examples - Basic Neo4j examples
 
 Copyright (c) 2009-2010 "Neo Technology," Network Engine for Objects in Lund AB
     
