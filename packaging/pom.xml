@@ -9,8 +9,12 @@
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>3-SNAPSHOT</version>
+    <version>3</version>
   </parent>
+
+  <properties>
+    <short-name>neo4j-examples</short-name>
+  </properties>
 
   <dependencies>
     <dependency>
