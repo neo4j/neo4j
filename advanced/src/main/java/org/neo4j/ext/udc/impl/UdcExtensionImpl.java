@@ -108,10 +108,12 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties {
         }
     }
 
-
     @Override
     protected void unload(KernelData kernel) {
-        timer.cancel();
+        if ( timer != null )
+        {
+            timer.cancel();
+        }
     }
 
     /**
