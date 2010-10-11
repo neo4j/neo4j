@@ -14,12 +14,12 @@ Included in this release of Neo4j are:
    neo4j-shell           command shell for browsing and manipulating the graph
    neo4j-online-backup   create backups of a running neo4j graph database
    neo4j-graph-algo      graph algorithms (such as shortest path algorithm)
-   neo4j-udc             usage data collection
+   neo4j-udc             usage data collector
 
 The lib/ directory contains the binary jar files for all components as well as 
 required third-party libraries. Javadocs are in the site/apidocs directory.
 
-The included usage data collection component will send basic information like     
+The included usage data collector component will send basic information like     
 for example version number to udc.neo4j.org once a day and can easily be disabled,
 see more information on the wiki:                                                 
 http://wiki.neo4j.org/content/UDC
