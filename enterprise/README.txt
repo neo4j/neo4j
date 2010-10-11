@@ -1,38 +1,66 @@
-Neo4j with Basic Examples
+Neo4j Component Distribution
+============================
 
-The purpose of this package is to provide an easy-to-get-going distribution
-of the Neo4j graph database and a handful of commonly used components. It
-includes the binary jar files for these components as well as example code
-that shows basic usage.
+This package provides an easy-to-get-going distribution of the Neo4j graph
+database, with a collection of essential components and helpful examples. 
+These components are the core of any application needing to model, persist
+and explore arbitrarily complex data. 
 
-Included in this release of Neo4j is:
+Included in this release of Neo4j are:
 
-   neo4j-kernel:         the neo4j graph database engine
-   neo4j-index:          indexing and data structures
-   neo4j-remote-graphdb: thin layer to enable remote access to a neo4j instance
-   neo4j-shell:          text command shell for browsing the graph
-   neo4j-online-backup:  create backups of a running neo4j graph database
-   neo4j-graph-algo:     graph algorithms (such as shortest path algorithm)
-   neo4j-udc:            usage data collection
-   
-You can run the examples from the Unix and Windows start scripts in the bin/
-directory. The shell-client script starts a neo4j-shell instance, an interactive
-environment for exploring and manipulating a graph.
+   neo4j-kernel          the neo4j graph database engine
+   neo4j-index           indexing and data structures
+   neo4j-remote-graphdb  thin layer to enable remote access to a neo4j instance
+   neo4j-shell           text command shell for browsing the graph
+   neo4j-online-backup   create backups of a running neo4j graph database
+   neo4j-graph-algo      graph algorithms (such as shortest path algorithm)
+   neo4j-udc             usage data collection
 
-The included usage data collection component will send basic information like 
-for example version number to udc.neo4j.org once a day and can easily be disabled,
-see more information on the wiki:
-http://wiki.neo4j.org/content/UDC
+The lib/ directory contains the binary jar files for all components as well as 
+required third-party libraries. Javadocs are in the site/apidocs directory.
 
-You'll find the source code to the examples in the examples/ directory.
+Getting started
+---------------
 
-The components are found in the lib/ directory, and the javadocs for the
-included components are found in the site/apidocs directory.
+For a quick introduction try the Neo4j Shell, an interactive environment for 
+exploring and manipulating a graph. Check the bin/ directory for Unix and 
+Windows start scripts. The `neo4j-shell` script starts a neo4j-shell instance.
+
+Try this:
+
+1. run the `neo4j-shell` script
+2. type 'l' to start a local shell instance
+3. welcome to the graph, type 'ls' to see the current node
+
+For more details, refer to the wiki at http://wiki.neo4j.org/content/Shell,
+or follow the steps at http://wiki.neo4j.org/content/Shell_Matrix_Example.
+
+Example code
+------------
+
+You'll find some source code in the examples/ directory. These examples 
+progress from setting up a graph, to indexing, to using algorithms. 
+Scripts in the bin/ directory run the source code against pre-compiled 
+classes in the lib/ directotry.
+
+The scripts and related source code are:
+
+  * embedded-neo4j                org.neo4j.examples.EmbeddedNeo4j 
+  * embedded-neo4j-with-indexing  org.neo4j.examples.EmbeddedNeo4jWithIndexing 
+  * calculate-shortest-path       org.neo4j.examples.CalculateShortestPath
+
+
+Learn more
+----------
 
 For documentation, see also:
-http://components.neo4j.org/
-http://wiki.neo4j.org
 
+  * http://wiki.neo4j.org/        comprehensive documentation                
+  * http://components.neo4j.org/  documentation about each component
+
+
+License(s)
+----------
 Various licenses apply. Please refer to the LICENSE and NOTICE files for more
 detailed information. A full report regarding the licenses of all included
 dependencies is found in site/dependencies.html.
