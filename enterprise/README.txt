@@ -1,5 +1,5 @@
-Neo4j Component Distribution
-============================
+Neo4j Distribution
+==================
 
 This package provides an easy-to-get-going distribution of the Neo4j graph
 database, with a collection of essential components and helpful examples. 
@@ -19,16 +19,23 @@ Included in this release of Neo4j are:
 The lib/ directory contains the binary jar files for all components as well as 
 required third-party libraries. Javadocs are in the site/apidocs directory.
 
+The included usage data collection component will send basic information like     
+for example version number to udc.neo4j.org once a day and can easily be disabled,
+see more information on the wiki:                                                 
+http://wiki.neo4j.org/content/UDC
+
+
 Getting started
 ---------------
 
 For a quick introduction try the Neo4j Shell, an interactive environment for 
 exploring and manipulating a graph. Check the bin/ directory for Unix and 
-Windows start scripts. The `neo4j-shell` script starts a neo4j-shell instance.
+Windows start scripts. The `shell-example` script starts a Neo4j Shell with
+example data loaded.
 
 Try this:
 
-1. run the `neo4j-shell` script
+1. run the `shell-example` script
 2. type 'l' to start a local shell instance
 3. welcome to the graph, type 'ls' to see the current node
 4. 'cd 1' to jump to the related node with id '1'
@@ -39,13 +46,16 @@ Try this:
 For more details, refer to the wiki at http://wiki.neo4j.org/content/Shell,
 or follow the steps at http://wiki.neo4j.org/content/Shell_Matrix_Example.
 
+To start a normal Neo4j Shell (without example data) use the neo4j-shell script.
+
+
 Example code
 ------------
 
 You'll find some source code in the examples/ directory. These examples 
 progress from setting up a graph, to indexing, to using algorithms. 
 Scripts in the bin/ directory run the source code against pre-compiled 
-classes in the lib/ directotry.
+classes in the lib/ directory.
 
 The scripts and related source code are:
 
