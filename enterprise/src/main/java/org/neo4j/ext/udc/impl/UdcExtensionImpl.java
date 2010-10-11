@@ -71,6 +71,8 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties {
      */
     private boolean disabled = false;
 
+    private Timer timer;
+
     /**
      * No-arg constructor, sets the extension key to "kernel udc".
      *  
@@ -98,12 +100,18 @@ public class UdcExtensionImpl extends KernelExtension implements UdcProperties {
         kernel.setState(this, new Object());
 
         if (!disabled) {
-            Timer timer = new Timer();
+            timer = new Timer();
             NeoStoreXaDataSource ds = (NeoStoreXaDataSource) kernel.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource("nioneodb");
             String storeId = Long.toHexString(ds.getRandomIdentifier());
             UdcTimerTask task = new UdcTimerTask(hostAddress, Version.VERSION.getRevision(), storeId);
             timer.scheduleAtFixedRate(task, firstDelay, interval);
         }
+    }
+
+
+    @Override
+    protected void unload(KernelData kernel) {
+        timer.cancel();
     }
 
     /**
