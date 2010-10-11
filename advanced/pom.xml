@@ -149,7 +149,7 @@
         <configuration>
           <finalName>neo4j-${project.version}</finalName>
           <descriptors>
-            <descriptor>src/main/assembly/apoc-assembly.xml</descriptor>
+            <descriptor>src/main/assembly/neo4j-assembly.xml</descriptor>
           </descriptors>
         </configuration>
         <executions>
