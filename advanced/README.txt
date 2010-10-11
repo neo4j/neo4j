@@ -42,6 +42,7 @@ Try this:
 5. 'cd user96' then hit tab, for tab completion (and then return)
 6. 'ls -p' to list just the properties of the current node
 7. 'cd' by itself will return to the reference node (your starting point)
+8. when in doubt, type 'help' to find other commands
 
 For more details, refer to the wiki at http://wiki.neo4j.org/content/Shell,
 or follow the steps at http://wiki.neo4j.org/content/Shell_Matrix_Example.
