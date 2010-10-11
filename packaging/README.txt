@@ -19,6 +19,11 @@ You can run the examples from the Unix and Windows start scripts in the bin/
 directory. The shell-client script starts a neo4j-shell instance, an interactive
 environment for exploring and manipulating a graph.
 
+The included usage data collection component will send basic information like 
+for example version number to udc.neo4j.org once a day and can easily be disabled,
+see more information on the wiki:
+http://wiki.neo4j.org/content/UDC
+
 You'll find the source code to the examples in the examples/ directory.
 
 The components are found in the lib/ directory, and the javadocs for the
