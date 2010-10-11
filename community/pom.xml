@@ -95,12 +95,14 @@
               <mainClass>org.neo4j.shell.StartClient</mainClass>
               <name>shell-client</name>
             </program>
-            <program>
+            <!-- Disabled since there's no longer such a main class. It'd be nice
+                 to have something which runs the tests instead though -->
+            <!--program>
               <mainClass>
                 org.neo4j.examples.socnet.Main
               </mainClass>
               <name>social-network-application</name>
-            </program>
+            </program-->
           </programs>
         </configuration>
         <executions>
