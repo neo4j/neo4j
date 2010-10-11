@@ -103,6 +103,10 @@
               </mainClass>
               <name>social-network-application</name>
             </program-->
+            <program>
+              <mainClass>org.neo4j.examples.CalculateShortestPath</mainClass>
+              <name>calculate-shortest-path</name>
+            </program>
           </programs>
         </configuration>
         <executions>
