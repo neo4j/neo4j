@@ -58,6 +58,7 @@ public class Neo4jShell
             startRemoteShellAndWait();
         }
         shutdown();
+        System.exit( 0 );
     }
 
     private static void startGraphDb()
