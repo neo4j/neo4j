@@ -89,11 +89,11 @@
               <mainClass>
                 org.neo4j.examples.Neo4jShell
               </mainClass>
-              <name>neo4j-shell</name>
+              <name>shell-example</name>
             </program>
             <program>
               <mainClass>org.neo4j.shell.StartClient</mainClass>
-              <name>shell-client</name>
+              <name>neo4j-shell</name>
             </program>
             <!-- Disabled since there's no longer such a main class. It'd be nice
                  to have something which runs the tests instead though -->
