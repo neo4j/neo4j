@@ -11,7 +11,7 @@ Included in this release of Neo4j are:
    neo4j-kernel          the neo4j graph database engine
    neo4j-index           indexing and data structures
    neo4j-remote-graphdb  thin layer to enable remote access to a neo4j instance
-   neo4j-shell           text command shell for browsing the graph
+   neo4j-shell           command shell for browsing and manipulating the graph
    neo4j-online-backup   create backups of a running neo4j graph database
    neo4j-graph-algo      graph algorithms (such as shortest path algorithm)
    neo4j-udc             usage data collection
@@ -31,6 +31,10 @@ Try this:
 1. run the `neo4j-shell` script
 2. type 'l' to start a local shell instance
 3. welcome to the graph, type 'ls' to see the current node
+4. 'cd 1' to jump to the related node with id '1'
+5. 'cd user96' then hit tab, for tab completion (and then return)
+6. 'ls -p' to list just the properties of the current node
+7. 'cd' by itself will return to the reference node (your starting point)
 
 For more details, refer to the wiki at http://wiki.neo4j.org/content/Shell,
 or follow the steps at http://wiki.neo4j.org/content/Shell_Matrix_Example.
