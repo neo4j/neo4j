@@ -3,7 +3,7 @@
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-examples</artifactId>
   <name>Neo4j Examples</name>
-  <version>1.2-SNAPSHOT</version>
+  <version>1.2.M01</version>
   <description>Neo4j Distribution and examples</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
   <parent>
@@ -61,9 +61,9 @@
   </issueManagement>
   
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/trunk</connection>
-    <developerConnection>${project.scm.connection}</developerConnection>
-    <url>https://trac.neo4j.org/browser/examples/neo4j-examples/</url>
+    <connection>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/tags/1.2.M01</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/tags/1.2.M01</developerConnection>
+    <url>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/tags/1.2.M01</url>
   </scm>
   
   <build>
