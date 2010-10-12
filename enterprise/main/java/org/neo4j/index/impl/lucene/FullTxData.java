@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -21,6 +22,8 @@ class FullTxData extends TxData
 {
     private Directory directory;
     private IndexWriter writer;
+    private boolean modified;
+    private IndexReader reader;
     private IndexSearcher searcher;
     private BooleanQuery extraQueries;
     
@@ -153,28 +156,47 @@ class FullTxData extends TxData
     void close()
     {
         safeClose( this.writer );
-        invalidateSearcher();
+        safeClose( this.reader );
+        safeClose( this.searcher );
     }
 
     private void invalidateSearcher()
     {
-        safeClose( this.searcher );
-        this.searcher = null;
+        this.modified = true;
     }
     
     private IndexSearcher searcher()
     {
+        if ( this.searcher != null && !modified )
+        {
+            return this.searcher;
+        }
+        
         try
         {
-            if ( this.searcher == null )
+            IndexReader newReader = this.reader == null ? this.writer.getReader() : this.reader.reopen();
+            if ( newReader == this.reader )
             {
-                this.writer.commit();
-                this.searcher = new IndexSearcher( directory, true );
+                return this.searcher;
             }
+            if ( this.reader != null )
+            {
+                this.reader.close();
+            }
+            this.reader = newReader;
+            if ( this.searcher != null )
+            {
+                this.searcher.close();
+            }
+            searcher = new IndexSearcher( reader );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            this.modified = false;
         }
         return this.searcher;
     }
@@ -195,6 +217,10 @@ class FullTxData extends TxData
             else if ( object instanceof IndexSearcher )
             {
                 ( ( IndexSearcher ) object ).close();
+            }
+            else if ( object instanceof IndexReader )
+            {
+                ( ( IndexReader ) object ).close();
             }
         }
         catch ( IOException e )

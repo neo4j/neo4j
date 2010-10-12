@@ -8,6 +8,7 @@ class IndexIdentifier
     final Map<String, String> config;
     final EntityType entityType;
     final byte entityTypeByte;
+    private final int hashCode;
     
     public IndexIdentifier( byte entityTypeByte, EntityType entityType, String indexName,
             Map<String, String> customConfig )
@@ -16,6 +17,7 @@ class IndexIdentifier
         this.entityType = entityType;
         this.indexName = indexName;
         this.config = customConfig;
+        this.hashCode = calculateHashCode();
     }
     
     @Override
@@ -29,12 +31,17 @@ class IndexIdentifier
         return entityTypeByte == i.entityTypeByte && indexName.equals( i.indexName );
     }
     
-    @Override
-    public int hashCode()
+    private int calculateHashCode()
     {
         int code = 17;
         code += 7*entityTypeByte;
         code += 7*indexName.hashCode();
         return code;
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return this.hashCode;
     }
 }
