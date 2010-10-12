@@ -1,10 +1,8 @@
-Neo4j Apoc
+Neo4j
 
-    Apoc is A Package Of Components.
-    
-    It is a meta package containing the most commonly used Neo4j libraries,
+    This is a meta package containing the most commonly used Neo4j libraries,
     which means that it enables you to add these as a single {{{http://maven.apache.org/}Maven}}
-    dependency in your projects. With Apoc, you're also sure that you use
+    dependency in your projects. Using this package, you're also sure that you use
     component versions that fit together.
     
 Included components 
@@ -25,31 +23,15 @@ Included components
 
 Usage
     
-    To use Apoc, add the following repository to your 'pom.xml' file or
-    Maven {{{https://maven.apache.org/settings.html}settings file}}:
-    
----
-    <repositories>
-        <repository>
-            <id>neo4j-public-repository</id>
-            <name>Publically available Maven 2 repository for Neo4j</name>
-            <url>http://m2.neo4j.org</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
----
-
-    And then add the dependency on Apoc:
+    To use this package, add the following dependency to your pom.xml.
     
 ---
     <dependencies>
         <dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-apoc</artifactId>
-            <version>someversion</version> <!-- for example 1.0 or 1.1-SNAPSHOT -->
+            <artifactId>neo4j</artifactId>
+            <version>someversion</version> <!-- for example 1.2.M01 -->
             <type>pom</type>
         </dependency>
     </dependencies>
