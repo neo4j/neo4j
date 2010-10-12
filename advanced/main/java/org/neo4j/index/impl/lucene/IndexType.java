@@ -63,11 +63,6 @@ abstract class IndexType
                 addToDocument( document, key, existingValue );
             }
         }
-        
-        public TxData newTxData(LuceneIndex index)
-        {
-            return new ExactTxData( index );
-        }
     };
     
     private static class FulltextType extends IndexType
@@ -121,12 +116,6 @@ abstract class IndexType
             {
                 addToDocument( document, key, existingValue );
             }
-        }
-        
-        @Override
-        public TxData newTxData( LuceneIndex index )
-        {
-            return new FullTxData( index );
         }
     };
     
@@ -194,7 +183,10 @@ abstract class IndexType
     
     abstract Query get( String key, Object value );
     
-    abstract TxData newTxData( LuceneIndex index );
+    TxData newTxData( LuceneIndex index )
+    {
+        return new ExactTxData( index );
+    }
     
     Query query( String keyOrNull, Object value, QueryContext contextOrNull )
     {
