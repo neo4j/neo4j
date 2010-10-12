@@ -7,7 +7,6 @@ import static org.neo4j.index.Neo4jTestCase.assertCollection;
 import static org.neo4j.index.Neo4jTestCase.assertOrderedCollection;
 
 import java.io.File;
-import java.util.Random;
 
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -572,19 +571,20 @@ public class TestLuceneIndex
     private <T extends PropertyContainer> void testInsertionSpeed( Index<T> index,
             EntityCreator<T> creator )
     {
-        Random random = new Random();
         long t = System.currentTimeMillis();
-        for ( int i = 0; i < 500000; i++ )
+        for ( int i = 0; i < 30000; i++ )
         {
             T entity = creator.create();
+//            index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
+            index.get( "name", "The name " + i );
             index.add( entity, "name", "The name " + i );
-            index.add( entity, "title", random.nextInt() );
-            index.add( entity, "something", random.nextInt() );
-            index.add( entity, "else", random.nextInt() );
-            if ( i%50000 == 0 )
+            index.add( entity, "title", "Some title " + i );
+            index.add( entity, "something", i + "Nothing" );
+            index.add( entity, "else", i + "kdfjkdjf" + i );
+            if ( i%5000 == 0 )
             {
                 restartTx();
-                System.out.print( "." );
+//                System.out.print( "." );
             }
         }
         System.out.println( "insert:" + (System.currentTimeMillis() - t) );
@@ -707,7 +707,6 @@ public class TestLuceneIndex
         assertEquals( node1, index.query( "key", "10" ).getSingle() );
     }
     
-    @Ignore
     @Test
     public void testNodeInsertionSpeed()
     {
@@ -715,7 +714,13 @@ public class TestLuceneIndex
                 LuceneIndexProvider.EXACT_CONFIG ), NODE_CREATOR );
     }
     
-    @Ignore
+    @Test
+    public void testNodeFulltextInsertionSpeed()
+    {
+        testInsertionSpeed( provider.nodeIndex( "insertion-speed-full",
+                LuceneIndexProvider.FULLTEXT_CONFIG ), NODE_CREATOR );
+    }
+    
     @Test
     public void testRelationshipInsertionSpeed()
     {
