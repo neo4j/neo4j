@@ -1,10 +1,10 @@
 package org.neo4j.graphdb.index;
 
-import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
+
+import java.util.Map;
 
 /**
  * The {@link BatchInserter} version of {@link Index}. Additions/updates to a
@@ -26,7 +26,7 @@ public interface BatchInserterIndex
      * This behaviour is because of performance reasons, to not being forced
      * to check if indexing for {@code entity} already exists or not. If you
      * need to update indexing for {@code entity} and it's ok with a slower
-     * indexing process use {@link #addOrUpdate(long, Map)} instead.
+     * indexing process use {@link #updateOrAdd(long, Map)} instead.
      * 
      * Entries added to the index aren't necessarily written to the index and
      * to disk until {@link BatchInserterIndexProvider#shutdown()} has been
@@ -35,7 +35,7 @@ public interface BatchInserterIndex
      * {@link #query(String, Object)} and {@link #query(Object)} until a call
      * to {@link #flush()} has been made.
      * 
-     * @param entity the entity (i.e id of {@link Node} or
+     * @param entityId the entity (i.e id of {@link Node} or
      * {@link Relationship}) to associate the key/value pairs with.
      * @param properties key/value pairs to index for {@code entity}.
      */
@@ -58,7 +58,7 @@ public interface BatchInserterIndex
      * to {@link #flush()} has been made. So only entries added before the most
      * recent {@link #flush()} are guaranteed to be found by this method.
      * 
-     * @param entity the entity (i.e id of {@link Node} or
+     * @param entityId the entity (i.e id of {@link Node} or
      * {@link Relationship}) to associate the key/value pairs with.
      * @param properties key/value pairs to index for {@code entity}.
      */
@@ -67,7 +67,7 @@ public interface BatchInserterIndex
     /**
      * Returns exact matches from this index, given the key/value pair.
      * Matches will be for key/value pairs just as they were added by the
-     * {@link #add(long, Map)} or {@link #addOrUpdate(long, Map)} method. 
+     * {@link #add(long, Map)} or {@link #updateOrAdd(long, Map)} method.
      * 
      * Entries added to the index aren't necessarily written to the index and
      * to disk until {@link BatchInserterIndexProvider#shutdown()} has been
