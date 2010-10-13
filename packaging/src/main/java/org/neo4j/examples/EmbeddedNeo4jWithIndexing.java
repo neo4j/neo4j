@@ -102,7 +102,6 @@ public class EmbeddedNeo4jWithIndexing
         }
         System.out.println( "Shutting down database ..." );
         shutdown();
-        System.exit( 0 );
     }
 
     private static void shutdown()
