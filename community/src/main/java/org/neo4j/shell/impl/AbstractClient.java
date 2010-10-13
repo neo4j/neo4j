@@ -21,12 +21,16 @@
 package org.neo4j.shell.impl;
 
 import java.io.Serializable;
+import java.rmi.NoSuchObjectException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.shell.Console;
+import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.TextUtil;
@@ -65,7 +69,8 @@ public abstract class AbstractClient implements ShellClient
     private Console console;
     private long timeConnection;
     private final Set<String> grabbedKeysFromServer = new HashSet<String>();
-
+    private final SessionImpl session = new SessionImpl();
+    
     public void grabPrompt()
     {
         this.init();
@@ -246,5 +251,27 @@ public abstract class AbstractClient implements ShellClient
     public long timeForMostRecentConnection()
     {
         return timeConnection;
+    }
+    
+    public Session session()
+    {
+        return this.session;
+    }
+    
+    public void shutdown()
+    {
+        if ( session.writer != null ) this.tryUnexport( session.writer );
+    }
+
+    protected void tryUnexport( Remote remote )
+    {
+    	try
+    	{
+    		UnicastRemoteObject.unexportObject( remote, true );
+    	}
+    	catch ( NoSuchObjectException e )
+    	{
+    		System.out.println( "Couldn't unexport:" + remote );
+    	}
     }
 }

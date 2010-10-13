@@ -20,13 +20,9 @@
 
 package org.neo4j.shell.impl;
 
-import java.rmi.NoSuchObjectException;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 
 import org.neo4j.shell.Output;
-import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
@@ -39,7 +35,6 @@ public class RemoteClient extends AbstractClient
 {
 	private ShellServer server;
 	private RmiLocation serverLocation;
-    private SessionImpl session;
 	private Output out;
 
 	/**
@@ -50,7 +45,6 @@ public class RemoteClient extends AbstractClient
 	{
 		this.serverLocation = serverLocation;
 		this.server = findRemoteServer();
-		this.session = new SessionImpl();
 		this.out = RemoteOutput.newOutput();
 	}
 
@@ -122,26 +116,9 @@ public class RemoteClient extends AbstractClient
 		return this.server;
 	}
 
-	public Session session()
-	{
-		return this.session;
-	}
-
 	public void shutdown()
 	{
+	    super.shutdown();
 		this.tryUnexport( this.out );
-        if ( session.writer != null ) this.tryUnexport( session.writer );
-	}
-
-	private void tryUnexport( Remote remote )
-	{
-		try
-		{
-			UnicastRemoteObject.unexportObject( remote, true );
-		}
-		catch ( NoSuchObjectException e )
-		{
-			System.out.println( "Couldn't unexport:" + remote );
-		}
 	}
 }

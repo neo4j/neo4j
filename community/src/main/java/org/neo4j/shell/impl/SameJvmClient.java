@@ -21,7 +21,6 @@
 package org.neo4j.shell.impl;
 
 import org.neo4j.shell.Output;
-import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellServer;
 
@@ -33,7 +32,6 @@ public class SameJvmClient extends AbstractClient
 {
 	private Output out = new SystemOutput();
 	private ShellServer server;
-	private Session session = new SessionImpl();
 	
 	/**
 	 * @param server the server to communicate with.
@@ -52,14 +50,5 @@ public class SameJvmClient extends AbstractClient
 	public ShellServer getServer()
 	{
 		return this.server;
-	}
-
-	public Session session()
-	{
-		return this.session;
-	}
-	
-	public void shutdown()
-	{
 	}
 }
