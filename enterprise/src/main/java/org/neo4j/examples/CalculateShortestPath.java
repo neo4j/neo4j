@@ -88,7 +88,6 @@ public class CalculateShortestPath
         System.out.println( "Shutting down database ..." );
         indexService.shutdown();
         graphDb.shutdown();
-        System.exit( 0 );
     }
 
     private static void createChain( String... names )

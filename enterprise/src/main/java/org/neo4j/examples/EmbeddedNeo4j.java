@@ -83,7 +83,6 @@ public class EmbeddedNeo4j
         // START SNIPPET: shutdownServer
         graphDb.shutdown();
         // END SNIPPET: shutdownServer
-        System.exit( 0 );
     }
 
     private static void registerShutdownHook( final GraphDatabaseService graphDb )
