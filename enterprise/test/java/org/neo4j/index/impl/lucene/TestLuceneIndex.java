@@ -3,6 +3,7 @@ package org.neo4j.index.impl.lucene;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import static org.neo4j.index.Neo4jTestCase.assertCollection;
 import static org.neo4j.index.Neo4jTestCase.assertOrderedCollection;
 
@@ -147,8 +148,11 @@ public class TestLuceneIndex
         index.add( entity1, key, value );
         assertEquals( entity1, index.get( key, value ).getSingle() );
         assertCollection( index.get( key, value ), entity1 );
-        assertCollection( index.query( key, "*" ), entity1 );
-        assertCollection( index.query( key + ":*" ), entity1 );
+        
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( key, "*" ), entity1 );
+//        assertCollection( index.query( key + ":*" ), entity1 );
+        
         restartTx();
         assertEquals( entity1, index.get( key, value ).getSingle() );
         assertCollection( index.get( key, value ), entity1 );
@@ -160,6 +164,28 @@ public class TestLuceneIndex
         restartTx();
         assertCollection( index.get( key, value ), entity1, entity2 );
         index.clear();
+    }
+    
+    private <T extends PropertyContainer> void assertQueryNotPossible( Index<T> index )
+    {
+        try
+        {
+            index.query( "somekey:somevalue" );
+            fail( "Querying shouldn't be possible" );
+        }
+        catch ( QueryNotPossibleException e )
+        {
+            // Good
+        }
+    }
+    
+    @Test(expected = QueryNotPossibleException.class)
+    public void makeSureYouCantQueryModifiedIndexInTx()
+    {
+        Index<Node> index = provider.nodeIndex( "failing-index", LuceneIndexProvider.FULLTEXT_CONFIG );
+        Node node = graphDb.createNode();
+        index.add( node, "key", "value" );
+        index.query( "key:value" );
     }
     
     @Test
@@ -303,6 +329,16 @@ public class TestLuceneIndex
     }
     
     @Test
+    public void shouldNotFailQueryFromIndexInTx()
+    {
+        Index<Node> index = provider.nodeIndex( "indexFooBar", LuceneIndexProvider.EXACT_CONFIG );
+        Node node = graphDb.createNode();
+        index.add( node, "key", "value" );
+        
+        assertCollection( index.query( "key", new QueryContext( "value" ).allowQueryingModifications() ), node);
+    }
+    
+    @Test
     public void makeSureArrayValuesAreSupported()
     {
         Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
@@ -346,14 +382,16 @@ public class TestLuceneIndex
         index.add( node1, key, value1 );
         index.add( node2, key, value2 );
         
-        assertCollection( index.query( key, "neo4j" ), node1 );
-        assertCollection( index.query( key, "neo*" ), node1 );
-        assertCollection( index.query( key, "n?o4j" ), node1 );
-        assertCollection( index.query( key, "ne*" ), node1, node2 );
-        assertCollection( index.query( key + ":neo4j" ), node1 );
-        assertCollection( index.query( key + ":neo*" ), node1 );
-        assertCollection( index.query( key + ":n?o4j" ), node1 );
-        assertCollection( index.query( key + ":ne*" ), node1, node2 );
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( key, "neo4j" ), node1 );
+//        assertCollection( index.query( key, "neo*" ), node1 );
+//        assertCollection( index.query( key, "n?o4j" ), node1 );
+//        assertCollection( index.query( key, "ne*" ), node1, node2 );
+//        assertCollection( index.query( key + ":neo4j" ), node1 );
+//        assertCollection( index.query( key + ":neo*" ), node1 );
+//        assertCollection( index.query( key + ":n?o4j" ), node1 );
+//        assertCollection( index.query( key + ":ne*" ), node1, node2 );
+        
         restartTx();
         assertCollection( index.query( key, "neo4j" ), node1 );
         assertCollection( index.query( key, "neo*" ), node1 );
@@ -377,10 +415,12 @@ public class TestLuceneIndex
         index.add( trinity, "username", "trinity@matrix" );
         index.add( trinity, "sex", "female" );
         
-        assertCollection( index.query( "username:*@matrix AND sex:male" ), neo );
-        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), neo );
-        assertCollection( index.query( "username:*@matrix OR sex:male" ), neo, trinity );
-        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), neo, trinity );
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( "username:*@matrix AND sex:male" ), neo );
+//        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), neo );
+//        assertCollection( index.query( "username:*@matrix OR sex:male" ), neo, trinity );
+//        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), neo, trinity );
+        
         restartTx();
         assertCollection( index.query( "username:*@matrix AND sex:male" ), neo );
         assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), neo );
@@ -405,10 +445,16 @@ public class TestLuceneIndex
         assertNull( index.get( name, mattias ).getSingle() );
         index.add( entity1, name, mattias );
         assertCollection( index.get( name, mattias ), entity1 );
-        assertCollection( index.query( name, "\"" + mattias + "\"" ), entity1 );
-        assertCollection( index.query( "name:\"" + mattias + "\"" ), entity1 );
+        
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( name, "\"" + mattias + "\"" ), entity1 );
+//        assertCollection( index.query( "name:\"" + mattias + "\"" ), entity1 );
+        
         assertEquals( entity1, index.get( name, mattias ).getSingle() );
-        assertCollection( index.query( "name", "Mattias*" ), entity1 );
+        
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( "name", "Mattias*" ), entity1 );
+        
         commitTx();
         assertCollection( index.get( name, mattias ), entity1 );
         assertCollection( index.query( name, "\"" + mattias + "\"" ), entity1 );
@@ -421,8 +467,11 @@ public class TestLuceneIndex
         index.add( entity1, title, hacker );
         assertCollection( index.get( name, mattias ), entity1 );
         assertCollection( index.get( title, hacker ), entity1, entity2 );
-        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
-                hacker + "\"" ), entity1, entity2 );
+
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
+//                hacker + "\"" ), entity1, entity2 );
+        
         commitTx();
         assertCollection( index.get( name, mattias ), entity1 );
         assertCollection( index.get( title, hacker ), entity1, entity2 );
@@ -435,8 +484,11 @@ public class TestLuceneIndex
         index.remove( entity2, title, hacker );
         assertCollection( index.get( name, mattias ), entity1 );
         assertCollection( index.get( title, hacker ), entity1 );
-        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
-                hacker + "\"" ), entity1 );
+
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
+//                hacker + "\"" ), entity1 );
+        
         commitTx();
         assertCollection( index.get( name, mattias ), entity1 );
         assertCollection( index.get( title, hacker ), entity1 );
@@ -476,10 +528,13 @@ public class TestLuceneIndex
         
         assertCollection( index.get( key, "The quick brown fox" ), entity1 );
         assertCollection( index.get( key, "brown fox jumped over" ), entity2 );
-        assertCollection( index.query( key, "quick" ), entity1 );
-        assertCollection( index.query( key, "brown" ), entity1, entity2 );
-        assertCollection( index.query( key, "quick OR jumped" ), entity1, entity2 );
-        assertCollection( index.query( key, "brown AND fox" ), entity1, entity2 );
+        
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( key, "quick" ), entity1 );
+//        assertCollection( index.query( key, "brown" ), entity1, entity2 );
+//        assertCollection( index.query( key, "quick OR jumped" ), entity1, entity2 );
+//        assertCollection( index.query( key, "brown AND fox" ), entity1, entity2 );
+        
         restartTx();
         assertCollection( index.get( key, "The quick brown fox" ), entity1 );
         assertCollection( index.get( key, "brown fox jumped over" ), entity2 );
@@ -630,9 +685,10 @@ public class TestLuceneIndex
         index.add( eva, sex, "female" );
         index.add( eva, other, "ddd" );
         
-        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
-        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
-        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+        assertQueryNotPossible( index );
+//        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
+//        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
+//        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
         
         restartTx();
         
@@ -655,9 +711,11 @@ public class TestLuceneIndex
         index.add( node2, key, new ValueContext( 6 ).indexNumeric() );
         index.add( node3, key, new ValueContext( 31 ).indexNumeric() );
         
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), node1, node2, node3 );
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), node1, node2 );
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), node1 );
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), node1, node2, node3 );
+//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), node1, node2 );
+//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), node1 );
+        
         restartTx();
         assertCollection( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), node1, node2, node3 );
         assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), node1, node2 );
@@ -674,9 +732,15 @@ public class TestLuceneIndex
         index.add( node1, key, new ValueContext( 15 ).indexNumeric() );
         index.add( node2, key, new ValueContext( 5 ).indexNumeric() );
         index.remove( node1, key, new ValueContext( 15 ).indexNumeric() );
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
+        
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
+        
         index.remove( node2, key, new ValueContext( 5 ).indexNumeric() );
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ) );
+        
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ) );
+        
         restartTx();
         assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ) );
 
@@ -685,7 +749,10 @@ public class TestLuceneIndex
         restartTx();
         assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node1, node2 );
         index.remove( node1, key, new ValueContext( 15 ).indexNumeric() );
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
+        
+        assertQueryNotPossible( index );
+//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
+        
         restartTx();
         assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
     }
@@ -698,8 +765,11 @@ public class TestLuceneIndex
         index.add( node1, "key", 10 );
         assertEquals( node1, index.get( "key", 10 ).getSingle() );
         assertEquals( node1, index.get( "key", "10" ).getSingle() );
-        assertEquals( node1, index.query( "key", 10 ).getSingle() );
-        assertEquals( node1, index.query( "key", "10" ).getSingle() );
+        
+        assertQueryNotPossible( index );
+//        assertEquals( node1, index.query( "key", 10 ).getSingle() );
+//        assertEquals( node1, index.query( "key", "10" ).getSingle() );
+        
         restartTx();
         assertEquals( node1, index.get( "key", 10 ).getSingle() );
         assertEquals( node1, index.get( "key", "10" ).getSingle() );
@@ -707,6 +777,7 @@ public class TestLuceneIndex
         assertEquals( node1, index.query( "key", "10" ).getSingle() );
     }
     
+    @Ignore
     @Test
     public void testNodeInsertionSpeed()
     {
@@ -714,6 +785,7 @@ public class TestLuceneIndex
                 LuceneIndexProvider.EXACT_CONFIG ), NODE_CREATOR );
     }
     
+    @Ignore
     @Test
     public void testNodeFulltextInsertionSpeed()
     {
@@ -721,6 +793,7 @@ public class TestLuceneIndex
                 LuceneIndexProvider.FULLTEXT_CONFIG ), NODE_CREATOR );
     }
     
+    @Ignore
     @Test
     public void testRelationshipInsertionSpeed()
     {

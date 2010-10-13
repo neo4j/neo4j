@@ -9,6 +9,7 @@ public class QueryContext
     final Object queryOrQueryObject;
     Sort sorting;
     Operator defaultOperator;
+    boolean allowQueryingModifications;
     
     public QueryContext( Object queryOrQueryObject )
     {
@@ -41,6 +42,12 @@ public class QueryContext
     public QueryContext defaultOperator( Operator defaultOperator )
     {
         this.defaultOperator = defaultOperator;
+        return this;
+    }
+
+    public QueryContext allowQueryingModifications()
+    {
+        this.allowQueryingModifications = true;
         return this;
     }
 }
