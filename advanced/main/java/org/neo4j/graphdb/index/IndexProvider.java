@@ -1,11 +1,10 @@
 package org.neo4j.graphdb.index;
 
-import java.util.Map;
-
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Service;
+
+import java.util.Map;
 
 /**
  * A provider which can create and instantiate {@link Index}s.
@@ -28,8 +27,8 @@ public abstract class IndexProvider extends Service
      * {@link Map} can contain any provider-implementation-specific data that
      * can control how an index behaves.
      * 
-     * @param indexName the name of the index, from
-     * {@link GraphDatabaseService#nodeIndex(String)}.
+     * @param indexName the for the database unique name of the index. Node indexes and
+     * relationship indexes do not share the same name space, and can have the same name.
      * @param config a {@link Map} of configuration parameters to use with the
      * index. Parameters can be anything and are implementation-specific.
      * @return the {@link Index} corresponding to the {@code indexName} and
@@ -43,8 +42,8 @@ public abstract class IndexProvider extends Service
      * {@link Map} can contain any provider-implementation-specific data that
      * can control how an index behaves.
      * 
-     * @param indexName the name of the index, from
-     * {@link GraphDatabaseService#nodeIndex(String)}.
+     * @param indexName the for the database unique name of the index. Node indexes and
+     * relationship indexes do not share the same name space, and can have the same name. 
      * @param config a {@link Map} of configuration parameters to use with the
      * index. Parameters can be anything and are implementation-specific.
      * @return the {@link Index} corresponding to the {@code indexName} and
