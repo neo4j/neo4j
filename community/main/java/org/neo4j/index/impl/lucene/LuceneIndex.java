@@ -128,6 +128,10 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
      * Or it can be a {@link Query} object. If can even be a {@link QueryContext}
      * object which can contain a query ({@link String} or {@link Query}) and
      * additional parameters, such as {@link Sort}.
+     * 
+     * Because of performance issues, including uncommitted transaction modifications
+     * in the result is disabled by default, but can be enabled using
+     * {@link QueryContext#allowQueryingModifications()}. 
      */
     public IndexHits<T> query( String key, Object queryOrQueryObject )
     {
