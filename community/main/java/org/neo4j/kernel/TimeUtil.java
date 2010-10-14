@@ -4,7 +4,9 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class TimeUtil
 {
-    public static long parseTimeSeconds( String timeWithOrWithoutUnit )
+    private static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
+    
+    public static long parseTimeMillis( String timeWithOrWithoutUnit )
     {
         int unitIndex = -1;
         for ( int i = 0; i < timeWithOrWithoutUnit.length(); i++ )
@@ -18,7 +20,7 @@ public abstract class TimeUtil
         }
         if ( unitIndex == -1 )
         {
-            return Integer.parseInt( timeWithOrWithoutUnit );
+            return DEFAULT_TIME_UNIT.toMillis( Integer.parseInt( timeWithOrWithoutUnit ) );
         }
         else
         {
@@ -26,7 +28,11 @@ public abstract class TimeUtil
             String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
             TimeUnit timeUnit = null;
             int multiplyFactor = 1;
-            if ( unit.equals( "s" ) )
+            if ( unit.equals( "ms" ) )
+            {
+                timeUnit = TimeUnit.MILLISECONDS;
+            }
+            else if ( unit.equals( "s" ) )
             {
                 timeUnit = TimeUnit.SECONDS;
             }
@@ -40,7 +46,7 @@ public abstract class TimeUtil
             {
                 throw new RuntimeException( "Unrecognized unit " + unit );
             }
-            return timeUnit.toSeconds( amount*multiplyFactor );
+            return timeUnit.toMillis( amount*multiplyFactor );
         }
     }
 }
