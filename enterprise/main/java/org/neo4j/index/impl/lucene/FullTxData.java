@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -38,7 +40,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.neo4j.helpers.Pair;
 
-class FullTxData extends TxData
+class FullTxData extends ExactTxData
 {
     private Directory directory;
     private IndexWriter writer;
@@ -46,6 +48,7 @@ class FullTxData extends TxData
     private IndexReader reader;
     private IndexSearcher searcher;
     private BooleanQuery extraQueries;
+    private Map<Long, Document> cachedDocuments = new HashMap<Long, Document>();
     
     FullTxData( LuceneIndex index )
     {
@@ -54,11 +57,12 @@ class FullTxData extends TxData
     
     TxData add( Object entityId, String key, Object value )
     {
+        super.add( entityId, key, value );
         try
         {
             ensureLuceneDataInstantiated();
             long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
-            Document document = LuceneDataSource.findDocument( index.type, searcher(), id );
+            Document document = findDocument( id );
             if ( document != null )
             {
                 index.type.addToDocument( document, key, value );
@@ -67,6 +71,7 @@ class FullTxData extends TxData
             else
             {
                 document = index.identifier.entityType.newDocument( entityId );
+                cachedDocuments.put( id, document );
                 index.type.addToDocument( document, key, value );
                 writer.addDocument( document );
             }
@@ -77,6 +82,11 @@ class FullTxData extends TxData
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private Document findDocument( long id )
+    {
+        return cachedDocuments.get( id );
     }
     
     @Override
@@ -109,11 +119,12 @@ class FullTxData extends TxData
 
     TxData remove( Object entityId, String key, Object value )
     {
+        super.remove( entityId, key, value );
         try
         {
             ensureLuceneDataInstantiated();
             long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
-            Document document = LuceneDataSource.findDocument( index.type, searcher(), id );
+            Document document = findDocument( id );
             if ( document != null )
             {
                 index.type.removeFromDocument( document, key, value );
@@ -158,7 +169,8 @@ class FullTxData extends TxData
         try
         {
             Sort sorting = contextOrNull != null ? contextOrNull.sorting : null;
-            Hits hits = new Hits( searcher(), query, null, sorting );
+            boolean allowRefreshSearcher = contextOrNull == null || !contextOrNull.tradeCorrectnessForSpeed; 
+            Hits hits = new Hits( searcher( allowRefreshSearcher ), query, null, sorting );
             Collection<Long> result = new ArrayList<Long>();
             for ( int i = 0; i < hits.length(); i++ )
             {
@@ -185,9 +197,9 @@ class FullTxData extends TxData
         this.modified = true;
     }
     
-    private IndexSearcher searcher()
+    private IndexSearcher searcher( boolean allowRefreshSearcher )
     {
-        if ( this.searcher != null && !modified )
+        if ( this.searcher != null && (!modified || !allowRefreshSearcher) )
         {
             return this.searcher;
         }
@@ -199,15 +211,9 @@ class FullTxData extends TxData
             {
                 return this.searcher;
             }
-            if ( this.reader != null )
-            {
-                this.reader.close();
-            }
+            safeClose( reader );
             this.reader = newReader;
-            if ( this.searcher != null )
-            {
-                this.searcher.close();
-            }
+            safeClose( searcher );
             searcher = new IndexSearcher( reader );
         }
         catch ( IOException e )
@@ -216,7 +222,10 @@ class FullTxData extends TxData
         }
         finally
         {
-            this.modified = false;
+            if ( allowRefreshSearcher )
+            {
+                this.modified = false;
+            }
         }
         return this.searcher;
     }
@@ -249,12 +258,6 @@ class FullTxData extends TxData
         }
     }
 
-    @Override
-    Pair<Collection<Long>, TxData> get( String key, Object value )
-    {
-        return internalQuery( this.index.type.get( key, value ), null );
-    }
-    
     @Override
     Query getExtraQuery()
     {

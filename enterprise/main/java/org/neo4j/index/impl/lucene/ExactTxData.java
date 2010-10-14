@@ -122,14 +122,9 @@ public class ExactTxData extends TxData
     @Override
     Pair<Collection<Long>, TxData> query( Query query, QueryContext contextOrNull )
     {
-        boolean hasModifications = data != null && !data.isEmpty();
-        boolean mustNotDoSlowQuery = contextOrNull == null || !contextOrNull.allowQueryingModifications;
-        
-        if ( hasModifications && mustNotDoSlowQuery )
+        if ( contextOrNull != null && contextOrNull.tradeCorrectnessForSpeed )
         {
-            throw new QueryNotPossibleException( "Querying an index inside a transaction where " +
-            		"modifications has been made must be explicitly enabled using " +
-            		"QueryContext.allowQueryingModifications" );
+            return new Pair<Collection<Long>, TxData>( Collections.<Long>emptyList(), this );
         }
         
         return toFullTxData().query( query, contextOrNull );

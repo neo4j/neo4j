@@ -20,9 +20,25 @@
 
 package org.neo4j.index.impl.lucene;
 
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.index.Neo4jTestCase.assertCollection;
+import static org.neo4j.index.Neo4jTestCase.assertOrderedCollection;
+import static org.neo4j.index.impl.lucene.Contains.contains;
+import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
+import static org.neo4j.index.impl.lucene.ValueContext.numeric;
+
+import java.io.File;
+
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -41,20 +57,6 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-
-import java.io.File;
-
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.index.Neo4jTestCase.assertOrderedCollection;
-import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
-import static org.neo4j.index.impl.lucene.ValueContext.numeric;
 
 public class TestLuceneIndex
 {
@@ -155,8 +157,8 @@ public class TestLuceneIndex
         T entity2 = entityCreator.create();
         index.add( entity1, key, value );
         assertThat( index.get( key, value ), contains( entity1 ) );
-
-        assertQueryNotPossible( index );
+        assertThat( index.query( key, "*" ), contains( entity1 ) );
+        assertThat( index.get( key, value ), contains( entity1 ) );
 
         restartTx();
         assertThat( index.get( key, value ), contains( entity1 ) );
@@ -171,27 +173,27 @@ public class TestLuceneIndex
         index.delete();
     }
 
-    private <T extends PropertyContainer> void assertQueryNotPossible(
-            Index<T> index )
-    {
-        try
-        {
-            index.query( "somekey:somevalue" );
-            fail( "Querying shouldn't be possible" );
-        }
-        catch ( QueryNotPossibleException e )
-        {
-            // Good
-        }
-    }
+//    private <T extends PropertyContainer> void assertQueryNotPossible(
+//            Index<T> index )
+//    {
+//        try
+//        {
+//            index.query( "somekey:somevalue" );
+//            fail( "Querying shouldn't be possible" );
+//        }
+//        catch ( QueryNotPossibleException e )
+//        {
+//            // Good
+//        }
+//    }
 
-    @Test( expected = QueryNotPossibleException.class )
-    public void makeSureYouCantQueryModifiedIndexInTx()
+    @Test()
+    public void makeSureYouGetLatestTxModificationsInQueryByDefault()
     {
         Index<Node> index = provider.nodeIndex( "failing-index", LuceneIndexProvider.FULLTEXT_CONFIG );
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
-        index.query( "key:value" );
+        assertThat( index.query( "key:value" ), contains( node ) );
     }
 
     @Test
@@ -336,14 +338,14 @@ public class TestLuceneIndex
     }
 
     @Test
-    public void shouldNotFailQueryFromIndexInTx()
+    public void shouldNotGetLatestTxModificationsWhenChoosingSpeedQueries()
     {
         Index<Node> index = provider.nodeIndex( "indexFooBar", LuceneIndexProvider.EXACT_CONFIG );
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
-
-        QueryContext queryContext = new QueryContext( "value" ).allowQueryingModifications();
-        assertThat( index.query( "key", queryContext ), contains( node ) );
+        QueryContext queryContext = new QueryContext( "value" ).tradeCorrectnessForSpeed();
+        assertThat( index.query( "key", queryContext ), isEmpty() );
+        assertThat( index.query( "key", "value" ), contains( node ) );
     }
 
     @Test
@@ -390,9 +392,16 @@ public class TestLuceneIndex
         index.add( node1, key, value1 );
         index.add( node2, key, value2 );
 
-        assertQueryNotPossible( index );
+        assertThat( index.query( key, "neo*" ), contains( node1 ) );
+        assertThat( index.query( key, "n?o4j" ), contains( node1 ) );
+        assertThat( index.query( key, "ne*" ), contains( node1, node2 ) );
+        assertThat( index.query( key + ":neo4j" ), contains( node1 ) );
+        assertThat( index.query( key + ":neo*" ), contains( node1 ) );
+        assertThat( index.query( key + ":n?o4j" ), contains( node1 ) );
+        assertThat( index.query( key + ":ne*" ), contains( node1, node2 ) );
 
         restartTx();
+        
         assertThat( index.query( key, "neo*" ), contains( node1 ) );
         assertThat( index.query( key, "n?o4j" ), contains( node1 ) );
         assertThat( index.query( key, "ne*" ), contains( node1, node2 ) );
@@ -414,9 +423,13 @@ public class TestLuceneIndex
         index.add( trinity, "username", "trinity@matrix" );
         index.add( trinity, "sex", "female" );
 
-        assertQueryNotPossible( index );
+        assertThat( index.query( "username:*@matrix AND sex:male" ), contains( neo ) );
+        assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), contains( neo ) );
+        assertThat( index.query( "username:*@matrix OR sex:male" ), contains( neo, trinity ) );
+        assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), contains( neo, trinity ) );
 
         restartTx();
+        
         assertThat( index.query( "username:*@matrix AND sex:male" ), contains( neo ) );
         assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), contains( neo ) );
         assertThat( index.query( "username:*@matrix OR sex:male" ), contains( neo, trinity ) );
@@ -441,14 +454,12 @@ public class TestLuceneIndex
         index.add( entity1, name, mattias );
         assertThat( index.get( name, mattias ), contains( entity1 ) );
 
-        assertQueryNotPossible( index );
-//        assertCollection( index.query( name, "\"" + mattias + "\"" ), entity1 );
-//        assertCollection( index.query( "name:\"" + mattias + "\"" ), entity1 );
+        assertCollection( index.query( name, "\"" + mattias + "\"" ), entity1 );
+        assertCollection( index.query( "name:\"" + mattias + "\"" ), entity1 );
 
         assertEquals( entity1, index.get( name, mattias ).getSingle() );
 
-        assertQueryNotPossible( index );
-//        assertCollection( index.query( "name", "Mattias*" ), entity1 );
+        assertCollection( index.query( "name", "Mattias*" ), entity1 );
 
         commitTx();
         assertThat( index.get( name, mattias ), contains( entity1 ) );
@@ -463,9 +474,8 @@ public class TestLuceneIndex
         assertThat( index.get( name, mattias ), contains( entity1 ) );
         assertThat( index.get( title, hacker ), contains( entity1, entity2 ) );
 
-        assertQueryNotPossible( index );
-//        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
-//                hacker + "\"" ), entity1, entity2 );
+        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
+                hacker + "\"" ), entity1, entity2 );
 
         commitTx();
         assertThat( index.get( name, mattias ), contains( entity1 ) );
@@ -479,9 +489,8 @@ public class TestLuceneIndex
         assertThat( index.get( name, mattias ), contains( entity1 ) );
         assertThat( index.get( title, hacker ), contains( entity1 ) );
 
-        assertQueryNotPossible( index );
-//        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
-//                hacker + "\"" ), entity1 );
+        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
+                hacker + "\"" ), entity1 );
 
         commitTx();
         assertThat( index.get( name, mattias ), contains( entity1 ) );
@@ -523,14 +532,13 @@ public class TestLuceneIndex
 
         assertThat( index.get( key, "The quick brown fox" ), contains( entity1 ) );
         assertThat( index.get( key, "brown fox jumped over" ), contains( entity2 ) );
-
-        assertQueryNotPossible( index );
-//        assertCollection( index.query( key, "quick" ), entity1 );
-//        assertCollection( index.query( key, "brown" ), entity1, entity2 );
-//        assertCollection( index.query( key, "quick OR jumped" ), entity1, entity2 );
-//        assertCollection( index.query( key, "brown AND fox" ), entity1, entity2 );
+        assertCollection( index.query( key, "quick" ), entity1 );
+        assertCollection( index.query( key, "brown" ), entity1, entity2 );
+        assertCollection( index.query( key, "quick OR jumped" ), entity1, entity2 );
+        assertCollection( index.query( key, "brown AND fox" ), entity1, entity2 );
 
         restartTx();
+        
         assertThat( index.get( key, "The quick brown fox" ), contains( entity1 ) );
         assertThat( index.get( key, "brown fox jumped over" ), contains( entity2 ) );
         assertThat( index.query( key, "quick" ), contains( entity1 ) );
@@ -626,7 +634,11 @@ public class TestLuceneIndex
         for ( int i = 0; i < 30000; i++ )
         {
             T entity = creator.create();
-//            index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
+            if ( i % 5000 == 5 )
+            {
+                index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
+            }
+            index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() );
             index.get( "name", "The name " + i );
             index.add( entity, "name", "The name " + i );
             index.add( entity, "title", "Some title " + i );
@@ -635,7 +647,7 @@ public class TestLuceneIndex
             if ( i % 5000 == 0 )
             {
                 restartTx();
-//                System.out.print( "." );
+                System.out.print( "." );
             }
         }
         System.out.println( "insert:" + ( System.currentTimeMillis() - t ) );
@@ -681,10 +693,9 @@ public class TestLuceneIndex
         index.add( eva, sex, "female" );
         index.add( eva, other, "ddd" );
 
-        assertQueryNotPossible( index );
-//        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
-//        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
-//        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
+        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
+        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
 
         restartTx();
 
@@ -707,9 +718,12 @@ public class TestLuceneIndex
         index.add( node6, key, numeric( 6 ) );
         index.add( node31, key, numeric( 31 ) );
 
-        assertQueryNotPossible( index );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node6, node31 ) );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), contains( node10, node6 ) );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), contains( node10 ) );
 
         restartTx();
+        
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node6, node31 ) );
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), contains( node10, node6 ) );
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), contains( node10 ) );
@@ -726,11 +740,11 @@ public class TestLuceneIndex
         index.add( node2, key, new ValueContext( 5 ).indexNumeric() );
         index.remove( node1, key, new ValueContext( 15 ).indexNumeric() );
 
-        assertQueryNotPossible( index );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), contains( node2 ) );
 
         index.remove( node2, key, new ValueContext( 5 ).indexNumeric() );
 
-        assertQueryNotPossible( index );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), isEmpty() );
 
         restartTx();
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), isEmpty() );
@@ -741,7 +755,7 @@ public class TestLuceneIndex
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), contains( node1, node2 ) );
         index.remove( node1, key, new ValueContext( 15 ).indexNumeric() );
 
-        assertQueryNotPossible( index );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), contains( node2 ) );
 
         restartTx();
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), contains( node2 ) );
@@ -755,10 +769,8 @@ public class TestLuceneIndex
         index.add( node1, "key", 10 );
         assertEquals( node1, index.get( "key", 10 ).getSingle() );
         assertEquals( node1, index.get( "key", "10" ).getSingle() );
-
-        assertQueryNotPossible( index );
-//        assertEquals( node1, index.query( "key", 10 ).getSingle() );
-//        assertEquals( node1, index.query( "key", "10" ).getSingle() );
+        assertEquals( node1, index.query( "key", 10 ).getSingle() );
+        assertEquals( node1, index.query( "key", "10" ).getSingle() );
 
         restartTx();
         assertEquals( node1, index.get( "key", 10 ).getSingle() );
@@ -767,7 +779,6 @@ public class TestLuceneIndex
         assertEquals( node1, index.query( "key", "10" ).getSingle() );
     }
 
-    @Ignore
     @Test
     public void testNodeInsertionSpeed()
     {
@@ -775,7 +786,6 @@ public class TestLuceneIndex
                 LuceneIndexProvider.EXACT_CONFIG ), NODE_CREATOR );
     }
 
-    @Ignore
     @Test
     public void testNodeFulltextInsertionSpeed()
     {
@@ -783,7 +793,6 @@ public class TestLuceneIndex
                 LuceneIndexProvider.FULLTEXT_CONFIG ), NODE_CREATOR );
     }
 
-    @Ignore
     @Test
     public void testRelationshipInsertionSpeed()
     {
