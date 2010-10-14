@@ -361,7 +361,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         String pullInterval = this.config.get( CONFIG_KEY_HA_PULL_INTERVAL );
         if ( pullInterval != null )
         {
-            long timeSeconds = TimeUtil.parseTimeSeconds( pullInterval );
+            long timeMillis = TimeUtil.parseTimeMillis( pullInterval );
             updatePuller = new ScheduledThreadPoolExecutor( 1 );
             updatePuller.scheduleWithFixedDelay( new Runnable()
             {
@@ -376,7 +376,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                         msgLog.logMessage( "Pull updates failed", e  );
                     }
                 }
-            }, timeSeconds, timeSeconds, TimeUnit.SECONDS );
+            }, timeMillis, timeMillis, TimeUnit.MILLISECONDS );
         }
     }
 
