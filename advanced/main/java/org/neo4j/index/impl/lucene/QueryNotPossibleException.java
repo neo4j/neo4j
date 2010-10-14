@@ -20,6 +20,11 @@
 
 package org.neo4j.index.impl.lucene;
 
+/**
+ * Querying an index inside a transaction where
+ * modifications has been made must be explicitly enabled using
+ * QueryContext.allowQueryingModifications
+ */
 public class QueryNotPossibleException extends RuntimeException
 {
     public QueryNotPossibleException()
