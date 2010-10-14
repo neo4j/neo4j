@@ -54,6 +54,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.index.Neo4jTestCase.assertOrderedCollection;
 import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
+import static org.neo4j.index.impl.lucene.ValueContext.numeric;
 
 public class TestLuceneIndex
 {
@@ -140,7 +141,8 @@ public class TestLuceneIndex
         }
     }
 
-    private <T extends PropertyContainer> void makeSureAdditionsCanBeRead( Index<T> index, EntityCreator<T> entityCreator )
+    private <T extends PropertyContainer> void makeSureAdditionsCanBeRead(
+            Index<T> index, EntityCreator<T> entityCreator )
     {
         String key = "name";
         String value = "Mattias";
@@ -696,21 +698,21 @@ public class TestLuceneIndex
     {
         Index<Node> index = provider.nodeIndex( "numeric", LuceneIndexProvider.EXACT_CONFIG );
 
-        Node node1 = graphDb.createNode();
-        Node node2 = graphDb.createNode();
-        Node node3 = graphDb.createNode();
+        Node node10 = graphDb.createNode();
+        Node node6 = graphDb.createNode();
+        Node node31 = graphDb.createNode();
 
         String key = "key";
-        index.add( node1, key, new ValueContext( 10 ).indexNumeric() );
-        index.add( node2, key, new ValueContext( 6 ).indexNumeric() );
-        index.add( node3, key, new ValueContext( 31 ).indexNumeric() );
+        index.add( node10, key, numeric( 10 ) );
+        index.add( node6, key, numeric( 6 ) );
+        index.add( node31, key, numeric( 31 ) );
 
         assertQueryNotPossible( index );
 
         restartTx();
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node1, node2, node3 ) );
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), contains( node1, node2 ) );
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), contains( node1 ) );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node6, node31 ) );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), contains( node10, node6 ) );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), contains( node10 ) );
     }
 
     @Test
