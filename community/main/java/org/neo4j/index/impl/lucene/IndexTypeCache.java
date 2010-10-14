@@ -20,22 +20,29 @@
 
 package org.neo4j.index.impl.lucene;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 class IndexTypeCache
 {
-    private final Map<String, IndexType> cache = new HashMap<String, IndexType>();
+    private final Map<IndexIdentifier, IndexType> cache = Collections.synchronizedMap(
+            new HashMap<IndexIdentifier, IndexType>() );
     
     IndexType getIndexType( IndexIdentifier identifier )
     {
-        IndexType type = cache.get( identifier.indexName );
+        IndexType type = cache.get( identifier );
         if ( type != null )
         {
             return type;
         }
         type = IndexType.getIndexType( identifier );
-        cache.put( identifier.indexName, type );
+        cache.put( identifier, type );
         return type;
+    }
+    
+    void invalidate( IndexIdentifier identifier )
+    {
+        cache.remove( identifier );
     }
 }

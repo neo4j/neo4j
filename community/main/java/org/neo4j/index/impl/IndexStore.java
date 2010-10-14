@@ -146,6 +146,7 @@ public class IndexStore
         {
             throw new RuntimeException( "Index config for '" + name + "' not found" );
         }
+        write();
     }
     
     public synchronized boolean setIfNecessary( String name, Map<String, String> config )

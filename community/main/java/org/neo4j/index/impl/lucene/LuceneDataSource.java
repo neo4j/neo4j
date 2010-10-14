@@ -49,6 +49,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.index.impl.IndexStore;
 import org.neo4j.kernel.Config;
@@ -124,6 +125,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private final Cache caching;
     EntityType nodeEntityType;
     EntityType relationshipEntityType;
+    final Map<IndexIdentifier, LuceneIndex<? extends PropertyContainer>> indexes =
+            new HashMap<IndexIdentifier, LuceneIndex<? extends PropertyContainer>>();
 
     /**
      * Constructs this data source.
@@ -498,6 +501,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         closeIndexSearcher( identifier );
         deleteFileOrDirectory( getFileDirectory( baseStorePath, identifier ) );
+        invalidateCache( identifier );
+        indexStore.remove( identifier.indexName );
+        typeCache.invalidate( identifier );
+        synchronized ( indexes )
+        {
+            indexes.remove( identifier ).markAsDeleted();
+        }
     }
     
     private static void deleteFileOrDirectory( File file )

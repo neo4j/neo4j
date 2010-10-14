@@ -83,6 +83,12 @@ abstract class IndexType
                 addToDocument( document, key, existingValue );
             }
         }
+        
+        @Override
+        public String toString()
+        {
+            return "EXACT";
+        }
     };
     
     private static class FulltextType extends IndexType
@@ -136,6 +142,12 @@ abstract class IndexType
             {
                 addToDocument( document, key, existingValue );
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "FULLTEXT";
         }
     };
     

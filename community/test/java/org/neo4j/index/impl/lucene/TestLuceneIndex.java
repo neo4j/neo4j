@@ -135,25 +135,6 @@ public class TestLuceneIndex
         }
     }
     
-    @Test
-    public void testClear()
-    {
-        Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
-        Node node = graphDb.createNode();
-        index.add( node, "name", "Mattias" );
-        index.clear();
-        assertCollection( index.get( "name", "Mattias" ) );
-        restartTx();
-        assertCollection( index.get( "name", "Mattias" ) );
-        
-        index.add( node, "name", "Mattias" );
-        restartTx();
-        index.clear();
-        assertCollection( index.get( "name", "Mattias" ) );
-        restartTx();
-        assertCollection( index.get( "name", "Mattias" ) );
-    }
-    
     private <T extends PropertyContainer> void makeSureAdditionsCanBeRead( Index<T> index,
             EntityCreator<T> entityCreator )
     {
@@ -183,7 +164,7 @@ public class TestLuceneIndex
         assertCollection( index.get( key, value ), entity1, entity2 );
         restartTx();
         assertCollection( index.get( key, value ), entity1, entity2 );
-        index.clear();
+        index.delete();
     }
     
     private <T extends PropertyContainer> void assertQueryNotPossible( Index<T> index )
@@ -260,7 +241,7 @@ public class TestLuceneIndex
         restartTx();
         assertNull( index.get( key, value ).getSingle() );
         node.delete();
-        index.clear();
+        index.delete();
     }
     
     @Test
@@ -293,7 +274,7 @@ public class TestLuceneIndex
         assertEquals( node2, index.get( key1, value1 ).getSingle() );
         assertNull( index.get( key2, value1 ).getSingle() );
         node.delete();
-        index.clear();
+        index.delete();
     }
     
     @Test
@@ -345,7 +326,7 @@ public class TestLuceneIndex
         assertCollection( index.get( key, value2 ), node );
         assertCollection( index.get( key, value3 ), node );
         assertCollection( index.get( key, "whatever" ) );
-        index.clear();
+        index.delete();
     }
     
     @Test
@@ -387,7 +368,7 @@ public class TestLuceneIndex
         assertCollection( index.get( key, value1 ), node );
         assertCollection( index.get( key, value2 ) );
         assertCollection( index.get( key, value3 ) );
-        index.clear();
+        index.delete();
     }
     
     @Test
@@ -421,7 +402,7 @@ public class TestLuceneIndex
         assertCollection( index.query( key + ":neo*" ), node1 );
         assertCollection( index.query( key + ":n?o4j" ), node1 );
         assertCollection( index.query( key + ":ne*" ), node1, node2 );
-        index.clear();
+        index.delete();
     }
     
     @Test
@@ -446,7 +427,7 @@ public class TestLuceneIndex
         assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), neo );
         assertCollection( index.query( "username:*@matrix OR sex:male" ), neo, trinity );
         assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), neo, trinity );
-        index.clear();
+        index.delete();
     }
     
     private <T extends PropertyContainer> void doSomeRandomUseCaseTestingWithExactIndex(
@@ -518,7 +499,7 @@ public class TestLuceneIndex
         beginTx();
         index.remove( entity1, title, hacker );
         index.remove( entity1, name, mattias );
-        index.clear();
+        index.delete();
         commitTx();
     }
     
@@ -563,7 +544,7 @@ public class TestLuceneIndex
         assertCollection( index.query( key, "quick OR jumped" ), entity1, entity2 );
         assertCollection( index.query( key, "brown AND fox" ), entity1, entity2 );
         
-        index.clear();
+        index.delete();
     }
     
     @Test
@@ -603,7 +584,7 @@ public class TestLuceneIndex
         startNode.delete();
         endNode1.delete();
         endNode2.delete();
-        index.clear();
+        index.delete();
     }
     
     @Ignore("This breaks on automated build system - but nohwere else")
@@ -637,7 +618,7 @@ public class TestLuceneIndex
         assertEquals( node2, hits.next() );
         assertEquals( node1, hits.next() );
         assertFalse( hits.hasNext() );
-        index.clear();
+        index.delete();
         node1.delete();
         node2.delete();
         node3.delete();

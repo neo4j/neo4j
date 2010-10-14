@@ -125,7 +125,7 @@ public class TestRecovery
     	} );
     	Thread.sleep( 7000 );
     	process.destroy();
-    	Thread.sleep( 3000 );
+    	process.waitFor();
     	new EmbeddedGraphDatabase( path ).shutdown();
     }
 }
