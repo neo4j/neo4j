@@ -63,10 +63,10 @@ public interface Index<T extends PropertyContainer>
     void remove( T entity, String key, Object value );
     
     /**
-     * Clears the index. After this nothing will be returned in any query
-     * until key/value pairs are added again.
+     * Deletes the index and all its content. After this the index cannot be
+     * used anymore and all operations will throw {@link IllegalStateException}. 
      */
-    void clear();
+    void delete();
     
     /**
      * Returns exact matches from this index, given the key/value pair.

@@ -104,9 +104,9 @@ class LuceneXaConnection extends XaConnectionHelpImpl
         getLuceneTx().remove( index, entity, key, value );
     }
     
-    <T extends PropertyContainer> void clear( LuceneIndex<T> index )
+    <T extends PropertyContainer> void delete( LuceneIndex<T> index )
     {
-        getLuceneTx().clear( index );
+        getLuceneTx().delete( index );
     }
     
     void createIndex( String name, Map<String, String> config )

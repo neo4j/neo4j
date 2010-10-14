@@ -34,7 +34,7 @@ abstract class LuceneCommand extends XaCommand
 {
     private static final byte ADD_COMMAND = (byte) 1;
     private static final byte REMOVE_COMMAND = (byte) 2;
-    private static final byte CLEAR_COMMAND = (byte) 3;
+    private static final byte DELETE_COMMAND = (byte) 3;
     private static final byte CREATE_INDEX_COMMAND = (byte) 4;
     
     public static final byte NODE = (byte) 1;
@@ -184,11 +184,11 @@ abstract class LuceneCommand extends XaCommand
         }
     }
 
-    static class ClearCommand extends LuceneCommand
+    static class DeleteCommand extends LuceneCommand
     {
-        ClearCommand( IndexIdentifier indexId )
+        DeleteCommand( IndexIdentifier indexId )
         {
-            super( indexId, (byte)0, -1L, "", "", CLEAR_COMMAND );
+            super( indexId, (byte)0, -1L, "", "", DELETE_COMMAND );
         }
     }
     
@@ -348,7 +348,7 @@ abstract class LuceneCommand extends XaCommand
                         new AddRelationshipCommand( identifier, cls,
                                 new RelationshipId( entityId, startNodeId, endNodeId ), key, value );
                 case REMOVE_COMMAND: return new RemoveCommand( identifier, cls, entityId, key, value );
-                case CLEAR_COMMAND: return new ClearCommand( identifier );
+                case DELETE_COMMAND: return new DeleteCommand( identifier );
                 default:
                     throw new IOException( "Unknown command type[" + 
                         commandType + "]" );

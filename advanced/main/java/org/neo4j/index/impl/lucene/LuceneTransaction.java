@@ -37,7 +37,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.index.impl.lucene.LuceneCommand.AddCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.AddRelationshipCommand;
-import org.neo4j.index.impl.lucene.LuceneCommand.ClearCommand;
+import org.neo4j.index.impl.lucene.LuceneCommand.DeleteCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.CreateIndexCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.RemoveCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -97,21 +97,10 @@ class LuceneTransaction extends XaTransaction
         queueCommand( index.newRemoveCommand( entity, key, value ) ).removeCount++;
     }
     
-    <T extends PropertyContainer> void clear( LuceneIndex<T> index )
+    <T extends PropertyContainer> void delete( LuceneIndex<T> index )
     {
-        TxDataBoth data = getTxData( index, true );
-        TxDataHolder added = data.added( false );
-        if ( added != null )
-        {
-            added.clear();
-        }
-        TxDataHolder removed = data.removed( true );
-        if ( removed != null )
-        {
-            removed.clear();
-            removed.setRemoveAll();
-        }
-        queueCommand( new ClearCommand( index.identifier ) );
+        txData.put( index.identifier, new DeletedTxDataBoth( index ) );
+        queueCommand( new DeleteCommand( index.identifier ) );
     }
     
     private CommandList queueCommand( LuceneCommand command )
@@ -267,13 +256,12 @@ class LuceneTransaction extends XaTransaction
                         }
                         searcher = dataSource.getIndexSearcher( identifier ).getSearcher();
                     }
-                    if ( command instanceof ClearCommand )
+                    if ( command instanceof DeleteCommand )
                     {
                         documents.clear();
                         dataSource.closeWriter( writer );
                         writer = null;
                         dataSource.deleteIndex( identifier );
-                        dataSource.invalidateCache( identifier );
                         if ( isRecovery )
                         {
                             dataSource.removeRecoveryIndexWriter( identifier );
@@ -398,7 +386,7 @@ class LuceneTransaction extends XaTransaction
     {
         private TxDataHolder add;
         private TxDataHolder remove;
-        private final LuceneIndex index;
+        final LuceneIndex index;
         
         public TxDataBoth( LuceneIndex index )
         {
@@ -413,7 +401,7 @@ class LuceneTransaction extends XaTransaction
             }
             return this.add;
         }
-        
+
         TxDataHolder removed( boolean createIfNotExists )
         {
             if ( this.remove == null && createIfNotExists )
@@ -435,6 +423,32 @@ class LuceneTransaction extends XaTransaction
             {
                 data.close();
             }
+        }
+    }
+    
+    private class DeletedTxDataBoth extends TxDataBoth
+    {
+        public DeletedTxDataBoth( LuceneIndex index )
+        {
+            super( index );
+        }
+
+        @Override
+        TxDataHolder added( boolean createIfNotExists )
+        {
+            throw illegalStateException();
+        }
+        
+        @Override
+        TxDataHolder removed( boolean createIfNotExists )
+        {
+            throw illegalStateException();
+        }
+
+        private IllegalStateException illegalStateException()
+        {
+            throw new IllegalStateException( "This index (" + index.identifier + 
+                    ") has been marked as deleted in this transaction" );
         }
     }
     

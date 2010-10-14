@@ -43,8 +43,8 @@ import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.index.impl.IdToEntityIterator;
-import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.index.impl.IndexHitsImpl;
+import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
@@ -57,6 +57,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     final LuceneIndexProvider service;
     final IndexIdentifier identifier;
     final IndexType type;
+    private volatile boolean deleted;
 
     LuceneIndex( LuceneIndexProvider service, IndexIdentifier identifier )
     {
@@ -67,6 +68,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     
     LuceneXaConnection getConnection()
     {
+        assertNotDeleted();
         if ( service.broker == null )
         {
             throw new ReadOnlyDbException();
@@ -74,10 +76,24 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         return service.broker.acquireResourceConnection();
     }
     
+    private void assertNotDeleted()
+    {
+        if ( deleted )
+        {
+            throw new IllegalStateException( "This index (" + identifier + ") has been deleted" );
+        }
+    }
+
     LuceneXaConnection getReadOnlyConnection()
     {
+        assertNotDeleted();
         return service.broker == null ? null :
                 service.broker.acquireReadOnlyResourceConnection();
+    }
+    
+    void markAsDeleted()
+    {
+        this.deleted = true;
     }
     
     /**
@@ -130,9 +146,9 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         }
     }
     
-    public void clear()
+    public void delete()
     {
-        getConnection().clear( this );
+        getConnection().delete( this );
     }
     
     public IndexHits<T> get( String key, Object value )
@@ -176,11 +192,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     {
         List<Long> ids = new ArrayList<Long>();
         LuceneXaConnection con = getReadOnlyConnection();
-        LuceneTransaction luceneTx = null;
-        if ( con != null )
-        {
-            luceneTx = getReadOnlyConnection().getLuceneTx();
-        }
+        LuceneTransaction luceneTx = con != null ? con.getLuceneTx() : null;
         Collection<Long> addedIds = Collections.emptySet();
         Collection<Long> removedIds = Collections.emptySet();
         Query excludeQuery = null;

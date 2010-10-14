@@ -81,7 +81,7 @@ class ReadOnlyIndexProviderProxy extends IndexProvider
 
         abstract T wrap( T actual );
 
-        public void clear()
+        public void delete()
         {
             readOnly();
         }

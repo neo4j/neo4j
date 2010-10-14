@@ -39,13 +39,13 @@ public class LuceneConfigDefaultsFiller implements DefaultsFiller
             type = "exact";
             result.put( "type", type );
         }
-        if ( type.equals( "fulltext" ) )
-        {
-            if ( !result.containsKey( "to_lower_case" ) )
-            {
-                result.put( "to_lower_case", "true" );
-            }
-        }
+//        if ( type.equals( "fulltext" ) )
+//        {
+//            if ( !result.containsKey( "to_lower_case" ) )
+//            {
+//                result.put( "to_lower_case", "true" );
+//            }
+//        }
         return result;
     }
 }
