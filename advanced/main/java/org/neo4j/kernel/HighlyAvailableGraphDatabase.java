@@ -361,7 +361,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         String pullInterval = this.config.get( CONFIG_KEY_HA_PULL_INTERVAL );
         if ( pullInterval != null )
         {
-            long timeSeconds = TimeUtil.parseTimeMillis( pullInterval );
+            long timeSeconds = TimeUtil.parseTimeSeconds( pullInterval );
             updatePuller = new ScheduledThreadPoolExecutor( 1 );
             updatePuller.scheduleWithFixedDelay( new Runnable()
             {
