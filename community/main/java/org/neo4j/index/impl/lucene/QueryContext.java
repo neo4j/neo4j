@@ -23,9 +23,13 @@ package org.neo4j.index.impl.lucene;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.neo4j.graphdb.index.Index;
 
 /**
- * 
+ * This class has the extra query configuration to use
+ * with {@link Index}. It allows a query to have sorting,
+ * default operators, and allows the engine to return
+ * even inside a transaction that has introduced modifications.
  */
 public class QueryContext
 {
@@ -38,13 +42,26 @@ public class QueryContext
     {
         this.queryOrQueryObject = queryOrQueryObject;
     }
-    
+
+    /**
+     * Returns a QueryContext with sorting added to it.
+     *
+     * @param sorting The sorting to be used
+     * @return A QueryContext with the sorting applied.
+     */
     public QueryContext sort( Sort sorting )
     {
         this.sorting = sorting;
         return this;
     }
-    
+
+    /**
+     * Returns a QueryContext with sorting added to it.
+     *
+     * @param key The key to sort on.
+     * @param additionalKeys Any additional keys to sort on.
+     * @return A QueryContext with sorting added to it.
+     */
     public QueryContext sort( String key, String... additionalKeys )
     {
         SortField firstSortField = new SortField( key, SortField.STRING );
@@ -61,13 +78,30 @@ public class QueryContext
         }
         return sort( new Sort( sortFields ) );
     }
-    
+
+    /**
+     * Lucenes default operator is OR. Using this method, the default operator
+     * can be changed for the query.
+     *
+     * @param defaultOperator The new operator to use.
+     * @return A QueryContext with the new default operator applied.
+     */
     public QueryContext defaultOperator( Operator defaultOperator )
     {
         this.defaultOperator = defaultOperator;
         return this;
     }
 
+    /**
+     * Adding or removing data from an index should affect the index results
+     * inside the transaction, even if it's not committed. To do this, some
+     * rather heavy operations have to be done, which can be slow to complete.
+     *
+     * The default is to not allow these slow, but correct, queries. If you
+     * do want them, this is the method you are looking for.
+     *
+     * @return  A QueryContext with the slow but correct setting turned on.
+     */
     public QueryContext allowQueryingModifications()
     {
         this.allowQueryingModifications = true;
