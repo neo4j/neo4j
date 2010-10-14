@@ -28,15 +28,15 @@ import org.neo4j.graphdb.index.Index;
 /**
  * This class has the extra query configuration to use
  * with {@link Index}. It allows a query to have sorting,
- * default operators, and allows the engine to return
- * even inside a transaction that has introduced modifications.
+ * default operators, and allows the engine to turn of searching of
+ * modifications made inside a transaction, to gain performance.
  */
 public class QueryContext
 {
     final Object queryOrQueryObject;
     Sort sorting;
     Operator defaultOperator;
-    boolean allowQueryingModifications;
+    boolean tradeCorrectnessForSpeed;
     
     public QueryContext( Object queryOrQueryObject )
     {
@@ -94,17 +94,20 @@ public class QueryContext
 
     /**
      * Adding or removing data from an index should affect the index results
-     * inside the transaction, even if it's not committed. To do this, some
+     * inside the transaction, even if it's not committed. To let those
+     * modifications be visible in {@link Index#query(Object)} results, some
      * rather heavy operations have to be done, which can be slow to complete.
      *
-     * The default is to not allow these slow, but correct, queries. If you
-     * do want them, this is the method you are looking for.
+     * The default behaviour is that these modifications are visible, but using
+     * this method will tell the query to not strive to include the absolutely
+     * latest modifications, so that such a performance penalty can be avoided.
      *
-     * @return  A QueryContext with the slow but correct setting turned on.
+     * @return A QueryContext which doesn't necessarily include the latest
+     * transaction modifications in the results, but may perform faster.
      */
-    public QueryContext allowQueryingModifications()
+    public QueryContext tradeCorrectnessForSpeed()
     {
-        this.allowQueryingModifications = true;
+        this.tradeCorrectnessForSpeed = true;
         return this;
     }
 }
