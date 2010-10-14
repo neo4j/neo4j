@@ -64,4 +64,10 @@ class IndexIdentifier
     {
         return this.hashCode;
     }
+    
+    @Override
+    public String toString()
+    {
+        return "Index[" + indexName + ", " + (entityTypeByte==LuceneCommand.NODE?"node":"relationship") + "]";
+    }
 }

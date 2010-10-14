@@ -106,8 +106,38 @@ public class LuceneIndexProvider extends IndexProvider
     
     public Index<Node> nodeIndex( String indexName, Map<String, String> config )
     {
-        return new LuceneIndex.NodeIndex( this, new IndexIdentifier( LuceneCommand.NODE,
-                dataSource.nodeEntityType, indexName, config( indexName, config ) ) );
+        IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE,
+                dataSource.nodeEntityType, indexName, config( indexName, config ) );
+        synchronized ( dataSource.indexes )
+        {
+            LuceneIndex index = dataSource.indexes.get( identifier );
+            if ( index == null )
+            {
+                index = new LuceneIndex.NodeIndex( this, identifier );
+                dataSource.indexes.put( identifier, index );
+            }
+            return index;
+        }
+        
+//        return new LuceneIndex.NodeIndex( this, identifier );
+    }
+
+    public RelationshipIndex relationshipIndex( String indexName, Map<String, String> config )
+    {
+        IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.RELATIONSHIP,
+                dataSource.relationshipEntityType, indexName, config( indexName, config ) );
+        synchronized ( dataSource.indexes )
+        {
+            LuceneIndex index = dataSource.indexes.get( identifier );
+            if ( index == null )
+            {
+                index = new LuceneIndex.RelationshipIndex( this, identifier );
+                dataSource.indexes.put( identifier, index );
+            }
+            return (RelationshipIndex) index;
+        }
+//
+//        return new LuceneIndex.RelationshipIndex( this, identifier );
     }
     
     private Map<String, String> config( final String indexName, Map<String, String> config )
@@ -158,11 +188,5 @@ public class LuceneIndexProvider extends IndexProvider
             }
         }
         return result.first();
-    }
-
-    public RelationshipIndex relationshipIndex( String indexName, Map<String, String> config )
-    {
-        return new LuceneIndex.RelationshipIndex( this, new IndexIdentifier( LuceneCommand.RELATIONSHIP,
-                dataSource.relationshipEntityType, indexName, config( indexName, config ) ) );
     }
 }
