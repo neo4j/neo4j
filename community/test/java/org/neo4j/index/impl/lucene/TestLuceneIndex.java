@@ -20,15 +20,6 @@
 
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-import static org.neo4j.index.Neo4jTestCase.assertCollection;
-import static org.neo4j.index.Neo4jTestCase.assertOrderedCollection;
-
-import java.io.File;
-
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
@@ -51,12 +42,25 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
+import java.io.File;
+
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.index.Neo4jTestCase.assertOrderedCollection;
+import static org.neo4j.index.impl.lucene.Contains.contains;
+import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
+
 public class TestLuceneIndex
 {
     private static GraphDatabaseService graphDb;
     private static LuceneIndexProvider provider;
     private Transaction tx;
-    
+
     @BeforeClass
     public static void setUpStuff()
     {
@@ -65,13 +69,13 @@ public class TestLuceneIndex
         graphDb = new EmbeddedGraphDatabase( storeDir );
         provider = new LuceneIndexProvider( graphDb );
     }
-    
+
     @AfterClass
     public static void tearDownStuff()
     {
         graphDb.shutdown();
     }
-    
+
     @After
     public void commitTx()
     {
@@ -82,7 +86,7 @@ public class TestLuceneIndex
             tx = null;
         }
     }
-    
+
     @Before
     public void beginTx()
     {
@@ -91,18 +95,18 @@ public class TestLuceneIndex
             tx = graphDb.beginTx();
         }
     }
-    
+
     void restartTx()
     {
         commitTx();
         beginTx();
     }
-    
+
     private static abstract interface EntityCreator<T extends PropertyContainer>
     {
         T create();
     }
-    
+
     private static final RelationshipType TEST_TYPE =
             DynamicRelationshipType.withName( "TEST_TYPE" );
     private static final EntityCreator<Node> NODE_CREATOR = new EntityCreator<Node>()
@@ -114,12 +118,13 @@ public class TestLuceneIndex
     };
     private static final EntityCreator<Relationship> RELATIONSHIP_CREATOR =
             new EntityCreator<Relationship>()
-    {
-        public Relationship create()
-        {
-            return graphDb.createNode().createRelationshipTo( graphDb.createNode(), TEST_TYPE );
-        }
-    };
+            {
+                public Relationship create()
+                {
+                    return graphDb.createNode().createRelationshipTo( graphDb.createNode(), TEST_TYPE );
+                }
+            };
+
     static class FastRelationshipCreator implements EntityCreator<Relationship>
     {
         private Node node, otherNode;
@@ -134,40 +139,38 @@ public class TestLuceneIndex
             return node.createRelationshipTo( otherNode, TEST_TYPE );
         }
     }
-    
-    private <T extends PropertyContainer> void makeSureAdditionsCanBeRead( Index<T> index,
-            EntityCreator<T> entityCreator )
+
+    private <T extends PropertyContainer> void makeSureAdditionsCanBeRead( Index<T> index, EntityCreator<T> entityCreator )
     {
         String key = "name";
         String value = "Mattias";
-        assertNull( index.get( key, value ).getSingle() );
-        assertCollection( index.get( key, value ) );
-        assertCollection( index.query( key, "*" ) );
-        
+        assertThat( index.get( key, value ).getSingle(), is( nullValue() ) );
+        assertThat( index.get( key, value ), isEmpty() );
+
+        assertThat( index.query( key, "*" ), isEmpty() );
+
         T entity1 = entityCreator.create();
         T entity2 = entityCreator.create();
         index.add( entity1, key, value );
-        assertEquals( entity1, index.get( key, value ).getSingle() );
-        assertCollection( index.get( key, value ), entity1 );
-        
+        assertThat( index.get( key, value ), contains( entity1 ) );
+
         assertQueryNotPossible( index );
-//        assertCollection( index.query( key, "*" ), entity1 );
-//        assertCollection( index.query( key + ":*" ), entity1 );
-        
+
         restartTx();
-        assertEquals( entity1, index.get( key, value ).getSingle() );
-        assertCollection( index.get( key, value ), entity1 );
-        assertCollection( index.query( key, "*" ), entity1 );
-        assertCollection( index.query( key + ":*" ), entity1 );
-        
+        assertThat( index.get( key, value ), contains( entity1 ) );
+        assertThat( index.query( key, "*" ), contains( entity1 ) );
+        assertThat( index.get( key, value ), contains( entity1 ) );
+
         index.add( entity2, key, value );
-        assertCollection( index.get( key, value ), entity1, entity2 );
+        assertThat( index.get( key, value ), contains( entity1, entity2 ) );
+
         restartTx();
-        assertCollection( index.get( key, value ), entity1, entity2 );
+        assertThat( index.get( key, value ), contains( entity1, entity2 ) );
         index.delete();
     }
-    
-    private <T extends PropertyContainer> void assertQueryNotPossible( Index<T> index )
+
+    private <T extends PropertyContainer> void assertQueryNotPossible(
+            Index<T> index )
     {
         try
         {
@@ -179,8 +182,8 @@ public class TestLuceneIndex
             // Good
         }
     }
-    
-    @Test(expected = QueryNotPossibleException.class)
+
+    @Test( expected = QueryNotPossibleException.class )
     public void makeSureYouCantQueryModifiedIndexInTx()
     {
         Index<Node> index = provider.nodeIndex( "failing-index", LuceneIndexProvider.FULLTEXT_CONFIG );
@@ -188,41 +191,41 @@ public class TestLuceneIndex
         index.add( node, "key", "value" );
         index.query( "key:value" );
     }
-    
+
     @Test
     public void makeSureAdditionsCanBeReadNodeExact()
     {
         makeSureAdditionsCanBeRead( provider.nodeIndex( "exact", LuceneIndexProvider.EXACT_CONFIG ),
                 NODE_CREATOR );
     }
-    
+
     @Test
     public void makeSureAdditionsCanBeReadNodeFulltext()
     {
         makeSureAdditionsCanBeRead( provider.nodeIndex( "fulltext",
                 LuceneIndexProvider.FULLTEXT_CONFIG ), NODE_CREATOR );
     }
-    
+
     @Test
     public void makeSureAdditionsCanBeReadRelationshipExact()
     {
         makeSureAdditionsCanBeRead( provider.relationshipIndex( "exact",
                 LuceneIndexProvider.EXACT_CONFIG ), RELATIONSHIP_CREATOR );
     }
-    
+
     @Test
     public void makeSureAdditionsCanBeReadRelationshipFulltext()
     {
         makeSureAdditionsCanBeRead( provider.relationshipIndex( "fulltext",
                 LuceneIndexProvider.FULLTEXT_CONFIG ), RELATIONSHIP_CREATOR );
     }
-    
+
     @Test
     public void makeSureAdditionsCanBeRemovedInSameTx()
     {
         makeSureAdditionsCanBeRemoved( false );
     }
-    
+
     private void makeSureAdditionsCanBeRemoved( boolean restartTx )
     {
         Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
@@ -243,13 +246,13 @@ public class TestLuceneIndex
         node.delete();
         index.delete();
     }
-    
+
     @Test
     public void makeSureAdditionsCanBeRemoved()
     {
         makeSureAdditionsCanBeRemoved( true );
     }
-    
+
     private void makeSureSomeAdditionsCanBeRemoved( boolean restartTx )
     {
         Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
@@ -276,39 +279,40 @@ public class TestLuceneIndex
         node.delete();
         index.delete();
     }
-    
+
     @Test
     public void makeSureSomeAdditionsCanBeRemovedInSameTx()
     {
         makeSureSomeAdditionsCanBeRemoved( false );
     }
-    
+
     @Test
     public void makeSureSomeAdditionsCanBeRemoved()
     {
         makeSureSomeAdditionsCanBeRemoved( true );
     }
-    
+
     @Test
     public void makeSureThereCanBeMoreThanOneValueForAKeyAndEntity()
     {
         makeSureThereCanBeMoreThanOneValueForAKeyAndEntity( false );
     }
-    
+
     @Test
     public void makeSureThereCanBeMoreThanOneValueForAKeyAndEntitySameTx()
     {
         makeSureThereCanBeMoreThanOneValueForAKeyAndEntity( true );
     }
-    
-    private void makeSureThereCanBeMoreThanOneValueForAKeyAndEntity( boolean restartTx )
+
+    private void makeSureThereCanBeMoreThanOneValueForAKeyAndEntity(
+            boolean restartTx )
     {
         Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
         String key = "name";
         String value1 = "Lucene";
         String value2 = "Index";
         String value3 = "Rules";
-        assertCollection( index.query( key, "*" ) );
+        assertThat( index.query( key, "*" ), isEmpty() );
         Node node = graphDb.createNode();
         index.add( node, key, value1 );
         index.add( node, key, value2 );
@@ -317,28 +321,29 @@ public class TestLuceneIndex
             restartTx();
         }
         index.add( node, key, value3 );
-        assertCollection( index.get( key, value1 ), node );
-        assertCollection( index.get( key, value2 ), node );
-        assertCollection( index.get( key, value3 ), node );
-        assertCollection( index.get( key, "whatever" ) );
+        assertThat( index.get( key, value1 ), contains( node ) );
+        assertThat( index.get( key, value2 ), contains( node ) );
+        assertThat( index.get( key, value3 ), contains( node ) );
+        assertThat( index.get( key, "whatever" ), isEmpty() );
         restartTx();
-        assertCollection( index.get( key, value1 ), node );
-        assertCollection( index.get( key, value2 ), node );
-        assertCollection( index.get( key, value3 ), node );
-        assertCollection( index.get( key, "whatever" ) );
+        assertThat( index.get( key, value1 ), contains( node ) );
+        assertThat( index.get( key, value2 ), contains( node ) );
+        assertThat( index.get( key, value3 ), contains( node ) );
+        assertThat( index.get( key, "whatever" ), isEmpty() );
         index.delete();
     }
-    
+
     @Test
     public void shouldNotFailQueryFromIndexInTx()
     {
         Index<Node> index = provider.nodeIndex( "indexFooBar", LuceneIndexProvider.EXACT_CONFIG );
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
-        
-        assertCollection( index.query( "key", new QueryContext( "value" ).allowQueryingModifications() ), node);
+
+        QueryContext queryContext = new QueryContext( "value" ).allowQueryingModifications();
+        assertThat( index.query( "key", queryContext ), contains( node ) );
     }
-    
+
     @Test
     public void makeSureArrayValuesAreSupported()
     {
@@ -347,30 +352,30 @@ public class TestLuceneIndex
         String value1 = "Lucene";
         String value2 = "Index";
         String value3 = "Rules";
-        assertCollection( index.query( key, "*" ) );
+        assertThat( index.query( key, "*" ), isEmpty() );
         Node node = graphDb.createNode();
-        index.add( node, key, new String[] { value1, value2, value3 } );
-        assertCollection( index.get( key, value1 ), node );
-        assertCollection( index.get( key, value2 ), node );
-        assertCollection( index.get( key, value3 ), node );
-        assertCollection( index.get( key, "whatever" ) );
+        index.add( node, key, new String[]{value1, value2, value3} );
+        assertThat( index.get( key, value1 ), contains( node ) );
+        assertThat( index.get( key, value2 ), contains( node ) );
+        assertThat( index.get( key, value3 ), contains( node ) );
+        assertThat( index.get( key, "whatever" ), isEmpty() );
         restartTx();
-        assertCollection( index.get( key, value1 ), node );
-        assertCollection( index.get( key, value2 ), node );
-        assertCollection( index.get( key, value3 ), node );
-        assertCollection( index.get( key, "whatever" ) );
-        
-        index.remove( node, key, new String[] { value2, value3 } );
-        assertCollection( index.get( key, value1 ), node );
-        assertCollection( index.get( key, value2 ) );
-        assertCollection( index.get( key, value3 ) );
+        assertThat( index.get( key, value1 ), contains( node ) );
+        assertThat( index.get( key, value2 ), contains( node ) );
+        assertThat( index.get( key, value3 ), contains( node ) );
+        assertThat( index.get( key, "whatever" ), isEmpty() );
+
+        index.remove( node, key, new String[]{value2, value3} );
+        assertThat( index.get( key, value1 ), contains( node ) );
+        assertThat( index.get( key, value2 ), isEmpty() );
+        assertThat( index.get( key, value3 ), isEmpty() );
         restartTx();
-        assertCollection( index.get( key, value1 ), node );
-        assertCollection( index.get( key, value2 ) );
-        assertCollection( index.get( key, value3 ) );
+        assertThat( index.get( key, value1 ), contains( node ) );
+        assertThat( index.get( key, value2 ), isEmpty() );
+        assertThat( index.get( key, value3 ), isEmpty() );
         index.delete();
     }
-    
+
     @Test
     public void makeSureWildcardQueriesCanBeAsked()
     {
@@ -382,29 +387,20 @@ public class TestLuceneIndex
         Node node2 = graphDb.createNode();
         index.add( node1, key, value1 );
         index.add( node2, key, value2 );
-        
+
         assertQueryNotPossible( index );
-//        assertCollection( index.query( key, "neo4j" ), node1 );
-//        assertCollection( index.query( key, "neo*" ), node1 );
-//        assertCollection( index.query( key, "n?o4j" ), node1 );
-//        assertCollection( index.query( key, "ne*" ), node1, node2 );
-//        assertCollection( index.query( key + ":neo4j" ), node1 );
-//        assertCollection( index.query( key + ":neo*" ), node1 );
-//        assertCollection( index.query( key + ":n?o4j" ), node1 );
-//        assertCollection( index.query( key + ":ne*" ), node1, node2 );
-        
+
         restartTx();
-        assertCollection( index.query( key, "neo4j" ), node1 );
-        assertCollection( index.query( key, "neo*" ), node1 );
-        assertCollection( index.query( key, "n?o4j" ), node1 );
-        assertCollection( index.query( key, "ne*" ), node1, node2 );
-        assertCollection( index.query( key + ":neo4j" ), node1 );
-        assertCollection( index.query( key + ":neo*" ), node1 );
-        assertCollection( index.query( key + ":n?o4j" ), node1 );
-        assertCollection( index.query( key + ":ne*" ), node1, node2 );
+        assertThat( index.query( key, "neo*" ), contains( node1 ) );
+        assertThat( index.query( key, "n?o4j" ), contains( node1 ) );
+        assertThat( index.query( key, "ne*" ), contains( node1, node2 ) );
+        assertThat( index.query( key + ":neo4j" ), contains( node1 ) );
+        assertThat( index.query( key + ":neo*" ), contains( node1 ) );
+        assertThat( index.query( key + ":n?o4j" ), contains( node1 ) );
+        assertThat( index.query( key + ":ne*" ), contains( node1, node2 ) );
         index.delete();
     }
-    
+
     @Test
     public void makeSureCompositeQueriesCanBeAsked()
     {
@@ -415,21 +411,17 @@ public class TestLuceneIndex
         index.add( neo, "sex", "male" );
         index.add( trinity, "username", "trinity@matrix" );
         index.add( trinity, "sex", "female" );
-        
+
         assertQueryNotPossible( index );
-//        assertCollection( index.query( "username:*@matrix AND sex:male" ), neo );
-//        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), neo );
-//        assertCollection( index.query( "username:*@matrix OR sex:male" ), neo, trinity );
-//        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), neo, trinity );
-        
+
         restartTx();
-        assertCollection( index.query( "username:*@matrix AND sex:male" ), neo );
-        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), neo );
-        assertCollection( index.query( "username:*@matrix OR sex:male" ), neo, trinity );
-        assertCollection( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), neo, trinity );
+        assertThat( index.query( "username:*@matrix AND sex:male" ), contains( neo ) );
+        assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), contains( neo ) );
+        assertThat( index.query( "username:*@matrix OR sex:male" ), contains( neo, trinity ) );
+        assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), contains( neo, trinity ) );
         index.delete();
     }
-    
+
     private <T extends PropertyContainer> void doSomeRandomUseCaseTestingWithExactIndex(
             Index<T> index, EntityCreator<T> creator )
     {
@@ -437,136 +429,136 @@ public class TestLuceneIndex
         String mattias = "Mattias Persson";
         String title = "title";
         String hacker = "Hacker";
-        
-        assertCollection( index.get( name, mattias ) );
-        
+
+        assertThat( index.get( name, mattias ), isEmpty() );
+
         T entity1 = creator.create();
         T entity2 = creator.create();
-        
+
         assertNull( index.get( name, mattias ).getSingle() );
         index.add( entity1, name, mattias );
-        assertCollection( index.get( name, mattias ), entity1 );
-        
+        assertThat( index.get( name, mattias ), contains( entity1 ) );
+
         assertQueryNotPossible( index );
 //        assertCollection( index.query( name, "\"" + mattias + "\"" ), entity1 );
 //        assertCollection( index.query( "name:\"" + mattias + "\"" ), entity1 );
-        
+
         assertEquals( entity1, index.get( name, mattias ).getSingle() );
-        
+
         assertQueryNotPossible( index );
 //        assertCollection( index.query( "name", "Mattias*" ), entity1 );
-        
+
         commitTx();
-        assertCollection( index.get( name, mattias ), entity1 );
-        assertCollection( index.query( name, "\"" + mattias + "\"" ), entity1 );
-        assertCollection( index.query( "name:\"" + mattias + "\"" ), entity1 );
+        assertThat( index.get( name, mattias ), contains( entity1 ) );
+        assertThat( index.query( name, "\"" + mattias + "\"" ), contains( entity1 ) );
+        assertThat( index.query( "name:\"" + mattias + "\"" ), contains( entity1 ) );
         assertEquals( entity1, index.get( name, mattias ).getSingle() );
-        assertCollection( index.query( "name", "Mattias*" ), entity1 );
-        
+        assertThat( index.query( "name", "Mattias*" ), contains( entity1 ) );
+
         beginTx();
         index.add( entity2, title, hacker );
         index.add( entity1, title, hacker );
-        assertCollection( index.get( name, mattias ), entity1 );
-        assertCollection( index.get( title, hacker ), entity1, entity2 );
+        assertThat( index.get( name, mattias ), contains( entity1 ) );
+        assertThat( index.get( title, hacker ), contains( entity1, entity2 ) );
 
         assertQueryNotPossible( index );
 //        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
 //                hacker + "\"" ), entity1, entity2 );
-        
+
         commitTx();
-        assertCollection( index.get( name, mattias ), entity1 );
-        assertCollection( index.get( title, hacker ), entity1, entity2 );
-        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
-                hacker + "\"" ), entity1, entity2 );
-        assertCollection( index.query( "name:\"" + mattias + "\" AND title:\"" +
-                hacker + "\"" ), entity1 );
-        
+        assertThat( index.get( name, mattias ), contains( entity1 ) );
+        assertThat( index.get( title, hacker ), contains( entity1, entity2 ) );
+        assertThat( index.query( "name:\"" + mattias + "\" OR title:\"" + hacker + "\"" ), contains( entity1, entity2 ) );
+        assertThat( index.query( "name:\"" + mattias + "\" AND title:\"" +
+                hacker + "\"" ), contains( entity1 ) );
+
         beginTx();
         index.remove( entity2, title, hacker );
-        assertCollection( index.get( name, mattias ), entity1 );
-        assertCollection( index.get( title, hacker ), entity1 );
+        assertThat( index.get( name, mattias ), contains( entity1 ) );
+        assertThat( index.get( title, hacker ), contains( entity1 ) );
 
         assertQueryNotPossible( index );
 //        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
 //                hacker + "\"" ), entity1 );
-        
+
         commitTx();
-        assertCollection( index.get( name, mattias ), entity1 );
-        assertCollection( index.get( title, hacker ), entity1 );
-        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
-                hacker + "\"" ), entity1 );
-        
+        assertThat( index.get( name, mattias ), contains( entity1 ) );
+        assertThat( index.get( title, hacker ), contains( entity1 ) );
+        assertThat( index.query( "name:\"" + mattias + "\" OR title:\"" +
+                hacker + "\"" ), contains( entity1 ) );
+
         beginTx();
         index.remove( entity1, title, hacker );
         index.remove( entity1, name, mattias );
         index.delete();
         commitTx();
     }
-    
+
     @Test
     public void doSomeRandomUseCaseTestingWithExactNodeIndex()
     {
         doSomeRandomUseCaseTestingWithExactIndex( provider.nodeIndex( "index",
                 LuceneIndexProvider.EXACT_CONFIG ), NODE_CREATOR );
     }
-    
+
     @Test
     public void doSomeRandomUseCaseTestingWithExactRelationshipIndex()
     {
         doSomeRandomUseCaseTestingWithExactIndex( provider.relationshipIndex( "index",
                 LuceneIndexProvider.EXACT_CONFIG ), RELATIONSHIP_CREATOR );
     }
-    
-    private <T extends PropertyContainer> void doSomeRandomTestingWithFulltextIndex( Index<T> index,
+
+    private <T extends PropertyContainer> void doSomeRandomTestingWithFulltextIndex(
+            Index<T> index,
             EntityCreator<T> creator )
     {
         T entity1 = creator.create();
         T entity2 = creator.create();
-        
+
         String key = "name";
         index.add( entity1, key, "The quick brown fox" );
         index.add( entity2, key, "brown fox jumped over" );
-        
-        assertCollection( index.get( key, "The quick brown fox" ), entity1 );
-        assertCollection( index.get( key, "brown fox jumped over" ), entity2 );
-        
+
+        assertThat( index.get( key, "The quick brown fox" ), contains( entity1 ) );
+        assertThat( index.get( key, "brown fox jumped over" ), contains( entity2 ) );
+
         assertQueryNotPossible( index );
 //        assertCollection( index.query( key, "quick" ), entity1 );
 //        assertCollection( index.query( key, "brown" ), entity1, entity2 );
 //        assertCollection( index.query( key, "quick OR jumped" ), entity1, entity2 );
 //        assertCollection( index.query( key, "brown AND fox" ), entity1, entity2 );
-        
+
         restartTx();
-        assertCollection( index.get( key, "The quick brown fox" ), entity1 );
-        assertCollection( index.get( key, "brown fox jumped over" ), entity2 );
-        assertCollection( index.query( key, "quick" ), entity1 );
-        assertCollection( index.query( key, "brown" ), entity1, entity2 );
-        assertCollection( index.query( key, "quick OR jumped" ), entity1, entity2 );
-        assertCollection( index.query( key, "brown AND fox" ), entity1, entity2 );
-        
+        assertThat( index.get( key, "The quick brown fox" ), contains( entity1 ) );
+        assertThat( index.get( key, "brown fox jumped over" ), contains( entity2 ) );
+        assertThat( index.query( key, "quick" ), contains( entity1 ) );
+        assertThat( index.query( key, "brown" ), contains( entity1, entity2 ) );
+        assertThat( index.query( key, "quick OR jumped" ), contains( entity1, entity2 ) );
+        assertThat( index.query( key, "brown AND fox" ), contains( entity1, entity2 ) );
+
         index.delete();
     }
-    
+
     @Test
     public void doSomeRandomTestingWithNodeFulltextInde()
     {
         doSomeRandomTestingWithFulltextIndex( provider.nodeIndex( "fulltext",
                 LuceneIndexProvider.FULLTEXT_CONFIG ), NODE_CREATOR );
     }
-    
+
     @Test
     public void doSomeRandomTestingWithRelationshipFulltextInde()
     {
         doSomeRandomTestingWithFulltextIndex( provider.relationshipIndex( "fulltext",
                 LuceneIndexProvider.FULLTEXT_CONFIG ), RELATIONSHIP_CREATOR );
     }
-    
+
     @Test
     public void testNodeLocalRelationshipIndex()
     {
         RelationshipIndex index = provider.relationshipIndex( "locality",
                 LuceneIndexProvider.EXACT_CONFIG );
-        
+
         RelationshipType type = DynamicRelationshipType.withName( "YO" );
         Node startNode = graphDb.createNode();
         Node endNode1 = graphDb.createNode();
@@ -576,9 +568,9 @@ public class TestLuceneIndex
         index.add( rel1, "name", "something" );
         index.add( rel2, "name", "something" );
         restartTx();
-        assertCollection( index.query( "name:something" ), rel1, rel2 );
-        assertCollection( index.query( "name:something", null, endNode1 ), rel1 );
-        assertCollection( index.query( "name:something", startNode, endNode2 ), rel2 );
+        assertThat( index.query( "name:something" ), contains( rel1, rel2 ) );
+        assertThat( index.query( "name:something", null, endNode1 ), contains( rel1 ) );
+        assertThat( index.query( "name:something", startNode, endNode2 ), contains( rel2 ) );
         rel2.delete();
         rel1.delete();
         startNode.delete();
@@ -586,13 +578,13 @@ public class TestLuceneIndex
         endNode2.delete();
         index.delete();
     }
-    
-    @Ignore("This breaks on automated build system - but nohwere else")
+
+    @Ignore( "This breaks on automated build system - but nohwere else" )
     @Test
     public void testSortByRelevance()
     {
         Index<Node> index = provider.nodeIndex( "relevance", LuceneIndexProvider.EXACT_CONFIG );
-        
+
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
         Node node3 = graphDb.createNode();
@@ -603,7 +595,7 @@ public class TestLuceneIndex
         index.add( node3, "foo", "yes" );
         index.add( node3, "bar", "yes" );
         restartTx();
-        
+
         // This section fails in hudson - does INDEXORDER *really* mean "insertion order"?
         IndexHits<Node> hits = index.query(
                 new QueryContext( "+name:something foo:yes bar:yes" ).sort( Sort.INDEXORDER ) );
@@ -611,7 +603,7 @@ public class TestLuceneIndex
         assertEquals( node2, hits.next() );
         assertEquals( node3, hits.next() );
         assertFalse( hits.hasNext() );
-        
+
         hits = index.query(
                 new QueryContext( "+name:something foo:yes bar:yes" ).sort( Sort.RELEVANCE ) );
         assertEquals( node3, hits.next() );
@@ -623,8 +615,9 @@ public class TestLuceneIndex
         node2.delete();
         node3.delete();
     }
-    
-    private <T extends PropertyContainer> void testInsertionSpeed( Index<T> index,
+
+    private <T extends PropertyContainer> void testInsertionSpeed(
+            Index<T> index,
             EntityCreator<T> creator )
     {
         long t = System.currentTimeMillis();
@@ -637,14 +630,14 @@ public class TestLuceneIndex
             index.add( entity, "title", "Some title " + i );
             index.add( entity, "something", i + "Nothing" );
             index.add( entity, "else", i + "kdfjkdjf" + i );
-            if ( i%5000 == 0 )
+            if ( i % 5000 == 0 )
             {
                 restartTx();
 //                System.out.print( "." );
             }
         }
-        System.out.println( "insert:" + (System.currentTimeMillis() - t) );
-        
+        System.out.println( "insert:" + ( System.currentTimeMillis() - t ) );
+
         t = System.currentTimeMillis();
         int count = 100;
         for ( int i = 0; i < count; i++ )
@@ -653,9 +646,9 @@ public class TestLuceneIndex
             {
             }
         }
-        System.out.println( "get:" + (double)(System.currentTimeMillis() - t)/(double)count );
+        System.out.println( "get:" + (double)( System.currentTimeMillis() - t ) / (double)count );
     }
-    
+
     @Test
     public void testSorting()
     {
@@ -668,7 +661,7 @@ public class TestLuceneIndex
         Node adam2 = graphDb.createNode();
         Node jack = graphDb.createNode();
         Node eva = graphDb.createNode();
-        
+
         index.add( adam, name, "Adam" );
         index.add( adam, title, "Software developer" );
         index.add( adam, sex, "male" );
@@ -685,44 +678,41 @@ public class TestLuceneIndex
         index.add( eva, title, "Secretary" );
         index.add( eva, sex, "female" );
         index.add( eva, other, "ddd" );
-        
+
         assertQueryNotPossible( index );
 //        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
 //        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
 //        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
-        
+
         restartTx();
-        
+
         assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
         assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
         assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
     }
-    
+
     @Test
     public void testNumericValues()
     {
         Index<Node> index = provider.nodeIndex( "numeric", LuceneIndexProvider.EXACT_CONFIG );
-        
+
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
         Node node3 = graphDb.createNode();
-        
+
         String key = "key";
         index.add( node1, key, new ValueContext( 10 ).indexNumeric() );
         index.add( node2, key, new ValueContext( 6 ).indexNumeric() );
         index.add( node3, key, new ValueContext( 31 ).indexNumeric() );
-        
+
         assertQueryNotPossible( index );
-//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), node1, node2, node3 );
-//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), node1, node2 );
-//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), node1 );
-        
+
         restartTx();
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), node1, node2, node3 );
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), node1, node2 );
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), node1 );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node1, node2, node3 ) );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, true, true ) ), contains( node1, node2 ) );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), contains( node1 ) );
     }
-    
+
     @Test
     public void testRemoveNumericValues()
     {
@@ -733,31 +723,28 @@ public class TestLuceneIndex
         index.add( node1, key, new ValueContext( 15 ).indexNumeric() );
         index.add( node2, key, new ValueContext( 5 ).indexNumeric() );
         index.remove( node1, key, new ValueContext( 15 ).indexNumeric() );
-        
+
         assertQueryNotPossible( index );
-//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
-        
+
         index.remove( node2, key, new ValueContext( 5 ).indexNumeric() );
-        
+
         assertQueryNotPossible( index );
-//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ) );
-        
+
         restartTx();
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ) );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), isEmpty() );
 
         index.add( node1, key, new ValueContext( 15 ).indexNumeric() );
         index.add( node2, key, new ValueContext( 5 ).indexNumeric() );
         restartTx();
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node1, node2 );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), contains( node1, node2 ) );
         index.remove( node1, key, new ValueContext( 15 ).indexNumeric() );
-        
+
         assertQueryNotPossible( index );
-//        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
-        
+
         restartTx();
-        assertCollection( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), node2 );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), contains( node2 ) );
     }
-    
+
     @Test
     public void testIndexNumberAsString()
     {
@@ -766,18 +753,18 @@ public class TestLuceneIndex
         index.add( node1, "key", 10 );
         assertEquals( node1, index.get( "key", 10 ).getSingle() );
         assertEquals( node1, index.get( "key", "10" ).getSingle() );
-        
+
         assertQueryNotPossible( index );
 //        assertEquals( node1, index.query( "key", 10 ).getSingle() );
 //        assertEquals( node1, index.query( "key", "10" ).getSingle() );
-        
+
         restartTx();
         assertEquals( node1, index.get( "key", 10 ).getSingle() );
         assertEquals( node1, index.get( "key", "10" ).getSingle() );
         assertEquals( node1, index.query( "key", 10 ).getSingle() );
         assertEquals( node1, index.query( "key", "10" ).getSingle() );
     }
-    
+
     @Ignore
     @Test
     public void testNodeInsertionSpeed()
@@ -785,7 +772,7 @@ public class TestLuceneIndex
         testInsertionSpeed( provider.nodeIndex( "insertion-speed",
                 LuceneIndexProvider.EXACT_CONFIG ), NODE_CREATOR );
     }
-    
+
     @Ignore
     @Test
     public void testNodeFulltextInsertionSpeed()
@@ -793,7 +780,7 @@ public class TestLuceneIndex
         testInsertionSpeed( provider.nodeIndex( "insertion-speed-full",
                 LuceneIndexProvider.FULLTEXT_CONFIG ), NODE_CREATOR );
     }
-    
+
     @Ignore
     @Test
     public void testRelationshipInsertionSpeed()

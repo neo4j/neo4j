@@ -24,6 +24,9 @@ import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 
+/**
+ * 
+ */
 public class QueryContext
 {
     final Object queryOrQueryObject;
