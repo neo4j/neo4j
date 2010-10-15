@@ -1,6 +1,6 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
  *
@@ -17,8 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.core;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -29,13 +31,17 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.cache.NoCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
+import org.neo4j.kernel.impl.cache.WeakLruCache;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
@@ -59,6 +65,7 @@ public class NodeManager
     private final Cache<Integer,NodeImpl> nodeCache;
     private final Cache<Integer,RelationshipImpl> relCache;
     private final AdaptiveCacheManager cacheManager;
+    private final CacheType cacheType;
     private final LockManager lockManager;
     private final TransactionManager transactionManager;
     private final LockReleaser lockReleaser;
@@ -67,14 +74,14 @@ public class NodeManager
     private final PersistenceManager persistenceManager;
     private final EntityIdGenerator idGenerator;
 
-    private boolean useAdaptiveCache = true;
+    private boolean useAdaptiveCache = false;
     private float adaptiveCacheHeapRatio = 0.77f;
     private int minNodeCacheSize = 0;
     private int minRelCacheSize = 0;
     private int maxNodeCacheSize = 1500;
     private int maxRelCacheSize = 3500;
 
-    private static final int LOCK_STRIPE_COUNT = 5;
+    private static final int LOCK_STRIPE_COUNT = 32;
     private final ReentrantLock loadLocks[] =
         new ReentrantLock[LOCK_STRIPE_COUNT];
 
@@ -82,7 +89,7 @@ public class NodeManager
             AdaptiveCacheManager cacheManager, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-            RelationshipTypeCreator relTypeCreator, boolean useNewCaches )
+            RelationshipTypeCreator relTypeCreator, CacheType cacheType )
     {
         this.graphDbService = graphDb;
         this.cacheManager = cacheManager;
@@ -97,20 +104,10 @@ public class NodeManager
         this.idGenerator = idGenerator;
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
             persistenceManager, idGenerator, relTypeCreator );
-        if ( useNewCaches )
-        {
-            nodeCache = new SoftLruCache<Integer,NodeImpl>(
-                "NodeCache" );
-            relCache = new SoftLruCache<Integer,RelationshipImpl>(
-                "RelationshipCache" );
-        }
-        else
-        {
-            nodeCache = new LruCache<Integer,NodeImpl>( "NodeCache", 1500,
-                this.cacheManager );
-            relCache = new LruCache<Integer,RelationshipImpl>(
-                "RelationshipCache", 3500, this.cacheManager );
-        }
+        
+        this.cacheType = cacheType;
+        this.nodeCache = cacheType.node( cacheManager );
+        this.relCache = cacheType.relationship( cacheManager );
         for ( int i = 0; i < loadLocks.length; i++ )
         {
             loadLocks[i] = new ReentrantLock();
@@ -122,9 +119,9 @@ public class NodeManager
         return graphDbService;
     }
 
-    public boolean isUsingSoftReferenceCache()
+    public CacheType getCacheType()
     {
-        return nodeCache instanceof SoftLruCache;
+        return this.cacheType;
     }
 
     private void parseParams( Map<Object,Object> params )
@@ -223,7 +220,7 @@ public class NodeManager
         parseParams( params );
         nodeCache.resize( maxNodeCacheSize );
         relCache.resize( maxRelCacheSize );
-        if ( useAdaptiveCache )
+        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
         {
             cacheManager.registerCache( nodeCache, adaptiveCacheHeapRatio,
                 minNodeCacheSize );
@@ -235,7 +232,7 @@ public class NodeManager
 
     public void stop()
     {
-        if ( useAdaptiveCache )
+        if ( useAdaptiveCache && cacheType.needsCacheManagerRegistration )
         {
             cacheManager.stop();
             cacheManager.unregisterCache( nodeCache );
@@ -247,13 +244,13 @@ public class NodeManager
     public Node createNode()
     {
         int id = idGenerator.nextId( Node.class );
-        NodeImpl node = new NodeImpl( id, true, this );
+        NodeImpl node = new NodeImpl( id, true );
         acquireLock( node, LockType.WRITE );
         boolean success = false;
         try
         {
             persistenceManager.nodeCreate( id );
-            nodeCache.put( (int) node.getId(), node );
+            nodeCache.put( id, node );
             success = true;
             return new NodeProxy( id, this );
         }
@@ -267,7 +264,7 @@ public class NodeManager
         }
     }
 
-    public Relationship createRelationship( Node startNode, Node endNode,
+    public Relationship createRelationship( NodeImpl startNode, Node endNode,
         RelationshipType type )
     {
         if ( startNode == null || endNode == null || type == null )
@@ -297,8 +294,7 @@ public class NodeManager
                 + "] deleted" );
         }
         int id = idGenerator.nextId( Relationship.class );
-        RelationshipImpl rel = new RelationshipImpl( id, startNodeId,
-            endNodeId, type, true, this );
+        RelationshipImpl rel = new RelationshipImpl( id, startNodeId, endNodeId, type, true );
         boolean firstNodeTaken = false;
         boolean secondNodeTaken = false;
         acquireLock( rel, LockType.WRITE );
@@ -312,8 +308,8 @@ public class NodeManager
             int typeId = getRelationshipTypeIdFor( type );
             persistenceManager.relationshipCreate( id, typeId, startNodeId,
                 endNodeId );
-            firstNode.addRelationship( type, id );
-            secondNode.addRelationship( type, id );
+            firstNode.addRelationship( this, type, id );
+            secondNode.addRelationship( this, type, id );
             relCache.put( (int) rel.getId(), rel );
             success = true;
             return new RelationshipProxy( id, this );
@@ -363,7 +359,7 @@ public class NodeManager
 
     private ReentrantLock lockId( int id )
     {
-        int stripe = id % LOCK_STRIPE_COUNT;
+        int stripe = (id / 32768) % LOCK_STRIPE_COUNT;
         if ( stripe < 0 )
         {
             stripe *= -1;
@@ -380,7 +376,6 @@ public class NodeManager
         {
             return new NodeProxy( nodeId, this );
         }
-        node = new NodeImpl( nodeId, this );
         ReentrantLock loadLock = lockId( nodeId );
         try
         {
@@ -392,6 +387,7 @@ public class NodeManager
             {
                 throw new NotFoundException( "Node[" + nodeId + "]" );
             }
+            node = new NodeImpl( nodeId );
             nodeCache.put( nodeId, node );
             return new NodeProxy( nodeId, this );
         }
@@ -408,19 +404,19 @@ public class NodeManager
         {
             return node;
         }
-        node = new NodeImpl( nodeId, this );
         ReentrantLock loadLock = lockId( nodeId );
         try
         {
-            if ( nodeCache.get( nodeId ) != null )
+            node = nodeCache.get( nodeId );
+            if ( node != null )
             {
-                node = nodeCache.get( nodeId );
                 return node;
             }
             if ( !persistenceManager.loadLightNode( nodeId ) )
             {
                 return null;
             }
+            node = new NodeImpl( nodeId );
             nodeCache.put( nodeId, node );
             return node;
         }
@@ -437,19 +433,19 @@ public class NodeManager
         {
             return node;
         }
-        node = new NodeImpl( nodeId, this );
         ReentrantLock loadLock = lockId( nodeId );
         try
         {
-            if ( nodeCache.get( nodeId ) != null )
+            node = nodeCache.get( nodeId );
+            if ( node != null )
             {
-                node = nodeCache.get( nodeId );
                 return node;
             }
             if ( !persistenceManager.loadLightNode( nodeId ) )
             {
                 throw new NotFoundException( "Node[" + nodeId + "] not found." );
             }
+            node = new NodeImpl( nodeId );
             nodeCache.put( nodeId, node );
             return node;
         }
@@ -481,13 +477,12 @@ public class NodeManager
         {
             return new RelationshipProxy( relId, this );
         }
-        relationship = new RelationshipImpl( relId, this );
         ReentrantLock loadLock = lockId( relId );
         try
         {
-            if ( relCache.get( relId ) != null )
+            relationship = relCache.get( relId );
+            if ( relationship != null )
             {
-                relationship = relCache.get( relId );
                 return new RelationshipProxy( relId, this );
             }
             RelationshipData data = persistenceManager.loadLightRelationship(
@@ -506,8 +501,7 @@ public class NodeManager
             }
             final int startNodeId = data.firstNode();
             final int endNodeId = data.secondNode();
-            relationship = new RelationshipImpl( relId, startNodeId, endNodeId,
-                type, false, this );
+            relationship = new RelationshipImpl( relId, startNodeId, endNodeId, type, false );
             relCache.put( relId, relationship );
             return new RelationshipProxy( relId, this );
         }
@@ -529,13 +523,12 @@ public class NodeManager
         {
             return relationship;
         }
-        relationship = new RelationshipImpl( relId, this );
         ReentrantLock loadLock = lockId( relId );
         try
         {
-            if ( relCache.get( relId ) != null )
+            relationship = relCache.get( relId );
+            if ( relationship != null )
             {
-                relationship = relCache.get( relId );
                 return relationship;
             }
             RelationshipData data = persistenceManager.loadLightRelationship(
@@ -553,8 +546,8 @@ public class NodeManager
                     + "] exist but relationship type[" + typeId
                     + "] not found." );
             }
-            relationship = new RelationshipImpl( relId, data.firstNode(),
-                data.secondNode(), type, false, this );
+            relationship = new RelationshipImpl( relId, data.firstNode(), data.secondNode(), type,
+                    false );
             relCache.put( relId, relationship );
             return relationship;
         }
@@ -585,7 +578,7 @@ public class NodeManager
             (int) node.getId() );
     }
 
-    ArrayMap<String,IntArray> getMoreRelationships( NodeImpl node )
+    Pair<ArrayMap<String,IntArray>,Map<Integer,RelationshipImpl>> getMoreRelationships( NodeImpl node )
     {
         int nodeId = (int) node.getId();
         RelationshipChainPosition position = node.getRelChainPosition();
@@ -593,6 +586,7 @@ public class NodeManager
             persistenceManager.getMoreRelationships( nodeId, position );
         ArrayMap<String,IntArray> newRelationshipMap =
             new ArrayMap<String,IntArray>();
+        Map<Integer,RelationshipImpl> relsMap = new HashMap<Integer,RelationshipImpl>( 150 );
         for ( RelationshipData rel : rels )
         {
             int relId = rel.getId();
@@ -602,9 +596,10 @@ public class NodeManager
             {
                 type = getRelationshipTypeById( rel.relationshipType() );
                 assert type != null;
-                relImpl = new RelationshipImpl( relId, rel.firstNode(),
-                    rel.secondNode(), type, false, this );
-                relCache.put( relId, relImpl );
+                relImpl = new RelationshipImpl( relId, rel.firstNode(), rel.secondNode(), type,
+                        false );
+                relsMap.put( relId, relImpl );
+                // relCache.put( relId, relImpl );
             }
             else
             {
@@ -619,7 +614,14 @@ public class NodeManager
             }
             relationshipSet.add( relId );
         }
-        return newRelationshipMap;
+        // relCache.putAll( relsMap );
+        return new Pair<ArrayMap<String,IntArray>,Map<Integer,RelationshipImpl>>( 
+                newRelationshipMap, relsMap );
+    }
+    
+    void putAllInRelCache( Map<Integer,RelationshipImpl> map )
+    {
+        relCache.putAll( map );
     }
 
     ArrayMap<Integer,PropertyData> loadProperties( NodeImpl node,
@@ -673,15 +675,28 @@ public class NodeManager
         }
     }
 
-    void acquireLock( Object resource, LockType lockType )
+    void acquireLock( Primitive resource, LockType lockType )
     {
+        PropertyContainer container;
+        if ( resource instanceof NodeImpl )
+        {
+            container = new NodeProxy( resource.id, this );
+        }
+        else if ( resource instanceof RelationshipImpl )
+        {
+            container = new RelationshipProxy( resource.id, this );
+        }
+        else
+        {
+            throw new LockException( "Unkown primitivite type: " + resource );
+        }
         if ( lockType == LockType.READ )
         {
-            lockManager.getReadLock( resource );
+            lockManager.getReadLock( container );
         }
         else if ( lockType == LockType.WRITE )
         {
-            lockManager.getWriteLock( resource );
+            lockManager.getWriteLock( container );
         }
         else
         {
@@ -689,15 +704,28 @@ public class NodeManager
         }
     }
 
-    void releaseLock( Object resource, LockType lockType )
+    void releaseLock( Primitive resource, LockType lockType )
     {
+        PropertyContainer container;
+        if ( resource instanceof NodeImpl )
+        {
+            container = new NodeProxy( resource.id, this );
+        }
+        else if ( resource instanceof RelationshipImpl )
+        {
+            container = new RelationshipProxy( resource.id, this );
+        }
+        else
+        {
+            throw new LockException( "Unkown primitivite type: " + resource );
+        }
         if ( lockType == LockType.READ )
         {
-            lockManager.releaseReadLock( resource );
+            lockManager.releaseReadLock( container );
         }
         else if ( lockType == LockType.WRITE )
         {
-            lockReleaser.addLockToTransaction( resource, lockType );
+            lockReleaser.addLockToTransaction( container, lockType );
         }
         else
         {
@@ -938,5 +966,87 @@ public class NodeManager
     public RelationshipTypeHolder getRelationshipTypeHolder()
     {
         return this.relTypeHolder;
+    }
+    
+    public static enum CacheType
+    {
+        weak( false, "weak reference cache" )
+        {
+            @Override
+            Cache<Integer, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            {
+                return new WeakLruCache<Integer,NodeImpl>( NODE_CACHE_NAME );
+            }
+
+            @Override
+            Cache<Integer, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            {
+                return new WeakLruCache<Integer,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+            }
+        },
+        soft( false, "soft reference cache" )
+        {
+            @Override
+            Cache<Integer, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            {
+                return new SoftLruCache<Integer,NodeImpl>( NODE_CACHE_NAME );
+            }
+
+            @Override
+            Cache<Integer, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            {
+                return new SoftLruCache<Integer,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+            }
+        },
+        old( true, "lru cache" )
+        {
+            @Override
+            Cache<Integer, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            {
+                return new LruCache<Integer,NodeImpl>( NODE_CACHE_NAME, 1500, cacheManager );
+            }
+
+            @Override
+            Cache<Integer, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            {
+                return new LruCache<Integer,RelationshipImpl>(
+                        RELATIONSHIP_CACHE_NAME, 3500, cacheManager );
+            }
+        },
+        none( false, "no cache" )
+        {
+            @Override
+            Cache<Integer, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            {
+                return new NoCache<Integer, NodeImpl>( NODE_CACHE_NAME );
+            }
+
+            @Override
+            Cache<Integer, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            {
+                return new NoCache<Integer, RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+            }
+        };
+        
+        private static final String NODE_CACHE_NAME = "NodeCache";
+        private static final String RELATIONSHIP_CACHE_NAME = "RelationshipCache";
+        
+        final boolean needsCacheManagerRegistration;
+        private final String description;
+        
+        private CacheType( boolean needsCacheManagerRegistration, String description )
+        {
+            this.needsCacheManagerRegistration = needsCacheManagerRegistration;
+            this.description = description;
+        }
+        
+        abstract Cache<Integer,NodeImpl> node( AdaptiveCacheManager cacheManager );
+        
+        abstract Cache<Integer,RelationshipImpl> relationship( AdaptiveCacheManager cacheManager );
+        
+        public String getDescription()
+        {
+            return this.description;
+        }
     }
 }

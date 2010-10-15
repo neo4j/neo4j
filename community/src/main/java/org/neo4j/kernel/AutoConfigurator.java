@@ -1,6 +1,6 @@
-/*
+/**
  * Copyright (c) 2002-2010 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
  *
@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel;
 
 import java.io.File;
@@ -49,6 +50,9 @@ public class AutoConfigurator
         catch ( Exception e )
         { // ok we tried but probably 1.5 JVM or other class library implementation
         }
+        catch ( LinkageError e )
+        { // ok we tried but probably 1.5 JVM or other class library implementation
+        }
         if ( mem != -1 )
         {
             totalPhysicalMemMb = (int) (mem / 1024 / 1024 );
@@ -61,9 +65,13 @@ public class AutoConfigurator
         maxVmUsageMb = (int) ( mem / 1024 / 1024 );
         if ( dump )
         {
-            System.out.println( "Physical mem: " + totalPhysicalMemMb + "MB" );
-            System.out.println( "Heap size: " + maxVmUsageMb + "MB" );
+            System.out.println( getNiceMemoryInformation() );
         }
+    }
+
+    public String getNiceMemoryInformation()
+    {
+        return "Physical mem: " + totalPhysicalMemMb + "MB, Heap size: " + maxVmUsageMb + "MB";
     }
 
     public void configure( Map<Object,Object> config )

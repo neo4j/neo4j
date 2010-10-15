@@ -1,6 +1,6 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
  *
@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.Direction;
@@ -54,89 +55,89 @@ class NodeProxy implements Node
 
     public void delete()
     {
-        nm.getNodeForProxy( nodeId ).delete();
+        nm.getNodeForProxy( nodeId ).delete( nm );
     }
 
     public Iterable<Relationship> getRelationships()
     {
-        return nm.getNodeForProxy( nodeId ).getRelationships();
+        return nm.getNodeForProxy( nodeId ).getRelationships( nm );
     }
 
     public boolean hasRelationship()
     {
-        return nm.getNodeForProxy( nodeId ).hasRelationship();
+        return nm.getNodeForProxy( nodeId ).hasRelationship( nm );
     }
 
     public Iterable<Relationship> getRelationships( Direction dir )
     {
-        return nm.getNodeForProxy( nodeId ).getRelationships( dir );
+        return nm.getNodeForProxy( nodeId ).getRelationships( nm, dir );
     }
 
     public boolean hasRelationship( Direction dir )
     {
-        return nm.getNodeForProxy( nodeId ).hasRelationship( dir );
+        return nm.getNodeForProxy( nodeId ).hasRelationship( nm, dir );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
-        return nm.getNodeForProxy( nodeId ).getRelationships( types );
+        return nm.getNodeForProxy( nodeId ).getRelationships( nm, types );
     }
 
     public boolean hasRelationship( RelationshipType... types )
     {
-        return nm.getNodeForProxy( nodeId ).hasRelationship( types );
+        return nm.getNodeForProxy( nodeId ).hasRelationship( nm, types );
     }
 
     public Iterable<Relationship> getRelationships( RelationshipType type,
         Direction dir )
     {
-        return nm.getNodeForProxy( nodeId ).getRelationships( type, dir );
+        return nm.getNodeForProxy( nodeId ).getRelationships( nm, type, dir );
     }
 
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
-        return nm.getNodeForProxy( nodeId ).hasRelationship( type, dir );
+        return nm.getNodeForProxy( nodeId ).hasRelationship( nm, type, dir );
     }
 
     public Relationship getSingleRelationship( RelationshipType type,
         Direction dir )
     {
-        return nm.getNodeForProxy( nodeId ).getSingleRelationship( type, dir );
+        return nm.getNodeForProxy( nodeId ).getSingleRelationship( nm, type, dir );
     }
 
     public void setProperty( String key, Object value )
     {
-        nm.getNodeForProxy( nodeId ).setProperty( key, value );
+        nm.getNodeForProxy( nodeId ).setProperty( nm, key, value );
     }
 
     public Object removeProperty( String key ) throws NotFoundException
     {
-        return nm.getNodeForProxy( nodeId ).removeProperty( key );
+        return nm.getNodeForProxy( nodeId ).removeProperty( nm, key );
     }
 
     public Object getProperty( String key, Object defaultValue )
     {
-        return nm.getNodeForProxy( nodeId ).getProperty( key, defaultValue );
+        return nm.getNodeForProxy( nodeId ).getProperty( nm, key, defaultValue );
     }
 
     public Iterable<Object> getPropertyValues()
     {
-        return nm.getNodeForProxy( nodeId ).getPropertyValues();
+        return nm.getNodeForProxy( nodeId ).getPropertyValues( nm );
     }
 
     public Iterable<String> getPropertyKeys()
     {
-        return nm.getNodeForProxy( nodeId ).getPropertyKeys();
+        return nm.getNodeForProxy( nodeId ).getPropertyKeys( nm );
     }
 
     public Object getProperty( String key ) throws NotFoundException
     {
-        return nm.getNodeForProxy( nodeId ).getProperty( key );
+        return nm.getNodeForProxy( nodeId ).getProperty( nm, key );
     }
 
     public boolean hasProperty( String key )
     {
-        return nm.getNodeForProxy( nodeId ).hasProperty( key );
+        return nm.getNodeForProxy( nodeId ).hasProperty( nm, key );
     }
 
     public int compareTo( Object node )
@@ -183,7 +184,7 @@ class NodeProxy implements Node
     public Relationship createRelationshipTo( Node otherNode,
         RelationshipType type )
     {
-        return nm.getNodeForProxy( nodeId ).createRelationshipTo( otherNode,
+        return nm.getNodeForProxy( nodeId ).createRelationshipTo( nm, otherNode,
             type );
     }
 
@@ -219,7 +220,7 @@ class NodeProxy implements Node
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType relationshipType, Direction direction )
     {
-        return nm.getNodeForProxy( nodeId ).traverse( traversalOrder,
+        return nm.getNodeForProxy( nodeId ).traverse( nm, traversalOrder,
             stopEvaluator, returnableEvaluator, relationshipType, direction );
     }
 
@@ -228,7 +229,7 @@ class NodeProxy implements Node
         RelationshipType firstRelationshipType, Direction firstDirection,
         RelationshipType secondRelationshipType, Direction secondDirection )
     {
-        return nm.getNodeForProxy( nodeId ).traverse( traversalOrder,
+        return nm.getNodeForProxy( nodeId ).traverse( nm, traversalOrder,
             stopEvaluator, returnableEvaluator, firstRelationshipType,
             firstDirection, secondRelationshipType, secondDirection );
     }
@@ -237,7 +238,7 @@ class NodeProxy implements Node
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         Object... relationshipTypesAndDirections )
     {
-        return nm.getNodeForProxy( nodeId ).traverse( traversalOrder,
+        return nm.getNodeForProxy( nodeId ).traverse( nm, traversalOrder,
             stopEvaluator, returnableEvaluator, relationshipTypesAndDirections );
     }
 }

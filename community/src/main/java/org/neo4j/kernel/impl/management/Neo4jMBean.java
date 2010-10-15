@@ -1,37 +1,528 @@
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.neo4j.kernel.impl.management;
 
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.logging.Logger;
+
+import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerConnection;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 import javax.management.StandardMBean;
 
-import org.neo4j.kernel.KernelExtension.KernelData;
-import org.neo4j.kernel.management.Kernel;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
 public class Neo4jMBean extends StandardMBean
 {
-    final ObjectName objectName;
+    private static final Logger log = Logger.getLogger( Neo4jMBean.class.getName() );
 
-    protected Neo4jMBean( ManagementBeanProvider provider, KernelData kernel, boolean isMXBean )
+    public static Runnable initMBeans( Creator creator )
     {
-        super( provider.beanInterface, isMXBean );
-        this.objectName = provider.getObjectName( kernel );
+        Factory jmx = new Factory( getPlatformMBeanServer(), creator );
+        creator.create( jmx );
+        jmx.createKernelMBean( creator.kernelVersion );
+        return new JmxShutdown( jmx.beans );
     }
 
-    protected Neo4jMBean( ManagementBeanProvider provider, KernelData kernel )
-            throws NotCompliantMBeanException
+    public static <T> T getBean( String instanceId, Class<T> beanType )
     {
-        super( provider.beanInterface );
-        this.objectName = provider.getObjectName( kernel );
+        if ( beanType.isInterface()
+             && ( beanType.getPackage().getName().equals( "org.neo4j.kernel.management" )
+                     || beanType == DynamicMBean.class ) )
+        {
+            if ( PROXY_MAKER == null )
+            {
+                throw new UnsupportedOperationException(
+                        "Creating Management Bean proxies requires Java 1.6" );
+            }
+            else
+            {
+                ObjectName name = getObjectName( instanceId, beanType, Configuration.class );
+                return PROXY_MAKER.makeProxy( name, beanType );
+            }
+        }
+        throw new IllegalArgumentException( "Not a Neo4j management bean: " + beanType );
     }
 
-    Neo4jMBean( Class<Kernel> beenInterface, KernelData kernel ) throws NotCompliantMBeanException
+    public static abstract class Creator
     {
-        super( beenInterface );
-        this.objectName = JmxExtension.getObjectName( kernel, beenInterface, null );
+        private final String id;
+        private final String kernelVersion;
+        private final NeoStoreXaDataSource datasource;
+
+        protected Creator( String instanceId, String kernelVersion, NeoStoreXaDataSource datasource )
+        {
+            if ( kernelVersion == null || datasource == null )
+            {
+                throw new IllegalArgumentException( "null valued argument" );
+            }
+            this.id = instanceId;
+            this.kernelVersion = kernelVersion;
+            this.datasource = datasource;
+        }
+
+        protected abstract void create( Neo4jMBean.Factory jmx );
+    }
+
+    public static final class Factory
+    {
+        private final MBeanServer mbs;
+        private final Creator instance;
+        private final List<Neo4jMBean> beans = new ArrayList<Neo4jMBean>();
+
+        private Factory( MBeanServer mbs, Creator creator )
+        {
+            this.mbs = mbs;
+            this.instance = creator;
+        }
+
+        private void createKernelMBean( final String kernelVersion )
+        {
+            if ( !register( new Callable<KernelBean>()
+            {
+                public KernelBean call() throws Exception
+                {
+                    return new KernelBean( instance.id, kernelVersion, instance.datasource,
+                            getObjectName( instance.id, null, null ) );
+                }
+            } ) ) failedToRegister( "KernelBean" );
+        }
+
+        public void createPrimitiveMBean( final NodeManager nodeManager )
+        {
+            if ( !register( new Callable<PrimitivesBean>()
+            {
+                public PrimitivesBean call() throws NotCompliantMBeanException
+                {
+                    return new PrimitivesBean( instance.id, nodeManager );
+                }
+            } ) ) failedToRegister( "PrimitiveMBean" );
+        }
+
+        public void createCacheMBean( final NodeManager nodeManager )
+        {
+            if ( !register( new Callable<CacheBean>()
+            {
+                public CacheBean call() throws NotCompliantMBeanException
+                {
+                    return new CacheBean( instance.id, nodeManager );
+                }
+            } ) ) failedToRegister( "CacheMBean" );
+        }
+
+        public void createDynamicConfigurationMBean( final Map<Object, Object> params )
+        {
+            if ( !register( new Callable<Neo4jMBean>()
+            {
+                public Neo4jMBean call() throws NotCompliantMBeanException
+                {
+                    return new Configuration( instance.id, params );
+                }
+            } ) ) failedToRegister( "ConfigurationMBean" );
+        }
+
+        public void createMemoryMappingMBean( XaDataSourceManager datasourceMananger )
+        {
+            final NeoStoreXaDataSource datasource = (NeoStoreXaDataSource) datasourceMananger.getXaDataSource( "nioneodb" );
+            if ( !register( new Callable<Neo4jMBean>()
+            {
+                public Neo4jMBean call()
+                {
+                    return MemoryMappingBean.create( instance.id, datasource );
+                }
+            } ) ) failedToRegister( "MemoryMappingMBean" );
+        }
+
+        public void createXaManagerMBean( final XaDataSourceManager datasourceMananger )
+        {
+            if ( !register( new Callable<Neo4jMBean>()
+            {
+                public Neo4jMBean call()
+                {
+                    return XaManagerBean.create( instance.id, datasourceMananger );
+                }
+            } ) ) failedToRegister( "XaManagerMBean" );
+        }
+
+        public void createTransactionManagerMBean( final TxModule txModule )
+        {
+            if ( !register( new Callable<TransactionManagerBean>()
+            {
+                public TransactionManagerBean call() throws NotCompliantMBeanException
+                {
+                    return new TransactionManagerBean( instance.id, txModule );
+                }
+            } ) ) failedToRegister( "TransactionManagerMBean" );
+        }
+
+        public void createLockManagerMBean( final LockManager lockManager )
+        {
+            if ( !register( new Callable<LockManagerBean>()
+            {
+                public LockManagerBean call() throws NotCompliantMBeanException
+                {
+                    return new LockManagerBean( instance.id, lockManager );
+                }
+            } ) ) failedToRegister( "LockManagerMBean" );
+        }
+
+        public void createStoreFileMBean()
+        {
+            File path;
+            try
+            {
+                path = new File( instance.datasource.getStoreDir() ).getCanonicalFile().getAbsoluteFile();
+            }
+            catch ( IOException e )
+            {
+                path = new File( instance.datasource.getStoreDir() ).getAbsoluteFile();
+            }
+            final File storePath = path;
+            if ( !register( new Callable<StoreFileBean>()
+            {
+                public StoreFileBean call() throws NotCompliantMBeanException
+                {
+                    return new StoreFileBean( instance.id, storePath );
+                }
+            } ) ) failedToRegister( "StoreFileMBean" );
+        }
+
+        private boolean register( Callable<? extends Neo4jMBean> beanFactory )
+        {
+            Neo4jMBean bean;
+            try
+            {
+                bean = beanFactory.call();
+            }
+            catch ( Exception e )
+            {
+                return false;
+            }
+            bean = registerBean( mbs, bean );
+            if ( bean != null )
+            {
+                beans.add( bean );
+                return true;
+            }
+            return false;
+        }
+    }
+
+    private static Neo4jMBean registerBean( MBeanServer mbs, Neo4jMBean bean )
+    {
+        try
+        {
+            mbs.registerMBean( bean, bean.objectName );
+            return bean;
+        }
+        catch ( Exception e )
+        {
+            return null;
+        }
+    }
+
+    private static void failedToRegister( String mBean )
+    {
+        log.info( "Failed to register " + mBean );
+    }
+
+    private static final class JmxShutdown implements Runnable
+    {
+        private final Neo4jMBean[] beans;
+
+        public JmxShutdown( List<Neo4jMBean> beans )
+        {
+            this.beans = beans.toArray( new Neo4jMBean[beans.size()] );
+        }
+
+        public void run()
+        {
+            MBeanServer mbs = getPlatformMBeanServer();
+            for ( Neo4jMBean bean : beans )
+            {
+                unregisterBean( mbs, bean );
+            }
+        }
+    }
+
+    private static void unregisterBean( MBeanServer mbs, Neo4jMBean bean )
+    {
+        try
+        {
+            mbs.unregisterMBean( bean.objectName );
+        }
+        catch ( Exception e )
+        {
+            log.warning( "Failed to unregister JMX Bean " + bean );
+            e.printStackTrace();
+        }
+    }
+
+    private static final ProxyMaker PROXY_MAKER;
+
+    private static abstract class ProxyMaker
+    {
+        final boolean supportsMxBean;
+
+        ProxyMaker( boolean supportsMxBean )
+        {
+            this.supportsMxBean = supportsMxBean;
+        }
+
+        abstract <T> T makeProxy( ObjectName name, Class<T> beanType );
+    }
+
+    private static class Java6ProxyMaker extends ProxyMaker
+    {
+        private final Method isMXBeanInterface;
+        private final Method newMBeanProxy;
+        private final Method newMXBeanProxy;
+
+        Java6ProxyMaker() throws Exception
+        {
+            super( true );
+            Class<?> JMX = Class.forName( "javax.management.JMX" );
+            this.isMXBeanInterface = JMX.getMethod( "isMXBeanInterface", Class.class );
+            this.newMBeanProxy = JMX.getMethod( "newMBeanProxy", MBeanServerConnection.class,
+                    ObjectName.class, Class.class );
+            this.newMXBeanProxy = JMX.getMethod( "newMXBeanProxy", MBeanServerConnection.class,
+                    ObjectName.class, Class.class );
+        }
+
+        @Override
+        <T> T makeProxy( ObjectName name, Class<T> beanType )
+        {
+            try
+            {
+                final Method factoryMethod;
+                if ( isMXBeanInterface( beanType ) )
+                {
+                    factoryMethod = newMXBeanProxy;
+                }
+                else
+                {
+                    factoryMethod = newMBeanProxy;
+                }
+                return beanType.cast( factoryMethod.invoke( null, getPlatformMBeanServer(), name,
+                        beanType ) );
+            }
+            catch ( InvocationTargetException exception )
+            {
+                throw launderRuntimeException( exception.getTargetException() );
+            }
+            catch ( Exception exception )
+            {
+                throw new UnsupportedOperationException(
+                        "Creating Management Bean proxies requires Java 1.6", exception );
+            }
+        }
+
+        private boolean isMXBeanInterface( Class<?> interfaceClass ) throws Exception
+        {
+            return (Boolean) isMXBeanInterface.invoke( null, interfaceClass );
+        }
+
+        static RuntimeException launderRuntimeException( Throwable exception )
+        {
+            if ( exception instanceof RuntimeException )
+            {
+                return (RuntimeException) exception;
+            }
+            else if ( exception instanceof Error )
+            {
+                throw (Error) exception;
+            }
+            else
+            {
+                throw new RuntimeException( "Unexpected Exception!", exception );
+            }
+        }
+    }
+
+    private static class Java5ProxyMaker extends ProxyMaker
+    {
+        Java5ProxyMaker() throws Exception
+        {
+            super( false );
+            Class.forName( "javax.management.MBeanServerInvocationHandler" );
+        }
+
+        @Override
+        <T> T makeProxy( ObjectName name, Class<T> beanType )
+        {
+            return MBeanServerInvocationHandler.newProxyInstance( getPlatformMBeanServer(), name,
+                    beanType, false );
+        }
+    }
+
+    private static final boolean SUPPORT_MX_BEAN;
+    static
+    {
+        ProxyMaker proxyMaker;
+        try
+        {
+            proxyMaker = new Java6ProxyMaker();
+        }
+        catch ( Exception t )
+        {
+            proxyMaker = null;
+        }
+        catch ( LinkageError t )
+        {
+            proxyMaker = null;
+        }
+        if ( proxyMaker == null )
+        {
+            try
+            {
+                proxyMaker = new Java5ProxyMaker();
+            }
+            catch ( Exception t )
+            {
+                proxyMaker = null;
+            }
+            catch ( LinkageError t )
+            {
+                proxyMaker = null;
+            }
+        }
+        PROXY_MAKER = proxyMaker;
+        SUPPORT_MX_BEAN = proxyMaker != null && proxyMaker.supportsMxBean;
+    }
+
+    static abstract class MXFactory<T extends Neo4jMBean>
+    {
+        abstract T createStandardMBean() throws NotCompliantMBeanException;
+
+        abstract T createMXBean();
+
+        final T createMBean()
+        {
+            try
+            {
+                return createStandardMBean();
+            }
+            catch ( NotCompliantMBeanException cause )
+            {
+                throw new IllegalArgumentException( cause );
+            }
+        }
+    }
+
+    static <T extends Neo4jMBean> T createMX( MXFactory<T> factory )
+    {
+        if ( SUPPORT_MX_BEAN )
+        {
+            return factory.createMXBean();
+        }
+        else
+        {
+            return factory.createMBean();
+        }
+    }
+
+    private final ObjectName objectName;
+
+    protected Neo4jMBean( String instanceId, Class<?> mbeanIface, boolean isMXBean )
+    {
+        super( mbeanIface, isMXBean );
+        objectName = getObjectName( instanceId, mbeanIface, getClass() );
+        if ( objectName == null )
+        {
+            throw new IllegalArgumentException( "" );
+        }
+    }
+
+    protected Neo4jMBean( String instanceId, Class<?> mbeanIface ) throws NotCompliantMBeanException
+    {
+        super( mbeanIface );
+        objectName = getObjectName( instanceId, mbeanIface, getClass() );
+        if ( objectName == null )
+        {
+            throw new IllegalArgumentException( "" );
+        }
+    }
+
+    protected Neo4jMBean( String instanceId ) throws NotCompliantMBeanException
+    {
+        super( DynamicMBean.class );
+        objectName = getObjectName( instanceId, DynamicMBean.class, getClass() );
+    }
+
+    private static ObjectName getObjectName( String instanceId, Class<?> iface, Class<?> clazz )
+    {
+        final String name;
+        if ( iface == null )
+        {
+            name = "*";
+        }
+        else if ( iface == DynamicMBean.class )
+        {
+            name = clazz.getSimpleName();
+        }
+        else
+        {
+            try
+            {
+                name = (String) iface.getField( "NAME" ).get( null );
+            }
+            catch ( Exception e )
+            {
+                return null;
+            }
+        }
+        StringBuilder identifier = new StringBuilder( "org.neo4j:" );
+        identifier.append( "instance=kernel#" );
+        identifier.append( instanceId );
+        identifier.append( ",name=" );
+        identifier.append( name );
+        try
+        {
+            return new ObjectName( identifier.toString() );
+        }
+        catch ( MalformedObjectNameException e )
+        {
+            return null;
+        }
     }
 
     @Override

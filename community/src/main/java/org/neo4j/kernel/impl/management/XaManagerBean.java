@@ -1,3 +1,23 @@
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.neo4j.kernel.impl.management;
 
 import java.util.ArrayList;
@@ -5,85 +25,82 @@ import java.util.List;
 
 import javax.management.NotCompliantMBeanException;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.management.XaManager;
 import org.neo4j.kernel.management.XaResourceInfo;
 
-@Service.Implementation( ManagementBeanProvider.class )
-public final class XaManagerBean extends ManagementBeanProvider
+@Description( "Information about the XA transaction manager" )
+class XaManagerBean extends Neo4jMBean implements XaManager
 {
-    public XaManagerBean()
+    static XaManagerBean create( final String instanceId,
+            final XaDataSourceManager datasourceMananger )
     {
-        super( XaManager.class );
-    }
-
-    @Override
-    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
-    {
-        return new XaManagerImpl( null, kernel );
-    }
-
-    @Override
-    protected Neo4jMBean createMXBean( KernelData kernel ) throws NotCompliantMBeanException
-    {
-        return new XaManagerImpl( this, kernel, true );
-    }
-
-    @Description( "Information about the XA transaction manager" )
-    private static class XaManagerImpl extends Neo4jMBean implements XaManager
-    {
-        private final XaDataSourceManager datasourceMananger;
-
-        XaManagerImpl( ManagementBeanProvider provider, KernelData kernel )
-                throws NotCompliantMBeanException
+        return createMX( new MXFactory<XaManagerBean>()
         {
-            super( provider, kernel );
-            this.datasourceMananger = kernel.getConfig().getTxModule().getXaDataSourceManager();
-        }
-
-        XaManagerImpl( XaManagerBean provider, KernelData kernel, boolean isMxBean )
-        {
-            super( provider, kernel, isMxBean );
-            this.datasourceMananger = kernel.getConfig().getTxModule().getXaDataSourceManager();
-        }
-
-        @Description( "Information about all XA resources managed by the transaction manager" )
-        public XaResourceInfo[] getXaResources()
-        {
-            return getXaResourcesImpl( datasourceMananger );
-        }
-
-        private static XaResourceInfo[] getXaResourcesImpl( XaDataSourceManager datasourceMananger )
-        {
-            List<XaResourceInfo> result = new ArrayList<XaResourceInfo>();
-            for ( XaDataSource datasource : datasourceMananger.getAllRegisteredDataSources() )
+            @Override
+            XaManagerBean createMXBean()
             {
-                result.add( createXaResourceInfo( datasource ) );
+                return new XaManagerBean( instanceId, datasourceMananger, true );
             }
-            return result.toArray( new XaResourceInfo[result.size()] );
-        }
 
-        private static XaResourceInfo createXaResourceInfo( XaDataSource datasource )
-        {
-            return new XaResourceInfo( datasource.getName(), toHexString( datasource.getBranchId() ) );
-        }
-
-        private static String toHexString( byte[] branchId )
-        {
-            StringBuilder result = new StringBuilder();
-            for ( byte part : branchId )
+            @Override
+            XaManagerBean createStandardMBean() throws NotCompliantMBeanException
             {
-                String chunk = Integer.toHexString( part );
-                if ( chunk.length() < 2 ) result.append( "0" );
-                if ( chunk.length() > 2 )
-                    result.append( chunk.substring( chunk.length() - 2 ) );
-                else
-                    result.append( chunk );
+                return new XaManagerBean( instanceId, datasourceMananger );
             }
-            return result.toString();
+        } );
+    }
+
+    private final XaDataSourceManager datasourceMananger;
+
+    private XaManagerBean( String instanceId, XaDataSourceManager datasourceMananger )
+            throws NotCompliantMBeanException
+    {
+        super( instanceId, XaManager.class );
+        this.datasourceMananger = datasourceMananger;
+    }
+
+    private XaManagerBean( String instanceId, XaDataSourceManager datasourceMananger,
+            boolean isMXBean )
+    {
+        super( instanceId, XaManager.class, isMXBean );
+        this.datasourceMananger = datasourceMananger;
+    }
+
+    @Description( "Information about all XA resources managed by the transaction manager" )
+    public XaResourceInfo[] getXaResources()
+    {
+        return getXaResourcesImpl( datasourceMananger );
+    }
+
+    private static XaResourceInfo[] getXaResourcesImpl( XaDataSourceManager datasourceMananger )
+    {
+        List<XaResourceInfo> result = new ArrayList<XaResourceInfo>();
+        for ( XaDataSource datasource : datasourceMananger.getAllRegisteredDataSources() )
+        {
+            result.add( createXaResourceInfo( datasource ) );
         }
+        return result.toArray( new XaResourceInfo[result.size()] );
+    }
+
+    private static XaResourceInfo createXaResourceInfo( XaDataSource datasource )
+    {
+        return new XaResourceInfo( datasource.getName(), toHexString( datasource.getBranchId() ) );
+    }
+
+    private static String toHexString( byte[] branchId )
+    {
+        StringBuilder result = new StringBuilder();
+        for ( byte part : branchId )
+        {
+            String chunk = Integer.toHexString( part );
+            if ( chunk.length() < 2 ) result.append( "0" );
+            if ( chunk.length() > 2 )
+                result.append( chunk.substring( chunk.length() - 2 ) );
+            else
+                result.append( chunk );
+        }
+        return result.toString();
     }
 }

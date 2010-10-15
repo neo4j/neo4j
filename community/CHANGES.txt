@@ -1,3 +1,27 @@
+1.2-1.2.M1 (2010-10-08)
+-----------------------
+
+-New features
+o Kernel extensions - additional services for the Neo4j Kernel are loaded
+  automatically if they are present on the classpath.
+o The ability to inject Kernel extensions in a running instance through JVM
+  agents. This is used for loading the shell on an running instance.
+
+-API
+o Traversal: Uniqueness is now instantiated through a factory, with
+  the previous enum (moved to org.neo4j.kernel) as default implementation.
+o Filters in a traversal description are additive (just as PruneEvaluators).
+
+-Bug fixes
+o Circumvented the fact that Class.forName() sometimes throws a
+  NoClassDefFoundError instead of ClassNotFoundException.
+
+-Optimizations
+o NodeImpl/RelationshipImpl takes less memory since they no longer have
+  reference to NodeManager.
+o Fixed some low-level throughput/concurrency issues.
+o Added (default) weak reference cache option. Control with f.ex. "cache_type=weak"
+
 1.1 (2010-07-29)
 ----------------
 

@@ -1,22 +1,23 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.cache;
 
 import java.util.ArrayList;
@@ -38,8 +39,8 @@ public class AdaptiveCacheManager
     private final List<AdaptiveCacheElement> caches = 
         new LinkedList<AdaptiveCacheElement>();
 
-    private final List<SoftLruCache<?,?>> softCaches = 
-        new ArrayList<SoftLruCache<?,?>>();
+    private final List<ReferenceCache<?,?>> referenceCaches = 
+        new ArrayList<ReferenceCache<?,?>>();
     
     private AdaptiveCacheWorker workerThread;
 
@@ -52,9 +53,9 @@ public class AdaptiveCacheManager
                 + ratio + " minSize=" + minSize );
         }
         
-        if ( cache instanceof SoftLruCache<?,?> )
+        if ( cache instanceof ReferenceCache<?,?> )
         {
-            softCaches.add( (SoftLruCache<?,?>) cache );
+            referenceCaches.add( (ReferenceCache<?,?>) cache );
             return;
         }
         
@@ -84,7 +85,7 @@ public class AdaptiveCacheManager
         }
         if ( cache instanceof SoftLruCache<?,?> )
         {
-            softCaches.remove( cache );
+            referenceCaches.remove( cache );
             return;
         }
         Iterator<AdaptiveCacheElement> itr = caches.iterator();
@@ -215,8 +216,8 @@ public class AdaptiveCacheManager
             {
                 try
                 {
+                    adaptReferenceCaches();
                     adaptCaches();
-                    adaptSoftCaches();
                     this.wait( sleepTime );
                 }
                 catch ( InterruptedException e )
@@ -246,11 +247,11 @@ public class AdaptiveCacheManager
         }
     }
 
-    public synchronized void adaptSoftCaches()
+    public synchronized void adaptReferenceCaches()
     {
-        for ( SoftLruCache<?,?> cache : softCaches )
+        for ( ReferenceCache<?,?> cache : referenceCaches )
         {
-            cache.pollAll();
+            cache.pollClearedValues();
         }
     }
     

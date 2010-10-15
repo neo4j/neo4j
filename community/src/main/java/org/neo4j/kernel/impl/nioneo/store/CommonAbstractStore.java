@@ -1,6 +1,6 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
  *
@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
@@ -25,6 +26,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -258,6 +260,12 @@ public abstract class CommonAbstractStore
         {
             throw new UnderlyingStorageException( "Unable to lock store["
                 + storageFileName + "]" );
+        }
+        catch ( OverlappingFileLockException e )
+        {
+            throw new IllegalStateException( "Unable to lock store [" + storageFileName +
+                    "], this is usually caused by another Neo4j kernel already running in " +
+                    "this JVM for this particular store" );
         }
     }
 

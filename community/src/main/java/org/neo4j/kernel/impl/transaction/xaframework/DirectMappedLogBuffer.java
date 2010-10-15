@@ -1,22 +1,23 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
@@ -47,39 +48,50 @@ class DirectMappedLogBuffer implements LogBuffer
         byteBuffer.clear();
     }
 
-    public LogBuffer put( byte b ) throws IOException
+    private void ensureCapacity( int plusSize ) throws IOException
     {
         if ( byteBuffer == null || 
-            (BUFFER_SIZE - byteBuffer.position()) < 1 )
+                (BUFFER_SIZE - byteBuffer.position()) < plusSize )
         {
             getNewDirectBuffer();
         }
+    }
+    
+    public LogBuffer put( byte b ) throws IOException
+    {
+        ensureCapacity( 1 );
         byteBuffer.put( b );
         return this;
     }
 
     public LogBuffer putInt( int i ) throws IOException
     {
-        if ( byteBuffer == null || 
-            (BUFFER_SIZE - byteBuffer.position()) < 4 )
-        {
-            getNewDirectBuffer();
-        }
+        ensureCapacity( 4 );
         byteBuffer.putInt( i );
         return this;
     }
 
     public LogBuffer putLong( long l ) throws IOException
     {
-        if ( byteBuffer == null || 
-            (BUFFER_SIZE - byteBuffer.position()) < 8 )
-        {
-            getNewDirectBuffer();
-        }
+        ensureCapacity( 8 );
         byteBuffer.putLong( l );
         return this;
     }
 
+    public LogBuffer putFloat( float f ) throws IOException
+    {
+        ensureCapacity( 4 );
+        byteBuffer.putFloat( f );
+        return this;
+    }
+    
+    public LogBuffer putDouble( double d ) throws IOException
+    {
+        ensureCapacity( 8 );
+        byteBuffer.putDouble( d );
+        return this;
+    }
+    
     public LogBuffer put( byte[] bytes ) throws IOException
     {
         put( bytes, 0 );
@@ -93,11 +105,7 @@ class DirectMappedLogBuffer implements LogBuffer
         {
             bytesToWrite = BUFFER_SIZE;
         }
-        if ( byteBuffer == null || 
-                (BUFFER_SIZE - byteBuffer.position()) < bytesToWrite )
-        {
-            getNewDirectBuffer();
-        }
+        ensureCapacity( bytesToWrite );
         byteBuffer.put( bytes, offset, bytesToWrite );
         offset += bytesToWrite;
         if ( offset < bytes.length )
@@ -119,11 +127,7 @@ class DirectMappedLogBuffer implements LogBuffer
         {
             charsToWrite = BUFFER_SIZE / 2;
         }
-        if ( byteBuffer == null || 
-                (BUFFER_SIZE - byteBuffer.position()) < (charsToWrite * 2 ) )
-        {
-            getNewDirectBuffer();
-        }
+        ensureCapacity( charsToWrite*2 );
         int oldPos = byteBuffer.position();
         byteBuffer.asCharBuffer().put( chars, offset, charsToWrite );
         byteBuffer.position( oldPos + (charsToWrite * 2) );

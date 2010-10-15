@@ -1,22 +1,23 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
@@ -87,7 +88,7 @@ class MemoryMappedLogBuffer implements LogBuffer
     public LogBuffer put( byte b ) throws IOException
     {
         if ( mappedBuffer == null || 
-            (MAPPED_SIZE - mappedBuffer.position()) < 1 )
+                (MAPPED_SIZE - mappedBuffer.position()) < 1 )
         {
             getNewMappedBuffer();
             if ( mappedBuffer == null )
@@ -103,11 +104,11 @@ class MemoryMappedLogBuffer implements LogBuffer
         mappedBuffer.put( b );
         return this;
     }
-
+    
     public LogBuffer putInt( int i ) throws IOException
     {
         if ( mappedBuffer == null || 
-            (MAPPED_SIZE - mappedBuffer.position()) < 4 )
+                (MAPPED_SIZE - mappedBuffer.position()) < 4 )
         {
             getNewMappedBuffer();
             if ( mappedBuffer == null )
@@ -127,7 +128,7 @@ class MemoryMappedLogBuffer implements LogBuffer
     public LogBuffer putLong( long l ) throws IOException
     {
         if ( mappedBuffer == null || 
-            (MAPPED_SIZE - mappedBuffer.position()) < 8 )
+                (MAPPED_SIZE - mappedBuffer.position()) < 8 )
         {
             getNewMappedBuffer();
             if ( mappedBuffer == null )
@@ -144,6 +145,46 @@ class MemoryMappedLogBuffer implements LogBuffer
         return this;
     }
 
+    public LogBuffer putFloat( float f ) throws IOException
+    {
+        if ( mappedBuffer == null || 
+                (MAPPED_SIZE - mappedBuffer.position()) < 4 )
+        {
+            getNewMappedBuffer();
+            if ( mappedBuffer == null )
+            {
+                fallbackBuffer.clear();
+                fallbackBuffer.putFloat( f );
+                fallbackBuffer.flip();
+                fileChannel.write( fallbackBuffer, mappedStartPosition );
+                mappedStartPosition += 4;
+                return this;
+            }
+        }
+        mappedBuffer.putFloat( f );
+        return this;
+    }
+    
+    public LogBuffer putDouble( double d ) throws IOException
+    {
+        if ( mappedBuffer == null || 
+                (MAPPED_SIZE - mappedBuffer.position()) < 8 )
+        {
+            getNewMappedBuffer();
+            if ( mappedBuffer == null )
+            {
+                fallbackBuffer.clear();
+                fallbackBuffer.putDouble( d );
+                fallbackBuffer.flip();
+                fileChannel.write( fallbackBuffer, mappedStartPosition );
+                mappedStartPosition += 8;
+                return this;
+            }
+        }
+        mappedBuffer.putDouble( d );
+        return this;
+    }
+    
     public LogBuffer put( byte[] bytes ) throws IOException
     {
         put( bytes, 0 );
