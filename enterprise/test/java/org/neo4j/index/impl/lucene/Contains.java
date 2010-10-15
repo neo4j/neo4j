@@ -45,7 +45,8 @@ public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
 
         if ( expectedItems.length != collection.size() )
         {
-            message += "IndexHits with a size of " + expectedItems.length + ", got one with " + collection.size();
+            message = "IndexHits with a size of " + expectedItems.length + ", got one with " + collection.size();
+            message += collection.toString();
             return false;
         }
 
