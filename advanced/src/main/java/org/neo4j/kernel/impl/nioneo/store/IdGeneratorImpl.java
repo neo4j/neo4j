@@ -1,24 +1,26 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -72,7 +74,7 @@ public class IdGeneratorImpl implements IdGenerator
 
     // number of defragged ids to grab form file in batch (also used for write)
     private int grabSize = -1;
-    private long nextFreeId = -1;
+    private AtomicLong nextFreeId = new AtomicLong( -1 );
     // total bytes read from file, used in writeIdBatch() and close()
     private long totalBytesRead = 0;
     // true if more defragged ids can be read from file
@@ -147,8 +149,8 @@ public class IdGeneratorImpl implements IdGenerator
         {
             return nextDefragId;
         }
-        assertIdWithinCapacity( nextFreeId );
-        return nextFreeId++;
+        assertIdWithinCapacity( nextFreeId.get() );
+        return nextFreeId.getAndIncrement();
     }
 
     private void assertIdWithinCapacity( long id )
@@ -182,7 +184,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
     }
     
-    public synchronized IdRange nextIdBatch( int size )
+    public IdRange nextIdBatch( int size )
     {
         assertStillOpen();
         
@@ -205,10 +207,10 @@ public class IdGeneratorImpl implements IdGenerator
         System.arraycopy( tmpArray, 0, defragIds, 0, count );
         
         int sizeLeftForRange = size-count;
-        long start = nextFreeId;
-        long newHighId = nextFreeId + sizeLeftForRange;
+        long start = nextFreeId.get();
+        long newHighId = start + sizeLeftForRange;
         assertIdWithinCapacity( newHighId );
-        nextFreeId = newHighId;
+        nextFreeId.set( newHighId );
         return new IdRange( defragIds, start, sizeLeftForRange );
     }
 
@@ -219,9 +221,9 @@ public class IdGeneratorImpl implements IdGenerator
      * @param id
      *            The next free id
      */
-    public synchronized void setHighId( long id )
+    public void setHighId( long id )
     {
-        nextFreeId = id;
+        nextFreeId.set( id );
     }
 
     /**
@@ -230,9 +232,9 @@ public class IdGeneratorImpl implements IdGenerator
      * 
      * @return The next free "high" id
      */
-    public synchronized long getHighId()
+    public long getHighId()
     {
-        return nextFreeId;
+        return nextFreeId.get();
     }
 
     /**
@@ -252,7 +254,7 @@ public class IdGeneratorImpl implements IdGenerator
      */
     public synchronized void freeId( long id )
     {
-        if ( id < 0 || id >= nextFreeId )
+        if ( id < 0 || id >= nextFreeId.get() )
         {
             throw new IllegalArgumentException( "Illegal id[" + id + "]" );
         }
@@ -282,7 +284,7 @@ public class IdGeneratorImpl implements IdGenerator
      */
     public synchronized void close()
     {
-        if ( nextFreeId == -1 )
+        if ( nextFreeId.get() == -1 )
         {
             return;
         }
@@ -306,7 +308,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             fileChannel.position( 0 );
             ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
-            buffer.put( STICKY_GENERATOR ).putLong( nextFreeId );
+            buffer.put( STICKY_GENERATOR ).putLong( nextFreeId.get() );
             buffer.flip();
             fileChannel.write( buffer );
             // move data to remove fragmentation in file
@@ -347,7 +349,7 @@ public class IdGeneratorImpl implements IdGenerator
             fileChannel.close();
             fileChannel = null;
             // make this generator unusable
-            nextFreeId = -1;
+            nextFreeId.set( -1 );
         }
         catch ( IOException e )
         {
@@ -427,7 +429,7 @@ public class IdGeneratorImpl implements IdGenerator
                     + fileName
                     + "] delete this id generator and build a new one" );
             }
-            this.nextFreeId = buffer.getLong();
+            this.nextFreeId.set( buffer.getLong() );
             buffer.flip();
             buffer.put( STICKY_GENERATOR ).limit( 1 ).flip();
             fileChannel.position( 0 );
@@ -544,7 +546,7 @@ public class IdGeneratorImpl implements IdGenerator
 
     public synchronized long getNumberOfIdsInUse()
     {
-        return nextFreeId - defraggedIdCount;
+        return nextFreeId.get() - defraggedIdCount;
     }
 
     public long getDefragCount()

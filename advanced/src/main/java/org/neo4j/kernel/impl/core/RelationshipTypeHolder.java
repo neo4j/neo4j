@@ -1,26 +1,26 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,8 +37,8 @@ public class RelationshipTypeHolder
 {
     private ArrayMap<String,Integer> relTypes = 
         new ArrayMap<String,Integer>( 5, true, true );
-    private Map<Integer,String> relTranslation = 
-        new ConcurrentHashMap<Integer,String>();
+    private Map<Integer,RelationshipTypeImpl> relTranslation = 
+        new ConcurrentHashMap<Integer,RelationshipTypeImpl>();
 
     private final TransactionManager transactionManager;
     private final PersistenceManager persistenceManager;
@@ -65,27 +65,33 @@ public class RelationshipTypeHolder
     
     void addRawRelationshipType( RelationshipTypeData type )
     {
+        RelationshipTypeImpl relType = new RelationshipTypeImpl( type.getName() );
         relTypes.put( type.getName(), type.getId() );
-        relTranslation.put( type.getId(), type.getName() );
+        relTranslation.put( type.getId(), relType );
     }
 
     public RelationshipType addValidRelationshipType( String name,
         boolean create )
     {
-        if ( relTypes.get( name ) == null )
+        Integer id = relTypes.get( name );
+        if ( id == null )
         {
             if ( !create )
             {
                 return null;
             }
-            int id = createRelationshipType( name );
-            relTranslation.put( id, name );
+            id = createRelationshipType( name );
+            RelationshipTypeImpl type = new RelationshipTypeImpl( name );
+            relTranslation.put( id, type );
+            return type;
         }
-        else
+        RelationshipTypeImpl relType = relTranslation.get( id );
+        if ( relType == null )
         {
-            relTranslation.put( relTypes.get( name ), name );
+            relType = new RelationshipTypeImpl( name );
+            relTranslation.put( id, relType );
         }
-        return new RelationshipTypeImpl( name );
+        return relType;
     }
 
     boolean isValidRelationshipType( RelationshipType type )
@@ -153,10 +159,10 @@ public class RelationshipTypeHolder
 
     void removeRelType( int id )
     {
-        String name = relTranslation.remove( id );
-        if ( name != null )
+        RelationshipTypeImpl relType = relTranslation.remove( id );
+        if ( relType != null )
         {
-            relTypes.remove( name );
+            relTypes.remove( relType.name );
         }
     }
 
@@ -172,12 +178,7 @@ public class RelationshipTypeHolder
 
     RelationshipType getRelationshipType( int id )
     {
-        String name = relTranslation.get( id );
-        if ( name != null )
-        {
-            return new RelationshipTypeImpl( name );
-        }
-        return null;
+        return relTranslation.get( id );
     }
 
     public Iterable<RelationshipType> getRelationshipTypes()
@@ -193,6 +194,6 @@ public class RelationshipTypeHolder
     void clear()
     {
         relTypes = new ArrayMap<String,Integer>();
-        relTranslation = new HashMap<Integer,String>();
+        relTranslation = new ConcurrentHashMap<Integer,RelationshipTypeImpl>();
     }
 }

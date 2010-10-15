@@ -1,22 +1,23 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.IOException;
@@ -45,6 +46,7 @@ public class NeoStore extends AbstractStore
 
     // 4 longs in header (long + in use), time | random | version | txid
     private static final int RECORD_SIZE = 9;
+    private static final int DEFAULT_REL_GRAB_SIZE = 100;
 
     private NodeStore nodeStore;
     private PropertyStore propStore;
@@ -60,22 +62,16 @@ public class NeoStore extends AbstractStore
     public NeoStore( Map<?,?> config )
     {
         super( (String) config.get( "neo_store" ), config, IdType.NEOSTORE_BLOCK );
+        int relGrabSize = DEFAULT_REL_GRAB_SIZE;
         if ( getConfig() != null )
         {
             String grabSize = (String) getConfig().get( "relationship_grab_size" );
             if ( grabSize != null )
             {
-                REL_GRAB_SIZE = Integer.parseInt( grabSize ); 
-            }
-            else
-            {
-                REL_GRAB_SIZE = 100;
+                relGrabSize = Integer.parseInt( grabSize ); 
             }
         }
-        else
-        {
-            REL_GRAB_SIZE = 100;
-        }
+        REL_GRAB_SIZE = relGrabSize;
         lastCommittedTxIdSetter = (LastCommittedTxIdSetter)
                 config.get( LastCommittedTxIdSetter.class );
         idGeneratorFactory = (IdGeneratorFactory) config.get( IdGeneratorFactory.class );
@@ -84,7 +80,7 @@ public class NeoStore extends AbstractStore
 //    public NeoStore( String fileName )
 //    {
 //        super( fileName );
-//        REL_GRAB_SIZE = 100;
+//        REL_GRAB_SIZE = DEFAULT_REL_GRAB_SIZE;
 //    }
 
     /**

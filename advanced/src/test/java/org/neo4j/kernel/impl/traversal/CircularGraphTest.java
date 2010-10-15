@@ -1,4 +1,29 @@
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.neo4j.kernel.impl.traversal;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import java.util.Iterator;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,7 +66,6 @@ public class CircularGraphTest extends AbstractTestBase
                 if ( last != null && last.isType( type ) )
                 {
                     Node node = position.currentNode();
-                    if ( !node.hasProperty( "timestamp" ) ) new Exception().printStackTrace();
                     long currentTime = (Long) node.getProperty( "timestamp" );
                     return currentTime >= timestamp;
                 }
@@ -59,9 +83,9 @@ public class CircularGraphTest extends AbstractTestBase
                 return false;
             }
         }, type, Direction.OUTGOING );
-        for ( Node node : t )
-        {
-            System.out.println( node );
-        }
+        Iterator<Node> nodes = t.iterator();
+        assertEquals( "2", nodes.next().getProperty( "name" ) );
+        assertEquals( "3", nodes.next().getProperty( "name" ) );
+        assertFalse( nodes.hasNext() );
     }
 }

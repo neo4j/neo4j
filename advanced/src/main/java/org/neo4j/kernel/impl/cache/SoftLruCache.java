@@ -1,29 +1,32 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.cache;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class SoftLruCache<K,V> implements Cache<K,V>
+public class SoftLruCache<K,V> extends ReferenceCache<K,V>
 {
     private final ConcurrentHashMap<K,SoftValue<K,V>> cache =
         new ConcurrentHashMap<K,SoftValue<K,V>>();
@@ -43,6 +46,20 @@ public class SoftLruCache<K,V> implements Cache<K,V>
         SoftValue<K,V> ref = 
             new SoftValue<K,V>( key, value, (ReferenceQueue<V>) refQueue ); 
         cache.put( key, ref );
+        pollClearedValues();
+    }
+    
+    public void putAll( Map<K,V> map )
+    {
+        Map<K,SoftValue<K,V>> softMap = new HashMap<K,SoftValue<K,V>>( map.size() * 2 );
+        for ( Map.Entry<K, V> entry : map.entrySet() )
+        {
+            SoftValue<K,V> ref = 
+                new SoftValue<K,V>( entry.getKey(), entry.getValue(), (ReferenceQueue<V>) refQueue );
+            softMap.put( entry.getKey(), ref );
+        }
+        cache.putAll( softMap );
+        pollClearedValues();
     }
     
     public V get( K key )
@@ -50,6 +67,10 @@ public class SoftLruCache<K,V> implements Cache<K,V>
         SoftReference<V> ref = cache.get( key );
         if ( ref != null )
         {
+            if ( ref.get() == null )
+            {
+                cache.remove( key );
+            }
             return ref.get();
         }
         return null;
@@ -65,19 +86,19 @@ public class SoftLruCache<K,V> implements Cache<K,V>
         return null;
     }
     
+    protected void pollClearedValues()
+    {
+        SoftValue<K,V> clearedValue = refQueue.safePoll();
+        while ( clearedValue != null )
+        {
+            cache.remove( clearedValue.key );
+            clearedValue = refQueue.safePoll();
+        }
+    }
     
     public int size()
     {
         return cache.size();
-    }
-    
-    public void pollAll()
-    {
-        SoftValue<?,?> cv;
-        while ( ( cv = (SoftValue<?,?>) refQueue.poll() ) != null )
-        {
-            cache.remove( cv.key );
-        }
     }
     
     public void clear()

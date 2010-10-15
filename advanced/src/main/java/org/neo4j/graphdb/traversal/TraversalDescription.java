@@ -1,3 +1,23 @@
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Direction;
@@ -6,6 +26,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
 /**
@@ -68,12 +89,16 @@ public interface TraversalDescription
     TraversalDescription prune( PruneEvaluator pruning );
 
     /**
-     * Sets the return filter to use, that is which positions are OK to return.
+     * Adds {@code filter} to the list of filters to use, i.e. a filter to
+     * decide which positions are OK to return or not.
      * Each position is represented by a {@link Path} from the start node of the
      * traversal to the current node. The current node is the
-     * {@link Path#endNode()} of the path.
+     * {@link Path#endNode()} of the path. Each {@link Path} must be accepted
+     * by all added filter for it to be returned from the traverser. For adding
+     * a filter which returns paths accepted by any filters, see
+     * {@link Traversal#returnAcceptedByAny(Predicate...)} for convenience.
      *
-     * @param filter the {@link Predicate} to use as filter.
+     * @param filter the {@link Predicate} to add to the list of filters.
      * @return a new traversal description with the new modifications.
      */
     TraversalDescription filter( Predicate<Path> filter );

@@ -1,145 +1,74 @@
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.neo4j.kernel.impl.management;
-
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
-
-import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
 @Service.Implementation( KernelExtension.class )
 public final class JmxExtension extends KernelExtension
 {
-    private static final Logger log = Logger.getLogger( JmxExtension.class.getName() );
     public JmxExtension()
     {
         super( "kernel jmx" );
     }
 
     @Override
-    protected void load( KernelData kernel )
+    protected void load( final KernelData kernel )
     {
-        kernel.setState( this, loadBeans( kernel ) );
+        final NodeManager nodeManager = kernel.getConfig().getGraphDbModule().getNodeManager();
+        kernel.setState(
+                this,
+                Neo4jMBean.initMBeans( new Neo4jMBean.Creator(
+                        kernel.instanceId(),
+                        kernel.version(),
+                        (NeoStoreXaDataSource) kernel.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                                "nioneodb" ) )
+                {
+                    @Override
+                    protected void create( Neo4jMBean.Factory jmx )
+                    {
+                        jmx.createDynamicConfigurationMBean( kernel.getConfigParams() );
+                        jmx.createPrimitiveMBean( nodeManager );
+                        jmx.createStoreFileMBean();
+                        jmx.createCacheMBean( nodeManager );
+                        jmx.createLockManagerMBean( kernel.getConfig().getLockManager() );
+                        jmx.createTransactionManagerMBean( kernel.getConfig().getTxModule() );
+                        jmx.createMemoryMappingMBean( kernel.getConfig().getTxModule().getXaDataSourceManager() );
+                        jmx.createXaManagerMBean( kernel.getConfig().getTxModule().getXaDataSourceManager() );
+                    }
+                } ) );
     }
 
     @Override
     protected void unload( KernelData kernel )
     {
-        ( (ShutdownHook) kernel.getState( this ) ).shutdown();
+        ( (Runnable) kernel.getState( this ) ).run();
     }
 
-    private ShutdownHook loadBeans( KernelData kernel )
-    {
-        MBeanServer mbs = getPlatformMBeanServer();
-        List<Neo4jMBean> beans = new ArrayList<Neo4jMBean>();
-        for ( ManagementBeanProvider provider : Service.load( ManagementBeanProvider.class ) )
-        {
-            try
-            {
-                Neo4jMBean bean = provider.loadBeen( kernel );
-                if ( bean != null )
-                {
-                    mbs.registerMBean( bean, bean.objectName );
-                    beans.add( bean );
-                }
-            }
-            catch ( Exception e )
-            {
-                log.info( "Failed to register JMX Bean " + provider );
-            }
-        }
-        try
-        {
-            Neo4jMBean bean = new KernelBean( kernel );
-            mbs.registerMBean( bean, bean.objectName );
-            beans.add( bean );
-        }
-        catch ( Exception e )
-        {
-            log.info( "Failed to register Kernel JMX Bean" );
-        }
-        return new ShutdownHook( beans.toArray( new Neo4jMBean[beans.size()] ) );
-    }
-
-    private static final class ShutdownHook
-    {
-        private final Neo4jMBean[] beans;
-
-        ShutdownHook( Neo4jMBean[] beans )
-        {
-            this.beans = beans;
-        }
-
-        void shutdown()
-        {
-            MBeanServer mbs = getPlatformMBeanServer();
-            for ( Neo4jMBean bean : beans )
-            {
-                try
-                {
-                    mbs.unregisterMBean( bean.objectName );
-                }
-                catch ( Exception e )
-                {
-                    log.warning( "Failed to unregister JMX Bean " + bean );
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    public <T> T getBean( KernelData kernel, Class<T> beanInterface )
+    public <T> T getBean( KernelData kernel, Class<T> beanClass )
     {
         if ( !isLoaded( kernel ) ) throw new IllegalStateException( "Not Loaded!" );
-        ObjectName name = getObjectName( kernel, beanInterface, null );
-        if ( name == null )
-        {
-            throw new IllegalArgumentException( beanInterface
-                                                + " is not a Neo4j Management Bean interface" );
-        }
-        return BeanProxy.load( getPlatformMBeanServer(), beanInterface, name );
-    }
-
-    static ObjectName getObjectName( KernelData kernel, Class<?> beanInterface, String beanName )
-    {
-        final String name;
-        if ( beanName != null )
-        {
-            name = beanName;
-        }
-        else if ( beanInterface == null )
-        {
-            name = "*";
-        }
-        else
-        {
-            try
-            {
-                name = (String) beanInterface.getField( "NAME" ).get( null );
-            }
-            catch ( Exception e )
-            {
-                return null;
-            }
-        }
-        StringBuilder identifier = new StringBuilder( "org.neo4j:" );
-        identifier.append( "instance=kernel#" );
-        identifier.append( kernel.instanceId() );
-        identifier.append( ",name=" );
-        identifier.append( name );
-        try
-        {
-            return new ObjectName( identifier.toString() );
-        }
-        catch ( MalformedObjectNameException e )
-        {
-            return null;
-        }
+        return Neo4jMBean.getBean( kernel.instanceId(), beanClass );
     }
 }

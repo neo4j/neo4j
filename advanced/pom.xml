@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>7</version>
+    <artifactId>parent-central</artifactId>
+    <version>2-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -27,8 +27,16 @@
 
   <scm>
     <connection>scm:svn:https://svn.neo4j.org/components/kernel/trunk/</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/kernel/trunk/</developerConnection>
     <url>https://trac.neo4j.org/browser/components/kernel</url>
   </scm>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
 
   <issueManagement>
     <system>Trac</system>
@@ -130,7 +138,6 @@
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
-          <comparisonVersion>1.0</comparisonVersion>
         </configuration>
       </plugin>
       <plugin>
@@ -139,6 +146,17 @@
           <tagBase>https://svn.neo4j.org/components/${short-name}/tags</tagBase>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -146,8 +164,17 @@
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jta_1.1_spec</artifactId>
-      <version>1.1.1</version>
     </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi_R4_core</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>osgi_R4_compendium</artifactId>
+      <optional>true</optional>
+    </dependency>    
   </dependencies>
 
   <reporting>
@@ -159,8 +186,10 @@
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
-          <version>${project.version}</version>
+          <!-- ABK: this looks wrong to me
+            version>${project.version}</version>
           <comparisonVersion>1.0</comparisonVersion>
+          -->
         </configuration>
       </plugin>
       <plugin>
@@ -173,7 +202,7 @@
           <groups>
             <group>
               <title>Graph database</title>
-              <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*
+              <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*:org.apache.*
                   </packages>
             </group>
             <group>

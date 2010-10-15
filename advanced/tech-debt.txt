@@ -11,3 +11,14 @@
 [2010-02-25] Embedd checksum to logical log
     We need to be able to do a checksum on the logical log before applying it 
     during replication/backup.
+
+[2010-09-09] Uniform configuration of components
+    There should be a uniform mechanism for non-programmatic component and 
+    extension configuration (settings for which there is no direct API).
+    
+[2010-09-10] Expose build revision in JMX kernel bean
+    Now that the revision is available in a public api, it should also
+    be included in the jmx kernel bean. This will be particularly helpful
+    for reporting problems (since build revision will be a little more
+    particular than kernel version).
+

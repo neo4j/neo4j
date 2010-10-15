@@ -1,3 +1,23 @@
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.neo4j.kernel.impl.management;
 
 import java.io.File;
@@ -7,9 +27,7 @@ import java.util.Date;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
-import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.management.Kernel;
 
 @Description( "Information about the Neo4j kernel" )
@@ -24,13 +42,13 @@ class KernelBean extends Neo4jMBean implements Kernel
     private final String storeDir;
     private final ObjectName query;
 
-    KernelBean( KernelData kernel )
+    KernelBean( String instanceId, String kernelVersion, NeoStoreXaDataSource datasource,
+            ObjectName query )
             throws NotCompliantMBeanException
     {
-        super( Kernel.class, kernel );
-        NeoStoreXaDataSource datasource = getNeoDataSource( kernel );
-        this.kernelVersion = kernel.version();
-        this.query = JmxExtension.getObjectName( kernel, null, null );
+        super( instanceId, Kernel.class );
+        this.kernelVersion = kernelVersion;
+        this.query = query;
         storeCreationDate = datasource.getCreationTime();
         storeLogVersion = datasource.getCurrentLogVersion();
         isReadOnly = datasource.isReadOnly();
@@ -48,12 +66,6 @@ class KernelBean extends Neo4jMBean implements Kernel
         this.storeDir = storeDir;
 
         kernelStartTime = new Date().getTime();
-    }
-
-    static NeoStoreXaDataSource getNeoDataSource( KernelData kernel )
-    {
-        XaDataSourceManager mgr = kernel.getConfig().getTxModule().getXaDataSourceManager();
-        return (NeoStoreXaDataSource) mgr.getXaDataSource( "nioneodb" );
     }
 
     @Description( "An ObjectName that can be used as a query for getting all management "
