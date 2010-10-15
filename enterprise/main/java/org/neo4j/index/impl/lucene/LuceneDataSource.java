@@ -184,7 +184,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             XaCommandFactory cf = new LuceneCommandFactory();
             XaTransactionFactory tf = new LuceneTransactionFactory( store );
-            xaContainer = XaContainer.create( this.baseStorePath + "/lucene.log", cf,
+            xaContainer = XaContainer.create( this, this.baseStorePath + "/lucene.log", cf,
                     tf, params );
             try
             {
@@ -344,12 +344,12 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
             recoveryWriters.clear();
         }        
-//
-//        @Override
-//        public long getLastCommittedTx()
-//        {
-//            return store.getLastCommittedTx();
-//        }
+
+        @Override
+        public long getLastCommittedTx()
+        {
+            return store.getLastCommittedTx();
+        }
     }
     
     void getReadLock()
@@ -681,20 +681,20 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return store.getVersion();
     }
     
-//    @Override
-//    public long getLastCommittedTxId()
-//    {
-//        return store.getLastCommittedTx();
-//    }
+    @Override
+    public long getLastCommittedTxId()
+    {
+        return store.getLastCommittedTx();
+    }
 
     public void setLastCommittedTxId( long txId )
     {
         store.setLastCommittedTx( txId );
     }
     
-//    @Override
-//    public XaContainer getXaContainer()
-//    {
-//        return this.xaContainer;
-//    }
+    @Override
+    public XaContainer getXaContainer()
+    {
+        return this.xaContainer;
+    }
 }
