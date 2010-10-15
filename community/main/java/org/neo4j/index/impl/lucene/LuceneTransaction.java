@@ -224,7 +224,7 @@ class LuceneTransaction extends XaTransaction
                 {
                     continue;
                 }
-                boolean isRecovery = entry.getValue().isRecovery();
+                boolean isRecovery = false; // entry.getValue().isRecovery();
                 IndexIdentifier identifier = entry.getKey();
                 IndexType type = identifier == LuceneCommand.CreateIndexCommand.FAKE_IDENTIFIER ? null :
                         dataSource.getType( identifier );
@@ -308,8 +308,7 @@ class LuceneTransaction extends XaTransaction
                 }
             }
             
-            // TODO Set last committed txId
-//            dataSource.setLastCommittedTxId( getCommitTxId() );
+            dataSource.setLastCommittedTxId( getCommitTxId() );
             closeTxData();
         }
         catch ( IOException e )
