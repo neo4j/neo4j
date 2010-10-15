@@ -8,98 +8,69 @@ import java.util.Map;
 
 import javax.management.NotCompliantMBeanException;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.SlaveContext;
 import org.neo4j.kernel.impl.management.Description;
-import org.neo4j.kernel.impl.management.ManagementBeanProvider;
 import org.neo4j.kernel.impl.management.Neo4jMBean;
 import org.neo4j.kernel.management.HighAvailability;
 import org.neo4j.kernel.management.SlaveInfo;
 import org.neo4j.kernel.management.SlaveInfo.SlaveTransaction;
 
-@Service.Implementation( ManagementBeanProvider.class )
-public final class HighAvailabilityBean extends ManagementBeanProvider
+@Description( "Information about an instance participating in a HA cluster" )
+public final class HighAvailabilityBean extends Neo4jMBean implements HighAvailability
 {
-    public HighAvailabilityBean()
+    private final HighlyAvailableGraphDatabase db;
+    
+    public HighAvailabilityBean( String instanceId, GraphDatabaseService db )
+            throws NotCompliantMBeanException
     {
-        super( HighAvailability.class );
+        super( instanceId, HighAvailability.class );
+        this.db = (HighlyAvailableGraphDatabase) db;
     }
 
-    @Override
-    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
+    @Description( "The identifier used to identify this machine in the HA cluster" )
+    public String getMachineId()
     {
-        return new HaManager( this, kernel );
+        return Integer.toString( db.getMachineId() );
     }
 
-    @Override
-    protected Neo4jMBean createMXBean( KernelData kernel )
+    @Description( "Whether this instance is master or not" )
+    public boolean isMaster()
     {
-        return new HaManager( this, kernel, true );
+        return db.getMasterServerIfMaster() != null;
     }
 
-    @Description( "Information about an instance participating in a HA cluster" )
-    private static class HaManager extends Neo4jMBean implements HighAvailability
+    @Description( "(If this is a master) Information about "
+                  + "the instances connected to this instance" )
+    public SlaveInfo[] getConnectedSlaves()
     {
-        private final HighlyAvailableGraphDatabase haDb;
-
-        HaManager( ManagementBeanProvider provider, KernelData kernel, boolean isMXBean )
+        MasterServer master = db.getMasterServerIfMaster();
+        if ( master == null ) return null;
+        List<SlaveInfo> result = new ArrayList<SlaveInfo>();
+        for ( Map.Entry<Integer, Collection<SlaveContext>> entry : master.getSlaveInformation().entrySet() )
         {
-            super( provider, kernel, isMXBean );
-            this.haDb = (HighlyAvailableGraphDatabase) kernel.graphDatabase();
+            result.add( slaveInfo( entry.getKey(), entry.getValue() ) );
         }
+        return result.toArray( new SlaveInfo[result.size()] );
+    }
 
-        HaManager( ManagementBeanProvider provider, KernelData kernel )
-                throws NotCompliantMBeanException
+    @Description( "(If this is a slave) Update the database on this "
+                  + "instance with the latest transactions from the master" )
+    public String update()
+    {
+        long time = System.currentTimeMillis();
+        try
         {
-            super( provider, kernel );
-            this.haDb = (HighlyAvailableGraphDatabase) kernel.graphDatabase();
+            db.pullUpdates();
         }
-
-        @Description( "The identifier used to identify this machine in the HA cluster" )
-        public String getMachineId()
+        catch ( Exception e )
         {
-            return Integer.toString( haDb.getMachineId() );
+            return "Update failed: " + e;
         }
-
-        @Description( "Whether this instance is master or not" )
-        public boolean isMaster()
-        {
-            return haDb.getMasterServerIfMaster() != null;
-        }
-
-        @Description( "(If this is a master) Information about "
-                      + "the instances connected to this instance" )
-        public SlaveInfo[] getConnectedSlaves()
-        {
-            MasterServer master = haDb.getMasterServerIfMaster();
-            if ( master == null ) return null;
-            List<SlaveInfo> result = new ArrayList<SlaveInfo>();
-            for ( Map.Entry<Integer, Collection<SlaveContext>> entry : master.getSlaveInformation().entrySet() )
-            {
-                result.add( slaveInfo( entry.getKey(), entry.getValue() ) );
-            }
-            return result.toArray( new SlaveInfo[result.size()] );
-        }
-
-        @Description( "(If this is a slave) Update the database on this "
-                      + "instance with the latest transactions from the master" )
-        public String update()
-        {
-            long time = System.currentTimeMillis();
-            try
-            {
-                haDb.pullUpdates();
-            }
-            catch ( Exception e )
-            {
-                return "Update failed: " + e;
-            }
-            time = System.currentTimeMillis() - time;
-            return "Update completed in " + time + "ms";
-        }
+        time = System.currentTimeMillis() - time;
+        return "Update completed in " + time + "ms";
     }
 
     private static SlaveInfo slaveInfo( Integer machineId, Collection<SlaveContext> contexts )
