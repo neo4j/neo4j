@@ -6,7 +6,7 @@
     <version>1</version>
   </parent>
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-lucene-index</artifactId>
+  <artifactId>neo4j-lucene-index-ha</artifactId>
   <version>0.2-SNAPSHOT</version>
   <name>Neo4j - Lucene Index</name>
   <description>
@@ -29,7 +29,7 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
+      <artifactId>neo4j-kernel-ha</artifactId>
       <version>1.2-SNAPSHOT</version>
     </dependency>
     <dependency>
