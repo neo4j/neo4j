@@ -1,22 +1,23 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
@@ -775,7 +776,7 @@ public class LockReleaser
                 for ( PropertyData data : relElement.propertyAddMap.values() )
                 {
                     String key = nodeManager.getKeyForProperty( data.getId() );
-                    Object oldValue = relImpl.getCommittedPropertyValue( key );
+                    Object oldValue = relImpl.getCommittedPropertyValue( nodeManager, key );
                     Object newValue = data.getValue();
                     result.assignedProperty( rel, key, newValue, oldValue );
                 }
@@ -788,7 +789,7 @@ public class LockReleaser
                     Object oldValue = data.getValue();
                     if ( oldValue != null && !relElement.deleted ) 
                     {
-                        relImpl.getCommittedPropertyValue( key );
+                        relImpl.getCommittedPropertyValue( nodeManager, key );
                     }
                     result.removedProperty( rel, key, oldValue );
                 }
@@ -861,7 +862,7 @@ public class LockReleaser
                 for ( PropertyData data : nodeElement.propertyAddMap.values() )
                 {
                     String key = nodeManager.getKeyForProperty( data.getId() );
-                    Object oldValue = nodeImpl.getCommittedPropertyValue( key );
+                    Object oldValue = nodeImpl.getCommittedPropertyValue( nodeManager, key );
                     Object newValue = data.getValue();
                     result.assignedProperty( node, key, newValue, oldValue );
                 }
@@ -874,7 +875,7 @@ public class LockReleaser
                     Object oldValue = data.getValue();
                     if ( oldValue == null && !nodeElement.deleted ) 
                     {
-                        nodeImpl.getCommittedPropertyValue( key );
+                        nodeImpl.getCommittedPropertyValue( nodeManager, key );
                     }
                     result.removedProperty( node, key, oldValue );
                 }
@@ -899,5 +900,26 @@ public class LockReleaser
             }
             result.created( new NodeProxy( nodeId, nodeManager ) );
         }
+    }
+
+    boolean hasRelationshipModifications( NodeImpl node )
+    {
+        Transaction tx = getTransaction();
+        if ( tx == null )
+        {
+            return false;
+        }
+        PrimitiveElement primitiveElement = cowMap.get( tx );
+        if ( primitiveElement != null )
+        {
+            ArrayMap<Integer,CowNodeElement> cowElements = 
+                primitiveElement.nodes;
+            CowNodeElement element = cowElements.get( node.id );
+            if ( element != null && (element.relationshipAddMap != null || element.relationshipRemoveMap != null) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

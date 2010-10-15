@@ -1,6 +1,6 @@
-/*
+/**
  * Copyright (c) 2002-2010 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
  *
@@ -17,14 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel;
-
-import java.io.File;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
@@ -35,6 +29,14 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import javax.transaction.TransactionManager;
+import java.io.File;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeSet;
 
 class GraphDbInstance
 {
@@ -70,6 +72,7 @@ class GraphDbInstance
      */
     public synchronized Map<Object, Object> start( GraphDatabaseService graphDb )
     {
+
         if ( started )
         {
             throw new IllegalStateException( "Neo4j instance already started" );
@@ -77,11 +80,12 @@ class GraphDbInstance
         Map<Object, Object> params = config.getParams();
         boolean useMemoryMapped = Boolean.parseBoolean( (String) config.getInputParams().get(
                 Config.USE_MEMORY_MAPPED_BUFFERS ) );
-        boolean dump = Boolean.parseBoolean( (String) config.getInputParams().get(
+        boolean dumpToConsole = Boolean.parseBoolean( (String) config.getInputParams().get(
                 Config.DUMP_CONFIGURATION ) );
         storeDir = FileUtils.fixSeparatorsInPath( storeDir );
-        new AutoConfigurator( storeDir, useMemoryMapped, dump ).configure( subset(
-                config.getInputParams(), Config.USE_MEMORY_MAPPED_BUFFERS ) );
+        StringLogger logger = StringLogger.getLogger( storeDir + "/messages.log" );
+        AutoConfigurator autoConfigurator = new AutoConfigurator( storeDir, useMemoryMapped, dumpToConsole );
+        autoConfigurator.configure( subset( config.getInputParams(), Config.USE_MEMORY_MAPPED_BUFFERS ) );
         params.putAll( config.getInputParams() );
 
         String separator = System.getProperty( "file.separator" );
@@ -111,6 +115,9 @@ class GraphDbInstance
             catch ( ClassNotFoundException e )
             { // ok index util not on class path
             }
+            catch ( NoClassDefFoundError err )
+            { // ok index util not on class path
+            }
 
             try
             {
@@ -125,6 +132,9 @@ class GraphDbInstance
             catch ( ClassNotFoundException e )
             { // ok index util not on class path
             }
+            catch ( NoClassDefFoundError err )
+            { // ok index util not on class path
+            }
 
             try
             {
@@ -133,6 +143,9 @@ class GraphDbInstance
                         "162374".getBytes(), config.getParams() );
             }
             catch ( ClassNotFoundException e )
+            { // ok new lucene index not on classpath
+            }
+            catch ( NoClassDefFoundError err )
             { // ok new lucene index not on classpath
             }
         }
@@ -154,9 +167,17 @@ class GraphDbInstance
         config.getGraphDbModule().start( config.getLockReleaser(),
                 config.getPersistenceModule().getPersistenceManager(),
                 config.getRelationshipTypeCreator(), params );
-        if ( dump )
+
+        logger.logMessage( "--- CONFIGURATION START ---" );
+        logger.logMessage( autoConfigurator.getNiceMemoryInformation() );
+        logger.logMessage( "Kernel version: " + Version.get() );
+        logger.logMessage( "" );
+        logConfiguration( params, logger, dumpToConsole );
+        logger.logMessage( "--- CONFIGURATION END ---" );
+
+        if ( config.getTxModule().getXaDataSourceManager().hasDataSource( "lucene-index" ) )
         {
-            Config.dumpConfiguration( params );
+            config.getTxModule().getXaDataSourceManager().unregisterDataSource( "lucene-index" );
         }
 
         started = true;
@@ -174,6 +195,30 @@ class GraphDbInstance
             }
         }
         return result;
+    }
+
+    private void logConfiguration( Map<Object, Object> params, StringLogger logger, boolean dumpToConsole )
+    {
+        TreeSet<String> stringKeys = new TreeSet<String>();
+        for( Object key : params.keySet())
+        {
+            if (key instanceof String)
+            {
+                stringKeys.add((String)key);
+            }
+        }
+
+        for( String key : stringKeys )
+        {
+            Object value = params.get( key );
+            String mess = key + "=" + value;
+            if ( dumpToConsole )
+            {
+                System.out.println( mess );
+            }
+
+            logger.logMessage( mess );
+        }
     }
 
     private void cleanWriteLocksInLuceneDirectory( String luceneDir )

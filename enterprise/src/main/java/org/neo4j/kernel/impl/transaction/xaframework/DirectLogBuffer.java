@@ -1,22 +1,23 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
@@ -46,29 +47,44 @@ class DirectLogBuffer implements LogBuffer
     {
         buffer.clear();
         buffer.put( b );
-        buffer.flip();
-        fileChannel.write( buffer );
-        return this;
+        return flipAndWrite();
     }
 
     public LogBuffer putInt( int i ) throws IOException
     {
         buffer.clear();
         buffer.putInt( i );
-        buffer.flip();
-        fileChannel.write( buffer );
-        return this;
+        return flipAndWrite();
     }
 
     public LogBuffer putLong( long l ) throws IOException
     {
         buffer.clear();
         buffer.putLong( l );
+        return flipAndWrite();
+    }
+
+    public LogBuffer putFloat( float f ) throws IOException
+    {
+        buffer.clear();
+        buffer.putFloat( f );
+        return flipAndWrite();
+    }
+    
+    public LogBuffer putDouble( double d ) throws IOException
+    {
+        buffer.clear();
+        buffer.putDouble( d );
+        return flipAndWrite();
+    }
+    
+    private LogBuffer flipAndWrite() throws IOException
+    {
         buffer.flip();
         fileChannel.write( buffer );
         return this;
     }
-
+    
     public LogBuffer put( byte[] bytes ) throws IOException
     {
         fileChannel.write( ByteBuffer.wrap( bytes ) );

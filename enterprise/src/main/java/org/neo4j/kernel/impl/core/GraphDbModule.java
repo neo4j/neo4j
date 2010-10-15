@@ -1,24 +1,26 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.core;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -34,7 +36,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
+import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
@@ -43,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 
 public class GraphDbModule
 {
+    private static final CacheType DEFAULT_CACHE_TYPE = CacheType.weak;
     private static Logger log = Logger.getLogger( GraphDbModule.class.getName() );
 
     private boolean startIsOk = true;
@@ -84,24 +89,31 @@ public class GraphDbModule
         {
             return;
         }
-        boolean useNewCache = true;
-        if ( params.containsKey( "use_old_cache" ) && 
-            params.get( "use_old_cache" ).equals( "true" ) )
+        
+        String cacheTypeName = (String) params.get( Config.CACHE_TYPE );
+        CacheType cacheType = null;
+        try
         {
-            useNewCache = false;
+            cacheType = cacheTypeName != null ? CacheType.valueOf( cacheTypeName ) : DEFAULT_CACHE_TYPE;
         }
+        catch ( IllegalArgumentException e )
+        {
+            throw new IllegalArgumentException( "Invalid cache type, please use one of: " +
+                    Arrays.asList( CacheType.values() ) + " or keep empty for default (" +
+                    DEFAULT_CACHE_TYPE + ")", e.getCause() );
+        }
+        
         if ( !readOnly )
         {
             nodeManager = new NodeManager( graphDbService, cacheManager,
                     lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, relTypeCreator, useNewCache );
+                    persistenceManager, idGenerator, relTypeCreator, cacheType );
         }
         else
         {
             nodeManager = new ReadOnlyNodeManager( graphDbService,
                     cacheManager, lockManager, lockReleaser,
-                    transactionManager, persistenceManager, idGenerator,
-                    useNewCache );
+                    transactionManager, persistenceManager, idGenerator, cacheType );
         }
         // load and verify from PS
         RelationshipTypeData relTypes[] = null;

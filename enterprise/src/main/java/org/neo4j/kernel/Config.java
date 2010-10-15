@@ -1,6 +1,6 @@
-/*
+/**
  * Copyright (c) 2002-2010 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
  *
@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel;
 
 import java.util.HashMap;
@@ -88,6 +89,8 @@ public class Config
     public static final String LOGICAL_LOG = "logical_log";
     @Description( "Relative path for where the Neo4j storage information file is located" )
     public static final String NEO_STORE = "neo_store";
+    @Description( "The type of cache to use for nodes and relationships, one of [weak, soft, none]" )
+    public static final String CACHE_TYPE = "cache_type";
 
     private AdaptiveCacheManager cacheManager;
     private TxModule txModule;
@@ -104,8 +107,6 @@ public class Config
     private final TxEventSyncHookFactory syncHookFactory;
     private final RelationshipTypeCreator relTypeCreator;
 
-    private final KernelPanicEventGenerator kpe;
-
     private final boolean readOnly;
     private final boolean backupSlave;
     private final IdGeneratorFactory idGeneratorFactory;
@@ -119,7 +120,6 @@ public class Config
             RelationshipTypeCreator relTypeCreator, TxIdGenerator txIdGenerator,
             LastCommittedTxIdSetter lastCommittedTxIdSetter )
     {
-        this.kpe = kpe;
         this.storeDir = storeDir;
         this.inputParams = inputParams;
         this.idGeneratorFactory = idGeneratorFactory;

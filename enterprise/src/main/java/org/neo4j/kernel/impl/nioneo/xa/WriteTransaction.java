@@ -1,22 +1,23 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.Serializable;
@@ -600,6 +601,7 @@ class WriteTransaction extends XaTransaction
         RelationshipRecord relRecord = getRelationshipRecord( id );
         if ( relRecord != null )
         {
+            // if deleted in this tx still return it
 //            if ( !relRecord.inUse() )
 //            {
 //                return null;
@@ -859,15 +861,12 @@ class WriteTransaction extends XaTransaction
     public RelationshipChainPosition getRelationshipChainPosition( int nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
-        if ( nodeRecord == null )
+        if ( nodeRecord != null && nodeRecord.isCreated() )
         {
-            nodeRecord = getNodeStore().getRecord( nodeId );
+            return new RelationshipChainPosition( 
+                  Record.NO_NEXT_RELATIONSHIP.intValue() );
         }
-//        else if ( !nodeRecord.inUse() )
-//        {
-//            return new RelationshipChainPosition( 
-//                Record.NO_NEXT_RELATIONSHIP.intValue() );
-//        }
+        nodeRecord = getNodeStore().getRecord( nodeId );
         int nextRel = nodeRecord.getNextRel();
         return new RelationshipChainPosition( nextRel );
     }
@@ -880,11 +879,7 @@ class WriteTransaction extends XaTransaction
         for ( int i = 0; i < getRelGrabSize() && 
             nextRel != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
         {
-            RelationshipRecord relRecord = getRelationshipRecord( nextRel );
-            if ( relRecord == null )
-            {
-                relRecord = getRelationshipStore().getChainRecord( nextRel );
-            }
+            RelationshipRecord relRecord = getRelationshipStore().getChainRecord( nextRel );
             if ( relRecord == null )
             {
                 // return what we got so far
@@ -893,7 +888,7 @@ class WriteTransaction extends XaTransaction
             }
             int firstNode = relRecord.getFirstNode();
             int secondNode = relRecord.getSecondNode();
-            if ( relRecord.inUse() && !relRecord.isCreated() )
+            if ( relRecord.inUse() ) // && !relRecord.isCreated() )
             {
                 rels.add( new RelationshipData( relRecord.getId(), firstNode, 
                     secondNode, relRecord.getType() ) );
@@ -1018,7 +1013,13 @@ class WriteTransaction extends XaTransaction
     public ArrayMap<Integer,PropertyData> relGetProperties( int relId, 
             boolean light )
     {
+        ArrayMap<Integer,PropertyData> propertyMap = 
+            new ArrayMap<Integer,PropertyData>( 9, false, true );
         RelationshipRecord relRecord = getRelationshipRecord( relId );
+        if ( relRecord != null && relRecord.isCreated() )
+        {
+            return propertyMap;
+        }
         if ( relRecord != null )
         {
             if ( !relRecord.inUse() && !light )
@@ -1027,31 +1028,19 @@ class WriteTransaction extends XaTransaction
                         "] has been deleted in this tx" );
             }
         }
-        else
-        {
-            relRecord = getRelationshipStore().getRecord( relId );
-        }
+        relRecord = getRelationshipStore().getRecord( relId );
         if ( !relRecord.inUse() )
         {
             throw new InvalidRecordException( "Relationship[" + relId + 
                 "] not in use" );
         }
         int nextProp = relRecord.getNextProp();
-        ArrayMap<Integer,PropertyData> propertyMap = 
-            new ArrayMap<Integer,PropertyData>( 9, false, true );
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = getPropertyRecord( nextProp );
-            if ( propRecord == null )
-            {
-                propRecord = getPropertyStore().getLightRecord( nextProp );
-            }
-            if ( !propRecord.isCreated() )
-            {
-                propertyMap.put( propRecord.getKeyIndexId(), 
-                    new PropertyData( propRecord.getId(),                      
-                        propertyGetValueOrNull( propRecord ) ) );
-            }
+            PropertyRecord propRecord = getPropertyStore().getLightRecord( nextProp );
+            propertyMap.put( propRecord.getKeyIndexId(), 
+                new PropertyData( propRecord.getId(),                      
+                    propertyGetValueOrNull( propRecord ) ) );
             nextProp = propRecord.getNextProp();
         }
         return propertyMap;
@@ -1059,7 +1048,13 @@ class WriteTransaction extends XaTransaction
 
     ArrayMap<Integer,PropertyData> nodeGetProperties( int nodeId, boolean light )
     {
+        ArrayMap<Integer,PropertyData> propertyMap = 
+            new ArrayMap<Integer,PropertyData>( 9, false, true );
         NodeRecord nodeRecord = getNodeRecord( nodeId );
+        if ( nodeRecord != null && nodeRecord.isCreated() )
+        {
+            return propertyMap;
+        }
         if ( nodeRecord != null )
         {
             if ( !nodeRecord.inUse() && !light )
@@ -1068,10 +1063,7 @@ class WriteTransaction extends XaTransaction
                         "] has been deleted in this tx" );
             }
         }
-        else
-        {
-            nodeRecord = getNodeStore().getRecord( nodeId );
-        }
+        nodeRecord = getNodeStore().getRecord( nodeId );
         if ( !nodeRecord.inUse() )
         {
             throw new InvalidRecordException( "Node[" + nodeId + 
@@ -1079,21 +1071,12 @@ class WriteTransaction extends XaTransaction
         }
             
         int nextProp = nodeRecord.getNextProp();
-        ArrayMap<Integer,PropertyData> propertyMap = 
-            new ArrayMap<Integer,PropertyData>( 9, false, true );
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = getPropertyRecord( nextProp );
-            if ( propRecord == null )
-            {
-                propRecord = getPropertyStore().getLightRecord( nextProp );
-            }
-            if ( !propRecord.isCreated() )
-            {
-                propertyMap.put( propRecord.getKeyIndexId(), 
-                    new PropertyData( propRecord.getId(), 
-                        propertyGetValueOrNull( propRecord ) ) );
-            }
+            PropertyRecord propRecord = getPropertyStore().getLightRecord( nextProp );
+            propertyMap.put( propRecord.getKeyIndexId(), 
+                new PropertyData( propRecord.getId(), 
+                    propertyGetValueOrNull( propRecord ) ) );
             nextProp = propRecord.getNextProp();
         }
         return propertyMap;
@@ -1162,11 +1145,7 @@ class WriteTransaction extends XaTransaction
 
     public Object propertyGetValue( int id )
     {
-        PropertyRecord propertyRecord = getPropertyRecord( id );
-        if ( propertyRecord == null )
-        {
-            propertyRecord = getPropertyStore().getRecord( id );
-        }
+        PropertyRecord propertyRecord = getPropertyStore().getRecord( id );
         if ( propertyRecord.isLight() )
         {
             getPropertyStore().makeHeavy( propertyRecord );

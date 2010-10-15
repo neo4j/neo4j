@@ -1,22 +1,23 @@
-/*
- * Copyright (c) 2002-2009 "Neo Technology,"
- *     Network Engine for Objects in Lund AB [http://neotechnology.com]
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
- * 
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.core;
 
 import java.util.HashSet;
@@ -35,8 +36,8 @@ class RelTypeElement extends RelTypeElementIterator
     private boolean addTraversed = false;
     private int position = 0;
     private Integer nextElement = null;
-    
-    static RelTypeElementIterator create( String type, NodeImpl node, 
+
+    static RelTypeElementIterator create( String type, NodeImpl node,
         IntArray src, IntArray add, IntArray remove )
     {
         if ( add == null && remove == null )
@@ -45,14 +46,15 @@ class RelTypeElement extends RelTypeElementIterator
         }
         return new RelTypeElement( type, node, src, add, remove );
     }
-    
-    private RelTypeElement( String type, NodeImpl node, IntArray src, 
+
+    private RelTypeElement( String type, NodeImpl node, IntArray src,
         IntArray add, IntArray remove )
     {
         super( type, node );
         this.src = src;
         if ( src == null )
         {
+            src = IntArray.EMPTY;
             srcTraversed = true;
         }
         if ( add == null )
@@ -69,7 +71,7 @@ class RelTypeElement extends RelTypeElementIterator
         }
     }
 
-    public boolean hasNext()
+    public boolean hasNext( NodeManager nodeManager )
     {
         if ( nextElement != null )
         {
@@ -93,8 +95,8 @@ class RelTypeElement extends RelTypeElementIterator
         {
             if ( position >= src.length() )
             {
-                while ( getNode().getMoreRelationships() && 
-                    position >= src.length() );
+//                while ( getNode().getMoreRelationships( nodeManager ) &&
+//                    position >= src.length() );
                 if ( position >= src.length() )
                 {
                     srcTraversed = true;
@@ -112,9 +114,9 @@ class RelTypeElement extends RelTypeElementIterator
         return false;
     }
 
-    public Integer next()
+    public int next( NodeManager nodeManager )
     {
-        hasNext();
+        hasNext( nodeManager );
         if ( nextElement != null )
         {
             Integer elementToReturn = nextElement;
@@ -127,5 +129,16 @@ class RelTypeElement extends RelTypeElementIterator
     public void remove()
     {
         throw new UnsupportedOperationException();
+    }
+    
+    public boolean isSrcEmpty()
+    {
+        return src.length() == 0;
+    }
+    
+    @Override
+    public RelTypeElementIterator setSrc( IntArray newSrc )
+    {
+        return new FastRelTypeElement( getType(), getNode(), newSrc, position );
     }
 }

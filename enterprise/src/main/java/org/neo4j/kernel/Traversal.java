@@ -1,3 +1,23 @@
+/**
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.neo4j.kernel;
 
 import java.util.Iterator;
@@ -253,6 +273,31 @@ public class Traversal
     }
 
     /**
+     * Returns a filter which accepts items accepted by at least one of the
+     * supplied filters.
+     *
+     * @param filters
+     * @return
+     */
+    public static Predicate<Path> returnAcceptedByAny( final Predicate<Path>... filters )
+    {
+        return new Predicate<Path>()
+        {
+            public boolean accept( Path item )
+            {
+                for ( Predicate<Path> filter : filters )
+                {
+                    if ( filter.accept( item ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+    }
+
+    /**
      * A traversal return filter which returns all {@link Path}s except the
      * position of the start node.
      *
@@ -267,7 +312,7 @@ public class Traversal
      * Returns a "preorder depth first" ordering policy. A depth first selector
      * always tries to select positions (from the current position) which are
      * deeper than the current position.
-     * 
+     *
      * @return a {@link BranchOrderingPolicy} for a preorder depth first
      *         selector.
      */
@@ -281,7 +326,7 @@ public class Traversal
      * always tries to select positions (from the current position) which are
      * deeper than the current position. A postorder depth first selector
      * selects deeper position before the shallower ones.
-     * 
+     *
      * @return a {@link BranchOrderingPolicy} for a postorder depth first
      *         selector.
      */
@@ -294,7 +339,7 @@ public class Traversal
      * Returns a "preorder breadth first" ordering policy. A breadth first
      * selector always selects all positions on the current depth before
      * advancing to the next depth.
-     * 
+     *
      * @return a {@link BranchOrderingPolicy} for a preorder breadth first
      *         selector.
      */
@@ -308,7 +353,7 @@ public class Traversal
      * selector always selects all positions on the current depth before
      * advancing to the next depth. A postorder breadth first selector selects
      * the levels in the reversed order, starting with the deepest.
-     * 
+     *
      * @return a {@link BranchOrderingPolicy} for a postorder breadth first
      *         selector.
      */
@@ -369,7 +414,7 @@ public class Traversal
             {
                 suffix = "-->";
             }
-            return prefix + "<" + relationship.getType().name() + "," +
+            return prefix + "[" + relationship.getType().name() + "," +
                     relationship.getId() + "]" + suffix;
         }
     }
@@ -453,5 +498,37 @@ public class Traversal
                 return relationship.getStartNode().equals( from ) ? "-->" : "<--";
             }
         } );
+    }
+
+    public static Predicate<Path> returnWhereLastRelationshipTypeIs(
+            final RelationshipType firstRelationshipType,
+            final RelationshipType... relationshipTypes )
+    {
+        return new Predicate<Path>()
+        {
+            public boolean accept( Path p )
+            {
+                Relationship lastRel = p.lastRelationship();
+                if ( lastRel == null )
+                {
+                    return false;
+                }
+
+                if ( lastRel.isType( firstRelationshipType ) )
+                {
+                    return true;
+                }
+
+                for ( RelationshipType currentType : relationshipTypes )
+                {
+                    if ( lastRel.isType( currentType ) )
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        };
     }
 }
