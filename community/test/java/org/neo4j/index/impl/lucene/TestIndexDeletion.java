@@ -33,11 +33,14 @@ import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 import java.io.File;
-import java.util.concurrent.CountDownLatch;
+import java.util.ArrayList;
+import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.index.Neo4jTestCase.assertCollection;
+import static org.neo4j.index.impl.lucene.Contains.contains;
+import static org.neo4j.index.impl.lucene.HasThrownException.hasThrownException;
 
 
 public class TestIndexDeletion
@@ -50,6 +53,7 @@ public class TestIndexDeletion
     private String key;
     private Node node;
     private String value;
+    private List<WorkThread> workers;
 
     @BeforeClass
     public static void setUpStuff()
@@ -70,6 +74,11 @@ public class TestIndexDeletion
     public void commitTx()
     {
         finishTx( true );
+        for ( WorkThread worker : workers )
+        {
+            worker.rollback();
+            worker.die();
+        }
     }
 
     public void rollbackTx()
@@ -95,10 +104,16 @@ public class TestIndexDeletion
     {
         beginTx();
         index = provider.nodeIndex( INDEX_NAME, LuceneIndexProvider.EXACT_CONFIG );
+        index.delete();
+        restartTx();
+
+        index = provider.nodeIndex( INDEX_NAME, LuceneIndexProvider.EXACT_CONFIG );
         key = "key";
+
         value = "my own value";
         node = graphDb.createNode();
         index.add( node, key, value );
+        workers = new ArrayList<WorkThread>();
     }
 
     public void beginTx()
@@ -179,137 +194,54 @@ public class TestIndexDeletion
     public void deleteInOneTxShouldNotAffectTheOther() throws InterruptedException
     {
         index.delete();
-        OtherTransaction other = new OtherTransaction();
-        other.go();
+
+        WorkThread firstTx = createWorker();
+        firstTx.createNodeAndIndexBy( key, "another value" );
+        firstTx.commit();
     }
 
     @Test
-    public void deleteAndCommitShouldBePublishedToOtherTransaction() throws InterruptedException
+    public void deleteAndCommitShouldBePublishedToOtherTransaction2() throws InterruptedException
+    {
+        WorkThread firstTx = createWorker();
+        WorkThread secondTx = createWorker();
+
+        firstTx.beginTransaction();
+        secondTx.beginTransaction();
+
+        firstTx.createNodeAndIndexBy( key, "some value" );
+        secondTx.createNodeAndIndexBy( key, "some other value" );
+
+        firstTx.deleteIndex();
+        firstTx.commit();
+
+        secondTx.queryIndex( key, "some other value" );
+
+        assertThat( secondTx, hasThrownException() );
+
+        secondTx.rollback();
+    }
+
+    @Test
+    public void indexDeletesShouldNotByVisibleUntilCommit()
     {
         commitTx();
-        FirstTransaction firstTx = new FirstTransaction();
-        SecondTransaction secondTx = new SecondTransaction();
 
-        firstTx.doFirstStep();
-        secondTx.doFirstStep();
+        WorkThread firstTx = createWorker();
+        WorkThread secondTx = createWorker();
 
-        firstTx.doSecondStep();
-        secondTx.doSecondStep();
+        firstTx.beginTransaction();
+        firstTx.removeFromIndex( key, value );
 
-        assertNotNull( secondTx.exception );
+        assertThat( secondTx.queryIndex( key, value ), contains( node ) );
+
+        firstTx.rollback();
     }
 
-    private class OtherTransaction extends Thread
+    private WorkThread createWorker()
     {
-        public void go() throws InterruptedException
-        {
-            start();
-            join();
-        }
-
-        @Override
-        public void run()
-        {
-            Transaction tx = graphDb.beginTx();
-            try
-            {
-                Node node = graphDb.createNode();
-                index.add( node, key, "another value" );
-                tx.success();
-            }
-            finally
-            {
-                tx.finish();
-            }
-        }
-    }
-
-    private abstract class TxThread extends Thread
-    {
-        private final CountDownLatch latch = new CountDownLatch( 1 );
-
-        private void waitFor( Thread tx ) throws InterruptedException
-        {
-            while ( tx.getState() != State.WAITING )
-            {
-                Thread.sleep( 10 );
-            }
-        }
-
-        public void doFirstStep() throws InterruptedException
-        {
-            start();
-            waitFor( this );
-        }
-
-        public void doSecondStep() throws InterruptedException
-        {
-            this.latch.countDown();
-            join();
-        }
-
-        @Override
-        public void run()
-        {
-            Transaction tx = graphDb.beginTx();
-            try
-            {
-                doFirst();
-                latch.await();
-                doSecond();
-                tx.success();
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
-            finally
-            {
-                tx.finish();
-            }
-        }
-
-        protected abstract void doSecond();
-
-        protected abstract void doFirst();
-    }
-
-    private class FirstTransaction extends TxThread
-    {
-        @Override
-        protected void doFirst()
-        {
-            index.add( graphDb.createNode(), key, "another value" );
-        }
-
-        @Override
-        protected void doSecond()
-        {
-            index.delete();
-        }
-    }
-
-    private class SecondTransaction extends TxThread
-    {
-        private IllegalStateException exception;
-
-        @Override
-        protected void doFirst()
-        {
-            index.add( graphDb.createNode(), key, "my own value" );
-        }
-
-        @Override
-        protected void doSecond()
-        {
-            try
-            {
-                index.get( key, "something" );
-            }
-            catch ( IllegalStateException e )
-            {
-                this.exception = e;
-            }
-        }
+        WorkThread workThread = new WorkThread( index, graphDb );
+        workers.add( workThread );
+        return workThread;
     }
 }
