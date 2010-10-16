@@ -107,6 +107,27 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
         assertCentrality( betweennessCentrality, "d", 3.0 );
         assertCentrality( betweennessCentrality, "e", 0.0 );
     }
+    
+
+    @Test
+    public void testXlike()
+    {
+        graph.makeEdgeChain( "a,c,a");
+        graph.makeEdgeChain( "b,c,b");
+        graph.makeEdgeChain( "b,d,b");
+        graph.makeEdgeChain( "c,d,c");
+        graph.makeEdgeChain( "d,e,d");
+        graph.makeEdgeChain( "d,f,d");
+        BetweennessCentrality<Double> betweennessCentrality = new BetweennessCentrality<Double>(
+            getSingleSourceShortestPath(), graph.getAllNodes() );
+        betweennessCentrality.calculate();
+        assertCentrality( betweennessCentrality, "a", 0.0 );
+        assertCentrality( betweennessCentrality, "b", 0.0 );
+        assertCentrality( betweennessCentrality, "c", 4.0 );
+        assertCentrality( betweennessCentrality, "d", 7.0 );
+        assertCentrality( betweennessCentrality, "e", 0.0 );
+        assertCentrality( betweennessCentrality, "f", 0.0 );
+    }
 
     @Test
     public void testDependencyUpdating()
