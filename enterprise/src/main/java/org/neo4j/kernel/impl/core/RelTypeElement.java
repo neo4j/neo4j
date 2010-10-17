@@ -54,6 +54,7 @@ class RelTypeElement extends RelTypeElementIterator
         this.src = src;
         if ( src == null )
         {
+            src = IntArray.EMPTY;
             srcTraversed = true;
         }
         if ( add == null )
@@ -94,8 +95,8 @@ class RelTypeElement extends RelTypeElementIterator
         {
             if ( position >= src.length() )
             {
-                while ( getNode().getMoreRelationships( nodeManager ) &&
-                    position >= src.length() );
+//                while ( getNode().getMoreRelationships( nodeManager ) &&
+//                    position >= src.length() );
                 if ( position >= src.length() )
                 {
                     srcTraversed = true;
@@ -128,5 +129,16 @@ class RelTypeElement extends RelTypeElementIterator
     public void remove()
     {
         throw new UnsupportedOperationException();
+    }
+    
+    public boolean isSrcEmpty()
+    {
+        return src.length() == 0;
+    }
+    
+    @Override
+    public RelTypeElementIterator setSrc( IntArray newSrc )
+    {
+        return new FastRelTypeElement( getType(), getNode(), newSrc, position );
     }
 }

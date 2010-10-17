@@ -32,10 +32,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestDynamicStore
 {
+    public static IdGeneratorFactory ID_GENERATOR_FACTORY =
+            CommonFactories.defaultIdGeneratorFactory();
+    
     private String path()
     {
         String path = AbstractNeo4jTestCase.getStorePath( "dynamicstore" );
@@ -65,7 +72,7 @@ public class TestDynamicStore
         {
             try
             {
-                ByteStore.createStore( null, 1 );
+                ByteStore.createStore( null, 1, path() );
                 fail( "Null fileName should throw exception" );
             }
             catch ( IllegalArgumentException e )
@@ -73,16 +80,16 @@ public class TestDynamicStore
             }
             try
             {
-                ByteStore.createStore( dynamicStoreFile(), 0 );
+                ByteStore.createStore( dynamicStoreFile(), 0, path() );
                 fail( "Illegal blocksize should throw exception" );
             }
             catch ( IllegalArgumentException e )
             { // good
             }
-            ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30 );
+            ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30, path() );
             try
             {
-                ByteStore.createStore( dynamicStoreFile(), 15 );
+                ByteStore.createStore( dynamicStoreFile(), 15, path() );
                 fail( "Creating existing store should throw exception" );
             }
             catch ( IllegalStateException e )
@@ -118,12 +125,13 @@ public class TestDynamicStore
         try
         {
             log.setLevel( Level.OFF );
-            ByteStore.createStore( dynamicStoreFile(), 30 ).close();
+            ByteStore.createStore( dynamicStoreFile(), 30, path() ).close();
             java.nio.channels.FileChannel fileChannel = new java.io.RandomAccessFile(
                 dynamicStoreFile(), "rw" ).getChannel();
             fileChannel.truncate( fileChannel.size() - 2 );
             fileChannel.close();
-            ByteStore store = new ByteStore( dynamicStoreFile() );
+            ByteStore store = new ByteStore( dynamicStoreFile(),
+                    ID_GENERATOR_FACTORY, path() );
             store.makeStoreOk();
             store.close();
         }
@@ -139,7 +147,7 @@ public class TestDynamicStore
     {
         try
         {
-            ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30 );
+            ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30, path() );
             int blockId = store.nextBlockId();
             Collection<DynamicRecord> records = store.allocateRecords( blockId,
                 new byte[10] );
@@ -182,7 +190,7 @@ public class TestDynamicStore
         try
         {
             final String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30 );
+            ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30, path() );
             int blockId = store.nextBlockId();
             char[] chars = new char[STR.length()];
             STR.getChars( 0, STR.length(), chars, 0 );
@@ -205,7 +213,7 @@ public class TestDynamicStore
     public void testRandomTest()
     {
         Random random = new Random( System.currentTimeMillis() );
-        ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30 );
+        ByteStore store = ByteStore.createStore( dynamicStoreFile(), 30, path() );
         java.util.ArrayList<Integer> idsTaken = new java.util.ArrayList<Integer>();
         java.util.Map<Integer,byte[]> byteData = new java.util.HashMap<Integer,byte[]>();
         float deleteIndex = 0.2f;
@@ -254,7 +262,7 @@ public class TestDynamicStore
                 if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
                 {
                     store.close();
-                    store = new ByteStore( dynamicStoreFile() );
+                    store = new ByteStore( dynamicStoreFile(), ID_GENERATOR_FACTORY, path() );
                 }
             }
         }
@@ -270,9 +278,10 @@ public class TestDynamicStore
         // store version, each store ends with this string (byte encoded)
         private static final String VERSION = "DynamicTestVersion v0.1";
 
-        public ByteStore( String fileName )
+        public ByteStore( String fileName, IdGeneratorFactory idGenerator, String storeDir )
         {
-            super( fileName );
+            super( fileName, MapUtil.map( "neo_store", fileName,
+                    IdGeneratorFactory.class, idGenerator, "store_dir", storeDir ), IdType.ARRAY_BLOCK );
         }
 
         public String getTypeAndVersionDescriptor()
@@ -280,10 +289,11 @@ public class TestDynamicStore
             return VERSION;
         }
 
-        public static ByteStore createStore( String fileName, int blockSize )
+        public static ByteStore createStore( String fileName, int blockSize, String storeDir )
         {
-            createEmptyStore( fileName, blockSize, VERSION );
-            return new ByteStore( fileName );
+            createEmptyStore( fileName, blockSize, VERSION, ID_GENERATOR_FACTORY,
+                    IdType.ARRAY_BLOCK );
+            return new ByteStore( fileName, ID_GENERATOR_FACTORY, storeDir );
         }
 
         public byte[] getBytes( int blockId )

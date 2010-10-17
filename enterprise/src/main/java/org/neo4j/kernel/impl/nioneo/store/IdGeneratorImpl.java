@@ -20,14 +20,14 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.RandomAccessFile;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.LinkedList;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a
@@ -143,10 +143,26 @@ public class IdGeneratorImpl implements IdGenerator
      */
     public synchronized long nextId()
     {
-        if ( fileChannel == null )
+        assertStillOpen();
+        long nextDefragId = nextIdFromDefragList();
+        if ( nextDefragId != -1 )
         {
-            throw new IllegalStateException( "Closed id generator " + fileName );
+            return nextDefragId;
         }
+        assertIdWithinCapacity( nextFreeId.get() );
+        return nextFreeId.getAndIncrement();
+    }
+
+    private void assertIdWithinCapacity( long id )
+    {
+        if ( id >= OVERFLOW_ID || id < 0  )
+        {
+            throw new UnderlyingStorageException( "Id capacity exceeded" );
+        }
+    }
+    
+    private long nextIdFromDefragList()
+    {
         if ( defragedIdList.size() > 0 )
         {
             long id = defragedIdList.removeFirst();
@@ -157,11 +173,45 @@ public class IdGeneratorImpl implements IdGenerator
             defraggedIdCount--;
             return id;
         }
-        if ( nextFreeId.get() >= OVERFLOW_ID || nextFreeId.get() < 0  )
+        return -1;
+    }
+
+    private void assertStillOpen()
+    {
+        if ( fileChannel == null )
         {
-            throw new UnderlyingStorageException( "Id capacity exceeded" );
+            throw new IllegalStateException( "Closed id generator " + fileName );
         }
-        return nextFreeId.getAndIncrement();
+    }
+    
+    public IdRange nextIdBatch( int size )
+    {
+        assertStillOpen();
+        
+        // Get from defrag list
+        int count = 0;
+        long[] defragIds = new long[size];
+        while ( count < size )
+        {
+            long id = nextIdFromDefragList();
+            if ( id == -1 )
+            {
+                break;
+            }
+            defragIds[count++] = id;
+        }
+        
+        // Shrink the array to actual size
+        long[] tmpArray = defragIds;
+        defragIds = new long[count];
+        System.arraycopy( tmpArray, 0, defragIds, 0, count );
+        
+        int sizeLeftForRange = size-count;
+        long start = nextFreeId.get();
+        long newHighId = start + sizeLeftForRange;
+        assertIdWithinCapacity( newHighId );
+        nextFreeId.set( newHighId );
+        return new IdRange( defragIds, start, sizeLeftForRange );
     }
 
     /**
@@ -497,5 +547,10 @@ public class IdGeneratorImpl implements IdGenerator
     public synchronized long getNumberOfIdsInUse()
     {
         return nextFreeId.get() - defraggedIdCount;
+    }
+
+    public long getDefragCount()
+    {
+        return defraggedIdCount;
     }
 }

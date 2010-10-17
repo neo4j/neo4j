@@ -24,6 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+
 /**
  * Implementation of the node store.
  */
@@ -41,16 +44,16 @@ public class NodeStore extends AbstractStore implements Store
      */
     public NodeStore( String fileName, Map<?,?> config )
     {
-        super( fileName, config );
+        super( fileName, config, IdType.NODE );
     }
 
     /**
      * See {@link AbstractStore#AbstractStore(String)}
      */
-    public NodeStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public NodeStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     public String getTypeAndVersionDescriptor()
     {
@@ -72,10 +75,12 @@ public class NodeStore extends AbstractStore implements Store
      * @throws IOException
      *             If unable to create node store or name null
      */
-    public static void createStore( String fileName )
+    public static void createStore( String fileName, Map<?, ?> config )
     {
-        createEmptyStore( fileName, VERSION );
-        NodeStore store = new NodeStore( fileName );
+        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
+                IdGeneratorFactory.class );
+        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        NodeStore store = new NodeStore( fileName, config );
         NodeRecord nodeRecord = new NodeRecord( store.nextId() );
         nodeRecord.setInUse( true );
         store.updateRecord( nodeRecord );
@@ -103,6 +108,7 @@ public class NodeStore extends AbstractStore implements Store
         try
         {
             updateRecord( record );
+            registerIdFromUpdateRecord( record.getId() );
         }
         finally
         {

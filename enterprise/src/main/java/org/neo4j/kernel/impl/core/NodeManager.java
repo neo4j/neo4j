@@ -31,6 +31,7 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
@@ -46,7 +47,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
-import org.neo4j.kernel.impl.persistence.IdGenerator;
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -71,7 +72,7 @@ public class NodeManager
     private final PropertyIndexManager propertyIndexManager;
     private final RelationshipTypeHolder relTypeHolder;
     private final PersistenceManager persistenceManager;
-    private final IdGenerator idGenerator;
+    private final EntityIdGenerator idGenerator;
 
     private boolean useAdaptiveCache = false;
     private float adaptiveCacheHeapRatio = 0.77f;
@@ -87,7 +88,8 @@ public class NodeManager
     NodeManager( GraphDatabaseService graphDb,
             AdaptiveCacheManager cacheManager, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
-            PersistenceManager persistenceManager, IdGenerator idGenerator, CacheType cacheType )
+            PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
+            RelationshipTypeCreator relTypeCreator, CacheType cacheType )
     {
         this.graphDbService = graphDb;
         this.cacheManager = cacheManager;
@@ -101,7 +103,7 @@ public class NodeManager
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
         this.relTypeHolder = new RelationshipTypeHolder( transactionManager,
-            persistenceManager, idGenerator );
+            persistenceManager, idGenerator, relTypeCreator );
         
         this.cacheType = cacheType;
         this.nodeCache = cacheType.node( cacheManager );
@@ -675,13 +677,26 @@ public class NodeManager
 
     void acquireLock( Primitive resource, LockType lockType )
     {
+        PropertyContainer container;
+        if ( resource instanceof NodeImpl )
+        {
+            container = new NodeProxy( resource.id, this );
+        }
+        else if ( resource instanceof RelationshipImpl )
+        {
+            container = new RelationshipProxy( resource.id, this );
+        }
+        else
+        {
+            throw new LockException( "Unkown primitivite type: " + resource );
+        }
         if ( lockType == LockType.READ )
         {
-            lockManager.getReadLock( resource );
+            lockManager.getReadLock( container );
         }
         else if ( lockType == LockType.WRITE )
         {
-            lockManager.getWriteLock( resource );
+            lockManager.getWriteLock( container );
         }
         else
         {
@@ -691,13 +706,26 @@ public class NodeManager
 
     void releaseLock( Primitive resource, LockType lockType )
     {
+        PropertyContainer container;
+        if ( resource instanceof NodeImpl )
+        {
+            container = new NodeProxy( resource.id, this );
+        }
+        else if ( resource instanceof RelationshipImpl )
+        {
+            container = new RelationshipProxy( resource.id, this );
+        }
+        else
+        {
+            throw new LockException( "Unkown primitivite type: " + resource );
+        }
         if ( lockType == LockType.READ )
         {
-            lockManager.releaseReadLock( resource );
+            lockManager.releaseReadLock( container );
         }
         else if ( lockType == LockType.WRITE )
         {
-            lockReleaser.addLockToTransaction( resource, lockType );
+            lockReleaser.addLockToTransaction( container, lockType );
         }
         else
         {
@@ -933,6 +961,11 @@ public class NodeManager
     {
         int keyId = persistenceManager.getKeyIdForProperty( propertyId );
         return propertyIndexManager.getIndexFor( keyId ).getKey();
+    }
+    
+    public RelationshipTypeHolder getRelationshipTypeHolder()
+    {
+        return this.relTypeHolder;
     }
     
     public static enum CacheType

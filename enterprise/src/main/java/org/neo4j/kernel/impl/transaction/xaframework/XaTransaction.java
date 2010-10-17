@@ -169,6 +169,8 @@ public abstract class XaTransaction
     private boolean committed = false;
     private boolean rolledback = false;
     private boolean prepared = false;
+    
+    private long commitTxId = -1;
 
     public XaTransaction( int identifier, XaLogicalLog log )
     {
@@ -181,7 +183,7 @@ public abstract class XaTransaction
     }
 
     /**
-     * If this transacgtion is created during a recovery scan of the logical log
+     * If this transaction is created during a recovery scan of the logical log
      * method will be called to mark the transaction "recovered".
      */
     protected void setRecovered()
@@ -320,5 +322,15 @@ public abstract class XaTransaction
         {
             log.unregisterTxIdentifier();
         }
+    }
+    
+    public synchronized long getCommitTxId()
+    {
+        return commitTxId;
+    }
+    
+    public synchronized void setCommitTxId( long commitTxId )
+    {
+        this.commitTxId = commitTxId;
     }
 }

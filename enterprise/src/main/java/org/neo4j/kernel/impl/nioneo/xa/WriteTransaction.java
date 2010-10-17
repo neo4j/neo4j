@@ -412,6 +412,11 @@ class WriteTransaction extends XaTransaction
             commitRecovered();
             return;
         }
+        if ( !isRecovered() && getCommitTxId() != neoStore.getLastCommittedTx() + 1 )
+        {
+            throw new RuntimeException( "Tx id: " + getCommitTxId() + 
+                    " not next transaction (" + neoStore.getLastCommittedTx() + ")" );
+        }
         try
         {
             committed = true;
@@ -445,6 +450,8 @@ class WriteTransaction extends XaTransaction
             {
                 command.execute();
             }
+            
+            neoStore.setLastCommittedTx( getCommitTxId() );
             if ( !isRecovered() )
             {
                 lockReleaser.commit();
@@ -472,27 +479,7 @@ class WriteTransaction extends XaTransaction
         {
             committed = true;
             CommandSorter sorter = new CommandSorter();
-            // reltypes
-            java.util.Collections.sort( relTypeCommands, sorter );
-            for ( Command.RelationshipTypeCommand command : relTypeCommands )
-            {
-                command.execute();
-                addRelationshipType( command.getKey() );
-            }
-            // nodes
-            java.util.Collections.sort( nodeCommands, sorter );
-            for ( Command.NodeCommand command : nodeCommands )
-            {
-                command.execute();
-                removeNodeFromCache( command.getKey() );
-            }
-            // relationships
-            java.util.Collections.sort( relCommands, sorter );
-            for ( Command.RelationshipCommand command : relCommands )
-            {
-                command.execute();
-                removeRelationshipFromCache( command.getKey() );
-            }
+            // property index
             java.util.Collections.sort( propIndexCommands, sorter );
             for ( Command.PropertyIndexCommand command : propIndexCommands )
             {
@@ -506,7 +493,37 @@ class WriteTransaction extends XaTransaction
                 command.execute();
                 removePropertyFromCache( command );
             }
-            neoStore.updateIdGenerators();
+            // reltypes
+            java.util.Collections.sort( relTypeCommands, sorter );
+            for ( Command.RelationshipTypeCommand command : relTypeCommands )
+            {
+                command.execute();
+                addRelationshipType( command.getKey() );
+            }
+            // relationships
+            java.util.Collections.sort( relCommands, sorter );
+            for ( Command.RelationshipCommand command : relCommands )
+            {
+                command.execute();
+                removeRelationshipFromCache( command.getKey() );
+            }
+            // nodes
+            java.util.Collections.sort( nodeCommands, sorter );
+            for ( Command.NodeCommand command : nodeCommands )
+            {
+                command.execute();
+                removeNodeFromCache( command.getKey() );
+            }
+            neoStore.setRecoveredStatus( true );
+            try
+            {
+                neoStore.setLastCommittedTx( getCommitTxId() );
+            }
+            finally
+            {
+                neoStore.setRecoveredStatus( false );   
+            }
+            neoStore.getIdGeneratorFactory().updateIdGenerators( neoStore );
             if ( !isRecovered() )
             {
                 lockReleaser.commit();
@@ -531,7 +548,17 @@ class WriteTransaction extends XaTransaction
 
     private void removePropertyFromCache( PropertyCommand command )
     {
-        lockReleaser.clearCache();
+        int nodeId = command.getNodeId();
+        int relId = command.getRelId();
+        if ( nodeId != -1 )
+        {
+            removeNodeFromCache( nodeId );
+        }
+        else if ( relId != -1 )
+        {
+            removeRelationshipFromCache( relId );
+        }
+        // else means record value did not change
     }
 
     private RelationshipTypeStore getRelationshipTypeStore()
@@ -1367,6 +1394,7 @@ class WriteTransaction extends XaTransaction
         PropertyRecord propertyRecord = new PropertyRecord( propertyId );
         propertyRecord.setInUse( true );
         propertyRecord.setCreated();
+        propertyRecord.setRelId( relId );
         if ( relRecord.getNextProp() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             PropertyRecord prevProp = getPropertyRecord( 
@@ -1407,6 +1435,7 @@ class WriteTransaction extends XaTransaction
         PropertyRecord propertyRecord = new PropertyRecord( propertyId );
         propertyRecord.setInUse( true );
         propertyRecord.setCreated();
+        propertyRecord.setNodeId( nodeId );
         // encoding has to be set here before anything is change
         // (exception is thrown in encodeValue now and tx not marked
         // rollback only

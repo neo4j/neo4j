@@ -29,6 +29,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+
 /**
  * Implementation of the property store. This implementation has two dynamic
  * stores. One used to store keys and another for string property values.
@@ -52,26 +55,26 @@ public class PropertyStore extends AbstractStore implements Store
      */
     public PropertyStore( String fileName, Map<?,?> config )
     {
-        super( fileName, config );
+        super( fileName, config, IdType.PROPERTY );
     }
 
     /**
      * See {@link AbstractStore#AbstractStore(String)}
      */
-    public PropertyStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public PropertyStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     @Override
     protected void initStorage()
     {
         stringPropertyStore = new DynamicStringStore( getStorageFileName()
-            + ".strings", getConfig() );
+            + ".strings", getConfig(), IdType.STRING_BLOCK );
         propertyIndexStore = new PropertyIndexStore( getStorageFileName()
             + ".index", getConfig() );
         arrayPropertyStore = new DynamicArrayStore( getStorageFileName()
-            + ".arrays", getConfig() );
+            + ".arrays", getConfig(), IdType.ARRAY_BLOCK );
     }
 
     @Override
@@ -134,7 +137,10 @@ public class PropertyStore extends AbstractStore implements Store
      */
     public static void createStore( String fileName, Map<?,?> config )
     {
-        createEmptyStore( fileName, VERSION );
+        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
+                IdGeneratorFactory.class );
+                
+        createEmptyStore( fileName, VERSION, idGeneratorFactory );
         int stringStoreBlockSize = 120;
         int arrayStoreBlockSize = 120;
         try
@@ -164,10 +170,10 @@ public class PropertyStore extends AbstractStore implements Store
         }
 
         DynamicStringStore.createStore( fileName + ".strings",
-            stringStoreBlockSize );
-        PropertyIndexStore.createStore( fileName + ".index" );
+            stringStoreBlockSize, idGeneratorFactory, IdType.STRING_BLOCK );
+        PropertyIndexStore.createStore( fileName + ".index", idGeneratorFactory );
         DynamicArrayStore.createStore( fileName + ".arrays",
-            arrayStoreBlockSize );
+            arrayStoreBlockSize, idGeneratorFactory );
     }
 
     private int nextStringBlockId()
@@ -202,6 +208,7 @@ public class PropertyStore extends AbstractStore implements Store
         try
         {
             updateRecord( record );
+            registerIdFromUpdateRecord( record.getId() );
         }
         finally
         {

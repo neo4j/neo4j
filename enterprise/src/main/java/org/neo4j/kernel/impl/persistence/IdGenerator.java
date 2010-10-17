@@ -29,17 +29,13 @@ package org.neo4j.kernel.impl.persistence;
  * startup.
  * <P>
  */
-public class IdGenerator
+public class IdGenerator implements EntityIdGenerator
 {
-    IdGenerator()
-    {
-    }
-
     // the persistence source used to store the HIGH keys
     private PersistenceSource persistenceSource = null;
 
     /**
-     * Returns the next unique ID for the entity type represented by 
+     * Returns the next unique ID for the entity type represented by
      * <CODE>clazz</CODE>.
      * @return the next ID for <CODE>clazz</CODE>'s entity type
      */
@@ -64,7 +60,7 @@ public class IdGenerator
      * @param source
      *            the persistence source used for id generation
      */
-    void configure( PersistenceSource source )
+    public void configure( PersistenceSource source )
     {
         // Save connectivity
         this.persistenceSource = source;

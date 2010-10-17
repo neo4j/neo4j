@@ -28,10 +28,16 @@ import java.io.IOException;
 import java.util.List;
 
 import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestStore
 {
+    public static IdGeneratorFactory ID_GENERATOR_FACTORY =
+            CommonFactories.defaultIdGeneratorFactory();
+    
     private String path()
     {
         String path = AbstractNeo4jTestCase.getStorePath( "teststore" );
@@ -140,7 +146,8 @@ public class TestStore
 
         public Store( String fileName ) throws IOException
         {
-            super( fileName );
+            super( fileName, MapUtil.genericMap( IdGeneratorFactory.class,
+                    ID_GENERATOR_FACTORY, "store_dir", "target/var/teststore" ), null );
         }
 
         protected void initStorage()
@@ -168,7 +175,7 @@ public class TestStore
 
         public static Store createStore( String fileName ) throws IOException
         {
-            createEmptyStore( fileName, VERSION );
+            createEmptyStore( fileName, VERSION, ID_GENERATOR_FACTORY );
             return new Store( fileName );
         }
 

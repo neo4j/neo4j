@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 public class TestKernelPanic
 {
     @Test
-    public void noobTest() throws Exception
+    public void panicTest() throws Exception
     {
         String path = "target/var/testdb";
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( path ) );

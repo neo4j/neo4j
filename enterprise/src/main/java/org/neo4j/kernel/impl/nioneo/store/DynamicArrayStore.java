@@ -24,6 +24,9 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+
 /**
  * Dynamic store that stores strings.
  */
@@ -58,24 +61,25 @@ class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
-    public DynamicArrayStore( String fileName, Map<?,?> config )
+    public DynamicArrayStore( String fileName, Map<?,?> config, IdType idType )
     {
-        super( fileName, config );
+        super( fileName, config, idType );
     }
 
-    public DynamicArrayStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public DynamicArrayStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     public String getTypeAndVersionDescriptor()
     {
         return VERSION;
     }
 
-    public static void createStore( String fileName, int blockSize )
+    public static void createStore( String fileName, int blockSize,
+            IdGeneratorFactory idGeneratorFactory )
     {
-        createEmptyStore( fileName, blockSize, VERSION );
+        createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, IdType.ARRAY_BLOCK );
     }
 
     private Collection<DynamicRecord> allocateFromInt( int startBlock,

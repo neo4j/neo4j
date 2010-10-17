@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.kernel.impl.util.IntArray;
+
 public abstract class RelTypeElementIterator
 {
     private final String type;
@@ -44,4 +46,8 @@ public abstract class RelTypeElementIterator
     public abstract boolean hasNext( NodeManager nodeManager );
 
     public abstract int next( NodeManager nodeManager );
+    
+    public abstract boolean isSrcEmpty();
+
+    public abstract RelTypeElementIterator setSrc( IntArray newSrc );
 }

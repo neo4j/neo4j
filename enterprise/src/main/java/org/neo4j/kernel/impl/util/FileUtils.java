@@ -60,8 +60,8 @@ public class FileUtils
         }
         if ( renameToFile.exists() )
         {
-            throw new NotFoundException( "Source file[" + renameToFile.getName()
-                + "] not found" );
+            throw new NotFoundException( "Target file[" + renameToFile.getName()
+                + "] already exists" );
         }
         int count = 0;
         boolean renamed = false;

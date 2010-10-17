@@ -33,8 +33,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.AutoConfigurator;
+import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -78,32 +80,20 @@ public class BatchInserterImpl implements BatchInserter
         msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         Map<Object,Object> params = getDefaultParams();
         params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
-        boolean dump = false;
-        if ( "true".equals( stringParams.get( Config.DUMP_CONFIGURATION ) ) )
-        {
-            dump = true;
-        }
+        boolean dump = Boolean.parseBoolean( stringParams.get( Config.DUMP_CONFIGURATION ) );
         new AutoConfigurator( storeDir, false, dump ).configure( params );
         for ( Map.Entry<String,String> entry : stringParams.entrySet() )
         {
             params.put( entry.getKey(), entry.getValue() );
         }
         this.storeDir = storeDir;
-        String store = fixPath( storeDir, stringParams ); 
+        params.put( IdGeneratorFactory.class,
+                CommonFactories.defaultIdGeneratorFactory() );
+        String store = fixPath( storeDir, params ); 
         params.put( "neo_store", store );
-        if ( "true".equals( params.get( Config.DUMP_CONFIGURATION ) ) )
+        if ( dump )
         {
-            for ( Object key : params.keySet() )
-            {
-                if ( key instanceof String )
-                {
-                    Object value = params.get( key );
-                    if ( value instanceof String )
-                    {
-                        System.out.println( key + "=" + value );
-                    }
-                }
-            }
+            Config.dumpConfiguration( params );
         }
         msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         neoStore = new NeoStore( params );
@@ -558,7 +548,7 @@ public class BatchInserterImpl implements BatchInserter
         return getRelationshipStore().getRecord( (int) (id & 0xFFFFFFFF) );
     }
 
-    private String fixPath( String dir, Map<String,String> config )
+    private String fixPath( String dir, Map<?,?> config )
     {
         File directories = new File( dir );
         if ( !directories.exists() )

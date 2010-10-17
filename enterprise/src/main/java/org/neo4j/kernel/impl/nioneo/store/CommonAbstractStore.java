@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
 /**
@@ -41,10 +43,12 @@ public abstract class CommonAbstractStore
 {
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
+    
+    private long highestUpdateRecordId = -1;
 
     /**
      * Returns the type and version that identifies this store.
-     * 
+     *
      * @return This store's implementation type and version identifier
      */
     public abstract String getTypeAndVersionDescriptor();
@@ -56,7 +60,7 @@ public abstract class CommonAbstractStore
      * are needed by overriding this implementation.
      * <p>
      * This default implementation does nothing.
-     * 
+     *
      * @throws IOException
      *             If unable to initialize
      */
@@ -76,7 +80,7 @@ public abstract class CommonAbstractStore
      * {@link #initStorage()} method.
      * <p>
      * This default implementation does nothing.
-     * 
+     *
      * @throws IOException
      *             If unable to close
      */
@@ -87,7 +91,7 @@ public abstract class CommonAbstractStore
     /**
      * Should do first validation on store validating stuff like version and id
      * generator. This method is called by constructors.
-     * 
+     *
      * @throws IOException
      *             If unable to load store
      */
@@ -95,7 +99,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Should rebuild the id generator from scratch.
-     * 
+     *
      * @throws IOException
      *             If unable to rebuild id generator.
      */
@@ -105,18 +109,21 @@ public abstract class CommonAbstractStore
     protected static final int DEFAULT_ID_GRAB_SIZE = 1024;
 
     private final String storageFileName;
+    private final IdGeneratorFactory idGeneratorFactory;
     private IdGenerator idGenerator = null;
     private FileChannel fileChannel = null;
     private PersistenceWindowPool windowPool;
     private boolean storeOk = true;
     private FileLock fileLock;
     private boolean grabFileLock = true;
-    
+
     private Map<?,?> config = null;
-    
+
     private boolean readOnly = false;
     private boolean backupSlave = false;
-    
+
+    private final IdType idType;
+
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
      * loading any configuration defined in <CODE>config</CODE>. After
@@ -126,10 +133,10 @@ public abstract class CommonAbstractStore
      * and the {@link #validate()} method will not throw exception when invoked.
      * If a problem was found when opening the store the {@link #makeStoreOk()}
      * must be invoked else {@link #validate()} will throw exception.
-     * 
-     * throws IOException if the unable to open the storage or if the 
+     *
+     * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
-     * 
+     *
      * @param fileName
      *            The name of the store
      * @param config
@@ -137,10 +144,11 @@ public abstract class CommonAbstractStore
      * @throws IOException
      *             If store doesn't exist
      */
-    public CommonAbstractStore( String fileName, Map<?,?> config )
+    public CommonAbstractStore( String fileName, Map<?,?> config, IdType idType )
     {
         this.storageFileName = fileName;
         this.config = config;
+        this.idType = idType;
         if ( config != null )
         {
             String fileLock = (String) config.get( "grab_file_lock" );
@@ -149,16 +157,19 @@ public abstract class CommonAbstractStore
                 grabFileLock = false;
             }
         }
+        this.idGeneratorFactory = (IdGeneratorFactory)
+                config.get( IdGeneratorFactory.class );
+        
         checkStorage();
         loadStorage();
         initStorage();
     }
-    
+
     boolean isReadOnly()
     {
         return readOnly;
     }
-    
+
     boolean isBackupSlave()
     {
         return backupSlave;
@@ -172,28 +183,29 @@ public abstract class CommonAbstractStore
      * and the {@link #validate()} method will not throw exception when invoked.
      * If a problem was found when opening the store the {@link #makeStoreOk()}
      * must be invoked else {@link #validate()} will throw exception.
-     * 
-     * throws IOException if the unable to open the storage or if the 
+     *
+     * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
-     * 
+     *
      * @param fileName
      *            The name of the store
      * @throws IOException
      *             If store doesn't exist
      */
-    public CommonAbstractStore( String fileName )
-    {
-        this.storageFileName = fileName;
-        checkStorage();
-        loadStorage();
-        initStorage();
-    }
+//    public CommonAbstractStore( String fileName )
+//    {
+//        this.storageFileName = fileName;
+//        idGeneratorFactory = IdGeneratorFactory.DEFAULT;
+//        checkStorage();
+//        loadStorage();
+//        initStorage();
+//    }
 
     private void checkStorage()
     {
         if ( config != null )
         {
-            Boolean isReadOnly = (Boolean) config.get( "read_only" );
+            Boolean isReadOnly = Boolean.parseBoolean( (String) config.get( Config.READ_ONLY ) );
             if ( isReadOnly != null )
             {
                 readOnly = isReadOnly;
@@ -259,13 +271,13 @@ public abstract class CommonAbstractStore
 
     /**
      * Marks this store as "not ok".
-     * 
+     *
      */
     protected void setStoreNotOk()
     {
         if ( readOnly && !isBackupSlave() )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Cannot start up on non clean store as read only" );
         }
         storeOk = false;
@@ -273,7 +285,7 @@ public abstract class CommonAbstractStore
 
     /**
      * If store is "not ok" <CODE>false</CODE> is returned.
-     * 
+     *
      * @return True if this store is ok
      */
     protected boolean getStoreOk()
@@ -288,7 +300,7 @@ public abstract class CommonAbstractStore
      * {@link #acquireWindow(int, OperationType)}
      * {@link #releaseWindow(PersistenceWindow)} {@link #flush(int)}
      * {@link #forget(int)} {@link #close()} methods are invoked.
-     * 
+     *
      * @param pool
      *            The window pool this store should use
      */
@@ -299,7 +311,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Returns the next id for this store's {@link IdGenerator}.
-     * 
+     *
      * @return The next free id
      * @throws IOException
      *             If unable to get next free id
@@ -311,7 +323,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Frees an id for this store's {@link IdGenerator}.
-     * 
+     *
      * @param id
      *            The id to free
      * @throws IOException
@@ -321,25 +333,31 @@ public abstract class CommonAbstractStore
     {
         idGenerator.freeId( makeUnsignedInt( id ) );
     }
-    
+
     private long makeUnsignedInt( int signedInteger )
     {
         return signedInteger & 0xFFFFFFFFL;
     }
-    
+
     /**
      * Return the highest id in use.
-     * 
+     *
      * @return The highest id in use.
      */
-    protected long getHighId()
+    public long getHighId()
     {
-        return idGenerator.getHighId();
+        long genHighId = idGenerator != null ? idGenerator.getHighId() : -1;
+        long updateHighId = highestUpdateRecordId;
+        if ( updateHighId > genHighId )
+        {
+            return updateHighId;
+        }
+        return genHighId;
     }
 
     /**
      * Sets the highest id in use (use this when rebuilding id generator).
-     * 
+     *
      * @param highId
      *            The high id to set.
      */
@@ -350,20 +368,12 @@ public abstract class CommonAbstractStore
             idGenerator.setHighId( highId );
         }
     }
-    
+
     protected boolean getIfMemoryMapped()
     {
-        if ( getConfig() != null )
-        {
-            String useMemMapped = (String) getConfig().get( 
-                Config.USE_MEMORY_MAPPED_BUFFERS );
-            if ( useMemMapped != null && 
-                useMemMapped.toLowerCase().equals( "false" ) )
-            {
-                return false;
-            }
-        }
-        return true;
+        String configValue = getConfig() != null ?
+                (String) getConfig().get( Config.USE_MEMORY_MAPPED_BUFFERS ) : null;
+        return configValue != null ? Boolean.parseBoolean( configValue ) : true;
     }
 
     /**
@@ -371,7 +381,7 @@ public abstract class CommonAbstractStore
      * {@link MappedPersistenceWindow memory mapped windows} in bytes. The
      * configuration map passed in one constructor is checked for an entry with
      * this stores name.
-     * 
+     *
      * @return The number of bytes memory mapped windows this store has
      */
     protected long getMappedMem()
@@ -415,10 +425,10 @@ public abstract class CommonAbstractStore
     }
 
     /**
-     * If store is not ok a call to this method will rebuild the {@link 
-     * IdGenerator} used by this store and if successful mark it as 
+     * If store is not ok a call to this method will rebuild the {@link
+     * IdGenerator} used by this store and if successful mark it as
      * <CODE>ok</CODE>.
-     * 
+     *
      * @throws IOException
      *             If unable to rebuild id generator
      */
@@ -443,10 +453,10 @@ public abstract class CommonAbstractStore
         }
         rebuildIdGenerator();
     }
-    
+
     /**
      * Returns the configuration map if set in constructor.
-     * 
+     *
      * @return A map containing configuration or <CODE>null<CODE> if no
      *         configuration map set.
      */
@@ -459,7 +469,7 @@ public abstract class CommonAbstractStore
      * Acquires a {@link PersistenceWindow} for <CODE>position</CODE> and
      * operation <CODE>type</CODE>. Window must be released after operation
      * has been performed via {@link #releaseWindow(PersistenceWindow)}.
-     * 
+     *
      * @param position
      *            The record position
      * @param type
@@ -472,20 +482,19 @@ public abstract class CommonAbstractStore
     {
         long position = makeUnsignedInt( sPosition );
         if ( !isInRecoveryMode()
-            && ( position > idGenerator.getHighId() || !storeOk) )
+            && ( position > getHighId() || !storeOk) )
         {
             throw new InvalidRecordException( "Position[" + position
                 + "] requested for operation is high id["
-                + idGenerator.getHighId() + "] or store is flagged as dirty["
-                + storeOk + "]" );
+                + getHighId() + "], store is ok[" + storeOk + "]" );
         }
         return windowPool.acquire( position, type );
     }
 
     /**
-     * Releases the window and writes the data (async) if the 
+     * Releases the window and writes the data (async) if the
      * <CODE>window</CODE> was a {@link PersistenceRow}.
-     * 
+     *
      * @param window
      *            The window to be released
      * @throws IOException
@@ -496,7 +505,7 @@ public abstract class CommonAbstractStore
     {
         windowPool.release( window );
     }
-    
+
     public void flushAll()
     {
         windowPool.flushAll();
@@ -521,7 +530,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Returns the name of this store.
-     * 
+     *
      * @return The name of this store
      */
     public String getStorageFileName()
@@ -531,21 +540,34 @@ public abstract class CommonAbstractStore
 
     /**
      * Opens the {@link IdGenerator} used by this store.
-     * 
+     *
      * @throws IOException
      *             If unable to open the id generator
      */
     protected void openIdGenerator()
     {
-        idGenerator = new IdGeneratorImpl( storageFileName + ".id",
+        idGenerator = openIdGenerator( storageFileName + ".id",
             DEFAULT_ID_GRAB_SIZE );
+    }
+    
+    protected IdGenerator openIdGenerator( String fileName, int grabSize )
+    {
+        return idGeneratorFactory.open( fileName, grabSize, getIdType(),
+                figureOutHighestIdInUse() );
+    }
+    
+    protected abstract long figureOutHighestIdInUse();
+
+    protected void createIdGenerator( String fileName )
+    {
+        idGeneratorFactory.create( fileName );
     }
     
     protected void openReadOnlyIdGenerator( int recordSize )
     {
         try
         {
-            idGenerator = new ReadOnlyIdGenerator( storageFileName + ".id", 
+            idGenerator = new ReadOnlyIdGenerator( storageFileName + ".id",
                 fileChannel.size() / recordSize );
         }
         catch ( IOException e )
@@ -556,7 +578,7 @@ public abstract class CommonAbstractStore
 
     /**
      * Closed the {@link IdGenerator} used by this store
-     * 
+     *
      * @throws IOException
      *             If unable to close this store
      */
@@ -576,7 +598,7 @@ public abstract class CommonAbstractStore
      * This method will start by invoking the {@link #closeStorage} method
      * giving the implementing store way to do anything that it needs to do
      * before the fileChannel is closed.
-     * 
+     *
      * @throws IOException
      *             If problem when invoking {@link #closeStorage()}
      */
@@ -625,7 +647,7 @@ public abstract class CommonAbstractStore
                 try
                 {
                     fileChannel.position( highId * recordSize );
-                    ByteBuffer buffer = ByteBuffer.wrap( 
+                    ByteBuffer buffer = ByteBuffer.wrap(
                         getTypeAndVersionDescriptor().getBytes() );
                     fileChannel.write( buffer );
                     fileChannel.truncate( fileChannel.position() );
@@ -662,10 +684,10 @@ public abstract class CommonAbstractStore
     }
 
     /**
-     * Returns a <CODE>FileChannel</CODE> to this storage's file. If 
-     * <CODE>close()</CODE> method has been invoked <CODE>null</CODE> will be 
+     * Returns a <CODE>FileChannel</CODE> to this storage's file. If
+     * <CODE>close()</CODE> method has been invoked <CODE>null</CODE> will be
      * returned.
-     * 
+     *
      * @return A file channel to this storage
      */
     protected final FileChannel getFileChannel()
@@ -689,9 +711,28 @@ public abstract class CommonAbstractStore
         return idGenerator.getNumberOfIdsInUse();
     }
 
-    
     public WindowPoolStats getWindowPoolStats()
     {
         return windowPool.getStats();
+    }
+    
+    public IdType getIdType()
+    {
+        return idType;
+    }
+
+    protected void registerIdFromUpdateRecord( long id )
+    {
+        highestUpdateRecordId = Math.max( highestUpdateRecordId, id + 1 );
+    }
+
+    protected void updateHighId()
+    {
+        long highId = highestUpdateRecordId;
+        highestUpdateRecordId = -1;
+        if ( highId > getHighId() )
+        {
+            setHighId( highId );
+        }
     }
 }

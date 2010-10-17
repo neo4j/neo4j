@@ -29,6 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -49,6 +51,19 @@ public abstract class AbstractStore extends CommonAbstractStore
      * @return The record size
      */
     public abstract int getRecordSize();
+    
+    @Override
+    protected long figureOutHighestIdInUse()
+    {
+        try
+        {
+            return getFileChannel().size()/getRecordSize();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
 
     /**
      * Creates a new empty store. The factory method returning an implementation
@@ -67,7 +82,7 @@ public abstract class AbstractStore extends CommonAbstractStore
      *             If fileName is null or if file exists
      */
     protected static void createEmptyStore( String fileName,
-        String typeAndVersionDescriptor )
+        String typeAndVersionDescriptor, IdGeneratorFactory idGeneratorFactory )
     {
         // sanity checks
         if ( fileName == null )
@@ -97,18 +112,18 @@ public abstract class AbstractStore extends CommonAbstractStore
             throw new UnderlyingStorageException( "Unable to create store "
                 + fileName, e );
         }
-        IdGeneratorImpl.createGenerator( fileName + ".id" );
+        idGeneratorFactory.create( fileName + ".id" );
     }
 
-    public AbstractStore( String fileName, Map<?,?> config )
+    public AbstractStore( String fileName, Map<?,?> config, IdType idType )
     {
-        super( fileName, config );
+        super( fileName, config, idType );
     }
 
-    public AbstractStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public AbstractStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     protected void loadStorage()
     {
@@ -183,16 +198,6 @@ public abstract class AbstractStore extends CommonAbstractStore
     }
 
     /**
-     * Returns the highest id in use by this store.
-     * 
-     * @return The highest id in use
-     */
-    public long getHighId()
-    {
-        return super.getHighId();
-    }
-
-    /**
      * Sets the high id of {@link IdGenerator}.
      * 
      * @param id
@@ -203,18 +208,23 @@ public abstract class AbstractStore extends CommonAbstractStore
         super.setHighId( id );
     }
     
-    protected void updateHighId()
-    {
-        try
-        {
-            long highId = getFileChannel().size() / getRecordSize();
-            setHighId( highId );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
+//    @Override
+//    protected void updateHighId()
+//    {
+//        try
+//        {
+//            long highId = getFileChannel().size() / getRecordSize();
+//            
+//            if ( highId > getHighId() )
+//            {
+//                setHighId( highId );
+//            }
+//        }
+//        catch ( IOException e )
+//        {
+//            throw new UnderlyingStorageException( e );
+//        }
+//    }
 
     private int findHighIdBackwards() throws IOException
     {
@@ -265,7 +275,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             boolean success = file.delete();
             assert success;
         }
-        IdGeneratorImpl.createGenerator( getStorageFileName() + ".id" );
+        createIdGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
         FileChannel fileChannel = getFileChannel();
         long highId = 1;

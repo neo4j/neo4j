@@ -23,7 +23,7 @@ package org.neo4j.helpers;
 /**
  * Utility to handle pairs of objects.
  */
-public final class Pair<T1, T2>
+public class Pair<T1, T2>
 {
     private final T1 first;
     private final T2 other;
@@ -38,6 +38,11 @@ public final class Pair<T1, T2>
     {
         this.first = first;
         this.other = other;
+    }
+
+    public static <T1, T2> Pair<T1, T2> of( T1 first, T2 other )
+    {
+        return new Pair<T1, T2>( first, other );
     }
 
     /**
@@ -75,18 +80,23 @@ public final class Pair<T1, T2>
         if ( this == obj ) return true;
         if ( obj instanceof Pair )
         {
-            Pair that = (Pair) obj;
-            return equals( this.first, that.first ) && equals( this.other, that.other );
+            if ( obj.getClass() != this.getClass() ) return false;
+            return pairEquals( (Pair) obj );
         }
         return false;
     }
 
-    private static int hashCode( Object obj )
+    boolean pairEquals( Pair that )
+    {
+        return equals( this.first, that.first ) && equals( this.other, that.other );
+    }
+
+    static int hashCode( Object obj )
     {
         return obj == null ? 0 : obj.hashCode();
     }
 
-    private static boolean equals( Object obj1, Object obj2 )
+    static boolean equals( Object obj1, Object obj2 )
     {
         return ( obj1 == obj2 ) || ( obj1 != null && obj1.equals( obj2 ) );
     }

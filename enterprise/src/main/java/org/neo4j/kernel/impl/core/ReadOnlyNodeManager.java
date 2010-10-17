@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.persistence.IdGenerator;
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -38,11 +38,11 @@ class ReadOnlyNodeManager extends NodeManager
     ReadOnlyNodeManager( GraphDatabaseService graphDbService,
             AdaptiveCacheManager cacheManager, LockManager lockManager,
             LockReleaser lockReleaser, TransactionManager transactionManager,
-            PersistenceManager persistenceManager, IdGenerator idGenerator,
+            PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
             CacheType cacheType )
     {
         super( graphDbService, cacheManager, lockManager, lockReleaser,
-                transactionManager, persistenceManager, idGenerator, cacheType );
+                transactionManager, persistenceManager, idGenerator, null, cacheType );
     }
 
     @Override
