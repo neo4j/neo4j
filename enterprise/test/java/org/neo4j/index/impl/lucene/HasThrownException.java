@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2010 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -21,26 +21,26 @@
 package org.neo4j.index.impl.lucene;
 
 import org.hamcrest.Description;
+import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.junit.internal.matchers.TypeSafeMatcher;
 
-public class IsEmpty extends TypeSafeMatcher<Iterable<?>>
+public class HasThrownException extends TypeSafeMatcher<WorkThread>
 {
-    private Iterable<?> iterable;
-
     @Override
-    public boolean matchesSafely( Iterable<?> iterable )
+    public boolean matchesSafely( WorkThread workThread )
     {
-        this.iterable = iterable;
-        return !iterable.iterator().hasNext();
+       return workThread.hasException();
     }
 
     public void describeTo( Description description )
     {
-        description.appendValueList("[", ",", "]", iterable);
+        description.appendText( "A worker that has thrown an exception, but didn't get one." );
     }
 
-    public static Matcher<Iterable<?>> isEmpty() {
-         return new IsEmpty();
-     }
+    @Factory
+    public static Matcher<WorkThread> hasThrownException()
+    {
+        return new HasThrownException();
+    }
 }
