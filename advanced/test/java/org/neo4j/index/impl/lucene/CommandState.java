@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2002-2010 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -20,27 +20,23 @@
 
 package org.neo4j.index.impl.lucene;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.junit.internal.matchers.TypeSafeMatcher;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
 
-public class IsEmpty extends TypeSafeMatcher<Iterable<?>>
+public class CommandState
 {
-    private Iterable<?> iterable;
+    Index<Node> index;
+    GraphDatabaseService graphDb;
+    public Transaction tx;
+    public boolean alive = true;
+    public Node node;
 
-    @Override
-    public boolean matchesSafely( Iterable<?> iterable )
+    public CommandState( Index<Node> index, GraphDatabaseService graphDb )
     {
-        this.iterable = iterable;
-        return !iterable.iterator().hasNext();
-    }
 
-    public void describeTo( Description description )
-    {
-        description.appendValueList("[", ",", "]", iterable);
+        this.index = index;
+        this.graphDb = graphDb;
     }
-
-    public static Matcher<Iterable<?>> isEmpty() {
-         return new IsEmpty();
-     }
 }
