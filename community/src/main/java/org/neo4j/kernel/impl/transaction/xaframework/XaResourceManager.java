@@ -21,6 +21,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -53,11 +54,16 @@ public class XaResourceManager
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
     private final String name;
+    private final TxIdGenerator txIdGenerator;
+    private final XaDataSource dataSource;
     private StringLogger msgLog;
 
-    XaResourceManager( XaTransactionFactory tf, String name )
+    XaResourceManager( XaDataSource dataSource, XaTransactionFactory tf,
+            TxIdGenerator txIdGenerator, String name )
     {
+        this.dataSource = dataSource;
         this.tf = tf;
+        this.txIdGenerator = txIdGenerator;
         this.name = name;
     }
 
@@ -367,6 +373,18 @@ public class XaResourceManager
         xaTransaction.commit();
     }
     
+    synchronized XaTransaction getXaTransaction( Xid xid ) throws XAException
+    {
+        XidStatus status = xidMap.get( xid );
+        if ( status == null )
+        {
+            throw new XAException( "Unknown xid[" + xid + "]" );
+        }
+        TransactionStatus txStatus = status.getTransactionStatus();
+        XaTransaction xaTransaction = txStatus.getTransaction();
+        return xaTransaction;
+    }
+    
     synchronized XaTransaction commit( Xid xid, boolean onePhase )
         throws XAException
     {
@@ -384,7 +402,13 @@ public class XaResourceManager
                 if ( !xaTransaction.isRecovered() )
                 {
                     xaTransaction.prepare();
-                    log.commitOnePhase( xaTransaction.getIdentifier() );
+                    
+                    long txId = txIdGenerator.generate( dataSource,
+                            xaTransaction.getIdentifier() );
+                    int masterId = txIdGenerator.getCurrentMasterId();
+                    xaTransaction.setCommitTxId( txId );
+                    log.commitOnePhase( xaTransaction.getIdentifier(), 
+                            xaTransaction.getCommitTxId(), masterId );
                 }
             }
             txStatus.markAsPrepared();
@@ -400,10 +424,19 @@ public class XaResourceManager
             {
                 if ( !onePhase )
                 {
-                    log.commitTwoPhase( xaTransaction.getIdentifier() );
+                    long txId = txIdGenerator.generate( dataSource,
+                            xaTransaction.getIdentifier() );
+                    int masterId = txIdGenerator.getCurrentMasterId();
+                    xaTransaction.setCommitTxId( txId );
+                    log.commitTwoPhase( xaTransaction.getIdentifier(),
+                            xaTransaction.getCommitTxId(), masterId );
                 }
             }
             txStatus.markCommitStarted();
+            if ( xaTransaction.isRecovered() && xaTransaction.getCommitTxId() == -1 )
+            {
+                xaTransaction.setCommitTxId( dataSource.getLastCommittedTxId() + 1 );
+            }
             xaTransaction.commit();
         }
         if ( !xaTransaction.isRecovered() )
@@ -593,9 +626,9 @@ public class XaResourceManager
 
     private void checkIfRecoveryComplete()
     {
-        msgLog.logMessage( "XaResourceManager[" + name + "] checkRecoveryComplete " + xidMap.size() + " xids" );
         if ( log.scanIsComplete() && recoveredTxCount == 0 )
         {
+            msgLog.logMessage( "XaResourceManager[" + name + "] checkRecoveryComplete " + xidMap.size() + " xids" );
             // log.makeNewLog();
             tf.recoveryComplete();
             try
@@ -611,11 +644,6 @@ public class XaResourceManager
                 e.printStackTrace();
             }
             msgLog.logMessage( "XaResourceManager[" + name + "] recovery completed." );
-        }
-        else
-        {
-            msgLog.logMessage( "XaResourceManager[" + name + 
-                    "] recovery not completed, xidCount=" + recoveredTxCount + " waiting for global tm" );
         }
     }
 
@@ -638,5 +666,20 @@ public class XaResourceManager
     public boolean hasRecoveredTransactions()
     {
         return recoveredTxCount > 0;
+    }
+
+    public synchronized void applyCommittedTransaction(
+            ReadableByteChannel transaction ) throws IOException
+    {
+        log.applyTransaction( transaction );
+    }
+    
+    public synchronized long applyPreparedTransaction(
+            ReadableByteChannel transaction ) throws IOException
+    {
+        long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
+        int masterId = txIdGenerator.getCurrentMasterId();
+        log.applyTransactionWithoutTxId( transaction, txId, masterId );
+        return txId;
     }
 }

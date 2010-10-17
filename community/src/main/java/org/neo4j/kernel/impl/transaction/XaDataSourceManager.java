@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -190,7 +191,7 @@ public class XaDataSourceManager
     }
     
     // not thread safe
-    public Iterable<XaDataSource> getAllRegisteredDataSources()
+    public Collection<XaDataSource> getAllRegisteredDataSources()
     {
         return dataSources.values();
     }

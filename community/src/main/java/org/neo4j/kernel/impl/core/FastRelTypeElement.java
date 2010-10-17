@@ -36,12 +36,18 @@ class FastRelTypeElement extends RelTypeElementIterator
         super( type, node );
         if ( src == null )
         {
-            this.src = new IntArray();
+            this.src = IntArray.EMPTY;
         }
         else
         {
             this.src = src;
         }
+    }
+    
+    FastRelTypeElement( String type, NodeImpl node, IntArray src, int position )
+    {
+        this( type, node, src );
+        this.position = position;
     }
 
     @Override
@@ -51,11 +57,11 @@ class FastRelTypeElement extends RelTypeElementIterator
         {
             return true;
         }
-        if ( position >= src.length() )
-        {
-            while ( getNode().getMoreRelationships( nodeManager ) &&
-                position >= src.length() );
-        }
+//        if ( position >= src.length() )
+//        {
+//            while ( getNode().getMoreRelationships( nodeManager ) &&
+//                position >= src.length() );
+//        }
         while ( position < src.length() )
         {
             nextElement = src.get(position++);
@@ -75,5 +81,17 @@ class FastRelTypeElement extends RelTypeElementIterator
             return elementToReturn;
         }
         throw new NoSuchElementException();
+    }
+    
+    @Override
+    public boolean isSrcEmpty()
+    {
+        return src.length() == 0;
+    }
+
+    @Override
+    public RelTypeElementIterator setSrc( IntArray newSrc )
+    {
+        return new FastRelTypeElement( getType(), getNode(), newSrc, position );
     }
 }

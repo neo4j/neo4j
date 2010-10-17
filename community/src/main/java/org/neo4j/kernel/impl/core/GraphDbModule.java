@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
-import org.neo4j.kernel.impl.persistence.IdGenerator;
+import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
@@ -58,7 +58,7 @@ public class GraphDbModule
     private final TransactionManager transactionManager;
     private final AdaptiveCacheManager cacheManager;
     private final LockManager lockManager;
-    private final IdGenerator idGenerator;
+    private final EntityIdGenerator idGenerator;
     
     private NodeManager nodeManager;
     
@@ -66,7 +66,7 @@ public class GraphDbModule
 
     public GraphDbModule( GraphDatabaseService graphDb,
             AdaptiveCacheManager cacheManager, LockManager lockManager,
-            TransactionManager transactionManager, IdGenerator idGenerator,
+            TransactionManager transactionManager, EntityIdGenerator idGenerator,
             boolean readOnly )
     {
         this.graphDbService = graphDb;
@@ -82,7 +82,8 @@ public class GraphDbModule
     }
 
     public void start( LockReleaser lockReleaser, 
-        PersistenceManager persistenceManager, Map<Object,Object> params )
+        PersistenceManager persistenceManager, RelationshipTypeCreator relTypeCreator,
+        Map<Object,Object> params )
     {
         if ( !startIsOk )
         {
@@ -106,7 +107,7 @@ public class GraphDbModule
         {
             nodeManager = new NodeManager( graphDbService, cacheManager,
                     lockManager, lockReleaser, transactionManager,
-                    persistenceManager, idGenerator, cacheType );
+                    persistenceManager, idGenerator, relTypeCreator, cacheType );
         }
         else
         {
@@ -117,11 +118,11 @@ public class GraphDbModule
         // load and verify from PS
         RelationshipTypeData relTypes[] = null;
         PropertyIndexData propertyIndexes[] = null;
-        beginTx();
+        // beginTx();
         relTypes = persistenceManager.loadAllRelationshipTypes();
         propertyIndexes = persistenceManager.loadPropertyIndexes( 
             INDEX_COUNT );
-        commitTx();
+        // commitTx();
         nodeManager.addRawRelationshipTypes( relTypes );
         nodeManager.addPropertyIndexes( propertyIndexes );
         if ( propertyIndexes.length < INDEX_COUNT )

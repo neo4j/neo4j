@@ -31,6 +31,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store
  * relationship type names.
@@ -51,18 +54,18 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     /**
      * See {@link AbstractStore#AbstractStore(String, Map)}
      */
-    public RelationshipTypeStore( String fileName, Map<?,?> config )
+    public RelationshipTypeStore( String fileName, Map<?,?> config, IdType idType )
     {
-        super( fileName, config );
+        super( fileName, config, idType );
     }
 
     /**
      * See {@link AbstractStore#AbstractStore(String)}
      */
-    public RelationshipTypeStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public RelationshipTypeStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     @Override
     protected void setRecovered()
@@ -82,7 +85,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     protected void initStorage()
     {
         typeNameStore = new DynamicStringStore(
-            getStorageFileName() + ".names", getConfig() );
+            getStorageFileName() + ".names", getConfig(), IdType.RELATIONSHIP_TYPE_BLOCK );
     }
 
     @Override
@@ -118,12 +121,15 @@ public class RelationshipTypeStore extends AbstractStore implements Store
      * @throws IOException
      *             If unable to create store or name null
      */
-    public static void createStore( String fileName )
+    public static void createStore( String fileName, Map<?, ?> config )
     {
-        createEmptyStore( fileName, VERSION );
+        IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
+                IdGeneratorFactory.class );
+        createEmptyStore( fileName, VERSION, idGeneratorFactory );
         DynamicStringStore.createStore( fileName + ".names",
-            TYPE_STORE_BLOCK_SIZE );
-        RelationshipTypeStore store = new RelationshipTypeStore( fileName );
+            TYPE_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_BLOCK );
+        RelationshipTypeStore store = new RelationshipTypeStore(
+                fileName, config, IdType.RELATIONSHIP_TYPE );
         store.close();
     }
 
@@ -153,6 +159,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         try
         {
             updateRecord( record );
+            registerIdFromUpdateRecord( record.getId() );
         }
         finally
         {
@@ -316,7 +323,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             boolean success = file.delete();
             assert success;
         }
-        IdGeneratorImpl.createGenerator( getStorageFileName() + ".id" );
+        createIdGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
         FileChannel fileChannel = getFileChannel();
         long highId = -1;
@@ -345,7 +352,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
                 {
                     highId = i;
                 }
-                nextId();
+                // nextId();
             }
             highId++;
             fileChannel.truncate( highId * recordSize );

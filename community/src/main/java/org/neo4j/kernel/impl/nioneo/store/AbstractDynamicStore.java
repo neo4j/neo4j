@@ -32,6 +32,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -76,7 +78,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
      *             If fileName is null or if file exists or illegal block size
      */
     protected static void createEmptyStore( String fileName, int baseBlockSize,
-        String typeAndVersionDescriptor )
+        String typeAndVersionDescriptor, IdGeneratorFactory idGeneratorFactory, IdType idType )
     {
         int blockSize = baseBlockSize;
         // sanity checks
@@ -116,23 +118,24 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             throw new UnderlyingStorageException( "Unable to create store "
                 + fileName, e );
         }
-        IdGeneratorImpl.createGenerator( fileName + ".id" );
-        IdGenerator idGenerator = new IdGeneratorImpl( fileName + ".id", 1 );
+        idGeneratorFactory.create( fileName + ".id" );
+        // TODO highestIdInUse = 0 works now, but not when slave can create store files.
+        IdGenerator idGenerator = idGeneratorFactory.open( fileName + ".id", 1, idType, 0 );
         idGenerator.nextId(); // reserv first for blockSize
         idGenerator.close();
     }
 
     private int blockSize;
 
-    public AbstractDynamicStore( String fileName, Map<?,?> config )
+    public AbstractDynamicStore( String fileName, Map<?,?> config, IdType idType )
     {
-        super( fileName, config );
+        super( fileName, config, idType );
     }
 
-    public AbstractDynamicStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public AbstractDynamicStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     /**
      * Loads this store validating version and id generator. Also the block size
@@ -254,6 +257,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
     public void updateRecord( DynamicRecord record )
     {
         int blockId = record.getId();
+        if ( isInRecoveryMode() )
+        {
+            registerIdFromUpdateRecord( blockId );
+        }
         PersistenceWindow window = acquireWindow( blockId, OperationType.WRITE );
         try
         {
@@ -645,9 +652,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             boolean success = file.delete();
             assert success;
         }
-        IdGeneratorImpl.createGenerator( getStorageFileName() + ".id" );
+        createIdGenerator( getStorageFileName() + ".id" );
         openIdGenerator();
-        nextBlockId(); // reserved first block containing blockSize
+//        nextBlockId(); // reserved first block containing blockSize
+        setHighId( 1 );
         FileChannel fileChannel = getFileChannel();
         int highId = 0;
         long defraggedCount = 0;
@@ -713,17 +721,34 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         openIdGenerator();
     }
 
-
-    protected void updateHighId()
+//    @Override
+//    protected void updateHighId()
+//    {
+//        try
+//        {
+//            long highId = getFileChannel().size() / getBlockSize();
+//            
+//            if ( highId > getHighId() )
+//            {
+//                setHighId( highId );
+//            }
+//        }
+//        catch ( IOException e )
+//        {
+//            throw new UnderlyingStorageException( e );
+//        }
+//    }
+    
+    @Override
+    protected long figureOutHighestIdInUse()
     {
         try
         {
-            long highId = getFileChannel().size() / getBlockSize();
-            super.setHighId( highId );
+            return getFileChannel().size()/getBlockSize();
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( e );
+            throw new RuntimeException( e );
         }
     }
 }

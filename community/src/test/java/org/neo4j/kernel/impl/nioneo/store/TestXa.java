@@ -45,6 +45,9 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -52,9 +55,13 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XidImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
 public class TestXa extends AbstractNeo4jTestCase
 {
+    public static IdGeneratorFactory ID_GENERATOR_FACTORY =
+        CommonFactories.defaultIdGeneratorFactory();
+    
     private NeoStoreXaDataSource ds;
     private NeoStoreXaConnection xaCon;
     private Logger log;
@@ -133,11 +140,13 @@ public class TestXa extends AbstractNeo4jTestCase
         log = Logger
             .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
-        NeoStore.createStore( file( "neo" ), Collections.EMPTY_MAP );
+        NeoStore.createStore( file( "neo" ), MapUtil.map(
+                IdGeneratorFactory.class, ID_GENERATOR_FACTORY ) );
         lockManager = getEmbeddedGraphDb().getConfig().getLockManager();
         lockReleaser = getEmbeddedGraphDb().getConfig().getLockReleaser();
-        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
-            lockManager, lockReleaser );
+        ds = newNeoStore();
+//        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+//            lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
     }
 
@@ -407,12 +416,26 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
-        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
-            lockManager, lockReleaser );
+        ds = newNeoStore();
+//        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+//            lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
         assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
         xaCon.clearAllTransactions();
+    }
+    
+    private NeoStoreXaDataSource newNeoStore() throws InstantiationException,
+            IOException
+    {
+        return new NeoStoreXaDataSource( MapUtil.genericMap(
+                LockManager.class, lockManager,
+                LockReleaser.class, lockReleaser,
+                IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+                TxIdGenerator.class, TxIdGenerator.DEFAULT,
+                "store_dir", path(),
+                "neo_store", file( "neo" ),
+                "logical_log", file( "nioneo_logical.log" ) ) );
     }
 
     @Test
@@ -447,8 +470,9 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
-        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
-            lockManager, lockReleaser );
+        ds = newNeoStore();
+//        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+//            lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
         assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -487,8 +511,9 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
-        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
-            lockManager, lockReleaser );
+        ds = newNeoStore();
+//        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+//            lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
         assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -512,8 +537,9 @@ public class TestXa extends AbstractNeo4jTestCase
         renameCopiedLogicalLog();
         truncateLogicalLog( 39 );
         truncateLogicalLog( 40 );
-        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
-            lockManager, lockReleaser );
+        ds = newNeoStore();
+//        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+//            lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
         assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -538,8 +564,9 @@ public class TestXa extends AbstractNeo4jTestCase
         renameCopiedLogicalLog();
         truncateLogicalLog( 32 );
         truncateLogicalLog( 40 );
-        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
-            lockManager, lockReleaser );
+        ds = newNeoStore();
+//        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+//            lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
         assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -567,8 +594,9 @@ public class TestXa extends AbstractNeo4jTestCase
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
         truncateLogicalLog( 141 );
-        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
-            lockManager, lockReleaser );
+        ds = newNeoStore();
+//        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+//            lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
         assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -595,9 +623,10 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog();
-        truncateLogicalLog( 145 );
-        ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
-            lockManager, lockReleaser );
+        truncateLogicalLog( 157 );
+        ds = newNeoStore();
+//        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+//             lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
         assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
@@ -699,6 +728,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.rotateLogicalLog();
         ds.rotateLogicalLog();
         ds.setCurrentLogVersion( currentVersion );
+        ds.setCommittedTxId( 0 );
         ds.makeBackupSlave();
         ds.applyLog( ds.getLogicalLog( currentVersion ) );
         ds.applyLog( ds.getLogicalLog( currentVersion + 1 ) );

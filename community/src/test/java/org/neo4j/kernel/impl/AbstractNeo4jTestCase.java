@@ -66,6 +66,7 @@ public abstract class AbstractNeo4jTestCase
     @BeforeClass
     public static void setUpDb()
     {
+        deleteFileOrDirectory( new File( getStorePath( "neo-test" ) ) );
         graphDb = new EmbeddedGraphDatabase( getStorePath( "neo-test" ) );
     }
     

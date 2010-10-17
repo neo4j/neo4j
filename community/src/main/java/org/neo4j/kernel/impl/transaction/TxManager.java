@@ -87,11 +87,14 @@ public class TxManager implements TransactionManager
     
     private final StringLogger msgLog;
 
-    TxManager( String txLogDir, KernelPanicEventGenerator kpe )
+    final TxFinishHook finishHook;
+
+    TxManager( String txLogDir, KernelPanicEventGenerator kpe, TxFinishHook finishHook )
     {
         this.txLogDir = txLogDir;
         this.msgLog = StringLogger.getLogger( txLogDir + "/messages.log" );
         this.kpe = kpe;
+        this.finishHook = finishHook;
     }
 
     synchronized int getNextEventIdentifier()
@@ -101,7 +104,6 @@ public class TxManager implements TransactionManager
 
     void stop()
     {
-        StringLogger.close( txLogDir + "/messages.log" );
         if ( txLog != null )
         {
             try
@@ -114,6 +116,8 @@ public class TxManager implements TransactionManager
                     + ", " + e );
             }
         }
+        msgLog.logMessage( "TM shutting down" );
+        StringLogger.close( txLogDir + "/messages.log" );
     }
 
     void init( XaDataSourceManager xaDsManagerToUse )
@@ -561,28 +565,41 @@ public class TxManager implements TransactionManager
         {
             throw new IllegalStateException( "Not in transaction" );
         }
-        if ( tx.getStatus() != Status.STATUS_ACTIVE
-            && tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
+        
+        boolean hasAnyLocks = false;
+        try
         {
-            throw new IllegalStateException( "Tx status is: "
-                + getTxStatusAsString( tx.getStatus() ) );
+            hasAnyLocks = finishHook.hasAnyLocks( tx );
+            if ( tx.getStatus() != Status.STATUS_ACTIVE
+                && tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
+            {
+                throw new IllegalStateException( "Tx status is: "
+                    + getTxStatusAsString( tx.getStatus() ) );
+            }
+            tx.doBeforeCompletion();
+            // delist resources?
+            if ( tx.getStatus() == Status.STATUS_ACTIVE )
+            {
+                comittedTxCount.incrementAndGet();
+                commit( thread, tx );
+            }
+            else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
+            {
+                rolledBackTxCount.incrementAndGet();
+                rollbackCommit( thread, tx );
+            }
+            else
+            {
+                throw new IllegalStateException( "Tx status is: "
+                    + getTxStatusAsString( tx.getStatus() ) );
+            }
         }
-        tx.doBeforeCompletion();
-        // delist resources?
-        if ( tx.getStatus() == Status.STATUS_ACTIVE )
+        finally
         {
-            comittedTxCount.incrementAndGet();
-            commit( thread, tx );
-        }
-        else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
-        {
-            rolledBackTxCount.incrementAndGet();
-            rollbackCommit( thread, tx );
-        }
-        else
-        {
-            throw new IllegalStateException( "Tx status is: "
-                + getTxStatusAsString( tx.getStatus() ) );
+            if ( hasAnyLocks )
+            {
+                finishHook.finishTransaction( tx.getEventIdentifier() );
+            }
         }
     }
     
@@ -620,6 +637,7 @@ public class TxManager implements TransactionManager
             }
             catch ( Throwable t )
             {
+                t.printStackTrace();
                 commitFailureCause = t;
             }
         }
@@ -751,52 +769,65 @@ public class TxManager implements TransactionManager
         {
             throw new IllegalStateException( "Not in transaction" );
         }
-        if ( tx.getStatus() == Status.STATUS_ACTIVE ||
-            tx.getStatus() == Status.STATUS_MARKED_ROLLBACK || 
-            tx.getStatus() == Status.STATUS_PREPARING )
+        
+        boolean hasAnyLocks = false;
+        try
         {
-            tx.setStatus( Status.STATUS_MARKED_ROLLBACK );
-            tx.doBeforeCompletion();
-            // delist resources?
-            try
+            hasAnyLocks = finishHook.hasAnyLocks( tx );
+            if ( tx.getStatus() == Status.STATUS_ACTIVE ||
+                tx.getStatus() == Status.STATUS_MARKED_ROLLBACK || 
+                tx.getStatus() == Status.STATUS_PREPARING )
             {
-                rolledBackTxCount.incrementAndGet();
-                tx.doRollback();
-            }
-            catch ( XAException e )
-            {
-                e.printStackTrace();
-                log.severe( "Unable to rollback marked or active transaction. "
-                    + "Some resources may be commited others not. "
-                    + "Neo4j kernel should be SHUTDOWN for "
-                    + "resource maintance and transaction recovery ---->" );
-                setTmNotOk();
-                throw new SystemException( "Unable to rollback "
-                    + " ---> error code for rollback: " + e.errorCode );
-            }
-            tx.doAfterCompletion();
-            txThreadMap.remove( thread );
-            try
-            {
-                if ( tx.isGlobalStartRecordWritten() )
+                tx.setStatus( Status.STATUS_MARKED_ROLLBACK );
+                tx.doBeforeCompletion();
+                // delist resources?
+                try
                 {
-                    getTxLog().txDone( tx.getGlobalId() );
+                    rolledBackTxCount.incrementAndGet();
+                    tx.doRollback();
                 }
+                catch ( XAException e )
+                {
+                    e.printStackTrace();
+                    log.severe( "Unable to rollback marked or active transaction. "
+                        + "Some resources may be commited others not. "
+                        + "Neo4j kernel should be SHUTDOWN for "
+                        + "resource maintance and transaction recovery ---->" );
+                    setTmNotOk();
+                    throw new SystemException( "Unable to rollback "
+                        + " ---> error code for rollback: " + e.errorCode );
+                }
+                tx.doAfterCompletion();
+                txThreadMap.remove( thread );
+                try
+                {
+                    if ( tx.isGlobalStartRecordWritten() )
+                    {
+                        getTxLog().txDone( tx.getGlobalId() );
+                    }
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                    log.severe( "Error writing transaction log" );
+                    setTmNotOk();
+                    throw new SystemException( "TM encountered a problem, "
+                        + " error writing transaction log," + e );
+                }
+                tx.setStatus( Status.STATUS_NO_TRANSACTION );
             }
-            catch ( IOException e )
+            else
             {
-                e.printStackTrace();
-                log.severe( "Error writing transaction log" );
-                setTmNotOk();
-                throw new SystemException( "TM encountered a problem, "
-                    + " error writing transaction log," + e );
+                throw new IllegalStateException( "Tx status is: "
+                    + getTxStatusAsString( tx.getStatus() ) );
             }
-            tx.setStatus( Status.STATUS_NO_TRANSACTION );
         }
-        else
+        finally
         {
-            throw new IllegalStateException( "Tx status is: "
-                + getTxStatusAsString( tx.getStatus() ) );
+            if ( hasAnyLocks )
+            {
+                finishHook.finishTransaction( tx.getEventIdentifier() );
+            }
         }
     }
 

@@ -65,9 +65,13 @@ public class AutoConfigurator
         maxVmUsageMb = (int) ( mem / 1024 / 1024 );
         if ( dump )
         {
-            System.out.println( "Physical mem: " + totalPhysicalMemMb + "MB" );
-            System.out.println( "Heap size: " + maxVmUsageMb + "MB" );
+            System.out.println( getNiceMemoryInformation() );
         }
+    }
+
+    public String getNiceMemoryInformation()
+    {
+        return "Physical mem: " + totalPhysicalMemMb + "MB, Heap size: " + maxVmUsageMb + "MB";
     }
 
     public void configure( Map<Object,Object> config )

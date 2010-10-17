@@ -20,17 +20,17 @@
 
 package org.neo4j.kernel.impl.core;
 
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.impl.util.IntArray;
 
 class IntArrayIterator implements Iterable<Relationship>,
     Iterator<Relationship>
@@ -43,16 +43,16 @@ class IntArrayIterator implements Iterable<Relationship>,
     private final NodeManager nodeManager;
     private final RelationshipType types[];
 
-    private final Set<String> visitedTypes = new HashSet<String>();
+    private final List<RelTypeElementIterator> rels;
 
     IntArrayIterator( List<RelTypeElementIterator> rels, NodeImpl fromNode,
         Direction direction, NodeManager nodeManager, RelationshipType[] types )
     {
+        this.rels = rels;
         this.typeIterator = rels.iterator();
         if ( typeIterator.hasNext() )
         {
             currentTypeIterator = typeIterator.next();
-            visitedTypes.add( currentTypeIterator.getType() );
         }
         else
         {
@@ -82,68 +82,77 @@ class IntArrayIterator implements Iterable<Relationship>,
                 int nextId = currentTypeIterator.next( nodeManager );
                 try
                 {
-                    Relationship possibleElement = nodeManager
-                        .getRelationshipById( nextId );
-                    if ( direction == Direction.INCOMING
-                         && possibleElement.getEndNode().getId() == fromNode.id )
+                    if ( direction == Direction.BOTH )
                     {
-                        nextElement = possibleElement;
+                        nextElement = new RelationshipProxy( nextId, nodeManager );
+                        return true;
+                    }
+                    RelationshipImpl possibleElement = nodeManager.getRelForProxy( nextId );
+                    if ( direction == Direction.INCOMING 
+                         && possibleElement.getEndNodeId() == fromNode.id )
+                    {
+                        nextElement = new RelationshipProxy( nextId, nodeManager );
                         return true;
                     }
                     else if ( direction == Direction.OUTGOING
-                              && possibleElement.getStartNode().getId() == fromNode.id )
+                              && possibleElement.getStartNodeId() == fromNode.id )
                     {
-                        nextElement = possibleElement;
+                        nextElement = new RelationshipProxy( nextId, nodeManager );
                         return true;
                     }
-                    else if ( direction == Direction.BOTH )
-                    {
-                        nextElement = possibleElement;
-                        return true;
-                    }
+                    // No match
                 }
                 catch ( NotFoundException e )
                 { // ok deleted 
                 }
             }
+            
             while ( !currentTypeIterator.hasNext( nodeManager ) )
             {
                 if ( typeIterator.hasNext() )
                 {
                     currentTypeIterator = typeIterator.next();
-                    visitedTypes.add( currentTypeIterator.getType() );
                 }
-                else 
+                else if ( fromNode.getMoreRelationships( nodeManager ) )
                 {
-                    boolean gotMore = fromNode.getMoreRelationships( nodeManager );
-                    List<RelTypeElementIterator> list = Collections.EMPTY_LIST;
+                    Map<String, RelTypeElementIterator> newRels = new HashMap<String, RelTypeElementIterator>();
+                    for ( RelTypeElementIterator itr : rels )
+                    {
+                        RelTypeElementIterator newItr = itr;
+                        if ( itr.isSrcEmpty() )
+                        {
+                            IntArray newSrc = fromNode.getIntArray( itr.getType() );
+                            if ( newSrc != null )
+                            {
+                                newItr = itr.setSrc( newSrc );
+                            }
+                        }
+                        newRels.put( newItr.getType(), newItr );
+                    }
                     if ( types.length == 0 )
                     {
-                        list = fromNode.getAllRelationships( nodeManager );
-                    }
-                    else
-                    {
-                        list = fromNode.getAllRelationshipsOfType( nodeManager, types );
-                    }
-                    Iterator<RelTypeElementIterator> itr = list.iterator();
-                    while ( itr.hasNext() )
-                    {
-                        RelTypeElementIterator element = itr.next();
-                        if ( visitedTypes.contains( element.getType() ) )
+                        for ( Map.Entry<String, IntArray> entry : fromNode.getIntArrayMap().entrySet() )
                         {
-                            itr.remove();
+                            String type = entry.getKey();
+                            RelTypeElementIterator itr = newRels.get( type );
+                            if ( itr == null || itr.isSrcEmpty() )
+                            {
+                                itr = itr == null ? new FastRelTypeElement( type, fromNode, entry.getValue() ) :
+                                        itr.setSrc( entry.getValue() );
+                                newRels.put( type, itr );
+                            }
                         }
                     }
-                    typeIterator = list.iterator();
-                    if ( typeIterator.hasNext() )
-                    {
-                        currentTypeIterator = typeIterator.next();
-                        visitedTypes.add( currentTypeIterator.getType() );
-                    }
-                    if ( !gotMore )
-                    {
-                        break;
-                    }
+                    
+                    rels.clear();
+                    rels.addAll( newRels.values() );
+                    
+                    typeIterator = rels.iterator();
+                    currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : new NullRelTypeElement();
+                }
+                else
+                {
+                    break;
                 }
             }
          } while ( currentTypeIterator.hasNext( nodeManager ) );

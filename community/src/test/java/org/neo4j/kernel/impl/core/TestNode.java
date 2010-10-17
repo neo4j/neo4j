@@ -21,17 +21,23 @@
 package org.neo4j.kernel.impl.core;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.lang.Thread.State;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Test;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestNode extends AbstractNeo4jTestCase
@@ -356,5 +362,60 @@ public class TestNode extends AbstractNeo4jTestCase
         node.setProperty( "test", "test4" );
         newTransaction();
         assertEquals( "test4", node.getProperty( "test" ) );
+    }
+    
+    @Test
+    public void testNodeLockingProblem() throws InterruptedException
+    {
+        testLockProblem( getGraphDb().createNode() );
+    }
+
+    @Test
+    public void testRelationshipLockingProblem() throws InterruptedException
+    {
+        Node node = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        testLockProblem( node.createRelationshipTo( node2,
+                DynamicRelationshipType.withName( "lock-rel" ) ) );
+    }
+    
+    private void testLockProblem( final PropertyContainer entity ) throws InterruptedException
+    {
+        entity.setProperty( "key", "value" );
+        final AtomicBoolean gotTheLock = new AtomicBoolean();
+        Thread thread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                Transaction tx = getGraphDb().beginTx();
+                try
+                {
+                    ((AbstractGraphDatabase) getGraphDb()).getConfig().getLockManager().getWriteLock( entity );
+                    gotTheLock.set( true );
+                    tx.success();
+                }
+                catch ( RuntimeException e )
+                {
+                    e.printStackTrace();
+                    throw e;
+                }
+                finally
+                {
+                    tx.failure();
+                }
+            }
+        };
+        thread.start();
+        long endTime = System.currentTimeMillis() + 5000;
+        while ( thread.getState() != State.TERMINATED )
+        {
+            Thread.sleep( 100 );
+            if ( System.currentTimeMillis() > endTime )
+            {
+                break;
+            }
+        }
+        assertFalse( gotTheLock.get() );
     }
 }

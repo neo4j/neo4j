@@ -462,7 +462,7 @@ public class Neo4jMBean extends StandardMBean
 
     private final ObjectName objectName;
 
-    Neo4jMBean( String instanceId, Class<?> mbeanIface, boolean isMXBean )
+    protected Neo4jMBean( String instanceId, Class<?> mbeanIface, boolean isMXBean )
     {
         super( mbeanIface, isMXBean );
         objectName = getObjectName( instanceId, mbeanIface, getClass() );
@@ -472,7 +472,7 @@ public class Neo4jMBean extends StandardMBean
         }
     }
 
-    Neo4jMBean( String instanceId, Class<?> mbeanIface ) throws NotCompliantMBeanException
+    protected Neo4jMBean( String instanceId, Class<?> mbeanIface ) throws NotCompliantMBeanException
     {
         super( mbeanIface );
         objectName = getObjectName( instanceId, mbeanIface, getClass() );
@@ -482,7 +482,7 @@ public class Neo4jMBean extends StandardMBean
         }
     }
 
-    Neo4jMBean( String instanceId ) throws NotCompliantMBeanException
+    protected Neo4jMBean( String instanceId ) throws NotCompliantMBeanException
     {
         super( DynamicMBean.class );
         objectName = getObjectName( instanceId, DynamicMBean.class, getClass() );

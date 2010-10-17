@@ -120,4 +120,22 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     {
         return logicalLog.getFileName( version );
     }
+    
+    @Override
+    public ReadableByteChannel getCommittedTransaction( long txId ) throws IOException
+    {
+        return logicalLog.getCommittedTransaction( txId );
+    }
+
+    @Override
+    public ReadableByteChannel getPreparedTransaction( int identifier ) throws IOException
+    {
+        return logicalLog.getPreparedTransaction( identifier );
+    }
+
+    @Override
+    public int getMasterForCommittedTx( long txId ) throws IOException
+    {
+        return logicalLog.getMasterIdForCommittedTransaction( txId );
+    }
 }
