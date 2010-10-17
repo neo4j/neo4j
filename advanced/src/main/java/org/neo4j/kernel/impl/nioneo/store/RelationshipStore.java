@@ -24,6 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+
 /**
  * Implementation of the relationship store.
  */
@@ -44,16 +47,16 @@ public class RelationshipStore extends AbstractStore implements Store
      */
     public RelationshipStore( String fileName, Map<?,?> config )
     {
-        super( fileName, config );
+        super( fileName, config, IdType.RELATIONSHIP );
     }
 
     /**
      * See {@link AbstractStore#AbstractStore(String)}
      */
-    public RelationshipStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public RelationshipStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     public String getTypeAndVersionDescriptor()
     {
@@ -81,9 +84,9 @@ public class RelationshipStore extends AbstractStore implements Store
      * @throws IOException
      *             If unable to create relationship store or name null
      */
-    public static void createStore( String fileName )
+    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
     {
-        createEmptyStore( fileName, VERSION );
+        createEmptyStore( fileName, VERSION, idGeneratorFactory );
     }
 
     public RelationshipRecord getRecord( int id )
@@ -130,6 +133,7 @@ public class RelationshipStore extends AbstractStore implements Store
         try
         {
             updateRecord( record );
+            registerIdFromUpdateRecord( record.getId() );
         }
         finally
         {

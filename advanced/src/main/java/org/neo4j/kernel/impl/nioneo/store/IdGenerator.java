@@ -20,14 +20,14 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
-
 public interface IdGenerator
 {
     long nextId();
+    IdRange nextIdBatch( int size );
     void setHighId( long id );
     long getHighId();
     void freeId( long id );
     void close();
-    String getFileName();
     long getNumberOfIdsInUse();
+    long getDefragCount();
 }

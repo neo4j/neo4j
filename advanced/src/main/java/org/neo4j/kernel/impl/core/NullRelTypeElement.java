@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.NoSuchElementException;
 
+import org.neo4j.kernel.impl.util.IntArray;
+
 class NullRelTypeElement extends RelTypeElementIterator
 {
     NullRelTypeElement()
@@ -39,5 +41,17 @@ class NullRelTypeElement extends RelTypeElementIterator
     public int next( NodeManager nodeManager )
     {
         throw new NoSuchElementException();
+    }
+    
+    @Override
+    public boolean isSrcEmpty()
+    {
+        return true;
+    }
+    
+    @Override
+    public RelTypeElementIterator setSrc( IntArray newSrc )
+    {
+        return this;
     }
 }

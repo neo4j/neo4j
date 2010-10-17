@@ -127,4 +127,10 @@ public class DummyXaDataSource extends XaDataSource
         {
         }
     }
+    
+    @Override
+    public long getLastCommittedTxId()
+    {
+        return 0;
+    }
 }

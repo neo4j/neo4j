@@ -20,8 +20,10 @@
 
 package org.neo4j.helpers.collection;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -313,5 +315,20 @@ public abstract class IteratorUtil
     public static <T> int count( Iterable<T> iterable )
     {
         return count( iterable.iterator() );
+    }
+
+
+    /**
+     * Creates a collection from an iterable.
+     *
+     * @param iterable The iterable to create the collection from.
+     * @param <T> The generic type of both the iterable and the collection.
+     * @return a collection containing all items from the iterable.
+     */
+    public static <T> Collection<T> asCollection( Iterable<T> iterable )
+    {
+        List<T> list = new ArrayList<T>();
+        addToCollection( iterable, list );
+        return list;
     }
 }

@@ -25,6 +25,8 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import org.neo4j.kernel.impl.util.StringLogger;
+
 /**
  * <CODE>XaDataSource</CODE> is as a factory for creating
  * {@link XaConnection XaConnections}.
@@ -65,6 +67,7 @@ public abstract class XaDataSource
     private byte[] branchId = null;
     private String name = null;
     
+    private final StringLogger msgLog;
     /**
      * Constructor used by the Neo4j kernel to create datasources.
      * 
@@ -73,6 +76,8 @@ public abstract class XaDataSource
      */
     public XaDataSource( Map<?,?> params ) throws InstantiationException
     {
+        String storeDir = (String) params.get( "store_dir" );
+        msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
     }
 
     /**
@@ -335,5 +340,53 @@ public abstract class XaDataSource
             }
         }
         return false;
+    }
+    
+    public ReadableByteChannel getCommittedTransaction( long txId ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    public ReadableByteChannel getPreparedTransaction( int identifier ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    public synchronized void applyCommittedTransaction( long txId, ReadableByteChannel transaction ) throws IOException
+    {
+        if ( getLastCommittedTxId() + 1 == txId )
+        {
+            getXaContainer().getResourceManager().applyCommittedTransaction( transaction );
+        }
+        else if ( getLastCommittedTxId() + 1 < txId )
+        {
+            throw new IOException( "Tried to apply transaction with txId=" + txId + 
+                    " but last committed txId=" + getLastCommittedTxId() );
+        }
+        else
+        {
+            msgLog.logMessage( "Tried to apply transaction with txId=" + txId + 
+                    " but last committed txId=" + getLastCommittedTxId() );
+        }
+    }
+    
+    public long applyPreparedTransaction( ReadableByteChannel transaction ) throws IOException
+    {
+        return getXaContainer().getResourceManager().applyPreparedTransaction( transaction );
+    }
+    
+    public long getLastCommittedTxId()
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    public XaContainer getXaContainer()
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    public int getMasterForCommittedTx( long txId ) throws IOException
+    {
+        throw new UnsupportedOperationException();
     }
 }

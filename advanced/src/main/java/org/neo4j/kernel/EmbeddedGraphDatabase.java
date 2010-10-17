@@ -77,7 +77,13 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
      */
     public EmbeddedGraphDatabase( String storeDir, Map<String,String> params )
     {
-        this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this );
+        this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, params, this,
+                CommonFactories.defaultLockManagerFactory(),
+                CommonFactories.defaultIdGeneratorFactory(),
+                CommonFactories.defaultRelationshipTypeCreator(),
+                CommonFactories.defaultTxIdGeneratorFactory(),
+                CommonFactories.defaultTxFinishHook(),
+                CommonFactories.defaultLastCommittedTxIdSetter() );
     }
 
     /**

@@ -20,24 +20,23 @@
 
 package org.neo4j.kernel;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LockReleaser;
-import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import javax.transaction.TransactionManager;
+import java.io.File;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeSet;
 
 class GraphDbInstance
 {
@@ -45,38 +44,20 @@ class GraphDbInstance
     private boolean create;
     private String storeDir;
 
-    GraphDbInstance( String storeDir, boolean create )
+    GraphDbInstance( String storeDir, boolean create, Config config )
     {
         this.storeDir = storeDir;
         this.create = create;
+        this.config = config;
     }
 
-    private Config config = null;
+    private final Config config;
 
     private NioNeoDbPersistenceSource persistenceSource = null;
 
     public Config getConfig()
     {
         return config;
-    }
-
-    private Map<Object, Object> getDefaultParams()
-    {
-        Map<Object, Object> params = new HashMap<Object, Object>();
-        params.put( "neostore.nodestore.db.mapped_memory", "20M" );
-        params.put( "neostore.propertystore.db.mapped_memory", "90M" );
-        params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-        params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
-        params.put( "neostore.relationshipstore.db.mapped_memory", "100M" );
-        // if on windows, default no memory mapping
-        String nameOs = System.getProperty( "os.name" );
-        if ( nameOs.startsWith( "Windows" ) )
-        {
-            params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
-        }
-        return params;
     }
 
     /**
@@ -89,38 +70,23 @@ class GraphDbInstance
      * @param configuration parameters
      * @throws StartupFailedException if unable to start
      */
-    public synchronized Map<Object, Object> start(
-            GraphDatabaseService graphDb,
-            Map<String, String> stringParams, KernelPanicEventGenerator kpe,
-            TxEventSyncHookFactory syncHookFactory )
+    public synchronized Map<Object, Object> start( GraphDatabaseService graphDb )
     {
+
         if ( started )
         {
             throw new IllegalStateException( "Neo4j instance already started" );
         }
-        Map<Object, Object> params = getDefaultParams();
-        boolean useMemoryMapped = true;
-        if ( stringParams.containsKey( Config.USE_MEMORY_MAPPED_BUFFERS ) )
-        {
-            params.put( Config.USE_MEMORY_MAPPED_BUFFERS,
-                    stringParams.get( Config.USE_MEMORY_MAPPED_BUFFERS ) );
-        }
-        if ( "false".equals( params.get( Config.USE_MEMORY_MAPPED_BUFFERS ) ) )
-        {
-            useMemoryMapped = false;
-        }
-        boolean dump = false;
-        if ( "true".equals( stringParams.get( Config.DUMP_CONFIGURATION ) ) )
-        {
-            dump = true;
-        }
+        Map<Object, Object> params = config.getParams();
+        boolean useMemoryMapped = Boolean.parseBoolean( (String) config.getInputParams().get(
+                Config.USE_MEMORY_MAPPED_BUFFERS ) );
+        boolean dumpToConsole = Boolean.parseBoolean( (String) config.getInputParams().get(
+                Config.DUMP_CONFIGURATION ) );
         storeDir = FileUtils.fixSeparatorsInPath( storeDir );
-        new AutoConfigurator( storeDir, useMemoryMapped, dump ).configure( params );
-        for ( Map.Entry<String, String> entry : stringParams.entrySet() )
-        {
-            params.put( entry.getKey(), entry.getValue() );
-        }
-        config = new Config( graphDb, storeDir, params, kpe );
+        StringLogger logger = StringLogger.getLogger( storeDir + "/messages.log" );
+        AutoConfigurator autoConfigurator = new AutoConfigurator( storeDir, useMemoryMapped, dumpToConsole );
+        autoConfigurator.configure( subset( config.getInputParams(), Config.USE_MEMORY_MAPPED_BUFFERS ) );
+        params.putAll( config.getInputParams() );
 
         String separator = System.getProperty( "file.separator" );
         String store = storeDir + separator + "neostore";
@@ -194,27 +160,20 @@ class GraphDbInstance
         config.getGraphDbModule().init();
 
         config.getTxModule().start();
-        config.getPersistenceModule().start(
-                config.getTxModule().getTxManager(), persistenceSource,
-                syncHookFactory );
+        config.getPersistenceModule().start( config.getTxModule().getTxManager(),
+                persistenceSource, config.getSyncHookFactory() );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
         config.getGraphDbModule().start( config.getLockReleaser(),
-                config.getPersistenceModule().getPersistenceManager(), params );
-        if ( "true".equals( params.get( Config.DUMP_CONFIGURATION ) ) )
-        {
-            for ( Object key : params.keySet() )
-            {
-                if ( key instanceof String )
-                {
-                    Object value = params.get( key );
-                    if ( value instanceof String )
-                    {
-                        System.out.println( key + "=" + value );
-                    }
-                }
-            }
-        }
+                config.getPersistenceModule().getPersistenceManager(),
+                config.getRelationshipTypeCreator(), params );
+
+        logger.logMessage( "--- CONFIGURATION START ---" );
+        logger.logMessage( autoConfigurator.getNiceMemoryInformation() );
+        logger.logMessage( "Kernel version: " + Version.get() );
+        logger.logMessage( "" );
+        logConfiguration( params, logger, dumpToConsole );
+        logger.logMessage( "--- CONFIGURATION END ---" );
 
         if ( config.getTxModule().getXaDataSourceManager().hasDataSource( "lucene-index" ) )
         {
@@ -223,6 +182,43 @@ class GraphDbInstance
 
         started = true;
         return Collections.unmodifiableMap( params );
+    }
+
+    private static Map<Object, Object> subset( Map<Object, Object> source, String... keys )
+    {
+        Map<Object, Object> result = new HashMap<Object, Object>();
+        for ( String key : keys )
+        {
+            if ( source.containsKey( key ) )
+            {
+                result.put( key, source.get( key ) );
+            }
+        }
+        return result;
+    }
+
+    private void logConfiguration( Map<Object, Object> params, StringLogger logger, boolean dumpToConsole )
+    {
+        TreeSet<String> stringKeys = new TreeSet<String>();
+        for( Object key : params.keySet())
+        {
+            if (key instanceof String)
+            {
+                stringKeys.add((String)key);
+            }
+        }
+
+        for( String key : stringKeys )
+        {
+            Object value = params.get( key );
+            String mess = key + "=" + value;
+            if ( dumpToConsole )
+            {
+                System.out.println( mess );
+            }
+
+            logger.logMessage( mess );
+        }
     }
 
     private void cleanWriteLocksInLuceneDirectory( String luceneDir )

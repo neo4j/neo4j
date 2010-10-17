@@ -28,6 +28,8 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
@@ -38,9 +40,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.transaction.TxModule;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
@@ -132,6 +131,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         public DummyTransaction( int identifier, XaLogicalLog log )
         {
             super( identifier, log );
+            setCommitTxId( 0 );
         }
 
         public void doAddCommand( XaCommand command )
@@ -185,6 +185,12 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             return -1;
         }
+
+        @Override
+        public long getLastCommittedTx()
+        {
+            return 0;
+        }
     }
 
     public class DummyXaDataSource extends XaDataSource
@@ -198,7 +204,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             try
             {
                 map.put( "store_dir", path() );
-                xaContainer = XaContainer.create( resourceFile(),
+                xaContainer = XaContainer.create( this, resourceFile(),
                     new DummyCommandFactory(), new DummyTransactionFactory(), 
                     map );
                 xaContainer.openLogicalLog();
@@ -244,6 +250,12 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             // TODO Auto-generated method stub
 
+        }
+        
+        @Override
+        public long getLastCommittedTxId()
+        {
+            return 0;
         }
     }
 
@@ -311,8 +323,10 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     @Test
     public void testCreateXaResource() throws Exception
     {
+        Map<Object,Object> config = new HashMap<Object,Object>();
+        config.put( "store_dir", "target/var" );
         xaDsMgr.registerDataSource( "dummy_datasource", new DummyXaDataSource(
-                new java.util.HashMap<Object, Object>() ), "DDDDDD".getBytes() );
+                config ), "DDDDDD".getBytes() );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -371,10 +385,10 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         DummyXaConnection xaC1 = null;
         try
         {
+            Map<Object,Object> config = new HashMap<Object,Object>();
+            config.put( "store_dir", "target/var" );
             xaDsMgr.registerDataSource( "dummy_datasource1",
-                    new DummyXaDataSource(
-                            new java.util.HashMap<Object, Object>() ),
-                    "DDDDDD".getBytes() );
+                    new DummyXaDataSource( config ), "DDDDDD".getBytes() );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                 .getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();

@@ -41,6 +41,9 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -51,10 +54,14 @@ import org.neo4j.kernel.impl.nioneo.xa.RelationshipEventConsumer;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipTypeEventConsumer;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XidImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class TestNeoStore extends AbstractNeo4jTestCase
 {
+    private static final IdGeneratorFactory ID_GENERATOR_FACTORY =
+            CommonFactories.defaultIdGeneratorFactory();
+    
     private NodeEventConsumer nStore;
     private PropertyStore pStore;
     private RelationshipTypeEventConsumer relTypeStore;
@@ -84,7 +91,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     @Before
     public void setUpNeoStore() throws Exception
     {
-        NeoStore.createStore( file( "neo" ), Collections.EMPTY_MAP );
+        NeoStore.createStore( file( "neo" ), MapUtil.map(
+                IdGeneratorFactory.class, ID_GENERATOR_FACTORY ) );
     }
 
     private static class MyPropertyIndex extends
@@ -136,8 +144,18 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                 .getLockManager();
             LockReleaser lockReleaser = getEmbeddedGraphDb().getConfig()
                 .getLockReleaser();
-            ds = new NeoStoreXaDataSource( file( "neo" ), path(), // file( "nioneo_logical.log" ),
-                lockManager, lockReleaser );
+            
+            ds = new NeoStoreXaDataSource( MapUtil.genericMap(
+                    LockManager.class, lockManager,
+                    LockReleaser.class, lockReleaser,
+                    IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+                    TxIdGenerator.class, TxIdGenerator.DEFAULT,
+                    "store_dir", path(),
+                    "neo_store", file( "neo" ),
+                    "logical_log", file( "nioneo_logical.log" ) ) );
+            
+//            ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
+//                lockManager, lockReleaser );
         }
         catch ( InstantiationException e )
         {
@@ -1034,9 +1052,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     public void testSetBlockSize() throws Exception
     {
         tearDownNeoStore();
-        Map<String,String> config = new HashMap<String, String>();
+        Map<Object,Object> config = new HashMap<Object, Object>();
         config.put( "string_block_size", "62" );
         config.put( "array_block_size", "302" );
+        config.put( IdGeneratorFactory.class, CommonFactories.defaultIdGeneratorFactory() );
         NeoStore.createStore( file( "neo" ), config );
         initializeStores();
         assertEquals( 62 + 13, pStore.getStringBlockSize() );

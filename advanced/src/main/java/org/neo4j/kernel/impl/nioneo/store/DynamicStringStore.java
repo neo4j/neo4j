@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.Map;
 
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 
 /**
@@ -31,25 +33,26 @@ public class DynamicStringStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "StringPropertyStore v0.9.5";
-
-    public DynamicStringStore( String fileName, Map<?,?> config )
+    
+    public DynamicStringStore( String fileName, Map<?,?> config, IdType idType )
     {
-        super( fileName, config );
+        super( fileName, config, idType );
     }
 
-    public DynamicStringStore( String fileName )
-    {
-        super( fileName );
-    }
+//    public DynamicStringStore( String fileName )
+//    {
+//        super( fileName );
+//    }
 
     public String getTypeAndVersionDescriptor()
     {
         return VERSION;
     }
 
-    public static void createStore( String fileName, int blockSize )
+    public static void createStore( String fileName, int blockSize,
+            IdGeneratorFactory idGeneratorFactory, IdType idType )
     {
-        createEmptyStore( fileName, blockSize, VERSION );
+        createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, idType );
     }
     
     public void setHighId( long highId )

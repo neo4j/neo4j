@@ -25,6 +25,14 @@ import java.util.Set;
 
 public class IntArray
 {
+    public static final IntArray EMPTY = new IntArray()
+    {
+        public int length()
+        {
+            return 0;
+        }
+    };
+    
     private int[] rels;
     private int arrayCount = 0;
 

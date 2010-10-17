@@ -38,14 +38,14 @@ public class IdGeneratorModule
     private static final String MODULE_NAME = "IdGeneratorModule";
 
     private PersistenceSource persistenceSource = null;
-    private final IdGenerator idGenerator;
+    private final EntityIdGenerator idGenerator;
 
-    public IdGeneratorModule()
+    public IdGeneratorModule( EntityIdGenerator idGenerator )
     {
-        this.idGenerator = new IdGenerator();
+        this.idGenerator = idGenerator;
     }
 
-    public IdGenerator getIdGenerator()
+    public EntityIdGenerator getIdGenerator()
     {
         return idGenerator;
     }
@@ -63,7 +63,7 @@ public class IdGeneratorModule
 
     public synchronized void reload()
     {
-        throw new UnsupportedOperationException( 
+        throw new UnsupportedOperationException(
             "IdGenerator does not support reload" );
     }
 
@@ -93,6 +93,7 @@ public class IdGeneratorModule
         this.persistenceSource = source;
     }
 
+    @Override
     public String toString()
     {
         return this.getModuleName();
