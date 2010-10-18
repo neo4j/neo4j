@@ -26,7 +26,7 @@ import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.MasterImpl;
 
-public class SingleJvmTesting extends AbstractHaTest
+public class SingleJvmTest extends AbstractHaTest
 {
     private MasterImpl master;
     private List<GraphDatabaseService> haDbs;

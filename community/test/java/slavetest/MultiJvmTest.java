@@ -14,7 +14,7 @@ import org.junit.After;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.impl.RmiLocation;
 
-public class MultiJvmTesting extends AbstractHaTest
+public class MultiJvmTest extends AbstractHaTest
 {
     private static final int MASTER_PORT = 8990;
     
