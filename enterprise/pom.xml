@@ -15,6 +15,10 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
   <url>http://components.neo4j.org/${project.artifactId}/</url>
   
   <properties>
+    <lucene.groupId>org.apache.servicemix.bundles</lucene.groupId>
+    <lucene.artifactId>org.apache.servicemix.bundles.lucene</lucene.artifactId>
+    <lucene.version>3.0.1_2</lucene.version>
+    <lucene.main.version>3.0.1</lucene.main.version>
     <bundle.namespace>org.neo4j.index</bundle.namespace>
     <short-name>lucene-index</short-name>
   </properties>
@@ -23,6 +27,7 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
 
   <scm>
     <connection>scm:svn:https://svn.neo4j.org/components/lucene-index/trunk/</connection>
+    <developerConnection>${project.scm.connection}</developerConnection>
     <url>https://trac.neo4j.org/browser/components/lucene-index/trunk</url>
   </scm>
 
@@ -38,10 +43,17 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
       <version>1.2-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
+    <!-- lucene has downgraded the simple patch for OSGi
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
       <version>3.0.1</version>
+    </dependency>
+    -->
+    <dependency>
+      <groupId>${lucene.groupId}</groupId>
+      <artifactId>${lucene.artifactId}</artifactId>
+      <version>${lucene.version}</version>
     </dependency>
   </dependencies>
 
@@ -56,3 +68,4 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
     </plugins>
   </build>
 </project>
+
