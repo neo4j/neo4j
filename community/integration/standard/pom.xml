@@ -23,6 +23,11 @@
       <artifactId>commons-io</artifactId>
       <version>1.4</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j.release.integration</groupId>
+      <artifactId>poja</artifactId>
+      <version>0.1-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
 </project>
