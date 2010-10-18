@@ -21,6 +21,7 @@
 package org.neo4j.index.impl.lucene;
 
 import java.io.File;
+import java.lang.Thread.State;
 import java.util.Random;
 
 import org.junit.Test;
@@ -94,11 +95,16 @@ public class TestRecovery
             // Ok
         }
         
-        sleepNice( 1000 );
+        // Wait until the stopper has run, i.e. the graph db is shut down
+        while ( stopper.getState() != State.TERMINATED )
+        {
+            sleepNice( 100 );
+        }
+        
+        // Start up and let it recover
         final GraphDatabaseService newGraphDb =
             new EmbeddedGraphDatabase( getDbPath() );
         final IndexProvider newProvider = new LuceneIndexProvider( newGraphDb );
-        sleepNice( 1000 );
         newGraphDb.shutdown();
     }
     
@@ -123,9 +129,12 @@ public class TestRecovery
     			"java", "-cp", System.getProperty( "java.class.path" ),
     			getClass().getPackage().getName() + ".Inserter", path
     	} );
+    	
+    	// Let it run for a while and then kill it, and wait for it to die
     	Thread.sleep( 7000 );
     	process.destroy();
     	process.waitFor();
+    	
     	new EmbeddedGraphDatabase( path ).shutdown();
     }
 }
