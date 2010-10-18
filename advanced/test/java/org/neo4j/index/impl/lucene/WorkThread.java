@@ -27,7 +27,7 @@ import org.neo4j.graphdb.index.IndexHits;
 
 public class WorkThread extends BaseWorker
 {
-    public WorkThread( Index<Node> index, GraphDatabaseService graphDb )
+    public WorkThread( Index<Node> index, GraphDatabaseService graphDb ) 
     {
         super( index, graphDb );
     }

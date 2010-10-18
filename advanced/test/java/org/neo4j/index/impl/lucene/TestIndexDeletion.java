@@ -42,7 +42,6 @@ import static org.neo4j.index.Neo4jTestCase.assertCollection;
 import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.HasThrownException.hasThrownException;
 
-
 public class TestIndexDeletion
 {
     private static final String INDEX_NAME = "index";
