@@ -1,7 +1,5 @@
 package org.neo4j.release.it.std.exec;
 
-import com.sun.xml.internal.xsom.impl.scd.Iterators;
-import org.ops4j.io.FileUtils;
 import org.ops4j.pax.runner.platform.internal.StreamUtils;
 
 import java.io.BufferedOutputStream;
