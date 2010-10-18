@@ -33,6 +33,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 import javax.transaction.TransactionManager;
 import java.io.File;
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.RuntimeMXBean;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -171,6 +176,25 @@ class GraphDbInstance
         logger.logMessage( "--- CONFIGURATION START ---" );
         logger.logMessage( autoConfigurator.getNiceMemoryInformation() );
         logger.logMessage( "Kernel version: " + Version.get() );
+        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+        OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
+        logger.logMessage( "Operating System: " + os.getName() + "; version: " + os.getVersion()
+                           + "; arch: " + os.getArch() );
+        logger.logMessage( "VM Name: " + runtime.getVmName() );
+        logger.logMessage( "VM Vendor: " + runtime.getVmVendor() );
+        logger.logMessage( "VM Version: " + runtime.getVmVersion() );
+        if ( runtime.isBootClassPathSupported() )
+        {
+            logger.logMessage( "Boot Class Path: " + runtime.getBootClassPath() );
+        }
+        logger.logMessage( "Class Path: " + runtime.getClassPath() );
+        logger.logMessage( "Library Path: " + runtime.getLibraryPath() );
+        for ( GarbageCollectorMXBean gcBean : ManagementFactory.getGarbageCollectorMXBeans() )
+        {
+            logger.logMessage( "Garbage Collector: " + gcBean.getName() + ": "
+                               + Arrays.toString( gcBean.getMemoryPoolNames() ) );
+        }
+        logger.logMessage( "VM Arguments: " + runtime.getInputArguments() );
         logger.logMessage( "" );
         logConfiguration( params, logger, dumpToConsole );
         logger.logMessage( "--- CONFIGURATION END ---" );
