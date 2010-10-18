@@ -34,11 +34,12 @@ public class BaseWorker extends Thread
     protected Index<Node> index;
     protected GraphDatabaseService graphDb;
     protected Exception exception;
-    protected CountDownLatch latch = new CountDownLatch( WAITING );
-    protected AtomicInteger threadState = new AtomicInteger();
-    protected static final int WAITING = 1;
+    protected CountDownLatch latch = new CountDownLatch( 1 );
+    protected AtomicInteger threadState = new AtomicInteger( STARTING );
+    private static final int WAITING = 1;
     private static final int RUNNING = 2;
-    protected static final int DONE = 3;
+    private static final int DONE = 3;
+    private static final int STARTING = 4;
     private Queue<Command> commands = new ConcurrentLinkedQueue<Command>();
 
     public BaseWorker( Index<Node> index, GraphDatabaseService graphDb )
@@ -46,13 +47,14 @@ public class BaseWorker extends Thread
         this.index = index;
         this.graphDb = graphDb;
         start();
+        waitForWorkerToStart();
     }
 
     @Override
     public void run()
     {
         CommandState state = new CommandState( index, graphDb );
-        threadState.set( WorkThread.WAITING );
+        threadState.set( STARTING );
         while ( state.alive )
         {
             try
@@ -64,7 +66,7 @@ public class BaseWorker extends Thread
                 Command command = commands.poll();
                 log( "WORKER: I have a command! " + command.getClass().getSimpleName() );
                 command.doWork( state );
-                threadState.set( WorkThread.DONE );
+                threadState.set( DONE );
 
             } catch ( InterruptedException e )
             {
@@ -72,7 +74,7 @@ public class BaseWorker extends Thread
             } catch ( Exception exception )
             {
                 this.exception = exception;
-                threadState.set( WorkThread.DONE );
+                threadState.set( DONE );
             }
 
         }
@@ -88,13 +90,24 @@ public class BaseWorker extends Thread
         commands.add( cmd );
         log( "MASTER: Queuing command, and starting worker - " + cmd.getClass().getSimpleName() );
         latch.countDown();
-        waitFor();
+        waitForCommandToComplete();
         threadState.set( WAITING );
     }
 
-    private void waitFor()
+    private void waitForCommandToComplete()
     {
-        while ( !threadState.compareAndSet( DONE, WAITING ) )
+        waitFor( DONE, WAITING );
+    }
+
+    private void waitForWorkerToStart()
+    {
+        waitFor( STARTING, WAITING );
+    }
+
+    private void waitFor( int expectedState, int newState )
+    {
+        int retries = 0;
+        while ( !threadState.compareAndSet( expectedState, newState ) && retries++ < 100 )
         {
             try
             {
@@ -104,5 +117,12 @@ public class BaseWorker extends Thread
                 throw new RuntimeException( e );
             }
         }
+
+        if (retries > 100)
+        {
+            throw new IllegalStateException( "Something didn't finish in a timely manner. Aborting..." );
+        }
     }
+
+
 }
