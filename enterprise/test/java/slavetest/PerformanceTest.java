@@ -1,10 +1,30 @@
+/*
+ * Copyright (c) 2002-2010 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *  
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package slavetest;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
 @Ignore
-public class PerformanceTests
+public class PerformanceTest
 {
     @Test
     public void allocateIds() throws Exception
@@ -32,11 +52,11 @@ public class PerformanceTests
 
     public static void main( String[] args ) throws Exception
     {
-        PerformanceTests perf = new PerformanceTests();
+        PerformanceTest perf = new PerformanceTest();
         perf.selective = true;
         for ( String test : args )
         {
-            PerformanceTests.class.getDeclaredMethod( test ).invoke( perf );
+            PerformanceTest.class.getDeclaredMethod( test ).invoke( perf );
         }
     }
 
@@ -48,7 +68,7 @@ public class PerformanceTests
         final boolean singleJvm = doTest( "SINGLE_JVM" );
         if ( noHa || singleJvm )
         {
-            SingleJvmTesting single = new SingleJvmTesting();
+            SingleJvmTest single = new SingleJvmTest();
             if ( noHa )
             {
                 single.initializeDbs( 1 );
@@ -65,14 +85,14 @@ public class PerformanceTests
 
         if ( doTest( "MULTI_JVM" ) )
         {
-            MultiJvmTesting multi = new MultiJvmTesting();
+            MultiJvmTest multi = new MultiJvmTest();
             multi.initializeDbs( 1 );
             time( "Multi JVM HA", executeOnSlave( multi, job ) );
             multi.shutdownDbs();
         }
         if ( doTest( "FULL_HA" ) )
         {
-            MultiJvmWithZooKeeperTesting multiZoo = new MultiJvmWithZooKeeperTesting();
+            MultiJvmWithZooKeeperTest multiZoo = new MultiJvmWithZooKeeperTest();
             multiZoo.startZooKeeperCluster();
             multiZoo.initializeDbs( 1 );
             time( "Multi JVM HA with ZooKeeper", executeOnSlave( multiZoo, job ) );
