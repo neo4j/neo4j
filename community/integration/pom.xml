@@ -16,9 +16,9 @@
   <packaging>pom</packaging>
 
   <modules>
+    <module>poja</module>
     <module>standard</module>
     <module>osgi</module>
-    <module>poja</module>
   </modules>
 
 </project>
