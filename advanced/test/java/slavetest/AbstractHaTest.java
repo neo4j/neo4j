@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -357,18 +358,18 @@ public abstract class AbstractHaTest
 
     // This is difficult to test a.t.m. since you can't really bring down a master
     // and expect it to be able to come up again without any work.
-//    @Test
-//    public void testMasterFailure() throws Exception
-//    {
-//        initializeDbs( 1 );
-//        Serializable[] result = executeJob( new CommonJobs.CreateSubRefNodeMasterFailJob(
-//                getMasterShutdownDispatcher() ), 0 );
-//        assertFalse( (Boolean) result[0] );
-//        startUpMaster( MapUtil.stringMap() );
-//        long nodeId = (Long) result[1];
-//        Boolean existed = executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 );
-//        assertFalse( existed.booleanValue() );
-//    }
+    @Test
+    public void testMasterFailure() throws Exception
+    {
+        initializeDbs( 1 );
+        Serializable[] result = executeJob( new CommonJobs.CreateSubRefNodeMasterFailJob(
+                getMasterShutdownDispatcher() ), 0 );
+        assertFalse( (Boolean) result[0] );
+        startUpMaster( MapUtil.stringMap() );
+        long nodeId = (Long) result[1];
+        Boolean existed = executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 );
+        assertFalse( existed.booleanValue() );
+    }
     
     @Test
     public void testSlaveConstraintViolation() throws Exception
