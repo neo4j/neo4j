@@ -127,7 +127,9 @@ public class FluentPlatformBuilderTest {
                 forMainClass(named(mainClassName)),
                 includingTargetClasses(),
                 includingTargetTestClasses(),
-                provisioning()
+                provisioning(
+                        mavenBundle().groupId("org.neo4j").artifactId("neo4j-kernel").version("1.2-1.2.M01")
+                )
         );
         platform.start();
     }
