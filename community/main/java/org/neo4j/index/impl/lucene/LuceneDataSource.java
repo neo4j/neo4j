@@ -146,8 +146,19 @@ public class LuceneDataSource extends LogBackedXaDataSource
         this.indexStore = new IndexStore( storeDir );
         this.store = newIndexStore( storeDir );
         this.typeCache = new IndexTypeCache();
-        boolean isReadOnly = params.containsKey( "read_only" ) ?
-                (Boolean) params.get( "read_only" ) : false;
+        boolean isReadOnly = false;
+        if ( params.containsKey( "read_only" ) )
+        {
+            Object readOnly = params.get( "read_only" );
+            if ( readOnly instanceof Boolean )
+            {
+                isReadOnly = (Boolean) readOnly;
+            }
+            else
+            {
+                isReadOnly = Boolean.parseBoolean( (String) readOnly );
+            }
+        }
                 
         nodeEntityType = new EntityType()
         {
@@ -179,13 +190,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return Relationship.class;
             }
         };
-                
+
+        XaCommandFactory cf = new LuceneCommandFactory();
+        XaTransactionFactory tf = new LuceneTransactionFactory( store );
+        xaContainer = XaContainer.create( this, this.baseStorePath + "/lucene.log", cf, tf, params );
+
         if ( !isReadOnly )
         {
-            XaCommandFactory cf = new LuceneCommandFactory();
-            XaTransactionFactory tf = new LuceneTransactionFactory( store );
-            xaContainer = XaContainer.create( this, this.baseStorePath + "/lucene.log", cf,
-                    tf, params );
             try
             {
                 xaContainer.openLogicalLog();
@@ -199,10 +210,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
             xaContainer.getLogicalLog().setKeepLogs(
                     shouldKeepLog( (String) params.get( Config.KEEP_LOGICAL_LOGS ), DEFAULT_NAME ) );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
-        }
-        else
-        {
-            xaContainer = null;
         }
     }
     
