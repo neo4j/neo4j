@@ -53,7 +53,7 @@ public class TestCacheTypes extends AbstractNeo4jTestCase
     public void testDefaultCache()
     {
         GraphDatabaseService db = newDb( null );
-        assertEquals( CacheType.weak, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
+        assertEquals( CacheType.soft, ((EmbeddedGraphDatabase) db).getConfig().getGraphDbModule().getNodeManager().getCacheType() );
         db.shutdown();
     }
 
