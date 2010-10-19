@@ -33,10 +33,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public abstract class KernelExtension extends Service
 {
     private static final String INSTANCE_ID = "instanceId";
+    private final String key;
 
     protected KernelExtension( String key )
     {
         super( key );
+        this.key = key;
     }
 
     @Override
@@ -49,6 +51,11 @@ public abstract class KernelExtension extends Service
     public final boolean equals( Object obj )
     {
         return this.getClass().equals( obj.getClass() );
+    }
+    
+    String getKey()
+    {
+        return this.key;
     }
 
     public final void agentLoad( String agentArgs )
@@ -141,6 +148,7 @@ public abstract class KernelExtension extends Service
                 try
                 {
                     extension.load( this );
+                    loaded( extension );
                     msgLog.logMessage( "Extension " + extension + " loaded ok" );
                 }
                 catch ( Exception ex )
@@ -194,6 +202,8 @@ public abstract class KernelExtension extends Service
                 return getConfigParams().get( key );
             }
         }
+        
+        protected abstract void loaded( KernelExtension extension );
     }
 
     /**

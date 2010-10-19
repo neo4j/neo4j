@@ -36,6 +36,7 @@ import org.neo4j.kernel.AutoConfigurator;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -60,6 +61,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class BatchInserterImpl implements BatchInserter
 {
     private final NeoStore neoStore;
+    private final IndexStore indexStore;
     private final String storeDir;
     
     private final PropertyIndexHolder indexHolder;
@@ -109,6 +111,7 @@ public class BatchInserterImpl implements BatchInserter
             getRelationshipTypeStore().getRelationshipTypes();
         typeHolder = new RelationshipTypeHolder( types );
         graphDbService = new BatchGraphDatabaseImpl( this );
+        indexStore = new IndexStore( storeDir );
     }
     
     public long createNode( Map<String,Object> properties )
@@ -592,5 +595,10 @@ public class BatchInserterImpl implements BatchInserter
     public GraphDatabaseService getGraphDbService()
     {
         return graphDbService;
+    }
+    
+    public IndexStore getIndexStore()
+    {
+        return this.indexStore;
     }
 }
