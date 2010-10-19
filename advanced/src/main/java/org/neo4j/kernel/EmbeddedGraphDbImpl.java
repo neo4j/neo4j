@@ -41,19 +41,15 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelExtension.Function;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
@@ -63,12 +59,10 @@ import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.kernel.impl.index.IndexXaConnection;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxFinishHook;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 class EmbeddedGraphDbImpl
@@ -93,8 +87,7 @@ class EmbeddedGraphDbImpl
 
     private KernelExtension.KernelData extensions;
     
-    private final IndexStore indexStore;
-    private final Map<String, IndexProvider> indexProviders = new HashMap<String, IndexProvider>();
+    private final IndexManagerImpl indexManager;
     private final StringLogger msgLog;
 
     /**
@@ -122,6 +115,8 @@ class EmbeddedGraphDbImpl
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
         this.msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
         this.graphDbService = graphDbService;
+        IndexStore indexStore = graphDbInstance.getConfig().getIndexStore();
+        this.indexManager = new IndexManagerImpl( this, indexStore );
         graphDbInstance.start( graphDbService, new KernelExtensionLoader()
         {
             public void load( final Map<Object, Object> params )
@@ -156,7 +151,7 @@ class EmbeddedGraphDbImpl
                     {
                         if ( extension instanceof IndexProvider )
                         {
-                            indexProviders.put( extension.getKey(), (IndexProvider) extension );
+                            indexManager.addProvider( extension.getKey(), (IndexProvider) extension );
                         }
                     }
                 };
@@ -164,7 +159,6 @@ class EmbeddedGraphDbImpl
             }
         });
         nodeManager = config.getGraphDbModule().getNodeManager();
-        this.indexStore = graphDbInstance.getConfig().getIndexStore();
     }
 
     private TxModule newTxModule( Map<String, String> inputParams, TxFinishHook rollbackHook )
@@ -491,155 +485,9 @@ class EmbeddedGraphDbImpl
                             getConfig().getTxModule().getTxManager() );
         }
     }
-
-    private Pair<Map<String, String>, Boolean> findIndexConfig( Class<? extends PropertyContainer> cls,
-            String indexName, Map<String, String> suppliedConfig, Map<?, ?> dbConfig )
-    {
-        // 1. Check stored config (has this index been created previously?)
-        Map<String, String> storedConfig = indexStore.get( cls, indexName );
-//        userConfig = userConfig != null ? defaultsFiller.fill( userConfig ) : null;
-        Map<String, String> configToUse = null;
-        IndexProvider indexProvider = null;
-        
-        // 2. Check config supplied by the user for this method call
-        if ( configToUse == null )
-        {
-            configToUse = suppliedConfig;
-        }
-        
-        // 3. Check db config properties for provider
-        if ( configToUse == null )
-        {
-            String provider = null;
-            if ( dbConfig != null )
-            {
-                provider = (String) dbConfig.get( "index." + indexName );
-                if ( provider == null )
-                {
-                    provider = (String) dbConfig.get( "index" );
-                }
-            }
-            
-            // 4. Default to lucene
-            if ( provider == null )
-            {
-                provider = "lucene";
-            }
-            indexProvider = getIndexProvider( provider );
-            configToUse = indexProvider.fillInDefaults( MapUtil.stringMap( KEY_INDEX_PROVIDER, provider ) );
-        }
-        else
-        {
-            indexProvider = getIndexProvider( configToUse.get( KEY_INDEX_PROVIDER ) );
-        }
-        
-        if ( storedConfig != null )
-        {
-            if ( suppliedConfig != null && !storedConfig.equals( suppliedConfig ) )
-            {
-                throw new IllegalArgumentException( "Supplied index configuration:\n" +
-                        suppliedConfig + "\ndiffer from stored config:\n" + storedConfig +
-                        "\nfor '" + indexName + "'" );
-            }
-            configToUse = storedConfig;
-        }
-        
-        boolean created = indexStore.setIfNecessary( cls, indexName, configToUse );
-        return new Pair<Map<String, String>, Boolean>( configToUse, created );
-    }
     
-    private IndexProvider getIndexProvider( String provider )
+    IndexManager index()
     {
-        synchronized ( this.indexProviders )
-        {
-            IndexProvider result = this.indexProviders.get( provider );
-            if ( result != null )
-            {
-                return result;
-            }
-            throw new IllegalArgumentException( "No index provider '" + provider + "' found" );
-//            result = (IndexProvider) Service.load( KernelExtension.class, provider );
-//            this.indexProviders.put( provider, result );
-//            return result;
-        }
-    }
-    
-    private Map<String, String> getOrCreateIndexConfig( Class<? extends PropertyContainer> cls,
-            String indexName, Map<String, String> suppliedConfig )
-    {
-        Pair<Map<String, String>, Boolean> result = findIndexConfig( cls,
-                indexName, suppliedConfig, getConfig().getParams() );
-        if ( result.other() )
-        {
-            IndexCreatorThread creator = new IndexCreatorThread( cls, indexName, result.first() );
-            creator.start();
-            try
-            {
-                creator.join();
-                if ( creator.exception != null )
-                {
-                    throw new TransactionFailureException( "Index creation failed for " + indexName +
-                            ", " + result.first(), creator.exception );
-                }
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-            }
-        }
-        return result.first();
-    }
-    
-    Index<Node> nodeIndex( String indexName, Map<String, String> configForCreation )
-    {
-        Map<String, String> config = getOrCreateIndexConfig( Node.class, indexName, configForCreation );
-        return getIndexProvider( config.get( KEY_INDEX_PROVIDER ) ).nodeIndex( indexName, config );
-    }
-    
-    RelationshipIndex relationshipIndex( String indexName, Map<String, String> configForCreation )
-    {
-        Map<String, String> config = getOrCreateIndexConfig( Relationship.class, indexName, configForCreation );
-        return getIndexProvider( config.get( KEY_INDEX_PROVIDER ) ).relationshipIndex( indexName, config );
-    }
-    
-    private class IndexCreatorThread extends Thread
-    {
-        private final String indexName;
-        private final Map<String, String> config;
-        private Exception exception;
-        private final Class<? extends PropertyContainer> cls;
-
-        IndexCreatorThread( Class<? extends PropertyContainer> cls, String indexName,
-                Map<String, String> config )
-        {
-            this.cls = cls;
-            this.indexName = indexName;
-            this.config = config;
-        }
-        
-        @Override
-        public void run()
-        {
-            String provider = config.get( KEY_INDEX_PROVIDER );
-            String dataSourceName = getIndexProvider( provider ).getDataSourceName();
-            XaDataSource dataSource = getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( dataSourceName );
-            IndexXaConnection connection = (IndexXaConnection) dataSource.getXaConnection();
-            Transaction tx = beginTx();
-            try
-            {
-                javax.transaction.Transaction javaxTx = getConfig().getTxModule().getTxManager().getTransaction();
-                javaxTx.enlistResource( connection.getXaResource() );
-                connection.createIndex( cls, indexName, config );
-                tx.success();
-            }
-            catch ( Exception e )
-            {
-                this.exception = e;
-            }
-            finally
-            {
-                tx.finish();
-            }
-        }
+        return this.indexManager;
     }
 }

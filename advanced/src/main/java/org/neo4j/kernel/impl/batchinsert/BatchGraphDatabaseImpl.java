@@ -40,8 +40,7 @@ import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 
@@ -709,13 +708,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         throw new UnsupportedOperationException();
     }
     
-    public Index<Node> nodeIndex( String indexName, Map<String, String> configForCreation )
-    {
-        throw new UnsupportedOperationException();
-    }
-    
-    public RelationshipIndex relationshipIndex( String indexName,
-            Map<String, String> configForCreation )
+    public IndexManager index()
     {
         throw new UnsupportedOperationException();
     }

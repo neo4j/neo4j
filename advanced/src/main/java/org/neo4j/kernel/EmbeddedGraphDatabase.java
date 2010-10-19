@@ -32,8 +32,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.index.IndexManager;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
@@ -213,14 +212,8 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
         return this.graphDbImpl.unregisterTransactionEventHandler( handler );
     }
     
-    public Index<Node> nodeIndex( String indexName, Map<String, String> configForCreation )
+    public IndexManager index()
     {
-        return this.graphDbImpl.nodeIndex( indexName, configForCreation );
-    }
-    
-    public RelationshipIndex relationshipIndex( String indexName,
-            Map<String, String> configForCreation )
-    {
-        return this.graphDbImpl.relationshipIndex( indexName, configForCreation );
+        return this.graphDbImpl.index();
     }
 }
