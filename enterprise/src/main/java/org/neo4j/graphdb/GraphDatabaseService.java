@@ -25,9 +25,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
@@ -267,36 +265,9 @@ public interface GraphDatabaseService
             KernelEventHandler handler );
     
     /**
-     * Returns an {@link Index} for {@link Node}s for the name
-     * {@code indexName} with the given {@code config}. The {@code config}
-     * {@link Map} can contain any provider-implementation-specific data that
-     * can control how an index behaves. The key <bold>provider</bold> controls
-     * which implementation to use, where that value maps to an
-     * {@link IndexProvider}. If there's no index for {@code indexName} it will
-     * be created with the specified configuration.
-     * 
-     * @param indexName the name of the index.
-     * @param config a {@link Map} of configuration parameters to use with the
-     * index. Parameters can be anything and are implementation-specific,
-     * except <bold>provider</bold> which controls the index implementation.
-     * @return the {@link Index} corresponding to the {@code indexName}.
+     * Returns the {@link IndexManager} paired with this graph database service
+     * and is the entry point for managing indexes coupled with this database.
+     * @return the {@link IndexManager} for this database.
      */
-    public Index<Node> nodeIndex( String indexName, Map<String, String> configForCreation );
-
-    /**
-     * Returns an {@link Index} for {@link Relationship}s for the name
-     * {@code indexName} with the given {@code config}. The {@code config}
-     * {@link Map} can contain any provider-implementation-specific data that
-     * can control how an index behaves. The key <bold>provider</bold> controls
-     * which implementation to use, where that value maps to an
-     * {@link IndexProvider}. If there's no index for {@code indexName} it will
-     * be created with the specified configuration.
-     * 
-     * @param indexName the name of the index.
-     * @param config a {@link Map} of configuration parameters to use with the
-     * index. Parameters can be anything and are implementation-specific,
-     * except <bold>provider</bold> which controls the index implementation.
-     * @return the {@link Index} corresponding to the {@code indexName}.
-     */
-    public RelationshipIndex relationshipIndex( String indexName, Map<String, String> configForCreation );
+    public IndexManager index();
 }
