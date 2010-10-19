@@ -39,11 +39,12 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
-public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService
+public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexManager
 {
     private final GraphDatabaseService actual;
 
@@ -443,15 +444,40 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService
         };
     }
 
-    public Index<Node> nodeIndex( String indexName, Map<String, String> configForCreation )
+    public boolean existsForNodes( String indexName )
     {
-        return new ReadOnlyNodeIndexProxy( actual.nodeIndex( indexName, configForCreation ) );
+        return actual.index().existsForNodes( indexName );
     }
 
-    public RelationshipIndex relationshipIndex( String indexName,
-            Map<String, String> configForCreation )
+    public Index<Node> forNodes( String indexName )
     {
-        return new ReadOnlyRelationshipIndexProxy( actual.relationshipIndex( indexName, configForCreation ) );
+        return new ReadOnlyNodeIndexProxy( actual.index().forNodes( indexName, null ) );
+    }
+
+    public Index<Node> forNodes( String indexName, Map<String, String> customConfiguration )
+    {
+        return new ReadOnlyNodeIndexProxy( actual.index().forNodes( indexName, customConfiguration ) );
+    }
+
+    public boolean existsForRelationships( String indexName )
+    {
+        return actual.index().existsForRelationships( indexName );
+    }
+
+    public RelationshipIndex forRelationships( String indexName )
+    {
+        return new ReadOnlyRelationshipIndexProxy( actual.index().forRelationships( indexName, null ) );
+    }
+
+    public RelationshipIndex forRelationships( String indexName,
+            Map<String, String> customConfiguration )
+    {
+        return new ReadOnlyRelationshipIndexProxy( actual.index().forRelationships( indexName, customConfiguration ) );
+    }
+
+    public IndexManager index()
+    {
+        return this;
     }
 
     abstract class ReadOnlyIndexProxy<T extends PropertyContainer, I extends Index<T>> implements
