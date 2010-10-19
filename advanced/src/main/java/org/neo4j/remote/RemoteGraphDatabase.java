@@ -32,6 +32,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.RelationshipIndex;
 
 /**
  * A remote connection to a running {@link GraphDatabaseService Graph Database}
@@ -276,5 +278,16 @@ public final class RemoteGraphDatabase implements GraphDatabaseService
     {
         // NOTE This might not be something that we wish to support in RemoteGraphDatabase
         return false;
+    }
+    
+    public Index<Node> nodeIndex( String indexName, Map<String, String> configForCreation )
+    {
+        throw new UnsupportedOperationException( "Not implemented RemoteGraphDatabase.nodeIndex()" );
+    }
+    
+    public RelationshipIndex relationshipIndex( String indexName,
+            Map<String, String> configForCreation )
+    {
+        throw new UnsupportedOperationException( "Not implemented RemoteGraphDatabase.relationshipIndex()" );
     }
 }
