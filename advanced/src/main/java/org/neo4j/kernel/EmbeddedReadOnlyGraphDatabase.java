@@ -32,6 +32,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.RelationshipIndex;
 
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
@@ -163,6 +165,12 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     {
         return graphDbImpl.getManagementBean( type );
     }
+    
+    @Override
+    public boolean isReadOnly()
+    {
+        return true;
+    }
 
     @Override
     public String toString()
@@ -202,5 +210,16 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
             TransactionEventHandler<T> handler )
     {
         throw new UnsupportedOperationException();
+    }
+    
+    public Index<Node> nodeIndex( String indexName, Map<String, String> configForCreation )
+    {
+        return graphDbImpl.nodeIndex( indexName, configForCreation );
+    }
+    
+    public RelationshipIndex relationshipIndex( String indexName,
+            Map<String, String> configForCreation )
+    {
+        return graphDbImpl.relationshipIndex( indexName, configForCreation );
     }
 }

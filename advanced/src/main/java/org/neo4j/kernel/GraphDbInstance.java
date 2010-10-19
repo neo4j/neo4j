@@ -75,7 +75,8 @@ class GraphDbInstance
      * @param configuration parameters
      * @throws StartupFailedException if unable to start
      */
-    public synchronized Map<Object, Object> start( GraphDatabaseService graphDb )
+    public synchronized Map<Object, Object> start( GraphDatabaseService graphDb,
+            KernelExtensionLoader kernelExtensionLoader )
     {
 
         if ( started )
@@ -140,19 +141,19 @@ class GraphDbInstance
             catch ( NoClassDefFoundError err )
             { // ok index util not on class path
             }
-
-            try
-            {
-                Class<?> cls = Class.forName( "org.neo4j.index.impl.lucene.LuceneDataSource" );
-                config.getTxModule().registerDataSource( "lucene-index", cls.getName(),
-                        "162374".getBytes(), config.getParams() );
-            }
-            catch ( ClassNotFoundException e )
-            { // ok new lucene index not on classpath
-            }
-            catch ( NoClassDefFoundError err )
-            { // ok new lucene index not on classpath
-            }
+//
+//            try
+//            {
+//                Class<?> cls = Class.forName( "org.neo4j.index.impl.lucene.LuceneDataSource" );
+//                config.getTxModule().registerDataSource( "lucene-index", cls.getName(),
+//                        "162374".getBytes(), config.getParams() );
+//            }
+//            catch ( ClassNotFoundException e )
+//            { // ok new lucene index not on classpath
+//            }
+//            catch ( NoClassDefFoundError err )
+//            { // ok new lucene index not on classpath
+//            }
         }
         persistenceSource = new NioNeoDbPersistenceSource();
         config.setPersistenceSource( Config.DEFAULT_DATA_SOURCE_NAME, create );
@@ -163,6 +164,8 @@ class GraphDbInstance
         persistenceSource.init();
         config.getIdGeneratorModule().init();
         config.getGraphDbModule().init();
+        
+        kernelExtensionLoader.load( params );
 
         config.getTxModule().start();
         config.getPersistenceModule().start( config.getTxModule().getTxManager(),
@@ -199,10 +202,10 @@ class GraphDbInstance
         logConfiguration( params, logger, dumpToConsole );
         logger.logMessage( "--- CONFIGURATION END ---" );
 
-        if ( config.getTxModule().getXaDataSourceManager().hasDataSource( "lucene-index" ) )
-        {
-            config.getTxModule().getXaDataSourceManager().unregisterDataSource( "lucene-index" );
-        }
+//        if ( config.getTxModule().getXaDataSourceManager().hasDataSource( "lucene-index" ) )
+//        {
+//            config.getTxModule().getXaDataSourceManager().unregisterDataSource( "lucene-index" );
+//        }
 
         started = true;
         return Collections.unmodifiableMap( params );
