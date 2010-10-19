@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -31,7 +32,6 @@ public abstract class AbstractHaTest
     static final File PARENT_PATH = new File( "target/havar" );
     static final File DBS_PATH = new File( PARENT_PATH, "dbs" );
     static final File SKELETON_DB_PATH = new File( DBS_PATH, "skeleton" );
-    static final Map<String, String> INDEX_CONFIG = MapUtil.stringMap( "index", "true" );
     
     private boolean expectsResults;
     private int nodeCount;
@@ -52,9 +52,9 @@ public abstract class AbstractHaTest
         expectsResults = false;
     }
 
-    public void verify( VerifyDbContext refDb, VerifyDbContext... dbs )
+    public void verify( GraphDatabaseService refDb, GraphDatabaseService... dbs )
     {
-        for ( VerifyDbContext otherDb : dbs )
+        for ( GraphDatabaseService otherDb : dbs )
         {
             int vNodeCount = 0;
             int vRelCount = 0;
@@ -63,11 +63,11 @@ public abstract class AbstractHaTest
             int vNodeIndexServicePropCount = 0;
             int vNodeIndexProviderPropCount = 0;
             
-            Set<Node> otherNodes = IteratorUtil.addToCollection( otherDb.db.getAllNodes().iterator(),
+            Set<Node> otherNodes = IteratorUtil.addToCollection( otherDb.getAllNodes().iterator(),
                     new HashSet<Node>() );
-            for ( Node node : refDb.db.getAllNodes() )
+            for ( Node node : refDb.getAllNodes() )
             {
-                Node otherNode = otherDb.db.getNodeById( node.getId() );
+                Node otherNode = otherDb.getNodeById( node.getId() );
                 int[] counts = verifyNode( node, otherNode, refDb, otherDb );
                 vRelCount += counts[0];
                 vNodePropCount += counts[1];
@@ -92,10 +92,10 @@ public abstract class AbstractHaTest
     }
     
     private static int[] verifyNode( Node node, Node otherNode,
-            VerifyDbContext refDb, VerifyDbContext otherDb )
+            GraphDatabaseService refDb, GraphDatabaseService otherDb )
     {
         int vNodePropCount = verifyProperties( node, otherNode );
-        int vNodeIndexServicePropCount = verifyIndexService( node, otherNode, refDb, otherDb );
+//        int vNodeIndexServicePropCount = verifyIndexService( node, otherNode, refDb, otherDb );
         int vNodeIndexProviderProCount = verifyIndexProvider( node, otherNode, refDb, otherDb );
         Set<Long> otherRelIds = new HashSet<Long>();
         for ( Relationship otherRel : otherNode.getRelationships( Direction.OUTGOING ) )
@@ -107,7 +107,7 @@ public abstract class AbstractHaTest
         int vRelPropCount = 0;
         for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
         {
-            Relationship otherRel = otherDb.db.getRelationshipById( rel.getId() );
+            Relationship otherRel = otherDb.getRelationshipById( rel.getId() );
             vRelPropCount += verifyProperties( rel, otherRel );
             if ( rel.getStartNode().getId() != otherRel.getStartNode().getId() )
             {
@@ -130,14 +130,14 @@ public abstract class AbstractHaTest
             throw new RuntimeException( "Other node " + otherNode + " has more relationships " +
                     otherRelIds );
         }
-        return new int[] { vRelCount, vNodePropCount, vRelPropCount, vNodeIndexServicePropCount, vNodeIndexProviderProCount };
+        return new int[] { vRelCount, vNodePropCount, vRelPropCount, -1, vNodeIndexProviderProCount };
     }
 
-    private static int verifyIndexService( Node node, Node otherNode, VerifyDbContext refDb,
+/*    private static int verifyIndexService( Node node, Node otherNode, VerifyDbContext refDb,
             VerifyDbContext otherDb )
     {
         return 0;
-/*        int count = 0;
+        int count = 0;
         if ( refDb.indexService == null || otherDb.indexService == null )
         {
             return count;
@@ -165,23 +165,23 @@ public abstract class AbstractHaTest
             throw new RuntimeException( "Other node " + otherNode + " has more indexing: " +
                     otherKeys );
         }
-        return count;*/
-    }
+        return count;
+    }*/
 
-    private static boolean isIndexedWithIndexService( Node node, VerifyDbContext db, String key )
-    {
-        return false;
-        // return db.indexService.getSingleNode( key, node.getProperty( key ) ) != null;
-    }
+//    private static boolean isIndexedWithIndexService( Node node, VerifyDbContext db, String key )
+//    {
+//        return false;
+//        // return db.indexService.getSingleNode( key, node.getProperty( key ) ) != null;
+//    }
 
-    private static int verifyIndexProvider( Node node, Node otherNode, VerifyDbContext refDb,
-            VerifyDbContext otherDb )
+    private static int verifyIndexProvider( Node node, Node otherNode, GraphDatabaseService refDb,
+            GraphDatabaseService otherDb )
     {
         int count = 0;
-        if ( refDb.indexProvider == null || otherDb.indexProvider == null )
-        {
-            return count;
-        }
+//        if ( refDb.indexProvider == null || otherDb.indexProvider == null )
+//        {
+//            return count;
+//        }
         
         Set<String> otherKeys = new HashSet<String>();
         for ( String key : otherNode.getPropertyKeys() )
@@ -208,9 +208,9 @@ public abstract class AbstractHaTest
         return count;
     }
     
-    private static boolean isIndexedWithIndexProvider( Node node, VerifyDbContext db, String key )
+    private static boolean isIndexedWithIndexProvider( Node node, GraphDatabaseService db, String key )
     {
-        return db.indexProvider.nodeIndex( "users", null ).get( key, node.getProperty( key ) ).getSingle() != null;
+        return db.nodeIndex( "users", null ).get( key, node.getProperty( key ) ).getSingle() != null;
     }
     
     private static int verifyProperties( PropertyContainer entity, PropertyContainer otherEntity )
@@ -468,14 +468,14 @@ public abstract class AbstractHaTest
     public void createNodeAndIndex() throws Exception
     {
         setExpectedResults( 2, 0, 1, 0, 1, 0 );
-        initializeDbs( 1, INDEX_CONFIG );
+        initializeDbs( 1 );
         executeJob( new CommonJobs.CreateNodeAndIndexJob( "name", "Neo" ), 0 );
     }
     
     @Test
     public void indexingAndTwoSlaves() throws Exception
     {
-        initializeDbs( 2, INDEX_CONFIG );
+        initializeDbs( 2 );
         long id = executeJobOnMaster( new CommonJobs.CreateNodeAndIndexJob( "name", "Morpheus" ) );
         pullUpdates();
         long id2 = executeJobOnMaster( new CommonJobs.CreateNodeAndIndexJob( "name", "Trinity" ) );
@@ -488,7 +488,7 @@ public abstract class AbstractHaTest
     public void testNewIndexFramework() throws Exception
     {
         setExpectedResults( 2, 0, 2, 0, 0, 2 );
-        initializeDbs( 2, INDEX_CONFIG );
+        initializeDbs( 2 );
         long id = executeJobOnMaster( new CommonJobs.CreateNodeAndNewIndexJob( "users",
                 "name", "Morpheus", "rank", "Captain" ) );
         pullUpdates();
