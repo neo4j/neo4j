@@ -104,32 +104,22 @@ public class SingleJvmTest extends AbstractHaTest
     @After
     public void verifyAndShutdownDbs()
     {
-        verify( new VerifyDbContext( master.getGraphDb() ), getVerifyDbArray() );
+        verify( master.getGraphDb(), haDbs.toArray( new GraphDatabaseService[haDbs.size()] ) );
         shutdownDbs();
 
-        VerifyDbContext masterOfflineDb =
-                new VerifyDbContext( new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() ) );
-        VerifyDbContext[] slaveOfflineDbs = new VerifyDbContext[haDbs.size()];
+        GraphDatabaseService masterOfflineDb =
+                new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
+        GraphDatabaseService[] slaveOfflineDbs = new GraphDatabaseService[haDbs.size()];
         for ( int i = 1; i <= haDbs.size(); i++ )
         {
-            slaveOfflineDbs[i-1] = new VerifyDbContext( new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() ) );
+            slaveOfflineDbs[i-1] = new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
         }
         verify( masterOfflineDb, slaveOfflineDbs );
-        masterOfflineDb.db.shutdown();
-        for ( VerifyDbContext db : slaveOfflineDbs )
+        masterOfflineDb.shutdown();
+        for ( GraphDatabaseService db : slaveOfflineDbs )
         {
-            db.db.shutdown();
+            db.shutdown();
         }
-    }
-
-    private VerifyDbContext[] getVerifyDbArray()
-    {
-        VerifyDbContext[] contexts = new VerifyDbContext[haDbs.size()];
-        for ( int i = 0; i < contexts.length; i++ )
-        {
-            contexts[i] = new VerifyDbContext( haDbs.get( i ) );
-        }
-        return contexts;
     }
 
     @Override

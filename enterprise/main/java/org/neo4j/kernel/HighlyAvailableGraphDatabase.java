@@ -20,26 +20,26 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
-import org.neo4j.index.impl.lucene.LuceneIndexProvider;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.ha.HaCommunicationException;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
+import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.Response;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.ha.SlaveContext;
+import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
+import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
+import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveTxRollbackHook;
 import org.neo4j.kernel.ha.TransactionStream;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
-import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
-import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
@@ -64,7 +64,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private final Broker broker;
     private volatile EmbeddedGraphDbImpl localGraph;
 //    private volatile IndexService localIndexService;
-    private volatile IndexProvider localIndexProvider;
+//    private volatile IndexProvider localIndexProvider;
     private final int machineId;
     private volatile MasterServer masterServer;
     private final AtomicBoolean reevaluatingMyself = new AtomicBoolean();
@@ -274,7 +274,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new SlaveTxIdGeneratorFactory( broker, this ),
                 new SlaveTxRollbackHook( broker, this ),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
-        instantiateIndexIfNeeded();
+//        instantiateIndexIfNeeded();
         instantiateAutoUpdatePullerIfConfigSaysSo();
         msgLog.logMessage( "Started as slave" );
     }
@@ -290,7 +290,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 CommonFactories.defaultTxFinishHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
-        instantiateIndexIfNeeded();
+//        instantiateIndexIfNeeded();
         msgLog.logMessage( "Started as master" );
     }
 
@@ -382,14 +382,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     // This whole thing with instantiating indexes internally depending on config
     // is obviously temporary
-    private void instantiateIndexIfNeeded()
-    {
-        if ( Boolean.parseBoolean( config.get( "index" ) ) )
-        {
-//            this.localIndexService = new LuceneIndexService( this );
-            this.localIndexProvider = new LuceneIndexProvider( this );
-        }
-    }
+//    private void instantiateIndexIfNeeded()
+//    {
+//        if ( Boolean.parseBoolean( config.get( "index" ) ) )
+//        {
+////            this.localIndexService = new LuceneIndexService( this );
+//            this.localIndexProvider = new LuceneIndexProvider( this );
+//        }
+//    }
 
     public Transaction beginTx()
     {
@@ -571,10 +571,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 //        return this.localIndexService;
 //    }
 
-    public IndexProvider getIndexProvider()
-    {
-        return this.localIndexProvider;
-    }
+//    public IndexProvider getIndexProvider()
+//    {
+//        return this.localIndexProvider;
+//    }
 
     protected MasterServer getMasterServerIfMaster()
     {
@@ -589,5 +589,22 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public boolean isMaster()
     {
         return broker.iAmMaster();
+    }
+    
+    @Override
+    public boolean isReadOnly()
+    {
+        return false;
+    }
+    
+    public Index<Node> nodeIndex( String indexName, Map<String, String> configForCreation )
+    {
+        return this.localGraph.nodeIndex( indexName, configForCreation );
+    }
+    
+    public RelationshipIndex relationshipIndex( String indexName,
+            Map<String, String> configForCreation )
+    {
+        return this.localGraph.relationshipIndex( indexName, configForCreation );
     }
 }

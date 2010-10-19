@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.impl.RmiLocation;
 
@@ -58,11 +59,10 @@ public class MultiJvmTest extends AbstractHaTest
     {
         shutdownDbs();
         
-        VerifyDbContext masterDb = new VerifyDbContext( new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() ) );
+        GraphDatabaseService masterDb = new EmbeddedGraphDatabase( dbPath( 0 ).getAbsolutePath() );
         for ( int i = 1; i < jvms.size(); i++ )
         {
-            VerifyDbContext slaveDb =
-                    new VerifyDbContext( new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() ) );
+            GraphDatabaseService slaveDb = new EmbeddedGraphDatabase( dbPath( i ).getAbsolutePath() );
             verify( masterDb, slaveDb );
         }
     }
