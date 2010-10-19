@@ -51,9 +51,10 @@ import org.apache.lucene.store.FSDirectory;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.index.impl.IndexStore;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.index.IndexProviderStore;
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
@@ -119,7 +120,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private final String baseStorePath;
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock(); 
     final IndexStore indexStore;
-    final LuceneIndexStore store;
+    final IndexProviderStore providerStore;
     private final IndexTypeCache typeCache;
     private boolean closed;
     private final Cache caching;
@@ -143,8 +144,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
         String storeDir = (String) params.get( "store_dir" );
         this.baseStorePath = getStoreDir( storeDir );
         cleanWriteLocks( baseStorePath );
-        this.indexStore = new IndexStore( storeDir );
-        this.store = newIndexStore( storeDir );
+        this.indexStore = (IndexStore) params.get( IndexStore.class );
+        this.providerStore = newIndexStore( storeDir );
         this.typeCache = new IndexTypeCache();
         boolean isReadOnly = false;
         if ( params.containsKey( "read_only" ) )
@@ -167,7 +168,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return IndexType.newBaseDocument( (Long) entityId );
             }
             
-            public Class<?> getType()
+            public Class<? extends PropertyContainer> getType()
             {
                 return Node.class;
             }
@@ -185,14 +186,14 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return doc;
             }
 
-            public Class<?> getType()
+            public Class<? extends PropertyContainer> getType()
             {
                 return Relationship.class;
             }
         };
 
         XaCommandFactory cf = new LuceneCommandFactory();
-        XaTransactionFactory tf = new LuceneTransactionFactory( store );
+        XaTransactionFactory tf = new LuceneTransactionFactory();
         xaContainer = XaContainer.create( this, this.baseStorePath + "/lucene.log", cf, tf, params );
 
         if ( !isReadOnly )
@@ -253,9 +254,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return dir.getAbsolutePath();
     }
     
-    static LuceneIndexStore newIndexStore( String dbStoreDir )
+    static IndexProviderStore newIndexStore( String dbStoreDir )
     {
-        return new LuceneIndexStore( getStoreDir( dbStoreDir ) + "/lucene-store.db" );
+        return new IndexProviderStore( getStoreDir( dbStoreDir ) + "/lucene-store.db" );
     }
 
     @Override
@@ -282,7 +283,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             xaContainer.close();
         }
-        store.close();
+        providerStore.close();
         closed = true;
     }
 
@@ -310,13 +311,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
     
     private class LuceneTransactionFactory extends XaTransactionFactory
     {
-        private final LuceneIndexStore store;
-        
-        LuceneTransactionFactory( LuceneIndexStore store )
-        {
-            this.store = store;
-        }
-        
         @Override
         public XaTransaction create( int identifier )
         {
@@ -332,13 +326,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
         @Override
         public long getCurrentVersion()
         {
-            return store.getVersion();
+            return providerStore.getVersion();
         }
         
         @Override
         public long getAndSetNewVersion()
         {
-            return store.incrementVersion();
+            return providerStore.incrementVersion();
         }
         
         @Override
@@ -355,7 +349,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         @Override
         public long getLastCommittedTx()
         {
-            return store.getLastCommittedTx();
+            return providerStore.getLastCommittedTx();
         }
     }
     
@@ -509,7 +503,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         closeIndexSearcher( identifier );
         deleteFileOrDirectory( getFileDirectory( baseStorePath, identifier ) );
         invalidateCache( identifier );
-        indexStore.remove( identifier.indexName );
+        indexStore.remove( identifier.entityType.getType(), identifier.indexName );
         typeCache.invalidate( identifier );
         synchronized ( indexes )
         {
@@ -626,7 +620,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
     
-    void closeWriter( IndexWriter writer )
+    static void closeWriter( IndexWriter writer )
     {
         try
         {
@@ -673,30 +667,30 @@ public class LuceneDataSource extends LogBackedXaDataSource
     @Override
     public long getCreationTime()
     {
-        return store.getCreationTime();
+        return providerStore.getCreationTime();
     }
     
     @Override
     public long getRandomIdentifier()
     {
-        return store.getRandomNumber();
+        return providerStore.getRandomNumber();
     }
     
     @Override
     public long getCurrentLogVersion()
     {
-        return store.getVersion();
+        return providerStore.getVersion();
     }
     
     @Override
     public long getLastCommittedTxId()
     {
-        return store.getLastCommittedTx();
+        return providerStore.getLastCommittedTx();
     }
 
     public void setLastCommittedTxId( long txId )
     {
-        store.setLastCommittedTx( txId );
+        providerStore.setLastCommittedTx( txId );
     }
     
     @Override

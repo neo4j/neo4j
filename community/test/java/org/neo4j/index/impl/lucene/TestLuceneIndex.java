@@ -33,6 +33,7 @@ import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
 import static org.neo4j.index.impl.lucene.ValueContext.numeric;
 
 import java.io.File;
+import java.util.Map;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 public class TestLuceneIndex
 {
     private static GraphDatabaseService graphDb;
-    private static LuceneIndexProvider provider;
     private Transaction tx;
 
     @BeforeClass
@@ -70,7 +70,6 @@ public class TestLuceneIndex
         String storeDir = "target/var/freshindex";
         Neo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
         graphDb = new EmbeddedGraphDatabase( storeDir );
-        provider = new LuceneIndexProvider( graphDb );
     }
 
     @AfterClass
@@ -78,13 +77,26 @@ public class TestLuceneIndex
     {
         graphDb.shutdown();
     }
-
+    
     @After
     public void commitTx()
     {
+        finishTx( true );
+    }
+    
+    private void rollbackTx()
+    {
+        finishTx( false );
+    }
+
+    public void finishTx( boolean success )
+    {
         if ( tx != null )
         {
-            tx.success();
+            if ( success )
+            {
+                tx.success();
+            }
             tx.finish();
             tx = null;
         }
@@ -142,7 +154,17 @@ public class TestLuceneIndex
             return node.createRelationshipTo( otherNode, TEST_TYPE );
         }
     }
-
+    
+    private Index<Node> nodeIndex( String name, Map<String, String> config )
+    {
+        return graphDb.nodeIndex( name, config );
+    }
+    
+    private RelationshipIndex relationshipIndex( String name, Map<String, String> config )
+    {
+        return graphDb.relationshipIndex( name, config );
+    }
+    
     private <T extends PropertyContainer> void makeSureAdditionsCanBeRead(
             Index<T> index, EntityCreator<T> entityCreator )
     {
@@ -190,7 +212,7 @@ public class TestLuceneIndex
     @Test()
     public void makeSureYouGetLatestTxModificationsInQueryByDefault()
     {
-        Index<Node> index = provider.nodeIndex( "failing-index", LuceneIndexProvider.FULLTEXT_CONFIG );
+        Index<Node> index = graphDb.nodeIndex( "failing-index", LuceneIndexProvider.FULLTEXT_CONFIG );
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
         assertThat( index.query( "key:value" ), contains( node ) );
@@ -199,28 +221,28 @@ public class TestLuceneIndex
     @Test
     public void makeSureAdditionsCanBeReadNodeExact()
     {
-        makeSureAdditionsCanBeRead( provider.nodeIndex( "exact", LuceneIndexProvider.EXACT_CONFIG ),
+        makeSureAdditionsCanBeRead( nodeIndex( "exact", LuceneIndexProvider.EXACT_CONFIG ),
                 NODE_CREATOR );
     }
 
     @Test
     public void makeSureAdditionsCanBeReadNodeFulltext()
     {
-        makeSureAdditionsCanBeRead( provider.nodeIndex( "fulltext",
+        makeSureAdditionsCanBeRead( nodeIndex( "fulltext",
                 LuceneIndexProvider.FULLTEXT_CONFIG ), NODE_CREATOR );
     }
 
     @Test
     public void makeSureAdditionsCanBeReadRelationshipExact()
     {
-        makeSureAdditionsCanBeRead( provider.relationshipIndex( "exact",
+        makeSureAdditionsCanBeRead( relationshipIndex( "exact",
                 LuceneIndexProvider.EXACT_CONFIG ), RELATIONSHIP_CREATOR );
     }
 
     @Test
     public void makeSureAdditionsCanBeReadRelationshipFulltext()
     {
-        makeSureAdditionsCanBeRead( provider.relationshipIndex( "fulltext",
+        makeSureAdditionsCanBeRead( relationshipIndex( "fulltext",
                 LuceneIndexProvider.FULLTEXT_CONFIG ), RELATIONSHIP_CREATOR );
     }
 
@@ -232,7 +254,7 @@ public class TestLuceneIndex
 
     private void makeSureAdditionsCanBeRemoved( boolean restartTx )
     {
-        Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
         String key = "name";
         String value = "Mattias";
         assertNull( index.get( key, value ).getSingle() );
@@ -259,7 +281,7 @@ public class TestLuceneIndex
 
     private void makeSureSomeAdditionsCanBeRemoved( boolean restartTx )
     {
-        Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
         String key1 = "name";
         String key2 = "title";
         String value1 = "Mattias";
@@ -311,7 +333,7 @@ public class TestLuceneIndex
     private void makeSureThereCanBeMoreThanOneValueForAKeyAndEntity(
             boolean restartTx )
     {
-        Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
         String key = "name";
         String value1 = "Lucene";
         String value2 = "Index";
@@ -340,7 +362,7 @@ public class TestLuceneIndex
     @Test
     public void shouldNotGetLatestTxModificationsWhenChoosingSpeedQueries()
     {
-        Index<Node> index = provider.nodeIndex( "indexFooBar", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = graphDb.nodeIndex( "indexFooBar", LuceneIndexProvider.EXACT_CONFIG );
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
         QueryContext queryContext = new QueryContext( "value" ).tradeCorrectnessForSpeed();
@@ -351,7 +373,7 @@ public class TestLuceneIndex
     @Test
     public void makeSureArrayValuesAreSupported()
     {
-        Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
         String key = "name";
         String value1 = "Lucene";
         String value2 = "Index";
@@ -383,7 +405,7 @@ public class TestLuceneIndex
     @Test
     public void makeSureWildcardQueriesCanBeAsked()
     {
-        Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
         String key = "name";
         String value1 = "neo4j";
         String value2 = "nescafe";
@@ -415,7 +437,7 @@ public class TestLuceneIndex
     @Test
     public void makeSureCompositeQueriesCanBeAsked()
     {
-        Index<Node> index = provider.nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "index", LuceneIndexProvider.EXACT_CONFIG );
         Node neo = graphDb.createNode();
         Node trinity = graphDb.createNode();
         index.add( neo, "username", "neo@matrix" );
@@ -508,14 +530,14 @@ public class TestLuceneIndex
     @Test
     public void doSomeRandomUseCaseTestingWithExactNodeIndex()
     {
-        doSomeRandomUseCaseTestingWithExactIndex( provider.nodeIndex( "index",
+        doSomeRandomUseCaseTestingWithExactIndex( nodeIndex( "index",
                 LuceneIndexProvider.EXACT_CONFIG ), NODE_CREATOR );
     }
 
     @Test
     public void doSomeRandomUseCaseTestingWithExactRelationshipIndex()
     {
-        doSomeRandomUseCaseTestingWithExactIndex( provider.relationshipIndex( "index",
+        doSomeRandomUseCaseTestingWithExactIndex( relationshipIndex( "index",
                 LuceneIndexProvider.EXACT_CONFIG ), RELATIONSHIP_CREATOR );
     }
 
@@ -552,21 +574,21 @@ public class TestLuceneIndex
     @Test
     public void doSomeRandomTestingWithNodeFulltextInde()
     {
-        doSomeRandomTestingWithFulltextIndex( provider.nodeIndex( "fulltext",
+        doSomeRandomTestingWithFulltextIndex( nodeIndex( "fulltext",
                 LuceneIndexProvider.FULLTEXT_CONFIG ), NODE_CREATOR );
     }
 
     @Test
     public void doSomeRandomTestingWithRelationshipFulltextInde()
     {
-        doSomeRandomTestingWithFulltextIndex( provider.relationshipIndex( "fulltext",
+        doSomeRandomTestingWithFulltextIndex( relationshipIndex( "fulltext",
                 LuceneIndexProvider.FULLTEXT_CONFIG ), RELATIONSHIP_CREATOR );
     }
 
     @Test
     public void testNodeLocalRelationshipIndex()
     {
-        RelationshipIndex index = provider.relationshipIndex( "locality",
+        RelationshipIndex index = relationshipIndex( "locality",
                 LuceneIndexProvider.EXACT_CONFIG );
 
         RelationshipType type = DynamicRelationshipType.withName( "YO" );
@@ -593,7 +615,7 @@ public class TestLuceneIndex
     @Test
     public void testSortByRelevance()
     {
-        Index<Node> index = provider.nodeIndex( "relevance", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "relevance", LuceneIndexProvider.EXACT_CONFIG );
 
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
@@ -666,7 +688,7 @@ public class TestLuceneIndex
     @Test
     public void testSorting()
     {
-        Index<Node> index = provider.nodeIndex( "sort", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "sort", LuceneIndexProvider.EXACT_CONFIG );
         String name = "name";
         String title = "title";
         String other = "other";
@@ -707,7 +729,7 @@ public class TestLuceneIndex
     @Test
     public void testNumericValues()
     {
-        Index<Node> index = provider.nodeIndex( "numeric", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "numeric", LuceneIndexProvider.EXACT_CONFIG );
 
         Node node10 = graphDb.createNode();
         Node node6 = graphDb.createNode();
@@ -732,7 +754,7 @@ public class TestLuceneIndex
     @Test
     public void testRemoveNumericValues()
     {
-        Index<Node> index = provider.nodeIndex( "numeric2", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "numeric2", LuceneIndexProvider.EXACT_CONFIG );
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
         String key = "key";
@@ -764,7 +786,7 @@ public class TestLuceneIndex
     @Test
     public void testIndexNumberAsString()
     {
-        Index<Node> index = provider.nodeIndex( "nums", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "nums", LuceneIndexProvider.EXACT_CONFIG );
         Node node1 = graphDb.createNode();
         index.add( node1, "key", 10 );
         assertEquals( node1, index.get( "key", 10 ).getSingle() );
@@ -779,24 +801,38 @@ public class TestLuceneIndex
         assertEquals( node1, index.query( "key", "10" ).getSingle() );
     }
 
+    @Ignore
     @Test
     public void testNodeInsertionSpeed()
     {
-        testInsertionSpeed( provider.nodeIndex( "insertion-speed",
+        testInsertionSpeed( nodeIndex( "insertion-speed",
                 LuceneIndexProvider.EXACT_CONFIG ), NODE_CREATOR );
     }
 
+    @Ignore
     @Test
     public void testNodeFulltextInsertionSpeed()
     {
-        testInsertionSpeed( provider.nodeIndex( "insertion-speed-full",
+        testInsertionSpeed( nodeIndex( "insertion-speed-full",
                 LuceneIndexProvider.FULLTEXT_CONFIG ), NODE_CREATOR );
     }
 
+    @Ignore
     @Test
     public void testRelationshipInsertionSpeed()
     {
-        testInsertionSpeed( provider.relationshipIndex( "insertion-speed",
+        testInsertionSpeed( relationshipIndex( "insertion-speed",
                 LuceneIndexProvider.EXACT_CONFIG ), new FastRelationshipCreator() );
+    }
+    
+    @Test( expected = IllegalArgumentException.class )
+    public void makeSureIndexGetsCreatedImmediately()
+    {
+        // Since index creation is done outside of the normal transactions,
+        // a rollback will not roll back index creation.
+        
+        graphDb.nodeIndex( "immediate-index", LuceneIndexProvider.FULLTEXT_CONFIG );
+        rollbackTx();
+        graphDb.nodeIndex( "immediate-index", LuceneIndexProvider.EXACT_CONFIG );
     }
 }

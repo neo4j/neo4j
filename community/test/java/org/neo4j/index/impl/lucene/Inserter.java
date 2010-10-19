@@ -24,7 +24,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class Inserter
@@ -33,8 +32,7 @@ public class Inserter
 	{
 		String path = args[0];
 		final GraphDatabaseService db = new EmbeddedGraphDatabase( path );
-		final IndexProvider provider = new LuceneIndexProvider( db );
-		final Index<Node> index = provider.nodeIndex( "myIndex", LuceneIndexProvider.EXACT_CONFIG );
+		final Index<Node> index = db.nodeIndex( "myIndex", LuceneIndexProvider.EXACT_CONFIG );
 		final String[] keys = new String[] { "apoc", "zion", "morpheus" };
 		final String[] values = new String[] { "hej", "yo", "something", "just a value", "anything" };
 		
@@ -52,8 +50,12 @@ public class Inserter
 						{
 							for ( int i = 0; i < 100; i++ )
 							{
+                                String key = keys[i%keys.length];
+                                String value = values[i%values.length]+i;
+                                
 								Node node = db.createNode();
-								index.add( node, keys[i%keys.length], values[i%values.length]+i );
+                                node.setProperty( key, value );
+								index.add( node, key, value );
 							}
 							tx.success();
 						}

@@ -24,19 +24,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.transaction.xa.XAResource;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
+import org.neo4j.kernel.impl.index.IndexConnectionBroker;
+import org.neo4j.kernel.impl.index.ReadOnlyIndexConnectionBroker;
 import org.neo4j.kernel.impl.transaction.TxModule;
 
 public class LuceneIndexProvider extends IndexProvider
@@ -56,46 +53,70 @@ public class LuceneIndexProvider extends IndexProvider
     public static final int DEFAULT_LAZY_THRESHOLD = 100;
     private static final String DATA_SOURCE_NAME = "lucene-index";
     
-    final ConnectionBroker broker;
-    final LuceneDataSource dataSource;
+    private IndexConnectionBroker<LuceneXaConnection> broker;
+    private LuceneDataSource dataSource;
+    private GraphDatabaseService graphDb;
     final int lazynessThreshold = DEFAULT_LAZY_THRESHOLD;
-    final GraphDatabaseService graphDb;
     
-    public LuceneIndexProvider( final GraphDatabaseService graphDb )
+    public LuceneIndexProvider()
     {
         super( SERVICE_NAME );
-        this.graphDb = graphDb;
-
-        Config config = getGraphDbConfig();
+    }
+    
+    public LuceneIndexProvider( GraphDatabaseService db )
+    {
+        this();
+        load( db, ((AbstractGraphDatabase) db).getConfig() );
+    }
+    
+    IndexConnectionBroker<LuceneXaConnection> broker()
+    {
+        return this.broker;
+    }
+    
+    LuceneDataSource dataSource()
+    {
+        return this.dataSource;
+    }
+    
+    GraphDatabaseService graphDb()
+    {
+        return this.graphDb;
+    }
+    
+    @Override
+    protected void load( KernelData kernel )
+    {
+        try
+        {
+            load( kernel.graphDatabase(), kernel.getConfig() );
+        }
+        catch ( RuntimeException e )
+        {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+    
+    private void load( GraphDatabaseService db, Config config )
+    {
+        this.graphDb = db;
         TxModule txModule = config.getTxModule();
-        boolean isReadOnly = isReadOnly( graphDb );
+        boolean isReadOnly = ((AbstractGraphDatabase) graphDb).isReadOnly();
         Map<Object, Object> params = new HashMap<Object, Object>( config.getParams() );
         params.put( "read_only", isReadOnly );
-        params.put( "index_config",
-//                config.getIndexStore() );
-                new HashMap<String, Map<String, String>>() );
         dataSource = (LuceneDataSource) txModule.registerDataSource( DATA_SOURCE_NAME,
                 LuceneDataSource.class.getName(), LuceneDataSource.DEFAULT_BRANCH_ID,
                 params, true );
         broker = isReadOnly ?
-                new ReadOnlyConnectionBroker( txModule.getTxManager(), dataSource ) :
+                new ReadOnlyIndexConnectionBroker<LuceneXaConnection>( txModule.getTxManager() ) :
                 new ConnectionBroker( txModule.getTxManager(), dataSource );
-    }
-    
-    private static boolean isReadOnly( GraphDatabaseService graphDb )
-    {
-        return graphDb instanceof EmbeddedReadOnlyGraphDatabase;
-    }
-    
-    private Config getGraphDbConfig()
-    {
-        return ((AbstractGraphDatabase) graphDb).getConfig();
     }
     
     public Index<Node> nodeIndex( String indexName, Map<String, String> config )
     {
         IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE,
-                dataSource.nodeEntityType, indexName, config( indexName, config ) );
+                dataSource.nodeEntityType, indexName, config );
         synchronized ( dataSource.indexes )
         {
             LuceneIndex index = dataSource.indexes.get( identifier );
@@ -113,7 +134,7 @@ public class LuceneIndexProvider extends IndexProvider
     public RelationshipIndex relationshipIndex( String indexName, Map<String, String> config )
     {
         IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.RELATIONSHIP,
-                dataSource.relationshipEntityType, indexName, config( indexName, config ) );
+                dataSource.relationshipEntityType, indexName, config );
         synchronized ( dataSource.indexes )
         {
             LuceneIndex index = dataSource.indexes.get( identifier );
@@ -128,53 +149,29 @@ public class LuceneIndexProvider extends IndexProvider
 //        return new LuceneIndex.RelationshipIndex( this, identifier );
     }
     
-    private Map<String, String> config( final String indexName, Map<String, String> config )
+    public Map<String, String> fillInDefaults( Map<String, String> source )
     {
-        final Pair<Map<String, String>, Boolean> result = dataSource.indexStore.getIndexConfig( indexName,
-                config, null, LuceneConfigDefaultsFiller.INSTANCE );
-        if ( result.other() )
+        Map<String, String> result = source != null ?
+                new HashMap<String, String>( source ) : new HashMap<String, String>();
+        String type = result.get( "type" );
+        if ( type == null )
         {
-            Thread creator = new Thread()
+            type = "exact";
+            result.put( "type", type );
+        }
+        if ( type.equals( "fulltext" ) )
+        {
+            if ( !result.containsKey( "to_lower_case" ) )
             {
-                @Override
-                public void run()
-                {
-                    Transaction tx = graphDb.beginTx();
-                    try
-                    {
-                        LuceneXaConnection connection = (LuceneXaConnection) dataSource.getXaConnection();
-                        javax.transaction.Transaction javaxTx = getGraphDbConfig().getTxModule().getTxManager().getTransaction();
-                        javaxTx.enlistResource( connection.getXaResource() );
-                        try
-                        {
-                            connection.getLuceneTx().createIndex( indexName, result.first() );
-                        }
-                        finally
-                        {
-                            javaxTx.delistResource( connection.getXaResource(), XAResource.TMSUCCESS );
-                        }
-                        tx.success();
-                    }
-                    catch ( Exception e )
-                    {
-                        e.printStackTrace();
-                    }
-                    finally
-                    {
-                        tx.finish();
-                    }
-                }
-            };
-            creator.start();
-            try
-            {
-                creator.join();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
+                result.put( "to_lower_case", "true" );
             }
         }
-        return result.first();
+        return result;
+    }
+    
+    @Override
+    public String getDataSourceName()
+    {
+        return DATA_SOURCE_NAME;
     }
 }
