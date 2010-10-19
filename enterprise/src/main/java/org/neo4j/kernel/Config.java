@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.core.GraphDbModule;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
@@ -102,6 +103,7 @@ public class Config
     private final IdGeneratorModule idGeneratorModule;
     private final GraphDbModule graphDbModule;
     private final String storeDir;
+    private IndexStore indexStore;
     private final Map<Object, Object> params;
     private final Map inputParams;
     private final TxEventSyncHookFactory syncHookFactory;
@@ -138,6 +140,8 @@ public class Config
         graphDbModule = new GraphDbModule( graphDb, cacheManager, lockManager,
                 txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
                 readOnly );
+        indexStore = new IndexStore( storeDir );
+        params.put( IndexStore.class, indexStore );
 
         params.put( IdGeneratorFactory.class, idGeneratorFactory );
         params.put( TxIdGenerator.class, txIdGenerator );
@@ -204,6 +208,11 @@ public class Config
     public LockManager getLockManager()
     {
         return lockManager;
+    }
+    
+    public IndexStore getIndexStore()
+    {
+        return indexStore;
     }
 
     public LockReleaser getLockReleaser()
