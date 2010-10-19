@@ -40,6 +40,7 @@ public class IndexStore
     private static final int VERSION = 1;
     
     private final File file;
+    private final File oldFile;
     private final Map<String, Map<String, String>> nodeConfig = new HashMap<String, Map<String,String>>();
     private final Map<String, Map<String, String>> relConfig = new HashMap<String, Map<String,String>>();
     private ByteBuffer dontUseBuffer = ByteBuffer.allocate( 100 );
@@ -47,6 +48,7 @@ public class IndexStore
     public IndexStore( String graphDbStoreDir )
     {
         this.file = new File( new File( graphDbStoreDir ), "index.db" );
+        this.oldFile = new File( file.getParentFile(), file.getName() + ".old" );
         read();
     }
     
@@ -61,7 +63,8 @@ public class IndexStore
     
     private void read()
     {
-        if ( !file.exists() )
+        File fileToReadFrom = file.exists() ? file : oldFile;
+        if ( !fileToReadFrom.exists() )
         {
             return;
         }
@@ -69,12 +72,12 @@ public class IndexStore
         FileChannel channel = null;
         try
         {
-            channel = new RandomAccessFile( file, "r" ).getChannel();
+            channel = new RandomAccessFile( fileToReadFrom, "r" ).getChannel();
             Integer version = tryToReadVersion( channel );
             if ( version == null )
             {
                 close( channel );
-                channel = new RandomAccessFile( file, "r" ).getChannel();
+                channel = new RandomAccessFile( fileToReadFrom, "r" ).getChannel();
                 // Legacy format, TODO
                 readMap( channel, nodeConfig, version );
                 relConfig.putAll( nodeConfig );
@@ -213,10 +216,17 @@ public class IndexStore
     
     private void write()
     {
+        // Write to a .tmp file
         File tmpFile = new File( this.file.getParentFile(), this.file.getName() + ".tmp" );
         write( tmpFile );
-        this.file.delete();
+        
+        // Make sure the .old file doesn't exist, then rename the current one to .old
+        this.oldFile.delete();
+        this.file.renameTo( this.oldFile );
+        
+        // Rename the .tmp file to the current name
         tmpFile.renameTo( this.file );
+        this.oldFile.delete();
     }
     
     private void write( File file )
