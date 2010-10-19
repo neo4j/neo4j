@@ -29,9 +29,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
-import org.neo4j.index.impl.lucene.LuceneIndexProvider;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
@@ -39,37 +37,34 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.kernel.ReadOnlyGraphDatabaseProxy;
 import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
 
 @Service.Implementation( App.class )
 public class IndexProviderShellApp extends GraphDatabaseApp
 {
-    private volatile IndexProvider indexProvider = null;
+//    private IndexProvider indexes()
+//    {
+//        IndexProvider result = indexProvider;
+//        if ( result == null )
+//        {
+//            result = indexProvider = startProvider( getServer().getDb() );
+//        }
+//        return result;
+//    }
 
-    private IndexProvider indexes()
-    {
-        IndexProvider result = indexProvider;
-        if ( result == null )
-        {
-            result = indexProvider = startProvider( getServer().getDb() );
-        }
-        return result;
-    }
-
-    private static IndexProvider startProvider( GraphDatabaseService graphDb )
-    {
-        if ( graphDb instanceof ReadOnlyGraphDatabaseProxy )
-        {
-            ReadOnlyGraphDatabaseProxy proxy = (ReadOnlyGraphDatabaseProxy) graphDb;
-            return new ReadOnlyIndexProviderProxy( proxy, new LuceneIndexProvider(
-                    proxy.getActualGraphDb() ) );
-        }
-        else
-        {
-            return new LuceneIndexProvider( graphDb );
-        }
-    }
+//    private static IndexProvider startProvider( GraphDatabaseService graphDb )
+//    {
+//        if ( graphDb instanceof ReadOnlyGraphDatabaseProxy )
+//        {
+//            ReadOnlyGraphDatabaseProxy proxy = (ReadOnlyGraphDatabaseProxy) graphDb;
+//            return new ReadOnlyIndexProviderProxy( proxy, new LuceneIndexProvider(
+//                    proxy.getActualGraphDb() ) );
+//        }
+//        else
+//        {
+//            return new LuceneIndexProvider( graphDb );
+//        }
+//    }
 
     {
         addOptionDefinition( "g", new OptionDefinition( OptionValueType.NONE,
@@ -113,7 +108,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
     protected String exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
-        IndexProvider indexes = indexes();
+//        IndexProvider indexes = indexes();
 
         boolean doCd = parser.options().containsKey( "cd" );
         boolean doLs = parser.options().containsKey( "ls" );
@@ -127,6 +122,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
             throw new ShellException( "Supply one of: -g, -i, -r" );
         }
 
+        GraphDatabaseService db = getServer().getDb();
         if ( get )
         {
             String commandToRun = parser.options().get( "c" );
@@ -151,11 +147,11 @@ public class IndexProviderShellApp extends GraphDatabaseApp
             Iterable<Node> result;
             if ( query )
             {
-                result = query( indexes, parser );
+                result = query( db, parser );
             }
             else
             {
-                result = get( indexes, parser );
+                result = get( db, parser );
             }
             for ( Node node : result )
             {
@@ -165,11 +161,11 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         }
         else if ( index )
         {
-            index( indexes, parser, session );
+            index( db, parser, session );
         }
         else if ( remove )
         {
-            remove( indexes, parser, session );
+            remove( db, parser, session );
         }
         return null;
     }
@@ -187,22 +183,22 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         return count;
     }
 
-    private Iterable<Node> get( IndexProvider indexes, AppCommandParser parser )
+    private Iterable<Node> get( GraphDatabaseService db, AppCommandParser parser )
     {
         String index = parser.arguments().get( 0 );
         String key = parser.arguments().get( 1 );
         String value = parser.arguments().get( 2 );
-        return indexes.nodeIndex( index, emptyConfig() ).get( key, value );
+        return db.nodeIndex( index, emptyConfig() ).get( key, value );
     }
 
-    private Iterable<Node> query( IndexProvider indexes, AppCommandParser parser )
+    private Iterable<Node> query( GraphDatabaseService db, AppCommandParser parser )
     {
         String index = parser.arguments().get( 0 );
         String query = parser.arguments().get( 1 );
-        return indexes.nodeIndex( index, emptyConfig() ).query( query );
+        return db.nodeIndex( index, emptyConfig() ).query( query );
     }
 
-    private void index( IndexProvider indexes, AppCommandParser parser, Session session )
+    private void index( GraphDatabaseService db, AppCommandParser parser, Session session )
             throws ShellException
     {
         Node node = getCurrent( session ).asNode();
@@ -214,10 +210,10 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         {
             throw new ShellException( "No value to index" );
         }
-        indexes.nodeIndex( index, emptyConfig() ).add( node, key, value );
+        db.nodeIndex( index, emptyConfig() ).add( node, key, value );
     }
 
-    private void remove( IndexProvider indexes, AppCommandParser parser, Session session )
+    private void remove( GraphDatabaseService db, AppCommandParser parser, Session session )
             throws ShellException
     {
         Node node = getCurrent( session ).asNode();
@@ -229,7 +225,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         {
             throw new ShellException( "No value to remove" );
         }
-        indexes.nodeIndex( index, emptyConfig() ).remove( node, key, value );
+        db.nodeIndex( index, emptyConfig() ).remove( node, key, value );
     }
 
     private static Map<String, String> emptyConfig()

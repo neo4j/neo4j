@@ -21,7 +21,6 @@
 package org.neo4j.index.impl.lucene;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -29,10 +28,10 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
@@ -165,8 +164,7 @@ abstract class IndexType
     
     static IndexType getIndexType( IndexIdentifier identifier )
     {
-        Map<String, String> config = identifier.config != null ? identifier.config :
-                new HashMap<String, String>();
+        Map<String, String> config = identifier.config;
         String type = config.get( configKey( identifier.indexName, "type" ) );
         IndexType result = null;
         if ( type.equals( "exact" ) )

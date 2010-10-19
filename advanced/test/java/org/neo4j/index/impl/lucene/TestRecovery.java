@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
@@ -56,10 +55,9 @@ public class TestRecovery
     public void testRecovery() throws Exception
     {
         final GraphDatabaseService graphDb = newGraphDbService();
-        final IndexProvider provider = new LuceneIndexProvider( graphDb );
-        final Index<Node> nodeIndex = provider.nodeIndex( "node-index",
+        final Index<Node> nodeIndex = graphDb.nodeIndex( "node-index",
                 LuceneIndexProvider.EXACT_CONFIG );
-        final Index<Relationship> relIndex = provider.relationshipIndex( "rel-index",
+        final Index<Relationship> relIndex = graphDb.relationshipIndex( "rel-index",
                 LuceneIndexProvider.EXACT_CONFIG );
         final RelationshipType relType = DynamicRelationshipType.withName( "recovery" );
         
@@ -102,9 +100,7 @@ public class TestRecovery
         }
         
         // Start up and let it recover
-        final GraphDatabaseService newGraphDb =
-            new EmbeddedGraphDatabase( getDbPath() );
-        final IndexProvider newProvider = new LuceneIndexProvider( newGraphDb );
+        final GraphDatabaseService newGraphDb = new EmbeddedGraphDatabase( getDbPath() );
         newGraphDb.shutdown();
     }
     
@@ -127,7 +123,7 @@ public class TestRecovery
         Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
     	Process process = Runtime.getRuntime().exec( new String[] {
     			"java", "-cp", System.getProperty( "java.class.path" ),
-    			getClass().getPackage().getName() + ".Inserter", path
+    			Inserter.class.getName(), path
     	} );
     	
     	// Let it run for a while and then kill it, and wait for it to die
@@ -135,6 +131,43 @@ public class TestRecovery
     	process.destroy();
     	process.waitFor();
     	
-    	new EmbeddedGraphDatabase( path ).shutdown();
+    	GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+    	Index<Node> index = db.nodeIndex( "myIndex", null );
+    	for ( Node node : db.getAllNodes() )
+    	{
+    	    for ( String key : node.getPropertyKeys() )
+    	    {
+    	        String value = (String) node.getProperty( key );
+    	        boolean found = false;
+    	        for ( Node indexedNode : index.get( key, value ) )
+                {
+    	            if ( indexedNode.equals( node ) )
+    	            {
+    	                found = true;
+    	                break;
+    	            }
+                }
+    	        if ( !found )
+    	        {
+    	            throw new IllegalStateException( node + " has property '" + key + "'='" +
+    	                    value + "', but not in index" );
+    	        }
+    	    }
+    	}
+    	db.shutdown();
+    }
+    
+    @Test
+    public void testAsLittleAsPossibleRecoveryScenario() throws Exception
+    {
+        GraphDatabaseService db = newGraphDbService();
+        Index<Node> index = db.nodeIndex( "my-index", LuceneIndexProvider.EXACT_CONFIG );
+        db.beginTx();
+        Node node = db.createNode();
+        index.add( node, "key", "value" );
+        db.shutdown();
+        
+        // This doesn't seem to trigger recovery... it really should
+        new EmbeddedGraphDatabase( getDbPath() ).shutdown();
     }
 }

@@ -28,17 +28,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.index.impl.lucene.CommitContext.DocumentContext;
 import org.neo4j.index.impl.lucene.LuceneCommand.AddCommand;
-import org.neo4j.index.impl.lucene.LuceneCommand.AddRelationshipCommand;
-import org.neo4j.index.impl.lucene.LuceneCommand.DeleteCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.CreateIndexCommand;
+import org.neo4j.index.impl.lucene.LuceneCommand.DeleteCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.RemoveCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -224,86 +222,21 @@ class LuceneTransaction extends XaTransaction
                 {
                     continue;
                 }
-                boolean isRecovery = false; // entry.getValue().isRecovery();
+                
                 IndexIdentifier identifier = entry.getKey();
                 IndexType type = identifier == LuceneCommand.CreateIndexCommand.FAKE_IDENTIFIER ? null :
                         dataSource.getType( identifier );
-                IndexWriter writer = null;
-                IndexSearcher searcher = null;
                 CommandList commandList = entry.getValue();
-                Map<Long, DocumentContext> documents = new HashMap<Long, DocumentContext>();
+                CommitContext context = new CommitContext( dataSource, identifier, type, commandList );
                 for ( LuceneCommand command : commandList.commands )
                 {
-                    if ( command instanceof CreateIndexCommand )
-                    {
-                        CreateIndexCommand createCommand = (CreateIndexCommand) command;
-                        dataSource.indexStore.setIfNecessary( createCommand.getName(),
-                                createCommand.getConfig() );
-                        continue;
-                    }
-                    
-                    if ( writer == null )
-                    {
-                        if ( isRecovery )
-                        {
-                            writer = dataSource.getRecoveryIndexWriter( identifier );
-                        }
-                        else
-                        {
-                            writer = dataSource.getIndexWriter( identifier );
-                            writer.setMaxBufferedDocs( commandList.addCount + 100 );
-                            writer.setMaxBufferedDeleteTerms( commandList.removeCount + 100 );
-                        }
-                        searcher = dataSource.getIndexSearcher( identifier ).getSearcher();
-                    }
-                    if ( command instanceof DeleteCommand )
-                    {
-                        documents.clear();
-                        dataSource.closeWriter( writer );
-                        writer = null;
-                        dataSource.deleteIndex( identifier );
-                        if ( isRecovery )
-                        {
-                            dataSource.removeRecoveryIndexWriter( identifier );
-                        }
-                        continue;
-                    }
-                    
-                    Object entityId = command.entityId;
-                    long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
-                    DocumentContext context = documents.get( id );
-                    if ( context == null )
-                    {
-                        Document document = LuceneDataSource.findDocument( type, searcher, id );
-                        context = document == null ?
-                                new DocumentContext( identifier.entityType.newDocument( entityId ) /*type.newDocument( entityId )*/, false, id ) :
-                                new DocumentContext( document, true, id );
-                        documents.put( id, context );
-                    }
-                    String key = command.key;
-                    Object value = command.value;
-                    if ( command instanceof AddCommand ||
-                            command instanceof AddRelationshipCommand )
-                    {
-                        type.addToDocument( context.document, key, value );
-                        dataSource.invalidateCache( identifier, key, value );
-                    }
-                    else if ( command instanceof RemoveCommand )
-                    {
-                        type.removeFromDocument( context.document, key, value );
-                        dataSource.invalidateCache( identifier, key, value );
-                    }
-                    else
-                    {
-                        throw new RuntimeException( "Unknown command type " +
-                            command + ", " + command.getClass() );
-                    }
+                    command.perform( context );
                 }
                 
-                applyDocuments( writer, type, documents );
-                if ( writer != null && !isRecovery )
+                applyDocuments( context.writer, type, context.documents );
+                if ( context.writer != null && !context.isRecovery )
                 {
-                    dataSource.closeWriter( writer );
+                    context.safeCloseWriter();
                     dataSource.invalidateIndexSearcher( identifier );
                 }
             }
@@ -451,11 +384,11 @@ class LuceneTransaction extends XaTransaction
         }
     }
     
-    private static class CommandList
+    static class CommandList
     {
         private final List<LuceneCommand> commands = new ArrayList<LuceneCommand>();
-        private int addCount;
-        private int removeCount;
+        int addCount;
+        int removeCount;
         
         void add( LuceneCommand command )
         {
@@ -485,28 +418,28 @@ class LuceneTransaction extends XaTransaction
         }
     }
     
-    private static class DocumentContext
-    {
-        private final Document document;
-        private final boolean exists;
-        private final long entityId;
-
-        DocumentContext( Document document, boolean exists, long entityId )
-        {
-            this.document = document;
-            this.exists = exists;
-            this.entityId = entityId;
-        }
-    }
-
     <T extends PropertyContainer> boolean isRemoveAll( LuceneIndex<T> index )
     {
         TxDataHolder removed = removedTxDataOrNull( index );
         return removed != null ? removed.isRemoveAll() : false;
     }
 
-    void createIndex( String name, Map<String, String> config )
+    void createIndex( Class<? extends PropertyContainer> entityType, String name,
+            Map<String, String> config )
     {
-        queueCommand( new CreateIndexCommand( name, config ) );
+        byte entityTypeByte = 0;
+        if ( entityType == Node.class )
+        {
+            entityTypeByte = LuceneCommand.NODE;
+        }
+        else if ( entityType == Relationship.class )
+        {
+            entityTypeByte = LuceneCommand.RELATIONSHIP;
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unknown entity typee " + entityType );
+        }
+        queueCommand( new CreateIndexCommand( entityTypeByte, name, config ) );
     }
 }
