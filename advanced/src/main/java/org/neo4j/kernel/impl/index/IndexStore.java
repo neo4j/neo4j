@@ -222,10 +222,16 @@ public class IndexStore
         
         // Make sure the .old file doesn't exist, then rename the current one to .old
         this.oldFile.delete();
-        this.file.renameTo( this.oldFile );
+        if ( this.file.exists() && !this.file.renameTo( this.oldFile ) )
+        {
+            throw new RuntimeException( "Couldn't rename " + file + " -> " + oldFile );
+        }
         
         // Rename the .tmp file to the current name
-        tmpFile.renameTo( this.file );
+        if ( !tmpFile.renameTo( this.file ) )
+        {
+            throw new RuntimeException( "Couldn't rename " + tmpFile + " -> " + file );
+        }
         this.oldFile.delete();
     }
     
@@ -239,6 +245,7 @@ public class IndexStore
             IoPrimitiveUtils.writeInt( channel, buffer( 4 ), VERSION );
             writeMap( channel, nodeConfig );
             writeMap( channel, relConfig );
+            channel.force( false );
         }
         catch ( IOException e )
         {
