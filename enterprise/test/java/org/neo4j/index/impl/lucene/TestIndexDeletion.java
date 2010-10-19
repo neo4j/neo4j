@@ -46,7 +46,6 @@ public class TestIndexDeletion
 {
     private static final String INDEX_NAME = "index";
     private static GraphDatabaseService graphDb;
-    private static LuceneIndexProvider provider;
     private Index<Node> index;
     private Transaction tx;
     private String key;
@@ -60,7 +59,6 @@ public class TestIndexDeletion
         String storeDir = "target/var/freshindex";
         Neo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
         graphDb = new EmbeddedGraphDatabase( storeDir );
-        provider = new LuceneIndexProvider( graphDb );
     }
 
     @AfterClass
@@ -102,11 +100,11 @@ public class TestIndexDeletion
     public void createInitialData()
     {
         beginTx();
-        index = provider.nodeIndex( INDEX_NAME, LuceneIndexProvider.EXACT_CONFIG );
+        index = graphDb.nodeIndex( INDEX_NAME, LuceneIndexProvider.EXACT_CONFIG );
         index.delete();
         restartTx();
 
-        index = provider.nodeIndex( INDEX_NAME, LuceneIndexProvider.EXACT_CONFIG );
+        index = graphDb.nodeIndex( INDEX_NAME, LuceneIndexProvider.EXACT_CONFIG );
         key = "key";
 
         value = "my own value";
@@ -137,7 +135,7 @@ public class TestIndexDeletion
         index.delete();
         restartTx();
 
-        Index<Node> recreatedIndex = provider.nodeIndex( INDEX_NAME, LuceneIndexProvider.FULLTEXT_CONFIG );
+        Index<Node> recreatedIndex = graphDb.nodeIndex( INDEX_NAME, LuceneIndexProvider.FULLTEXT_CONFIG );
         assertNull( recreatedIndex.get( key, value ).getSingle() );
         recreatedIndex.add( node, key, value );
         restartTx();
@@ -185,7 +183,7 @@ public class TestIndexDeletion
     {
         restartTx();
         index.delete();
-        Index<Node> newIndex = provider.nodeIndex( INDEX_NAME, LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> newIndex = graphDb.nodeIndex( INDEX_NAME, LuceneIndexProvider.EXACT_CONFIG );
         newIndex.query( key, "own" );
     }
 

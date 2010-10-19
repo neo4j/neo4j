@@ -26,6 +26,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -51,10 +54,11 @@ abstract class LuceneCommand extends XaCommand
     final String key;
     final Object value;
     final byte type;
-    private final byte entityType;
+    final byte entityType;
     
     LuceneCommand( IndexIdentifier indexId, byte entityType, Object entityId, String key, Object value, byte type )
     {
+        assert entityType == NODE || entityType == RELATIONSHIP;
         this.indexId = indexId;
         this.entityType = entityType;
         this.entityId = entityId;
@@ -69,16 +73,26 @@ abstract class LuceneCommand extends XaCommand
         // TODO Auto-generated method stub
     }
     
-    private byte indexClass()
+    abstract void perform( CommitContext context );
+    
+    public Class<? extends PropertyContainer> getEntityType()
     {
-        return this.entityType;
+        if ( this.entityType == NODE )
+        {
+            return Node.class;
+        }
+        else if ( this.entityType == RELATIONSHIP )
+        {
+            return Relationship.class;
+        }
+        throw new IllegalArgumentException( "Unknown entity type " + entityType );
     }
 
     @Override
     public void writeToFile( LogBuffer buffer ) throws IOException
     {
         buffer.put( type );
-        buffer.put( indexClass() );
+        buffer.put( entityType );
         char[] indexName = indexId.indexName.toCharArray();
         buffer.putInt( indexName.length );
         long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
@@ -157,6 +171,14 @@ abstract class LuceneCommand extends XaCommand
         {
             super( indexId, entityType, entityId, key, value, ADD_COMMAND );
         }
+        
+        @Override
+        void perform( CommitContext context )
+        {
+            context.ensureWriterInstantiated();
+            context.indexType.addToDocument( context.getDocument( entityId ).document, key, value );
+            context.dataSource.invalidateCache( context.identifier, key, value );
+        }
     }
     
     static class AddRelationshipCommand extends LuceneCommand
@@ -174,6 +196,14 @@ abstract class LuceneCommand extends XaCommand
             buffer.putLong( ((RelationshipId) entityId).startNode );
             buffer.putLong( ((RelationshipId) entityId).endNode );
         }
+
+        @Override
+        void perform( CommitContext context )
+        {
+            context.ensureWriterInstantiated();
+            context.indexType.addToDocument( context.getDocument( entityId ).document, key, value );
+            context.dataSource.invalidateCache( context.identifier, key, value );
+        }
     }
     
     static class RemoveCommand extends LuceneCommand
@@ -182,6 +212,14 @@ abstract class LuceneCommand extends XaCommand
         {
             super( indexId, entityType, entityId, key, value, REMOVE_COMMAND );
         }
+        
+        @Override
+        void perform( CommitContext context )
+        {
+            context.ensureWriterInstantiated();
+            context.indexType.removeFromDocument( context.getDocument( entityId ).document, key, value );
+            context.dataSource.invalidateCache( context.identifier, key, value );
+        }
     }
 
     static class DeleteCommand extends LuceneCommand
@@ -189,6 +227,18 @@ abstract class LuceneCommand extends XaCommand
         DeleteCommand( IndexIdentifier indexId )
         {
             super( indexId, (byte)0, -1L, "", "", DELETE_COMMAND );
+        }
+        
+        @Override
+        void perform( CommitContext context )
+        {
+            context.documents.clear();
+            context.safeCloseWriter();
+            context.dataSource.deleteIndex( context.identifier );
+            if ( context.isRecovery )
+            {
+                context.dataSource.removeRecoveryIndexWriter( context.identifier );
+            }
         }
     }
     
@@ -199,9 +249,9 @@ abstract class LuceneCommand extends XaCommand
         private final String name;
         private final Map<String, String> config;
 
-        CreateIndexCommand( String name, Map<String, String> config )
+        CreateIndexCommand( byte entityType, String name, Map<String, String> config )
         {
-            super( FAKE_IDENTIFIER, (byte) 0, -1L, null, null, CREATE_INDEX_COMMAND );
+            super( FAKE_IDENTIFIER, entityType, -1L, null, null, CREATE_INDEX_COMMAND );
             this.name = name;
             this.config = config;
         }
@@ -220,6 +270,7 @@ abstract class LuceneCommand extends XaCommand
         public void writeToFile( LogBuffer buffer ) throws IOException
         {
             buffer.put( type );
+            buffer.put( entityType );
             writeLengthAndString( buffer, name );
             buffer.putInt( config.size() );
             for ( Map.Entry<String, String> entry : config.entrySet() )
@@ -228,19 +279,26 @@ abstract class LuceneCommand extends XaCommand
                 writeLengthAndString( buffer, entry.getValue() );
             }
         }
+        
+        @Override
+        void perform( CommitContext context )
+        {
+            context.dataSource.indexStore.setIfNecessary( getEntityType(), name, config );
+        }
     }
     
     static XaCommand readCommand( ReadableByteChannel channel, 
         ByteBuffer buffer, LuceneDataSource dataSource ) throws IOException
     {
         // Read what type of command it is
-        buffer.clear(); buffer.limit( 1 );
+        buffer.clear(); buffer.limit( 2 );
         if ( channel.read( buffer ) != buffer.limit() )
         {
             return null;
         }
         buffer.flip();
         byte commandType = buffer.get();
+        byte entityTypeByte = buffer.get();
         
         if ( commandType == CREATE_INDEX_COMMAND )
         {
@@ -262,25 +320,24 @@ abstract class LuceneCommand extends XaCommand
                 }
                 config.put( key, value );
             }
-            return new CreateIndexCommand( name, config );
+            return new CreateIndexCommand( entityTypeByte, name, config );
         }
         else
         {
             // Read the command data
-            buffer.clear(); buffer.limit( 18 );
+            buffer.clear(); buffer.limit( 17 );
             if ( channel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
             buffer.flip();
             
-            byte cls = buffer.get();
             EntityType entityType = null;
-            if ( cls == NODE )
+            if ( entityTypeByte == NODE )
             {
                 entityType = dataSource.nodeEntityType;
             }
-            else if ( cls == RELATIONSHIP )
+            else if ( entityTypeByte == RELATIONSHIP )
             {
                 entityType = dataSource.relationshipEntityType;
             }
@@ -328,7 +385,7 @@ abstract class LuceneCommand extends XaCommand
             
             Long startNodeId = null;
             Long endNodeId = null;
-            if ( commandType == ADD_COMMAND && cls == RELATIONSHIP )
+            if ( commandType == ADD_COMMAND && entityTypeByte == RELATIONSHIP )
             {
                 startNodeId = PrimitiveUtils.readLong( channel, buffer );
                 endNodeId = PrimitiveUtils.readLong( channel, buffer );
@@ -338,16 +395,16 @@ abstract class LuceneCommand extends XaCommand
                 }
             }
             
-            IndexIdentifier identifier = new IndexIdentifier( cls, entityType, indexName,
-                    dataSource.indexStore.get( indexName ) );
+            IndexIdentifier identifier = new IndexIdentifier( entityTypeByte, entityType, indexName,
+                    dataSource.indexStore.get( entityType.getType(), indexName ) );
             
             switch ( commandType )
             {
-                case ADD_COMMAND: return cls == NODE ?
-                        new AddCommand( identifier, cls, entityId, key, value ) :
-                        new AddRelationshipCommand( identifier, cls,
+                case ADD_COMMAND: return entityTypeByte == NODE ?
+                        new AddCommand( identifier, entityTypeByte, entityId, key, value ) :
+                        new AddRelationshipCommand( identifier, entityTypeByte,
                                 new RelationshipId( entityId, startNodeId, endNodeId ), key, value );
-                case REMOVE_COMMAND: return new RemoveCommand( identifier, cls, entityId, key, value );
+                case REMOVE_COMMAND: return new RemoveCommand( identifier, entityTypeByte, entityId, key, value );
                 case DELETE_COMMAND: return new DeleteCommand( identifier );
                 default:
                     throw new IOException( "Unknown command type[" + 

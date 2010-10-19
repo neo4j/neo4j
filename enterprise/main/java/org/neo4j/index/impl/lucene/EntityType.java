@@ -21,10 +21,11 @@
 package org.neo4j.index.impl.lucene;
 
 import org.apache.lucene.document.Document;
+import org.neo4j.graphdb.PropertyContainer;
 
 interface EntityType
 {
     Document newDocument( Object entityId );
     
-    Class<?> getType();
+    Class<? extends PropertyContainer> getType();
 }

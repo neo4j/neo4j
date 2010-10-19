@@ -63,17 +63,17 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     {
         this.service = service;
         this.identifier = identifier;
-        this.type = service.dataSource.getType( identifier );
+        this.type = service.dataSource().getType( identifier );
     }
     
     LuceneXaConnection getConnection()
     {
         assertNotDeleted();
-        if ( service.broker == null )
+        if ( service.broker() == null )
         {
             throw new ReadOnlyDbException();
         }
-        return service.broker.acquireResourceConnection();
+        return service.broker().acquireResourceConnection();
     }
     
     private void assertNotDeleted()
@@ -87,8 +87,8 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     LuceneXaConnection getReadOnlyConnection()
     {
         assertNotDeleted();
-        return service.broker == null ? null :
-                service.broker.acquireReadOnlyResourceConnection();
+        return service.broker() == null ? null :
+                service.broker().acquireReadOnlyResourceConnection();
     }
     
     void markAsDeleted()
@@ -148,7 +148,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     
     public void delete()
     {
-        getConnection().delete( this );
+        getConnection().deleteIndex( this );
     }
     
     public IndexHits<T> get( String key, Object value )
@@ -209,14 +209,14 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
             excludeQuery = luceneTx.getExtraRemoveQuery( this );
             isRemoveAll = luceneTx.isRemoveAll( this );
         }
-        service.dataSource.getReadLock();
+        service.dataSource().getReadLock();
         Iterator<Long> idIterator = null;
         int idIteratorSize = -1;
         IndexSearcherRef searcher = null;
         boolean isLazy = false;
         try
         {
-            searcher = service.dataSource.getIndexSearcher( identifier );
+            searcher = service.dataSource().getIndexSearcher( identifier );
             if ( !isRemoveAll && searcher != null )
             {
                 if ( excludeQuery != null )
@@ -230,7 +230,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
                 LruCache<String, Collection<Long>> cachedIdsMap = null;
                 if ( keyForDirectLookup != null )
                 {
-                    cachedIdsMap = service.dataSource.getFromCache(
+                    cachedIdsMap = service.dataSource().getFromCache(
                             identifier, keyForDirectLookup );
                     foundInCache = fillFromCache( cachedIdsMap, ids,
                             keyForDirectLookup, valueForDirectLookup.toString(), removedIds );
@@ -269,7 +269,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         {
             // The DocToIdIterator closes the IndexSearchRef instance anyways,
             // or the LazyIterator if it's a lazy one. So no need here.
-            service.dataSource.releaseReadLock();
+            service.dataSource().releaseReadLock();
         }
 
         if ( idIterator == null )
@@ -339,12 +339,12 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
     
     public void setCacheCapacity( String key, int capacity )
     {
-        service.dataSource.setCacheCapacity( identifier, key, capacity );
+        service.dataSource().setCacheCapacity( identifier, key, capacity );
     }
     
     public Integer getCacheCapacity( String key )
     {
-        return service.dataSource.getCacheCapacity( identifier, key );
+        return service.dataSource().getCacheCapacity( identifier, key );
     }
     
     private Collection<Long> readNodesFromHits( DocToIdIterator searchedIds,
@@ -381,7 +381,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         @Override
         protected Node getById( long id )
         {
-            return service.graphDb.getNodeById( id );
+            return service.graphDb().getNodeById( id );
         }
         
         @Override
@@ -417,7 +417,7 @@ abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
         @Override
         protected Relationship getById( long id )
         {
-            return service.graphDb.getRelationshipById( id );
+            return service.graphDb().getRelationshipById( id );
         }
         
         @Override
