@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.Neo4jTestCase.assertCollection;
 import static org.neo4j.index.Neo4jTestCase.assertOrderedCollection;
 import static org.neo4j.index.impl.lucene.Contains.contains;
@@ -157,12 +158,12 @@ public class TestLuceneIndex
     
     private Index<Node> nodeIndex( String name, Map<String, String> config )
     {
-        return graphDb.nodeIndex( name, config );
+        return graphDb.index().forNodes( name, config );
     }
     
     private RelationshipIndex relationshipIndex( String name, Map<String, String> config )
     {
-        return graphDb.relationshipIndex( name, config );
+        return graphDb.index().forRelationships( name, config );
     }
     
     private <T extends PropertyContainer> void makeSureAdditionsCanBeRead(
@@ -212,7 +213,7 @@ public class TestLuceneIndex
     @Test()
     public void makeSureYouGetLatestTxModificationsInQueryByDefault()
     {
-        Index<Node> index = graphDb.nodeIndex( "failing-index", LuceneIndexProvider.FULLTEXT_CONFIG );
+        Index<Node> index = nodeIndex( "failing-index", LuceneIndexProvider.FULLTEXT_CONFIG );
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
         assertThat( index.query( "key:value" ), contains( node ) );
@@ -250,6 +251,19 @@ public class TestLuceneIndex
     public void makeSureAdditionsCanBeRemovedInSameTx()
     {
         makeSureAdditionsCanBeRemoved( false );
+    }
+    
+    @Test
+    public void makeSureYouCanAskIfAnIndexExistsOrNot()
+    {
+        String name = "index-that-may-exist";
+        assertFalse( graphDb.index().existsForNodes( name ) );
+        graphDb.index().forNodes( name );
+        assertTrue( graphDb.index().existsForNodes( name ) );
+
+        assertFalse( graphDb.index().existsForRelationships( name ) );
+        graphDb.index().forRelationships( name );
+        assertTrue( graphDb.index().existsForRelationships( name ) );
     }
 
     private void makeSureAdditionsCanBeRemoved( boolean restartTx )
@@ -362,7 +376,7 @@ public class TestLuceneIndex
     @Test
     public void shouldNotGetLatestTxModificationsWhenChoosingSpeedQueries()
     {
-        Index<Node> index = graphDb.nodeIndex( "indexFooBar", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = nodeIndex( "indexFooBar", LuceneIndexProvider.EXACT_CONFIG );
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
         QueryContext queryContext = new QueryContext( "value" ).tradeCorrectnessForSpeed();
@@ -831,8 +845,10 @@ public class TestLuceneIndex
         // Since index creation is done outside of the normal transactions,
         // a rollback will not roll back index creation.
         
-        graphDb.nodeIndex( "immediate-index", LuceneIndexProvider.FULLTEXT_CONFIG );
+        nodeIndex( "immediate-index", LuceneIndexProvider.FULLTEXT_CONFIG );
+        assertTrue( graphDb.index().existsForNodes( "immediate-index" ) );
         rollbackTx();
-        graphDb.nodeIndex( "immediate-index", LuceneIndexProvider.EXACT_CONFIG );
+        assertTrue( graphDb.index().existsForNodes( "immediate-index" ) );
+        nodeIndex( "immediate-index", LuceneIndexProvider.EXACT_CONFIG );
     }
 }
