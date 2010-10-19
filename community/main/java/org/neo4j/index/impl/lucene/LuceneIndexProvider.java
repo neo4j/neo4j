@@ -63,12 +63,6 @@ public class LuceneIndexProvider extends IndexProvider
         super( SERVICE_NAME );
     }
     
-    public LuceneIndexProvider( GraphDatabaseService db )
-    {
-        this();
-        load( db, ((AbstractGraphDatabase) db).getConfig() );
-    }
-    
     IndexConnectionBroker<LuceneXaConnection> broker()
     {
         return this.broker;
