@@ -13,11 +13,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.index.impl.lucene.LuceneIndexProvider;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.LockableNode;
 import org.neo4j.kernel.impl.core.LockReleaser;
@@ -620,13 +618,10 @@ public abstract class CommonJobs
         @Override
         protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
-            IndexProvider provider = db instanceof HighlyAvailableGraphDatabase ?
-                    ((HighlyAvailableGraphDatabase) db).getIndexProvider() :
-                    new LuceneIndexProvider( db );
             Node node = db.createNode();
             node.setProperty( key, value );
             node.setProperty( key2, value2 );
-            Index<Node> index = provider.nodeIndex( indexName, LuceneIndexProvider.EXACT_CONFIG );
+            Index<Node> index = db.nodeIndex( indexName, LuceneIndexProvider.EXACT_CONFIG );
             index.add( node, key, value );
             index.add( node, key2, value2 );
             tx.success();
