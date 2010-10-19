@@ -226,7 +226,7 @@ abstract class LuceneCommand extends XaCommand
     {
         DeleteCommand( IndexIdentifier indexId )
         {
-            super( indexId, (byte)0, -1L, "", "", DELETE_COMMAND );
+            super( indexId, indexId.entityTypeByte, -1L, "", "", DELETE_COMMAND );
         }
         
         @Override
