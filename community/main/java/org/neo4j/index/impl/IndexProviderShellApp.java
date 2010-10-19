@@ -24,7 +24,6 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,30 +41,6 @@ import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
 @Service.Implementation( App.class )
 public class IndexProviderShellApp extends GraphDatabaseApp
 {
-//    private IndexProvider indexes()
-//    {
-//        IndexProvider result = indexProvider;
-//        if ( result == null )
-//        {
-//            result = indexProvider = startProvider( getServer().getDb() );
-//        }
-//        return result;
-//    }
-
-//    private static IndexProvider startProvider( GraphDatabaseService graphDb )
-//    {
-//        if ( graphDb instanceof ReadOnlyGraphDatabaseProxy )
-//        {
-//            ReadOnlyGraphDatabaseProxy proxy = (ReadOnlyGraphDatabaseProxy) graphDb;
-//            return new ReadOnlyIndexProviderProxy( proxy, new LuceneIndexProvider(
-//                    proxy.getActualGraphDb() ) );
-//        }
-//        else
-//        {
-//            return new LuceneIndexProvider( graphDb );
-//        }
-//    }
-
     {
         addOptionDefinition( "g", new OptionDefinition( OptionValueType.NONE,
                 "Get nodes for the given key and value" ) );
@@ -108,8 +83,6 @@ public class IndexProviderShellApp extends GraphDatabaseApp
     protected String exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
-//        IndexProvider indexes = indexes();
-
         boolean doCd = parser.options().containsKey( "cd" );
         boolean doLs = parser.options().containsKey( "ls" );
         boolean query = parser.options().containsKey( "q" );
@@ -144,15 +117,15 @@ public class IndexProviderShellApp extends GraphDatabaseApp
             {
                 commandsToRun.addAll( Arrays.asList( commandToRun.split( Pattern.quote( "&&" ) ) ) );
             }
-            Iterable<Node> result;
-            if ( query )
+            
+            String indexName = parser.arguments().get( 0 );
+            if ( !db.index().existsForNodes( indexName ) )
             {
-                result = query( db, parser );
+                out.println( "No such index '" + indexName + "'" );
+                return null;
             }
-            else
-            {
-                result = get( db, parser );
-            }
+            
+            Iterable<Node> result = query ? query( db, parser ) : get( db, parser );
             for ( Node node : result )
             {
                 printAndInterpretTemplateLines( commandsToRun, false, !specialCommand, node,
@@ -188,14 +161,14 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         String index = parser.arguments().get( 0 );
         String key = parser.arguments().get( 1 );
         String value = parser.arguments().get( 2 );
-        return db.nodeIndex( index, emptyConfig() ).get( key, value );
+        return db.index().forNodes( index ).get( key, value );
     }
 
     private Iterable<Node> query( GraphDatabaseService db, AppCommandParser parser )
     {
         String index = parser.arguments().get( 0 );
         String query = parser.arguments().get( 1 );
-        return db.nodeIndex( index, emptyConfig() ).query( query );
+        return db.index().forNodes( index ).query( query );
     }
 
     private void index( GraphDatabaseService db, AppCommandParser parser, Session session )
@@ -210,7 +183,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         {
             throw new ShellException( "No value to index" );
         }
-        db.nodeIndex( index, emptyConfig() ).add( node, key, value );
+        db.index().forNodes( index ).add( node, key, value );
     }
 
     private void remove( GraphDatabaseService db, AppCommandParser parser, Session session )
@@ -225,11 +198,6 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         {
             throw new ShellException( "No value to remove" );
         }
-        db.nodeIndex( index, emptyConfig() ).remove( node, key, value );
-    }
-
-    private static Map<String, String> emptyConfig()
-    {
-        return null;
+        db.index().forNodes( index ).remove( node, key, value );
     }
 }
