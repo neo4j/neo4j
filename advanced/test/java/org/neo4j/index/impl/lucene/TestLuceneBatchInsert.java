@@ -20,6 +20,7 @@
 
 package org.neo4j.index.impl.lucene;
 
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.Neo4jTestCase.assertCollection;
 
 import java.io.File;
@@ -78,7 +79,8 @@ public class TestLuceneBatchInsert
         inserter.shutdown();
         
         GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
-        Index<Node> dbIndex = db.nodeIndex( "users", null );
+        assertTrue( db.index().existsForNodes( "users" ) );
+        Index<Node> dbIndex = db.index().forNodes( "users" );
         for ( int i = 0; i < 100; i++ )
         {
             assertCollection( dbIndex.get( "name", "Joe" + i ), db.getNodeById(
@@ -128,7 +130,7 @@ public class TestLuceneBatchInsert
         inserter.shutdown();
         
         GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
-        Index<Node> dbIndex = db.nodeIndex( name, LuceneIndexProvider.FULLTEXT_CONFIG );
+        Index<Node> dbIndex = db.index().forNodes( name, LuceneIndexProvider.FULLTEXT_CONFIG );
         Node node1 = db.getNodeById( id1 );
         Node node2 = db.getNodeById( id2 );
         assertCollection( dbIndex.query( "name", "persson" ), node1, node2 );

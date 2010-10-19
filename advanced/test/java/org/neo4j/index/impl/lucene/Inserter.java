@@ -32,7 +32,7 @@ public class Inserter
 	{
 		String path = args[0];
 		final GraphDatabaseService db = new EmbeddedGraphDatabase( path );
-		final Index<Node> index = db.nodeIndex( "myIndex", LuceneIndexProvider.EXACT_CONFIG );
+		final Index<Node> index = db.index().forNodes( "myIndex" );
 		final String[] keys = new String[] { "apoc", "zion", "morpheus" };
 		final String[] values = new String[] { "hej", "yo", "something", "just a value", "anything" };
 		

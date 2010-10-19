@@ -20,6 +20,8 @@
 
 package org.neo4j.index.impl.lucene;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.lang.Thread.State;
 import java.util.Random;
@@ -55,10 +57,8 @@ public class TestRecovery
     public void testRecovery() throws Exception
     {
         final GraphDatabaseService graphDb = newGraphDbService();
-        final Index<Node> nodeIndex = graphDb.nodeIndex( "node-index",
-                LuceneIndexProvider.EXACT_CONFIG );
-        final Index<Relationship> relIndex = graphDb.relationshipIndex( "rel-index",
-                LuceneIndexProvider.EXACT_CONFIG );
+        final Index<Node> nodeIndex = graphDb.index().forNodes( "node-index" );
+        final Index<Relationship> relIndex = graphDb.index().forRelationships( "rel-index" );
         final RelationshipType relType = DynamicRelationshipType.withName( "recovery" );
         
         graphDb.beginTx();
@@ -132,7 +132,8 @@ public class TestRecovery
     	process.waitFor();
     	
     	GraphDatabaseService db = new EmbeddedGraphDatabase( path );
-    	Index<Node> index = db.nodeIndex( "myIndex", null );
+    	assertTrue( db.index().existsForNodes( "myIndex" ) );
+    	Index<Node> index = db.index().forNodes( "myIndex" );
     	for ( Node node : db.getAllNodes() )
     	{
     	    for ( String key : node.getPropertyKeys() )
@@ -161,7 +162,7 @@ public class TestRecovery
     public void testAsLittleAsPossibleRecoveryScenario() throws Exception
     {
         GraphDatabaseService db = newGraphDbService();
-        Index<Node> index = db.nodeIndex( "my-index", LuceneIndexProvider.EXACT_CONFIG );
+        Index<Node> index = db.index().forNodes( "my-index" );
         db.beginTx();
         Node node = db.createNode();
         index.add( node, "key", "value" );

@@ -118,7 +118,7 @@ public class BaseWorker extends Thread
             }
         }
 
-        if (retries > 100)
+        if (retries > 300)
         {
             throw new IllegalStateException( "Something didn't finish in a timely manner. Aborting..." );
         }
