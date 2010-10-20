@@ -48,7 +48,7 @@ import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 
-abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
+public abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
 {
     static final String KEY_DOC_ID = "_id_";
     static final String KEY_START_NODE_ID = "_start_node_id_";
