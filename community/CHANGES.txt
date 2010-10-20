@@ -1,5 +1,10 @@
-1.2-1.2.M1 (2010-10-08)
------------------------
+1.2-1.2.M02 (2010-10-21)
+------------------------
+
+o Fixed a shutdown issue which could keep the JVM alive.
+
+1.2-1.2.M01 (2010-10-08)
+------------------------
 
 o Added -host as option when connecting a remote client.
 o Remote client optimizations (less communication with server).
