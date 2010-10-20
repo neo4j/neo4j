@@ -617,6 +617,7 @@ public class TestLuceneIndex
         assertThat( index.query( "name:something" ), contains( rel1, rel2 ) );
         assertThat( index.query( "name:something", null, endNode1 ), contains( rel1 ) );
         assertThat( index.query( "name:something", startNode, endNode2 ), contains( rel2 ) );
+        assertThat( index.query( null, startNode, endNode1 ), contains( rel1 ) );
         rel2.delete();
         rel1.delete();
         startNode.delete();
