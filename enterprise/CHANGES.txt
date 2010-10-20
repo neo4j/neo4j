@@ -1,5 +1,9 @@
-0.1-1.2.M1 (2010-10-08)
------------------------
+0.1-1.2.M02 (2010-10-21)
+------------------------
+
+o Fixed an issue where a timer thread was left running, keeping the JVM alive.
+
+0.1-1.2.M01 (2010-10-08)
+------------------------
 
 o Added a "pinger" as a kernel extension which pings to a server about its existence.
-o System properties can control behaviour (ping frequency and data).
