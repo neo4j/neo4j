@@ -1,0 +1,4 @@
+Neo4j Lucene Index
+
+    Integration layer between Neo4j and Lucene, providing one possible implementation
+    of the Index API.
