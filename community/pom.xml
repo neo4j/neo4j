@@ -9,7 +9,7 @@
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>3</version>
+    <version>4</version>
   </parent>
 
   <properties>
@@ -191,6 +191,21 @@
       </plugin>
     </plugins>
   </build>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <inherited>true</inherited>
+        <configuration>
+          <windowtitle>Neo4j ${project.version} API</windowtitle>
+          <doctitle>Neo4j ${project.version} API</doctitle>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
   
   <distributionManagement>
     <site>
