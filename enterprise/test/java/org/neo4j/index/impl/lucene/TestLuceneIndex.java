@@ -732,12 +732,14 @@ public class TestLuceneIndex
         assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
         assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
         assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+        assertOrderedCollection( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
 
         restartTx();
 
         assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
         assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
         assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+        assertOrderedCollection( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
     }
 
     @Test
