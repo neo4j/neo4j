@@ -1,0 +1,6 @@
+0.2-1.2.M02 (2010-10-21)
+------------------------
+
+o Moved to be an official and supported neo4j component.
+o The Index API moved to kernel, this component merely provides an
+  implementation.
