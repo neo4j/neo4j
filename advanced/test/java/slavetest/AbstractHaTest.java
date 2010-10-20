@@ -210,7 +210,7 @@ public abstract class AbstractHaTest
     
     private static boolean isIndexedWithIndexProvider( Node node, GraphDatabaseService db, String key )
     {
-        return db.nodeIndex( "users", null ).get( key, node.getProperty( key ) ).getSingle() != null;
+        return db.index().forNodes( "users" ).get( key, node.getProperty( key ) ).getSingle() != null;
     }
     
     private static int verifyProperties( PropertyContainer entity, PropertyContainer otherEntity )

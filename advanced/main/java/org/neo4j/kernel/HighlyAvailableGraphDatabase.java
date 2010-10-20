@@ -20,8 +20,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
@@ -597,14 +596,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return false;
     }
     
-    public Index<Node> nodeIndex( String indexName, Map<String, String> configForCreation )
+    public IndexManager index()
     {
-        return this.localGraph.nodeIndex( indexName, configForCreation );
-    }
-    
-    public RelationshipIndex relationshipIndex( String indexName,
-            Map<String, String> configForCreation )
-    {
-        return this.localGraph.relationshipIndex( indexName, configForCreation );
+        return this.localGraph.index();
     }
 }
