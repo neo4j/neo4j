@@ -13,7 +13,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.index.impl.lucene.LuceneIndexProvider;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
@@ -621,7 +620,7 @@ public abstract class CommonJobs
             Node node = db.createNode();
             node.setProperty( key, value );
             node.setProperty( key2, value2 );
-            Index<Node> index = db.nodeIndex( indexName, LuceneIndexProvider.EXACT_CONFIG );
+            Index<Node> index = db.index().forNodes( indexName );
             index.add( node, key, value );
             index.add( node, key2, value2 );
             tx.success();
