@@ -1,5 +1,12 @@
-1.2-1.2.M1 (2010-10-08)
------------------------
+1.2-1.2.M02 (2010-10-21)
+------------------------
+
+o HA branch merged into trunk
+o Made the "soft reference" cache type default.
+o Added GraphDatabaseService#index() which exposes an integrated index framework.
+
+1.2-1.2.M01 (2010-10-08)
+------------------------
 
 -New features
 o Kernel extensions - additional services for the Neo4j Kernel are loaded
