@@ -3,7 +3,7 @@
   <parent>
     <artifactId>parent-central</artifactId>
     <groupId>org.neo4j</groupId>
-    <version>1</version>
+    <version>2</version>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-lucene-index</artifactId>
@@ -30,6 +30,13 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
     <developerConnection>${project.scm.connection}</developerConnection>
     <url>https://trac.neo4j.org/browser/components/lucene-index/trunk</url>
   </scm>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
 
   <dependencies>
     <dependency>
@@ -67,5 +74,5 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
       </plugin>
     </plugins>
   </build>
-</project>
 
+</project>
