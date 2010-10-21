@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Relationship;
  * Extends the {@link Index} interface with additional get/query methods which
  * are specific to {@link Relationship}s. Each of {@link #get(String, Object)},
  * {@link #query(String, Object)} and {@link #query(Object)} have an additional
- * method which allows filtering on start/end node of the relationships.
+ * method which allows effient filtering on start/end node of the relationships.
  * 
  * @author Mattias Persson
  */

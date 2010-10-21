@@ -30,10 +30,10 @@ import java.util.NoSuchElementException;
  * can be used in a for-each loop. The <code>iterator()</code> method
  * <i>always</i> returns <code>this</code>.
  * 
- * The size is calculated before-hand so that calling it's always fast.
+ * The size is calculated before-hand so that calling it is always fast.
  * 
- * When you're done with your result and haven't reached the end of the
- * iteration you must call {@link #close()}. Results which are looped through
+ * When you're done with the result and haven't reached the end of the
+ * iteration {@link #close()} must be called. Results which are looped through
  * entirely closes automatically.
  * 
  * @param <T> the type of items in the Iterator.

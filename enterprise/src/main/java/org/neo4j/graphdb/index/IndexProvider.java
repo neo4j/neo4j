@@ -22,14 +22,13 @@ package org.neo4j.graphdb.index;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.KernelExtension;
 
 /**
  * A provider which can create and instantiate {@link Index}s.
- * An {@link IndexProvider} is typically tied to one type of index, f.ex.
+ * An {@link IndexProvider} is typically tied to one implementation, f.ex.
  * lucene, http://lucene.apache.org/java.
  * 
  * @author Mattias Persson
@@ -42,6 +41,10 @@ public abstract class IndexProvider extends KernelExtension
         super( key );
     }
     
+    /**
+     * Returns the name of the XA data source coupled with this index provider.
+     * @return the name of the XA data source coupled with this index provider.
+     */
     public abstract String getDataSourceName();
 
     /**
@@ -50,8 +53,7 @@ public abstract class IndexProvider extends KernelExtension
      * {@link Map} can contain any provider-implementation-specific data that
      * can control how an index behaves.
      * 
-     * @param indexName the name of the index, from
-     * {@link GraphDatabaseService#nodeIndex(String)}.
+     * @param indexName the name of the index.
      * @param config a {@link Map} of configuration parameters to use with the
      * index. Parameters can be anything and are implementation-specific.
      * @return the {@link Index} corresponding to the {@code indexName} and
@@ -65,8 +67,7 @@ public abstract class IndexProvider extends KernelExtension
      * {@link Map} can contain any provider-implementation-specific data that
      * can control how an index behaves.
      * 
-     * @param indexName the name of the index, from
-     * {@link GraphDatabaseService#nodeIndex(String)}.
+     * @param indexName the name of the index.
      * @param config a {@link Map} of configuration parameters to use with the
      * index. Parameters can be anything and are implementation-specific.
      * @return the {@link Index} corresponding to the {@code indexName} and
@@ -77,5 +78,12 @@ public abstract class IndexProvider extends KernelExtension
     public abstract RelationshipIndex relationshipIndex( String indexName,
             Map<String, String> config );
 
+    /**
+     * Fills in default configuration parameters for indexes provided from this
+     * index provider.
+     * @param config the configuration map to complete with defaults.
+     * @return a {@link Map} filled with decent defaults for an index from
+     * this index provider.
+     */
     public abstract Map<String, String> fillInDefaults( Map<String, String> config );
 }
