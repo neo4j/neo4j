@@ -16,39 +16,14 @@
   <groupId>org.neo4j</groupId>
   <version>0.7-SNAPSHOT</version>
   <packaging>bundle</packaging>
-  <name>${short-name}</name>
-  <description>Graph algorithms for neo4j</description>
+  <name>Neo4j - Graph Algorithms</name>
+  <description>Graph algorithms for Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
-  <!-- For custom complexity taglet -->
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <tags>
-            <tag>
-              <name>complexity</name>
-              <placement>a</placement>
-              <head>Complexity:</head>
-            </tag>
-          </tags>
-          <links>
-            <link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
-          </links>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
-
   <scm>
-    <connection>
-            scm:svn:https://svn.neo4j.org/components/graph-algo/trunk/
-        </connection>
+    <connection>scm:svn:https://svn.neo4j.org/components/graph-algo/trunk/</connection>
     <developerConnection>scm:svn:https://svn.neo4j.org/components/graph-algo/trunk/</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/graph-algo
-        </url>
+    <url>https://trac.neo4j.org/browser/components/graph-algo</url>
   </scm>
 
   <developers>
@@ -92,7 +67,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
