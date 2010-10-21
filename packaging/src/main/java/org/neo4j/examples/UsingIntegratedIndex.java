@@ -53,9 +53,11 @@ public class UsingIntegratedIndex
 
     public static void main( final String[] args )
     {
+        // START SNIPPET: createIndex
         graphDb = new EmbeddedGraphDatabase( DB_PATH );
         nodeIndex = graphDb.index().forNodes( INDEX_NAME );
         registerShutdownHook();
+        // END SNIPPET: createIndex
 
         Transaction tx = graphDb.beginTx();
         try
@@ -106,7 +108,9 @@ public class UsingIntegratedIndex
 
     static void shutdown()
     {
+        // START SNIPPET: shutdownDatabase
         graphDb.shutdown();
+        // END SNIPPET: shutdownDatabase
     }
 
     private static String idToUserName( final int id )
@@ -116,9 +120,11 @@ public class UsingIntegratedIndex
 
     private static Node createAndIndexUser( final String username )
     {
+        // START SNIPPET: indexNode
         Node node = graphDb.createNode();
         node.setProperty( USERNAME_KEY, username );
         nodeIndex.add( node, USERNAME_KEY, username );
+        // END SNIPPET: indexNode
         return node;
     }
 

@@ -16,3 +16,12 @@ Neo4j Examples
     * {{{./graphalgo.html}Graph algorithms}}
     
     * {{{./management.html}Management features}}    
+
+    * {{{./integrated-index.html}Integrated indexing}} - managed through the GraphDatabaseService (new!)
+
+Neo4j Example Tests
+
+    For your reference, there are unit tests included which illustrate
+    approaches for testing graph-based applications.
+
+    * {{{./base-test.html}Base test}} - simplest possible unit test of a graph, with setup and teardown
