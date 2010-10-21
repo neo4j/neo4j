@@ -3,7 +3,7 @@
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-examples</artifactId>
   <name>Neo4j Examples</name>
-  <version>1.2-SNAPSHOT</version>
+  <version>1.2.M02</version>
   <description>Neo4j Distribution and examples</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
   <parent>
@@ -20,7 +20,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.2-SNAPSHOT</version>
+      <version>1.2.M02</version>
       <type>pom</type>
       <exclusions>
         <exclusion>
@@ -32,7 +32,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-udc</artifactId>
-      <version>0.1-SNAPSHOT</version>
+      <version>0.1-1.2.M02</version>
       <classifier>neo4j</classifier>
     </dependency>
     <dependency>
