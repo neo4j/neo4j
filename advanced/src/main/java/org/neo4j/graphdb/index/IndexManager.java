@@ -27,10 +27,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
 /**
- * A one stop shop for creating and retrieving {@link Index}s for {@link Node}s
+ * A one stop shop for accessing {@link Index}s for {@link Node}s
  * and {@link Relationship}s. An {@link IndexManager} is paired with a
  * {@link GraphDatabaseService} via {@link GraphDatabaseService#index()} so that
- * you can reach your indexes from your graph database.
+ * indexes can be accessed directly from the graph database.
  */
 public interface IndexManager
 {

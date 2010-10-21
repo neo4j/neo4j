@@ -25,13 +25,21 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
 /**
- * An index to store key/value pairs for fast lookup and querying. Indexes
- * participates in transactions so rolling back and committing works the same
- * way as usual in Neo4j.
+ * An index to associate key/value pairs with entities ({@link Node}s or
+ * {@link Relationship}s) for fast lookup and querying. Any number of key/value
+ * pairs can be associated with any number of entities using
+ * {@link #add(PropertyContainer, String, Object)} and dissociated with
+ * {@link #remove(PropertyContainer, String, Object)}. Querting is done using
+ * {@link #get(String, Object)} for exact lookups and {@link #query(Object)} or
+ * {@link #query(String, Object)} for more advanced querying, exposing querying
+ * capabilities from the backend which is backing this particular index.
+ * 
+ * Write operations participates in transactions so committing and rolling back
+ * works the same way as usual in Neo4j.
  * 
  * @author Mattias Persson
  *
- * @param <T> The type of items this index manages. It may be either
+ * @param <T> The type of entities this index manages. It may be either
  * {@link Node}s or {@link Relationship}s.
  */
 public interface Index<T extends PropertyContainer>
@@ -63,8 +71,10 @@ public interface Index<T extends PropertyContainer>
     void remove( T entity, String key, Object value );
     
     /**
-     * Clears the index. After this nothing will be returned in any query
-     * until key/value pairs are added again.
+     * Clears the index and deletes the configuration associated with it. After
+     * this it's invalid to call any other method on this index. However if the
+     * transaction which the delete operation was called in gets rolled back
+     * it again becomes ok to use this index.
      */
     void delete();
     
