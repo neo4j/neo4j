@@ -92,7 +92,7 @@ public abstract class GraphAlgoFactory
 
     /**
      * Returns an algorithm which can find all paths of a certain length between
-     * two nodes. These returned paths cannot contain loops (i.e. a node cannot
+     * two nodes. These returned paths can contain loops (i.e. a node could
      * occur more than once in any returned path).
      * 
      * @see ShortestPath
