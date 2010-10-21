@@ -75,4 +75,18 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
     </plugins>
   </build>
 
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <!-- Override parent to include impl package in javadocs. -->
+          <excludePackageNames>*.dummy</excludePackageNames>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
+
 </project>
