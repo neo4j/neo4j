@@ -1,6 +1,6 @@
 1.2-1.2.M02 (2010-10-21)
 ------------------------
-
+ 
 o HA branch merged into trunk
 o Made the "soft reference" cache type default.
 
