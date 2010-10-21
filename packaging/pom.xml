@@ -3,7 +3,7 @@
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-examples</artifactId>
   <name>Neo4j Examples</name>
-  <version>1.2.M02</version>
+  <version>1.2-SNAPSHOT</version>
   <description>Neo4j Distribution and examples</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
   <parent>
