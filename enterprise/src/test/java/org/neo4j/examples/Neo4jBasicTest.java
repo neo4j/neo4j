@@ -37,7 +37,7 @@ import static org.junit.Assert.assertThat;
 /**
  * An example of unit testing with Neo4j.
  */
-public class Neo4jBaseTest
+public class Neo4jBasicTest
 {
     /**
      * Base directory for temporary database.
@@ -59,8 +59,10 @@ public class Neo4jBaseTest
     @Before
     public void prepareTestDatabase()
     {
+        // START SNIPPET: beforeTest
         deleteFileOrDirectory( testDatabasePath );
         graphDb = new EmbeddedGraphDatabase( testDatabasePath.getAbsolutePath() );
+        // END SNIPPET: beforeTest
     }
 
     /**
@@ -69,7 +71,9 @@ public class Neo4jBaseTest
     @After
     public void destroyTestDatabase()
     {
+        // START SNIPPET: afterTest
         graphDb.shutdown();
+        // END SNIPPET: afterTest
     }
 
     protected void deleteFileOrDirectory( File path )
@@ -91,7 +95,9 @@ public class Neo4jBaseTest
     @Test
     public void shouldCreateNode()
     {
+        // START SNIPPET: unitTest
         Transaction tx = graphDb.beginTx();
+        
         Node n = null;
         try
         {
@@ -114,6 +120,7 @@ public class Neo4jBaseTest
         assertThat( foundNode.getId(), is( n.getId() ) );
         assertThat( (String) foundNode.getProperty( "name" ), is( "Nancy" ) );
 
+        // END SNIPPET: unitTest
     }
 
 }

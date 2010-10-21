@@ -12,6 +12,10 @@
             <directory>src/main/java</directory>
             <outputDirectory>examples</outputDirectory>
         </fileSet>
+        <fileSet>
+            <directory>src/test/java</directory>
+            <outputDirectory>tests</outputDirectory>
+        </fileSet>
         <!-- INFO -->
         <fileSet>
             <includes>
