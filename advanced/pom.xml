@@ -114,8 +114,8 @@
               <name>calculate-shortest-path</name>
             </program>
             <program>
-              <mainClass>org.neo4j.examples.UsingIndexManager</mainClass>
-              <name>using-index-manager</name>
+              <mainClass>org.neo4j.examples.UsingIntegratedIndex</mainClass>
+              <name>using-integrated-index</name>
             </program>
           </programs>
         </configuration>
