@@ -1,5 +1,16 @@
-1.2-1.2.M1 (2010-10-08)
------------------------
+1.2-1.2.M02 (2010-10-21)
+------------------------
+
+-New components
+o Lucene index, an implementation of the integrated index framework
+  using lucene as backend. Planned to replace current index service.
+
+-Important changes
+o Fixed shutdown issue regarding UDC leaving a thread running.
+o A new index framework integrated into the kernel API.
+
+1.2-1.2.M01 (2010-10-08)
+------------------------
 
 -New components
 o Udc
