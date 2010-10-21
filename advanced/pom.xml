@@ -33,7 +33,7 @@
   </modules>
 
   <properties>
-    <neo4j-release.version>1.2.M01</neo4j-release.version>
+    <neo4j-release.version>1.2.M02</neo4j-release.version>
     <neo4j-kernel.version>1.2-${neo4j-release.version}</neo4j-kernel.version>
     <neo4j-index.version>1.2-${neo4j-release.version}</neo4j-index.version>
     <neo4j-shell.version>1.2-${neo4j-release.version}</neo4j-shell.version>
@@ -41,5 +41,16 @@
     <neo4j-online-backup.version>0.7-${neo4j-release.version}</neo4j-online-backup.version>
     <neo4j-udc.version>0.1-${neo4j-release.version}</neo4j-udc.version>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>staging-1</id>
+      <url>https://oss.sonatype.org/content/repositories/orgneo4j-636/</url>
+    </repository>
+    <repository>
+      <id>staging-2</id>
+      <url>https://oss.sonatype.org/content/repositories/orgneo4j-637/</url>
+    </repository>
+  </repositories>
 
 </project>
