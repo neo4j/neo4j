@@ -8,6 +8,7 @@ o Lucene index, an implementation of the integrated index framework
 -Important changes
 o Fixed shutdown issue regarding UDC leaving a thread running.
 o A new index framework integrated into the kernel API.
+o Getting relationships is faster due to less cache lookups.
 
 1.2-1.2.M01 (2010-10-08)
 ------------------------
