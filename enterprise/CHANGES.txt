@@ -3,7 +3,12 @@
 
 o HA branch merged into trunk
 o Made the "soft reference" cache type default.
+
+-New features
 o Added GraphDatabaseService#index() which exposes an integrated index framework.
+
+-Optimizations
+o Gettings relationships requires less cache lookups and is therefore faster.
 
 1.2-1.2.M01 (2010-10-08)
 ------------------------
