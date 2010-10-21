@@ -42,7 +42,7 @@
     <neo4j-udc.version>0.1-${neo4j-release.version}</neo4j-udc.version>
   </properties>
 
-  <!-- Staging repository URLs change... ->
+  <!-- Staging repository URLs change... -->
   <!-- repositories>
     <repository>
       <id>staging-1</id>
@@ -52,6 +52,6 @@
       <id>staging-2</id>
       <url>https://oss.sonatype.org/content/repositories/orgneo4j-637/</url>
     </repository>
-  </repositorieas -->
+  </repositories -->
 
 </project>
