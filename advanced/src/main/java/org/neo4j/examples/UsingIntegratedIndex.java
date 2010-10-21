@@ -20,28 +20,30 @@
 
 package org.neo4j.examples;
 
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.IndexService;
-import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-
-import java.util.Map;
-
 
 /**
  * As of neo4j-1.2.M02, the {@link org.neo4j.graphdb.GraphDatabaseService} is
  * always paired with an {@link org.neo4j.graphdb.index.IndexManager} for
- * creating and managing indexes on Nodes and Relationships.
- * 
+ * creating and managing indexes on Nodes and Relationships. It is a new index
+ * framework set to replace the {@link IndexService} interface and is tighter
+ * integrated with the graph database.
  */
-public class UsingIndexManager
+public class UsingIntegratedIndex
 {
     private static final String DB_PATH = "neo4j-store";
     private static final String USERNAME_KEY = "username";
     private static GraphDatabaseService graphDb;
     private static final String INDEX_NAME = "user-index";
-    private static Index<Node> nodeIndex ;
+    private static Index<Node> nodeIndex;
 
     private static enum RelTypes implements RelationshipType
     {
@@ -116,7 +118,7 @@ public class UsingIndexManager
     {
         Node node = graphDb.createNode();
         node.setProperty( USERNAME_KEY, username );
-        nodeIndex.add(  node, USERNAME_KEY, username );
+        nodeIndex.add( node, USERNAME_KEY, username );
         return node;
     }
 
