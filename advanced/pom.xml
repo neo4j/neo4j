@@ -203,6 +203,14 @@
           <doctitle>Neo4j ${project.version} API</doctitle>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jxr-plugin</artifactId>
+        <version>2.2</version>
+        <configuration>
+          <linkJavadoc>false</linkJavadoc>
+        </configuration>
+      </plugin>
     </plugins>
   </reporting>
 
