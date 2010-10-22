@@ -36,11 +36,9 @@ import static org.neo4j.index.impl.lucene.ValueContext.numeric;
 import java.io.File;
 import java.util.Map;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TermQuery;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -668,36 +666,49 @@ public class TestLuceneIndex
             EntityCreator<T> creator )
     {
         long t = System.currentTimeMillis();
-        for ( int i = 0; i < 30000; i++ )
+        for ( int i = 0; i < 1000000; i++ )
         {
             T entity = creator.create();
-            if ( i % 5000 == 5 )
-            {
-                index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
-            }
-            index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() );
+//            if ( i % 5000 == 5 )
+//            {
+//                index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
+//            }
+//            index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() );
             index.get( "name", "The name " + i );
             index.add( entity, "name", "The name " + i );
             index.add( entity, "title", "Some title " + i );
             index.add( entity, "something", i + "Nothing" );
             index.add( entity, "else", i + "kdfjkdjf" + i );
-            if ( i % 5000 == 0 )
+            if ( i % 10000 == 0 )
             {
                 restartTx();
-                System.out.print( "." );
+                System.out.println( i );
             }
         }
         System.out.println( "insert:" + ( System.currentTimeMillis() - t ) );
 
         t = System.currentTimeMillis();
-        int count = 100;
+        int count = 1000;
+        int resultCount = 0;
         for ( int i = 0; i < count; i++ )
         {
-            for ( T entity : index.get( "name", "The name " + i ) )
+            for ( T entity : index.get( "name", "The name " + i*900 ) )
             {
+                resultCount++;
             }
         }
-        System.out.println( "get:" + (double)( System.currentTimeMillis() - t ) / (double)count );
+        System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
+
+        t = System.currentTimeMillis();
+        resultCount = 0;
+        for ( int i = 0; i < count; i++ )
+        {
+            for ( T entity : index.get( "something", i*900 + "Nothing" ) )
+            {
+                resultCount++;
+            }
+        }
+        System.out.println( "get(" + resultCount + "):" + (double)( System.currentTimeMillis() - t ) / (double)count );
     }
 
     @Test
