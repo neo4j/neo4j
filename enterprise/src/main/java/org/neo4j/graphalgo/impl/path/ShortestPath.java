@@ -214,6 +214,7 @@ public class ShortestPath implements PathFinder<Path>
         private Iterator<Relationship> nextRelationships;
         private final Collection<Node> nextNodes = new ArrayList<Node>();
         private Map<Node, LevelData> visitedNodes = new HashMap<Node, LevelData>();
+        private final Collection<Long> sharedVisitedRels;
         private Node lastParentTraverserNode;
         private final MutableInteger sharedFrozenDepth;
         private final MutableBoolean sharedStop;
@@ -236,6 +237,7 @@ public class ShortestPath implements PathFinder<Path>
             this.sharedCurrentDepth = sharedCurrentDepth;
             this.stopAsap = stopAsap;
             this.expander = expander;
+            this.sharedVisitedRels = sharedVisitedRels;
             prepareNextLevel();
         }
         
@@ -267,6 +269,10 @@ public class ShortestPath implements PathFinder<Path>
                 if ( nextRel == null )
                 {
                     return null;
+                }
+                if ( !hitDecider.canVisitRelationship( sharedVisitedRels, nextRel ) )
+                {
+                    continue;
                 }
                 
                 Node result = nextRel.getOtherNode( this.lastParentTraverserNode );
@@ -512,11 +518,18 @@ public class ShortestPath implements PathFinder<Path>
     private static interface HitDecider
     {
         boolean isHit( int depth );
+        
+        boolean canVisitRelationship( Collection<Long> rels, Relationship rel );
     }
     
     private static final HitDecider YES_HIT_DECIDER = new HitDecider()
     {
         public boolean isHit( int depth )
+        {
+            return true;
+        }
+        
+        public boolean canVisitRelationship( Collection<Long> rels, Relationship rel )
         {
             return true;
         }
@@ -534,6 +547,11 @@ public class ShortestPath implements PathFinder<Path>
         public boolean isHit( int depth )
         {
             return this.depth == depth;
+        }
+        
+        public boolean canVisitRelationship( Collection<Long> rels, Relationship rel )
+        {
+            return rels.add( rel.getId() );
         }
     }
 }
