@@ -67,7 +67,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 class EmbeddedGraphDbImpl
 {
-    private static final String KEY_INDEX_PROVIDER = "provider";
     private static final String KERNEL_VERSION = Version.get();
 
     private static Logger log =
