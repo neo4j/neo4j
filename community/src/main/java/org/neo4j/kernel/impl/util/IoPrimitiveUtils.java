@@ -25,6 +25,8 @@ import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class IoPrimitiveUtils
 {
@@ -120,6 +122,23 @@ public abstract class IoPrimitiveUtils
         return readAndFlip( channel, ByteBuffer.wrap( array ), bytes ) ? array : null;
     }
     
+    public static Map<String, String> readMap( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
+    {
+        int size = readInt( channel, buffer );
+        Map<String, String> map = new HashMap<String, String>();
+        for ( int i = 0; i < size; i++ )
+        {
+            String key = readLengthAndString( channel, buffer );
+            String value = readLengthAndString( channel, buffer );
+            if ( key == null || value == null )
+            {
+                return null;
+            }
+            map.put( key, value );
+        }
+        return map;
+    }
+    
     public static void writeLengthAndString( FileChannel channel, ByteBuffer buffer, String value )
             throws IOException
     {
@@ -163,7 +182,18 @@ public abstract class IoPrimitiveUtils
         buffer.flip();
         channel.write( buffer );
     }
-
+    
+    public static void writeMap( FileChannel channel, ByteBuffer buffer, Map<String, String> map )
+            throws IOException
+    {
+        writeInt( channel, buffer, map.size() );
+        for ( Map.Entry<String, String> entry : map.entrySet() )
+        {
+            writeLengthAndString( channel, buffer, entry.getKey() );
+            writeLengthAndString( channel, buffer, entry.getValue() );
+        }
+    }
+    
     public static Object[] asArray( Object propertyValue )
     {
         if ( propertyValue.getClass().isArray() )
