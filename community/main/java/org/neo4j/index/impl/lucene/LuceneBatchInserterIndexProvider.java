@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.BatchInserterIndexProvider;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -100,6 +101,8 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
         // TODO Doesn't look right
         if ( config != null )
         {
+            config = MapUtil.stringMap( new HashMap<String, String>( config ),
+                    "provider", LuceneIndexProvider.SERVICE_NAME );
             indexStore.setIfNecessary( cls, indexName, config );
             return config;
         }

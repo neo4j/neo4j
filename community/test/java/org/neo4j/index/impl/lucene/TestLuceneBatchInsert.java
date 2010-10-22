@@ -105,8 +105,7 @@ public class TestLuceneBatchInsert
         BatchInserter inserter = new BatchInserterImpl( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         String name = "users";
-        BatchInserterIndex index = provider.nodeIndex( name,
-                LuceneIndexProvider.FULLTEXT_CONFIG );
+        BatchInserterIndex index = provider.nodeIndex( name, MapUtil.stringMap( "type", "fulltext" ) );
 
         long id1 = inserter.createNode( null );
         index.add( id1, MapUtil.map( "name", "Mattias Persson", "email", "something@somewhere",
@@ -130,7 +129,7 @@ public class TestLuceneBatchInsert
         inserter.shutdown();
         
         GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
-        Index<Node> dbIndex = db.index().forNodes( name, LuceneIndexProvider.FULLTEXT_CONFIG );
+        Index<Node> dbIndex = db.index().forNodes( name );
         Node node1 = db.getNodeById( id1 );
         Node node2 = db.getNodeById( id2 );
         assertCollection( dbIndex.query( "name", "persson" ), node1, node2 );
