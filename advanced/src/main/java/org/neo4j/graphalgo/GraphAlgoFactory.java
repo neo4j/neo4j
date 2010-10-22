@@ -91,14 +91,15 @@ public abstract class GraphAlgoFactory
     }
 
     /**
-     * Returns an algorithm which can find all paths of a certain length between
-     * two nodes. These returned paths can contain loops (i.e. a node could
-     * occur more than once in any returned path).
+     * Returns an algorithm which can find simple all paths of a certain length
+     * between two nodes. These returned paths cannot contain loops (i.e. a node
+     * could not occur more than once in any returned path).
      * 
      * @see ShortestPath
      * @param expander the {@link RelationshipExpander} to use for expanding
-     *            {@link Relationship}s for each {@link Node}.
-     * @param length the {@link Path#length()} returned paths are must have.
+     * {@link Relationship}s for each {@link Node}.
+     * @param length the {@link Path#length()} returned paths will have, if any
+     * paths were found.
      * @return an algorithm which finds paths of a certain length between two nodes.
      */
     public static PathFinder<Path> pathsWithLength( RelationshipExpander expander, int length )
