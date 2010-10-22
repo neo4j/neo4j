@@ -120,6 +120,18 @@ public class Traversal
     {
         return StandardExpander.create( type, dir );
     }
+    
+    /**
+     * Creates a new {@link RelationshipExpander} which is set to expand
+     * relationships with {@code type} in any direction.
+     *
+     * @param type the {@link RelationshipType} to expand.
+     * @return a new {@link RelationshipExpander}.
+     */
+    public static Expander expanderForTypes( RelationshipType type )
+    {
+        return StandardExpander.create( type, Direction.BOTH );
+    }
 
     /**
      * Returns an empty {@link Expander} which, if not modified, will expand
