@@ -18,7 +18,7 @@
   <modules>
     <module>poja</module>
     <module>standard</module>
-    <module>osgi</module>
+    <!-- module>osgi</module -->
   </modules>
 
 </project>
