@@ -160,4 +160,43 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         assertPaths( GraphAlgoFactory.pathsWithLength( expander, 7 ).findAllPaths( a, k ), "a,b,e,f,h,i,j,k" );
         assertPaths( GraphAlgoFactory.pathsWithLength( expander, 8 ).findAllPaths( a, k ) );
     }
+    
+    @Test
+    public void makeSureShortestPathsReturnsNoLoops()
+    {
+        // Layout:
+        //
+        // (a)-->(b)==>(c)-->(e)
+        //        ^    /
+        //         \  v
+        //         (d)
+        //
+        
+        graph.makeEdgeChain( "a,b,c,d,b,c,e" );
+        Node a = graph.getNode( "a" );
+        Node e = graph.getNode( "e" );
+        assertPaths( instantiatePathFinder( 6 ).findAllPaths( a, e ), "a,b,c,e", "a,b,c,e" );
+    }
+    
+    @Test
+    public void testExactDepthPathsReturnsNoLoops()
+    {
+        // Layout:
+        //
+        // (a)-->(b)==>(c)-->(e)
+        //        ^    /
+        //         \  v
+        //         (d)
+        //
+        
+        graph.makeEdgeChain( "a,b,c,d,b,c,e" );
+        Node a = graph.getNode( "a" );
+        Node e = graph.getNode( "e" );
+        assertPaths( GraphAlgoFactory.pathsWithLength(
+                Traversal.expanderForTypes( MyRelTypes.R1 ), 3 ).findAllPaths( a, e ), "a,b,c,e", "a,b,c,e" );
+        assertPaths( GraphAlgoFactory.pathsWithLength(
+                Traversal.expanderForTypes( MyRelTypes.R1 ), 4 ).findAllPaths( a, e ), "a,b,d,c,e" );
+        assertPaths( GraphAlgoFactory.pathsWithLength(
+                Traversal.expanderForTypes( MyRelTypes.R1 ), 6 ).findAllPaths( a, e ) );
+    }
 }

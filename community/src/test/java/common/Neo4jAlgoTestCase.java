@@ -160,6 +160,6 @@ public abstract class Neo4jAlgoTestCase
                 fail( "Unexpected path " + pathDef );
             }
         }
-        assertTrue( "Should be empty: " + pathDefs.toString(), pathDefs.isEmpty() );
+        assertTrue( "These were expected, but not found: " + pathDefs.toString(), pathDefs.isEmpty() );
     }
 }
