@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>2</version>
+    <version>3</version>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-online-backup</artifactId>
@@ -61,6 +61,10 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-index</artifactId>
       <version>1.2-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
     </dependency>
   </dependencies>
 
