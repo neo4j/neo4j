@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-      <groupId>org.neo4j</groupId>
+    <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>2</version>
+    <version>3</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-udc</artifactId>
-  <name>Neo4j Usage Data Collection</name>
+  <name>Neo4j - Usage Data Collection</name>
   <version>0.1-SNAPSHOT</version>
   <description>Collects simple statistics about server deployment.</description>
   
@@ -130,7 +130,7 @@
       <groupId>org.osgi</groupId>
       <artifactId>osgi_R4_compendium</artifactId>
       <optional>true</optional>
-    </dependency>    
+    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -156,6 +156,10 @@
       <artifactId>commons-io</artifactId>
       <version>1.4</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
     </dependency>
  </dependencies>
 </project>
