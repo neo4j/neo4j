@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>2</version>
+    <version>3</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -150,7 +150,10 @@
         </exclusion>
       </exclusions>
     </dependency>
-
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
   </dependencies>
 </project>
 
