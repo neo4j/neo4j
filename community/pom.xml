@@ -3,7 +3,7 @@
   <parent>
     <artifactId>parent-central</artifactId>
     <groupId>org.neo4j</groupId>
-    <version>2</version>
+    <version>3</version>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-lucene-index</artifactId>
@@ -61,6 +61,10 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
       <groupId>${lucene.groupId}</groupId>
       <artifactId>${lucene.artifactId}</artifactId>
       <version>${lucene.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
     </dependency>
   </dependencies>
 
