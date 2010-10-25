@@ -1457,7 +1457,10 @@ public class XaLogicalLog
         readAndAssertLogHeader( buffer, fileChannel, currentVersion );
         if ( xidIdentMap.size() > 0 )
         {
-            fileChannel.position( getFirstStartEntry( endPosition ) );
+            long firstEntryPosition = getFirstStartEntry( endPosition );
+            fileChannel.position( firstEntryPosition );
+            msgLog.logMessage( "Rotate log first start entry @ pos=" + 
+                    firstEntryPosition );
         }
         LogEntry entry;
         // Set<Integer> startEntriesWritten = new HashSet<Integer>();
@@ -1535,8 +1538,6 @@ public class XaLogicalLog
                 firstEntryPosition = entry.getStartPosition();
             }
         }
-        msgLog.logMessage( "Rotate log first start entry @ pos=" + 
-                firstEntryPosition );
         return firstEntryPosition;
     }
 
