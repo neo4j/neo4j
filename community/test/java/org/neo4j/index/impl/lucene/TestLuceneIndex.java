@@ -34,6 +34,8 @@ import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
 import static org.neo4j.index.impl.lucene.ValueContext.numeric;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.queryParser.QueryParser.Operator;
@@ -55,6 +57,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
@@ -864,5 +868,129 @@ public class TestLuceneIndex
         rollbackTx();
         assertTrue( graphDb.index().existsForNodes( "immediate-index" ) );
         nodeIndex( "immediate-index", LuceneIndexProvider.EXACT_CONFIG );
+    }
+    
+    @Test
+    public void makeSureFulltextConfigIsCaseInsensitiveByDefault()
+    {
+        Index<Node> index = nodeIndex( "ft-case-sensitive", LuceneIndexProvider.FULLTEXT_CONFIG );
+        Node node = graphDb.createNode();
+        String key = "name";
+        String value = "Mattias Persson";
+        index.add( node, key, value );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.query( "name", "[A TO Z]" ), contains( node ) );
+            assertThat( index.query( "name", "[a TO z]" ), contains( node ) );
+            assertThat( index.query( "name", "Mattias" ), contains( node ) );
+            assertThat( index.query( "name", "mattias" ), contains( node ) );
+            assertThat( index.query( "name", "Matt*" ), contains( node ) );
+            assertThat( index.query( "name", "matt*" ), contains( node ) );
+            restartTx();
+        }
+    }
+    
+    @Test
+    public void makeSureFulltextIndexCanBeCaseSensitive()
+    {
+        Index<Node> index = nodeIndex( "ft-case-insensitive", MapUtil.stringMap(
+                new HashMap<String, String>( LuceneIndexProvider.FULLTEXT_CONFIG ),
+                        "to_lower_case", "false" ) );
+        Node node = graphDb.createNode();
+        String key = "name";
+        String value = "Mattias Persson";
+        index.add( node, key, value );
+        for ( int i = 0; i < 2; i++ )
+        {
+            assertThat( index.query( "name", "[A TO Z]" ), contains( node ) );
+            assertThat( index.query( "name", "[a TO z]" ), isEmpty() );
+            assertThat( index.query( "name", "Matt*" ), contains( node ) );
+            assertThat( index.query( "name", "matt*" ), isEmpty() );
+            assertThat( index.query( "name", "Persson" ), contains( node ) );
+            assertThat( index.query( "name", "persson" ), isEmpty() );
+            restartTx();
+        }
+    }
+    
+    @Test
+    public void makeSureCustomAnalyzerCanBeUsed()
+    {
+        CustomAnalyzer.called = false;
+        Index<Node> index = nodeIndex( "w-custom-analyzer", MapUtil.stringMap(
+                "provider", "lucene", "analyzer", org.neo4j.index.impl.lucene.CustomAnalyzer.class.getName(),
+                "to_lower_case", "true" ) );
+        Node node = graphDb.createNode();
+        String key = "name";
+        String value = "The value";
+        index.add( node, key, value );
+        restartTx();
+        assertTrue( CustomAnalyzer.called );
+        assertThat( index.query( key, "[A TO Z]" ), contains( node ) );
+    }
+    
+    @Test
+    public void makeSureCustomAnalyzerCanBeUsed2()
+    {
+        CustomAnalyzer.called = false;
+        Index<Node> index = nodeIndex( "w-custom-analyzer-2", MapUtil.stringMap(
+                "provider", "lucene", "analyzer", org.neo4j.index.impl.lucene.CustomAnalyzer.class.getName(),
+                "to_lower_case", "true", "type", "fulltext" ) );
+        Node node = graphDb.createNode();
+        String key = "name";
+        String value = "The value";
+        index.add( node, key, value );
+        restartTx();
+        assertTrue( CustomAnalyzer.called );
+        assertThat( index.query( key, "[A TO Z]" ), contains( node ) );
+    }
+    
+    @Ignore
+    @Test
+    public void makeSureFilesAreClosedProperly()
+    {
+        commitTx();
+        Index<Node> index = nodeIndex( "open-files", LuceneIndexProvider.EXACT_CONFIG );
+        long time = System.currentTimeMillis();
+        for ( int i = 0; System.currentTimeMillis() - time < 100*1000; i++ )
+        {
+            if ( i%10 == 0 )
+            {
+                if ( i%100 == 0 )
+                {
+                    IndexHits<Node> itr = index.get( "key", "value5" );
+                    int size = 0;
+                    for ( ;itr.hasNext() && size < 5; size++ )
+                    {
+                        itr.next();
+                    }
+                    itr.close();
+                    System.out.println( "C iterated " + size + " only" );
+                }
+                else
+                {
+                    int size = IteratorUtil.count( (Iterator) index.get( "key", "value5" ) );
+                    System.out.println( "hit size:" + size );
+                }
+            }
+            else
+            {
+                Transaction tx = graphDb.beginTx();
+                try
+                {
+                    for ( int ii = 0; ii < 20; ii++ )
+                    {
+                        Node node = graphDb.createNode();
+                        index.add( node, "key", "value" + ii );
+                    }
+                    tx.success();
+                }
+                finally
+                {
+                    tx.finish();
+                }
+            }
+            
+            if ( i%1000 == 0 ) System.out.println( i );
+        }
     }
 }
