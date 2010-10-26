@@ -27,8 +27,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.index.Neo4jTestCase.assertCollection;
-import static org.neo4j.index.Neo4jTestCase.assertOrderedCollection;
+import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
 import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
 import static org.neo4j.index.impl.lucene.ValueContext.numeric;
@@ -37,6 +37,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -492,12 +493,12 @@ public class TestLuceneIndex
         index.add( entity1, name, mattias );
         assertThat( index.get( name, mattias ), contains( entity1 ) );
 
-        assertCollection( index.query( name, "\"" + mattias + "\"" ), entity1 );
-        assertCollection( index.query( "name:\"" + mattias + "\"" ), entity1 );
+        assertContains( index.query( name, "\"" + mattias + "\"" ), entity1 );
+        assertContains( index.query( "name:\"" + mattias + "\"" ), entity1 );
 
         assertEquals( entity1, index.get( name, mattias ).getSingle() );
 
-        assertCollection( index.query( "name", "Mattias*" ), entity1 );
+        assertContains( index.query( "name", "Mattias*" ), entity1 );
 
         commitTx();
         assertThat( index.get( name, mattias ), contains( entity1 ) );
@@ -512,7 +513,7 @@ public class TestLuceneIndex
         assertThat( index.get( name, mattias ), contains( entity1 ) );
         assertThat( index.get( title, hacker ), contains( entity1, entity2 ) );
 
-        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
+        assertContains( index.query( "name:\"" + mattias + "\" OR title:\"" +
                 hacker + "\"" ), entity1, entity2 );
 
         commitTx();
@@ -527,7 +528,7 @@ public class TestLuceneIndex
         assertThat( index.get( name, mattias ), contains( entity1 ) );
         assertThat( index.get( title, hacker ), contains( entity1 ) );
 
-        assertCollection( index.query( "name:\"" + mattias + "\" OR title:\"" +
+        assertContains( index.query( "name:\"" + mattias + "\" OR title:\"" +
                 hacker + "\"" ), entity1 );
 
         commitTx();
@@ -570,10 +571,10 @@ public class TestLuceneIndex
 
         assertThat( index.get( key, "The quick brown fox" ), contains( entity1 ) );
         assertThat( index.get( key, "brown fox jumped over" ), contains( entity2 ) );
-        assertCollection( index.query( key, "quick" ), entity1 );
-        assertCollection( index.query( key, "brown" ), entity1, entity2 );
-        assertCollection( index.query( key, "quick OR jumped" ), entity1, entity2 );
-        assertCollection( index.query( key, "brown AND fox" ), entity1, entity2 );
+        assertContains( index.query( key, "quick" ), entity1 );
+        assertContains( index.query( key, "brown" ), entity1, entity2 );
+        assertContains( index.query( key, "quick OR jumped" ), entity1, entity2 );
+        assertContains( index.query( key, "brown AND fox" ), entity1, entity2 );
 
         restartTx();
         
@@ -745,17 +746,17 @@ public class TestLuceneIndex
         index.add( eva, sex, "female" );
         index.add( eva, other, "ddd" );
 
-        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
-        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
-        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
-        assertOrderedCollection( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
+        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
+        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+        assertContainsInOrder( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
 
         restartTx();
 
-        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
-        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
-        assertOrderedCollection( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
-        assertOrderedCollection( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
+        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
+        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+        assertContainsInOrder( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
     }
 
     @Test
@@ -958,12 +959,21 @@ public class TestLuceneIndex
                 if ( i%100 == 0 )
                 {
                     IndexHits<Node> itr = index.get( "key", "value5" );
-                    int size = 0;
-                    for ( ;itr.hasNext() && size < 5; size++ )
+                    try
                     {
-                        itr.next();
+                        itr.getSingle();
                     }
-                    itr.close();
+                    catch ( NoSuchElementException e )
+                    {
+                        
+                    }
+                    int size = 99;
+//                    int size = 0;
+//                    for ( ;itr.hasNext() && size < 5; size++ )
+//                    {
+//                        itr.next();
+//                    }
+//                    itr.close();
                     System.out.println( "C iterated " + size + " only" );
                 }
                 else
@@ -992,5 +1002,19 @@ public class TestLuceneIndex
             
             if ( i%1000 == 0 ) System.out.println( i );
         }
+    }
+    
+    @Test
+    public void makeSureIndexNameAndConfigCanBeReachedFromIndex()
+    {
+        String indexName = "my-index-1";
+        Index<Node> nodeIndex = nodeIndex( indexName, LuceneIndexProvider.EXACT_CONFIG );
+        assertEquals( indexName, nodeIndex.getName() );
+        assertEquals( LuceneIndexProvider.EXACT_CONFIG, nodeIndex.getConfiguration() );
+        
+        String indexName2 = "my-index-2";
+        Index<Relationship> relIndex = relationshipIndex( indexName2, LuceneIndexProvider.FULLTEXT_CONFIG );
+        assertEquals( indexName2, relIndex.getName() );
+        assertEquals( LuceneIndexProvider.FULLTEXT_CONFIG, relIndex.getConfiguration() );
     }
 }

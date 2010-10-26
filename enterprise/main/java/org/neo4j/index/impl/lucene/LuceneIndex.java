@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -94,6 +95,16 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     void markAsDeleted()
     {
         this.deleted = true;
+    }
+    
+    public String getName()
+    {
+        return this.identifier.indexName;
+    }
+    
+    public Map<String, String> getConfiguration()
+    {
+        return this.identifier.config;
     }
     
     /**
