@@ -43,7 +43,7 @@ import org.apache.lucene.util.Version;
 
 abstract class IndexType
 {
-    private static final IndexType EXACT = new IndexType( LuceneDataSource.KEYWORD_ANALYZER )
+    private static final IndexType EXACT = new IndexType( LuceneDataSource.KEYWORD_ANALYZER, false )
     {
         @Override
         public Query deletionQuery( long entityId, String key, Object value )
@@ -90,11 +90,11 @@ abstract class IndexType
         }
     };
     
-    private static class FulltextType extends IndexType
+    private static class CustomType extends IndexType
     {
-        FulltextType( Analyzer analyzer )
+        CustomType( Analyzer analyzer, boolean toLowerCase )
         {
-            super( analyzer );
+            super( analyzer, toLowerCase );
         }
         
         @Override
@@ -151,10 +151,12 @@ abstract class IndexType
     };
     
     final Analyzer analyzer;
+    private final boolean toLowerCase;
     
-    private IndexType( Analyzer analyzer )
+    private IndexType( Analyzer analyzer, boolean toLowerCase )
     {
         this.analyzer = analyzer;
+        this.toLowerCase = toLowerCase;
     }
     
     private static String configKey( String indexName, String property )
@@ -167,23 +169,47 @@ abstract class IndexType
         Map<String, String> config = identifier.config;
         String type = config.get( configKey( identifier.indexName, "type" ) );
         IndexType result = null;
-        if ( type.equals( "exact" ) )
+        boolean toLowerCase = parseBoolean( config.get( configKey( identifier.indexName, "to_lower_case" ) ), true );
+        Analyzer customAnalyzer = getCustomAnalyzer( config, identifier.indexName );
+        if ( type != null )
         {
-            result = EXACT;
-        }
-        else if ( type.equals( "fulltext" ) )
-        {
-            result = new FulltextType( getAnalyzer( config, identifier.indexName ) );
+            // Use the built in alternatives... "exact" or "fulltext"
+            if ( type.equals( "exact" ) )
+            {
+                result = EXACT;
+            }
+            else if ( type.equals( "fulltext" ) )
+            {
+                Analyzer analyzer = customAnalyzer;
+                if ( analyzer == null )
+                {
+                    analyzer = toLowerCase ? LuceneDataSource.LOWER_CASE_WHITESPACE_ANALYZER :
+                            LuceneDataSource.WHITESPACE_ANALYZER;
+                }
+                result = new CustomType( analyzer, toLowerCase );
+            }
         }
         else
         {
-            throw new RuntimeException( "Unknown type '" + type + "' for index '" +
-                    identifier.indexName + "'" );
+            // Use custom analyzer
+            if ( customAnalyzer == null )
+            {
+                throw new IllegalArgumentException( "No 'type' was given (which can point out " +
+                		"built-in analyzers, such as 'exact' and 'fulltext')" +
+                		" and no 'analyzer' was given either (which can point out a custom " +
+                		Analyzer.class.getName() + " to use)" );
+            }
+            result = new CustomType( customAnalyzer, toLowerCase );
         }
         return result;
     }
+
+    private static boolean parseBoolean( String string, boolean valueIfNull )
+    {
+        return string == null ? valueIfNull : Boolean.parseBoolean( string );
+    }
     
-    private static Analyzer getAnalyzer( Map<String, String> config, String indexName )
+    private static Analyzer getCustomAnalyzer( Map<String, String> config, String indexName )
     {
         String analyzerClass = config.get( configKey( indexName, "analyzer" ) );
         if ( analyzerClass != null )
@@ -197,16 +223,7 @@ abstract class IndexType
                 throw new RuntimeException( e );
             }
         }
-        
-        String lowerCase = config.get( configKey( indexName, "to_lower_case" ) );
-        if ( lowerCase == null || Boolean.parseBoolean( lowerCase ) )
-        {
-            return LuceneDataSource.LOWER_CASE_WHITESPACE_ANALYZER;
-        }
-        else
-        {
-            return LuceneDataSource.WHITESPACE_ANALYZER;
-        }
+        return null;
     }
 
     abstract Query deletionQuery( long entityId, String key, Object value );
@@ -227,7 +244,7 @@ abstract class IndexType
         
         QueryParser parser = new QueryParser( Version.LUCENE_30, keyOrNull, analyzer );
         parser.setAllowLeadingWildcard( true );
-        parser.setLowercaseExpandedTerms( false );
+        parser.setLowercaseExpandedTerms( toLowerCase );
         if ( contextOrNull != null && contextOrNull.defaultOperator != null )
         {
             parser.setDefaultOperator( contextOrNull.defaultOperator );
