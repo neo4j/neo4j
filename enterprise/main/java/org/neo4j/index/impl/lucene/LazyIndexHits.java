@@ -71,6 +71,13 @@ class LazyIndexHits<T> implements IndexHits<T>
     
     public T getSingle()
     {
-        return hits.getSingle();
+        try
+        {
+            return hits.getSingle();
+        }
+        finally
+        {
+            close();
+        }
     }
 }
