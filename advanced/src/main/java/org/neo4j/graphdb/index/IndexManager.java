@@ -73,6 +73,15 @@ public interface IndexManager
     Index<Node> forNodes( String indexName, Map<String, String> customConfiguration );
     
     /**
+     * Returns the names of all existing {@link Node} indexes.
+     * Those names can then be used to get to the actual {@link Index}
+     * instances.
+     * 
+     * @return the names of all existing {@link Node} indexes.
+     */
+    String[] nodeIndexNames();
+    
+    /**
      * Returns whether or not there exists a relationship index with the name
      * {@code indexName}. Indexes are created when needed in calls to
      * {@link #forRelationships(String)} and {@link #forRelationships(String, Map)}.
@@ -109,4 +118,13 @@ public interface IndexManager
      * but instead interpreted by the implementation represented by the provider.
      */
     RelationshipIndex forRelationships( String indexName, Map<String, String> customConfiguration );
+    
+    /**
+     * Returns the names of all existing {@link Relationship} indexes.
+     * Those names can then be used to get to the actual {@link Index}
+     * instances.
+     * 
+     * @return the names of all existing {@link Relationship} indexes.
+     */
+    String[] relationshipIndexNames();
 }
