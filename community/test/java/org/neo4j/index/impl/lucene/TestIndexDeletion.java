@@ -39,7 +39,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.index.Neo4jTestCase.assertCollection;
+import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.HasThrownException.hasThrownException;
 
@@ -132,7 +132,7 @@ public class TestIndexDeletion
     public void shouldBeAbleToDeleteAndRecreateIndex()
     {
         restartTx();
-        assertCollection( index.query( key, "own" ) );
+        assertContains( index.query( key, "own" ) );
         index.delete();
         restartTx();
 
@@ -140,7 +140,7 @@ public class TestIndexDeletion
         assertNull( recreatedIndex.get( key, value ).getSingle() );
         recreatedIndex.add( node, key, value );
         restartTx();
-        assertCollection( recreatedIndex.query( key, "own" ), node );
+        assertContains( recreatedIndex.query( key, "own" ), node );
         recreatedIndex.delete();
     }
 

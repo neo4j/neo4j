@@ -38,8 +38,9 @@ import org.neo4j.kernel.impl.transaction.TxModule;
 
 public class LuceneIndexProvider extends IndexProvider
 {
-    private static final String KEY_PROVIDER = "provider";
-    private static final String KEY_TYPE = "type";
+    static final String KEY_PROVIDER = "provider";
+    static final String KEY_TYPE = "type";
+    static final String KEY_TO_LOWER_CASE = "to_lower_case";
     public static final String SERVICE_NAME = "lucene";
     
     public static final Map<String, String> EXACT_CONFIG =
@@ -48,7 +49,8 @@ public class LuceneIndexProvider extends IndexProvider
     
     public static final Map<String, String> FULLTEXT_CONFIG =
             Collections.unmodifiableMap( MapUtil.stringMap(
-                    KEY_PROVIDER, SERVICE_NAME, KEY_TYPE, "fulltext" ) );
+                    KEY_PROVIDER, SERVICE_NAME, KEY_TYPE, "fulltext",
+                    KEY_TO_LOWER_CASE, "true" ) );
     
     public static final int DEFAULT_LAZY_THRESHOLD = 100;
     private static final String DATA_SOURCE_NAME = "lucene-index";
@@ -155,7 +157,7 @@ public class LuceneIndexProvider extends IndexProvider
         }
         if ( type.equals( "fulltext" ) )
         {
-            if ( !result.containsKey( "to_lower_case" ) )
+            if ( !result.containsKey( LuceneIndexProvider.KEY_TO_LOWER_CASE ) )
             {
                 result.put( "to_lower_case", "true" );
             }

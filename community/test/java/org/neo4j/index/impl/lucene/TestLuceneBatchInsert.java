@@ -21,7 +21,7 @@
 package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.index.Neo4jTestCase.assertCollection;
+import static org.neo4j.index.Neo4jTestCase.assertContains;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -75,12 +75,12 @@ public class TestLuceneBatchInsert
 
         for ( int i = 0; i < 100; i++ )
         {
-            assertCollection( index.get( "name", "Joe" + i ), ids.get( i ) );
+            assertContains( index.get( "name", "Joe" + i ), ids.get( i ) );
         }
-        assertCollection( index.query( "name:Joe0 AND other:Schmoe" ),
+        assertContains( index.query( "name:Joe0 AND other:Schmoe" ),
                 ids.get( 0 ) );
 
-        assertCollection( index.query( "name", "Joe*" ),
+        assertContains( index.query( "name", "Joe*" ),
                 ids.values().toArray( new Long[ids.size()] ) );
         provider.shutdown();
         inserter.shutdown();
@@ -90,7 +90,7 @@ public class TestLuceneBatchInsert
         Index<Node> dbIndex = db.index().forNodes( "users" );
         for ( int i = 0; i < 100; i++ )
         {
-            assertCollection( dbIndex.get( "name", "Joe" + i ),
+            assertContains( dbIndex.get( "name", "Joe" + i ),
                     db.getNodeById( ids.get( i ) ) );
         }
 
@@ -99,9 +99,9 @@ public class TestLuceneBatchInsert
         {
             nodes.add( db.getNodeById( id ) );
         }
-        assertCollection( dbIndex.query( "name", "Joe*" ),
+        assertContains( dbIndex.query( "name", "Joe*" ),
                 nodes.toArray( new Node[nodes.size()] ) );
-        assertCollection( dbIndex.query( "name:Joe0 AND other:Schmoe" ),
+        assertContains( dbIndex.query( "name:Joe0 AND other:Schmoe" ),
                 db.getNodeById( ids.get( 0 ) ) );
         db.shutdown();
     }
@@ -122,18 +122,18 @@ public class TestLuceneBatchInsert
         long id2 = inserter.createNode( null );
         index.add( id2, MapUtil.map( "name", "Lars PerssoN" ) );
         index.flush();
-        assertCollection( index.get( "name", "Mattias Persson" ), id1 );
-        assertCollection( index.query( "name", "mattias" ), id1 );
-        assertCollection( index.query( "name", "bla" ) );
-        assertCollection( index.query( "name", "persson" ), id1, id2 );
-        assertCollection( index.query( "email", "*@*" ), id1 );
-        assertCollection( index.get( "something", "bad" ), id1 );
+        assertContains( index.get( "name", "Mattias Persson" ), id1 );
+        assertContains( index.query( "name", "mattias" ), id1 );
+        assertContains( index.query( "name", "bla" ) );
+        assertContains( index.query( "name", "persson" ), id1, id2 );
+        assertContains( index.query( "email", "*@*" ), id1 );
+        assertContains( index.get( "something", "bad" ), id1 );
         long id3 = inserter.createNode( null );
         index.add( id3,
                 MapUtil.map( "name", new String[] { "What Ever", "Anything" } ) );
         index.flush();
-        assertCollection( index.get( "name", "What Ever" ), id3 );
-        assertCollection( index.get( "name", "Anything" ), id3 );
+        assertContains( index.get( "name", "What Ever" ), id3 );
+        assertContains( index.get( "name", "Anything" ), id3 );
 
         provider.shutdown();
         inserter.shutdown();
@@ -142,7 +142,7 @@ public class TestLuceneBatchInsert
         Index<Node> dbIndex = db.index().forNodes( name );
         Node node1 = db.getNodeById( id1 );
         Node node2 = db.getNodeById( id2 );
-        assertCollection( dbIndex.query( "name", "persson" ), node1, node2 );
+        assertContains( dbIndex.query( "name", "persson" ), node1, node2 );
         db.shutdown();
     }
 

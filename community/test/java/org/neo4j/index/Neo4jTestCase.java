@@ -156,7 +156,7 @@ public abstract class Neo4jTestCase
         return graphDb;
     }
     
-    public static <T> void assertCollection( Collection<T> collection,
+    public static <T> void assertContains( Collection<T> collection,
         T... expectedItems )
     {
         String collectionString = join( ", ", collection.toArray() );
@@ -168,12 +168,12 @@ public abstract class Neo4jTestCase
         }
     }
 
-    public static <T> void assertCollection( Iterable<T> items, T... expectedItems )
+    public static <T> void assertContains( Iterable<T> items, T... expectedItems )
     {
-        assertCollection( asCollection( items ), expectedItems );
+        assertContains( asCollection( items ), expectedItems );
     }
     
-    public static <T> void assertOrderedCollection( Collection<T> collection,
+    public static <T> void assertContainsInOrder( Collection<T> collection,
             T... expectedItems )
     {
         String collectionString = join( ", ", collection.toArray() );
@@ -185,10 +185,10 @@ public abstract class Neo4jTestCase
         }
     }
     
-    public static <T> void assertOrderedCollection( Iterable<T> collection,
+    public static <T> void assertContainsInOrder( Iterable<T> collection,
             T... expectedItems )
     {
-        assertOrderedCollection( asCollection( collection ), expectedItems );
+        assertContainsInOrder( asCollection( collection ), expectedItems );
     }
     
     public static <T> Collection<T> asCollection( Iterable<T> iterable )

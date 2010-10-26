@@ -169,7 +169,7 @@ abstract class IndexType
         Map<String, String> config = identifier.config;
         String type = config.get( configKey( identifier.indexName, "type" ) );
         IndexType result = null;
-        boolean toLowerCase = parseBoolean( config.get( configKey( identifier.indexName, "to_lower_case" ) ), true );
+        boolean toLowerCase = parseBoolean( config.get( configKey( identifier.indexName, LuceneIndexProvider.KEY_TO_LOWER_CASE ) ), true );
         Analyzer customAnalyzer = getCustomAnalyzer( config, identifier.indexName );
         if ( type != null )
         {
