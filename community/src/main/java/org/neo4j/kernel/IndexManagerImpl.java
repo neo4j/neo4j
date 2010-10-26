@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -76,9 +77,12 @@ class IndexManagerImpl implements IndexManager
     {
         // 1. Check stored config (has this index been created previously?)
         Map<String, String> storedConfig = indexStore.get( cls, indexName );
-//        userConfig = userConfig != null ? defaultsFiller.fill( userConfig ) : null;
+        if ( storedConfig != null && suppliedConfig == null )
+        {
+            return Pair.of( storedConfig, Boolean.FALSE );
+        }
+        
         Map<String, String> configToUse = null;
-        IndexProvider indexProvider = null;
         
         // 2. Check config supplied by the user for this method call
         if ( configToUse == null )
@@ -104,14 +108,11 @@ class IndexManagerImpl implements IndexManager
             {
                 provider = "lucene";
             }
-            indexProvider = getIndexProvider( provider );
+            IndexProvider indexProvider = getIndexProvider( provider );
             configToUse = indexProvider.fillInDefaults( MapUtil.stringMap( KEY_INDEX_PROVIDER, provider ) );
         }
-        else
-        {
-            indexProvider = getIndexProvider( configToUse.get( KEY_INDEX_PROVIDER ) );
-        }
         
+        // Do they match (stored vs. supplied)?
         if ( storedConfig != null )
         {
             if ( suppliedConfig != null && !storedConfig.equals( suppliedConfig ) )
@@ -124,7 +125,7 @@ class IndexManagerImpl implements IndexManager
         }
         
         boolean created = indexStore.setIfNecessary( cls, indexName, configToUse );
-        return new Pair<Map<String, String>, Boolean>( configToUse, created );
+        return new Pair<Map<String, String>, Boolean>( Collections.unmodifiableMap( configToUse ), created );
     }
     
     private Map<String, String> getOrCreateIndexConfig( Class<? extends PropertyContainer> cls,
@@ -211,7 +212,12 @@ class IndexManagerImpl implements IndexManager
                 customConfiguration );
         return getIndexProvider( config.get( KEY_INDEX_PROVIDER ) ).nodeIndex( indexName, config );
     }
-
+    
+    public String[] nodeIndexNames()
+    {
+        return indexStore.getNames( Node.class );
+    }
+    
     public boolean existsForRelationships( String indexName )
     {
         return indexStore.get( Relationship.class, indexName ) != null;
@@ -231,5 +237,10 @@ class IndexManagerImpl implements IndexManager
                 customConfiguration );
         return getIndexProvider( config.get( KEY_INDEX_PROVIDER ) ).relationshipIndex( indexName,
                 config );
+    }
+    
+    public String[] relationshipIndexNames()
+    {
+        return indexStore.getNames( Relationship.class );
     }
 }

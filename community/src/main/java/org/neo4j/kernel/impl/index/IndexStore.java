@@ -26,6 +26,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -135,7 +136,7 @@ public class IndexStore
             }
             map.put( indexName, properties );
         }
-        return map;
+        return Collections.unmodifiableMap( map );
     }
     
     private Integer tryToReadVersion( ReadableByteChannel channel ) throws IOException
@@ -174,6 +175,12 @@ public class IndexStore
         return map( cls ).get( indexName );
     }
     
+    public synchronized String[] getNames( Class<? extends PropertyContainer> cls )
+    {
+        Map<String, Map<String, String>> indexMap = map( cls );
+        return indexMap.keySet().toArray( new String[indexMap.size()] );
+    }
+    
     private Map<String, Map<String, String>> map( Class<? extends PropertyContainer> cls )
     {
         if ( cls.equals( Node.class ) )
@@ -209,7 +216,7 @@ public class IndexStore
         {
             return false;
         }
-        map.put( name, config );
+        map.put( name, Collections.unmodifiableMap( config ) );
         write();
         return true;
     }
