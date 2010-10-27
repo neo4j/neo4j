@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent-central</artifactId>
+    <version>3</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j.app</groupId>
+  <artifactId>neo4j-server</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <name>Neo4j Server</name>
+  <description>
+	Standalone Neo4j server application.
+    </description>
+  <url>http://components.neo4j.org/${project.artifactId}/</url>
+
+  <properties>
+    <bundle.namespace>org.neo4j.server</bundle.namespace>
+    <short-name>server</short-name>
+  </properties>
+
+  <packaging>bundle</packaging>
+
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/components/server/trunk/</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/server/trunk/</developerConnection>
+    <url>https://trac.neo4j.org/browser/components/server</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
+
+  <issueManagement>
+    <system>Trac</system>
+    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
+  </issueManagement>
+
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.2-SNAPSHOT</version>
+    </dependency>
+    <!-- lucene has downgraded the simple patch for OSGi
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>3.0.1</version>
+    </dependency>
+    -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit-dep</artifactId>
+    </dependency>
+	<dependency>
+		<groupId>org.hamcrest</groupId>
+		<artifactId>hamcrest-all</artifactId>
+	</dependency>
+	<dependency>
+    	<groupId>org.mockito</groupId>
+    	<artifactId>mockito-all</artifactId>
+    	<version>1.8.5</version>
+    	<scope>test</scope>
+	</dependency>
+	<dependency>
+		<groupId>commons-configuration</groupId>
+		<artifactId>commons-configuration</artifactId>
+		<version>1.6</version>
+		<type>jar</type>
+		<scope>compile</scope>
+	</dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
