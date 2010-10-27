@@ -631,16 +631,23 @@ public class XaLogicalLog
         }
         else
         {
+            FileChannel channel = null;
             try
             {
-                FileChannel channel = new RandomAccessFile( newName, 
-                    "rw" ).getChannel();
+                channel = new RandomAccessFile( newName, "rw" ).getChannel();
                 FileUtils.truncateFile( channel, endPosition );
             }
             catch ( IOException e )
             {
                 log.log( Level.WARNING, 
                     "Failed to truncate log at correct size", e );
+            }
+            finally
+            {
+                if ( channel != null )
+                {
+                    channel.close();
+                }
             }
         }
 //        System.out.println( " ---- Created " + newName + " -----" );
@@ -774,6 +781,7 @@ public class XaLogicalLog
                 new File( logFileName + "_unknown_timestamp_" + 
                     System.currentTimeMillis() + ".log" ) );
             assert success;
+            fileChannel.close();
             fileChannel = new RandomAccessFile( logFileName, 
                 "rw" ).getChannel();
             return;
@@ -1453,8 +1461,10 @@ public class XaLogicalLog
         {
             throw new IOException( "Unable to write log version to new" );
         }
+        long pos = fileChannel.position();
         fileChannel.position( 0 );
         readAndAssertLogHeader( buffer, fileChannel, currentVersion );
+        fileChannel.position( pos );
         if ( xidIdentMap.size() > 0 )
         {
             long firstEntryPosition = getFirstStartEntry( endPosition );
