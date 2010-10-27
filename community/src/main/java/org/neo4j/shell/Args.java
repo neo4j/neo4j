@@ -76,7 +76,8 @@ class Args
     
     public String get( String key, String defaultValue )
     {
-        return this.map.containsKey( key ) ? this.map.get( key ) : defaultValue;
+        String value = this.map.get( key );
+        return value != null ? value : defaultValue;
     }
     
     public Number getNumber( String key, Number defaultValue )
@@ -142,10 +143,14 @@ class Args
                 else
                 {
                     String key = arg;
-                    int nextIndex = ++i;
+                    int nextIndex = i+1;
                     String value = nextIndex < args.length ?
                         args[ nextIndex ] : null;
                     value = value == null || isOption( value ) ? null : value;
+                    if ( value != null )
+                    {
+                        i = nextIndex;
+                    }
                     map.put( key, value );
                 }
             }
