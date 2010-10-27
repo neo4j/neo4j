@@ -35,6 +35,8 @@ public class ZooClient extends AbstractZooKeeperManager
 
     private final StringLogger msgLog;
     
+    private long sessionId = -1;
+    
     public ZooClient( String servers, int machineId, long storeCreationTime, 
         long storeId, long committedTx, ResponseReceiver receiver, String haServer, String storeDir )
     {
@@ -80,19 +82,29 @@ public class ZooClient extends AbstractZooKeeperManager
             }
             else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
             {
-                Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
-                msgLog.logMessage( "Get master before write:" + masterBeforeIWrite );
-                sequenceNr = setup();
-                msgLog.logMessage( "Did setup, seq=" + sequenceNr );
-                keeperState = KeeperState.SyncConnected;
-                Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false );
-                msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
-                int masterId = masterAfterIWrote.other().getMachineId();
-//                if ( masterBeforeIWrite.other().getMachineId() != masterId && masterId != machineId )
-//                {
-                    setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
-//                }
-                receiver.newMaster( masterAfterIWrote, new Exception() );
+                long newSessionId = zooKeeper.getSessionId();
+                if ( newSessionId != sessionId )
+                {
+                    Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
+                    msgLog.logMessage( "Get master before write:" + masterBeforeIWrite );
+                    sequenceNr = setup();
+                    msgLog.logMessage( "Did setup, seq=" + sequenceNr + " new sessionId=" + newSessionId );
+                    keeperState = KeeperState.SyncConnected;
+                    Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false );
+                    msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
+                    int masterId = masterAfterIWrote.other().getMachineId();
+    //                if ( masterBeforeIWrite.other().getMachineId() != masterId && masterId != machineId )
+    //                {
+                        setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
+    //                }
+                    receiver.newMaster( masterAfterIWrote, new Exception() );
+                    sessionId = newSessionId;
+                }
+                else
+                {
+                    msgLog.logMessage( "SyncConnected with same session id: " + sessionId );
+                    keeperState = KeeperState.SyncConnected;
+                }
             }
             else if ( path == null && event.getState() == Watcher.Event.KeeperState.Disconnected )
             {
