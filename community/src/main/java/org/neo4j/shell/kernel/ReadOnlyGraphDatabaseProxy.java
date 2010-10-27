@@ -20,10 +20,6 @@
 
 package org.neo4j.shell.kernel;
 
-import java.io.Serializable;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -43,6 +39,10 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
+
+import java.io.Serializable;
+import java.util.Iterator;
+import java.util.Map;
 
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexManager
 {
@@ -459,6 +459,11 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         return new ReadOnlyNodeIndexProxy( actual.index().forNodes( indexName, customConfiguration ) );
     }
 
+    public String[] nodeIndexNames()
+    {
+        return actual.index().nodeIndexNames();
+    }
+
     public boolean existsForRelationships( String indexName )
     {
         return actual.index().existsForRelationships( indexName );
@@ -473,6 +478,11 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
             Map<String, String> customConfiguration )
     {
         return new ReadOnlyRelationshipIndexProxy( actual.index().forRelationships( indexName, customConfiguration ) );
+    }
+
+    public String[] relationshipIndexNames()
+    {
+        return actual.index().relationshipIndexNames();
     }
 
     public IndexManager index()
@@ -535,6 +545,16 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             return readOnly( actual );
         }
+
+        public String getName()
+        {
+            return actual.getName();
+        }
+
+        public Map<String, String> getConfiguration()
+        {
+            return actual.getConfiguration();
+        }
     };
 
     class ReadOnlyRelationshipIndexProxy extends
@@ -570,6 +590,16 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             return new ReadOnlyIndexHitsProxy<Relationship>( this, actual.query(
                     queryOrQueryObjectOrNull, startNodeOrNull, endNodeOrNull ) );
+        }
+
+        public String getName()
+        {
+            return actual.getName();
+        }
+
+        public Map<String, String> getConfiguration()
+        {
+            return actual.getConfiguration();
         }
     }
 
