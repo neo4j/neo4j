@@ -428,7 +428,14 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull,
                 Node endNodeOrNull )
         {
-            return query( (Query) null, (String) null, null, null );
+            BooleanQuery query = new BooleanQuery();
+            if ( key != null && valueOrNull != null )
+            {
+                query.add( type.get( key, valueOrNull ), Occur.MUST );
+            }
+            addIfNotNull( query, startNodeOrNull, KEY_START_NODE_ID );
+            addIfNotNull( query, endNodeOrNull, KEY_END_NODE_ID );
+            return query( query, (String) null, null, null );
         }
 
         public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull,
