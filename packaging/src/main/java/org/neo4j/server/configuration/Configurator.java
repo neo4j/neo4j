@@ -22,14 +22,13 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
+import org.neo4j.server.logging.Logger;
 
 public class Configurator {
 
@@ -37,6 +36,7 @@ public class Configurator {
     private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
 
     public Configurator(File... configDirs) {
+        
         if (configDirs == null || configDirs.length == 0) {
             configDirs = new File[1];
             configDirs[0] = defaultConfigurationDirectory;
@@ -83,9 +83,7 @@ public class Configurator {
     }
 
     private void logFailureToLoadConfigFile(File configFile, Exception e) {
-        Logger.getLogger(this.getClass().toString()).log(Level.INFO,
-                String.format("The configuration file [%s] could not be loaded as a property file.", configFile.getAbsolutePath()));
-        Logger.getLogger(this.getClass().toString()).log(Level.INFO, e.getMessage());
+        Logger.getLogger(this.getClass()).info(String.format("The configuration file [%s] could not be loaded as a property file.", configFile.getAbsolutePath()), e);
    }
     
     private File[] getCandidateConfigFiles(final File configDir, final String fileExtension) {
