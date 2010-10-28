@@ -22,54 +22,85 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.apache.commons.configuration.*;
+import org.apache.commons.configuration.CompositeConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration.SystemConfiguration;
+import org.apache.commons.configuration.XMLConfiguration;
 
 public class Configurator {
 
-    private File configDir = new File("etc");
+    private File defaultConfigurationDirectory = new File("etc" + File.separatorChar + "neo-server");
+    private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
 
-    private HashMap<String, Configuration> config = new HashMap<String, Configuration>();
-
-    public Configurator(File ... configDirs) {
+    public Configurator(File... configDirs) {
+        if (configDirs == null || configDirs.length == 0) {
+            configDirs = new File[1];
+            configDirs[0] = defaultConfigurationDirectory;
+        }
+        
         for (File configDir : configDirs) {
-            loadConfigFrom( configDir );
+            loadConfigFrom(configDir);
         }
     }
 
-    public Configuration getConfigurationFor(String componentName) {
-        Configuration configuration = config.get(componentName);
-        return configuration == null ? new SystemConfiguration() : configuration;
+    public Configuration configuration() {
+        return serverConfiguration == null ? new SystemConfiguration() : serverConfiguration;
     }
 
-    /**
-     * Looks for files of the form <componentName>.<ext>
-     *
-     * @param configDir
-     */
     private void loadConfigFrom(File configDir) {
+        
+        if(configDir.exists()) {
+            loadXmlConfig(configDir);
+            loadPropertiesConfig(configDir);           
+        }
+    }
+
+    private void loadPropertiesConfig(File configDir) {
+
+        for (File configFile : getCandidateConfigFiles(configDir, ".properties")) {
+            try {
+                PropertiesConfiguration propertiesConfig = new PropertiesConfiguration(configFile);
+                serverConfiguration.addConfiguration(propertiesConfig);
+            } catch (Exception e) {
+                logFailureToLoadConfigFile(configFile, e);
+            }
+        }
+    }
+
+    private void loadXmlConfig(File configDir) {
+        for (File configFile : getCandidateConfigFiles(configDir, ".xml")) {
+            try {
+                XMLConfiguration xmlConfig = new XMLConfiguration(configFile);
+                serverConfiguration.addConfiguration(xmlConfig);
+            } catch (Exception e) {
+                logFailureToLoadConfigFile(configFile, e);
+            }
+        }
+    }
+
+    private void logFailureToLoadConfigFile(File configFile, Exception e) {
+        Logger.getLogger(this.getClass().toString()).log(Level.INFO,
+                String.format("The configuration file [%s] could not be loaded as a property file.", configFile.getAbsolutePath()));
+        Logger.getLogger(this.getClass().toString()).log(Level.INFO, e.getMessage());
+   }
+    
+    private File[] getCandidateConfigFiles(final File configDir, final String fileExtension) {
         FilenameFilter filenameFilter = new FilenameFilter() {
-            public boolean accept( File dir, String name )
-            {
-                return name.indexOf( "." ) > 0;
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(fileExtension);
             }
         };
-        for (File configFile : configDir.listFiles( filenameFilter )) {
-            String filename = configFile.getName();
-            String componentName = filename.substring( filename.lastIndexOf('.') + 1 );
-            CompositeConfiguration componentConfig = new CompositeConfiguration();
-
-            try
-            {
-                componentConfig.addConfiguration( new PropertiesConfiguration(filename) );
-            } catch ( ConfigurationException e )
-            {
-                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            }
-            config.put(componentName, componentConfig);
-
+        
+        File[] listFiles = configDir.listFiles(filenameFilter);
+       
+        if(listFiles == null) {
+            listFiles = new File[0];
         }
+        
+        return listFiles;
     }
-
 }
