@@ -26,105 +26,77 @@ import java.util.Iterator;
 
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
+import org.neo4j.server.configuration.validation.DuplicateKeyRule;
+import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
+public class Configurator {
 
-public class Configurator
-{
+    public static Logger log = Logger.getLogger(Configurator.class);
 
-    private File defaultConfigurationDirectory = new File( "etc" + File.separatorChar + "neo-server" );
+    private File defaultConfigurationDirectory = new File("etc" + File.separatorChar + "neo-server");
     private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
-    private Logger log = Logger.getLogger( this.getClass() );
+
+    private Validator validator = new Validator(new DuplicateKeyRule());
 
     public Configurator() {
-        this ( null );
+        this(null);
     }
 
-    public Configurator( File configDir )
-    {
-        if ( configDir == null )
-        {
+    public Configurator(File configDir) {
+        if (configDir == null) {
             configDir = defaultConfigurationDirectory;
         }
 
-        loadConfigFrom( configDir );
+        try {
+            loadConfigFrom(configDir);
+        } catch(ConfigurationException ce) {
+            log.warn(ce);
+        }
+
     }
 
-    public Configuration configuration()
-    {
+    public Configuration configuration() {
         return serverConfiguration == null ? new SystemConfiguration() : serverConfiguration;
     }
 
-    private void loadConfigFrom( File configDir )
-    {
+    private void loadConfigFrom(File configDir) throws ConfigurationException {
 
-        if ( configDir.exists() && configDir.isDirectory() )
-        {
-            loadXmlConfig( configDir );
-            loadPropertiesConfig( configDir );
+        if (configDir.exists() && configDir.isDirectory()) {
+            loadXmlConfig(configDir);
+            loadPropertiesConfig(configDir);
         }
     }
 
-    private void includeConfiguration( Configuration moreConfiguration )
-    {
-        Iterator keys = moreConfiguration.getKeys();
-        while ( keys.hasNext() )
-        {
-            String key = (String) keys.next();
-            Object value = moreConfiguration.getProperty( key );
-            if ( serverConfiguration.containsKey( key ) )
-            {
-                if ( !serverConfiguration.getProperty( key ).equals( value ) )
-                {
-                    final String failureMessage = "Configuration contains duplicate key " + key + " with different values.";
-                    log.fatal( failureMessage );
-                    throw new RuntimeException( failureMessage );
-                } else {
-                    log.warn ("Duplicate key " + key + " found.");
-                }
-            }
-            serverConfiguration.addProperty( key, value );
-        }
-    }
+    private void loadPropertiesConfig(File configDir) throws ConfigurationException {
 
-    private void loadPropertiesConfig( File configDir )
-    {
+        for (File configFile : getCandidateConfigFiles(configDir, ".properties")) {
 
-        for ( File configFile : getCandidateConfigFiles( configDir, ".properties" ) )
-        {
-            try
-            {
-                PropertiesConfiguration propertiesConfig = new PropertiesConfiguration( configFile );
-                includeConfiguration( propertiesConfig );
-            } catch ( Exception e )
-            {
-                logFailureToLoadConfigFile( configFile, e );
+            PropertiesConfiguration propertiesConfig = new PropertiesConfiguration(configFile);
+            if (validator.validate(serverConfiguration, propertiesConfig)) {
+                serverConfiguration.addConfiguration(propertiesConfig);
+            } else {
+                String failed = String.format("Error processing [%s], configuration file(s) corrupt or contains duplicates", configFile.getAbsolutePath());
+                log.fatal(failed);
+                throw new InvalidServerConfigurationException(failed);
             }
         }
     }
 
-    private void loadXmlConfig( File configDir )
-    {
-        for ( File configFile : getCandidateConfigFiles( configDir, ".xml" ) )
-        {
-            try
-            {
-                XMLConfiguration xmlConfig = new XMLConfiguration( configFile );
-                serverConfiguration.addConfiguration( xmlConfig );
-            } catch ( Exception e )
-            {
-                logFailureToLoadConfigFile( configFile, e );
+    private void loadXmlConfig(File configDir) throws ConfigurationException {
+        for (File configFile : getCandidateConfigFiles(configDir, ".xml")) {
+
+            XMLConfiguration xmlConfig = new XMLConfiguration(configFile);
+            if (validator.validate(serverConfiguration, xmlConfig)) {
+                serverConfiguration.addConfiguration(xmlConfig);
             }
         }
     }
 
-    private void logFailureToLoadConfigFile(File configFile, Exception e) {
-        Logger.getLogger(this.getClass()).info(String.format("The configuration file [%s] could not be loaded as a property file.", configFile.getAbsolutePath()), e);
-   }
-    
     private File[] getCandidateConfigFiles(final File configDir, final String fileExtension) {
         FilenameFilter filenameFilter = new FilenameFilter() {
             public boolean accept(File dir, String name) {
@@ -132,10 +104,9 @@ public class Configurator
             }
         };
 
-        File[] listFiles = configDir.listFiles( filenameFilter );
+        File[] listFiles = configDir.listFiles(filenameFilter);
 
-        if ( listFiles == null )
-        {
+        if (listFiles == null) {
             listFiles = new File[0];
         }
 
