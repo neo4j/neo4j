@@ -19,6 +19,9 @@
   <properties>
     <bundle.namespace>org.neo4j.server</bundle.namespace>
     <short-name>server</short-name>
+    <neo4j-server.mainClass>org.neo4j.server.Neo4jServer</neo4j-server.mainClass>
+    <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
+    <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
   </properties>
 
   <packaging>bundle</packaging>
@@ -91,6 +94,103 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>${neo4j-server.mainClass}</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <configuration>
+          <repositoryLayout>flat</repositoryLayout>
+          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>         
+          <daemons>
+            <daemon>
+              <id>neo-server</id>
+              <mainClass>${neo4j-server.mainClass}</mainClass>
+              <commandLineArguments>
+                <commandLineArgument>start</commandLineArgument>
+              </commandLineArguments>
+              <platforms>
+                <platform>jsw</platform>
+              </platforms>              
+            </daemon>
+          </daemons>
+        </configuration>
+        <executions>
+          <execution>
+            <id>generate-jsw-scripts</id>
+            <phase>package</phase>
+            <goals>
+              <goal>generate-daemons</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- experiment with copying artifacts into expected startup directories...
+      <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-dependency-plugin</artifactId>
+         <executions>
+           <execution>
+             <id>copy-dependencies</id>
+             <phase>package</phase>
+             <goals>
+               <goal>copy-dependencies</goal>
+             </goals>
+             <configuration>
+               <outputDirectory>${project.build.directory}/lib</outputDirectory>
+               <overWriteReleases>false</overWriteReleases>
+               <overWriteSnapshots>true</overWriteSnapshots>
+               <includeScope>runtime</includeScope>
+               <excludeScope>test</excludeScope>
+             </configuration>
+           </execution>
+           <execution>
+             <id>copy-extensions</id>
+             <phase>package</phase>
+             <goals>
+               <goal>copy</goal>
+             </goals>
+             <configuration>
+               <artifactItems>
+                 <artifactItem>
+                   <groupId>org.neo4j.ext</groupId>
+                   <artifactId>hello-ext</artifactId>
+                   <version>0.1-SNAPSHOT</version>
+                   <classifier>next</classifier>
+                 </artifactItem>
+               </artifactItems>
+               <outputDirectory>${project.build.directory}/ext</outputDirectory>
+             </configuration>
+           </execution>
+           <execution>
+             <id>copy-installed</id>
+             <phase>install</phase>
+             <goals>
+               <goal>copy</goal>
+             </goals>
+             <configuration>
+               <artifactItems>
+                 <artifactItem>
+                   <groupId>${project.groupId}</groupId>
+                   <artifactId>${project.artifactId}</artifactId>
+                   <version>${project.version}</version>
+                   <type>${project.packaging}</type>
+                 </artifactItem>
+               </artifactItems>
+               <outputDirectory>${project.build.directory}/lib</outputDirectory>
+             </configuration>
+           </execution>
+         </executions>
+       </plugin>
+       -->
     </plugins>
   </build>
 
