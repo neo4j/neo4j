@@ -116,6 +116,8 @@
         <configuration>
           <repositoryLayout>flat</repositoryLayout>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>         
+          <configurationDirectory>etc</configurationDirectory>
+          <target>${project.build.directory}/dist</target>
           <daemons>
             <daemon>
               <id>neo-server</id>
