@@ -41,22 +41,9 @@ class TxDataHolder
         this.data = this.data.add( entityId, key, value );
     }
     
-    /**
-     * Only for the tx data representing removal.
-     */
-    void add( Query query )
-    {
-        this.data = this.data.add( query );
-    }
-
     void remove( Object entityId, String key, Object value )
     {
         this.data = this.data.remove( entityId, key, value );
-    }
-
-    void remove( Query query )
-    {
-        this.data = this.data.remove( query );
     }
 
     Collection<Long> query( Query query, QueryContext contextOrNull )
@@ -76,25 +63,5 @@ class TxDataHolder
     void close()
     {
         this.data.close();
-    }
-
-    Query getExtraQuery()
-    {
-        return this.data.getExtraQuery();
-    }
-    
-    void clear()
-    {
-        this.data = this.data.clear();
-    }
-
-    void setRemoveAll()
-    {
-        this.data.setRemoveAll();
-    }
-    
-    boolean isRemoveAll()
-    {
-        return this.data.isRemoveAll();
     }
 }

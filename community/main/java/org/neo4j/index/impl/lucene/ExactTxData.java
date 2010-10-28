@@ -47,12 +47,6 @@ public class ExactTxData extends TxData
         return this;
     }
     
-    @Override
-    TxData add( Query query )
-    {
-        return toFullTxData().add( query );
-    }
-    
     private Set<Object> idCollection( String key, Object value, boolean create )
     {
         Map<Object, Set<Object>> keyMap = keyMap( key, create );
@@ -144,13 +138,7 @@ public class ExactTxData extends TxData
         }
         return this;
     }
-
-    @Override
-    TxData remove( Query query )
-    {
-        return toFullTxData().remove( query );
-    }
-
+    
     @Override
     Pair<Collection<Long>, TxData> get( String key, Object value )
     {
@@ -178,21 +166,5 @@ public class ExactTxData extends TxData
             }
             return longs;
         }
-    }
-
-    @Override
-    Query getExtraQuery()
-    {
-        return null;
-    }
-    
-    @Override
-    TxData clear()
-    {
-        if ( this.data != null )
-        {
-            this.data.clear();
-        }
-        return this;
     }
 }
