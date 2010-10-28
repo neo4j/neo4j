@@ -89,9 +89,12 @@ public class SiteExamples
         createRelationshipsBetween( startNode, middleNode2, middleNode3, endNode );
         
         // Will find the shortest path between startNode and endNode via
-        // "MY_TYPE" relationships (irregardless of their directions)
+        // "MY_TYPE" relationships (in OUTGOING direction), like f.ex:
+        //
+        // (startNode)-->(middleNode1)-->(endNode)
+        //
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
-                Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ), 15 );
+                Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.OUTGOING ), 15 );
         Iterable<Path> paths = finder.findAllPaths( startNode, endNode );
     }
     // END SNIPPET: shortestPathUsage
