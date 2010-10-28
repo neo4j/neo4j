@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -114,10 +115,11 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
     private <T> Response<T> sendRequest( RequestType type,
             SlaveContext slaveContext, Serializer serializer, Deserializer<T> deserializer )
     {
+        Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = null;
         try
         {
             // Send 'em over the wire
-            Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = getChannel();
+            channelContext = getChannel();
             Channel channel = channelContext.first();
             ChannelBuffer buffer = channelContext.other();
             buffer.clear();
@@ -134,12 +136,18 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
             ChannelBuffer message =  reader.read( READ_RESPONSE_TIMEOUT_SECONDS, TimeUnit.SECONDS );
             if ( message == null )
             {
+                channelPool.dispose( channelContext );
                 throw new HaCommunicationException( "Channel has been closed" );
             }
             T response = deserializer.read( message );
             TransactionStreams txStreams = type.includesSlaveContext() ?
                     readTransactionStreams( message ) : TransactionStreams.EMPTY;
             return new Response<T>( response, txStreams );
+        }
+        catch ( ClosedChannelException e )
+        {
+            channelPool.dispose( channelContext );
+            throw new HaCommunicationException( e );
         }
         catch ( IOException e )
         {
