@@ -22,6 +22,7 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.Iterator;
 
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -30,54 +31,92 @@ import org.apache.commons.configuration.SystemConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.neo4j.server.logging.Logger;
 
-public class Configurator {
 
-    private File defaultConfigurationDirectory = new File("etc" + File.separatorChar + "neo-server");
+public class Configurator
+{
+
+    private File defaultConfigurationDirectory = new File( "etc" + File.separatorChar + "neo-server" );
     private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
+    private Logger log = Logger.getLogger( this.getClass() );
 
-    public Configurator(File... configDirs) {
-        
-        if (configDirs == null || configDirs.length == 0) {
-            configDirs = new File[1];
-            configDirs[0] = defaultConfigurationDirectory;
-        }
-        
-        for (File configDir : configDirs) {
-            loadConfigFrom(configDir);
-        }
+    public Configurator() {
+        this ( null );
     }
 
-    public Configuration configuration() {
+    public Configurator( File configDir )
+    {
+        if ( configDir == null )
+        {
+            configDir = defaultConfigurationDirectory;
+        }
+
+        loadConfigFrom( configDir );
+    }
+
+    public Configuration configuration()
+    {
         return serverConfiguration == null ? new SystemConfiguration() : serverConfiguration;
     }
 
-    private void loadConfigFrom(File configDir) {
-        
-        if(configDir.exists()) {
-            loadXmlConfig(configDir);
-            loadPropertiesConfig(configDir);           
+    private void loadConfigFrom( File configDir )
+    {
+
+        if ( configDir.exists() && configDir.isDirectory() )
+        {
+            loadXmlConfig( configDir );
+            loadPropertiesConfig( configDir );
         }
     }
 
-    private void loadPropertiesConfig(File configDir) {
+    private void includeConfiguration( Configuration moreConfiguration )
+    {
+        Iterator keys = moreConfiguration.getKeys();
+        while ( keys.hasNext() )
+        {
+            String key = (String) keys.next();
+            Object value = moreConfiguration.getProperty( key );
+            if ( serverConfiguration.containsKey( key ) )
+            {
+                if ( !serverConfiguration.getProperty( key ).equals( value ) )
+                {
+                    final String failureMessage = "Configuration contains duplicate key " + key + " with different values.";
+                    log.fatal( failureMessage );
+                    throw new RuntimeException( failureMessage );
+                } else {
+                    log.warn ("Duplicate key " + key + " found.");
+                }
+            }
+            serverConfiguration.addProperty( key, value );
+        }
+    }
 
-        for (File configFile : getCandidateConfigFiles(configDir, ".properties")) {
-            try {
-                PropertiesConfiguration propertiesConfig = new PropertiesConfiguration(configFile);
-                serverConfiguration.addConfiguration(propertiesConfig);
-            } catch (Exception e) {
-                logFailureToLoadConfigFile(configFile, e);
+    private void loadPropertiesConfig( File configDir )
+    {
+
+        for ( File configFile : getCandidateConfigFiles( configDir, ".properties" ) )
+        {
+            try
+            {
+                PropertiesConfiguration propertiesConfig = new PropertiesConfiguration( configFile );
+                includeConfiguration( propertiesConfig );
+            } catch ( Exception e )
+            {
+                logFailureToLoadConfigFile( configFile, e );
             }
         }
     }
 
-    private void loadXmlConfig(File configDir) {
-        for (File configFile : getCandidateConfigFiles(configDir, ".xml")) {
-            try {
-                XMLConfiguration xmlConfig = new XMLConfiguration(configFile);
-                serverConfiguration.addConfiguration(xmlConfig);
-            } catch (Exception e) {
-                logFailureToLoadConfigFile(configFile, e);
+    private void loadXmlConfig( File configDir )
+    {
+        for ( File configFile : getCandidateConfigFiles( configDir, ".xml" ) )
+        {
+            try
+            {
+                XMLConfiguration xmlConfig = new XMLConfiguration( configFile );
+                serverConfiguration.addConfiguration( xmlConfig );
+            } catch ( Exception e )
+            {
+                logFailureToLoadConfigFile( configFile, e );
             }
         }
     }
@@ -92,13 +131,14 @@ public class Configurator {
                 return name.toLowerCase().endsWith(fileExtension);
             }
         };
-        
-        File[] listFiles = configDir.listFiles(filenameFilter);
-       
-        if(listFiles == null) {
+
+        File[] listFiles = configDir.listFiles( filenameFilter );
+
+        if ( listFiles == null )
+        {
             listFiles = new File[0];
         }
-        
+
         return listFiles;
     }
 }
