@@ -225,7 +225,7 @@ public class Config
         return this.params;
     }
 
-    boolean isReadOnly()
+    public boolean isReadOnly()
     {
         return readOnly;
     }

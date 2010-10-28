@@ -23,6 +23,8 @@ package org.neo4j.kernel;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -139,16 +141,34 @@ public abstract class KernelExtension extends Service
 
         public abstract Map<Object, Object> getConfigParams();
 
+        private final Collection<KernelExtension> loadedExtensions = new ArrayList<KernelExtension>();
         private final Map<KernelExtension, Object> state = new HashMap<KernelExtension, Object>();
-
-        void startup( StringLogger msgLog )
+        
+        void initAll( StringLogger msgLog )
         {
             for ( KernelExtension extension : Service.load( KernelExtension.class ) )
             {
                 try
                 {
+                    extension.init( this );
+                    loadedExtensions.add( extension );
+                    initialized( extension );
+                    msgLog.logMessage( "Extension " + extension + " initialized ok" );
+                }
+                catch ( Exception ex )
+                {
+                    msgLog.logMessage( "Failed to init extension " + extension, ex );
+                }
+            }
+        }
+
+        void loadAll( StringLogger msgLog )
+        {
+            for ( KernelExtension extension : loadedExtensions )
+            {
+                try
+                {
                     extension.load( this );
-                    loaded( extension );
                     msgLog.logMessage( "Extension " + extension + " loaded ok" );
                 }
                 catch ( Exception ex )
@@ -160,7 +180,7 @@ public abstract class KernelExtension extends Service
 
         synchronized void shutdown( StringLogger msgLog )
         {
-            for ( KernelExtension loaded : state.keySet() )
+            for ( KernelExtension loaded : loadedExtensions )
             {
                 try
                 {
@@ -203,7 +223,7 @@ public abstract class KernelExtension extends Service
             }
         }
         
-        protected abstract void loaded( KernelExtension extension );
+        protected abstract void initialized( KernelExtension extension );
     }
 
     /**
@@ -211,6 +231,16 @@ public abstract class KernelExtension extends Service
      */
     protected abstract void load( KernelData kernel );
 
+    /**
+     * Init this extension with an, at the moment, non-initialized graph database.
+     * Useful for loading extensions and providing the graph database service instance
+     * and configuration before the kernel is started (where a recovery takes place).
+     */
+    protected void init( KernelData kernel )
+    {
+        // Default: do nothing
+    }
+    
     protected void unload( KernelData kernel )
     {
         // Default: do nothing

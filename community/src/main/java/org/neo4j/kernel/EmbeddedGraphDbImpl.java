@@ -116,48 +116,57 @@ class EmbeddedGraphDbImpl
         this.graphDbService = graphDbService;
         IndexStore indexStore = graphDbInstance.getConfig().getIndexStore();
         this.indexManager = new IndexManagerImpl( this, indexStore );
-        graphDbInstance.start( graphDbService, new KernelExtensionLoader()
+        
+        extensions = new KernelExtension.KernelData()
         {
-            public void load( final Map<Object, Object> params )
+            @Override
+            public String version()
             {
-                extensions = new KernelExtension.KernelData()
-                {
-                    @Override
-                    public String version()
-                    {
-                        return KERNEL_VERSION;
-                    }
-
-                    @Override
-                    public Config getConfig()
-                    {
-                        return config;
-                    }
-
-                    @Override
-                    public Map<Object, Object> getConfigParams()
-                    {
-                        return params;
-                    }
-
-                    @Override
-                    public GraphDatabaseService graphDatabase()
-                    {
-                        return EmbeddedGraphDbImpl.this.graphDbService;
-                    }
-                    
-                    protected void loaded( KernelExtension extension )
-                    {
-                        if ( extension instanceof IndexProvider )
-                        {
-                            indexManager.addProvider( extension.getKey(), (IndexProvider) extension );
-                        }
-                    }
-                };
-                extensions.startup( msgLog );
+                return KERNEL_VERSION;
             }
-        });
+
+            @Override
+            public Config getConfig()
+            {
+                return config;
+            }
+
+            @Override
+            public Map<Object, Object> getConfigParams()
+            {
+                return config.getParams();
+            }
+
+            @Override
+            public GraphDatabaseService graphDatabase()
+            {
+                return EmbeddedGraphDbImpl.this.graphDbService;
+            }
+            
+            protected void initialized( KernelExtension extension )
+            {
+                if ( extension instanceof IndexProvider )
+                {
+                    indexManager.addProvider( extension.getKey(), (IndexProvider) extension );
+                }
+            }
+        };
+        
+        KernelExtensionLoader extensionLoader = new KernelExtensionLoader()
+        {
+            public void init()
+            {
+                extensions.initAll( msgLog );
+            }
+            
+            public void load()
+            {
+                extensions.loadAll( msgLog );
+            }
+        };
+        graphDbInstance.start( graphDbService, extensionLoader );
         nodeManager = config.getGraphDbModule().getNodeManager();
+        extensionLoader.load();
     }
 
     private TxModule newTxModule( Map<String, String> inputParams, TxFinishHook rollbackHook )
