@@ -51,6 +51,12 @@
       <artifactId>neo4j-kernel</artifactId>
       <version>1.2-SNAPSHOT</version>
     </dependency>
+    <dependency>
+    	<groupId>log4j</groupId>
+    	<artifactId>log4j</artifactId>
+    	<version>1.2.16</version>
+	</dependency>
+    
     <!-- lucene has downgraded the simple patch for OSGi
     <dependency>
       <groupId>org.apache.lucene</groupId>
