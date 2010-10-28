@@ -31,6 +31,7 @@ import java.util.Random;
 import java.util.Scanner;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.io.FileUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -73,6 +74,7 @@ public class ConfiguratorTest {
 
     private File createTempDir() throws IOException {
         File d = File.createTempFile( "neo4j-test", "dir" );
+        if (!d.delete())  throw new RuntimeException ("temp config directory pre-delete failed");
         if (!d.mkdirs()) throw new RuntimeException ("temp config directory not created");
         d.deleteOnExit();
         return d;
