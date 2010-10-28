@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -206,8 +205,6 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         LuceneTransaction luceneTx = con != null ? con.getLuceneTx() : null;
         Collection<Long> addedIds = Collections.emptySet();
         Collection<Long> removedIds = Collections.emptySet();
-        Query excludeQuery = null;
-        boolean isRemoveAll = false;
         if ( luceneTx != null )
         {
             addedIds = keyForDirectLookup != null ?
@@ -217,8 +214,6 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             removedIds = keyForDirectLookup != null ?
                     luceneTx.getRemovedIds( this, keyForDirectLookup, valueForDirectLookup ) :
                     luceneTx.getRemovedIds( this, query );
-            excludeQuery = luceneTx.getExtraRemoveQuery( this );
-            isRemoveAll = luceneTx.isRemoveAll( this );
         }
         service.dataSource().getReadLock();
         Iterator<Long> idIterator = null;
@@ -228,15 +223,8 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         try
         {
             searcher = service.dataSource().getIndexSearcher( identifier );
-            if ( !isRemoveAll && searcher != null )
+            if ( searcher != null )
             {
-                if ( excludeQuery != null )
-                {
-                    removedIds = removedIds.isEmpty() ? new HashSet<Long>() : removedIds;
-                    readNodesFromHits( new DocToIdIterator( search( searcher, excludeQuery, null ),
-                            null, searcher ), removedIds );
-                }
-                
                 boolean foundInCache = false;
                 LruCache<String, Collection<Long>> cachedIdsMap = null;
                 if ( keyForDirectLookup != null )
@@ -304,7 +292,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         }
         return hits;
     }
-
+    
     private boolean fillFromCache(
             LruCache<String, Collection<Long>> cachedNodesMap,
             List<Long> nodeIds, String key, String valueAsString,
