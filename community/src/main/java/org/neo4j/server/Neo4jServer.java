@@ -20,6 +20,7 @@
 
 package org.neo4j.server;
 
+import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 
 import java.io.File;
@@ -28,24 +29,27 @@ import java.util.logging.Logger;
 /**
  * Application entry point for the Neo4j Server.
  */
-public class Neo4jServer
-{
+public class Neo4jServer {
     private static Configurator configurator;
 
-    private static Logger log = Logger.getLogger( "neo4j-server" );
+    private static Logger log = Logger.getLogger("neo4j-server");
     private static final String NEO_CONFIGDIR_PROPERTY = "neo-server.home";
     private static final String DEFAULT_NEO_CONFIGDIR = "etc";
 
-    public static void main( String[] args )
-    {
-        log.info( "Starting Neo4j Server..." );
-
-        configurator = new Configurator( new File( getConfigDir() ) );
+    private Neo4jServer() {
     }
 
-    private static String getConfigDir()
-    {
-        return System.getProperty( NEO_CONFIGDIR_PROPERTY, DEFAULT_NEO_CONFIGDIR );
+    public static void main(String[] args) {
+        log.info("Starting Neo4j Server...");
+
+        configurator = new Configurator(new File(getConfigDir()));
     }
 
+    private static String getConfigDir() {
+        return System.getProperty(NEO_CONFIGDIR_PROPERTY, DEFAULT_NEO_CONFIGDIR);
+    }
+
+    public static Configuration configuration() {
+        return configurator.configuration();
+    }
 }
