@@ -30,7 +30,6 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.index.IndexConnectionBroker;
 import org.neo4j.kernel.impl.index.ReadOnlyIndexConnectionBroker;
@@ -83,6 +82,11 @@ public class LuceneIndexProvider extends IndexProvider
     @Override
     protected void load( KernelData kernel )
     {
+    }
+    
+    @Override
+    protected void init( KernelData kernel )
+    {
         try
         {
             load( kernel.graphDatabase(), kernel.getConfig() );
@@ -98,7 +102,7 @@ public class LuceneIndexProvider extends IndexProvider
     {
         this.graphDb = db;
         TxModule txModule = config.getTxModule();
-        boolean isReadOnly = ((AbstractGraphDatabase) graphDb).isReadOnly();
+        boolean isReadOnly = config.isReadOnly();
         Map<Object, Object> params = new HashMap<Object, Object>( config.getParams() );
         params.put( "read_only", isReadOnly );
         dataSource = (LuceneDataSource) txModule.registerDataSource( DATA_SOURCE_NAME,
