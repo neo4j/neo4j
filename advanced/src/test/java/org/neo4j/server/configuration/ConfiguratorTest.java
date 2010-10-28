@@ -27,13 +27,16 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Random;
+import java.util.Scanner;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class ConfiguratorTest {
-    
+    private Random rnd = new Random();
+
     @Test
     public void shouldProvideAConfiguration() {
         Configuration config = new Configurator().configuration();
@@ -51,8 +54,9 @@ public class ConfiguratorTest {
     
     @Test
     public void shouldAcceptDuplicateKeysWithSameValueAndLogDuplication() throws IOException {
-        File configA = createTempPropertyFile();
-        File configB = createTempPropertyFile();
+        File configDir = createTempDir();
+        File configA = createTempPropertyFile( configDir );
+        File configB = createTempPropertyFile( configDir );
         
         BufferedWriter writer = new BufferedWriter(new FileWriter(configA));
         writer.write("foo=bar");
@@ -62,21 +66,30 @@ public class ConfiguratorTest {
         writer.write("foo=bar");
         writer.close();
         
-        Configurator configurator = new Configurator(configA, configB);
+        Configurator configurator = new Configurator(configDir);
         Configuration testConf = configurator.configuration();
         
     }
 
-    private File createTempPropertyFile() throws IOException {
-        File f = File.createTempFile("test-", ".properties");
+    private File createTempDir() throws IOException {
+        File d = File.createTempFile( "neo4j-test", "dir" );
+        if (!d.mkdirs()) throw new RuntimeException ("temp config directory not created");
+        d.deleteOnExit();
+        return d;
+    }
+
+    private File createTempPropertyFile(File parentDir) throws IOException {
+
+        File f = new File(parentDir, "test-" + rnd.nextInt() + ".properties");
         f.deleteOnExit();
         return f;
     }
     
     @Test(expected = InvalidServerConfigurationException.class)
     public void shouldFailOnDuplicateKeysWithDifferentValues() throws IOException {
-        File configA = createTempPropertyFile();
-        File configB = createTempPropertyFile();
+        File configDir = createTempDir();
+        File configA = createTempPropertyFile(configDir);
+        File configB = createTempPropertyFile(configDir);
         
         BufferedWriter writer = new BufferedWriter(new FileWriter(configA));
         writer.write("foo=bar");
@@ -86,7 +99,7 @@ public class ConfiguratorTest {
         writer.write("foo=bar");
         writer.close();
         
-        Configurator configurator = new Configurator(configA, configB);
+        Configurator configurator = new Configurator(configDir);
         Configuration testConf = configurator.configuration();
 
     }
