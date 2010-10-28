@@ -136,12 +136,6 @@ class LuceneTransaction extends XaTransaction
         return ids != null ? ids : Collections.<Long>emptySet();
     }
     
-    <T extends PropertyContainer> Query getExtraRemoveQuery( LuceneIndex<T> index )
-    {
-        TxDataHolder removed = removedTxDataOrNull( index );
-        return removed != null ? removed.getExtraQuery() : null;
-    }
-    
     <T extends PropertyContainer> Collection<Long> getRemovedIds( LuceneIndex<T> index,
             String key, Object value )
     {
@@ -416,12 +410,6 @@ class LuceneTransaction extends XaTransaction
         {
             return commands.get( 0 ).isRecovered();
         }
-    }
-    
-    <T extends PropertyContainer> boolean isRemoveAll( LuceneIndex<T> index )
-    {
-        TxDataHolder removed = removedTxDataOrNull( index );
-        return removed != null ? removed.isRemoveAll() : false;
     }
 
     void createIndex( Class<? extends PropertyContainer> entityType, String name,

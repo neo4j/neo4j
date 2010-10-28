@@ -31,8 +31,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -47,7 +45,6 @@ class FullTxData extends ExactTxData
     private boolean modified;
     private IndexReader reader;
     private IndexSearcher searcher;
-    private BooleanQuery extraQueries;
     private Map<Long, Document> cachedDocuments = new HashMap<Long, Document>();
     
     FullTxData( LuceneIndex index )
@@ -87,17 +84,6 @@ class FullTxData extends ExactTxData
     private Document findDocument( long id )
     {
         return cachedDocuments.get( id );
-    }
-    
-    @Override
-    TxData add( Query query )
-    {
-        if ( this.extraQueries == null )
-        {
-            this.extraQueries = new BooleanQuery();
-        }
-        this.extraQueries.add( query, Occur.SHOULD );
-        return this;
     }
     
     private void ensureLuceneDataInstantiated()
@@ -144,14 +130,6 @@ class FullTxData extends ExactTxData
         {
             throw new RuntimeException( e );
         }
-    }
-    
-    TxData remove( Query query )
-    {
-        ensureLuceneDataInstantiated();
-        LuceneDataSource.remove( writer, query );
-        invalidateSearcher();
-        return this;
     }
     
     Pair<Collection<Long>, TxData> query( Query query, QueryContext contextOrNull )
@@ -255,31 +233,6 @@ class FullTxData extends ExactTxData
         catch ( IOException e )
         {
             // Ok
-        }
-    }
-
-    @Override
-    Query getExtraQuery()
-    {
-        return this.extraQueries;
-    }
-    
-    @Override
-    TxData clear()
-    {
-        try
-        {
-            if ( writer != null )
-            {
-                writer.deleteAll();
-            }
-            invalidateSearcher();
-            this.extraQueries = null;
-            return this;
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
         }
     }
 }
