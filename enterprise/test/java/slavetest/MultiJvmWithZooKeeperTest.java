@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2002-2010 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
