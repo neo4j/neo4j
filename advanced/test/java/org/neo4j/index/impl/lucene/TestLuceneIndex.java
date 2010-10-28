@@ -34,14 +34,17 @@ import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
 import static org.neo4j.index.impl.lucene.ValueContext.numeric;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -621,6 +624,9 @@ public class TestLuceneIndex
         assertThat( index.query( "name:something", null, endNode1 ), contains( rel1 ) );
         assertThat( index.query( "name:something", startNode, endNode2 ), contains( rel2 ) );
         assertThat( index.query( null, startNode, endNode1 ), contains( rel1 ) );
+        assertThat( index.get( "name", "something", null, endNode1 ), contains( rel1 ) );
+        assertThat( index.get( "name", "something", startNode, endNode2 ), contains( rel2 ) );
+        assertThat( index.get( null, null, startNode, endNode1 ), contains( rel1 ) );
         rel2.delete();
         rel1.delete();
         startNode.delete();
@@ -1016,5 +1022,25 @@ public class TestLuceneIndex
         Index<Relationship> relIndex = relationshipIndex( indexName2, LuceneIndexProvider.FULLTEXT_CONFIG );
         assertEquals( indexName2, relIndex.getName() );
         assertEquals( LuceneIndexProvider.FULLTEXT_CONFIG, relIndex.getConfiguration() );
+    }
+    
+    @Test
+    public void testStringQueryVsQueryObject() throws IOException
+    {
+        Index<Node> index = nodeIndex( "query-diff", LuceneIndexProvider.FULLTEXT_CONFIG );
+        Node node = graphDb.createNode();
+        index.add( node, "name", "Mattias Persson" );
+        restartTx();
+        assertContains( index.query( "name:Mattias AND name:Per*" ), node );
+        assertContains( index.query( "name:mattias" ), node );
+        assertContains( index.query( new TermQuery( new Term( "name", "mattias" ) ) ), node );
+        assertNull( index.query( new TermQuery( new Term( "name", "Mattias" ) ) ).getSingle() );
+        
+//        Analyzer analyzer = LuceneDataSource.LOWER_CASE_WHITESPACE_ANALYZER;
+//        TokenStream tokens = analyzer.tokenStream( null, new StringReader( "Mattias Persson" ) );
+//        while ( tokens.incrementToken() )
+//        {
+//            System.out.println( tokens.getAttribute( TermAttribute.class ).term() );
+//        }
     }
 }
