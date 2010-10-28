@@ -20,6 +20,7 @@
 
 package org.neo4j.server.configuration;
 
+@SuppressWarnings("serial")
 public class InvalidServerConfigurationException extends RuntimeException {
     public InvalidServerConfigurationException(String message) {
         super(message);

@@ -20,7 +20,6 @@
 
 package org.neo4j.server.configuration;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.BufferedWriter;
@@ -28,11 +27,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Random;
-import java.util.Scanner;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.io.FileUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ConfiguratorTest {
@@ -45,37 +41,49 @@ public class ConfiguratorTest {
     }
 
     @Test
-    @Ignore("This is a functional test, so move it accordingly.")
-    public void shouldUseSpecifiedConfigDir() {
-        Configuration testConf = new Configurator(new File("src/test/resources/etc/neo-server")).configuration();
-
-        final String EXPECTED_VALUE = "bar";
-        assertEquals(EXPECTED_VALUE, testConf.getString("org.neo4j.foo"));
-    }
-    
-    @Test
-    public void shouldAcceptDuplicateKeysWithSameValueAndLogDuplication() throws IOException {
+    public void shouldAcceptDuplicateKeysWithSameValue() throws IOException {
         File configDir = createTempDir();
-        File configA = createTempPropertyFile( configDir );
-        File configB = createTempPropertyFile( configDir );
-        
+        File configA = createTempPropertyFile(configDir);
+        File configB = createTempPropertyFile(configDir);
+
         BufferedWriter writer = new BufferedWriter(new FileWriter(configA));
         writer.write("foo=bar");
         writer.close();
-        
+
         writer = new BufferedWriter(new FileWriter(configB));
         writer.write("foo=bar");
         writer.close();
-        
+
         Configurator configurator = new Configurator(configDir);
         Configuration testConf = configurator.configuration();
-        
+
+        assertNotNull(testConf);
+    }
+
+    @Test(expected = InvalidServerConfigurationException.class)
+    public void shouldFailOnDuplicateKeysWithDifferentValues() throws IOException {
+
+        File configDir = createTempDir();
+        File configA = createTempPropertyFile(configDir);
+        File configB = createTempPropertyFile(configDir);
+
+        BufferedWriter writer = new BufferedWriter(new FileWriter(configA));
+        writer.write("foo=bar");
+        writer.close();
+
+        writer = new BufferedWriter(new FileWriter(configB));
+        writer.write("foo=differentBar");
+        writer.close();
+
+        new Configurator(configDir);
     }
 
     private File createTempDir() throws IOException {
-        File d = File.createTempFile( "neo4j-test", "dir" );
-        if (!d.delete())  throw new RuntimeException ("temp config directory pre-delete failed");
-        if (!d.mkdirs()) throw new RuntimeException ("temp config directory not created");
+        File d = File.createTempFile("neo4j-test", "dir");
+        if (!d.delete())
+            throw new RuntimeException("temp config directory pre-delete failed");
+        if (!d.mkdirs())
+            throw new RuntimeException("temp config directory not created");
         d.deleteOnExit();
         return d;
     }
@@ -85,24 +93,5 @@ public class ConfiguratorTest {
         File f = new File(parentDir, "test-" + rnd.nextInt() + ".properties");
         f.deleteOnExit();
         return f;
-    }
-    
-    @Test(expected = InvalidServerConfigurationException.class)
-    public void shouldFailOnDuplicateKeysWithDifferentValues() throws IOException {
-        File configDir = createTempDir();
-        File configA = createTempPropertyFile(configDir);
-        File configB = createTempPropertyFile(configDir);
-        
-        BufferedWriter writer = new BufferedWriter(new FileWriter(configA));
-        writer.write("foo=bar");
-        writer.close();
-        
-        writer = new BufferedWriter(new FileWriter(configB));
-        writer.write("foo=bar");
-        writer.close();
-        
-        Configurator configurator = new Configurator(configDir);
-        Configuration testConf = configurator.configuration();
-
     }
 }
