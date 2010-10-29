@@ -669,9 +669,23 @@ public class XaResourceManager
     }
 
     public synchronized void applyCommittedTransaction(
-            ReadableByteChannel transaction ) throws IOException
+            ReadableByteChannel transaction, long txId ) throws IOException
     {
-        log.applyTransaction( transaction );
+        long lastCommittedTxId = dataSource.getLastCommittedTxId();
+        if ( lastCommittedTxId + 1 == txId )
+        {
+            log.applyTransaction( transaction );
+        }
+        else if ( lastCommittedTxId + 1 < txId )
+        {
+            throw new IOException( "Tried to apply transaction with txId=" + txId + 
+                    " but last committed txId=" + lastCommittedTxId );
+        }
+        else
+        {
+            msgLog.logMessage( "Tried to apply transaction with txId=" + txId + 
+                    " but last committed txId=" + lastCommittedTxId );
+        }
     }
     
     public synchronized long applyPreparedTransaction(

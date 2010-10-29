@@ -1337,9 +1337,8 @@ public class XaLogicalLog
                 nextTxId + " but expected transaction " + 
                 (xaTf.getCurrentVersion() + 1) );
         }
-        log.fine( "Logical log version: " + logVersion + 
-            ", committing tx=" + nextTxId + ")" );
-//        System.out.println( "applyTxWithoutTxId#start @ pos: " + writeBuffer.getFileChannelPosition() );
+        msgLog.logMessage( "applyTxWithoutTxId log version: " + logVersion + 
+            ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition() );
         long logEntriesFound = 0;
         scanIsComplete = false;
         LogApplier logApplier = new LogApplier( byteChannel );
