@@ -1,4 +1,4 @@
-Neo4j Examples
+Neo4j
 
     Neo4j examples contains code examples using the different components
     included in the Neo4j package.
@@ -19,7 +19,7 @@ Neo4j Examples
 
     * {{{./integrated-index.html}Integrated indexing}} - managed through the GraphDatabaseService (new!)
 
-Neo4j Example Tests
+Neo4j Tests
 
     For your reference, there are unit tests included which illustrate
     approaches for testing graph-based applications.
