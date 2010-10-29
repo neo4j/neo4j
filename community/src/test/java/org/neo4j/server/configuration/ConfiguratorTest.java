@@ -20,6 +20,7 @@
 
 package org.neo4j.server.configuration;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.BufferedWriter;
@@ -38,6 +39,22 @@ public class ConfiguratorTest {
     public void shouldProvideAConfiguration() {
         Configuration config = new Configurator().configuration();
         assertNotNull(config);
+    }
+    
+    @Test
+    public void shouldUseSpecifiedConfigDir() throws Exception {
+        File configDir = createTempDir();
+        File configFile = createTempPropertyFile(configDir);
+        
+        FileWriter fstream = new FileWriter(configFile);
+        BufferedWriter out = new BufferedWriter(fstream);
+        out.write("org.neo4j.foo=bar");
+        out.close();
+        
+        Configuration testConf = new Configurator(configDir).configuration();
+
+        final String EXPECTED_VALUE = "bar";
+        assertEquals(EXPECTED_VALUE, testConf.getString("org.neo4j.foo"));
     }
 
     @Test
@@ -89,7 +106,6 @@ public class ConfiguratorTest {
     }
 
     private File createTempPropertyFile(File parentDir) throws IOException {
-
         File f = new File(parentDir, "test-" + rnd.nextInt() + ".properties");
         f.deleteOnExit();
         return f;

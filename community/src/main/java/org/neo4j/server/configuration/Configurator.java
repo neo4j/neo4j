@@ -22,7 +22,6 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.Iterator;
 
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
