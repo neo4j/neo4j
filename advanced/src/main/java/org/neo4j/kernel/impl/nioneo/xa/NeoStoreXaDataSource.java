@@ -120,7 +120,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         String create = "" + config.get( "create" );
         if ( !readOnly && !file.exists() && "true".equals( create ) )
         {
-            msgLog.logMessage( "Creating new db @ " + store );
+            msgLog.logMessage( "Creating new db @ " + store, true );
             autoCreatePath( store );
             NeoStore.createStore( store, config );
         }
@@ -249,7 +249,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
         neoStore.close();
         logger.fine( "NeoStore closed" );
-        msgLog.logMessage( "NeoStore closed" );
+        msgLog.logMessage( "NeoStore closed", true );
     }
 
     @Override

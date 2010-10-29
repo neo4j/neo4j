@@ -349,7 +349,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         graphDbService.clearCaches();
         neoStore.close();
-        msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")" );
+        msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
     }
 
     private Map<Object,Object> getDefaultParams()

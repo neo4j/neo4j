@@ -153,11 +153,11 @@ public abstract class KernelExtension extends Service
                     extension.init( this );
                     loadedExtensions.add( extension );
                     initialized( extension );
-                    msgLog.logMessage( "Extension " + extension + " initialized ok" );
+                    msgLog.logMessage( "Extension " + extension + " initialized ok", true );
                 }
-                catch ( Exception ex )
+                catch ( Throwable t )
                 {
-                    msgLog.logMessage( "Failed to init extension " + extension, ex );
+                    msgLog.logMessage( "Failed to init extension " + extension, t, true );
                 }
             }
         }
@@ -169,11 +169,11 @@ public abstract class KernelExtension extends Service
                 try
                 {
                     extension.load( this );
-                    msgLog.logMessage( "Extension " + extension + " loaded ok" );
+                    msgLog.logMessage( "Extension " + extension + " loaded ok", true );
                 }
-                catch ( Exception ex )
+                catch ( Throwable t )
                 {
-                    msgLog.logMessage( "Failed to load extension " + extension, ex );
+                    msgLog.logMessage( "Failed to load extension " + extension, t, true );
                 }
             }
         }
@@ -188,7 +188,7 @@ public abstract class KernelExtension extends Service
                 }
                 catch ( Throwable t )
                 {
-                    msgLog.logMessage( "Error unloading " + loaded, t );
+                    msgLog.logMessage( "Error unloading " + loaded, t, true );
                 }
             }
             removeInstance( instanceId );

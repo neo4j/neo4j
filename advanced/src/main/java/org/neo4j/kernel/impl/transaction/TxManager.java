@@ -116,7 +116,7 @@ public class TxManager implements TransactionManager
                     + ", " + e );
             }
         }
-        msgLog.logMessage( "TM shutting down" );
+        msgLog.logMessage( "TM shutting down", true );
         StringLogger.close( txLogDir + "/messages.log" );
     }
 
@@ -147,7 +147,7 @@ public class TxManager implements TransactionManager
                         currentTxLog + "] not found." );
                 }
                 txLog = new TxLog( currentTxLog );
-                msgLog.logMessage( "TM opening log: " + currentTxLog );
+                msgLog.logMessage( "TM opening log: " + currentTxLog, true );
             }
             else
             {
@@ -168,7 +168,7 @@ public class TxManager implements TransactionManager
                     "rw" ).getChannel();
                 fc.write( buf );
                 txLog = new TxLog( txLogDir + separator + txLog1FileName );
-                msgLog.logMessage( "TM new log: " + txLog1FileName );
+                msgLog.logMessage( "TM new log: " + txLog1FileName, true );
                 fc.force( true );
                 fc.close();
             }
@@ -239,7 +239,7 @@ public class TxManager implements TransactionManager
 
     private void recover( Iterator<List<TxLog.Record>> danglingRecordList )
     {
-        msgLog.logMessage( "TM non resolved transactions found in " + txLog.getName() );
+        msgLog.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
         try
         {
             // contains NonCompletedTransaction that needs to be committed
@@ -270,7 +270,7 @@ public class TxManager implements TransactionManager
                         {
                             log.fine( "Found pre commit " + xids[i]
                                 + " rolling back ... " );
-                            msgLog.logMessage( "TM: Found pre commit " + xids[i] + " rolling back ... " );
+                            msgLog.logMessage( "TM: Found pre commit " + xids[i] + " rolling back ... ", true );
                             rollbackList.remove( xids[i] );
                             xaRes.rollback( xids[i] );
                         }
@@ -323,7 +323,7 @@ public class TxManager implements TransactionManager
                     }
                     log.fine( "Commiting tx seq[" + seq + "][" + 
                         xids[i] + "] ... " );
-                    msgLog.logMessage( "TM: Committing tx " + xids[i] );
+                    msgLog.logMessage( "TM: Committing tx " + xids[i], true );
                     resourceMap.get( resource ).commit( xids[i], false );
                 }
             }
@@ -339,7 +339,7 @@ public class TxManager implements TransactionManager
                         "Couldn't find XAResource for " + xid );
                 }
                 log.fine( "Rollback " + xid + " ... " );
-                msgLog.logMessage( "TM: no match found for " + xid + " removing" );
+                msgLog.logMessage( "TM: no match found for " + xid + " removing", true );
                 resourceMap.get( resource ).rollback( xid );
             }
             if ( rollbackList.size() > 0 )
@@ -350,7 +350,7 @@ public class TxManager implements TransactionManager
                     + rollbackList.size()
                     + " transactions already rolled back." );
                 msgLog.logMessage( "TM: no match found for in total " + rollbackList.size() +
-                        " transaction that should have been rolled back" );
+                        " transaction that should have been rolled back", true );
             }
         }
         catch ( XAException e )
