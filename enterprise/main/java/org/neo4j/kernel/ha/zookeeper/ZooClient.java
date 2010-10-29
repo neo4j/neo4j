@@ -82,7 +82,7 @@ public class ZooClient extends AbstractZooKeeperManager
         try
         {
             String path = event.getPath();
-            msgLog.logMessage( this + ", " + new Date() + " Got event: " + event + "(path=" + path + ")" );
+            msgLog.logMessage( this + ", " + new Date() + " Got event: " + event + "(path=" + path + ")", true );
             if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
             {
                 keeperState = KeeperState.Expired;
@@ -103,10 +103,10 @@ public class ZooClient extends AbstractZooKeeperManager
             else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
             {
                 long newSessionId = zooKeeper.getSessionId();
-                if ( newSessionId != sessionId )
+                Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
+                msgLog.logMessage( "Get master before write:" + masterBeforeIWrite );
+                if ( newSessionId != sessionId || masterBeforeIWrite.other().getMachineId() != getCachedMaster().other().getMachineId() )
                 {
-                    Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
-                    msgLog.logMessage( "Get master before write:" + masterBeforeIWrite );
                     sequenceNr = setup();
                     msgLog.logMessage( "Did setup, seq=" + sequenceNr + " new sessionId=" + newSessionId );
                     keeperState = KeeperState.SyncConnected;
@@ -157,9 +157,13 @@ public class ZooClient extends AbstractZooKeeperManager
         }
         catch ( RuntimeException e )
         {
-            msgLog.logMessage( "Error in ZooClient.process", e );
+            msgLog.logMessage( "Error in ZooClient.process", e, true );
             e.printStackTrace();
             throw e;
+        }
+        finally
+        {
+            msgLog.flush();
         }
     }
     
@@ -417,6 +421,20 @@ public class ZooClient extends AbstractZooKeeperManager
             {
                 throw e;
             }
+            msgLog.logMessage( "HA server info already present, trying again" );
+            try
+            {
+                zooKeeper.delete( machinePath, -1 );
+            }
+            catch ( KeeperException ee )
+            {
+                ee.printStackTrace();
+                // ok
+            }
+            finally
+            {
+                writeHaServerConfig();
+            }
         }
         zooKeeper.setData( machinePath, data, -1 );
         msgLog.logMessage( "Wrote HA server " + haServer + " to zoo keeper" );
@@ -435,7 +453,7 @@ public class ZooClient extends AbstractZooKeeperManager
     
     public synchronized void setCommittedTx( long tx )
     {
-        msgLog.logMessage( "ZooClient setting txId=" + tx + " for machine=" + machineId );
+        msgLog.logMessage( "ZooClient setting txId=" + tx + " for machine=" + machineId, true );
         waitForSyncConnected();
         this.committedTx = tx;
         String root = getRoot();
