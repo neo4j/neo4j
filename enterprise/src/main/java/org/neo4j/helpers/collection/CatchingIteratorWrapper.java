@@ -36,15 +36,17 @@ public abstract class CatchingIteratorWrapper<T, U> extends PrefetchingIterator<
     {
         while ( source.hasNext() )
         {
+            U nextItem = null;
             try
             {
-                U nextItem = source.next();
+                nextItem = source.next();
                 return underlyingObjectToObject( nextItem );
             }
             catch ( Throwable t )
             {
                 if ( exceptionOk( t ) )
                 {
+                    itemDodged( nextItem );
                     continue;
                 }
                 if ( t instanceof RuntimeException )
@@ -61,6 +63,10 @@ public abstract class CatchingIteratorWrapper<T, U> extends PrefetchingIterator<
         return null;
     }
     
+    protected void itemDodged( U item )
+    {
+    }
+
     protected boolean exceptionOk( Throwable t )
     {
         return true;
