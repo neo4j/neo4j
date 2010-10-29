@@ -186,9 +186,9 @@ public abstract class KernelExtension extends Service
                 {
                     loaded.unload( this );
                 }
-                catch ( Exception ex )
+                catch ( Throwable t )
                 {
-                    msgLog.logMessage( "Error unloading " + loaded, ex );
+                    msgLog.logMessage( "Error unloading " + loaded, t );
                 }
             }
             removeInstance( instanceId );
