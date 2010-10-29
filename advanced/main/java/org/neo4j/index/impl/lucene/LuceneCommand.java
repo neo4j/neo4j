@@ -43,6 +43,7 @@ abstract class LuceneCommand extends XaCommand
     public static final byte NODE = (byte) 1;
     public static final byte RELATIONSHIP = (byte) 2;
     
+    private static final byte VALUE_TYPE_NULL = (byte) 0;
     private static final byte VALUE_TYPE_INT = (byte) 1;
     private static final byte VALUE_TYPE_LONG = (byte) 2;
     private static final byte VALUE_TYPE_FLOAT = (byte) 3;
@@ -97,11 +98,15 @@ abstract class LuceneCommand extends XaCommand
         buffer.putInt( indexName.length );
         long id = entityId instanceof Long ? (Long) entityId : ((RelationshipId)entityId).id;
         buffer.putLong( id );
-        char[] key = this.key.toCharArray();
-        buffer.putInt( key.length );
+        char[] key = this.key == null ? null : this.key.toCharArray();
+        buffer.putInt( key == null ? -1 : key.length );
         
         byte valueType = 0;
-        if ( value instanceof Number )
+        if ( value == null )
+        {
+            valueType = VALUE_TYPE_NULL;
+        }
+        else if ( value instanceof Number )
         {
             if ( value instanceof Float )
             {
@@ -128,14 +133,17 @@ abstract class LuceneCommand extends XaCommand
         buffer.put( valueType );
         
         buffer.put( indexName );
-        buffer.put( key );
+        if ( key != null )
+        {
+            buffer.put( key );
+        }
         if ( valueType == VALUE_TYPE_STRING )
         {
             char[] charValue = value.toString().toCharArray();
             buffer.putInt( charValue.length );
             buffer.put( charValue );
         }
-        else
+        else if ( valueType != VALUE_TYPE_NULL )
         {
             Number number = (Number) value;
             switch ( valueType )
@@ -357,10 +365,14 @@ abstract class LuceneCommand extends XaCommand
                 return null;
             }
             
-            String key = PrimitiveUtils.readString( channel, buffer, keyCharLength );
-            if ( key == null )
+            String key = null;
+            if ( keyCharLength != -1 )
             {
-                return null;
+                key = PrimitiveUtils.readString( channel, buffer, keyCharLength );
+                if ( key == null )
+                {
+                    return null;
+                }
             }
 
             Object value = null;
@@ -378,7 +390,7 @@ abstract class LuceneCommand extends XaCommand
             {
                 value = PrimitiveUtils.readLengthAndString( channel, buffer );
             }
-            if ( value == null )
+            if ( valueType != VALUE_TYPE_NULL && value == null )
             {
                 return null;
             }
