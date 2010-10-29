@@ -291,6 +291,27 @@ class LuceneTransaction extends XaTransaction
                 addCommand( command );
             }
         }
+        addAbandonedEntitiesToTheTx();
+    }
+
+    private void addAbandonedEntitiesToTheTx()
+    {
+        for ( Map.Entry<IndexIdentifier, TxDataBoth> entry : txData.entrySet() )
+        {
+            Collection<Long> abandonedIds = entry.getValue().index.abandonedIds;
+            if ( !abandonedIds.isEmpty() )
+            {
+                CommandList commands = commandMap.get( entry.getKey() );
+                for ( Long id : abandonedIds )
+                {
+                    RemoveCommand command = new RemoveCommand( entry.getKey(), entry.getKey().entityTypeByte, id, null, null );
+                    addCommand( command );
+                    commands.add( command );
+                    
+                }
+                abandonedIds.clear();
+            }
+        }
     }
 
     @Override

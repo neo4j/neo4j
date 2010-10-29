@@ -127,6 +127,8 @@ public class TestLuceneIndex
     private static abstract interface EntityCreator<T extends PropertyContainer>
     {
         T create();
+        
+        void delete( T entity );
     }
 
     private static final RelationshipType TEST_TYPE =
@@ -137,6 +139,11 @@ public class TestLuceneIndex
         {
             return graphDb.createNode();
         }
+        
+        public void delete( Node entity )
+        {
+            entity.delete();
+        }
     };
     private static final EntityCreator<Relationship> RELATIONSHIP_CREATOR =
             new EntityCreator<Relationship>()
@@ -144,6 +151,11 @@ public class TestLuceneIndex
                 public Relationship create()
                 {
                     return graphDb.createNode().createRelationshipTo( graphDb.createNode(), TEST_TYPE );
+                }
+                
+                public void delete( Relationship entity )
+                {
+                    entity.delete();
                 }
             };
 
@@ -159,6 +171,11 @@ public class TestLuceneIndex
                 otherNode = graphDb.createNode();
             }
             return node.createRelationshipTo( otherNode, TEST_TYPE );
+        }
+        
+        public void delete( Relationship entity )
+        {
+            entity.delete();
         }
     }
     
@@ -1035,12 +1052,46 @@ public class TestLuceneIndex
         assertContains( index.query( "name:mattias" ), node );
         assertContains( index.query( new TermQuery( new Term( "name", "mattias" ) ) ), node );
         assertNull( index.query( new TermQuery( new Term( "name", "Mattias" ) ) ).getSingle() );
+    }
+    
+    private <T extends PropertyContainer> void testAbandonedIds( EntityCreator<T> creator,
+            Index<T> index )
+    {
+        // TODO This doesn't actually test that they are deleted, it just triggers it
+        // so that you manually can inspect what's going on
+        T a = creator.create();
+        T b = creator.create();
+        T c = creator.create();
+        String key = "name";
+        String value = "value";
+        index.add( a, key, value );
+        index.add( b, key, value );
+        index.add( c, key, value );
+        restartTx();
         
-//        Analyzer analyzer = LuceneDataSource.LOWER_CASE_WHITESPACE_ANALYZER;
-//        TokenStream tokens = analyzer.tokenStream( null, new StringReader( "Mattias Persson" ) );
-//        while ( tokens.incrementToken() )
-//        {
-//            System.out.println( tokens.getAttribute( TermAttribute.class ).term() );
-//        }
+        creator.delete( b );
+        restartTx();
+        
+        IteratorUtil.count( (Iterator<Node>) index.get( key, value ) );
+        rollbackTx();
+        beginTx();
+        
+        IteratorUtil.count( (Iterator<Node>) index.get( key, value ) );
+        index.add( c, "something", "whatever" );
+        restartTx();
+        
+        IteratorUtil.count( (Iterator<Node>) index.get( key, value ) );
+    }
+    
+    @Test
+    public void testAbandonedNodeIds()
+    {
+        testAbandonedIds( NODE_CREATOR, nodeIndex( "abandoned", LuceneIndexProvider.EXACT_CONFIG ) );
+    }
+    
+    @Test
+    public void testAbandonedRelIds()
+    {
+        testAbandonedIds( RELATIONSHIP_CREATOR, relationshipIndex( "abandoned", LuceneIndexProvider.EXACT_CONFIG ) );
     }
 }
