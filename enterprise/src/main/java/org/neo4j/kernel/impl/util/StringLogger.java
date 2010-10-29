@@ -72,16 +72,37 @@ public class StringLogger
         return logger;
     }
     
-    public synchronized void logMessage( String msg )
+    public void logMessage( String msg )
     {
-        out.println( new Date() + ": " + msg );
-        out.flush();
+        logMessage( msg, false );
     } 
 
-    public synchronized void logMessage( String msg, Throwable cause )
+    public void logMessage( String msg, Throwable cause )
+    {
+        logMessage( msg, cause, false );
+    }
+    
+    public void logMessage( String msg, boolean flush )
+    {
+        out.println( new Date() + ": " + msg );
+        if ( flush )
+        {
+            out.flush();
+        }
+    } 
+
+    public void logMessage( String msg, Throwable cause, boolean flush )
     {
         out.println( new Date() + ": " + msg + " " + cause.getMessage() );
         cause.printStackTrace( out );
+        if ( flush )
+        {
+            out.flush();
+        }
+    }
+    
+    public void flush()
+    {
         out.flush();
     }
     

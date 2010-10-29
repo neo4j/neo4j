@@ -187,7 +187,7 @@ class GraphDbInstance
         logger.logMessage( "" );
         logConfiguration( params, logger, dumpToConsole );
         logger.logMessage( "--- CONFIGURATION END ---" );
-
+        logger.flush();
         started = true;
         return Collections.unmodifiableMap( params );
     }

@@ -206,7 +206,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                     String storeDir = (String) getConfig().get( "store_dir" );
                     StringLogger msgLog = StringLogger.getLogger( 
                             storeDir + "/messages.log" );
-                    msgLog.logMessage( getStorageFileName() + " non clean shutdown detected" );
+                    msgLog.logMessage( getStorageFileName() + " non clean shutdown detected", true );
                 }
             }
         }
@@ -715,7 +715,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             StringLogger msgLog = StringLogger.getLogger( 
                     storeDir + "/messages.log" );
             msgLog.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() + 
-                    " defragged count=" + defraggedCount );
+                    " defragged count=" + defraggedCount, true );
         }
         closeIdGenerator();
         openIdGenerator();
