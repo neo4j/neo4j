@@ -90,7 +90,7 @@ public class MasterServer implements ChannelPipelineFactory
                 Channel channel = bootstrap.bind( new InetSocketAddress( port ) );
                 // Add the "server" channel
                 channelGroup.add( channel );
-                msgLog.logMessage( "Master server bound to " + port );
+                msgLog.logMessage( "Master server bound to " + port, true );
             }
         } );
         deadConnectionsPoller = new ScheduledThreadPoolExecutor( 1 );
@@ -159,7 +159,7 @@ public class MasterServer implements ChannelPipelineFactory
     {
         // Close all open connections
         deadConnectionsPoller.shutdown();
-        msgLog.logMessage( "Master server shutdown, closing all channels" );
+        msgLog.logMessage( "Master server shutdown, closing all channels", true );
         channelGroup.close().awaitUninterruptibly();
 
         // TODO This should work, but blocks with busy wait sometimes

@@ -77,9 +77,12 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 channel = Triplet.of( channelFuture.getChannel(),
                                       ChannelBuffers.dynamicBuffer(),
                                       ByteBuffer.allocateDirect( 1024 * 1024 ) );
-                msgLog.logMessage( "Opened a new channel to " + address );
+                msgLog.logMessage( "Opened a new channel to " + address, true );
+                return channel;
             }
-            return channel;
+            String msg = "MasterClient could not connect to " + address;
+            msgLog.logMessage( msg, true );
+            throw new HaCommunicationException( msg );
         }
 
         @Override
@@ -104,7 +107,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 executor, executor ) );
         bootstrap.setPipelineFactory( this );
         msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
-        msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port );
+        msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port, true );
     }
 
     public MasterClient( Machine machine, String storeDir )
@@ -305,7 +308,7 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
 
     public void shutdown()
     {
-        msgLog.logMessage( "MasterClient shutdown" );
+        msgLog.logMessage( "MasterClient shutdown", true );
         channelPool.close( true );
     }
 }

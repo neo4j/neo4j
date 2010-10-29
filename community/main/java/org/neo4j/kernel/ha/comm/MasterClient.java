@@ -79,7 +79,7 @@ public class MasterClient implements Master, ChannelPipelineFactory
                 executor, executor ) );
         bootstrap.setPipelineFactory( this );
         msgLog = StringLogger.getLogger( storeDir + "/messages.log" );
-        msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port );
+        msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port, true );
     }
 
     public MasterClient( Machine machine, String storeDir )
@@ -167,12 +167,12 @@ public class MasterClient implements Master, ChannelPipelineFactory
                         if ( channelFuture.isSuccess() )
                         {
                             channel = channelFuture.getChannel();
-                            msgLog.logMessage( "Opened a new channel to " + hostNameOrIp + ":" + port );
+                            msgLog.logMessage( "Opened a new channel to " + hostNameOrIp + ":" + port, true );
                             break;
                         }
                         else
                         {
-                            msgLog.logMessage( "Retrying connect to " + hostNameOrIp + ":" + port );
+                            msgLog.logMessage( "Retrying connect to " + hostNameOrIp + ":" + port, true );
                             try
                             {
                                 Thread.sleep( 500 );
@@ -299,7 +299,7 @@ public class MasterClient implements Master, ChannelPipelineFactory
 
     public void shutdown()
     {
-        msgLog.logMessage( "MasterClient shutdown" );
+        msgLog.logMessage( "MasterClient shutdown", true );
         synchronized ( channels )
         {
             for ( Channel channel : unusedChannels )
