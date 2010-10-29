@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -58,6 +59,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     final IndexIdentifier identifier;
     final IndexType type;
     private volatile boolean deleted;
+    
+    // Will contain ids which were found to be missing from the graph when doing queries
+    // Write transactions can fetch from this list and add to their transactions to
+    // allow for self-healing properties.
+    final Collection<Long> abandonedIds = new CopyOnWriteArraySet<Long>();
 
     LuceneIndex( LuceneIndexProvider service, IndexIdentifier identifier )
     {
@@ -94,6 +100,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     void markAsDeleted()
     {
         this.deleted = true;
+        this.abandonedIds.clear();
     }
     
     public String getName()
@@ -285,6 +292,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     {
                         return getById( id );
                     }
+                    
+                    protected void itemDodged( Long item )
+                    {
+                        abandonedIds.add( item );
+                    }
                 } ), idIteratorSize );
         if ( isLazy )
         {
@@ -423,6 +435,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         protected long getEntityId( Relationship entity )
         {
             return entity.getId();
+        }
+        
+        public void add( Relationship relationship )
+        {
+            
         }
 
         public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull,

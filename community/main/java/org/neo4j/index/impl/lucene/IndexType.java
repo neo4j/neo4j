@@ -69,6 +69,18 @@ abstract class IndexType
         @Override
         public void removeFromDocument( Document document, String key, Object value )
         {
+            if ( key == null && value == null )
+            {
+                clearDocument( document );
+            }
+            else
+            {
+                removeFieldsFromDocument( document, key, value );
+            }
+        }
+
+        private void removeFieldsFromDocument( Document document, String key, Object value )
+        {
             String stringValue = value.toString();
             Set<String> values = new HashSet<String>( Arrays.asList(
                     document.getValues( key ) ) );
@@ -80,6 +92,19 @@ abstract class IndexType
             for ( String existingValue : values )
             {
                 addToDocument( document, key, existingValue );
+            }
+        }
+
+        private void clearDocument( Document document )
+        {
+            Set<String> names = new HashSet<String>();
+            for ( Fieldable field : document.getFields() )
+            {
+                names.add( field.name() );
+            }
+            for ( String name : names )
+            {
+                document.removeFields( name );
             }
         }
         
@@ -263,10 +288,6 @@ abstract class IndexType
     
     Fieldable instantiateField( String key, Object value, Index analyzed )
     {
-//        NumericField f = new NumericField( key );
-//        f.setIntValue( ((Number) value).intValue() );
-//        return f;
-        
         Fieldable field = null;
         if ( value instanceof Number )
         {
