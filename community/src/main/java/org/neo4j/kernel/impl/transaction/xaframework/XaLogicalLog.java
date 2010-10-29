@@ -281,7 +281,7 @@ public class XaLogicalLog
             buffer.flip();
             fileChannel.write( buffer );
             scanIsComplete = true;
-            msgLog.logMessage( "Opened [" + fileToOpen + "] clean empty log, version=" + logVersion );
+            msgLog.logMessage( "Opened [" + fileToOpen + "] clean empty log, version=" + logVersion, true );
         }
     }
 
@@ -529,7 +529,7 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectOnePhaseCommit( xid );
-            msgLog.logMessage( "Injected one phase commit, txId=" + commit.getTxId() );
+            msgLog.logMessage( "Injected one phase commit, txId=" + commit.getTxId(), true );
         }
         catch ( XAException e )
         {
@@ -572,7 +572,7 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectTwoPhaseCommit( xid );
-            msgLog.logMessage( "Injected two phase commit, txId=" + commit.getTxId() );
+            msgLog.logMessage( "Injected two phase commit, txId=" + commit.getTxId(), true );
         }
         catch ( XAException e )
         {
@@ -726,7 +726,7 @@ public class XaLogicalLog
             renameCurrentLogFileAndIncrementVersion( fileName + "." + 
                 logWas, endPosition );
         }
-        msgLog.logMessage( "Closed log " + fileName );
+        msgLog.logMessage( "Closed log " + fileName, true );
     }
     
     private long[] readLogHeader( ByteBuffer buffer,
@@ -768,14 +768,14 @@ public class XaLogicalLog
         log.info( "Non clean shutdown detected on log [" + logFileName + 
             "]. Recovery started ..." );
         msgLog.logMessage( "Non clean shutdown detected on log [" + logFileName + 
-            "]. Recovery started ..." );
+            "]. Recovery started ...", true );
         // get log creation time
         long[] header = readLogHeader( buffer, fileChannel, false );
         if ( header == null )
         {
             log.info( "Unable to read header information, "
                 + "no records in logical log." );
-            msgLog.logMessage( "No log version found for " + logFileName );
+            msgLog.logMessage( "No log version found for " + logFileName, true );
             fileChannel.close();
             boolean success = FileUtils.renameFile( new File( logFileName ), 
                 new File( logFileName + "_unknown_timestamp_" + 
@@ -792,7 +792,7 @@ public class XaLogicalLog
         log.fine( "Logical log version: " + logVersion + " with committed tx[" +
             lastCommittedTx + "]" );
         msgLog.logMessage( "[" + logFileName + "] logVersion=" + logVersion + 
-                " with committed tx=" + lastCommittedTx );
+                " with committed tx=" + lastCommittedTx, true );
         long logEntriesFound = 0;
         long lastEntryPos = fileChannel.position();
         LogEntry entry;
@@ -806,7 +806,7 @@ public class XaLogicalLog
         fileChannel.position( lastEntryPos );
 
         msgLog.logMessage( "[" + logFileName + "] entries found=" + logEntriesFound + 
-                " lastEntryPos=" + lastEntryPos  );
+                " lastEntryPos=" + lastEntryPos, true  );
         
         // zero out the slow way since windows don't support truncate very well
         buffer.clear();
@@ -1002,7 +1002,7 @@ public class XaLogicalLog
         }
         if ( logEntryList == null )
         {
-            msgLog.logMessage( "txId=" + txId + " not found in log=" + expectedVersion  );
+            msgLog.logMessage( "txId=" + txId + " not found in log=" + expectedVersion, true  );
             throw new IOException( "Transaction[" + txId + 
                     "] not found in log (" + expectedVersion/* + ", " + prevTxId*/ + ") " +
                     "current version is (" + this.logVersion + ")" );
@@ -1270,7 +1270,7 @@ public class XaLogicalLog
                 if ( entry instanceof LogEntry.Commit )
                 {
                     commitEntry = (LogEntry.Commit) entry;
-                    msgLog.logMessage( "Applying external tx: " + ((LogEntry.Commit) entry).getTxId() );
+                    msgLog.logMessage( "Applying external tx: " + ((LogEntry.Commit) entry).getTxId(), true );
                 }
                 else if ( entry instanceof LogEntry.Start )
                 {
@@ -1308,7 +1308,7 @@ public class XaLogicalLog
         log.fine( "Logical log version: " + logVersion + 
             "(previous committed tx=" + previousCommittedTx + ")" );
         msgLog.logMessage( "Applying log version=" + logVersion + 
-            " (previous committed tx=" + previousCommittedTx + ")" );
+            " (previous committed tx=" + previousCommittedTx + ")", true );
         long logEntriesFound = 0;
         LogApplier logApplier = new LogApplier( byteChannel );
         scanIsComplete = false;
@@ -1323,7 +1323,7 @@ public class XaLogicalLog
         xaTf.getAndSetNewVersion();
         xaRm.reset();
         msgLog.logMessage( "Apply of log version=" + logVersion + " successfull, " + 
-                logEntriesFound + " nr of log entries found." );
+                logEntriesFound + " nr of log entries found.", true );
         log.info( "Log[" + fileName + "] version " + logVersion + 
                 " applied successfully." );
     }
@@ -1338,7 +1338,7 @@ public class XaLogicalLog
                 (xaTf.getCurrentVersion() + 1) );
         }
         msgLog.logMessage( "applyTxWithoutTxId log version: " + logVersion + 
-            ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition() );
+            ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition(), true );
         long logEntriesFound = 0;
         scanIsComplete = false;
         LogApplier logApplier = new LogApplier( byteChannel );
@@ -1382,7 +1382,7 @@ public class XaLogicalLog
         // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
         scanIsComplete = true;
 //        log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
-        msgLog.logMessage( "Applied external tx and generated tx id=" + nextTxId );
+        msgLog.logMessage( "Applied external tx and generated tx id=" + nextTxId, true );
 //        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
     
@@ -1446,7 +1446,7 @@ public class XaLogicalLog
 //        System.out.println( " ----- end ----" );
         msgLog.logMessage( "Rotating [" + currentLogFile + "] @ version=" + 
                 currentVersion + " to " +  newLogFile + "from position " + 
-                writeBuffer.getFileChannelPosition() );
+                writeBuffer.getFileChannelPosition(), true );
         long endPosition = writeBuffer.getFileChannelPosition();
         writeBuffer.force();
         FileChannel newLog = new RandomAccessFile( 
@@ -1503,7 +1503,7 @@ public class XaLogicalLog
             }
         }
         msgLog.logMessage( "Rotate: old log scanned, newLog @ pos=" + 
-                newLog.position() );
+                newLog.position(), true );
         newLog.force( false );
         releaseCurrentLogFile();
         setActiveLog( newActiveLog );
@@ -1525,7 +1525,7 @@ public class XaLogicalLog
         fileChannel = newLog;
         instantiateCorrectWriteBuffer();
         msgLog.logMessage( "Log rotated, newLog @ pos=" + 
-                writeBuffer.getFileChannelPosition() + " and version " + logVersion ); 
+                writeBuffer.getFileChannelPosition() + " and version " + logVersion, true ); 
     }
 
     private void assertFileDoesntExist( String file, String description ) throws IOException

@@ -684,7 +684,7 @@ public class XaResourceManager
         else
         {
             msgLog.logMessage( "Tried to apply transaction with txId=" + txId + 
-                    " but last committed txId=" + lastCommittedTxId );
+                    " but last committed txId=" + lastCommittedTxId, true );
         }
     }
     
