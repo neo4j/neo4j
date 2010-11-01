@@ -1,210 +1,200 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <parent>
-    <groupId>org.neo4j</groupId>
-    <artifactId>parent-central</artifactId>
-    <version>3</version>
-  </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<parent>
+		<groupId>org.neo4j</groupId>
+		<artifactId>parent-central</artifactId>
+		<version>3</version>
+	</parent>
 
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.neo4j.app</groupId>
-  <artifactId>neo4j-server</artifactId>
-  <version>0.1-SNAPSHOT</version>
-  <name>Neo4j Server</name>
-  <description>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.neo4j.app</groupId>
+	<artifactId>neo4j-server</artifactId>
+	<version>0.1-SNAPSHOT</version>
+	<name>Neo4j Server</name>
+	<description>
 	Standalone Neo4j server application.
     </description>
-  <url>http://components.neo4j.org/${project.artifactId}/</url>
+	<url>http://components.neo4j.org/${project.artifactId}/</url>
 
-  <properties>
-    <bundle.namespace>org.neo4j.server</bundle.namespace>
-    <short-name>server</short-name>
-    <neo4j-server.mainClass>org.neo4j.server.Neo4jServer</neo4j-server.mainClass>
-    <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
-    <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
-  </properties>
+	<properties>
+		<bundle.namespace>org.neo4j.server</bundle.namespace>
+		<short-name>server</short-name>
+		<neo4j-server.mainClass>org.neo4j.server.Neo4jServer</neo4j-server.mainClass>
+		<neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
+		<neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
+	</properties>
 
-  <packaging>bundle</packaging>
+	<packaging>bundle</packaging>
 
-  <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/server/trunk/</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/server/trunk/</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/server</url>
-  </scm>
+	<scm>
+		<connection>scm:svn:https://svn.neo4j.org/components/server/trunk/</connection>
+		<developerConnection>scm:svn:https://svn.neo4j.org/components/server/trunk/</developerConnection>
+		<url>https://trac.neo4j.org/browser/components/server</url>
+	</scm>
 
-  <licenses>
-    <license>
-      <name>GNU Affero General Public License, Version 3</name>
-      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-    </license>
-  </licenses>
+	<licenses>
+		<license>
+			<name>GNU Affero General Public License, Version 3</name>
+			<url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+		</license>
+	</licenses>
 
-  <issueManagement>
-    <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
-  </issueManagement>
+	<issueManagement>
+		<system>Trac</system>
+		<url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
+	</issueManagement>
 
 
-  <dependencies>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>1.2-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-    	<groupId>log4j</groupId>
-    	<artifactId>log4j</artifactId>
-    	<version>1.2.16</version>
-	</dependency>
-    
-    <!-- lucene has downgraded the simple patch for OSGi
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-core</artifactId>
-      <version>3.0.1</version>
-    </dependency>
-    -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit-dep</artifactId>
-    </dependency>
-	<dependency>
-		<groupId>org.hamcrest</groupId>
-		<artifactId>hamcrest-all</artifactId>
-	</dependency>
-	<dependency>
-    	<groupId>org.mockito</groupId>
-    	<artifactId>mockito-all</artifactId>
-    	<version>1.8.5</version>
-    	<scope>test</scope>
-	</dependency>
-	<dependency>
-		<groupId>commons-configuration</groupId>
-		<artifactId>commons-configuration</artifactId>
-		<version>1.6</version>
-		<type>jar</type>
-		<scope>compile</scope>
-	</dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>1.4</version>
-    </dependency>
-  </dependencies>
+	<dependencies>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo4j-kernel</artifactId>
+			<version>1.2-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo4j-index</artifactId>
+			<version>1.2-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.16</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mortbay.jetty</groupId>
+			<artifactId>jetty</artifactId>
+			<version>6.1.25</version>
+		</dependency>
+		<dependency>
+			<groupId>com.sun.jersey</groupId>
+			<artifactId>jersey-server</artifactId>
+			<version>1.3</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-configuration</groupId>
+			<artifactId>commons-configuration</artifactId>
+			<version>1.6</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>1.4</version>
+		</dependency>
+		<!--
+			lucene has downgraded the simple patch for OSGi <dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-core</artifactId> <version>3.0.1</version>
+			</dependency>
+		-->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit-dep</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-all</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.8.5</version>
+			<scope>test</scope>
+		</dependency>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>${neo4j-server.mainClass}</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <configuration>
-          <repositoryLayout>flat</repositoryLayout>
-          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>         
-          <configurationDirectory>etc</configurationDirectory>
-          <target>${project.build.directory}/dist</target>
-          <daemons>
-            <daemon>
-              <id>neo-server</id>
-              <mainClass>${neo4j-server.mainClass}</mainClass>
-              <commandLineArguments>
-                <commandLineArgument>start</commandLineArgument>
-              </commandLineArguments>
-              <platforms>
-                <platform>jsw</platform>
-              </platforms>              
-            </daemon>
-          </daemons>
-        </configuration>
-        <executions>
-          <execution>
-            <id>generate-jsw-scripts</id>
-            <phase>package</phase>
-            <goals>
-              <goal>generate-daemons</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- experiment with copying artifacts into expected startup directories...
-      <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-dependency-plugin</artifactId>
-         <executions>
-           <execution>
-             <id>copy-dependencies</id>
-             <phase>package</phase>
-             <goals>
-               <goal>copy-dependencies</goal>
-             </goals>
-             <configuration>
-               <outputDirectory>${project.build.directory}/lib</outputDirectory>
-               <overWriteReleases>false</overWriteReleases>
-               <overWriteSnapshots>true</overWriteSnapshots>
-               <includeScope>runtime</includeScope>
-               <excludeScope>test</excludeScope>
-             </configuration>
-           </execution>
-           <execution>
-             <id>copy-extensions</id>
-             <phase>package</phase>
-             <goals>
-               <goal>copy</goal>
-             </goals>
-             <configuration>
-               <artifactItems>
-                 <artifactItem>
-                   <groupId>org.neo4j.ext</groupId>
-                   <artifactId>hello-ext</artifactId>
-                   <version>0.1-SNAPSHOT</version>
-                   <classifier>next</classifier>
-                 </artifactItem>
-               </artifactItems>
-               <outputDirectory>${project.build.directory}/ext</outputDirectory>
-             </configuration>
-           </execution>
-           <execution>
-             <id>copy-installed</id>
-             <phase>install</phase>
-             <goals>
-               <goal>copy</goal>
-             </goals>
-             <configuration>
-               <artifactItems>
-                 <artifactItem>
-                   <groupId>${project.groupId}</groupId>
-                   <artifactId>${project.artifactId}</artifactId>
-                   <version>${project.version}</version>
-                   <type>${project.packaging}</type>
-                 </artifactItem>
-               </artifactItems>
-               <outputDirectory>${project.build.directory}/lib</outputDirectory>
-             </configuration>
-           </execution>
-         </executions>
-       </plugin>
-       -->
-    </plugins>
-  </build>
+		<dependency>
+			<groupId>com.sun.jersey</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>1.3</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>com.mycila.maven-license-plugin</groupId>
+				<artifactId>maven-license-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>${neo4j-server.mainClass}</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>appassembler-maven-plugin</artifactId>
+				<configuration>
+					<repositoryLayout>flat</repositoryLayout>
+					<includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
+					<configurationDirectory>etc</configurationDirectory>
+					<target>${project.build.directory}/dist</target>
+					<daemons>
+						<daemon>
+							<id>neo-server</id>
+							<mainClass>${neo4j-server.mainClass}</mainClass>
+							<commandLineArguments>
+								<commandLineArgument>start</commandLineArgument>
+							</commandLineArguments>
+							<platforms>
+								<platform>jsw</platform>
+							</platforms>
+						</daemon>
+					</daemons>
+				</configuration>
+				<executions>
+					<execution>
+						<id>generate-jsw-scripts</id>
+						<phase>package</phase>
+						<goals>
+							<goal>generate-daemons</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!--
+				experiment with copying artifacts into expected startup
+				directories... <plugin> <groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId> <executions>
+				<execution> <id>copy-dependencies</id> <phase>package</phase>
+				<goals> <goal>copy-dependencies</goal> </goals> <configuration>
+				<outputDirectory>${project.build.directory}/lib</outputDirectory>
+				<overWriteReleases>false</overWriteReleases>
+				<overWriteSnapshots>true</overWriteSnapshots>
+				<includeScope>runtime</includeScope>
+				<excludeScope>test</excludeScope> </configuration> </execution>
+				<execution> <id>copy-extensions</id> <phase>package</phase> <goals>
+				<goal>copy</goal> </goals> <configuration> <artifactItems>
+				<artifactItem> <groupId>org.neo4j.ext</groupId>
+				<artifactId>hello-ext</artifactId> <version>0.1-SNAPSHOT</version>
+				<classifier>next</classifier> </artifactItem> </artifactItems>
+				<outputDirectory>${project.build.directory}/ext</outputDirectory>
+				</configuration> </execution> <execution> <id>copy-installed</id>
+				<phase>install</phase> <goals> <goal>copy</goal> </goals>
+				<configuration> <artifactItems> <artifactItem>
+				<groupId>${project.groupId}</groupId>
+				<artifactId>${project.artifactId}</artifactId>
+				<version>${project.version}</version>
+				<type>${project.packaging}</type> </artifactItem> </artifactItems>
+				<outputDirectory>${project.build.directory}/lib</outputDirectory>
+				</configuration> </execution> </executions> </plugin>
+			-->
+		</plugins>
+	</build>
 
 </project>
