@@ -31,7 +31,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashSet;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -70,9 +69,7 @@ public class NeoServerTest {
     private WebServer webServer() {
         WebServer webServer = new JettyWebServer();
         webServer.setPort(portNo);
-        HashSet<String> packages = new HashSet<String>();
-        packages.add("org.neo4j.server.web");
-        webServer.addPackages(packages);
+        webServer.addPackages("org.neo4j.server.web");
         return webServer;
     }
 

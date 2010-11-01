@@ -35,8 +35,12 @@ import org.neo4j.server.web.WebServer;
  * Application entry point for the Neo4j Server.
  */
 public class NeoServer {
-    
     public static final Logger log = Logger.getLogger(NeoServer.class);
+
+    private static final String WEBSERVICE_PACKAGES = "webservice.packages";
+    private static final String DATABASE_LOCATION = "database.location";
+    private static final String WEBSERVER_PORT = "webserver.port";
+
 
     private static final String NEO_CONFIGDIR_PROPERTY = "org.neo4j.server.properties";
     private static final String DEFAULT_NEO_CONFIGDIR = File.separator + "etc" + File.separator + "neo";
@@ -45,7 +49,7 @@ public class NeoServer {
     private Database database;
     private WebServer webServer;
 
-
+    private static NeoServer theServer;
 
     public NeoServer(Configurator configurator, Database db, WebServer ws) {
         this.configurator = configurator;
@@ -55,17 +59,23 @@ public class NeoServer {
 
     public static void main(String[] args) {
         Configurator conf = new Configurator(getConfigFile());
+
         JettyWebServer ws = new JettyWebServer();
-        
-        HashSet<String> packages = new HashSet<String>();
-        packages.add("org.neo4j.server.web");
-        ws.addPackages(packages);
-        
-        NeoServer theServer = new NeoServer(conf, 
-                                            new Database(conf.configuration().getString("database.location")), 
-                                            ws); 
+        ws.setPort(conf.configuration().getInt(WEBSERVER_PORT));
+        //ws.addPackages(getPackagesToLoad(conf.configuration().getStringArray(WEBSERVICE_PACKAGES)));
+        ws.addPackages("org.example.coffeeshop, org.example.petshop");
+
+        theServer = new NeoServer(conf, new Database(conf.configuration().getString(DATABASE_LOCATION)), ws);
         theServer.start();
     }
+
+//    private static HashSet<String> getPackagesToLoad(String[] commaSeparatedPackageValues) {
+//        StringBuilder sb = new StringBuilder();
+//
+//        
+//        
+//        return sb.toString();
+//    }
 
     private static File getConfigFile() {
         return new File(System.getProperty(NEO_CONFIGDIR_PROPERTY, DEFAULT_NEO_CONFIGDIR));
@@ -92,9 +102,9 @@ public class NeoServer {
 
     public void shutdown() {
         int portNo = -1;
-        String location = "unknown"; 
+        String location = "unknown";
         try {
-            if(database != null) {
+            if (database != null) {
                 location = database.getLocation();
                 database.shutdown();
                 database = null;
@@ -105,12 +115,19 @@ public class NeoServer {
                 webServer = null;
             }
             configurator = null;
-            
+
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", portNo, location);
         } catch (Exception e) {
             log.error("Failed to cleanly shutdown Neo Server on port [%d], database [%s]", portNo, location);
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Just for functional testing purposes
+     */
+    static NeoServer server() {
+        return theServer;
     }
 
     public GraphDatabaseService database() {
@@ -120,7 +137,7 @@ public class NeoServer {
     public WebServer webServer() {
         return webServer;
     }
-    
+
     public Configuration configuration() {
         return configurator.configuration();
     }

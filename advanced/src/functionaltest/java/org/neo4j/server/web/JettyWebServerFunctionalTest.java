@@ -26,8 +26,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.junit.Test;
 import org.neo4j.server.WebTestUtils;
@@ -86,9 +84,7 @@ public class JettyWebServerFunctionalTest {
         assertThat(response.getEntity(String.class), containsString("hello, Bertrand Russell"));
     }
 
-    private Set<String> getDummyWebResourcePackage() {
-        HashSet<String> result = new HashSet<String>();
-        result.add("org.neo4j.server.web");
-        return result;
+    private String getDummyWebResourcePackage() {
+        return "org.neo4j.server.web";
     }
 }
