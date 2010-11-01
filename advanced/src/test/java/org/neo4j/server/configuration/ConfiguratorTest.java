@@ -27,13 +27,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
+import org.neo4j.server.ServerTestUtils;
 
 public class ConfiguratorTest {
-    private Random rnd = new Random();
 
     @Test
     public void shouldProvideAConfiguration() {
@@ -42,72 +41,37 @@ public class ConfiguratorTest {
     }
     
     @Test
-    public void shouldUseSpecifiedConfigDir() throws Exception {
-        File configDir = createTempDir();
-        File configFile = createTempPropertyFile(configDir);
+    public void shouldUseSpecifiedConfigFile() throws Exception {
+        File configFile = ServerTestUtils.createTempPropertyFile();
         
         FileWriter fstream = new FileWriter(configFile);
         BufferedWriter out = new BufferedWriter(fstream);
-        out.write("org.neo4j.foo=bar");
+        out.write("foo=bar");
         out.close();
         
-        Configuration testConf = new Configurator(configDir).configuration();
+        Configuration testConf = new Configurator(configFile).configuration();
 
         final String EXPECTED_VALUE = "bar";
-        assertEquals(EXPECTED_VALUE, testConf.getString("org.neo4j.foo"));
+        assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
     }
 
     @Test
     public void shouldAcceptDuplicateKeysWithSameValue() throws IOException {
-        File configDir = createTempDir();
-        File configA = createTempPropertyFile(configDir);
-        File configB = createTempPropertyFile(configDir);
+        File configFile = ServerTestUtils.createTempPropertyFile();
+        
 
-        BufferedWriter writer = new BufferedWriter(new FileWriter(configA));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(configFile));
+        writer.write("foo=bar");
+        writer.write(System.getProperty("line.separator")); 
         writer.write("foo=bar");
         writer.close();
 
-        writer = new BufferedWriter(new FileWriter(configB));
-        writer.write("foo=bar");
-        writer.close();
 
-        Configurator configurator = new Configurator(configDir);
+        Configurator configurator = new Configurator(configFile);
         Configuration testConf = configurator.configuration();
 
         assertNotNull(testConf);
-    }
-
-    @Test(expected = InvalidServerConfigurationException.class)
-    public void shouldFailOnDuplicateKeysWithDifferentValues() throws IOException {
-
-        File configDir = createTempDir();
-        File configA = createTempPropertyFile(configDir);
-        File configB = createTempPropertyFile(configDir);
-
-        BufferedWriter writer = new BufferedWriter(new FileWriter(configA));
-        writer.write("foo=bar");
-        writer.close();
-
-        writer = new BufferedWriter(new FileWriter(configB));
-        writer.write("foo=differentBar");
-        writer.close();
-
-        new Configurator(configDir);
-    }
-
-    private File createTempDir() throws IOException {
-        File d = File.createTempFile("neo4j-test", "dir");
-        if (!d.delete())
-            throw new RuntimeException("temp config directory pre-delete failed");
-        if (!d.mkdirs())
-            throw new RuntimeException("temp config directory not created");
-        d.deleteOnExit();
-        return d;
-    }
-
-    private File createTempPropertyFile(File parentDir) throws IOException {
-        File f = new File(parentDir, "test-" + rnd.nextInt() + ".properties");
-        f.deleteOnExit();
-        return f;
+        final String EXPECTED_VALUE = "bar";
+        assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
     }
 }
