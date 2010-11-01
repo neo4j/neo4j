@@ -1,0 +1,106 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <artifactId>assembly-upload-to-dist</artifactId>
+    <groupId>org.neo4j.assembly</groupId>
+    <version>2-SNAPSHOT</version>
+  </parent>
+
+  <groupId>org.neo4j.assembly</groupId>
+  <artifactId>neo4j-standalone</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Neo4j Standalone Assembler</name>
+  <version>0.1-SNAPSHOT</version>
+
+  <properties>
+    <!-- User readble names -->
+    <product.fullname>Neo4j</product.fullname>
+    <product.shortname>neo4j</product.shortname>
+    <server.fullname>Neo4j Server</server.fullname>
+    <server.shortname>neo4j-server</server.shortname>
+    <shell.fullname>Neo4j Shell</shell.fullname>
+    <shell.shortname>neo4j-shell</shell.shortname>
+    <webadmin.fullname>Neo4j Web Administration</webadmin.fullname>
+    <webadmin.shortname>webadmin</webadmin.shortname>
+    <libs.fullname>Neo4j Libraries</libs.fullname>
+    <libs.shortname>neo4j-libs</libs.shortname>
+
+    <!-- 
+         Runtime properties. These are used to bootstrap
+         the server. All other configuration should happen
+         through a configuration file. 
+         Each of these should have a sensible default, so
+         that the server can operate without them defined.
+         -->
+    <neo4j.home>${project.build.directory}/neo4j</neo4j.home>
+    <neo4j.confdir>${neo4j.home}/conf</neo4j.confdir> <!-- needed? -->
+    <neo4j.datadir>${neo4j.home}/data</neo4j.datadir> <!-- needed? -->
+    <neo4j.logdir>${neo4j.datadir}/log</neo4j.logdir> <!-- needed? -->
+
+    <!-- dependency versions -->
+    <neo4j.version>1.2.M02</neo4j.version>
+    <neo4j-server.version>0.1-SNAPSHOT</neo4j-server.version>
+
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unix-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assemblies/unix-dist.xml</descriptor>
+              </descriptors>
+              <finalName>${product.shortname}-${neo4j.version}</finalName>
+              <tarLongFileMode>gnu</tarLongFileMode>
+            </configuration>
+          </execution>
+          <!--
+          <execution>
+            <id>windows-dist</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assemblies/windows-dist.xml</descriptor>
+              </descriptors>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <assemblyId />
+            </configuration>
+          </execution>
+          -->
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j</artifactId>
+      <version>${neo4j.version}</version>
+      <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <version>${neo4j-server.version}</version>
+    </dependency>
+  </dependencies>
+
+
+</project>
+
