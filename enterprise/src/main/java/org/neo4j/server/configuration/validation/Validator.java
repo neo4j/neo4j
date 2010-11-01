@@ -39,10 +39,10 @@ public class Validator {
         }
     }
     
-    public boolean validate(Configuration existingConfiguration, Configuration additionalConfiguration) {
+    public boolean validate(Configuration configuration) {
         for(ValidationRule vr : validationRules) {
             try {
-                vr.validate(existingConfiguration, additionalConfiguration);
+                vr.validate(configuration);
             } catch(RuntimeException re) {
                 log.debug(re.getMessage());
                 return false;

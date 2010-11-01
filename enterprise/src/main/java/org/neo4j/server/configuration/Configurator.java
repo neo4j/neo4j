@@ -21,15 +21,12 @@
 package org.neo4j.server.configuration;
 
 import java.io.File;
-import java.io.FilenameFilter;
 
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
-import org.apache.commons.configuration.XMLConfiguration;
-import org.neo4j.server.configuration.validation.DuplicateKeyRule;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
@@ -37,23 +34,23 @@ public class Configurator {
 
     public static Logger log = Logger.getLogger(Configurator.class);
 
-    private File defaultConfigurationDirectory = new File("etc" + File.separatorChar + "neo-server");
+    private File defaultConfigurationPropertiesFile = new File("etc" + File.separatorChar + "neo-server" + File.separatorChar + "neo-server.properties");
     private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
 
-    private Validator validator = new Validator(new DuplicateKeyRule());
+    private Validator validator = new Validator(/* No rules for now */);
 
     public Configurator() {
         this(null);
     }
 
-    public Configurator(File configDir) {
-        if (configDir == null) {
-            configDir = defaultConfigurationDirectory;
+    public Configurator(File propertiesFile) {
+        if (propertiesFile == null) {
+            propertiesFile = defaultConfigurationPropertiesFile;
         }
 
         try {
-            loadConfigFrom(configDir);
-        } catch(ConfigurationException ce) {
+            loadPropertiesConfig(propertiesFile);
+        } catch (ConfigurationException ce) {
             log.warn(ce);
         }
 
@@ -63,52 +60,14 @@ public class Configurator {
         return serverConfiguration == null ? new SystemConfiguration() : serverConfiguration;
     }
 
-    private void loadConfigFrom(File configDir) throws ConfigurationException {
-
-        if (configDir.exists() && configDir.isDirectory()) {
-            loadXmlConfig(configDir);
-            loadPropertiesConfig(configDir);
+    private void loadPropertiesConfig(File configFile) throws ConfigurationException {
+        PropertiesConfiguration propertiesConfig = new PropertiesConfiguration(configFile);
+        if (validator.validate(propertiesConfig)) {
+            serverConfiguration.addConfiguration(propertiesConfig);
+        } else {
+            String failed = String.format("Error processing [%s], configuration file(s) corrupt or contains duplicates", configFile.getAbsolutePath());
+            log.fatal(failed);
+            throw new InvalidServerConfigurationException(failed);
         }
-    }
-
-    private void loadPropertiesConfig(File configDir) throws ConfigurationException {
-
-        for (File configFile : getCandidateConfigFiles(configDir, ".properties")) {
-
-            PropertiesConfiguration propertiesConfig = new PropertiesConfiguration(configFile);
-            if (validator.validate(serverConfiguration, propertiesConfig)) {
-                serverConfiguration.addConfiguration(propertiesConfig);
-            } else {
-                String failed = String.format("Error processing [%s], configuration file(s) corrupt or contains duplicates", configFile.getAbsolutePath());
-                log.fatal(failed);
-                throw new InvalidServerConfigurationException(failed);
-            }
-        }
-    }
-
-    private void loadXmlConfig(File configDir) throws ConfigurationException {
-        for (File configFile : getCandidateConfigFiles(configDir, ".xml")) {
-
-            XMLConfiguration xmlConfig = new XMLConfiguration(configFile);
-            if (validator.validate(serverConfiguration, xmlConfig)) {
-                serverConfiguration.addConfiguration(xmlConfig);
-            }
-        }
-    }
-
-    private File[] getCandidateConfigFiles(final File configDir, final String fileExtension) {
-        FilenameFilter filenameFilter = new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().endsWith(fileExtension);
-            }
-        };
-
-        File[] listFiles = configDir.listFiles(filenameFilter);
-
-        if (listFiles == null) {
-            listFiles = new File[0];
-        }
-
-        return listFiles;
     }
 }
