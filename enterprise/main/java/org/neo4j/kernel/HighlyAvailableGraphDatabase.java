@@ -82,8 +82,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private final BrokerFactory brokerFactory;
     private final Broker broker;
     private volatile EmbeddedGraphDbImpl localGraph;
-//    private volatile IndexService localIndexService;
-//    private volatile IndexProvider localIndexProvider;
     private final int machineId;
     private volatile MasterServer masterServer;
     private final AtomicBoolean reevaluatingMyself = new AtomicBoolean();
@@ -293,7 +291,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new SlaveTxIdGeneratorFactory( broker, this ),
                 new SlaveTxRollbackHook( broker, this ),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
-//        instantiateIndexIfNeeded();
         instantiateAutoUpdatePullerIfConfigSaysSo();
         msgLog.logMessage( "Started as slave", true );
     }
@@ -309,7 +306,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 CommonFactories.defaultTxFinishHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ) );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
-//        instantiateIndexIfNeeded();
         msgLog.logMessage( "Started as master", true );
     }
 
@@ -400,17 +396,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             }, timeMillis, timeMillis, TimeUnit.MILLISECONDS );
         }
     }
-
-    // This whole thing with instantiating indexes internally depending on config
-    // is obviously temporary
-//    private void instantiateIndexIfNeeded()
-//    {
-//        if ( Boolean.parseBoolean( config.get( "index" ) ) )
-//        {
-////            this.localIndexService = new LuceneIndexService( this );
-//            this.localIndexProvider = new LuceneIndexProvider( this );
-//        }
-//    }
 
     public Transaction beginTx()
     {
@@ -590,16 +575,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             shutdown();
         }
     }
-
-//    public IndexService getIndexService()
-//    {
-//        return this.localIndexService;
-//    }
-
-//    public IndexProvider getIndexProvider()
-//    {
-//        return this.localIndexProvider;
-//    }
 
     protected MasterServer getMasterServerIfMaster()
     {
