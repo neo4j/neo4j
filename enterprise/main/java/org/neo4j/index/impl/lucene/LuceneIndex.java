@@ -56,7 +56,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     static final String KEY_END_NODE_ID = "_end_node_id_";
     
     final LuceneIndexProvider service;
-    final IndexIdentifier identifier;
+    private IndexIdentifier identifier;
     final IndexType type;
     private volatile boolean deleted;
     
@@ -381,6 +381,16 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     protected abstract LuceneCommand newRemoveCommand( PropertyContainer entity,
             String key, Object value );
     
+    IndexIdentifier getIdentifier()
+    {
+        return this.identifier;
+    }
+
+    void setIdentifier( IndexIdentifier identifier )
+    {
+        this.identifier = identifier;
+    }
+    
     static class NodeIndex extends LuceneIndex<Node>
     {
         NodeIndex( LuceneIndexProvider service,
@@ -404,14 +414,14 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         @Override
         protected LuceneCommand newAddCommand( PropertyContainer entity, String key, Object value )
         {
-            return new LuceneCommand.AddCommand( identifier, LuceneCommand.NODE,
+            return new LuceneCommand.AddCommand( getIdentifier(), LuceneCommand.NODE,
                     ((Node) entity).getId(), key, value );
         }
 
         @Override
         protected LuceneCommand newRemoveCommand( PropertyContainer entity, String key, Object value )
         {
-            return new LuceneCommand.RemoveCommand( identifier, LuceneCommand.NODE,
+            return new LuceneCommand.RemoveCommand( getIdentifier(), LuceneCommand.NODE,
                     ((Node) entity).getId(), key, value );
         }
     }
@@ -493,7 +503,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         protected LuceneCommand newAddCommand( PropertyContainer entity, String key, Object value )
         {
             Relationship rel = (Relationship) entity;
-            return new LuceneCommand.AddRelationshipCommand( identifier, LuceneCommand.RELATIONSHIP,
+            return new LuceneCommand.AddRelationshipCommand( getIdentifier(), LuceneCommand.RELATIONSHIP,
                     RelationshipId.of( rel ), key, value );
         }
 
@@ -501,7 +511,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         protected LuceneCommand newRemoveCommand( PropertyContainer entity, String key, Object value )
         {
             Relationship rel = (Relationship) entity;
-            return new LuceneCommand.RemoveCommand( identifier, LuceneCommand.RELATIONSHIP,
+            return new LuceneCommand.RemoveCommand( getIdentifier(), LuceneCommand.RELATIONSHIP,
                     rel.getId(), key, value );
         }
     }
