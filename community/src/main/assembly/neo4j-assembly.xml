@@ -1,61 +1,56 @@
 <assembly>
-    <id></id>
-    <!-- DOCS -->
-    <includeSiteDirectory>true</includeSiteDirectory>
-    <formats>
-        <format>tar.gz</format>
-        <format>zip</format>
-    </formats>
-    <fileSets>
-        <!-- SRC -->
-        <fileSet>
-            <directory>src/main/java</directory>
-            <outputDirectory>examples</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>src/test/java</directory>
-            <outputDirectory>tests</outputDirectory>
-        </fileSet>
-        <!-- INFO -->
-        <fileSet>
-            <includes>
-                <include>README*</include>
-                <include>CHANGES*</include>
-                <include>LICENSE*</include>
-                <include>NOTICE*</include>
-            </includes>
-            <useDefaultExcludes>true</useDefaultExcludes>
-        </fileSet>
-        <!-- DEPENDENCY INFO -->
-        <fileSet>
-            <directory>target/dependencies</directory>
-            <outputDirectory>lib/report</outputDirectory>
-        </fileSet>
-        <!-- SHELL -->        
-        <fileSet>
-            <directory>target/appassembler/bin</directory>
-            <outputDirectory>bin</outputDirectory>
-            <fileMode>0755</fileMode>
-            <excludes>
-                <exclude>*.bat</exclude>
-            </excludes>
-        </fileSet>
-        <!-- BAT -->        
-        <fileSet>
-            <directory>target/appassembler/bin</directory>
-            <outputDirectory>bin</outputDirectory>
-            <fileMode>0644</fileMode>
-            <includes>
-                <include>*.bat</include>
-            </includes>
-        </fileSet>
-        <!-- LIB -->
-        <fileSet>
-            <directory>target/appassembler/lib</directory>
-            <outputDirectory>lib</outputDirectory>
-            <includes>
-                <include>*.jar</include>
-            </includes>
-        </fileSet>
-    </fileSets>
+  <id></id>
+  <!-- DOCS -->
+  <includeSiteDirectory>true</includeSiteDirectory>
+  <formats>
+    <format>tar.gz</format>
+    <format>zip</format>
+  </formats>
+  <fileSets>
+    <!-- SRC -->
+    <fileSet>
+      <directory>src/main/java</directory>
+      <outputDirectory>examples</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <directory>src/test/java</directory>
+      <outputDirectory>tests</outputDirectory>
+    </fileSet>
+    <!-- INFO -->
+    <fileSet>
+      <includes>
+        <include>README*</include>
+        <include>CHANGES*</include>
+        <include>LICENSE*</include>
+        <include>NOTICE*</include>
+      </includes>
+      <useDefaultExcludes>true</useDefaultExcludes>
+    </fileSet>
+    <!-- SHELL -->
+    <fileSet>
+      <directory>target/appassembler/bin</directory>
+      <outputDirectory>bin</outputDirectory>
+      <fileMode>0755</fileMode>
+      <excludes>
+        <exclude>*.bat</exclude>
+      </excludes>
+    </fileSet>
+    <!-- BAT -->
+    <fileSet>
+      <directory>target/appassembler/bin</directory>
+      <outputDirectory>bin</outputDirectory>
+      <fileMode>0644</fileMode>
+      <includes>
+        <include>*.bat</include>
+      </includes>
+    </fileSet>
+    <!-- LIB -->
+    <fileSet>
+      <directory>target/appassembler/lib</directory>
+      <outputDirectory>lib</outputDirectory>
+      <includes>
+        <include>*.jar</include>
+      </includes>
+    </fileSet>
+  </fileSets>
 </assembly>
