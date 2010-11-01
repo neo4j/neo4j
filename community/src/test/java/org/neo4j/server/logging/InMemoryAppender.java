@@ -51,16 +51,6 @@ public class InMemoryAppender {
         reset();
 
     }
-//
-//    public InMemoryAppender(Logger logger, Level level) {
-//        this(logger, level, new SimpleLayout());
-//    }
-//
-//    public InMemoryAppender(org.apache.log4j.Logger log4jLogger, Level level) {
-//        this.log4jLogger = log4jLogger;
-//        this.level = level;
-//        reset();
-//    }
 
     private void changeLogger(Logger logger, org.apache.log4j.Logger log4jLogger) {
         Field loggerField = findLoggerField(logger);
