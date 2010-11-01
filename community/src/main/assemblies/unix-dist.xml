@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly>
+  <id>unix-dist</id>
+  <formats>
+    <format>tar.gz</format>
+  </formats>
+  <fileSets>
+
+    <!-- filter plain text -->
+    <fileSet>
+      <directory>src/main/distribution/text</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>unix</lineEnding>
+      <filtered>true</filtered>
+    </fileSet>
+    <!-- non-maven jars -->
+    <fileSet>
+      <directory>src/main/distribution/binary</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>system/lib/*.jar</include>
+        <include>lib/*.jar</include>
+      </includes>
+    </fileSet>
+    <!-- chmod 755 for unix bins -->
+    <fileSet>
+      <directory>src/main/distribution/binary</directory>
+      <outputDirectory>/</outputDirectory>
+      <fileMode>0755</fileMode>
+      <includes>
+        <include>bin/lib/lib*</include>
+        <include>bin/wrapper-*</include>
+      </includes>
+    </fileSet>
+    <!-- filter and chmod 755 shell scripts -->
+    <fileSet>
+      <directory>src/main/distribution/unix-shell</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>unix</lineEnding>
+      <fileMode>0755</fileMode>
+      <excludes>
+        <exclude>*.bat</exclude>
+      </excludes>
+    </fileSet>
+  </fileSets>
+
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/lib</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <includes>
+        <include>org.neo4j:*</include>
+        <include>org.apache.geronimo.specs:geronimo-jta_1.1_spec</include>
+        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
+        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
+        <include>com.google.protobuf:protobuf-java</include>
+      </includes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>system/lib</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <excludes>
+        <exclude>org.neo4j:*</exclude>
+        <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
+        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
+        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</exclude>
+        <exclude>com.google.protobuf:protobuf-java</exclude>
+      </excludes>
+    </dependencySet>
+
+  </dependencySets>
+
+</assembly>
