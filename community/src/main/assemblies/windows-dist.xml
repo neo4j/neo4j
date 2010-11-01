@@ -1,280 +1,71 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-    Licensed to the Apache Software Foundation (ASF) under one or more
-    contributor license agreements.  See the NOTICE file distributed with
-    this work for additional information regarding copyright ownership.
-    The ASF licenses this file to You under the Apache License, Version 2.0
-    (the "License"); you may not use this file except in compliance with
-    the License.  You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
--->
 <assembly>
-    <id></id> <!-- intentionally left blank -> http://jira.codehaus.org/browse/MASSEMBLY-301 -->
-    <formats>
-        <format>zip</format>
-    </formats>
-    <fileSets>
-      <!-- Copy license and other files from root -->
-        <fileSet>
-            <directory>..</directory>
-            <outputDirectory>/</outputDirectory>
-            <includes>
-                <include>README</include>
-                <include>RELEASE*</include>
-            </includes>
-            <lineEnding>dos</lineEnding>
-        </fileSet>
+  <id>windows-dist</id>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <fileSets>
 
-      <!-- Copy over everything that needs to get dos line endings -->
-        <fileSet>
-            <directory>src/main/distribution/text</directory>
-            <outputDirectory>/</outputDirectory>
-            <lineEnding>dos</lineEnding>
-        </fileSet>
-        <fileSet>
-            <directory>src/main/distribution/windows-text</directory>
-            <outputDirectory>/</outputDirectory>
-            <lineEnding>dos</lineEnding>
-        </fileSet>
-        <fileSet>
-            <directory>target/classes/bin</directory>
-            <outputDirectory>/bin/</outputDirectory>
-            <lineEnding>dos</lineEnding>
-            <includes>
-                <include>admin.bat</include>
-                <include>shell.bat</include>
-                <include>client.bat</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>target/classes/etc</directory>
-            <outputDirectory>/etc/</outputDirectory>
-            <lineEnding>dos</lineEnding>
-        </fileSet>        
-        <!-- Copy over the examples -->
-        <fileSet>
-            <directory>target/classes/demos</directory>
-            <outputDirectory>/demos/</outputDirectory>
-            <lineEnding>dos</lineEnding>
-        </fileSet>
+    <!-- filter plain text -->
+    <fileSet>
+      <directory>src/main/distribution/text</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>dos</lineEnding>
+      <filtered>true</filtered>
+    </fileSet>
+    <!-- non-maven jars -->
+    <fileSet>
+      <directory>src/main/distribution/binary</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>system/lib/*.jar</include>
+        <include>lib/*.jar</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>src/main/distribution/binary</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>bin/lib/lib*</include>
+        <include>bin/wrapper-*</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>src/main/distribution/shell-scripts</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>dos</lineEnding>
+      <includes>
+        <include>**/*.bat</include>
+      </includes>
+    </fileSet>
+  </fileSets>
 
-        <fileSet>
-            <directory>../demos</directory>
-            <outputDirectory>/demos/</outputDirectory>
-            <lineEnding>dos</lineEnding>
-            <excludes>
-                <exclude>**/target/**</exclude>
-            </excludes>
-        </fileSet>
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/lib</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <includes>
+        <include>org.neo4j:*</include>
+        <include>org.apache.geronimo.specs:geronimo-jta_1.1_spec</include>
+        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
+        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
+        <include>com.google.protobuf:protobuf-java</include>
+      </includes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>system/lib</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <excludes>
+        <exclude>org.neo4j:*</exclude>
+        <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
+        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
+        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</exclude>
+        <exclude>com.google.protobuf:protobuf-java</exclude>
+      </excludes>
+    </dependencySet>
 
-      <!-- Copy over files that should not get the line endings converted -->
-        <fileSet>
-            <directory>src/main/distribution/binary</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-
-      <!-- Copy over the files that should not get the line endings converted but need to be chmod to 755 -->
-        <fileSet>
-            <directory>src/main/distribution/windows-binary</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-      
-      <!-- Copy over jar files -->
-        <fileSet>
-            <directory>target/dependencies</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-
-    </fileSets>
-
-    <files>
-        <file>
-            <source>${basedir}/../LICENSE</source>
-            <outputDirectory>/</outputDirectory>
-            <destName>LICENSE</destName>
-            <fileMode>0644</fileMode>
-            <lineEnding>dos</lineEnding>
-        </file>
-        <file>
-            <source>${basedir}/NOTICE</source>
-            <outputDirectory>/</outputDirectory>
-            <destName>NOTICE</destName>
-            <fileMode>0644</fileMode>
-            <lineEnding>dos</lineEnding>
-        </file>
-        <file>
-            <source>${basedir}/target/classes/features.xml</source>
-            <outputDirectory>/system/org/apache/karaf/apache-karaf/${project.version}</outputDirectory>
-            <destName>apache-karaf-${project.version}-features.xml</destName>
-            <fileMode>0644</fileMode>
-            <lineEnding>dos</lineEnding>
-        </file>
-    </files>
-
-    <dependencySets>
-        <dependencySet>
-            <outputDirectory>/lib/endorsed</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <includes>
-                <include>org.apache.karaf:org.apache.karaf.exception</include>
-            </includes>
-        </dependencySet>
-
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/felix/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.felix:org.apache.felix.configadmin</include>
-                <include>org.apache.felix:org.apache.felix.framework</include>
-                <include>org.apache.felix:org.apache.felix.fileinstall</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/ops4j/pax/logging/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.ops4j.pax.logging:pax-logging-api</include>
-                <include>org.ops4j.pax.logging:pax-logging-service</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/ops4j/pax/url/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.ops4j.pax.url:pax-url-mvn</include>
-                <include>org.ops4j.pax.url:pax-url-wrap</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/karaf/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.karaf:org.apache.karaf.management</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/karaf/features/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.karaf.features:org.apache.karaf.features.core</include>
-                <include>org.apache.karaf.features:org.apache.karaf.features.command</include>
-                <include>org.apache.karaf.features:org.apache.karaf.features.management</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/karaf/admin/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.karaf.admin:org.apache.karaf.admin.core</include>
-                <include>org.apache.karaf.admin:org.apache.karaf.admin.command</include>
-                <include>org.apache.karaf.admin:org.apache.karaf.admin.management</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/karaf/deployer/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.karaf.deployer:org.apache.karaf.deployer.spring</include>
-                <include>org.apache.karaf.deployer:org.apache.karaf.deployer.blueprint</include>
-                <include>org.apache.karaf.deployer:org.apache.karaf.deployer.features</include>
-                <include>org.apache.karaf.deployer:org.apache.karaf.deployer.kar</include>                
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/karaf/shell/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.karaf.shell:org.apache.karaf.shell.console</include>
-                <include>org.apache.karaf.shell:org.apache.karaf.shell.dev</include>
-                <include>org.apache.karaf.shell:org.apache.karaf.shell.osgi</include>
-                <include>org.apache.karaf.shell:org.apache.karaf.shell.log</include>
-                <include>org.apache.karaf.shell:org.apache.karaf.shell.config</include>
-                <include>org.apache.karaf.shell:org.apache.karaf.shell.packages</include>
-                <include>org.apache.karaf.shell:org.apache.karaf.shell.ssh</include>
-                <include>org.apache.karaf.shell:org.apache.karaf.shell.commands</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/karaf/jaas/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.karaf.jaas:org.apache.karaf.jaas.config</include>
-                <include>org.apache.karaf.jaas:org.apache.karaf.jaas.modules</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/sshd/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.sshd:sshd-core</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/mina/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.mina:mina-core</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/eclipse/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.eclipse:osgi</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/aries/blueprint/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.aries.blueprint:org.apache.aries.blueprint</include>
-            </includes>
-        </dependencySet>
-        <dependencySet>
-            <outputDirectory>/system</outputDirectory>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <outputFileNameMapping>org/apache/aries/jmx/${artifact.artifactId}/${artifact.baseVersion}/${artifact.artifactId}-${artifact.baseVersion}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-            <includes>
-                <include>org.apache.aries.jmx:org.apache.aries.jmx</include>
-                <include>org.apache.aries.jmx:org.apache.aries.jmx.blueprint</include>
-            </includes>
-        </dependencySet>
-
-    </dependencySets>
+  </dependencySets>
 
 </assembly>
