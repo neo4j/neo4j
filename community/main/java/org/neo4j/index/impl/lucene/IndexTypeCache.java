@@ -24,21 +24,23 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.Pair;
+
 class IndexTypeCache
 {
-    private final Map<IndexIdentifier, IndexType> cache = Collections.synchronizedMap(
-            new HashMap<IndexIdentifier, IndexType>() );
+    private final Map<IndexIdentifier, Pair<Integer, IndexType>> cache = Collections.synchronizedMap(
+            new HashMap<IndexIdentifier, Pair<Integer, IndexType>>() );
     
     IndexType getIndexType( IndexIdentifier identifier )
     {
-        IndexType type = cache.get( identifier );
-        if ( type != null )
+        Pair<Integer, IndexType> type = cache.get( identifier );
+        if ( type != null && identifier.config.hashCode() == type.first() )
         {
-            return type;
+            return type.other();
         }
-        type = IndexType.getIndexType( identifier );
+        type = Pair.of( identifier.config.hashCode(), IndexType.getIndexType( identifier ) );
         cache.put( identifier, type );
-        return type;
+        return type.other();
     }
     
     void invalidate( IndexIdentifier identifier )

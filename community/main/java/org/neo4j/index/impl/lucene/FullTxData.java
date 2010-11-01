@@ -67,7 +67,7 @@ class FullTxData extends ExactTxData
             }
             else
             {
-                document = index.identifier.entityType.newDocument( entityId );
+                document = index.getIdentifier().entityType.newDocument( entityId );
                 cachedDocuments.put( id, document );
                 index.type.addToDocument( document, key, value );
                 writer.addDocument( document );

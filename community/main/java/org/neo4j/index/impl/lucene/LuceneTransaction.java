@@ -76,7 +76,7 @@ class LuceneTransaction extends XaTransaction
     <T extends PropertyContainer> TxDataBoth getTxData( LuceneIndex<T> index,
             boolean createIfNotExists )
     {
-        IndexIdentifier identifier = index.identifier;
+        IndexIdentifier identifier = index.getIdentifier();
         TxDataBoth data = txData.get( identifier );
         if ( data == null && createIfNotExists )
         {
@@ -97,8 +97,8 @@ class LuceneTransaction extends XaTransaction
     
     <T extends PropertyContainer> void delete( LuceneIndex<T> index )
     {
-        txData.put( index.identifier, new DeletedTxDataBoth( index ) );
-        queueCommand( new DeleteCommand( index.identifier ) );
+        txData.put( index.getIdentifier(), new DeletedTxDataBoth( index ) );
+        queueCommand( new DeleteCommand( index.getIdentifier() ) );
     }
     
     private CommandList queueCommand( LuceneCommand command )
@@ -394,7 +394,7 @@ class LuceneTransaction extends XaTransaction
 
         private IllegalStateException illegalStateException()
         {
-            throw new IllegalStateException( "This index (" + index.identifier + 
+            throw new IllegalStateException( "This index (" + index.getIdentifier() + 
                     ") has been marked as deleted in this transaction" );
         }
     }

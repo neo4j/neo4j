@@ -24,11 +24,18 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
@@ -37,6 +44,8 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
+import org.neo4j.shell.util.json.JSONException;
+import org.neo4j.shell.util.json.JSONObject;
 
 @Service.Implementation( App.class )
 public class IndexProviderShellApp extends GraphDatabaseApp
@@ -60,6 +69,16 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         addOptionDefinition( "ls", new OptionDefinition( OptionValueType.NONE,
                 "Does a 'ls' command on the returned nodes. " +
                 "Could also be done using the -c option. (Implies -g)" ) );
+        addOptionDefinition( "get-config", new OptionDefinition( OptionValueType.NONE,
+                "Displays the configuration for an index" ) );
+        addOptionDefinition( "set-config", new OptionDefinition( OptionValueType.NONE,
+                "EXPERT, USE WITH CARE: Set the configuration for an index, removes any existing configuration first" ) );
+        addOptionDefinition( "set-config-param", new OptionDefinition( OptionValueType.NONE,
+                "EXPERT, USE WITH CARE: Set one configuration parameter for an index (remove if no value)" ) );
+        addOptionDefinition( "t", new OptionDefinition( OptionValueType.MUST,
+                "The type of index, either Node or Relationship" ) );
+        addOptionDefinition( "indexes", new OptionDefinition( OptionValueType.NONE, "Lists all index names" ) );
+        addOptionDefinition( "delete", new OptionDefinition( OptionValueType.NONE, "Deletes an index" ) );
     }
 
     @Override
@@ -71,12 +90,16 @@ public class IndexProviderShellApp extends GraphDatabaseApp
     @Override
     public String getDescription()
     {
-        return "Access the IndexProvider capabilities for your Neo4j graph database. " +
-        "Use -g for getting nodes, -i and -r to manipulate. Examples:\n" +
-        "index -i persons name  (will index property 'name' with its value for current node in the persons index)\n" +
-        "index -g persons name \"Thomas A. Anderson\"  (will get nodes matching that name from the persons index)\n" +
-        "index -q persons \"name:'Thomas*'\"  (will get nodes with names that start with Thomas)\n" +
-        "index --cd persons name \"Agent Smith\"  (will 'cd' to the 'Agent Smith' node from the persons index).";
+        return "Access the integrated index for your Neo4j graph database. " +
+        "Use -g for getting nodes, -i and -r to manipulate.\nExamples:\n" +
+        "$ index -i persons name  (will index property 'name' with its value for current node in the 'persons' index)\n" +
+        "$ index -g persons name \"Thomas A. Anderson\"  (will get nodes matching that name from the 'persons' index)\n" +
+        "$ index -q persons \"name:'Thomas*'\"  (will get nodes with names that start with Thomas)\n" +
+        "$ index --cd persons name \"Agent Smith\"  (will 'cd' to the 'Agent Smith' node from the 'persons' index).\n\n" +
+        "EXPERT, USE WITH CARE. NOTE THAT INDEX DATA MAY BECOME INVALID AFTER CONFIGURATION CHANGES:\n" +
+        "$ index --set-config-param accounts type fulltext  (will set parameter 'type'='fulltext' for 'accounts' index).\n" +
+        "$ index --set-config-param accounts to_lower_case  (will remove parameter 'to_lower_case' from 'accounts' index).\n" +
+        "$ index -t Relationship --delete friends  (will delete the 'friends' relationship index).";
     }
 
     @Override
@@ -89,13 +112,17 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         boolean get = parser.options().containsKey( "g" ) || query || doCd || doLs;
         boolean index = parser.options().containsKey( "i" );
         boolean remove = parser.options().containsKey( "r" );
-        int count = boolCount( get, index, remove );
+        boolean getConfig = parser.options().containsKey( "get-config" );
+        boolean setConfig = parser.options().containsKey( "set-config" );
+        boolean setConfigParameter = parser.options().containsKey( "set-config-param" );
+        boolean delete = parser.options().containsKey( "delete" );
+        boolean indexes = parser.options().containsKey( "indexes" );
+        int count = boolCount( get, index, remove, getConfig, setConfig, setConfigParameter, delete, indexes );
         if ( count != 1 )
         {
-            throw new ShellException( "Supply one of: -g, -i, -r" );
+            throw new ShellException( "Supply one of: -g, -i, -r, --get-config, --set-config, --set-config-param, --delete, --indexes" );
         }
 
-        GraphDatabaseService db = getServer().getDb();
         if ( get )
         {
             String commandToRun = parser.options().get( "c" );
@@ -118,14 +145,12 @@ public class IndexProviderShellApp extends GraphDatabaseApp
                 commandsToRun.addAll( Arrays.asList( commandToRun.split( Pattern.quote( "&&" ) ) ) );
             }
             
-            String indexName = parser.arguments().get( 0 );
-            if ( !db.index().existsForNodes( indexName ) )
+            if ( getIndex( parser.arguments().get( 0 ), Node.class, out ) == null )
             {
-                out.println( "No such index '" + indexName + "'" );
                 return null;
             }
             
-            Iterable<Node> result = query ? query( db, parser ) : get( db, parser );
+            Iterable<Node> result = query ? query( parser ) : get( parser );
             for ( Node node : result )
             {
                 printAndInterpretTemplateLines( commandsToRun, false, !specialCommand, node,
@@ -134,13 +159,166 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         }
         else if ( index )
         {
-            index( db, parser, session );
+            index( parser, session );
         }
         else if ( remove )
         {
-            remove( db, parser, session );
+            if ( getIndex( parser.arguments().get( 0 ), Node.class, out ) == null )
+            {
+                return null;
+            }
+            remove( parser, session );
         }
+        else if ( getConfig )
+        {
+            displayConfig( parser, out );
+        }
+        else if ( setConfig )
+        {
+            setConfig( parser, out );
+        }
+        else if ( setConfigParameter )
+        {
+            setConfigParameter( parser, out );
+        }
+        else if ( delete )
+        {
+            deleteIndex( parser, out );
+        }
+        
+        if ( indexes )
+        {
+            listIndexes( out );
+        }
+        
         return null;
+    }
+    
+    private void listIndexes( Output out ) throws RemoteException
+    {
+        out.println( "Node indexes:" );
+        for ( String name : getServer().getDb().index().nodeIndexNames() )
+        {
+            out.println( "  " + name );
+        }
+        out.println( "" );
+        out.println( "Relationship indexes:" );
+        for ( String name : getServer().getDb().index().relationshipIndexNames() )
+        {
+            out.println( "  " + name );
+        }
+    }
+
+    private void deleteIndex( AppCommandParser parser, Output out ) throws RemoteException, ShellException
+    {
+        Index<? extends PropertyContainer> index = getIndex( parser.arguments().get( 0 ), getEntityType( parser ), out );
+        if ( index != null )
+        {
+            index.delete();
+        }
+    }
+
+    private void setConfigParameter( AppCommandParser parser, Output out ) throws ShellException, RemoteException
+    {
+        String indexName = parser.arguments().get( 0 );
+        String key = parser.arguments().get( 1 );
+        String value = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : null;
+        IndexStore indexStore = (IndexStore) ((AbstractGraphDatabase) getServer().getDb())
+                .getConfig().getParams().get( IndexStore.class );
+        Class<? extends PropertyContainer> entityType = getEntityType( parser );
+        if ( !indexStore.asMap( entityType ).containsKey( indexName ) )
+        {
+            out.println( "No such index '" + indexName + "'" );
+            return;
+        }
+        Map<String, String> config = new HashMap<String, String>( indexStore.get( entityType, indexName ) );
+        if ( value == null )
+        {
+            config.remove( key );
+        }
+        else
+        {
+            config.put( key, value );
+        }
+        indexStore.remove( entityType, indexName );
+        indexStore.setIfNecessary( entityType, indexName, config );
+        printWarning( out );
+    }
+
+    private void printWarning( Output out ) throws RemoteException
+    {
+        out.println( "INDEX CONFIGURATION CHANGED, INDEX DATA MAY BE INVALID" );
+    }
+
+    private void setConfig( AppCommandParser parser, Output out ) throws RemoteException, ShellException
+    {
+        String indexName = parser.arguments().get( 0 );
+        Map config;
+        try
+        {
+            config = parseJSONMap( parser.arguments().get( 1 ) );
+        }
+        catch ( JSONException e )
+        {
+            throw ShellException.wrapCause( e );
+        }
+        IndexStore indexStore = (IndexStore) ((AbstractGraphDatabase) getServer().getDb())
+                .getConfig().getParams().get( IndexStore.class );
+        Class<? extends PropertyContainer> entityType = getEntityType( parser );
+        if ( indexStore.asMap( entityType ).containsKey( indexName ) )
+        {
+            indexStore.remove( entityType, indexName );
+        }
+        indexStore.setIfNecessary( entityType, indexName, config );
+        printWarning( out );
+    }
+
+    private <T extends PropertyContainer> Index<T> getIndex( String indexName, Class<T> type, Output out )
+            throws RemoteException
+    {
+        IndexManager index = getServer().getDb().index();
+        boolean exists = (type.equals( Node.class ) && index.existsForNodes( indexName )) ||
+                (type.equals( Relationship.class ) && index.existsForRelationships( indexName ));
+        if ( !exists )
+        {
+            out.println( "No such " + type.getSimpleName().toLowerCase() + " index '" + indexName + "'" );
+            return null;
+        }
+        return (Index<T>) (type.equals( Node.class ) ? index.forNodes( indexName ) : index.forRelationships( indexName ));
+    }
+    
+    private void displayConfig( AppCommandParser parser, Output out )
+            throws RemoteException, ShellException
+    {
+        String indexName = parser.arguments().get( 0 );
+        Index<? extends PropertyContainer> index = getIndex( indexName, getEntityType( parser ), out );
+        if ( index == null )
+        {
+            return;
+        }
+        try
+        {
+            out.println( new JSONObject( index.getConfiguration() ).toString( 4 ) );
+        }
+        catch ( JSONException e )
+        {
+            throw ShellException.wrapCause( e );
+        }
+    }
+
+    private Class<? extends PropertyContainer> getEntityType( AppCommandParser parser ) throws ShellException
+    {
+        String type = parser.options().get( "t" );
+        type = type != null ? type.toLowerCase() : null;
+        if ( type == null || type.equals( "node" ) )
+        {
+            return Node.class;
+        }
+        else if ( type.equals( "relationship" ) )
+        {
+            return Relationship.class;
+        }
+        throw new ShellException( "'type' expects one of [Node, Relationship]" );
     }
 
     private int boolCount( boolean... bools )
@@ -156,23 +334,24 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         return count;
     }
 
-    private Iterable<Node> get( GraphDatabaseService db, AppCommandParser parser )
+    private Iterable<Node> get( AppCommandParser parser )
     {
         String index = parser.arguments().get( 0 );
         String key = parser.arguments().get( 1 );
         String value = parser.arguments().get( 2 );
-        return db.index().forNodes( index ).get( key, value );
+        return getServer().getDb().index().forNodes( index ).get( key, value );
     }
 
-    private Iterable<Node> query( GraphDatabaseService db, AppCommandParser parser )
+    private Iterable<Node> query( AppCommandParser parser )
     {
         String index = parser.arguments().get( 0 );
-        String query = parser.arguments().get( 1 );
-        return db.index().forNodes( index ).query( query );
+        String query1 = parser.arguments().get( 1 );
+        String query2 = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : null;
+        Index<Node> theIndex = getServer().getDb().index().forNodes( index );
+        return query2 != null ? theIndex.query( query1, query2 ) : theIndex.query( query1 );
     }
 
-    private void index( GraphDatabaseService db, AppCommandParser parser, Session session )
-            throws ShellException
+    private void index( AppCommandParser parser, Session session ) throws ShellException
     {
         Node node = getCurrent( session ).asNode();
         String index = parser.arguments().get( 0 );
@@ -183,21 +362,20 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         {
             throw new ShellException( "No value to index" );
         }
-        db.index().forNodes( index ).add( node, key, value );
+        getServer().getDb().index().forNodes( index ).add( node, key, value );
     }
 
-    private void remove( GraphDatabaseService db, AppCommandParser parser, Session session )
-            throws ShellException
+    private void remove( AppCommandParser parser, Session session ) throws ShellException
     {
         Node node = getCurrent( session ).asNode();
         String index = parser.arguments().get( 0 );
-        String key = parser.arguments().get( 0 );
-        Object value = parser.arguments().size() > 1 ? parser.arguments().get( 1 )
+        String key = parser.arguments().get( 1 );
+        Object value = parser.arguments().size() > 2 ? parser.arguments().get( 2 )
                 : node.getProperty( key, null );
         if ( value == null )
         {
             throw new ShellException( "No value to remove" );
         }
-        db.index().forNodes( index ).remove( node, key, value );
+        getServer().getDb().index().forNodes( index ).remove( node, key, value );
     }
 }
