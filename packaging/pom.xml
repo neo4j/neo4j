@@ -189,6 +189,15 @@
           <tagBase>https://svn.neo4j.org/examples/${short-name}/tags</tagBase>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-source</id>
+            <phase>package</phase>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
