@@ -21,7 +21,6 @@
 package org.neo4j.server;
 
 import java.io.File;
-import java.util.HashSet;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -62,20 +61,28 @@ public class NeoServer {
 
         JettyWebServer ws = new JettyWebServer();
         ws.setPort(conf.configuration().getInt(WEBSERVER_PORT));
-        //ws.addPackages(getPackagesToLoad(conf.configuration().getStringArray(WEBSERVICE_PACKAGES)));
-        ws.addPackages("org.example.coffeeshop, org.example.petshop");
-
+        ws.addPackages(convertPropertiesToSingleString(conf.configuration().getStringArray(WEBSERVICE_PACKAGES)));
+        
         theServer = new NeoServer(conf, new Database(conf.configuration().getString(DATABASE_LOCATION)), ws);
         theServer.start();
     }
 
-//    private static HashSet<String> getPackagesToLoad(String[] commaSeparatedPackageValues) {
-//        StringBuilder sb = new StringBuilder();
-//
-//        
-//        
-//        return sb.toString();
-//    }
+    private static String convertPropertiesToSingleString(String[] properties) {
+        if(properties == null || properties.length < 1) {
+            return null;
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        
+        // Nasty string hacks - commons config gives us nice-ish collections, but Jetty wants to load with stringified properties
+        for(String s : properties) {
+            sb.append(s);
+            sb.append(", ");
+        }
+        
+        String str = sb.toString();
+        return str.substring(0, str.length() -2);
+    }
 
     private static File getConfigFile() {
         return new File(System.getProperty(NEO_CONFIGDIR_PROPERTY, DEFAULT_NEO_CONFIGDIR));
