@@ -65,7 +65,6 @@
               <tarLongFileMode>gnu</tarLongFileMode>
             </configuration>
           </execution>
-          <!--
           <execution>
             <id>windows-dist</id>
             <phase>package</phase>
@@ -76,12 +75,11 @@
               <descriptors>
                 <descriptor>src/main/assemblies/windows-dist.xml</descriptor>
               </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
+              <finalName>${product.shortname}-${neo4j.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>
               <assemblyId />
             </configuration>
           </execution>
-          -->
         </executions>
       </plugin>
     </plugins>
