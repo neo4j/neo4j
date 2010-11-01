@@ -22,10 +22,11 @@ package org.neo4j.server;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
-import java.util.HashSet;
+import java.net.URISyntaxException;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
@@ -53,9 +54,7 @@ public class NeoServerFunctionalTest {
         Database database = database();
         WebServer webServer = webServer();
         webServer.setPort(6666);
-        HashSet<String> packages = new HashSet<String>();
-        packages.add("org.neo4j.server.web");
-        webServer.addPackages(packages);
+        webServer.addPackages("org.neo4j.server.web");
         
         NeoServer server = new NeoServer(configurator, database, webServer);
         server.start();
@@ -70,9 +69,31 @@ public class NeoServerFunctionalTest {
         server.shutdown();
     }
 
+    @Test
+    public void shouldDeployValidJAXRSClassesSpecifiedInTheConfigFile() throws URISyntaxException {
+        System.setProperty("org.neo4j.server.properties", "src/functionaltest/resources/etc/neo-server/neo-server.properties");
+        
+        NeoServer.main(null);
+        
+        Client client = Client.create();
+        ClientResponse petShopResponse = client.resource("http://localhost:" + NeoServer.server().webServer().getPort() + "/petshop/prices").get(ClientResponse.class);
+        
+        assertEquals(200, petShopResponse.getStatus());
+        assertThat(petShopResponse.getEntity(String.class), containsString("dogs for a tenner"));
+        
+        client = Client.create();
+        ClientResponse coffeeShopResponse = client.resource("http://localhost:" + NeoServer.server().webServer().getPort() + "/coffeeshop/menu").get(ClientResponse.class);
+        
+        assertEquals(200, coffeeShopResponse.getStatus());
+        assertThat(coffeeShopResponse.getEntity(String.class), containsString("espresso for a quid"));
+        
+        NeoServer.server().shutdown();
+
+    }
+    
     private WebServer webServer() {
         JettyWebServer server = new JettyWebServer();
-        server.setPort(WebTestUtils.nextAvailablePortNumber());
+        server.setPort(configurator().configuration().getInt("webserver.port"));
         return server;
     }
 

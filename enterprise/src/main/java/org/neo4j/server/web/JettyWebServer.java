@@ -24,7 +24,6 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.Set;
 
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -65,19 +64,18 @@ public class JettyWebServer implements WebServer {
     public void setPort(int portNo) {
         jettyPort = portNo;
     }
-    
+
     public int getPort() {
         return jettyPort;
     }
 
-    public void addPackages(Set<String> packageNames) {
-        if (packageNames == null || packageNames.size() < 1) {
+    public void addPackages(String packageNames) {
+        if (packageNames == null) {
             return;
         }
+        
+        servletHolder.setInitParameter("com.sun.jersey.config.property.packages", packageNames);
 
-        for (String pName : packageNames) {
-            servletHolder.setInitParameter("com.sun.jersey.config.property.packages", pName);
-        }
     }
 
     public void setMaxThreads(int maxThreads) {
@@ -86,9 +84,9 @@ public class JettyWebServer implements WebServer {
 
     public URI getBaseUri() throws URISyntaxException {
         StringBuilder sb = new StringBuilder();
-        
+
         sb.append("http");
-        if(jettyPort == 443) {
+        if (jettyPort == 443) {
             sb.append("s");
         }
         sb.append("://");
@@ -97,14 +95,14 @@ public class JettyWebServer implements WebServer {
         } catch (UnknownHostException e) {
             sb.append("localhost");
         }
-        
-        if(jettyPort != 80) {
+
+        if (jettyPort != 80) {
             sb.append(":");
             sb.append(jettyPort);
         }
-        
+
         sb.append(context.getContextPath());
-        
+
         return new URI(sb.toString());
     }
 
