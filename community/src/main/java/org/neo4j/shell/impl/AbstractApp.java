@@ -178,7 +178,7 @@ public abstract class AbstractApp implements App
 	    return map;
 	}
 
-    private static Map<String, Object> parseJSONMap( String jsonString )
+    protected static Map<String, Object> parseJSONMap( String jsonString )
         throws JSONException
 	{
         JSONObject object = new JSONObject( jsonString );
