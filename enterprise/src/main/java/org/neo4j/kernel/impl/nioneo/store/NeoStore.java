@@ -246,9 +246,20 @@ public class NeoStore extends AbstractStore
         }
         setRecord( 3, txId );
         // TODO Why check null here? because I have no time to fix the tests
+        // And the update to zookeeper or whatever should probably be moved from 
+        // here and be async since if it fails tx will get exception in committing 
+        // state and shutdown... that is wrong since the tx did not fail
+        // - zookeeper is only used for master election, tx state there is not critical
         if ( isStarted && lastCommittedTxIdSetter != null && txId != lastCommittedTx )
         {
-            lastCommittedTxIdSetter.setLastCommittedTxId( txId );
+            try
+            {
+                lastCommittedTxIdSetter.setLastCommittedTxId( txId );
+            }
+            catch ( RuntimeException e )
+            {
+                e.printStackTrace();
+            }
         }
         lastCommittedTx = txId;
     }
