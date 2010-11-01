@@ -22,7 +22,6 @@ package org.neo4j.server.web;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Set;
 
 public interface WebServer {
     public void addPackages(String packageNames);
