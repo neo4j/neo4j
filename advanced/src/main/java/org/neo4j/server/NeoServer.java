@@ -92,9 +92,10 @@ public class NeoServer {
 
     public void shutdown() {
         int portNo = -1;
-        String location = database.getLocation();
+        String location = "unknown"; 
         try {
             if(database != null) {
+                location = database.getLocation();
                 database.shutdown();
                 database = null;
             }
@@ -104,6 +105,7 @@ public class NeoServer {
                 webServer = null;
             }
             configurator = null;
+            
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", portNo, location);
         } catch (Exception e) {
             log.error("Failed to cleanly shutdown Neo Server on port [%d], database [%s]", portNo, location);
