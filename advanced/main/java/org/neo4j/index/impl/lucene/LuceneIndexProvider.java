@@ -125,6 +125,9 @@ public class LuceneIndexProvider extends IndexProvider
                 index = new LuceneIndex.NodeIndex( this, identifier );
                 dataSource.indexes.put( identifier, index );
             }
+            
+            // Because config might have changed
+            index.setIdentifier( identifier );
             return index;
         }
         
