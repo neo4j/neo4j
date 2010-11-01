@@ -2,9 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>assembly-upload-to-dist</artifactId>
+    <artifactId>assembly-pom</artifactId>
     <groupId>org.neo4j.assembly</groupId>
-    <version>2-SNAPSHOT</version>
+    <version>5</version>
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>
