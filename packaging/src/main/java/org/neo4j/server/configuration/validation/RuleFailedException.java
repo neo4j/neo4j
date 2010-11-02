@@ -25,4 +25,8 @@ public class RuleFailedException extends RuntimeException {
     public RuleFailedException(String message) {
         super(message);
     }
+    
+    public RuleFailedException(String message, Object ... args) {
+        super(String.format(message, args));
+    }
 }

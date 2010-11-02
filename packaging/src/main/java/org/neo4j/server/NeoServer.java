@@ -25,6 +25,8 @@ import java.io.File;
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
+import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.web.JettyWebServer;
@@ -61,7 +63,8 @@ public class NeoServer implements WrapperListener {
     }
 
     public NeoServer() {
-        this.configurator = new Configurator(getConfigFile());
+        Validator validator = new Validator(new DatabaseLocationMustBeSpecifiedRule()); 
+        this.configurator = new Configurator(validator, getConfigFile());
         
         JettyWebServer ws = new JettyWebServer();
         ws.setPort(configurator.configuration().getInt(WEBSERVER_PORT));
