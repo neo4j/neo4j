@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel.management;
 
+import java.beans.ConstructorProperties;
 import java.io.Serializable;
 import java.util.Map;
 
@@ -33,6 +34,7 @@ public final class SlaveInfo implements Serializable
         private final int eventId;
         private final Map<String, Long> lastTransactions;
 
+        @ConstructorProperties( { "eventIdentifier", "lastTransaction" } )
         public SlaveTransaction( int eventId, Map<String, Long> lastTransactions )
         {
             this.eventId = eventId;
@@ -53,6 +55,7 @@ public final class SlaveInfo implements Serializable
     private final Integer machineId;
     private final SlaveTransaction[] txInfo;
 
+    @ConstructorProperties( { "machineId", "txInfo" } )
     public SlaveInfo( Integer machineId, SlaveTransaction... txInfo )
     {
         this.machineId = machineId;
