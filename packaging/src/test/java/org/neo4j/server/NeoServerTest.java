@@ -36,6 +36,7 @@ import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.JettyWebServer;
 import org.neo4j.server.web.WebServer;
 
@@ -45,35 +46,6 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
 public class NeoServerTest {
-
-    private NeoServer server() throws IOException {       
-        Configurator configurator = configurator();
-        Database db = new Database(configurator.configuration().getString("org.neo4j.database.location"));
-        WebServer webServer = webServer();
-        return new NeoServer(configurator, db, webServer);
-    }
-
-    private WebServer webServer() {
-        WebServer webServer = new JettyWebServer();
-        webServer.addPackages("org.neo4j.server.web");
-        return webServer;
-    }
-
-    private Configurator configurator() throws IOException {
-        File propertyFile = ServerTestUtils.createTempPropertyFile();
-
-        writePropertyFile(propertyFile);
-
-        return new Configurator(propertyFile);
-    }
-
-    private void writePropertyFile(File propertyFile) throws IOException {
-        FileWriter fstream = new FileWriter(propertyFile);
-        BufferedWriter out = new BufferedWriter(fstream);
-        out.write("org.neo4j.database.location=");
-        out.write(ServerTestUtils.createTempDir().getAbsolutePath());
-        out.close();
-    }
 
     @Test
     public void whenServerIsStartedItShouldBringUpAWebServerWithWelcomePage() throws Exception {
@@ -132,5 +104,39 @@ public class NeoServerTest {
         server.stop();
 
         server.database().beginTx();
+    }
+    
+    @Test(expected=StartupHealthCheckFailedException.class)
+    public void shouldExitWhenFailedStartupHealthCheck() {
+        System.clearProperty(NeoServer.NEO_CONFIGDIR_PROPERTY);
+        new NeoServer();
+    }
+    
+    private NeoServer server() throws IOException {       
+        Configurator configurator = configurator();
+        Database db = new Database(configurator.configuration().getString("org.neo4j.database.location"));
+        WebServer webServer = webServer();
+        return new NeoServer(configurator, db, webServer);
+    }
+
+    private WebServer webServer() {
+        WebServer webServer = new JettyWebServer();
+        webServer.addPackages("org.neo4j.server.web");
+        return webServer;
+    }
+
+    private Configurator configurator() throws IOException {
+        File propertyFile = ServerTestUtils.createTempPropertyFile();
+        writePropertyFile(propertyFile);
+
+        return new Configurator(propertyFile);
+    }
+
+    private void writePropertyFile(File propertyFile) throws IOException {
+        FileWriter fstream = new FileWriter(propertyFile);
+        BufferedWriter out = new BufferedWriter(fstream);
+        out.write("org.neo4j.database.location=");
+        out.write(ServerTestUtils.createTempDir().getAbsolutePath());
+        out.close();
     }
 }
