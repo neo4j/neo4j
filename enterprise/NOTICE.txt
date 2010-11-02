@@ -1,4 +1,4 @@
-APOC - A Package Of Components
+Neo4j
 
 Copyright (c) 2010 "Neo Technology," Network Engine for Objects in Lund AB
     
