@@ -29,14 +29,21 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import org.apache.commons.configuration.Configuration;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.validation.Validator;
 
 public class ConfiguratorTest {
 
+    @BeforeClass
+    public static void setup() {
+        System.setProperty("org.neo4j.server.properties", "src/test/resources/etc/neo-server/neo-server.properties");
+    }
+    
     @Test
     public void shouldProvideAConfiguration() {
-        Configuration config = new Configurator().configuration();
+        Configuration config = new Configurator(new Validator()).configuration();
         assertNotNull(config);
     }
     
@@ -49,7 +56,7 @@ public class ConfiguratorTest {
         out.write("foo=bar");
         out.close();
         
-        Configuration testConf = new Configurator(configFile).configuration();
+        Configuration testConf = new Configurator(new Validator(), configFile).configuration();
 
         final String EXPECTED_VALUE = "bar";
         assertEquals(EXPECTED_VALUE, testConf.getString("foo"));

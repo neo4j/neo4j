@@ -33,21 +33,29 @@ import org.neo4j.server.logging.Logger;
 public class Configurator {
 
     public static Logger log = Logger.getLogger(Configurator.class);
-
-    private File defaultConfigurationPropertiesFile = new File("etc" + File.separatorChar + "neo-server" + File.separatorChar + "neo-server.properties");
+    
     private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
 
-    private Validator validator = new Validator(/* No rules for now */);
+    private Validator validator = new Validator();
 
-    public Configurator() {
-        this(null);
+    Configurator() {
+        this(new Validator(), null);
+    }
+    
+    
+    public Configurator(File propertiesFile) {
+        this(null, propertiesFile);
     }
 
-    public Configurator(File propertiesFile) {
+    public Configurator(Validator v) {
+        this(v, null);
+    }
+    
+    public Configurator(Validator v, File propertiesFile) {
         if (propertiesFile == null) {
-            propertiesFile = defaultConfigurationPropertiesFile;
+            propertiesFile = new File(System.getProperty("org.neo4j.server.properties"));
         }
-
+        
         try {
             loadPropertiesConfig(propertiesFile);
         } catch (ConfigurationException ce) {
@@ -65,7 +73,7 @@ public class Configurator {
         if (validator.validate(propertiesConfig)) {
             serverConfiguration.addConfiguration(propertiesConfig);
         } else {
-            String failed = String.format("Error processing [%s], configuration file(s) corrupt or contains duplicates", configFile.getAbsolutePath());
+            String failed = String.format("Error processing [%s], configuration file has failed validation.", configFile.getAbsolutePath());
             log.fatal(failed);
             throw new InvalidServerConfigurationException(failed);
         }
