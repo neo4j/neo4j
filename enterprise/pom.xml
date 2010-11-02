@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>2-SNAPSHOT</version>
+    <version>1</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
