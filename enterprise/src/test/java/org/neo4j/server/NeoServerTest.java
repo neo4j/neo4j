@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
@@ -46,29 +45,16 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
 public class NeoServerTest {
-    private NeoServer theServer;
 
-    private int portNo = WebTestUtils.nextAvailablePortNumber();
-
-    @Before
-    public void setup() throws IOException {       
-        if (theServer != null) {
-            theServer.stop();
-            theServer = null;
-        }
-
+    private NeoServer server() throws IOException {       
         Configurator configurator = configurator();
-
         Database db = new Database(configurator.configuration().getString("org.neo4j.database.location"));
-
         WebServer webServer = webServer();
-
-        theServer = new NeoServer(configurator, db, webServer);
+        return new NeoServer(configurator, db, webServer);
     }
 
     private WebServer webServer() {
         WebServer webServer = new JettyWebServer();
-        webServer.setPort(portNo);
         webServer.addPackages("org.neo4j.server.web");
         return webServer;
     }
@@ -91,56 +77,60 @@ public class NeoServerTest {
 
     @Test
     public void whenServerIsStartedItShouldBringUpAWebServerWithWelcomePage() throws Exception {
+        NeoServer server = server();
+        server.start(null);
 
-        theServer.start(null);
-
-        ClientResponse response = Client.create().resource(theServer.webServer().getWelcomeUri()).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(server.webServer().getWelcomeUri()).get(ClientResponse.class);
 
         assertEquals(200, response.getStatus());
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("text/html"));
 
-        theServer.stop();
+        server.stop();
     }
 
     @Test
-    public void whenServerIsStartedItshouldStartASingleDatabase() {
-        theServer.start(null);
+    public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception {
+        NeoServer server = server();
+        server.start(null);
 
-        assertNotNull(theServer.database());
+        assertNotNull(server.database());
 
-        theServer.stop();
+        server.stop();
     }
 
     @Test
-    public void shouldLogStartup() {
+    public void shouldLogStartup() throws Exception {
         InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
-        theServer.start(null);
+        NeoServer server = server();
+        server.start(null);
 
-        assertThat(appender.toString(), containsString("Started Neo Server on port [" + portNo + "]"));
+        assertThat(appender.toString(), containsString("Started Neo Server on port [" + 7474 + "]"));
 
-        theServer.stop();
+        server.stop();
     }
 
     @Test(expected = ClientHandlerException.class)
-    public void whenServerIsShutDownTheWebServerShouldHalt() throws UniformInterfaceException, URISyntaxException {
+    public void whenServerIsShutDownTheWebServerShouldHalt() throws UniformInterfaceException, URISyntaxException, IOException {
         
-        theServer.start(null);
+        NeoServer server = server();
+        server.start(null);
         
-        URI welcomeUri = theServer.webServer().getWelcomeUri();
+        URI welcomeUri = server.webServer().getWelcomeUri();
         
-        theServer.stop();
+        server.stop();
 
         Client.create().resource(welcomeUri).get(ClientResponse.class);
     }
 
     @Test(expected = NullPointerException.class)
-    public void whenServerIsShutDownTheDatabaseShouldNotBeAvailable() {
+    public void whenServerIsShutDownTheDatabaseShouldNotBeAvailable() throws IOException {
 
-        theServer.start(null);
+        NeoServer server = server();
+        server.start(null);
         // Do some work
-        theServer.database().beginTx().success();
-        theServer.stop();
+        server.database().beginTx().success();
+        server.stop();
 
-        theServer.database().beginTx();
+        server.database().beginTx();
     }
 }
