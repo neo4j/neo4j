@@ -104,10 +104,6 @@
               <name>shell-example</name>
             </program>
             <program>
-              <mainClass>org.neo4j.shell.StartClient</mainClass>
-              <name>neo4j-shell</name>
-            </program>
-            <program>
               <mainClass>org.neo4j.examples.CalculateShortestPath</mainClass>
               <name>calculate-shortest-path</name>
             </program>
