@@ -154,4 +154,18 @@ public class NeoServer implements WrapperListener {
         String str = sb.toString();
         return str.substring(0, str.length() -2);
     }
+
+    public static void main(String args[]) {
+        final NeoServer neo = new NeoServer();
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+	            @Override
+	            public void run() {
+	                log.info("Neo Server shutdown initiated by kill signal");
+	                neo.stop();
+	            }
+	        });
+
+        neo.start(args);
+    }
 }
