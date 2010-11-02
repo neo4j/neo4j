@@ -20,13 +20,15 @@
 
 package org.neo4j.server;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Random;
 
 public class ServerTestUtils {
     public static File createTempDir() throws IOException {
-        
+
         File d = File.createTempFile("neo4j-test", "dir");
         if (!d.delete())
             throw new RuntimeException("temp config directory pre-delete failed");
@@ -39,7 +41,21 @@ public class ServerTestUtils {
     public static File createTempPropertyFile() throws IOException {
         return createTempPropertyFile(createTempDir());
     }
-    
+
+    public static void writePropertyToFile(String name, String value, File propertyFile) {
+        try {
+            FileWriter fstream = new FileWriter(propertyFile, true);
+            BufferedWriter out = new BufferedWriter(fstream);
+            out.write(name);
+            out.write("=");
+            out.write(value);
+            out.write(System.getProperty("line.separator"));
+            out.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static File createTempPropertyFile(File parentDir) throws IOException {
         File f = new File(parentDir, "test-" + new Random().nextInt() + ".properties");
         f.deleteOnExit();

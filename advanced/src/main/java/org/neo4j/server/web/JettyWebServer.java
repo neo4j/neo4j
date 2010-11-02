@@ -41,6 +41,7 @@ public class JettyWebServer implements WebServer {
 
     public void start() {
         jetty = new Server(jettyPort);
+        jetty.setStopAtShutdown(true);
 
         context = new Context(jetty, "/");
         context.addServlet(servletHolder, "/*");
