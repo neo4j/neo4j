@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
@@ -43,16 +44,43 @@ import com.sun.jersey.api.client.ClientResponse;
 
 
 public class NeoServerFunctionalTest {
+    
+    private static final String ORG_NEO4J_SERVER_PROPERTIES = "org.neo4j.server.properties";
+    private static final String DEFAULT_PORT = "7474";
+    
     @Before
     public void setup() throws Exception {
+        System.setProperty(ORG_NEO4J_SERVER_PROPERTIES, "src/functionaltest/resources/etc/neo-server/neo-server.properties");
         String dbDir = configurator().configuration().getString("org.neo4j.database.location");
         FileUtils.deleteDirectory(new File(dbDir));
     }
     
+    @After
+    public void tearDown() {
+        System.clearProperty(ORG_NEO4J_SERVER_PROPERTIES);
+    }
+    
+    @Test
+    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
+        Configurator config = configWithoutWebServerPort();
+        
+        Database database = database();
+        WebServer webServer = new JettyWebServer();
+        webServer.addPackages("org.neo4j.server.web");
+        
+        NeoServer server = new NeoServer(config, database, webServer);
+        server.start(null);
+        
+        Client client = Client.create();
+        ClientResponse response = client.resource("http://localhost:" + DEFAULT_PORT + "/welcome.html").get(ClientResponse.class);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getEntity(String.class), containsString("Welcome"));
+    }
+    
+    
     @Test
     public void serverShouldProvideAWelcomePage() {
-        System.setProperty("org.neo4j.server.properties", "src/functionaltest/resources/etc/neo-server/neo-server.properties");
-        
         Configurator configurator = configurator();
         Database database = database();
         WebServer webServer = webServer();
@@ -72,24 +100,28 @@ public class NeoServerFunctionalTest {
     }
 
     @Test
-    public void shouldDeployValidJAXRSClassesSpecifiedInTheConfigFile() throws URISyntaxException {
-        System.setProperty("org.neo4j.server.properties", "src/functionaltest/resources/etc/neo-server/neo-server.properties");
+    public void shouldMakeJAXRSClassesSpecifiedInTheConfigFileAvailableViaHTTP() throws URISyntaxException {       
+        Configurator configurator = configurator();
+        Database database = database();
+        WebServer webServer = webServer();
         
-        NeoServer.main(null);
+        
+        NeoServer server = new NeoServer(configurator, database, webServer);
+        server.start(null);
         
         Client client = Client.create();
-        ClientResponse petShopResponse = client.resource("http://localhost:" + NeoServer.server().webServer().getPort() + "/petshop/prices").get(ClientResponse.class);
+        ClientResponse petShopResponse = client.resource("http://localhost:" + server.webServer().getPort() + "/petshop/prices").get(ClientResponse.class);
         
         assertEquals(200, petShopResponse.getStatus());
         assertThat(petShopResponse.getEntity(String.class), containsString("dogs for a tenner"));
         
         client = Client.create();
-        ClientResponse coffeeShopResponse = client.resource("http://localhost:" + NeoServer.server().webServer().getPort() + "/coffeeshop/menu").get(ClientResponse.class);
+        ClientResponse coffeeShopResponse = client.resource("http://localhost:" + server.webServer().getPort() + "/coffeeshop/menu").get(ClientResponse.class);
         
         assertEquals(200, coffeeShopResponse.getStatus());
         assertThat(coffeeShopResponse.getEntity(String.class), containsString("espresso for a quid"));
         
-        NeoServer.server().stop();
+        server.stop();
 
     }
     
@@ -120,8 +152,6 @@ public class NeoServerFunctionalTest {
         s2.stop();
     }
     
-
-
     private WebServer webServer() {
         JettyWebServer server = new JettyWebServer();
         server.setPort(configurator().configuration().getInt("org.neo4j.webserver.port"));
@@ -144,6 +174,14 @@ public class NeoServerFunctionalTest {
         ServerTestUtils.writePropertyToFile("org.neo4j.database.location", "/tmp/neo/functionaltest-clashing.db", tempPropertyFile);
         ServerTestUtils.writePropertyToFile("org.neo4j.webserver.port", "5555", tempPropertyFile);
         ServerTestUtils.writePropertyToFile("org.neo4j.webservice.packages", "org.example.coffeeshop, org.example.petshop", tempPropertyFile);
+        
+        return new Configurator(tempPropertyFile);
+    }
+    
+    private Configurator configWithoutWebServerPort() throws IOException {
+        File tempPropertyFile = ServerTestUtils.createTempPropertyFile();
+        ServerTestUtils.writePropertyToFile("org.neo4j.database.location", "/tmp/neo/no-webserver-port.db", tempPropertyFile);
+        ServerTestUtils.writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.web", tempPropertyFile);
         
         return new Configurator(tempPropertyFile);
     }
