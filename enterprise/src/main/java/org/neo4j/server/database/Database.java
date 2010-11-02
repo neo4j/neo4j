@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.IndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.logging.Logger;
@@ -40,7 +41,7 @@ public class Database {
     private String databaseStoreDirectory;
 
     public Database(String databaseStoreDirectory) {
-        this(new EmbeddedGraphDatabase(databaseStoreDirectory), null, null, null);
+        this(new EmbeddedGraphDatabase(databaseStoreDirectory, MapUtil.stringMap( "enable_remote_shell", "true" )), null, null, null);
         this.databaseStoreDirectory = databaseStoreDirectory;
     }
     
