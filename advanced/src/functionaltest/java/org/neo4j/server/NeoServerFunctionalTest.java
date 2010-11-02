@@ -45,7 +45,7 @@ import com.sun.jersey.api.client.ClientResponse;
 public class NeoServerFunctionalTest {
     @Before
     public void setup() throws Exception {
-        String dbDir = configurator().configuration().getString("database.location");
+        String dbDir = configurator().configuration().getString("org.neo4j.database.location");
         FileUtils.deleteDirectory(new File(dbDir));
     }
     
@@ -111,11 +111,11 @@ public class NeoServerFunctionalTest {
         Configurator conflictingConfig = portClashingConfigurator();
 
         
-        NeoServer s2 = new NeoServer(portClashingConfigurator(), new Database(conflictingConfig.configuration().getString("database.location")), webServer());
+        NeoServer s2 = new NeoServer(portClashingConfigurator(), new Database(conflictingConfig.configuration().getString("org.neo4j.database.location")), webServer());
         InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
         s2.start(null);
         
-        assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", conflictingConfig.configuration().getString("webserver.port"))));
+        assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", conflictingConfig.configuration().getString("org.neo4j.webserver.port"))));
         s1.stop();
         s2.stop();
     }
@@ -124,12 +124,12 @@ public class NeoServerFunctionalTest {
 
     private WebServer webServer() {
         JettyWebServer server = new JettyWebServer();
-        server.setPort(configurator().configuration().getInt("webserver.port"));
+        server.setPort(configurator().configuration().getInt("org.neo4j.webserver.port"));
         return server;
     }
 
     private Database database() {
-        String graphStoreDirectory = configurator().configuration().getString("database.location");
+        String graphStoreDirectory = configurator().configuration().getString("org.neo4j.database.location");
         return new Database(graphStoreDirectory);
     }
 
@@ -141,9 +141,9 @@ public class NeoServerFunctionalTest {
     
     private Configurator portClashingConfigurator() throws IOException {
         File tempPropertyFile = ServerTestUtils.createTempPropertyFile();
-        ServerTestUtils.writePropertyToFile("database.location", "/tmp/neo/functionaltest-clashing.db", tempPropertyFile);
-        ServerTestUtils.writePropertyToFile("webserver.port", "5555", tempPropertyFile);
-        ServerTestUtils.writePropertyToFile("webservice.packages", "org.example.coffeeshop, org.example.petshop", tempPropertyFile);
+        ServerTestUtils.writePropertyToFile("org.neo4j.database.location", "/tmp/neo/functionaltest-clashing.db", tempPropertyFile);
+        ServerTestUtils.writePropertyToFile("org.neo4j.webserver.port", "5555", tempPropertyFile);
+        ServerTestUtils.writePropertyToFile("org.neo4j.webservice.packages", "org.example.coffeeshop, org.example.petshop", tempPropertyFile);
         
         return new Configurator(tempPropertyFile);
     }

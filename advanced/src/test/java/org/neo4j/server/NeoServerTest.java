@@ -59,7 +59,7 @@ public class NeoServerTest {
 
         Configurator configurator = configurator();
 
-        Database db = new Database(configurator.configuration().getString("database.location"));
+        Database db = new Database(configurator.configuration().getString("org.neo4j.database.location"));
 
         WebServer webServer = webServer();
 
@@ -84,7 +84,7 @@ public class NeoServerTest {
     private void writePropertyFile(File propertyFile) throws IOException {
         FileWriter fstream = new FileWriter(propertyFile);
         BufferedWriter out = new BufferedWriter(fstream);
-        out.write("database.location=");
+        out.write("org.neo4j.database.location=");
         out.write(ServerTestUtils.createTempDir().getAbsolutePath());
         out.close();
     }
