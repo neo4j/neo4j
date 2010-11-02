@@ -1,4 +1,5 @@
 <assembly>
+  <id>assembly</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
     <format>jar</format>
