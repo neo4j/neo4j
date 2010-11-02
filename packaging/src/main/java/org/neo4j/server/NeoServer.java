@@ -29,11 +29,12 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.web.JettyWebServer;
 import org.neo4j.server.web.WebServer;
+import org.tanukisoftware.wrapper.WrapperListener;
 
 /**
  * Application entry point for the Neo4j Server.
  */
-public class NeoServer {
+public class NeoServer implements WrapperListener {
     public static final Logger log = Logger.getLogger(NeoServer.class);
 
     private static final String WEBSERVICE_PACKAGES = "webservice.packages";
@@ -50,21 +51,103 @@ public class NeoServer {
 
     private static NeoServer theServer;
 
-    public NeoServer(Configurator configurator, Database db, WebServer ws) {
+    /**
+     * For test purposes only.
+     */
+    NeoServer(Configurator configurator, Database db, WebServer ws) {
         this.configurator = configurator;
         this.database = db;
         this.webServer = ws;
     }
 
-    public static void main(String[] args) {
-        Configurator conf = new Configurator(getConfigFile());
-
-        JettyWebServer ws = new JettyWebServer();
-        ws.setPort(conf.configuration().getInt(WEBSERVER_PORT));
-        ws.addPackages(convertPropertiesToSingleString(conf.configuration().getStringArray(WEBSERVICE_PACKAGES)));
+    public NeoServer() {
+        this.configurator = new Configurator(getConfigFile());
         
-        theServer = new NeoServer(conf, new Database(conf.configuration().getString(DATABASE_LOCATION)), ws);
-        theServer.start();
+        JettyWebServer ws = new JettyWebServer();
+        ws.setPort(configurator.configuration().getInt(WEBSERVER_PORT));
+        ws.addPackages(convertPropertiesToSingleString(configurator.configuration().getStringArray(WEBSERVICE_PACKAGES)));
+        this.webServer = ws;
+
+        this.database = new Database(configurator.configuration().getString(DATABASE_LOCATION));
+    }
+
+    public static void main(String[] args) {        
+        theServer = new NeoServer();
+        
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                log.info("Neo Server shutdown initiated by kill signal");
+                theServer.stop();
+            }
+        });
+
+        theServer.start(args);
+    }
+
+    /**
+     * Just for functional testing purposes
+     */
+    static NeoServer server() {
+        return theServer;
+    }
+
+    public Integer start(String[] args) {
+        try {
+            webServer.start();
+            log.info("Started Neo Server on port [%s]", webServer.getPort());
+            return 0;
+        } catch (Exception e) {
+            log.error("Failed to start Neo Server on port [%s]", webServer.getPort());
+            return 1;
+        }
+    }
+
+    protected void stop() {
+        stop(0);
+    }
+    
+    public int stop(int stopArg) {
+        int portNo = -1;
+        String location = "unknown";
+        try {
+            if (database != null) {
+                location = database.getLocation();
+                database.shutdown();
+                database = null;
+            }
+            if (webServer != null) {
+                portNo = webServer.getPort();
+                webServer.shutdown();
+                webServer = null;
+            }
+            configurator = null;
+            log.info("Successfully shutdown Neo Server on port [%d], database [%s]", portNo, location);
+            return 0;
+        } catch (Exception e) {
+            log.error("Failed to cleanly shutdown Neo Server on port [%d], database [%s]", portNo, location);
+            return 1;
+        }
+    }
+
+    public GraphDatabaseService database() {
+        return database.db;
+    }
+
+    public WebServer webServer() {
+        return webServer;
+    }
+
+    public Configuration configuration() {
+        return configurator.configuration();
+    }
+
+    public void controlEvent(int controlArg) {
+       // Do nothing for now, this is needed by the WrapperListener interface
+    }
+    
+    private static File getConfigFile() {
+        return new File(System.getProperty(NEO_CONFIGDIR_PROPERTY, DEFAULT_NEO_CONFIGDIR));
     }
 
     private static String convertPropertiesToSingleString(String[] properties) {
@@ -82,70 +165,5 @@ public class NeoServer {
         
         String str = sb.toString();
         return str.substring(0, str.length() -2);
-    }
-
-    private static File getConfigFile() {
-        return new File(System.getProperty(NEO_CONFIGDIR_PROPERTY, DEFAULT_NEO_CONFIGDIR));
-    }
-
-    public void start() {
-        log.info("Starting Neo Server on port [%s]", webServer.getPort());
-
-        try {
-            webServer.start();
-
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
-                    log.info("Neo Server shutdown initiated by kill signal");
-                    shutdown();
-                }
-            });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    public void shutdown() {
-        int portNo = -1;
-        String location = "unknown";
-        try {
-            if (database != null) {
-                location = database.getLocation();
-                database.shutdown();
-                database = null;
-            }
-            if (webServer != null) {
-                portNo = webServer.getPort();
-                webServer.shutdown();
-                webServer = null;
-            }
-            configurator = null;
-
-            log.info("Successfully shutdown Neo Server on port [%d], database [%s]", portNo, location);
-        } catch (Exception e) {
-            log.error("Failed to cleanly shutdown Neo Server on port [%d], database [%s]", portNo, location);
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Just for functional testing purposes
-     */
-    static NeoServer server() {
-        return theServer;
-    }
-
-    public GraphDatabaseService database() {
-        return database.db;
-    }
-
-    public WebServer webServer() {
-        return webServer;
-    }
-
-    public Configuration configuration() {
-        return configurator.configuration();
     }
 }

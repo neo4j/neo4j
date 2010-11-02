@@ -53,7 +53,7 @@ public class NeoServerTest {
     @Before
     public void setup() throws IOException {       
         if (theServer != null) {
-            theServer.shutdown();
+            theServer.stop();
             theServer = null;
         }
 
@@ -92,43 +92,43 @@ public class NeoServerTest {
     @Test
     public void whenServerIsStartedItShouldBringUpAWebServerWithWelcomePage() throws Exception {
 
-        theServer.start();
+        theServer.start(null);
 
         ClientResponse response = Client.create().resource(theServer.webServer().getWelcomeUri()).get(ClientResponse.class);
 
         assertEquals(200, response.getStatus());
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("text/html"));
 
-        theServer.shutdown();
+        theServer.stop();
     }
 
     @Test
     public void whenServerIsStartedItshouldStartASingleDatabase() {
-        theServer.start();
+        theServer.start(null);
 
         assertNotNull(theServer.database());
 
-        theServer.shutdown();
+        theServer.stop();
     }
 
     @Test
     public void shouldLogStartup() {
         InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
-        theServer.start();
+        theServer.start(null);
 
-        assertThat(appender.toString(), containsString("Starting Neo Server on port [" + portNo + "]"));
+        assertThat(appender.toString(), containsString("Started Neo Server on port [" + portNo + "]"));
 
-        theServer.shutdown();
+        theServer.stop();
     }
 
     @Test(expected = ClientHandlerException.class)
     public void whenServerIsShutDownTheWebServerShouldHalt() throws UniformInterfaceException, URISyntaxException {
         
-        theServer.start();
+        theServer.start(null);
         
         URI welcomeUri = theServer.webServer().getWelcomeUri();
         
-        theServer.shutdown();
+        theServer.stop();
 
         Client.create().resource(welcomeUri).get(ClientResponse.class);
     }
@@ -136,16 +136,11 @@ public class NeoServerTest {
     @Test(expected = NullPointerException.class)
     public void whenServerIsShutDownTheDatabaseShouldNotBeAvailable() {
 
-        theServer.start();
+        theServer.start(null);
         // Do some work
         theServer.database().beginTx().success();
-        theServer.shutdown();
+        theServer.stop();
 
         theServer.database().beginTx();
-    }
-
-    @Test
-    public void shouldLogShutdown() {
-
     }
 }

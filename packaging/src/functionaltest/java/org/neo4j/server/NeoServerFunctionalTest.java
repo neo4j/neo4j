@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 
 import org.apache.commons.io.FileUtils;
@@ -33,6 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.web.JettyWebServer;
 import org.neo4j.server.web.WebServer;
 
@@ -49,15 +51,15 @@ public class NeoServerFunctionalTest {
     
     @Test
     public void serverShouldProvideAWelcomePage() {
+        System.setProperty("org.neo4j.server.properties", "src/functionaltest/resources/etc/neo-server/neo-server.properties");
         
         Configurator configurator = configurator();
         Database database = database();
         WebServer webServer = webServer();
-        webServer.setPort(6666);
         webServer.addPackages("org.neo4j.server.web");
         
         NeoServer server = new NeoServer(configurator, database, webServer);
-        server.start();
+        server.start(null);
         
         Client client = Client.create();
         ClientResponse response = client.resource("http://localhost:" + webServer.getPort() + "/welcome.html").get(ClientResponse.class);
@@ -66,7 +68,7 @@ public class NeoServerFunctionalTest {
         assertThat(response.getHeaders().getFirst("Server"), containsString("Jetty"));
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("html"));
         
-        server.shutdown();
+        server.stop();
     }
 
     @Test
@@ -87,10 +89,39 @@ public class NeoServerFunctionalTest {
         assertEquals(200, coffeeShopResponse.getStatus());
         assertThat(coffeeShopResponse.getEntity(String.class), containsString("espresso for a quid"));
         
-        NeoServer.server().shutdown();
+        NeoServer.server().stop();
 
     }
     
+    @Test
+    public void shouldLogShutdown() {
+        NeoServer neoServer = new NeoServer(configurator(), database(), webServer());
+        InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
+        neoServer.start(null);
+        neoServer.stop();
+        
+        assertThat(appender.toString(), containsString("INFO - Successfully shutdown Neo Server on port [5555], database [/tmp/neo/functionaltest.db]"));
+    }
+    
+    @Test
+    public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException {
+        NeoServer s1 = new NeoServer(configurator(), database(), webServer());
+        s1.start(null);
+        
+        Configurator conflictingConfig = portClashingConfigurator();
+
+        
+        NeoServer s2 = new NeoServer(portClashingConfigurator(), new Database(conflictingConfig.configuration().getString("database.location")), webServer());
+        InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
+        s2.start(null);
+        
+        assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", conflictingConfig.configuration().getString("webserver.port"))));
+        s1.stop();
+        s2.stop();
+    }
+    
+
+
     private WebServer webServer() {
         JettyWebServer server = new JettyWebServer();
         server.setPort(configurator().configuration().getInt("webserver.port"));
@@ -106,5 +137,14 @@ public class NeoServerFunctionalTest {
         File configFile = new File("src/functionaltest/resources/etc/neo-server/neo-server.properties");
         Configurator configurator = new Configurator(configFile);
         return configurator;
+    }
+    
+    private Configurator portClashingConfigurator() throws IOException {
+        File tempPropertyFile = ServerTestUtils.createTempPropertyFile();
+        ServerTestUtils.writePropertyToFile("database.location", "/tmp/neo/functionaltest-clashing.db", tempPropertyFile);
+        ServerTestUtils.writePropertyToFile("webserver.port", "5555", tempPropertyFile);
+        ServerTestUtils.writePropertyToFile("webservice.packages", "org.example.coffeeshop, org.example.petshop", tempPropertyFile);
+        
+        return new Configurator(tempPropertyFile);
     }
 }
