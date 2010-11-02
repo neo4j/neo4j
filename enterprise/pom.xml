@@ -19,6 +19,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
   <properties>
+    <bundle.namespace>org.neo4j.management</bundle.namespace>
     <short-name>management</short-name>
   </properties>
 
