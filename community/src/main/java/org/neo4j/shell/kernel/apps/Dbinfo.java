@@ -31,7 +31,7 @@ import javax.management.ObjectName;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.management.Kernel;
+import org.neo4j.management.Kernel;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.OptionValueType;

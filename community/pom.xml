@@ -139,6 +139,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-management</artifactId>
+      <version>1.2-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>${jline.groupId}</groupId>
       <artifactId>${jline.artifactId}</artifactId>
       <version>${jline.version}</version>
