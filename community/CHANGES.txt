@@ -1,0 +1,4 @@
+0.8-1.2.M03 (2010-11-04)
+------------------------
+
+o First release within the Neo4j suite
