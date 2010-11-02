@@ -65,6 +65,11 @@
       <artifactId>neo4j-management</artifactId>
       <version>1.2-SNAPSHOT</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-rest</artifactId>
+      <version>0.8-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
   <scm>
