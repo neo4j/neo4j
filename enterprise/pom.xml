@@ -118,6 +118,12 @@
         <scope>provided</scope>
         <optional>true</optional>
 		</dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-webadmin</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
+    
 		
 	</dependencies>
 
