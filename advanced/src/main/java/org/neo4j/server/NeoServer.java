@@ -29,6 +29,9 @@ import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecified
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
+import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.JettyWebServer;
 import org.neo4j.server.web.WebServer;
 import org.tanukisoftware.wrapper.WrapperListener;
@@ -39,15 +42,13 @@ import org.tanukisoftware.wrapper.WrapperListener;
 public class NeoServer implements WrapperListener {
     public static final Logger log = Logger.getLogger(NeoServer.class);
 
+    public static final String NEO_CONFIGDIR_PROPERTY = "org.neo4j.server.properties";
+    public static final String DEFAULT_NEO_CONFIGDIR = File.separator + "etc" + File.separator + "neo";
+
     private static final String WEBSERVICE_PACKAGES = "org.neo4j.webservice.packages";
     private static final String DATABASE_LOCATION = "org.neo4j.database.location";
     private static final String WEBSERVER_PORT = "org.neo4j.webserver.port";
     private static final int DEFAULT_WEBSERVER_PORT = 7474;
-
-
-    private static final String NEO_CONFIGDIR_PROPERTY = "org.neo4j.server.properties";
-    private static final String DEFAULT_NEO_CONFIGDIR = File.separator + "etc" + File.separator + "neo";
-
 
     private Configurator configurator;
     private Database database;
@@ -63,8 +64,12 @@ public class NeoServer implements WrapperListener {
     }
 
     public NeoServer() {
-        // Specify rules here
-        Validator validator = new Validator(new DatabaseLocationMustBeSpecifiedRule()); 
+        StartupHealthCheck healthCheck = new StartupHealthCheck(new ConfigFileMustBePresentRule());
+        if(!healthCheck.run()) {
+            throw new StartupHealthCheckFailedException("Startup healthcheck failed, server is not properly configured. Check logs for details.");
+        }
+        
+        Validator validator = new Validator(new DatabaseLocationMustBeSpecifiedRule());
         this.configurator = new Configurator(validator, getConfigFile());
         this.webServer = new JettyWebServer();
         this.database = new Database(configurator.configuration().getString(DATABASE_LOCATION));
