@@ -113,7 +113,7 @@ public class NeoServer implements WrapperListener {
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", portNo, location);
             return 0;
         } catch (Exception e) {
-            log.error("Failed to cleanly shutdown Neo Server on port [%d], database [%s]", portNo, location);
+            log.error("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ", portNo, location, e.getMessage());
             return 1;
         }
     }
