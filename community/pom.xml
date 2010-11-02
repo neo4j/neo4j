@@ -40,7 +40,7 @@
     <neo4j.logdir>${neo4j.datadir}/log</neo4j.logdir> <!-- needed? -->
 
     <!-- dependency versions -->
-    <neo4j.version>1.2.M02</neo4j.version>
+    <neo4j.version>1.2-SNAPSHOT</neo4j.version>
     <neo4j-server.version>0.1-SNAPSHOT</neo4j-server.version>
     <neo4j-examples.version>1.2-SNAPSHOT</neo4j-examples.version>
 
