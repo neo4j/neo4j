@@ -42,16 +42,16 @@ public class NeoServer implements WrapperListener {
     private static final String WEBSERVICE_PACKAGES = "org.neo4j.webservice.packages";
     private static final String DATABASE_LOCATION = "org.neo4j.database.location";
     private static final String WEBSERVER_PORT = "org.neo4j.webserver.port";
+    private static final int DEFAULT_WEBSERVER_PORT = 7474;
 
 
     private static final String NEO_CONFIGDIR_PROPERTY = "org.neo4j.server.properties";
     private static final String DEFAULT_NEO_CONFIGDIR = File.separator + "etc" + File.separator + "neo";
 
+
     private Configurator configurator;
     private Database database;
     private WebServer webServer;
-
-    private static NeoServer theServer;
 
     /**
      * For test purposes only.
@@ -63,42 +63,21 @@ public class NeoServer implements WrapperListener {
     }
 
     public NeoServer() {
+        // Specify rules here
         Validator validator = new Validator(new DatabaseLocationMustBeSpecifiedRule()); 
         this.configurator = new Configurator(validator, getConfigFile());
-        
-        JettyWebServer ws = new JettyWebServer();
-        ws.setPort(configurator.configuration().getInt(WEBSERVER_PORT));
-        ws.addPackages(convertPropertiesToSingleString(configurator.configuration().getStringArray(WEBSERVICE_PACKAGES)));
-        this.webServer = ws;
-
+        this.webServer = new JettyWebServer();
         this.database = new Database(configurator.configuration().getString(DATABASE_LOCATION));
-    }
-
-    public static void main(String[] args) {        
-        theServer = new NeoServer();
-        
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                log.info("Neo Server shutdown initiated by kill signal");
-                theServer.stop();
-            }
-        });
-
-        theServer.start(args);
-    }
-
-    /**
-     * Just for functional testing purposes
-     */
-    static NeoServer server() {
-        return theServer;
     }
 
     public Integer start(String[] args) {
         try {
+            webServer.setPort(configurator.configuration().getInt(WEBSERVER_PORT, DEFAULT_WEBSERVER_PORT));
+            webServer.addPackages(convertPropertiesToSingleString(configurator.configuration().getStringArray(WEBSERVICE_PACKAGES)));
             webServer.start();
+            
             log.info("Started Neo Server on port [%s]", webServer.getPort());
+            
             return 0;
         } catch (Exception e) {
             log.error("Failed to start Neo Server on port [%s]", webServer.getPort());
@@ -125,6 +104,7 @@ public class NeoServer implements WrapperListener {
                 webServer = null;
             }
             configurator = null;
+            
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", portNo, location);
             return 0;
         } catch (Exception e) {
