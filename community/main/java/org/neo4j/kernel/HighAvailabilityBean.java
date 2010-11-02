@@ -28,83 +28,112 @@ import java.util.Map;
 
 import javax.management.NotCompliantMBeanException;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.KernelExtension.KernelData;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.SlaveContext;
-import org.neo4j.kernel.impl.management.Description;
-import org.neo4j.kernel.impl.management.Neo4jMBean;
 import org.neo4j.kernel.management.HighAvailability;
 import org.neo4j.kernel.management.SlaveInfo;
 import org.neo4j.kernel.management.SlaveInfo.SlaveTransaction;
+import org.neo4j.management.impl.Description;
+import org.neo4j.management.impl.ManagementBeanProvider;
+import org.neo4j.management.impl.Neo4jMBean;
 
-@Description( "Information about an instance participating in a HA cluster" )
-public final class HighAvailabilityBean extends Neo4jMBean implements HighAvailability
+@Service.Implementation( ManagementBeanProvider.class )
+public final class HighAvailabilityBean extends ManagementBeanProvider
 {
-    private final HighlyAvailableGraphDatabase db;
-    
-    public HighAvailabilityBean( String instanceId, GraphDatabaseService db )
-            throws NotCompliantMBeanException
+    public HighAvailabilityBean()
     {
-        super( instanceId, HighAvailability.class );
-        this.db = (HighlyAvailableGraphDatabase) db;
+        super( HighAvailability.class );
     }
 
-    @Description( "The identifier used to identify this machine in the HA cluster" )
-    public String getMachineId()
+    @Override
+    protected Neo4jMBean createMXBean( KernelData kernel ) throws NotCompliantMBeanException
     {
-        return Integer.toString( db.getMachineId() );
+        return new HighAvailibilityImpl( this, kernel, true );
     }
 
-    @Description( "Whether this instance is master or not" )
-    public boolean isMaster()
+    @Override
+    protected Neo4jMBean createMBean( KernelData kernel ) throws NotCompliantMBeanException
     {
-        return db.getMasterServerIfMaster() != null;
+        return new HighAvailibilityImpl( this, kernel );
     }
 
-    @Description( "(If this is a master) Information about "
-                  + "the instances connected to this instance" )
-    public SlaveInfo[] getConnectedSlaves()
+    @Description( "Information about an instance participating in a HA cluster" )
+    private static class HighAvailibilityImpl extends Neo4jMBean implements HighAvailability
     {
-        MasterServer master = db.getMasterServerIfMaster();
-        if ( master == null ) return null;
-        List<SlaveInfo> result = new ArrayList<SlaveInfo>();
-        for ( Map.Entry<Integer, Collection<SlaveContext>> entry : master.getSlaveInformation().entrySet() )
+        private final HighlyAvailableGraphDatabase db;
+
+        HighAvailibilityImpl( ManagementBeanProvider provider, KernelData kernel )
+                throws NotCompliantMBeanException
         {
-            result.add( slaveInfo( entry.getKey(), entry.getValue() ) );
+            super( provider, kernel );
+            this.db = (HighlyAvailableGraphDatabase) kernel.graphDatabase();
         }
-        return result.toArray( new SlaveInfo[result.size()] );
-    }
 
-    @Description( "(If this is a slave) Update the database on this "
-                  + "instance with the latest transactions from the master" )
-    public String update()
-    {
-        long time = System.currentTimeMillis();
-        try
+        HighAvailibilityImpl( ManagementBeanProvider provider, KernelData kernel, boolean isMXBean )
         {
-            db.pullUpdates();
+            super( provider, kernel, isMXBean );
+            this.db = (HighlyAvailableGraphDatabase) kernel.graphDatabase();
         }
-        catch ( Exception e )
-        {
-            return "Update failed: " + e;
-        }
-        time = System.currentTimeMillis() - time;
-        return "Update completed in " + time + "ms";
-    }
 
-    private static SlaveInfo slaveInfo( Integer machineId, Collection<SlaveContext> contexts )
-    {
-        List<SlaveTransaction> txInfo = new ArrayList<SlaveTransaction>();
-        for ( SlaveContext context : contexts )
+        @Description( "The identifier used to identify this machine in the HA cluster" )
+        public String getMachineId()
         {
-            Map<String, Long> lastTransactions = new HashMap<String, Long>();
-            for ( Pair<String, Long> tx : context.lastAppliedTransactions() )
+            return Integer.toString( db.getMachineId() );
+        }
+
+        @Description( "Whether this instance is master or not" )
+        public boolean isMaster()
+        {
+            return db.getMasterServerIfMaster() != null;
+        }
+
+        @Description( "(If this is a master) Information about "
+                      + "the instances connected to this instance" )
+        public SlaveInfo[] getConnectedSlaves()
+        {
+            MasterServer master = db.getMasterServerIfMaster();
+            if ( master == null ) return null;
+            List<SlaveInfo> result = new ArrayList<SlaveInfo>();
+            for ( Map.Entry<Integer, Collection<SlaveContext>> entry : master.getSlaveInformation().entrySet() )
             {
-                lastTransactions.put( tx.first(), tx.other() );
+                result.add( slaveInfo( entry.getKey(), entry.getValue() ) );
             }
-            txInfo.add( new SlaveTransaction( context.getEventIdentifier(), lastTransactions ) );
+            return result.toArray( new SlaveInfo[result.size()] );
         }
-        return new SlaveInfo( machineId, txInfo.toArray( new SlaveTransaction[txInfo.size()] ) );
+
+        @Description( "(If this is a slave) Update the database on this "
+                      + "instance with the latest transactions from the master" )
+        public String update()
+        {
+            long time = System.currentTimeMillis();
+            try
+            {
+                db.pullUpdates();
+            }
+            catch ( Exception e )
+            {
+                return "Update failed: " + e;
+            }
+            time = System.currentTimeMillis() - time;
+            return "Update completed in " + time + "ms";
+        }
+
+        private static SlaveInfo slaveInfo( Integer machineId, Collection<SlaveContext> contexts )
+        {
+            List<SlaveTransaction> txInfo = new ArrayList<SlaveTransaction>();
+            for ( SlaveContext context : contexts )
+            {
+                Map<String, Long> lastTransactions = new HashMap<String, Long>();
+                for ( Pair<String, Long> tx : context.lastAppliedTransactions() )
+                {
+                    lastTransactions.put( tx.first(), tx.other() );
+                }
+                txInfo.add( new SlaveTransaction( context.getEventIdentifier(), lastTransactions ) );
+            }
+            return new SlaveInfo( machineId, txInfo.toArray( new SlaveTransaction[txInfo.size()] ) );
+        }
     }
 }
