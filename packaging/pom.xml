@@ -42,6 +42,7 @@
     <!-- dependency versions -->
     <neo4j.version>1.2.M02</neo4j.version>
     <neo4j-server.version>0.1-SNAPSHOT</neo4j-server.version>
+    <neo4j-examples.version>1.2-SNAPSHOT</neo4j-examples.version>
 
   </properties>
 
@@ -82,6 +83,50 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <configuration>
+          <repositoryName>../../lib</repositoryName>
+          <repositoryLayout>flat</repositoryLayout>
+          <generateRepository>false</generateRepository>
+          <programs>
+            <program>
+              <mainClass>org.neo4j.examples.EmbeddedNeo4j</mainClass>
+              <name>embedded-neo4j</name>
+            </program>
+            <program>
+              <mainClass>org.neo4j.examples.EmbeddedNeo4jWithIndexing</mainClass>
+              <name>embedded-neo4j-with-indexing</name>
+            </program>
+            <program>
+              <mainClass>org.neo4j.examples.Neo4jShell</mainClass>
+              <name>shell-example</name>
+            </program>
+            <program>
+              <mainClass>org.neo4j.shell.StartClient</mainClass>
+              <name>neo4j-shell</name>
+            </program>
+            <program>
+              <mainClass>org.neo4j.examples.CalculateShortestPath</mainClass>
+              <name>calculate-shortest-path</name>
+            </program>
+            <program>
+              <mainClass>org.neo4j.examples.UsingIntegratedIndex</mainClass>
+              <name>using-integrated-index</name>
+            </program>
+          </programs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>examples</id>
+            <phase>compile</phase> 
+            <goals>
+              <goal>assemble</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -97,8 +142,24 @@
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j-server.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j.examples</groupId>
+      <artifactId>neo4j-examples</artifactId>
+      <version>${neo4j-examples.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.examples</groupId>
+      <artifactId>neo4j-examples</artifactId>
+      <version>${neo4j-examples.version}</version>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.examples</groupId>
+      <artifactId>neo4j-examples</artifactId>
+      <version>${neo4j-examples.version}</version>
+      <classifier>test-sources</classifier>
+    </dependency>
   </dependencies>
-
 
 </project>
 
