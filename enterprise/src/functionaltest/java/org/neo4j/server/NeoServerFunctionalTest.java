@@ -61,6 +61,12 @@ public class NeoServerFunctionalTest {
     }
     
     @Test
+    public void whenHealthCheckFailsServerShouldNotStart() {
+        NeoServer server = new NeoServer();
+        server.start(null);
+    }
+    
+    @Test
     public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
         Configurator config = configWithoutWebServerPort();
         
