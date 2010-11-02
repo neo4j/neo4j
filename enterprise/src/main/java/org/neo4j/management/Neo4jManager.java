@@ -184,49 +184,41 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         return configuration;
     }
 
-    @Override
     public Date getKernelStartTime()
     {
         return kernel.getKernelStartTime();
     }
 
-    @Override
     public String getKernelVersion()
     {
         return kernel.getKernelVersion();
     }
 
-    @Override
     public ObjectName getMBeanQuery()
     {
         return kernel.getMBeanQuery();
     }
 
-    @Override
     public Date getStoreCreationDate()
     {
         return kernel.getStoreCreationDate();
     }
 
-    @Override
     public String getStoreDirectory()
     {
         return kernel.getStoreDirectory();
     }
 
-    @Override
     public String getStoreId()
     {
         return kernel.getStoreId();
     }
 
-    @Override
     public long getStoreLogVersion()
     {
         return kernel.getStoreLogVersion();
     }
 
-    @Override
     public boolean isReadOnly()
     {
         return kernel.isReadOnly();
