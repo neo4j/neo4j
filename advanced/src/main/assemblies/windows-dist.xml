@@ -38,6 +38,15 @@
         <include>**/*.bat</include>
       </includes>
     </fileSet>
+    <!-- java examples - shell scripts -->
+    <fileSet>
+      <directory>target/appassembler/bin</directory>
+      <outputDirectory>examples/java/bin</outputDirectory>
+      <fileMode>0755</fileMode>
+      <includes>
+        <include>*.bat</include>
+      </includes>
+    </fileSet>    
   </fileSets>
 
   <dependencySets>
@@ -64,6 +73,39 @@
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</exclude>
         <exclude>com.google.protobuf:protobuf-java</exclude>
       </excludes>
+    </dependencySet>
+    <!-- java examples -->
+    <dependencySet>
+      <outputDirectory>lib</outputDirectory>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <includes>
+        <include>org.neo4j.examples:*</include>
+      </includes>
+      <excludes>
+        <exclude>org.neo4j.examples:*:*:sources</exclude>
+        <exclude>org.neo4j.examples:*:*:test-sources</exclude>
+      </excludes>
+    </dependencySet>
+   <dependencySet>
+      <outputDirectory>examples/java/src</outputDirectory>
+      <unpack>true</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <fileMode>0444</fileMode>
+      <directoryMode>0777</directoryMode>
+      <includes>
+        <include>org.neo4j.examples:*:*:sources</include>
+      </includes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>examples/java/test</outputDirectory>
+      <unpack>true</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <fileMode>0444</fileMode>
+      <directoryMode>0777</directoryMode>
+      <includes>
+        <include>org.neo4j.examples:*:*:test-sources</include>
+      </includes>
     </dependencySet>
 
   </dependencySets>
