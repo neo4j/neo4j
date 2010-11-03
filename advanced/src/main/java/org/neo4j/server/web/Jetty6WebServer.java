@@ -20,20 +20,20 @@
 
 package org.neo4j.server.web;
 
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
-
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.DefaultHandler;
 import org.mortbay.jetty.handler.HandlerList;
-import org.mortbay.jetty.handler.ResourceHandler;
 import org.mortbay.jetty.servlet.ServletHolder;
+import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.thread.QueuedThreadPool;
 
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.UnknownHostException;
 
 public class Jetty6WebServer implements WebServer {
 
@@ -51,32 +51,15 @@ public class Jetty6WebServer implements WebServer {
         jetty = new Server(jettyPort);
         jetty.setStopAtShutdown(true);
 
-        
-        ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setResourceBase(contentResourcePath);
-        resourceHandler.setWelcomeFiles(new String[]{ "welcome.html" });
-        
-        resourceHandler.setResourceBase(contentContextBase);
-        
-        
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[] { resourceHandler, new DefaultHandler() });
-        jetty.addHandler(handlers);
+        URL staticUrl = this.getClass().getClassLoader().getResource(contentResourcePath);
+        String urlString = staticUrl.toExternalForm();
 
-        
-        
-//        Context contentContext = new Context(jetty, "/" + contentContextBase);
-//        contentContext.setContextPath(contentResourcePath);
-//        contentContext.setResourceBase(contentContextBase);
-//        contentContext.setWelcomeFiles(new String[] {"welcome.html"});
-//        
-//        ServletHolder sh = new ServletHolder();
-//        sh.setServlet(new DefaultServlet());
-//        contentContext.addServlet(sh, "/*");
-        
-            
-//        Context jerseyContext = new Context(jetty, "/");
-//        jerseyContext.addServlet(jerseyServletHolder, "/*");
+        WebAppContext staticContentContext = new WebAppContext( urlString, contentContextBase );
+
+        HandlerList handlers = new HandlerList();
+        handlers.setHandlers(new Handler[] { staticContentContext, new DefaultHandler() });
+
+        jetty.setHandler( handlers );
 
         try {
             jetty.start();
