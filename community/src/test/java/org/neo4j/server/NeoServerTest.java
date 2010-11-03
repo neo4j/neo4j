@@ -37,7 +37,7 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
-import org.neo4j.server.web.JettyWebServer;
+import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 
 import com.sun.jersey.api.client.Client;
@@ -52,10 +52,12 @@ public class NeoServerTest {
         NeoServer server = server();
         server.start(null);
 
-        ClientResponse response = Client.create().resource(server.webServer().getWelcomeUri()).get(ClientResponse.class);
+        //ClientResponse response = Client.create().resource(server.webServer().getWelcomeUri()).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource("http://localhost:7474/").get(ClientResponse.class);
 
         assertEquals(200, response.getStatus());
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("text/html"));
+        assertThat(response.getEntity(String.class), containsString("Welcome"));
 
         server.stop();
     }
@@ -120,7 +122,7 @@ public class NeoServerTest {
     }
 
     private WebServer webServer() {
-        WebServer webServer = new JettyWebServer();
+        WebServer webServer = new Jetty6WebServer();
         webServer.addPackages("org.neo4j.server.web");
         return webServer;
     }
