@@ -8,8 +8,8 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
   <parent>
     <groupId>org.neo4j.examples</groupId>
-    <artifactId>example-upload-to-dist</artifactId>
-    <version>1</version>
+    <artifactId>examples-pom</artifactId>
+    <version>5</version>
   </parent>
 
   <properties>
@@ -65,19 +65,45 @@
     <system>Trac</system>
     <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=neo4j</url>
   </issueManagement>
-  
+
   <scm>
     <connection>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/trunk</connection>
     <developerConnection>scm:svn:https://svn.neo4j.org/examples/neo4j-examples/trunk</developerConnection>
     <url>https://trac.neo4j.org/browser/examples/neo4j-examples/</url>
   </scm>
-  
+
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>neo4j</artifactId>
+                  <version>1.2-SNAPSHOT</version>
+                  <type>jar</type>
+                  <classifier>javadoc</classifier>
+                  <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
+                  <!-- 
+                  <includes>*.js</includes>
+                   -->
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin
-                </artifactId>
+        <artifactId>appassembler-maven-plugin</artifactId>
         <configuration>
           <programs>
             <program>
@@ -101,14 +127,8 @@
               <mainClass>org.neo4j.shell.StartClient</mainClass>
               <name>neo4j-shell</name>
             </program>
-            <!-- Disabled since there's no longer such a main class. It'd be nice
-                 to have something which runs the tests instead though -->
-            <!--program>
-              <mainClass>
-                org.neo4j.examples.socnet.Main
-              </mainClass>
-              <name>social-network-application</name>
-            </program-->
+            <!-- Disabled since there's no longer such a main class. It'd be nice to have something which runs the tests instead though -->
+            <!--program> <mainClass> org.neo4j.examples.socnet.Main </mainClass> <name>social-network-application</name> </program -->
             <program>
               <mainClass>org.neo4j.examples.CalculateShortestPath</mainClass>
               <name>calculate-shortest-path</name>
@@ -156,16 +176,32 @@
       </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <finalName>neo4j-${project.version}</finalName>
-          <descriptors>
-            <descriptor>src/main/assembly/neo4j-assembly.xml</descriptor>
-          </descriptors>
-        </configuration>
         <executions>
           <execution>
-            <id>apoc-assembly</id>
+            <id>download-assembly</id>
             <phase>package</phase>
+            <configuration>
+              <appendAssemblyId>false</appendAssemblyId>
+              <finalName>neo4j-${project.version}</finalName>
+              <descriptors>
+                <descriptor>src/main/assembly/neo4j-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>site-assembly</id>
+            <phase>package</phase>
+            <configuration>
+              <attach>true</attach>
+              <appendAssemblyId>false</appendAssemblyId>
+              <finalName>neo4j-${project.version}-site</finalName>
+              <descriptors>
+                <descriptor>src/main/assembly/site-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
             <goals>
               <goal>single</goal>
             </goals>
@@ -175,6 +211,9 @@
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
         <artifactId>maven-license-plugin</artifactId>
+        <configuration>
+          <header>http://neo4j.org/license-header-asl.txt</header>
+        </configuration>
         <executions>
           <execution>
             <goals>
@@ -182,12 +221,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-release-plugin</artifactId>
-        <configuration>
-          <tagBase>https://svn.neo4j.org/examples/${short-name}/tags</tagBase>
-        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-source-plugin</artifactId>
@@ -202,22 +235,48 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-artifacts</id>
+            <phase>package</phase>
+            <goals>
+              <!-- 
+              <goal>attach-artifact</goal>
+               -->
+            </goals>
+            <configuration>
+              <artifacts>
+                <artifact>
+                  <file>neo4j-${project.version}-site.jar</file>
+                  <type>jar</type>
+                  <classifier>site</classifier>
+                </artifact>
+              </artifacts>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-release-plugin</artifactId>
+        <configuration>
+          <tagBase>https://svn.neo4j.org/examples/${short-name}/tags</tagBase>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
   <reporting>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <inherited>true</inherited>
-        <configuration>
-          <windowtitle>Neo4j ${project.version} API</windowtitle>
-          <doctitle>Neo4j ${project.version} API</doctitle>
-        </configuration>
+        <reportSets>
+          <reportSet />
+        </reportSets>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jxr-plugin</artifactId>
         <version>2.2</version>
         <configuration>
@@ -227,7 +286,7 @@
     </plugins>
   </reporting>
 
-  
+
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
