@@ -72,6 +72,7 @@
       <useProjectArtifact>false</useProjectArtifact>
       <excludes>
         <exclude>org.neo4j:*</exclude>
+        <exclude>org.neo4j.examples:*</exclude>
         <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</exclude>
@@ -111,8 +112,6 @@
         <include>org.neo4j.examples:*:*:test-sources</include>
       </includes>
     </dependencySet>
-
-
   </dependencySets>
 
 </assembly>
