@@ -32,4 +32,6 @@ public interface WebServer {
     public void setMaxThreads(int maxThreads);
     public URI getBaseUri() throws URISyntaxException;
     public URI getWelcomeUri() throws URISyntaxException;
+    public void setStaticContentDir(String resourcePath);
+    public void setStaticContextRoot(String contextRoot);
 }
