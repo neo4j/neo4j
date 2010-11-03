@@ -21,7 +21,6 @@
 package org.neo4j.server;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
@@ -29,8 +28,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
@@ -40,26 +37,9 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.UniformInterfaceException;
+import com.sun.tools.javac.util.List;
 
 public class NeoServerTest {
-
-    @Test
-    public void whenServerIsStartedItShouldBringUpAWebServerWithWelcomePage() throws Exception {
-        NeoServer server = server();
-        server.start(null);
-
-        ClientResponse response = Client.create().resource(server.webServer().getWelcomeUri()).get(ClientResponse.class);
-        
-        assertEquals(200, response.getStatus());
-        assertThat(response.getHeaders().getFirst("Content-Type"), containsString("text/html"));
-        assertThat(response.getEntity(String.class), containsString("Welcome"));
-
-        server.stop();
-    }
 
     @Test
     public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception {
@@ -82,19 +62,6 @@ public class NeoServerTest {
         server.stop();
     }
 
-    @Test(expected = ClientHandlerException.class)
-    public void whenServerIsShutDownTheWebServerShouldHalt() throws UniformInterfaceException, URISyntaxException, IOException {
-        
-        NeoServer server = server();
-        server.start(null);
-        
-        URI welcomeUri = server.webServer().getWelcomeUri();
-        
-        server.stop();
-
-        Client.create().resource(welcomeUri).get(ClientResponse.class);
-    }
-
     @Test(expected = NullPointerException.class)
     public void whenServerIsShutDownTheDatabaseShouldNotBeAvailable() throws IOException {
 
@@ -109,7 +76,7 @@ public class NeoServerTest {
     
     @Test(expected=StartupHealthCheckFailedException.class)
     public void shouldExitWhenFailedStartupHealthCheck() {
-        System.clearProperty(NeoServer.NEO_CONFIGDIR_PROPERTY);
+        System.clearProperty(NeoServer.NEO_CONFIG_FILE_PROPERTY);
         new NeoServer();
     }
     
@@ -122,7 +89,7 @@ public class NeoServerTest {
 
     private WebServer webServer() {
         WebServer webServer = new Jetty6WebServer();
-        webServer.setPackages("org.neo4j.server.web");
+        webServer.addJAXRSPackages(List.from(new String[] {NeoServer.REST_API_PACKAGE}), NeoServer.REST_API_PATH);
         return webServer;
     }
 
