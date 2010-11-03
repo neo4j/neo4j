@@ -20,11 +20,9 @@
 
 package org.neo4j.server.web;
 
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.List;
 
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -37,36 +35,19 @@ import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class Jetty6WebServer implements WebServer {
 
-    private static final String DEFAULT_CONTENT_RESOURCE_PATH = "html";
-    private static final String DEFAULT_CONTENT_CONTEXT_BASE = "webadmin";
-
     private Server jetty;
-
     private int jettyPort = 80;
-    private ServletHolder jerseyServletHolder = new ServletHolder(ServletContainer.class);
 
-    private String contentResourcePath = DEFAULT_CONTENT_RESOURCE_PATH;
-    private String contentContextPath = DEFAULT_CONTENT_CONTEXT_BASE;
+    private HashMap<String, String> staticContent = new HashMap<String, String>();
+    private HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
 
     public void start() {
         jetty = new Server(jettyPort);
         jetty.setStopAtShutdown(true);
 
-        try {
-            final WebAppContext webadmin = new WebAppContext();
-            webadmin.setServer(jetty);
-            webadmin.setContextPath("/" + contentContextPath);
-            URL url = getClass().getClassLoader().getResource(contentResourcePath).toURI().toURL();
-            final Resource resource = Resource.newResource(url);
-            webadmin.setBaseResource(resource);
-            jetty.addHandler(webadmin);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        Context jerseyContext = new Context(jetty, "/");
-        jerseyContext.addServlet(jerseyServletHolder, "/*");
-
+        loadStaticContent();
+        loadJAXRSPackages();
+        
         try {
             jetty.start();
         } catch (Exception e) {
@@ -74,7 +55,7 @@ public class Jetty6WebServer implements WebServer {
         }
     }
 
-    public void shutdown() {
+    public void stop() {
         try {
             jetty.stop();
             jetty.join();
@@ -87,59 +68,54 @@ public class Jetty6WebServer implements WebServer {
         jettyPort = portNo;
     }
 
-    public int getPort() {
-        return jettyPort;
-    }
-
-    public void setPackages(String packageNames) {
-        if (packageNames == null) {
-            return;
-        }
-
-        jerseyServletHolder.setInitParameter("com.sun.jersey.config.property.packages", packageNames);
-    }
-
     public void setMaxThreads(int maxThreads) {
         jetty.setThreadPool(new QueuedThreadPool(maxThreads));
     }
 
-    public URI getBaseUri() throws URISyntaxException {
+    public void addJAXRSPackages(List<String> packageNames, String serverMountPoint) {
+        ServletHolder servletHolder = new ServletHolder(ServletContainer.class);
+        servletHolder.setInitParameter("com.sun.jersey.config.property.packages", toCommaSeparatedList(packageNames));
+        jaxRSPackages.put(serverMountPoint, servletHolder);
+    }
+
+    public void addStaticContent(String contentLocation, String serverMountPoint) {
+        staticContent.put(serverMountPoint, contentLocation);
+    }
+    
+    private void loadStaticContent() {
+        for (String mountPoint : staticContent.keySet()) {
+            String contentLocation = staticContent.get(mountPoint);
+            try {
+                final WebAppContext webadmin = new WebAppContext();
+                webadmin.setServer(jetty);
+                webadmin.setContextPath(mountPoint);
+                URL url = getClass().getClassLoader().getResource(contentLocation).toURI().toURL();
+                final Resource resource = Resource.newResource(url);
+                webadmin.setBaseResource(resource);
+                jetty.addHandler(webadmin);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void loadJAXRSPackages() {
+        for(String mountPoint : jaxRSPackages.keySet()) {
+             ServletHolder servletHolder = jaxRSPackages.get(mountPoint);
+             Context jerseyContext = new Context(jetty, mountPoint);
+             jerseyContext.addServlet(servletHolder, "/*");
+        }
+    }
+    
+    private String toCommaSeparatedList(List<String> packageNames) {
         StringBuilder sb = new StringBuilder();
-
-        sb.append("http");
-        if (jettyPort == 443) {
-            sb.append("s");
+        
+        for(String str : packageNames) {
+            sb.append(str);
+            sb.append(", ");
         }
-        sb.append("://");
-        try {
-            sb.append(InetAddress.getLocalHost().getHostName());
-        } catch (UnknownHostException e) {
-            sb.append("localhost");
-        }
-
-        if (jettyPort != 80) {
-            sb.append(":");
-            sb.append(jettyPort);
-        }
-
-        sb.append("/");
-
-        return new URI(sb.toString());
-    }
-
-    public URI getWelcomeUri() throws URISyntaxException {
-        if (contentContextPath == "") {
-            return new URI(getBaseUri().toString() + "welcome.html");
-        } else {
-            return new URI(getBaseUri().toString() + this.contentContextPath + "/" + "welcome.html");
-        }
-    }
-
-    public void setStaticContentDir(String staticContentResourcePath) {
-        this.contentResourcePath = staticContentResourcePath;
-    }
-
-    public void setStaticContextRoot(String contextRoot) {
-        this.contentContextPath = contextRoot;
+        
+        String result = sb.toString();
+        return result.substring(0, result.length() -2);
     }
 }

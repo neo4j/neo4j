@@ -30,7 +30,7 @@ public class ConfigFileMustBePresentRule implements StartupHealthCheckRule {
     private boolean ran = false;
 
     public boolean execute(Properties properties) {
-        String key = properties.getProperty(NeoServer.NEO_CONFIGDIR_PROPERTY);
+        String key = properties.getProperty(NeoServer.NEO_CONFIG_FILE_PROPERTY);
         this.passed  = key != null && new File(key).exists();
         ran = true;
         return passed;

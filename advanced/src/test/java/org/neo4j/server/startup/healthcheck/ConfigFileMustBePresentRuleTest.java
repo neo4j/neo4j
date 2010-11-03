@@ -56,12 +56,12 @@ public class ConfigFileMustBePresentRuleTest {
     }
     
     private Properties propertiesWithoutConfigFileLocation() {
-        System.clearProperty(NeoServer.NEO_CONFIGDIR_PROPERTY);
+        System.clearProperty(NeoServer.NEO_CONFIG_FILE_PROPERTY);
         return System.getProperties();
     }
     
     private Properties propertiesWithConfigFileLocation(File propertyFile) {
-        System.setProperty(NeoServer.NEO_CONFIGDIR_PROPERTY, propertyFile.getAbsolutePath());
+        System.setProperty(NeoServer.NEO_CONFIG_FILE_PROPERTY, propertyFile.getAbsolutePath());
         return System.getProperties();
     }
 }

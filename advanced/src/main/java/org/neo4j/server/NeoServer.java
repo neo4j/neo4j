@@ -36,16 +36,22 @@ import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 import org.tanukisoftware.wrapper.WrapperListener;
 
+import com.sun.tools.javac.util.List;
+
 /**
  * Application entry point for the Neo4j Server.
  */
 public class NeoServer implements WrapperListener {
+    private static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.webadmin.rest";
+
+    public static final String REST_API_PATH = "/rest/api";
+    public static final String REST_API_PACKAGE = "org.neo4j.rest.web";
+
     public static final Logger log = Logger.getLogger(NeoServer.class);
 
-    public static final String NEO_CONFIGDIR_PROPERTY = "org.neo4j.server.properties";
+    public static final String NEO_CONFIG_FILE_PROPERTY = "org.neo4j.server.properties";
     public static final String DEFAULT_NEO_CONFIGDIR = File.separator + "etc" + File.separator + "neo";
 
-    private static final String WEBSERVICE_PACKAGES = "org.neo4j.webservice.packages";
     private static final String DATABASE_LOCATION = "org.neo4j.database.location";
     private static final String WEBSERVER_PORT = "org.neo4j.webserver.port";
     private static final int DEFAULT_WEBSERVER_PORT = 7474;
@@ -53,6 +59,8 @@ public class NeoServer implements WrapperListener {
     private Configurator configurator;
     private Database database;
     private WebServer webServer;
+
+    private int webServerPort;
 
     /**
      * For test purposes only.
@@ -75,16 +83,22 @@ public class NeoServer implements WrapperListener {
     }
 
     public Integer start(String[] args) {
+        webServerPort = configurator.configuration().getInt(WEBSERVER_PORT, DEFAULT_WEBSERVER_PORT);
         try {
-            webServer.setPort(configurator.configuration().getInt(WEBSERVER_PORT, DEFAULT_WEBSERVER_PORT));
-            webServer.setPackages(convertPropertiesToSingleString(configurator.configuration().getStringArray(WEBSERVICE_PACKAGES)));
+            webServer.setPort(webServerPort);
+            webServer.addJAXRSPackages(List.from(new String[] {REST_API_PACKAGE}), REST_API_PATH);
+            
+            // webadmin assumes root
+            webServer.addStaticContent("html", "/webadmin");
+            webServer.addJAXRSPackages(List.from(new String[] {WEB_ADMIN_REST_API_PACKAGE}), "/");
+            
             webServer.start();
             
-            log.info("Started Neo Server on port [%s]", webServer.getPort());
+            log.info("Started Neo Server on port [%s]", webServerPort);
             
             return 0;
         } catch (Exception e) {
-            log.error("Failed to start Neo Server on port [%s]", webServer.getPort());
+            log.error("Failed to start Neo Server on port [%s]", webServerPort);
             return 1;
         }
     }
@@ -94,7 +108,6 @@ public class NeoServer implements WrapperListener {
     }
     
     public int stop(int stopArg) {
-        int portNo = -1;
         String location = "unknown";
         try {
             if (database != null) {
@@ -103,16 +116,15 @@ public class NeoServer implements WrapperListener {
                 database = null;
             }
             if (webServer != null) {
-                portNo = webServer.getPort();
-                webServer.shutdown();
+                webServer.stop();
                 webServer = null;
             }
             configurator = null;
             
-            log.info("Successfully shutdown Neo Server on port [%d], database [%s]", portNo, location);
+            log.info("Successfully shutdown Neo Server on port [%d], database [%s]", webServerPort, location);
             return 0;
         } catch (Exception e) {
-            log.error("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ", portNo, location, e.getMessage());
+            log.error("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ", webServerPort, location, e.getMessage());
             return 1;
         }
     }
@@ -134,24 +146,7 @@ public class NeoServer implements WrapperListener {
     }
     
     private static File getConfigFile() {
-        return new File(System.getProperty(NEO_CONFIGDIR_PROPERTY, DEFAULT_NEO_CONFIGDIR));
-    }
-
-    private static String convertPropertiesToSingleString(String[] properties) {
-        if(properties == null || properties.length < 1) {
-            return null;
-        }
-        
-        StringBuilder sb = new StringBuilder();
-        
-        // Nasty string hacks - commons config gives us nice-ish collections, but Jetty wants to load with stringified properties
-        for(String s : properties) {
-            sb.append(s);
-            sb.append(", ");
-        }
-        
-        String str = sb.toString();
-        return str.substring(0, str.length() -2);
+        return new File(System.getProperty(NEO_CONFIG_FILE_PROPERTY, DEFAULT_NEO_CONFIGDIR));
     }
 
     public static void main(String args[]) {

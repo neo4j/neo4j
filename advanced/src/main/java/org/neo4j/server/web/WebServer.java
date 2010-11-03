@@ -20,18 +20,13 @@
 
 package org.neo4j.server.web;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.List;
 
 public interface WebServer {
-    public void setPackages(String packageNames);
     public void setPort(int portNo);
-    public int getPort();
     public void start();
-    public void shutdown();
+    public void stop();
     public void setMaxThreads(int maxThreads);
-    public URI getBaseUri() throws URISyntaxException;
-    public URI getWelcomeUri() throws URISyntaxException;
-    public void setStaticContentDir(String resourcePath);
-    public void setStaticContextRoot(String contextRoot);
+    public void addJAXRSPackages(List<String> packageNames, String serverMountPoint);
+    public void addStaticContent(String contentLocation, String serverMountPoint);
 }
