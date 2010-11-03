@@ -24,6 +24,8 @@
             <item name="Social network" href="social-network.html" />
             <item name="Graph algorithms" href="graphalgo.html" />
             <item name="Neo4j JavaDocs" href="apidocs/index.html" />
+            <item name="Example code" href="xref/index.html" />
+            <item name="Example test code" href="xref-test/index.html" />
             <item name="Wiki" href="http://wiki.neo4j.org/content/Getting_Started_With_Apoc" />
             <item name="Source Repository"
                 href="https://svn.neo4j.org/examples/neo4j-examples/trunk/" />

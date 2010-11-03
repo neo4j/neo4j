@@ -9,7 +9,7 @@
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>5</version>
+    <version>6</version>
   </parent>
 
   <properties>
@@ -75,50 +75,20 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.neo4j</groupId>
-                  <artifactId>neo4j</artifactId>
-                  <version>1.2-SNAPSHOT</version>
-                  <type>jar</type>
-                  <classifier>javadoc</classifier>
-                  <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
-                  <!-- <includes>*.js</includes> -->
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
         <configuration>
           <programs>
             <program>
-              <mainClass>org.neo4j.examples.EmbeddedNeo4j
-              </mainClass>
+              <mainClass>org.neo4j.examples.EmbeddedNeo4j</mainClass>
               <name>embedded-neo4j</name>
             </program>
             <program>
-              <mainClass>
-                org.neo4j.examples.EmbeddedNeo4jWithIndexing
-              </mainClass>
+              <mainClass>org.neo4j.examples.EmbeddedNeo4jWithIndexing</mainClass>
               <name>embedded-neo4j-with-indexing</name>
             </program>
             <program>
-              <mainClass>
-                org.neo4j.examples.Neo4jShell
-              </mainClass>
+              <mainClass>org.neo4j.examples.Neo4jShell</mainClass>
               <name>shell-example</name>
             </program>
             <program>
@@ -173,6 +143,30 @@
         </executions>
       </plugin>
       <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>neo4j</artifactId>
+                  <version>1.2-SNAPSHOT</version>
+                  <type>jar</type>
+                  <classifier>javadoc</classifier>
+                  <outputDirectory>${project.build.directory}/neo4j-apidocs</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <!-- <execution> <id>get-javadoc-sources</id> <phase>none</phase> </execution> -->
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
@@ -194,8 +188,8 @@
             <phase>package</phase>
             <configuration>
               <attach>true</attach>
-              <appendAssemblyId>false</appendAssemblyId>
-              <finalName>neo4j-${project.version}-site</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <finalName>neo4j-${project.version}</finalName>
               <descriptors>
                 <descriptor>src/main/assembly/site-assembly.xml</descriptor>
               </descriptors>
@@ -266,6 +260,27 @@
 
   <reporting>
     <plugins>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <windowtitle>Neo4j ${project.version} API</windowtitle>
+          <doctitle>Neo4j ${project.version} API</doctitle>
+        </configuration>
+        <reportSets>
+          <reportSet>
+            <id>javadoc-aggregated-report</id>
+            <configuration>
+              <!-- <skip>true</skip> -->
+            </configuration>
+          </reportSet>
+          <reportSet>
+            <id>javadoc-report</id>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </reportSet>
+        </reportSets>
+      </plugin>
       <plugin>
         <artifactId>maven-jxr-plugin</artifactId>
         <version>2.2</version>
