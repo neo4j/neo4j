@@ -30,7 +30,6 @@ import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.jetty.webapp.WebAppContext;
-import org.mortbay.resource.FileResource;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
 
@@ -58,7 +57,7 @@ public class Jetty6WebServer implements WebServer {
             webadmin.setServer(jetty);
             webadmin.setContextPath("/" + contentContextPath);
             URL url = getClass().getClassLoader().getResource(contentResourcePath).toURI().toURL();
-            final Resource resource = new FileResource(url);
+            final Resource resource = Resource.newResource(url);
             webadmin.setBaseResource(resource);
             jetty.addHandler(webadmin);
         } catch (Exception e) {
