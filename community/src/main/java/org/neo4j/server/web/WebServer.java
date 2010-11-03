@@ -24,7 +24,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 public interface WebServer {
-    public void addPackages(String packageNames);
+    public void setPackages(String packageNames);
     public void setPort(int portNo);
     public int getPort();
     public void start();

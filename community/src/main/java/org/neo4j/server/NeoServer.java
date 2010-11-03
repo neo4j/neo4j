@@ -69,8 +69,7 @@ public class NeoServer implements WrapperListener {
             throw new StartupHealthCheckFailedException("Startup healthcheck failed, server is not properly configured. Check logs for details.");
         }
         
-        Validator validator = new Validator(new DatabaseLocationMustBeSpecifiedRule());
-        this.configurator = new Configurator(validator, getConfigFile());
+        this.configurator = new Configurator(new Validator(new DatabaseLocationMustBeSpecifiedRule()), getConfigFile());
         this.webServer = new Jetty6WebServer();
         this.database = new Database(configurator.configuration().getString(DATABASE_LOCATION));
     }
@@ -78,7 +77,7 @@ public class NeoServer implements WrapperListener {
     public Integer start(String[] args) {
         try {
             webServer.setPort(configurator.configuration().getInt(WEBSERVER_PORT, DEFAULT_WEBSERVER_PORT));
-            webServer.addPackages(convertPropertiesToSingleString(configurator.configuration().getStringArray(WEBSERVICE_PACKAGES)));
+            webServer.setPackages(convertPropertiesToSingleString(configurator.configuration().getStringArray(WEBSERVICE_PACKAGES)));
             webServer.start();
             
             log.info("Started Neo Server on port [%s]", webServer.getPort());
