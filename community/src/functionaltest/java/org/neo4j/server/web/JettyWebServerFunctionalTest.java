@@ -35,6 +35,7 @@ import org.neo4j.server.WebTestUtils;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.tools.javac.util.List;
 
 
 public class JettyWebServerFunctionalTest {
@@ -45,12 +46,11 @@ public class JettyWebServerFunctionalTest {
         WebServer ws = new Jetty6WebServer();
         int portNo = WebTestUtils.nextAvailablePortNumber();
         ws.setPort(portNo);
-        ws.setStaticContentDir(defaultStaticContentLocation());
+        ws.addStaticContent(defaultStaticContentLocation(), "/content");
         ws.start();
-        ClientResponse response = WebTestUtils.sendGetRequestTo(ws.getWelcomeUri());
+        ClientResponse response = WebTestUtils.sendGetRequestTo(new URI(String.format("http://localhost:%d/content/welcome.html", portNo)));
         
-        
-        ws.shutdown();
+        ws.stop();
         
         assertThat(response.getStatus(), greaterThan(199));
         assertThat(response.getStatus(), lessThan(308));
@@ -63,12 +63,12 @@ public class JettyWebServerFunctionalTest {
         WebServer ws = new Jetty6WebServer();
         int portNo = WebTestUtils.nextAvailablePortNumber();
         ws.setPort(portNo);
-        ws.setStaticContentDir(defaultStaticContentLocation());
+        ws.addStaticContent(defaultStaticContentLocation(), "/content");
         ws.start();
-        ws.shutdown();
+        ws.stop();
         
         try {
-            WebTestUtils.sendGetRequestTo(new URI("http://localhost:" + portNo + "/"));
+            WebTestUtils.sendGetRequestTo(new URI(String.format("http://localhost:%d/content/welcome.html", portNo)));
         } catch(ClientHandlerException che) {
             assertThat(che.getMessage(), containsString("Connection refused"));
         }
@@ -77,16 +77,15 @@ public class JettyWebServerFunctionalTest {
     @Test
     public void shouldMountASimpleJAXRSApp() throws Exception {
         WebServer ws = new Jetty6WebServer();
-        int portNo = WebTestUtils.nextAvailablePortNumber();
+        int portNo = 5555;//WebTestUtils.nextAvailablePortNumber();
         ws.setPort(portNo);
-        ws.setStaticContentDir(defaultStaticContentLocation());
-        ws.setPackages(getDummyWebResourcePackage());
+        ws.addJAXRSPackages(List.from(new String[] { getDummyWebResourcePackage() }), "/services");
         ws.start();
      
         
-        ClientResponse response = Client.create().resource("http://localhost:" + portNo + HelloWorldWebResource.ROOT_PATH).entity("Bertrand Russell").type("text/plain").accept("text/plain").post(ClientResponse.class);
+        ClientResponse response = Client.create().resource("http://localhost:" + portNo + "/services" + HelloWorldWebResource.ROOT_PATH).entity("Bertrand Russell").type("text/plain").accept("text/plain").post(ClientResponse.class);
         
-        ws.shutdown();
+        ws.stop();
         
         assertEquals(200, response.getStatus());
         assertThat(response.getEntity(String.class), containsString("hello, Bertrand Russell"));

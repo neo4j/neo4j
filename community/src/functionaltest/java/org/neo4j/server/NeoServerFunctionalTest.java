@@ -56,25 +56,17 @@ public class NeoServerFunctionalTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
         System.clearProperty(ORG_NEO4J_SERVER_PROPERTIES);
-    }
-
-    @Test
-    public void whenHealthCheckFailsServerShouldNotStart() {
-        NeoServer server = new NeoServer();
-        server.start(null);
+        String dbDir = configurator().configuration().getString("org.neo4j.database.location");
+        FileUtils.deleteDirectory(new File(dbDir));
     }
 
     @Test
     public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
-        Configurator config = configWithoutWebServerPort();
+        System.setProperty(NeoServer.NEO_CONFIG_FILE_PROPERTY, configWithoutWebServerPort().getAbsolutePath());
 
-        Database database = database();
-        WebServer webServer = new Jetty6WebServer();
-        webServer.setPackages("org.neo4j.server.web");
-
-        NeoServer server = new NeoServer(config, database, webServer);
+        NeoServer server = new NeoServer();
         server.start(null);
 
         Client client = Client.create();
@@ -87,16 +79,11 @@ public class NeoServerFunctionalTest {
 
     @Test
     public void serverShouldProvideAWelcomePage() {
-        Configurator configurator = configurator();
-        Database database = database();
-        WebServer webServer = webServer();
-        webServer.setPackages("org.neo4j.server.web");
-
-        NeoServer server = new NeoServer(configurator, database, webServer);
+        NeoServer server = new NeoServer();
         server.start(null);
 
         Client client = Client.create();
-        ClientResponse response = client.resource("http://localhost:" + webServer.getPort() + "/webadmin/welcome.html").get(ClientResponse.class);
+        ClientResponse response = client.resource("http://localhost:" + configurator().configuration().getInt("org.neo4j.webserver.port") + "/webadmin/welcome.html").get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
         assertThat( response.getHeaders().getFirst("Content-Type"), containsString("html"));
@@ -105,29 +92,13 @@ public class NeoServerFunctionalTest {
     }
 
     @Test
-    public void shouldMakeJAXRSClassesSpecifiedInTheConfigFileAvailableViaHTTP() throws URISyntaxException {
-        Configurator configurator = configurator();
-        Database database = database();
-        WebServer webServer = webServer();
-
-
-        NeoServer server = new NeoServer(configurator, database, webServer);
+    public void shouldMakeJAXRSClassesAvailableViaHTTP() throws URISyntaxException {
+        NeoServer server = new NeoServer();
         server.start(null);
 
-        Client client = Client.create();
-        ClientResponse petShopResponse = client.resource("http://localhost:" + server.webServer().getPort() + "/petshop/prices").get(ClientResponse.class);
-
-        assertEquals(200, petShopResponse.getStatus());
-        assertThat(petShopResponse.getEntity(String.class), containsString("dogs for a tenner"));
-
-        client = Client.create();
-        ClientResponse coffeeShopResponse = client.resource("http://localhost:" + server.webServer().getPort() + "/coffeeshop/menu").get(ClientResponse.class);
-
-        assertEquals(200, coffeeShopResponse.getStatus());
-        assertThat(coffeeShopResponse.getEntity(String.class), containsString("espresso for a quid"));
-
+        ClientResponse response = Client.create().resource("http://localhost:" + configurator().configuration().getInt("org.neo4j.webserver.port") + NeoServer.REST_API_PATH).get(ClientResponse.class);
+        assertEquals(200, response.getStatus());
         server.stop();
-
     }
 
     @Test
@@ -137,12 +108,12 @@ public class NeoServerFunctionalTest {
         neoServer.start(null);
         neoServer.stop();
 
-        assertThat(appender.toString(), containsString("INFO - Successfully shutdown Neo Server on port [5555], database [/tmp/neo/functionaltest.db]"));
+        assertThat(appender.toString(), containsString("INFO - Successfully shutdown Neo Server on port [7474], database [/tmp/neo/functionaltest.db]"));
     }
 
     @Test
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException {
-        NeoServer s1 = new NeoServer(configurator(), database(), webServer());
+        NeoServer s1 = new NeoServer();
         s1.start(null);
 
         Configurator conflictingConfig = portClashingConfigurator();
@@ -177,17 +148,17 @@ public class NeoServerFunctionalTest {
     private Configurator portClashingConfigurator() throws IOException {
         File tempPropertyFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile("org.neo4j.database.location", "/tmp/neo/functionaltest-clashing.db", tempPropertyFile);
-        ServerTestUtils.writePropertyToFile("org.neo4j.webserver.port", "5555", tempPropertyFile);
+        ServerTestUtils.writePropertyToFile("org.neo4j.webserver.port", "7474", tempPropertyFile);
         ServerTestUtils.writePropertyToFile("org.neo4j.webservice.packages", "org.example.coffeeshop, org.example.petshop", tempPropertyFile);
 
         return new Configurator(tempPropertyFile);
     }
 
-    private Configurator configWithoutWebServerPort() throws IOException {
+    private File configWithoutWebServerPort() throws IOException {
         File tempPropertyFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile("org.neo4j.database.location", "/tmp/neo/no-webserver-port.db", tempPropertyFile);
         ServerTestUtils.writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.web", tempPropertyFile);
 
-        return new Configurator(tempPropertyFile);
+        return tempPropertyFile;
     }
 }
