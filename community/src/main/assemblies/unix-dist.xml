@@ -41,6 +41,7 @@
       <excludes>
         <exclude>**/*.bat</exclude>
       </excludes>
+      <filtered>true</filtered>
     </fileSet>
     <!-- java examples - shell scripts -->
     <fileSet>

@@ -23,8 +23,8 @@ APP_NAME="neo4j-server"
 APP_LONG_NAME="Neo4j Server"
 
 # Wrapper
-WRAPPER_CMD="./wrapper"
-WRAPPER_CONF="../conf/neo4j-wrapper.conf"
+WRAPPER_CMD="wrapper"
+WRAPPER_CONF="${wrapper.conf}"
 
 # Priority at which to run the wrapper.  See "man nice" for valid priorities.
 #  nice is only used if a priority is specified.
