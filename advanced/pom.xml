@@ -27,6 +27,9 @@
     <libs.fullname>Neo4j Libraries</libs.fullname>
     <libs.shortname>neo4j-libs</libs.shortname>
 
+    <!-- other filter properties -->
+    <wrapper.conf>../conf/neo4j-wrapper.conf</wrapper.conf>
+
     <!-- 
          Runtime properties. These are used to bootstrap
          the server. All other configuration should happen
