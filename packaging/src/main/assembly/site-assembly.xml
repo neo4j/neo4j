@@ -1,0 +1,12 @@
+<assembly>
+  <id>site</id>
+  <includeBaseDirectory>false</includeBaseDirectory>  
+  <formats>
+    <format>jar</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <directory>target/site</directory>
+    </fileSet>
+  </fileSets>
+</assembly>
