@@ -20,46 +20,53 @@
 
 package org.neo4j.server.web;
 
-import com.sun.jersey.spi.container.servlet.ServletContainer;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.handler.DefaultHandler;
-import org.mortbay.jetty.handler.HandlerList;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.jetty.webapp.WebAppContext;
-import org.mortbay.thread.QueuedThreadPool;
-
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
 
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.ServletHolder;
+import org.mortbay.jetty.webapp.WebAppContext;
+import org.mortbay.resource.FileResource;
+import org.mortbay.resource.Resource;
+import org.mortbay.thread.QueuedThreadPool;
+
+import com.sun.jersey.spi.container.servlet.ServletContainer;
+
 public class Jetty6WebServer implements WebServer {
 
-    private static final String DEFAULT_CONTENT_CONTEXT_BASE = "";
     private static final String DEFAULT_CONTENT_RESOURCE_PATH = "html";
-    
+    private static final String DEFAULT_CONTENT_CONTEXT_BASE = "webadmin";
+
     private Server jetty;
+
     private int jettyPort = 80;
     private ServletHolder jerseyServletHolder = new ServletHolder(ServletContainer.class);
-    
+
     private String contentResourcePath = DEFAULT_CONTENT_RESOURCE_PATH;
-    private String contentContextBase = DEFAULT_CONTENT_CONTEXT_BASE;
+    private String contentContextPath = DEFAULT_CONTENT_CONTEXT_BASE;
 
     public void start() {
         jetty = new Server(jettyPort);
         jetty.setStopAtShutdown(true);
 
-        URL staticUrl = this.getClass().getClassLoader().getResource(contentResourcePath);
-        String urlString = staticUrl.toExternalForm();
+        try {
+            final WebAppContext webadmin = new WebAppContext();
+            webadmin.setServer(jetty);
+            webadmin.setContextPath("/" + contentContextPath);
+            URL url = getClass().getClassLoader().getResource(contentResourcePath).toURI().toURL();
+            final Resource resource = new FileResource(url);
+            webadmin.setBaseResource(resource);
+            jetty.addHandler(webadmin);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
-        WebAppContext staticContentContext = new WebAppContext( urlString, contentContextBase );
-
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[] { staticContentContext, new DefaultHandler() });
-
-        jetty.setHandler( handlers );
+        Context jerseyContext = new Context(jetty, "/");
+        jerseyContext.addServlet(jerseyServletHolder, "/*");
 
         try {
             jetty.start();
@@ -85,13 +92,12 @@ public class Jetty6WebServer implements WebServer {
         return jettyPort;
     }
 
-    public void addPackages(String packageNames) {
+    public void setPackages(String packageNames) {
         if (packageNames == null) {
             return;
         }
 
         jerseyServletHolder.setInitParameter("com.sun.jersey.config.property.packages", packageNames);
-
     }
 
     public void setMaxThreads(int maxThreads) {
@@ -118,15 +124,15 @@ public class Jetty6WebServer implements WebServer {
         }
 
         sb.append("/");
-        
+
         return new URI(sb.toString());
     }
 
     public URI getWelcomeUri() throws URISyntaxException {
-        if(contentContextBase == "") {
+        if (contentContextPath == "") {
             return new URI(getBaseUri().toString() + "welcome.html");
         } else {
-            return new URI(getBaseUri().toString() + this.contentContextBase + "/" + "welcome.html");
+            return new URI(getBaseUri().toString() + this.contentContextPath + "/" + "welcome.html");
         }
     }
 
@@ -135,6 +141,6 @@ public class Jetty6WebServer implements WebServer {
     }
 
     public void setStaticContextRoot(String contextRoot) {
-        this.contentContextBase = contextRoot;
+        this.contentContextPath = contextRoot;
     }
 }

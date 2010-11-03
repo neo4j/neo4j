@@ -42,8 +42,6 @@ import org.neo4j.server.web.WebServer;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
-import javax.ws.rs.core.MultivaluedMap;
-
 
 public class NeoServerFunctionalTest {
 
@@ -74,13 +72,13 @@ public class NeoServerFunctionalTest {
 
         Database database = database();
         WebServer webServer = new Jetty6WebServer();
-        webServer.addPackages("org.neo4j.server.web");
+        webServer.setPackages("org.neo4j.server.web");
 
         NeoServer server = new NeoServer(config, database, webServer);
         server.start(null);
 
         Client client = Client.create();
-        ClientResponse response = client.resource("http://localhost:" + DEFAULT_PORT + "/welcome.html").get(ClientResponse.class);
+        ClientResponse response = client.resource("http://localhost:" + DEFAULT_PORT + "/webadmin/welcome.html").get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getEntity(String.class), containsString("Welcome"));
@@ -92,13 +90,13 @@ public class NeoServerFunctionalTest {
         Configurator configurator = configurator();
         Database database = database();
         WebServer webServer = webServer();
-        webServer.addPackages("org.neo4j.server.web");
+        webServer.setPackages("org.neo4j.server.web");
 
         NeoServer server = new NeoServer(configurator, database, webServer);
         server.start(null);
 
         Client client = Client.create();
-        ClientResponse response = client.resource("http://localhost:" + webServer.getPort() + "/welcome.html").get(ClientResponse.class);
+        ClientResponse response = client.resource("http://localhost:" + webServer.getPort() + "/webadmin/welcome.html").get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
         assertThat( response.getHeaders().getFirst("Content-Type"), containsString("html"));
