@@ -1,3 +1,14 @@
+1.2.M03 (2010-11-04)
+--------------------
+- New components
+o Neo4j Management, making the use of JMX and other
+  management features easier
+o REST core API component, defining a basic data API
+  to a Neo4j graph and used in the Neo4j server.
+  
+- Important changes
+o Neo4j Examples licensed under Apache license version 2
+
 1.2.M02 (2010-10-21)
 --------------------
 
