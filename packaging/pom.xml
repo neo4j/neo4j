@@ -92,9 +92,7 @@
                   <type>jar</type>
                   <classifier>javadoc</classifier>
                   <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
-                  <!-- 
-                  <includes>*.js</includes>
-                   -->
+                  <!-- <includes>*.js</includes> -->
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -243,14 +241,12 @@
             <id>attach-artifacts</id>
             <phase>package</phase>
             <goals>
-              <!-- 
               <goal>attach-artifact</goal>
-               -->
             </goals>
             <configuration>
               <artifacts>
                 <artifact>
-                  <file>neo4j-${project.version}-site.jar</file>
+                  <file>${project.build.directory}/neo4j-${project.version}-site.jar</file>
                   <type>jar</type>
                   <classifier>site</classifier>
                 </artifact>
@@ -270,12 +266,6 @@
 
   <reporting>
     <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <reportSets>
-          <reportSet />
-        </reportSets>
-      </plugin>
       <plugin>
         <artifactId>maven-jxr-plugin</artifactId>
         <version>2.2</version>
