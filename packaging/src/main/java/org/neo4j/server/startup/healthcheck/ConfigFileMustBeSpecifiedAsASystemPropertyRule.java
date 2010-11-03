@@ -30,7 +30,7 @@ public class ConfigFileMustBeSpecifiedAsASystemPropertyRule implements StartupHe
     private boolean passed = false;
 
     public boolean execute(Properties properties) {
-        String key = properties.getProperty(NeoServer.NEO_CONFIGDIR_PROPERTY);
+        String key = properties.getProperty(NeoServer.NEO_CONFIG_FILE_PROPERTY);
         this.passed   = key != null;
         ran = true;
         return passed;
