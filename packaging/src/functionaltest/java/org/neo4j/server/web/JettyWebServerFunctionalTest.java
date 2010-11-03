@@ -22,6 +22,8 @@ package org.neo4j.server.web;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -38,25 +40,33 @@ import com.sun.jersey.api.client.ClientResponse;
 public class JettyWebServerFunctionalTest {
     
     @Test
-    public void shouldStartServerAtSpecificPort() throws Exception {
+    public void shouldHostWelcomePageOnStartup() throws Exception {
         
-        WebServer ws = new JettyWebServer();
-        int portNo = WebTestUtils.nextAvailablePortNumber();
+        WebServer ws = new Jetty6WebServer();
+        int portNo = 5555;//WebTestUtils.nextAvailablePortNumber();
         ws.setPort(portNo);
+        ws.setStaticContentDir(defaultStaticContentLocation());
         ws.start();
         
-        ClientResponse response = WebTestUtils.sendGetRequestTo(new URI("http://localhost:" + portNo + "/"));
+        
+        
+        ClientResponse response = WebTestUtils.sendGetRequestTo(ws.getWelcomeUri());
+        
+        System.out.println(response.getEntity(String.class));
         
         ws.shutdown();
         
         assertThat(response.getStatus(), greaterThan(199));
+        assertThat(response.getStatus(), lessThan(308));
+        assertThat(response.getEntity(String.class), not(containsString("Directory:")));
     }
     
     @Test
     public void shouldShutdownServer() throws Exception {
-        WebServer ws = new JettyWebServer();
+        WebServer ws = new Jetty6WebServer();
         int portNo = WebTestUtils.nextAvailablePortNumber();
         ws.setPort(portNo);
+        ws.setStaticContentDir(defaultStaticContentLocation());
         ws.start();
         ws.shutdown();
         
@@ -69,9 +79,10 @@ public class JettyWebServerFunctionalTest {
     
     @Test
     public void shouldMountASimpleJAXRSApp() throws Exception {
-        WebServer ws = new JettyWebServer();
+        WebServer ws = new Jetty6WebServer();
         int portNo = WebTestUtils.nextAvailablePortNumber();
         ws.setPort(portNo);
+        ws.setStaticContentDir(defaultStaticContentLocation());
         ws.start();
      
         ws.addPackages(getDummyWebResourcePackage());
@@ -82,6 +93,10 @@ public class JettyWebServerFunctionalTest {
         
         assertEquals(200, response.getStatus());
         assertThat(response.getEntity(String.class), containsString("hello, Bertrand Russell"));
+    }
+
+    private String defaultStaticContentLocation() {
+        return "html";
     }
 
     private String getDummyWebResourcePackage() {
