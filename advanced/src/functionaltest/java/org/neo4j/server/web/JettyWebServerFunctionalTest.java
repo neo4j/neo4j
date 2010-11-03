@@ -43,21 +43,18 @@ public class JettyWebServerFunctionalTest {
     public void shouldHostWelcomePageOnStartup() throws Exception {
         
         WebServer ws = new Jetty6WebServer();
-        int portNo = 5555;//WebTestUtils.nextAvailablePortNumber();
+        int portNo = WebTestUtils.nextAvailablePortNumber();
         ws.setPort(portNo);
         ws.setStaticContentDir(defaultStaticContentLocation());
         ws.start();
-        
-        
-        
         ClientResponse response = WebTestUtils.sendGetRequestTo(ws.getWelcomeUri());
         
-        System.out.println(response.getEntity(String.class));
         
         ws.shutdown();
         
         assertThat(response.getStatus(), greaterThan(199));
         assertThat(response.getStatus(), lessThan(308));
+        assertThat(response.getEntity(String.class), containsString("Welcome"));
         assertThat(response.getEntity(String.class), not(containsString("Directory:")));
     }
     
@@ -83,9 +80,9 @@ public class JettyWebServerFunctionalTest {
         int portNo = WebTestUtils.nextAvailablePortNumber();
         ws.setPort(portNo);
         ws.setStaticContentDir(defaultStaticContentLocation());
+        ws.setPackages(getDummyWebResourcePackage());
         ws.start();
      
-        ws.addPackages(getDummyWebResourcePackage());
         
         ClientResponse response = Client.create().resource("http://localhost:" + portNo + HelloWorldWebResource.ROOT_PATH).entity("Bertrand Russell").type("text/plain").accept("text/plain").post(ClientResponse.class);
         
