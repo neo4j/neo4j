@@ -26,8 +26,8 @@
       <directory>src/main/distribution/binary</directory>
       <outputDirectory>/</outputDirectory>
       <includes>
-        <include>bin/lib/lib*</include>
-        <include>bin/wrapper-*</include>
+        <include>bin/lib/wrapper-*</include>
+        <include>bin/wrapper*.exe</include>
       </includes>
     </fileSet>
     <fileSet>
@@ -37,6 +37,7 @@
       <includes>
         <include>**/*.bat</include>
       </includes>
+      <filtered>true</filtered>
     </fileSet>
     <!-- java examples - shell scripts -->
     <fileSet>
@@ -68,6 +69,7 @@
       <useProjectArtifact>false</useProjectArtifact>
       <excludes>
         <exclude>org.neo4j:*</exclude>
+        <exclude>org.neo4j.examples:*</exclude>
         <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</exclude>
