@@ -52,9 +52,8 @@ public class NeoServerTest {
         NeoServer server = server();
         server.start(null);
 
-        //ClientResponse response = Client.create().resource(server.webServer().getWelcomeUri()).get(ClientResponse.class);
-        ClientResponse response = Client.create().resource("http://localhost:7474/").get(ClientResponse.class);
-
+        ClientResponse response = Client.create().resource(server.webServer().getWelcomeUri()).get(ClientResponse.class);
+        
         assertEquals(200, response.getStatus());
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("text/html"));
         assertThat(response.getEntity(String.class), containsString("Welcome"));
@@ -123,7 +122,7 @@ public class NeoServerTest {
 
     private WebServer webServer() {
         WebServer webServer = new Jetty6WebServer();
-        webServer.addPackages("org.neo4j.server.web");
+        webServer.setPackages("org.neo4j.server.web");
         return webServer;
     }
 
