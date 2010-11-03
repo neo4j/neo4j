@@ -1,5 +1,5 @@
 <assembly>
-  <id></id>
+  <id>download</id>
   <!-- DOCS -->
   <includeSiteDirectory>true</includeSiteDirectory>
   <formats>
