@@ -25,26 +25,58 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
+import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.handler.DefaultHandler;
+import org.mortbay.jetty.handler.HandlerList;
+import org.mortbay.jetty.handler.ResourceHandler;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 
-public class JettyWebServer implements WebServer {
+public class Jetty6WebServer implements WebServer {
 
+    private static final String DEFAULT_CONTENT_CONTEXT_BASE = "";
+    private static final String DEFAULT_CONTENT_RESOURCE_PATH = "html";
+    
     private Server jetty;
     private int jettyPort = 80;
-    private ServletHolder servletHolder = new ServletHolder(ServletContainer.class);
-    private Context context;
+    private ServletHolder jerseyServletHolder = new ServletHolder(ServletContainer.class);
+    
+    private String contentResourcePath = DEFAULT_CONTENT_RESOURCE_PATH;
+    private String contentContextBase = DEFAULT_CONTENT_CONTEXT_BASE;
 
     public void start() {
         jetty = new Server(jettyPort);
         jetty.setStopAtShutdown(true);
 
-        context = new Context(jetty, "/");
-        context.addServlet(servletHolder, "/*");
+        
+        ResourceHandler resourceHandler = new ResourceHandler();
+        resourceHandler.setResourceBase(contentResourcePath);
+        resourceHandler.setWelcomeFiles(new String[]{ "welcome.html" });
+        
+        resourceHandler.setResourceBase(contentContextBase);
+        
+        
+        HandlerList handlers = new HandlerList();
+        handlers.setHandlers(new Handler[] { resourceHandler, new DefaultHandler() });
+        jetty.addHandler(handlers);
+
+        
+        
+//        Context contentContext = new Context(jetty, "/" + contentContextBase);
+//        contentContext.setContextPath(contentResourcePath);
+//        contentContext.setResourceBase(contentContextBase);
+//        contentContext.setWelcomeFiles(new String[] {"welcome.html"});
+//        
+//        ServletHolder sh = new ServletHolder();
+//        sh.setServlet(new DefaultServlet());
+//        contentContext.addServlet(sh, "/*");
+        
+            
+//        Context jerseyContext = new Context(jetty, "/");
+//        jerseyContext.addServlet(jerseyServletHolder, "/*");
 
         try {
             jetty.start();
@@ -74,8 +106,8 @@ public class JettyWebServer implements WebServer {
         if (packageNames == null) {
             return;
         }
-        
-        servletHolder.setInitParameter("com.sun.jersey.config.property.packages", packageNames);
+
+        jerseyServletHolder.setInitParameter("com.sun.jersey.config.property.packages", packageNames);
 
     }
 
@@ -102,12 +134,24 @@ public class JettyWebServer implements WebServer {
             sb.append(jettyPort);
         }
 
-        sb.append(context.getContextPath());
-
+        sb.append("/");
+        
         return new URI(sb.toString());
     }
 
     public URI getWelcomeUri() throws URISyntaxException {
-        return new URI(getBaseUri().toString() + "welcome.html");
+        if(contentContextBase == "") {
+            return new URI(getBaseUri().toString() + "welcome.html");
+        } else {
+            return new URI(getBaseUri().toString() + this.contentContextBase + "/" + "welcome.html");
+        }
+    }
+
+    public void setStaticContentDir(String staticContentResourcePath) {
+        this.contentResourcePath = staticContentResourcePath;
+    }
+
+    public void setStaticContextRoot(String contextRoot) {
+        this.contentContextBase = contextRoot;
     }
 }

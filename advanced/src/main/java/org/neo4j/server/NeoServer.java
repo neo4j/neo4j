@@ -32,7 +32,7 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
-import org.neo4j.server.web.JettyWebServer;
+import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 import org.tanukisoftware.wrapper.WrapperListener;
 
@@ -71,7 +71,7 @@ public class NeoServer implements WrapperListener {
         
         Validator validator = new Validator(new DatabaseLocationMustBeSpecifiedRule());
         this.configurator = new Configurator(validator, getConfigFile());
-        this.webServer = new JettyWebServer();
+        this.webServer = new Jetty6WebServer();
         this.database = new Database(configurator.configuration().getString(DATABASE_LOCATION));
     }
 

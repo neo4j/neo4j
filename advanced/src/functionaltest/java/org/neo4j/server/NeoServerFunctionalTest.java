@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.InMemoryAppender;
-import org.neo4j.server.web.JettyWebServer;
+import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 
 import com.sun.jersey.api.client.Client;
@@ -71,7 +71,7 @@ public class NeoServerFunctionalTest {
         Configurator config = configWithoutWebServerPort();
         
         Database database = database();
-        WebServer webServer = new JettyWebServer();
+        WebServer webServer = new Jetty6WebServer();
         webServer.addPackages("org.neo4j.server.web");
         
         NeoServer server = new NeoServer(config, database, webServer);
@@ -99,7 +99,6 @@ public class NeoServerFunctionalTest {
         ClientResponse response = client.resource("http://localhost:" + webServer.getPort() + "/welcome.html").get(ClientResponse.class);
         
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getHeaders().getFirst("Server"), containsString("Jetty"));
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("html"));
         
         server.stop();
@@ -159,7 +158,7 @@ public class NeoServerFunctionalTest {
     }
     
     private WebServer webServer() {
-        JettyWebServer server = new JettyWebServer();
+        Jetty6WebServer server = new Jetty6WebServer();
         server.setPort(configurator().configuration().getInt("org.neo4j.webserver.port"));
         return server;
     }
