@@ -21,7 +21,7 @@ set _WRAPPER_BASE=wrapper
 
 rem The name and location of the Wrapper configuration file.
 rem  (Do not remove quotes.)
-set _WRAPPER_CONF="../conf/wrapper.conf"
+set _WRAPPER_CONF_DEFAULT="../conf/neo4j-wrapper.conf"
 
 rem Do not modify anything beyond this point
 rem -----------------------------------------------------------------------------

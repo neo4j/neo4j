@@ -17,12 +17,12 @@ rem These settings can be modified to fit the needs of your application
 rem Optimized for use with version 3.5.4 of the Wrapper.
 
 rem The base name for the Wrapper binary.
-set _WRAPPER_BASE=..\bin\wrapper
+set _WRAPPER_BASE=wrapper
 
 rem The name and location of the Wrapper configuration file.   This will be used
 rem  if the user does not specify a configuration file as the first argument to
 rem  this script.
-set _WRAPPER_CONF_DEFAULT=../conf/neo4j-wrapper.conf
+set _WRAPPER_CONF_DEFAULT="../conf/neo4j-wrapper.conf"
 
 rem Do not modify anything beyond this point
 rem -----------------------------------------------------------------------------
