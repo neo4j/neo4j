@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>2</version>
+    <version>5</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -106,5 +106,123 @@
       </roles>
     </developer>
   </developers>
-</project>
 
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/extra-resources</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>src/main/resources/</directory>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>get-sources</id>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <classifier>sources</classifier>
+              <outputDirectory>${project.build.directory}/sources</outputDirectory>
+              <includeGroupIds>org.neo4j</includeGroupIds>
+            </configuration>
+          </execution>
+          <execution>
+            <id>get-javadoc-sources</id>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <classifier>sources</classifier>
+              <outputDirectory>${project.build.directory}/javadoc-sources</outputDirectory>
+              <includeGroupIds>org.neo4j</includeGroupIds>
+            </configuration>
+          </execution>
+          <!-- 
+          <execution>
+            <id>get-test-sources</id>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <classifier>test-sources</classifier>
+              <outputDirectory>${project.build.directory}/test-sources</outputDirectory>
+              <includeGroupIds>org.neo4j</includeGroupIds>
+            </configuration>
+          </execution>
+           -->
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>create-javadocs</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>javadoc</goal>
+            </goals>
+            <configuration>
+              <doctitle>Neo4j ${project.version} API</doctitle>
+              <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
+              <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jxr-plugin</artifactId>
+        <configuration>
+        </configuration>
+        <executions>
+          <execution>
+            <id>create-source-html</id>
+            <configuration>
+              <sourcePath>${project.build.directory}/sources</sourcePath>
+            </configuration>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>jxr</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>package-javadocs</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>true</attach>
+              <descriptors>
+                <descriptor>src/main/assembly/assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
