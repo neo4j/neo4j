@@ -11,11 +11,7 @@
   <artifactId>neo4j-management</artifactId>
   <version>1.2-SNAPSHOT</version>
   <name>Neo4j - Graph Database Monitoring and Management tools</name>
-  <description>
- Neo4j kernel is a lightweight, embedded Java database designed to
- store data structured as graphs rather than tables. For more
- information, see http://neo4j.org.
-  </description>
+  <description>Management support using JMX.</description>
 
   <properties>
     <bundle.namespace>org.neo4j.management</bundle.namespace>
