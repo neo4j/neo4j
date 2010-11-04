@@ -121,7 +121,7 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-webadmin</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>0.5-SNAPSHOT</version>
     </dependency>
     
 		

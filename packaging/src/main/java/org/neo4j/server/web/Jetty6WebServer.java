@@ -30,10 +30,14 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.logging.Logger;
 
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class Jetty6WebServer implements WebServer {
+
+    public static final Logger log = Logger.getLogger(Jetty6WebServer.class);
 
     private Server jetty;
     private int jettyPort = 80;
@@ -85,15 +89,21 @@ public class Jetty6WebServer implements WebServer {
     private void loadStaticContent() {
         for (String mountPoint : staticContent.keySet()) {
             String contentLocation = staticContent.get(mountPoint);
+            log.info("Mounting static content at [%s] from [%s]", mountPoint, contentLocation);
             try {
                 final WebAppContext webadmin = new WebAppContext();
                 webadmin.setServer(jetty);
                 webadmin.setContextPath(mountPoint);
-                URL url = getClass().getClassLoader().getResource(contentLocation).toURI().toURL();
+                URL resourceLoc = getClass().getClassLoader().getResource(contentLocation);
+                log.info("Found [%s]", resourceLoc);
+                URL url = resourceLoc.toURI().toURL();
                 final Resource resource = Resource.newResource(url);
                 webadmin.setBaseResource(resource);
+                log.info("Mounting static content from [%s] at [%s]", url, mountPoint);
                 jetty.addHandler(webadmin);
             } catch (Exception e) {
+                log.error( e );
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }
@@ -102,6 +112,7 @@ public class Jetty6WebServer implements WebServer {
     private void loadJAXRSPackages() {
         for(String mountPoint : jaxRSPackages.keySet()) {
              ServletHolder servletHolder = jaxRSPackages.get(mountPoint);
+             log.info("Mounting JAXRS package at [%s]", mountPoint);
              Context jerseyContext = new Context(jetty, mountPoint);
              jerseyContext.addServlet(servletHolder, "/*");
         }
