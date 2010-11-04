@@ -7,7 +7,7 @@
   </formats>
   <fileSets>
     <fileSet>
-      <directory>${project.build.outputDirectory}/public</directory>
+      <directory>${project.build.outputDirectory}/html</directory>
       <outputDirectory>/html</outputDirectory>
     </fileSet>
   </fileSets>
