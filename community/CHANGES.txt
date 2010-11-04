@@ -1,4 +1,5 @@
 0.8-1.2.M03 (2010-11-04)
 ------------------------
 
-o First release within the Neo4j suite
+o First release as a separate component, this functionality was
+  included in the neo4j-kernel component previously.
