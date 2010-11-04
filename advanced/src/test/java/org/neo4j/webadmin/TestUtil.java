@@ -20,24 +20,17 @@
 
 package org.neo4j.webadmin;
 
+import org.neo4j.rest.domain.DatabaseLocator;
+
 import java.io.File;
 
-import org.neo4j.rest.domain.DatabaseLocator;
 
 /**
  * This is here temporarily, it is simply a copy-paste of a class in the REST
  * test suite.
- * 
  */
 public abstract class TestUtil
-{ 
-    /**
-     * The "admin" part is here temporarily, while we wait to move management
-     * services into the REST project instead.
-     */
-    public static String SERVER_BASE = AdminServer.INSTANCE.getBaseUri()
-                                       + "manage";
-
+{
     public static void deleteTestDb()
     {
         deleteFileOrDirectory( new File( DatabaseLocator.getDatabaseLocation() ) );
@@ -56,11 +49,14 @@ public abstract class TestUtil
             {
                 deleteFileOrDirectory( child );
             }
-        }
-        else
+        } else
         {
             file.delete();
         }
     }
 
+    public static String SERVER_BASE()
+    {
+        throw new RuntimeException( "Don't use this!" );
+    }
 }

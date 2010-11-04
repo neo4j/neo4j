@@ -20,46 +20,49 @@
 
 package org.neo4j.webadmin.functional;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-import java.net.URI;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.neo4j.rest.WebServerFactory;
-import org.neo4j.rest.domain.DatabaseLocator;
-import org.neo4j.webadmin.AdminServer;
-import org.neo4j.webadmin.TestUtil;
-import org.neo4j.webadmin.domain.BackupFailedException;
-import org.neo4j.webadmin.rest.ExportService;
-import org.quartz.SchedulerException;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.server.web.Jetty6WebServer;
+import org.neo4j.webadmin.TestUtil;
+import org.neo4j.webadmin.rest.ExportService;
 
-@Ignore
+import javax.ws.rs.core.MediaType;
+
+import static org.junit.Assert.assertEquals;
+
 public class ExportFunctionalTest
 {
+    public static NeoServer server;
+    public static int serverPort;
+
     @BeforeClass
-    public static void startWebServer() throws IOException, SchedulerException,
-            BackupFailedException
+    public static void startWebServer() throws Exception
     {
         TestUtil.deleteTestDb();
-        AdminServer.INSTANCE.startServer();
+        Configurator configurator = ServerTestUtils.configurator();
+        serverPort = configurator.configuration().getInt( NeoServer.WEBSERVER_PORT );
+
+        InMemoryAppender log = new InMemoryAppender( NeoServer.log );
+        InMemoryAppender wslog = new InMemoryAppender( Jetty6WebServer.log );
+
+        server = new NeoServer();
+        server.start( new String[0] );
+        System.out.println( log.toString() );
+        System.out.println( wslog.toString() );
     }
 
     @AfterClass
     public static void stopWebServer() throws Exception
     {
-        AdminServer.INSTANCE.stopServer();
-        DatabaseLocator.shutdownGraphDatabase( new URI(
-                WebServerFactory.getDefaultWebServer().getBaseUri() ) );
+        server.stop( 0 );
     }
 
     @Test
@@ -67,7 +70,7 @@ public class ExportFunctionalTest
     {
         Client client = Client.create();
 
-        WebResource getResource = client.resource( TestUtil.SERVER_BASE
+        WebResource getResource = client.resource( "http://localhost:" + serverPort + "/db/manage"
                                                    + ExportService.ROOT_PATH
                                                    + ExportService.TRIGGER_PATH );
 

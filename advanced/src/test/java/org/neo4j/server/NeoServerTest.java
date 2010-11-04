@@ -20,17 +20,6 @@
 
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
@@ -38,6 +27,14 @@ import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class NeoServerTest {
 
@@ -83,7 +80,7 @@ public class NeoServerTest {
     }
     
     private NeoServer server() throws IOException {       
-        Configurator configurator = configurator();
+        Configurator configurator = ServerTestUtils.configurator();
         Database db = new Database(configurator.configuration().getString("org.neo4j.database.location"));
         WebServer webServer = webServer();
         return new NeoServer(configurator, db, webServer);
@@ -109,21 +106,4 @@ public class NeoServerTest {
         return al;
     }
 
-    private Configurator configurator() throws IOException {
-        File propertyFile = ServerTestUtils.createTempPropertyFile();
-        writePropertyFile(propertyFile);
-
-        return new Configurator(propertyFile);
-    }
-
-    private void writePropertyFile(File propertyFile) throws IOException {
-        FileWriter fstream = new FileWriter(propertyFile);
-        BufferedWriter out = new BufferedWriter(fstream);
-        out.write("org.neo4j.database.location=");
-        out.write(ServerTestUtils.createTempDir().getAbsolutePath() + "\n");
-        out.write(NeoServer.WEBADMIN_NAMESPACE + "rrdb.location=");
-        out.write(ServerTestUtils.createTempDir().getAbsolutePath() + "\n");
-        
-        out.close();
-    }
 }

@@ -20,20 +20,18 @@
 
 package org.neo4j.server.web;
 
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.logging.Logger;
 
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
 
 public class Jetty6WebServer implements WebServer {
 
