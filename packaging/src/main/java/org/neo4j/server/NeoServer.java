@@ -32,12 +32,12 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.webadmin.backup.BackupManager;
 import org.neo4j.webadmin.rrd.RrdManager;
 import org.neo4j.webadmin.rrd.RrdSampler;
 import org.tanukisoftware.wrapper.WrapperListener;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,7 +63,7 @@ public class NeoServer implements WrapperListener {
     public static final String DEFAULT_NEO_CONFIGDIR = File.separator + "etc" + File.separator + "neo";
 
     public static final String DATABASE_LOCATION = "org.neo4j.database.location";
-    private static final String WEBSERVER_PORT = "org.neo4j.webserver.port";
+    public static final String WEBSERVER_PORT = "org.neo4j.webserver.port";
     private static final int DEFAULT_WEBSERVER_PORT = 7474;
 
     private Configurator configurator;
@@ -98,17 +98,14 @@ public class NeoServer implements WrapperListener {
         
         webServerPort = configurator.configuration().getInt(WEBSERVER_PORT, DEFAULT_WEBSERVER_PORT);
         try {
-            //Start webserver
             startWebserver();
 
-            
             //start the others
             //log.info(  "Starting backup scheduler.." );
 
             //BackupManager.INSTANCE.start();
 
-            System.out.println( "Starting round-robin system state sampler.." );
-
+            log.info( "Starting round-robin system state sampler.." );
             RrdSampler.INSTANCE.start();
 
             
@@ -156,10 +153,8 @@ public class NeoServer implements WrapperListener {
     public int stop(int stopArg) {
         String location = "unknown";
         try {
-         // Kill the round robin sampler
-            System.out.println( "\nShutting down the round robin database" );
-            RrdSampler.INSTANCE.stop();
-            RrdManager.getRrdDB().close();
+            shutdownRrd();
+
             if (database != null) {
                 location = database.getLocation();
                 database.shutdown();
@@ -177,6 +172,14 @@ public class NeoServer implements WrapperListener {
             log.error("Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ", webServerPort, location, e.getMessage());
             return 1;
         }
+    }
+
+    private void shutdownRrd()
+            throws IOException
+    {
+        log.info ( "Shutting down the round robin database" );
+        RrdSampler.INSTANCE.stop();
+        RrdManager.getRrdDB().close();
     }
 
     public GraphDatabaseService database() {
