@@ -28,6 +28,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
@@ -36,8 +38,6 @@ import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
-
-import com.sun.tools.javac.util.List;
 
 public class NeoServerTest {
 
@@ -89,8 +89,20 @@ public class NeoServerTest {
 
     private WebServer webServer() {
         WebServer webServer = new Jetty6WebServer();
-        webServer.addJAXRSPackages(List.from(new String[] {NeoServer.REST_API_PACKAGE}), NeoServer.REST_API_PATH);
+        webServer.addJAXRSPackages(listFrom(new String[] {NeoServer.REST_API_PACKAGE}), NeoServer.REST_API_PATH);
         return webServer;
+    }
+    
+    private List<String> listFrom(String[] strings) {
+        ArrayList<String> al = new ArrayList<String>();
+        
+        if(strings != null) {
+            for(String str : strings) {
+                al.add(str);
+            }
+         }
+        
+        return al;
     }
 
     private Configurator configurator() throws IOException {
