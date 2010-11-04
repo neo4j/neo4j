@@ -31,8 +31,6 @@
     <server.shortname>neo4j</server.shortname>
     <shell.fullname>Neo4j Shell</shell.fullname>
     <shell.shortname>neo4j-shell</shell.shortname>
-    <webadmin.fullname>Neo4j Web Administration</webadmin.fullname>
-    <webadmin.shortname>webadmin</webadmin.shortname>
     <libs.fullname>Neo4j Libraries</libs.fullname>
     <libs.shortname>neo4j-libs</libs.shortname>
 
@@ -59,7 +57,6 @@
     <!-- dependency versions -->
     <neo4j.version>1.2-SNAPSHOT</neo4j.version>
     <neo4j-server.version>0.1-SNAPSHOT</neo4j-server.version>
-    <neo4j-webadmin.version>0.5-SNAPSHOT</neo4j-webadmin.version>
     <neo4j-examples.version>1.2-SNAPSHOT</neo4j-examples.version>
   </properties>
 
@@ -192,8 +189,8 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-webadmin</artifactId>
-      <version>${neo4j-webadmin.version}</version>
+      <artifactId>neo4j-server</artifactId>
+      <version>${neo4j-server.version}</version>
       <classifier>static-web</classifier>
     </dependency>
   </dependencies>
