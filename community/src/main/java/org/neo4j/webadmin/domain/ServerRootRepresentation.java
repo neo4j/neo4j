@@ -66,7 +66,7 @@ public class ServerRootRepresentation extends RootRepresentation
             if ( currentDb instanceof EmbeddedGraphDatabase )
             {
 
-                services.put( "backup", baseUri + BackupService.ROOT_PATH );
+                //services.put( "backup", baseUri + BackupService.ROOT_PATH );
                 //services.put( "config", baseUri + ConfigService.ROOT_PATH );
                 services.put( "importing", baseUri + ImportService.ROOT_PATH );
                 services.put( "exporting", baseUri + ExportService.ROOT_PATH );

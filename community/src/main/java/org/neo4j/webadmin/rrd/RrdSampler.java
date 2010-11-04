@@ -37,7 +37,7 @@ import javax.management.openmbean.CompositeDataSupport;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.management.Kernel;
-import org.neo4j.rest.domain.DatabaseLocator;
+import org.neo4j.server.NeoServer;
 import org.neo4j.webadmin.MBeanServerFactory;
 import org.rrd4j.core.Sample;
 
@@ -194,7 +194,7 @@ public class RrdSampler
     {
         try
         {
-            GraphDatabaseService genericDb = DatabaseLocator.getGraphDatabase();
+            GraphDatabaseService genericDb = NeoServer.INSTANCE.database();
 
             if ( genericDb instanceof EmbeddedGraphDatabase )
             {

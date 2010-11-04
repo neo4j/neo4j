@@ -32,6 +32,9 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.webadmin.backup.BackupManager;
+import org.neo4j.webadmin.rrd.RrdManager;
+import org.neo4j.webadmin.rrd.RrdSampler;
 import org.tanukisoftware.wrapper.WrapperListener;
 
 import java.io.File;
@@ -42,6 +45,9 @@ import java.util.List;
  * Application entry point for the Neo4j Server.
  */
 public class NeoServer implements WrapperListener {
+    
+    public static final String WEBADMIN_NAMESPACE = "org.neo4j.server.webadmin.";
+
     static final String MANAGE_PATH = "/db/manage";
 
     static final String WEBADMIN_PATH = "/webadmin";
@@ -56,7 +62,7 @@ public class NeoServer implements WrapperListener {
     public static final String NEO_CONFIG_FILE_PROPERTY = "org.neo4j.server.properties";
     public static final String DEFAULT_NEO_CONFIGDIR = File.separator + "etc" + File.separator + "neo";
 
-    private static final String DATABASE_LOCATION = "org.neo4j.database.location";
+    public static final String DATABASE_LOCATION = "org.neo4j.database.location";
     private static final String WEBSERVER_PORT = "org.neo4j.webserver.port";
     private static final int DEFAULT_WEBSERVER_PORT = 7474;
 
@@ -89,28 +95,46 @@ public class NeoServer implements WrapperListener {
 
     public Integer start(String[] args) {
         INSTANCE = this;
+        
         webServerPort = configurator.configuration().getInt(WEBSERVER_PORT, DEFAULT_WEBSERVER_PORT);
         try {
-            webServer.setPort(webServerPort);
-            // webadmin assumes root
-            log.info("Mounting static html at [%s]", WEBADMIN_PATH);
-            webServer.addStaticContent("html", WEBADMIN_PATH);
-            
-            log.info("Mounting REST at [%s]", REST_API_PATH);
-            webServer.addJAXRSPackages(listFrom(new String[] {REST_API_PACKAGE}), REST_API_PATH);
+            //Start webserver
+            startWebserver();
 
-            log.info("Mounting manage API at [%s]", MANAGE_PATH);
-            webServer.addJAXRSPackages(listFrom(new String[] {WEB_ADMIN_REST_API_PACKAGE}), MANAGE_PATH);
             
-            webServer.start();
-            
-            log.info("Started Neo Server on port [%s]", webServerPort);
+            //start the others
+            //log.info(  "Starting backup scheduler.." );
+
+            //BackupManager.INSTANCE.start();
+
+            System.out.println( "Starting round-robin system state sampler.." );
+
+            RrdSampler.INSTANCE.start();
+
             
             return null; //yes, that's right!
         } catch (Exception e) {
             log.error("Failed to start Neo Server on port [%s]", webServerPort);
             return 1;
         }
+    }
+
+    private void startWebserver()
+    {
+        webServer.setPort(webServerPort);
+        // webadmin assumes root
+        log.info("Mounting static html at [%s]", WEBADMIN_PATH);
+        webServer.addStaticContent("html", WEBADMIN_PATH);
+        
+        log.info("Mounting REST at [%s]", REST_API_PATH);
+        webServer.addJAXRSPackages(listFrom(new String[] {REST_API_PACKAGE}), REST_API_PATH);
+
+        log.info("Mounting manage API at [%s]", MANAGE_PATH);
+        webServer.addJAXRSPackages(listFrom(new String[] {WEB_ADMIN_REST_API_PACKAGE}), MANAGE_PATH);
+        
+        webServer.start();
+        
+        log.info("Started Neo Server on port [%s]", webServerPort);
     }
 
     private List<String> listFrom(String[] strings) {
@@ -132,6 +156,10 @@ public class NeoServer implements WrapperListener {
     public int stop(int stopArg) {
         String location = "unknown";
         try {
+         // Kill the round robin sampler
+            System.out.println( "\nShutting down the round robin database" );
+            RrdSampler.INSTANCE.stop();
+            RrdManager.getRrdDB().close();
             if (database != null) {
                 location = database.getLocation();
                 database.shutdown();

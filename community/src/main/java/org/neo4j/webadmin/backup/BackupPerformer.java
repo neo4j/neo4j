@@ -36,6 +36,7 @@ import org.neo4j.onlinebackup.Backup;
 import org.neo4j.onlinebackup.Neo4jBackup;
 import org.neo4j.rest.domain.DatabaseBlockedException;
 import org.neo4j.rest.domain.DatabaseLocator;
+import org.neo4j.server.NeoServer;
 import org.neo4j.webadmin.domain.BackupFailedException;
 import org.neo4j.webadmin.domain.NoBackupFoundationException;
 import org.neo4j.webadmin.properties.ServerConfiguration;
@@ -71,7 +72,7 @@ public class BackupPerformer
             }
 
             // Perform backup
-            GraphDatabaseService genericDb = DatabaseLocator.getGraphDatabase();
+            GraphDatabaseService genericDb = NeoServer.INSTANCE.database();
 
             if ( genericDb instanceof EmbeddedGraphDatabase )
             {
