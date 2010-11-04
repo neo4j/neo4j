@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -39,7 +40,7 @@ import org.neo4j.rest.domain.DatabaseLocator;
 import org.neo4j.webadmin.TestUtil;
 import org.neo4j.webadmin.domain.BackupFailedException;
 import org.neo4j.webadmin.domain.NoBackupFoundationException;
-
+@Ignore
 public class BackupPerformerTest
 {
 
