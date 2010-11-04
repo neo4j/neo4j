@@ -53,7 +53,6 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-rest</artifactId>
       <version>0.8-SNAPSHOT</version>
-      <type>pom</type>
     </dependency>
     <dependency>
       <groupId>log4j</groupId>
@@ -207,7 +206,7 @@
         <configuration>
           <mainClass>org.neo4j.server.webadmin.Main</mainClass>
           <arguments>
-            <argument>-webRoot=${project.build.outputDirectory}/public</argument>
+            <argument>-webRoot=${project.build.outputDirectory}/html</argument>
             <argument>-development=true</argument>
           </arguments>
         </configuration>
@@ -259,7 +258,7 @@
               <!-- insert new line after each concatenation -->
               <insertNewLine>true</insertNewLine>
 
-              <output>${project.build.directory}/classes/public/webadmin.js</output>
+              <output>${project.build.directory}/classes/html/webadmin.js</output>
 
               <inputDir>${project.build.outputDirectory}</inputDir>
 
