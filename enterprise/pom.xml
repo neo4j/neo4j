@@ -50,11 +50,6 @@
       <type>pom</type>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-rest</artifactId>
-      <version>0.8-SNAPSHOT</version>
-    </dependency>
-    <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
     </dependency>
