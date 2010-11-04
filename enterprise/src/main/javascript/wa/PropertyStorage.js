@@ -3,7 +3,6 @@
  * configured servers etc.
  */
 wa.PropertyStorage = function(storageUrl) {
-
     /**
      * Client-side property cache.
      */
