@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.webadmin;
+package org.neo4j.server.webadmin;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;

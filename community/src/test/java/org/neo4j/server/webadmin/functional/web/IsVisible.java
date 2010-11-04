@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.webadmin.functional.web;
+package org.neo4j.server.webadmin.functional.web;
 
 import org.hamcrest.Description;
 import org.hamcrest.Factory;

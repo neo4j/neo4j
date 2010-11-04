@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.webadmin.backup;
+package org.neo4j.server.webadmin.backup;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -37,9 +37,9 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.rest.WebServerFactory;
 import org.neo4j.rest.domain.DatabaseBlockedException;
 import org.neo4j.rest.domain.DatabaseLocator;
-import org.neo4j.webadmin.TestUtil;
-import org.neo4j.webadmin.domain.BackupFailedException;
-import org.neo4j.webadmin.domain.NoBackupFoundationException;
+import org.neo4j.server.webadmin.TestUtil;
+import org.neo4j.server.webadmin.domain.BackupFailedException;
+import org.neo4j.server.webadmin.domain.NoBackupFoundationException;
 @Ignore
 public class BackupPerformerTest
 {

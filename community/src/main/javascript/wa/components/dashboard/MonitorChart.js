@@ -13,7 +13,7 @@ wa.components.dashboard.monitorChartCounter = 0;
  * <li>height : integer value, height in pixels of the chart, default is 200</li>
  * <li>data : an object with data source definitions. Each key in this object
  * should correspond to a data set key used by the rrdb monitor system. See
- * {@link org.neo4j.webadmin.rrd.RrdManager}. For available settings in each
+ * {@link org.neo4j.server.webadmin.rrd.RrdManager}. For available settings in each
  * data set, see below</li>
  * </ul>
  * 
