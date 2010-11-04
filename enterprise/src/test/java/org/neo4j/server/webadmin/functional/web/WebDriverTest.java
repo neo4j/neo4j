@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.webadmin.functional.web;
+package org.neo4j.server.webadmin.functional.web;
 
 import java.io.IOException;
 
@@ -29,10 +29,10 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.neo4j.rest.WebServerFactory;
 import org.neo4j.rest.domain.DatabaseLocator;
-import org.neo4j.webadmin.AdminServer;
-import org.neo4j.webadmin.TestUtil;
-import org.neo4j.webadmin.backup.BackupManager;
-import org.neo4j.webadmin.domain.BackupFailedException;
+import org.neo4j.server.webadmin.AdminServer;
+import org.neo4j.server.webadmin.TestUtil;
+import org.neo4j.server.webadmin.backup.BackupManager;
+import org.neo4j.server.webadmin.domain.BackupFailedException;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;

@@ -18,11 +18,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.webadmin.backup;
+package org.neo4j.server.webadmin.backup;
 
-import static org.neo4j.rest.domain.JsonHelper.createJsonFrom;
-import static org.neo4j.rest.domain.JsonHelper.jsonToMap;
-import static org.neo4j.webadmin.utils.FileUtils.getFileAsString;
+import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.webadmin.domain.BackupJobDescriptionRepresentation;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,8 +33,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.rest.domain.Representation;
-import org.neo4j.webadmin.domain.BackupJobDescriptionRepresentation;
+import static org.neo4j.rest.domain.JsonHelper.createJsonFrom;
+import static org.neo4j.rest.domain.JsonHelper.jsonToMap;
+import static org.neo4j.server.webadmin.utils.FileUtils.getFileAsString;
 
 public class BackupConfig implements Representation
 {
