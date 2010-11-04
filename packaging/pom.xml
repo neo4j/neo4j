@@ -147,6 +147,7 @@
         <executions>
           <execution>
             <id>unpack</id>
+            <phase>generate-resources</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -163,7 +164,29 @@
               </artifactItems>
             </configuration>
           </execution>
-          <!-- <execution> <id>get-javadoc-sources</id> <phase>none</phase> </execution> -->
+          <execution>
+            <id>unpack-for-site</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>neo4j</artifactId>
+                  <version>1.2-SNAPSHOT</version>
+                  <type>jar</type>
+                  <classifier>javadoc</classifier>
+                  <outputDirectory>${project.build.directory}/neo4j-apidocs</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>get-javadoc-sources</id>
+            <phase>none</phase>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -196,6 +219,25 @@
             </configuration>
             <goals>
               <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-apidocs</id>
+            <phase>site</phase>
+            <configuration>
+              <tasks>
+                <copy todir="${project.build.directory}/site/apidocs" overwrite="true">
+                  <fileset dir="${project.build.directory}/neo4j-apidocs" includes="**/*" />
+                </copy>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
             </goals>
           </execution>
         </executions>
@@ -262,15 +304,11 @@
     <plugins>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <windowtitle>Neo4j ${project.version} API</windowtitle>
-          <doctitle>Neo4j ${project.version} API</doctitle>
-        </configuration>
         <reportSets>
           <reportSet>
             <id>javadoc-aggregated-report</id>
             <configuration>
-              <!-- <skip>true</skip> -->
+              <skip>true</skip>
             </configuration>
           </reportSet>
           <reportSet>
