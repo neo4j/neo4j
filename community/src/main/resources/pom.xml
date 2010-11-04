@@ -13,6 +13,7 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
       <version>${project.version}</version> <!-- for example 1.2.M02 -->
+      <type>pom</type>
     </dependency>
   </dependencies>
   <!-- END SNIPPET: deps -->
