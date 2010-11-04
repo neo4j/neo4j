@@ -40,9 +40,8 @@ import static org.neo4j.server.webadmin.rest.WebUtils.addHeaders;
 
 /**
  * A simple key/value store for handling preferences in the admin interface.
- * 
+ *
  * @author Jacob Hansson <jacob@voltvoodoo.com>
- * 
  */
 @Path( AdminPropertiesService.ROOT_PATH )
 public class AdminPropertiesService
@@ -54,7 +53,7 @@ public class AdminPropertiesService
 
     /**
      * Get settings file, creating one if it does not exist.
-     * 
+     *
      * @return
      * @throws IOException
      */
@@ -90,8 +89,7 @@ public class AdminPropertiesService
     @Path( PROPERTY_PATH )
     public Response getValue( @PathParam( "key" ) String key )
     {
-
-        Object value = getConfiguration().getProperty( NeoServer.WEBADMIN_NAMESPACE + key );
+        String value = getConfiguration().getString( NeoServer.WEBADMIN_NAMESPACE + key );
 
         if ( value == null )
         {
@@ -101,8 +99,7 @@ public class AdminPropertiesService
         }
 
         return addHeaders(
-                Response.ok( (String) value,
-                        JsonRenderers.DEFAULT.getMediaType() ) ).build();
+                Response.ok( value, JsonRenderers.DEFAULT.getMediaType() ) ).build();
     }
 
     private Configuration getConfiguration()
@@ -124,7 +121,7 @@ public class AdminPropertiesService
     @Consumes( MediaType.APPLICATION_FORM_URLENCODED )
     @Path( PROPERTY_PATH )
     public Response formSetValueJSON( @PathParam( "key" ) String key,
-            @FormParam( "value" ) String value )
+                                      @FormParam( "value" ) String value )
     {
         return setValue( key, value );
     }
