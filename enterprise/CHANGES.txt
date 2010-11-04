@@ -1,3 +1,13 @@
+1.2-1.2.M03 (2010-11-04)
+------------------------
+
+o Added support for modifying index configurations as well as listing
+  and deleting indexes and index configurations.
+
+-API
+o Added Index#getName() and Index#getConfiguration()
+o Added IndexManager#nodeIndexNames() and #relationshipIndexNames()
+
 0.2-1.2.M02 (2010-10-21)
 ------------------------
 
