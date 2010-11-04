@@ -16,6 +16,7 @@ Included in this release of Neo4j are:
    neo4j-graph-algo      graph algorithms (such as shortest path algorithm)
    neo4j-udc             usage data collector
    neo4j-lucene-index    integrated index implementation
+   neo4j-management      monitoring/manaement over JMX
 
 The lib/ directory contains the binary jar files for all components as well as 
 required third-party libraries. Javadocs are in the site/apidocs directory.
