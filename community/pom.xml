@@ -11,7 +11,8 @@
   <artifactId>neo4j-standalone</artifactId>
   <packaging>pom</packaging>
 
-  <name>Neo4j Standalone Assembler</name>
+  <name>Neo4j Server Assembler</name>
+
   <version>0.1-SNAPSHOT</version>
   <description>This project assembles the Neo4j stand-alone distribution,
       pulling together all the deliverable artifacts and packaging them 
@@ -25,13 +26,9 @@
   </scm>
 
   <properties>
-    <short-name>neo4j-standalone</short-name>
-
     <!-- User readable names -->
-    <product.fullname>Neo4j</product.fullname>
-    <product.shortname>neo4j</product.shortname>
-    <server.fullname>Neo4j Server</server.fullname>
-    <server.shortname>neo4j-server</server.shortname>
+    <server.fullname>Neo4j</server.fullname>
+    <server.shortname>neo4j</server.shortname>
     <shell.fullname>Neo4j Shell</shell.fullname>
     <shell.shortname>neo4j-shell</shell.shortname>
     <webadmin.fullname>Neo4j Web Administration</webadmin.fullname>
@@ -41,6 +38,11 @@
 
     <!-- other filter properties -->
     <wrapper.conf>../conf/neo4j-wrapper.conf</wrapper.conf>
+
+    <!-- conf/neo4j-server.properties filter properties -->
+    <org.neo4j.database.location>../data/graph.db</org.neo4j.database.location>
+    <org.neo4j.webserver.port>7474</org.neo4j.webserver.port>
+    <org.neo4j.webservice.packages>org.neo4j.rest.web,org.neo4j.webadmin,org.neo4j.webadmin.backup,org.neo4j.webadmin.console,org.neo4j.webadmin.domain,org.neo4j.webadmin.parser,org.neo4j.webadmin.properties,org.neo4j.webadmin.resources,org.neo4j.webadmin.rest,org.neo4j.webadmin.rrd,org.neo4j.webadmin.task,org.neo4j.webadmin.utils</org.neo4j.webservice.packages>
 
     <!-- 
          Runtime properties. These are used to bootstrap
@@ -85,7 +87,7 @@
               <descriptors>
                 <descriptor>src/main/assemblies/unix-dist.xml</descriptor>
               </descriptors>
-              <finalName>${product.shortname}-${neo4j.version}</finalName>
+              <finalName>${server.shortname}-${neo4j.version}</finalName>
               <tarLongFileMode>gnu</tarLongFileMode>
             </configuration>
           </execution>
@@ -99,7 +101,7 @@
               <descriptors>
                 <descriptor>src/main/assemblies/windows-dist.xml</descriptor>
               </descriptors>
-              <finalName>${product.shortname}-${neo4j.version}</finalName>
+              <finalName>${server.shortname}-${neo4j.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>
               <assemblyId />
             </configuration>
@@ -125,6 +127,10 @@
             <program>
               <mainClass>org.neo4j.examples.Neo4jShell</mainClass>
               <name>shell-example</name>
+            </program>
+            <program>
+              <mainClass>org.neo4j.shell.StartClient</mainClass>
+              <name>neo4j-shell</name>
             </program>
             <program>
               <mainClass>org.neo4j.examples.CalculateShortestPath</mainClass>
@@ -177,6 +183,12 @@
       <artifactId>neo4j-examples</artifactId>
       <version>${neo4j-examples.version}</version>
       <classifier>test-sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.examples</groupId>
+      <artifactId>neo4j-examples</artifactId>
+      <version>${neo4j-examples.version}</version>
+      <classifier>site</classifier>
     </dependency>
     <dependency>
       <groupId>org.neo4j.app</groupId>
