@@ -1,0 +1,44 @@
+<input type="hidden" class="mor_job_dialog_id" value="{ $T.id }"/>
+<table class="mor_fancy">
+	<tbody>
+		<tr>
+			<th>Name</th>
+			<td><input type="text" class="mor_job_dialog_name" value="{ $T.name }"/></td>
+			<td>A unique name.</td>
+		</tr>
+		<tr>
+			<th>Backup to</th>
+			<td><input type="text" class="mor_job_dialog_path" value="{ $T.backupPath }"/></td>
+			<td>A folder on the administration server.</td>
+		</tr>
+		<tr>
+			<th>Cron expression</th>
+			<td><input type="text" class="mor_job_dialog_cronexp" value="{ $T.cronExpression}" /></td>
+			<td>
+				<b>Pattern:</b><br />Sec Min Hour Day Month Weekday [Year]<br />
+				<table>
+					<tr>
+						<th>Every five minutes</th>
+						<td>* */5 * * * ? *</td>
+					</tr>
+					<tr>
+						<th>Daily</th>
+						<td>0 0 12 * * ? *</td>
+					</tr>
+				</table>
+				<a target="_BLANK" href="http://www.quartz-scheduler.org/docs/api/1.8.1/org/quartz/CronExpression.html">Documentation</a>
+			</td>
+		</tr>
+		<tr>
+			<th>Create foundation automatically</th>
+			<td><input type="checkbox" class="mor_job_dialog_auto-foundation" {#if $T.autoFoundation }checked="checked"{#/if} /></td>
+			<td>Allow backup job to temporarily shut down database to do one-time backup foundation.</td>
+		</tr>
+		<tr>
+			<th></th>
+			<td><button class="mor_job_dialog_save">Save job</button></td>
+			<td></td>
+		</tr>
+	</tbody>
+
+</table>

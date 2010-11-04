@@ -1,0 +1,17 @@
+<h2>Cache</h2>
+<table class="mor_fancy">
+	<tbody>
+		<tr>
+			<th>Cached nodes</th>
+			<td>{$T.data.NodeCacheSize.value}</td>
+		</tr>
+		<tr>
+			<th>Cached relationships</th>
+			<td>{$T.data.RelationshipCacheSize.value}</td>
+		</tr>
+		<tr>
+			<th>Cache type</th>
+			<td>{$T.data.CacheType.value}</td>
+		</tr>
+	</tbody>
+</table>
