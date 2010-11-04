@@ -10,7 +10,7 @@ wa.Servers = (function() {
     //
 
     var DEFAULT_DATA_URL = "http://" + document.domain + ":9999/";
-    var DEFAULT_MANAGEMENT_URL = "/manage/";
+    var DEFAULT_MANAGEMENT_URL = "db/manage/";
     
     var servers = {};
     var currentServerKey = null;
@@ -77,7 +77,7 @@ wa.Servers = (function() {
                     isLegacyFormat = true;
                     
                     if( item.adminUrl === "/admin/server/" ) {
-                        item.adminUrl = "/manage/";
+                        item.adminUrl = "/db/manage/";
                     }
                     
                     servers[item.name] = new neo4j.GraphDatabase(item.restUrl, item.adminUrl);
