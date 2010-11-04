@@ -17,7 +17,7 @@ Neo4j
     
     * {{{./management.html}Management features}}    
 
-    * {{{./integrated-index.html}Integrated indexing}} - managed through the GraphDatabaseService (new!)
+    * {{{./integrated-index.html}Integrated indexing}} - managed through the GraphDatabaseService
 
 Neo4j Tests
 
