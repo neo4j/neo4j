@@ -50,11 +50,6 @@
       <type>pom</type>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-rest</artifactId>
-      <version>0.8-SNAPSHOT</version>
-    </dependency>
-    <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
     </dependency>
@@ -106,19 +101,6 @@
       <version>3.2.3</version>
       <scope>provided</scope>
       <optional>true</optional>
-    </dependency>
-    
-    <!-- Admin webserver deps -->
-
-    <!-- TRANSITIVE DEPENDENCIES FROM neo4j-rest -->
-    <!-- dependency> <groupId>com.sun.grizzly</groupId> <artifactId>grizzly-servlet-webserver</artifactId> <version>1.8.6</version> </dependency> <dependency> <groupId>com.sun.jersey</groupId> <artifactId>jersey-server</artifactId> <version>1.3</version> </dependency> <dependency> <groupId>org.codehaus.jackson</groupId> 
-      <artifactId>jackson-jaxrs</artifactId> <version>1.4.1</version> </dependency> <dependency> <groupId>org.codehaus.jackson</groupId> <artifactId>jackson-mapper-asl</artifactId> <version>1.4.1</version> </dependency -->
-    <dependency>
-      <groupId>com.sun.grizzly</groupId>
-      <artifactId>grizzly-servlet-webserver</artifactId>
-      <version>1.9.18</version>
-      <optional>true</optional>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -204,9 +186,9 @@
           </execution>
         </executions>
         <configuration>
-          <mainClass>org.neo4j.server.webadmin.Main</mainClass>
+          <mainClass>org.neo4j.webadmin.Main</mainClass>
           <arguments>
-            <argument>-webRoot=${project.build.outputDirectory}/html</argument>
+            <argument>-webRoot=${project.build.outputDirectory}/public</argument>
             <argument>-development=true</argument>
           </arguments>
         </configuration>
@@ -258,7 +240,7 @@
               <!-- insert new line after each concatenation -->
               <insertNewLine>true</insertNewLine>
 
-              <output>${project.build.directory}/classes/html/webadmin.js</output>
+              <output>${project.build.directory}/classes/public/webadmin.js</output>
 
               <inputDir>${project.build.outputDirectory}</inputDir>
 
