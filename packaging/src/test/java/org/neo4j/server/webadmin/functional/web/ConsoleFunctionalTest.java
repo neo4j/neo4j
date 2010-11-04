@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.webadmin.functional.web;
+package org.neo4j.server.webadmin.functional.web;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +30,7 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.WebElement;
 
-import static org.neo4j.webadmin.functional.web.IsVisible.isVisible;
+import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 

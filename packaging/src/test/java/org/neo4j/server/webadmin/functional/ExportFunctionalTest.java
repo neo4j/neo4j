@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.webadmin.functional;
+package org.neo4j.server.webadmin.functional;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -31,8 +31,8 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.web.Jetty6WebServer;
-import org.neo4j.webadmin.TestUtil;
-import org.neo4j.webadmin.rest.ExportService;
+import org.neo4j.server.webadmin.TestUtil;
+import org.neo4j.server.webadmin.rest.ExportService;
 
 import javax.ws.rs.core.MediaType;
 
