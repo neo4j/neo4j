@@ -1,0 +1,10 @@
+<div style="float:left; width: 45%">
+	<h2>Name</h2>
+	<p><input type="text" id="mor_servers_add_name" /></p>
+</div>
+<div style="float:left; width: 45%">
+	<h2>Url</h2>
+	<p><input type="text" id="mor_servers_add_url" /></p>
+</div>
+<div class="break"></div>
+<p><button id="mor_servers_add_save_button">Save</button></p>

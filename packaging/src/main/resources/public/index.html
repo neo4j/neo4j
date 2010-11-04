@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+	
+		<link rel="icon" type="image/vnd.microsoft.icon" href="img/favicon.ico">
+		
+		<!--[if IE]><script language="javascript" type="text/javascript" src="js/vend/excanvas.js"></script><![endif]-->
+		<script src="webadmin.js" type="text/javascript"></script>
+		<script type="text/javascript" src="http://neo4j.org/wp-content/themes/neo4j-sandbox/custom-crowd.js"></script>
+		
+		<link rel="stylesheet" href="css/style.css" type="text/css" />
+		<link rel="stylesheet" type="text/css" href="http://neo4j.org/wp-content/themes/neo4j-sandbox/crowdsound-right.css" />
+		
+		<title>Neo4j Monitoring and Management Tool</title>
+		
+	</head>
+	
+	<body>
+		<div id="mor_header">
+			<img id="mor_header_icon" src="img/neo_icon.png" />
+			<ul id="mor_mainmenu"></ul>
+		
+			<div id="mor_servers">
+				<a href="#" id="mor_servers_current"></a>
+				<ul class="mor_servers_list hidden">
+				</ul>
+			</div>
+		</div>
+		
+		<div id="mor_pages"></div>
+		
+		<ul id="mor_errors" class="mor_error_list"></ul>
+		
+		<div id="mor_dialog_content" class="mor_overlay">
+			<div id="mor_dialog_title"></div>
+			<div class="close"><a href="#" class="simplemodal-close">x</a></div>
+			<div id="mor_dialog_data">
+				
+			</div>
+		</div>
+		
+		<div id="mor_loading_content" class="mor_overlay">
+			<div id="mor_loading_title"></div>
+			<div id="mor_loading_message"></div>
+		</div>
+		
+		<ul id="mor_debug" style="position:absolute; top:0; right:10px;display:none;">
+		</ul>
+		
+		<div id="crowsdound-footer">
+			<a id="crowdsound-activate-popup"></a>
+		</div>
+
+		<script type='text/javascript' src='http://crowdsound.com/widgets/popup?aid=4359'></script>
+		
+	</body>
+</html>
