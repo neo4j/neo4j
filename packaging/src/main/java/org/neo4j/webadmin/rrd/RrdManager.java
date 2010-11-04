@@ -23,6 +23,7 @@ package org.neo4j.webadmin.rrd;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.server.NeoServer;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
@@ -62,6 +63,7 @@ public class RrdManager
      * Singleton instance of central round robin database.
      */
     private static RrdDb INSTANCE;
+    
 
     public static RrdDb getRrdDB()
     {
@@ -151,7 +153,7 @@ public class RrdManager
     public static String getDbFilePath() throws IOException
     {
         File dbPath = new File(
-                System.getProperty( "org.neo4j.webadmin.rrdb.location" ) );
+                NeoServer.INSTANCE.configuration().getString( NeoServer.WEBADMIN_NAMESPACE+ "rrdb.location"  ));
 
         if ( !dbPath.exists() && !dbPath.mkdirs() )
         {

@@ -120,7 +120,10 @@ public class NeoServerTest {
         FileWriter fstream = new FileWriter(propertyFile);
         BufferedWriter out = new BufferedWriter(fstream);
         out.write("org.neo4j.database.location=");
-        out.write(ServerTestUtils.createTempDir().getAbsolutePath());
+        out.write(ServerTestUtils.createTempDir().getAbsolutePath() + "\n");
+        out.write(NeoServer.WEBADMIN_NAMESPACE + "rrdb.location=");
+        out.write(ServerTestUtils.createTempDir().getAbsolutePath() + "\n");
+        
         out.close();
     }
 }
