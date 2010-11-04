@@ -4,7 +4,7 @@
   <parent>
     <artifactId>assembly-pom</artifactId>
     <groupId>org.neo4j.assembly</groupId>
-    <version>5</version>
+    <version>6</version>
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>
@@ -13,9 +13,21 @@
 
   <name>Neo4j Standalone Assembler</name>
   <version>0.1-SNAPSHOT</version>
+  <description>This project assembles the Neo4j stand-alone distribution,
+      pulling together all the deliverable artifacts and packaging them 
+      into a downloadable installer.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/</url>
+
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/assemblies/neo4j-standalone/trunk</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/assemblies/neo4j-standalone/trunk</developerConnection>
+    <url>https://trac.neo4j.org/browser/assemblies/neo4j-standalone/trunk</url>
+  </scm>
 
   <properties>
-    <!-- User readble names -->
+    <short-name>neo4j-standalone</short-name>
+
+    <!-- User readable names -->
     <product.fullname>Neo4j</product.fullname>
     <product.shortname>neo4j</product.shortname>
     <server.fullname>Neo4j Server</server.fullname>
@@ -47,8 +59,15 @@
     <neo4j-server.version>0.1-SNAPSHOT</neo4j-server.version>
     <neo4j-webadmin.version>0.5-SNAPSHOT</neo4j-webadmin.version>
     <neo4j-examples.version>1.2-SNAPSHOT</neo4j-examples.version>
-
   </properties>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
+
 
   <build>
     <plugins>
@@ -120,7 +139,7 @@
         <executions>
           <execution>
             <id>examples</id>
-            <phase>compile</phase> 
+            <phase>compile</phase>
             <goals>
               <goal>assemble</goal>
             </goals>
@@ -166,6 +185,27 @@
       <classifier>static-web</classifier>
     </dependency>
   </dependencies>
+
+  <developers>
+    <developer>
+      <id>akollegger</id>
+      <name>Andreas Kollegger</name>
+      <email>andreas.kollegger [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>andres</id>
+      <name>Andrés Taylor</name>
+      <email>andres.taylor [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
 
 </project>
 

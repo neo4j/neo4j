@@ -2,20 +2,20 @@ Neo4j Stand-alone Project
 =========================
 
 This project assembles the Neo4j stand-alone distribution, pulling together all
-the deliverable artfifacts and packagin them into a downloadable installer.
+the deliverable artifacts and packaging them into a downloadable installer.
 
 Deliverable artifacts included:
 
 * neo4j server - start/stop-able standalone neo4j server
 * neo4j shell - text based shell for accessing the server
-* webadmin - the web-based administration application
+* neo4j webadmin - the web-based administration application
 * neo4j libs - java library files
 
 Building
 --------
 
 Running `mvn clean install` will produce packaged installers for Windows
-and linux.
+and Linux.
 
 
 Directories
