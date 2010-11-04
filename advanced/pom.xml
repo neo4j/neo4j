@@ -14,6 +14,8 @@
 
   <properties>
     <short-name>neo4j-examples</short-name>
+    <apidocs-unpack>${project.build.directory}/neo4j-apidocs</apidocs-unpack>
+    <apidocs-target>${project.build.directory}/site/apidocs</apidocs-target>
   </properties>
 
   <dependencies>
@@ -156,16 +158,17 @@
                 <artifactItem>
                   <groupId>org.neo4j</groupId>
                   <artifactId>neo4j</artifactId>
-                  <version>1.2-SNAPSHOT</version>
+                  <version>${project.version}</version>
                   <type>jar</type>
                   <classifier>javadoc</classifier>
-                  <outputDirectory>${project.build.directory}/neo4j-apidocs</outputDirectory>
+                  <outputDirectory>${apidocs-unpack}</outputDirectory>
                 </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
           <execution>
             <id>unpack-for-site</id>
+            <!-- make sure the apidocs are available when only building the site -->
             <phase>pre-site</phase>
             <goals>
               <goal>unpack</goal>
@@ -175,10 +178,10 @@
                 <artifactItem>
                   <groupId>org.neo4j</groupId>
                   <artifactId>neo4j</artifactId>
-                  <version>1.2-SNAPSHOT</version>
+                  <version>${project.version}</version>
                   <type>jar</type>
                   <classifier>javadoc</classifier>
-                  <outputDirectory>${project.build.directory}/neo4j-apidocs</outputDirectory>
+                  <outputDirectory>${apidocs-unpack}</outputDirectory>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -230,11 +233,11 @@
             <id>copy-apidocs</id>
             <phase>site</phase>
             <configuration>
-              <tasks>
-                <copy todir="${project.build.directory}/site/apidocs" overwrite="true">
-                  <fileset dir="${project.build.directory}/neo4j-apidocs" includes="**/*" />
+              <target name="Copy apidocs">
+                <copy todir="${apidocs-target}" overwrite="true">
+                  <fileset dir="${apidocs-unpack}" includes="**/*" />
                 </copy>
-              </tasks>
+              </target>
             </configuration>
             <goals>
               <goal>run</goal>
