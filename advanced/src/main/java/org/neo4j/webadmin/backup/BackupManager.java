@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
 
-import org.neo4j.rest.domain.DatabaseLocator;
 import org.neo4j.webadmin.domain.BackupFailedException;
 import org.neo4j.webadmin.properties.ConfigFileFactory;
 import org.quartz.CronExpression;
@@ -58,7 +57,7 @@ public enum BackupManager
     public void start() throws IOException, SchedulerException,
             BackupFailedException
     {
-        if ( !running && DatabaseLocator.isLocalDatabase() )
+        if ( !running )
         {
             log = new BackupLog( ConfigFileFactory.getBackupLogFile() );
 

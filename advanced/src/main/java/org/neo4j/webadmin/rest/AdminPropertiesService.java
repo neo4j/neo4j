@@ -84,7 +84,6 @@ public class AdminPropertiesService
     // PUBLIC
     //
 
-    private final String configurationNamespace = "org.neo4j.server.webadmin.";
 
     @GET
     @Produces( MediaType.APPLICATION_JSON )
@@ -92,7 +91,7 @@ public class AdminPropertiesService
     public Response getValue( @PathParam( "key" ) String key )
     {
 
-        Object value = getConfiguration().getProperty( configurationNamespace + key );
+        Object value = getConfiguration().getProperty( NeoServer.WEBADMIN_NAMESPACE + key );
 
         if ( value == null )
         {
@@ -136,7 +135,7 @@ public class AdminPropertiesService
 
     private synchronized Response setValue( String key, String value )
     {
-        getConfiguration().addProperty( configurationNamespace + key, value );
+        getConfiguration().addProperty( NeoServer.WEBADMIN_NAMESPACE + key, value );
 
         return Response.ok().build();
     }
