@@ -28,6 +28,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.server.WebTestUtils;
@@ -35,7 +37,6 @@ import org.neo4j.server.WebTestUtils;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
-import com.sun.tools.javac.util.List;
 
 
 public class JettyWebServerFunctionalTest {
@@ -79,7 +80,7 @@ public class JettyWebServerFunctionalTest {
         WebServer ws = new Jetty6WebServer();
         int portNo = 5555;//WebTestUtils.nextAvailablePortNumber();
         ws.setPort(portNo);
-        ws.addJAXRSPackages(List.from(new String[] { getDummyWebResourcePackage() }), "/services");
+        ws.addJAXRSPackages(listFrom(new String[] { getDummyWebResourcePackage() }), "/services");
         ws.start();
      
         
@@ -91,6 +92,18 @@ public class JettyWebServerFunctionalTest {
         assertThat(response.getEntity(String.class), containsString("hello, Bertrand Russell"));
     }
 
+    private List<String> listFrom(String[] strings) {
+        ArrayList<String> al = new ArrayList<String>();
+        
+        if(strings != null) {
+            for(String str : strings) {
+                al.add(str);
+            }
+         }
+        
+        return al;
+    }
+    
     private String defaultStaticContentLocation() {
         return "html";
     }
