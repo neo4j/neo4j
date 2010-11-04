@@ -21,6 +21,8 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,8 +37,6 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 import org.tanukisoftware.wrapper.WrapperListener;
-
-import com.sun.tools.javac.util.List;
 
 /**
  * Application entry point for the Neo4j Server.
@@ -86,11 +86,11 @@ public class NeoServer implements WrapperListener {
         webServerPort = configurator.configuration().getInt(WEBSERVER_PORT, DEFAULT_WEBSERVER_PORT);
         try {
             webServer.setPort(webServerPort);
-            webServer.addJAXRSPackages(List.from(new String[] {REST_API_PACKAGE}), REST_API_PATH);
+            webServer.addJAXRSPackages(listFrom(new String[] {REST_API_PACKAGE}), REST_API_PATH);
             
             // webadmin assumes root
             webServer.addStaticContent("html", "/webadmin");
-            webServer.addJAXRSPackages(List.from(new String[] {WEB_ADMIN_REST_API_PACKAGE}), "/");
+            webServer.addJAXRSPackages(listFrom(new String[] {WEB_ADMIN_REST_API_PACKAGE}), "/");
             
             webServer.start();
             
@@ -101,6 +101,18 @@ public class NeoServer implements WrapperListener {
             log.error("Failed to start Neo Server on port [%s]", webServerPort);
             return 1;
         }
+    }
+
+    private List<String> listFrom(String[] strings) {
+        ArrayList<String> al = new ArrayList<String>();
+        
+        if(strings != null) {
+            for(String str : strings) {
+                al.add(str);
+            }
+         }
+        
+        return al;
     }
 
     protected void stop() {
