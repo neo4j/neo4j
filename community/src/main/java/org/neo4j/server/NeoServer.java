@@ -20,10 +20,6 @@
 
 package org.neo4j.server;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.configuration.Configurator;
@@ -31,12 +27,16 @@ import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecified
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 import org.tanukisoftware.wrapper.WrapperListener;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Application entry point for the Neo4j Server.
@@ -65,6 +65,7 @@ public class NeoServer implements WrapperListener {
     private WebServer webServer;
 
     private int webServerPort;
+    public static NeoServer INSTANCE;
 
     /**
      * For test purposes only.
@@ -87,6 +88,7 @@ public class NeoServer implements WrapperListener {
     }
 
     public Integer start(String[] args) {
+        INSTANCE = this;
         webServerPort = configurator.configuration().getInt(WEBSERVER_PORT, DEFAULT_WEBSERVER_PORT);
         try {
             webServer.setPort(webServerPort);
