@@ -1,0 +1,58 @@
+1.2.M03 (2010-11-04)
+--------------------
+- New components
+o Neo4j Management, making the use of JMX and other
+  management features easier
+o REST core API component, defining a basic data API
+  to a Neo4j graph and used in the Neo4j server.
+  
+- Important changes
+o Neo4j Examples licensed under Apache license version 2
+
+1.2.M02 (2010-10-21)
+--------------------
+
+-New components
+o Lucene index, an implementation of the integrated index framework
+  using lucene as backend. Planned to replace current index service.
+
+-Important changes
+o Fixed shutdown issue regarding UDC leaving a thread running.
+o A new index framework integrated into the kernel API.
+o Getting relationships is faster due to less cache lookups.
+
+1.2.M01 (2010-10-08)
+--------------------
+
+-New components
+o Udc
+
+-Important changes
+o Index:
+   - Lucene version upgraded to 3.0.1
+o Shell:
+   - Apps discoverable with service locator
+   - Added read-only mode on server
+   - 'host' and 'config' options
+o Graph-algo:
+   - Find paths of certain length
+o Kernel:
+   - Lower memory footprint
+   - Higher throughput/concurrency for reads
+   - Common interface for loading kernel extensions (f.ex. shell)
+
+1.1 (2010-07-29)
+----------------
+
+-New components
+o Graph-algo
+o Online-backup
+
+1.0 (2010-02-16)
+----------------
+
+-Initial components
+o Kernel
+o Index
+o Remote-graphdb
+o Shell

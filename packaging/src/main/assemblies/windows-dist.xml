@@ -87,6 +87,7 @@
       <excludes>
         <exclude>org.neo4j.examples:*:*:sources</exclude>
         <exclude>org.neo4j.examples:*:*:test-sources</exclude>
+        <exclude>org.neo4j.examples:*:*:site</exclude>
       </excludes>
     </dependencySet>
    <dependencySet>
@@ -109,6 +110,17 @@
         <include>org.neo4j.examples:*:*:test-sources</include>
       </includes>
     </dependencySet>
+    <dependencySet>
+      <outputDirectory>examples/java/site</outputDirectory>
+      <unpack>true</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <fileMode>0444</fileMode>
+      <directoryMode>0777</directoryMode>
+      <includes>
+        <include>org.neo4j.examples:*:*:site</include>
+      </includes>
+    </dependencySet>
+
 
   </dependencySets>
 
