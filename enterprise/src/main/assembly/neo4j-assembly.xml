@@ -7,6 +7,11 @@
     <format>zip</format>
   </formats>
   <fileSets>
+    <!-- APIDOCS -->
+    <fileSet>
+      <directory>target/neo4j-apidocs</directory>
+      <outputDirectory>site/apidocs</outputDirectory>
+    </fileSet>
     <!-- SRC -->
     <fileSet>
       <directory>src/main/java</directory>
