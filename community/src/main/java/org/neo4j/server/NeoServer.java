@@ -32,8 +32,8 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.webadmin.rrd.RrdManager;
-import org.neo4j.webadmin.rrd.RrdSampler;
+import org.neo4j.server.webadmin.rrd.RrdManager;
+import org.neo4j.server.webadmin.rrd.RrdSampler;
 import org.tanukisoftware.wrapper.WrapperListener;
 
 import java.io.File;
@@ -52,7 +52,7 @@ public class NeoServer implements WrapperListener {
 
     static final String WEBADMIN_PATH = "/webadmin";
 
-    static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.webadmin.rest";
+    static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
 
     public static final String REST_API_PATH = "/db/data";
     public static final String REST_API_PACKAGE = "org.neo4j.rest.web";
@@ -72,6 +72,7 @@ public class NeoServer implements WrapperListener {
 
     private int webServerPort;
     public static NeoServer INSTANCE;
+    public static final String EXPORT_BASE_PATH = "org.neo4j.export.basepath";
 
     /**
      * For test purposes only.
@@ -107,6 +108,7 @@ public class NeoServer implements WrapperListener {
 
             log.info( "Starting round-robin system state sampler.." );
             RrdSampler.INSTANCE.start();
+            log.info( "Started round-robin system state sampler." );
 
             
             return null; //yes, that's right!
