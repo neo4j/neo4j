@@ -54,9 +54,11 @@ public class NeoServerTest {
     @Test
     public void shouldLogStartup() throws Exception {
         InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
+        InMemoryAppender jettyServerAppender = new InMemoryAppender(Jetty6WebServer.log);
         NeoServer server = server();
         server.start(null);
-
+        System.out.println(appender.toString());
+        System.out.println(jettyServerAppender.toString());
         assertThat(appender.toString(), containsString("Started Neo Server on port [" + 7474 + "]"));
 
         server.stop();
@@ -65,7 +67,7 @@ public class NeoServerTest {
     @Test(expected = NullPointerException.class)
     public void whenServerIsShutDownTheDatabaseShouldNotBeAvailable() throws IOException {
 
-        NeoServer server = server();
+        NeoServer server = server(); 
         server.start(null);
         // Do some work
         server.database().beginTx().success();
@@ -89,7 +91,9 @@ public class NeoServerTest {
 
     private WebServer webServer() {
         WebServer webServer = new Jetty6WebServer();
-        webServer.addJAXRSPackages(listFrom(new String[] {NeoServer.REST_API_PACKAGE}), NeoServer.REST_API_PATH);
+        //webServer.addStaticContent("html", NeoServer.WEBADMIN_PATH);
+        //webServer.addJAXRSPackages(listFrom(new String[] {NeoServer.REST_API_PACKAGE}), NeoServer.REST_API_PATH);
+        //webServer.addJAXRSPackages(listFrom(new String[] {NeoServer.WEB_ADMIN_REST_API_PACKAGE}), NeoServer.MANAGE_PATH);
         return webServer;
     }
     

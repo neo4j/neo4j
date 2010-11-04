@@ -42,7 +42,11 @@ import org.tanukisoftware.wrapper.WrapperListener;
  * Application entry point for the Neo4j Server.
  */
 public class NeoServer implements WrapperListener {
-    private static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.webadmin.rest";
+    static final String MANAGE_PATH = "/manage";
+
+    static final String WEBADMIN_PATH = "/webadmin";
+
+    static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.webadmin.rest";
 
     public static final String REST_API_PATH = "/rest/api";
     public static final String REST_API_PACKAGE = "org.neo4j.rest.web";
@@ -86,17 +90,21 @@ public class NeoServer implements WrapperListener {
         webServerPort = configurator.configuration().getInt(WEBSERVER_PORT, DEFAULT_WEBSERVER_PORT);
         try {
             webServer.setPort(webServerPort);
-            webServer.addJAXRSPackages(listFrom(new String[] {REST_API_PACKAGE}), REST_API_PATH);
-            
             // webadmin assumes root
-            webServer.addStaticContent("html", "/webadmin");
-            webServer.addJAXRSPackages(listFrom(new String[] {WEB_ADMIN_REST_API_PACKAGE}), "/");
+            log.info("Mounting static html at [%s]", WEBADMIN_PATH);
+            webServer.addStaticContent("html", WEBADMIN_PATH);
+            
+            log.info("Mounting REST at [%s]", REST_API_PATH);
+            webServer.addJAXRSPackages(listFrom(new String[] {REST_API_PACKAGE}), REST_API_PATH);
+
+            log.info("Mounting manage API at [%s]", MANAGE_PATH);
+            webServer.addJAXRSPackages(listFrom(new String[] {WEB_ADMIN_REST_API_PACKAGE}), MANAGE_PATH);
             
             webServer.start();
             
             log.info("Started Neo Server on port [%s]", webServerPort);
             
-            return 0;
+            return null; //yes, that's right!
         } catch (Exception e) {
             log.error("Failed to start Neo Server on port [%s]", webServerPort);
             return 1;
