@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>5</version>
+    <version>6</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
@@ -162,4 +162,26 @@
       <artifactId>junit</artifactId>
     </dependency>
  </dependencies>
+
+  <developers>
+    <developer>
+      <id>akollegger</id>
+      <name>Andreas Kollegger</name>
+      <email>andreas.kollegger [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>andres</id>
+      <name>Andrés Taylor</name>
+      <email>andres.taylor [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
+
 </project>
