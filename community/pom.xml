@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-online-backup</artifactId>
-  <version>0.7-SNAPSHOT</version>
+  <version>0.7-1.2.M03</version>
   <name>Neo4j - Online Backup</name>
   <description>Online backup of resources using the XA framework.</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
@@ -18,9 +18,9 @@
   </properties>
 
   <scm>
-    <connection>scm:svn:https://svn.neo4j.org/components/online-backup/trunk/</connection>
-    <developerConnection>scm:svn:https://svn.neo4j.org/components/online-backup/trunk/</developerConnection>
-    <url>https://trac.neo4j.org/browser/components/online-backup</url>
+    <connection>scm:svn:https://svn.neo4j.org/components/online-backup/tags/0.7-1.2.M03</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/online-backup/tags/0.7-1.2.M03</developerConnection>
+    <url>scm:svn:https://svn.neo4j.org/components/online-backup/tags/0.7-1.2.M03</url>
   </scm>
 
   <licenses>
