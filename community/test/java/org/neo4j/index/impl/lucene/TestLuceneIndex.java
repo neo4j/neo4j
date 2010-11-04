@@ -1094,4 +1094,21 @@ public class TestLuceneIndex
     {
         testAbandonedIds( RELATIONSHIP_CREATOR, relationshipIndex( "abandoned", LuceneIndexProvider.EXACT_CONFIG ) );
     }
+    
+    @Test
+    public void makeSureYouCanRemoveFromRelationshipIndex()
+    {
+        Node n1 = graphDb.createNode();
+        Node n2 = graphDb.createNode();
+        Relationship r = n1.createRelationshipTo( n2, DynamicRelationshipType.withName( "foo" ) );
+        RelationshipIndex index = graphDb.index().forRelationships( "rel-index" );
+        String key = "bar";
+        index.remove( r, key, "value" );
+        index.add( r, key, "otherValue" );
+        assertThat( index.get( key, "value" ), isEmpty() );
+        assertThat( index.get( key, "otherValue" ), contains( r ) );
+        restartTx();
+        assertThat( index.get( key, "value" ), isEmpty() );
+        assertThat( index.get( key, "otherValue" ), contains( r ) );
+    }
 }

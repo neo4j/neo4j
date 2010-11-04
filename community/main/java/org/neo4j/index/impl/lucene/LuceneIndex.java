@@ -512,7 +512,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         {
             Relationship rel = (Relationship) entity;
             return new LuceneCommand.RemoveCommand( getIdentifier(), LuceneCommand.RELATIONSHIP,
-                    rel.getId(), key, value );
+                    RelationshipId.of( rel ), key, value );
         }
     }
 }
