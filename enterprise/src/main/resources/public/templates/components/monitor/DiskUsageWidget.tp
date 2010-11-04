@@ -1,0 +1,33 @@
+<h2>Disk usage</h2>
+<table class="mor_fancy">
+	<tbody>
+		<tr>
+			<th>Total usage</th>
+			<td>{ Math.round($T.data.TotalStoreSize.value / 1024) } kB</td>
+		</tr>
+		<tr>
+			<th>Node storage</th>
+			<td>{ Math.round($T.data.NodeStoreSize.value / 1024) } kB ({ Math.round( ($T.data.NodeStoreSize.value / $T.data.TotalStoreSize.value) * 100) }%)</td>
+		</tr>
+		<tr>
+			<th>Property storage</th>
+			<td>{ Math.round($T.data.PropertyStoreSize.value / 1024) } kB ({ Math.round( ($T.data.PropertyStoreSize.value / $T.data.TotalStoreSize.value) * 100) }%)</td>
+		</tr>
+		<tr>
+			<th>Relationship storage</th>
+			<td>{ Math.round($T.data.RelationshipStoreSize.value / 1024) } kB ({ Math.round( ($T.data.RelationshipStoreSize.value / $T.data.TotalStoreSize.value) * 100) }%)</td>
+		</tr>
+		<tr>
+			<th>String storage</th>
+			<td>{ Math.round($T.data.StringStoreSize.value / 1024) } kB ({ Math.round( ($T.data.StringStoreSize.value / $T.data.TotalStoreSize.value) * 100) }%)</td>
+		</tr>
+		<tr>
+			<th>Array storage</th>
+			<td>{ Math.round($T.data.ArrayStoreSize.value / 1024) } kB ({ Math.round( ($T.data.ArrayStoreSize.value / $T.data.TotalStoreSize.value) * 100) }%)</td>
+		</tr>
+		<tr>
+			<th>Logical log size</th>
+			<td>{ Math.round($T.data.LogicalLogSize.value / 1024) } kB ({ Math.round( ($T.data.LogicalLogSize.value / $T.data.TotalStoreSize.value) * 100) }%)</td>
+		</tr>
+	</tbody>
+</table>

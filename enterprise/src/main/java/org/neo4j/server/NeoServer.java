@@ -42,13 +42,13 @@ import java.util.List;
  * Application entry point for the Neo4j Server.
  */
 public class NeoServer implements WrapperListener {
-    static final String MANAGE_PATH = "/manage";
+    static final String MANAGE_PATH = "/db/manage";
 
     static final String WEBADMIN_PATH = "/webadmin";
 
     static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.webadmin.rest";
 
-    public static final String REST_API_PATH = "/rest/api";
+    public static final String REST_API_PATH = "/db/data";
     public static final String REST_API_PACKAGE = "org.neo4j.rest.web";
 
     public static final Logger log = Logger.getLogger(NeoServer.class);

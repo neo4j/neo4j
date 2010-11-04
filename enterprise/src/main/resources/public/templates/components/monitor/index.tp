@@ -1,0 +1,44 @@
+<div class="mor_page_leftcol">
+	<h1>Neo4j server monitor</h1>
+	<div id="mor_monitor_lifecycle"></div>
+	<div class="mor_module">
+		<p class="mor_info">Get an overview on your neo4j server.</p>
+		<div class="mor_module_foldout">
+			<h2><a href="#" class="mor_module_foldout_trigger">More about lifecycle</a></h2>
+			<div class="mor_module_foldout_content">
+				<h2>Lifecycle</h2>
+				<p>With the controls above, you can stop, start, and restart the REST server.</p>
+				<p>Stopping the server will mean that the REST server will be turned off. The administration server will still be running, so that it can be used to turn the REST server back on.</p>
+				<p>Stopping the server does not turn off the underlying neo4j database, since the administration server still uses it.</p>
+				<p>If you want to ensure that the neo4j database is turned off, use the console on your server to stop the neo4j service.</p>
+			</div>
+		</div>
+		<div class="mor_module_foldout">
+			<h2><a href="#" class="mor_module_foldout_trigger">More about charts</a></h2>
+			<div class="mor_module_foldout_content">
+				<h2>Charts</h2>
+				<p>To the right are charts that show the total number of primitive entities in the database over time, as well as the heap memory usage in percent.</p>
+				<p>You can select the granularity of the charts with the links in the top right corner of each chart.</p>
+				<p>To get specific info of some point in any chart, simply hover the mouse over the chart line.</p>
+				<p>The charts are automatically updated every three seconds.</p>
+			</div>
+		</div>
+		<div class="mor_module_foldout">
+			<h2><a href="#" class="mor_module_foldout_trigger">More about KPIs</a></h2>
+			<div class="mor_module_foldout_content">
+				<h2>Key points of interest</h2>
+				<p>Below the charts are three boxes showing different sets of KPIs. These are updated every three seconds.</p>
+				<h2>A note on disk size</h2>
+				<p>Because of the way neo4j stores data, the different storage files (nodestore, relationshipstore etc.) will sometimes be very small before the server has recieved any requests.</p>
+				<p>It may be surprising to see the storage files grow rapidly when server first recieves requests, but the measurements will actually be correctly reflecting the disk size of the storage files.</p>
+				<p>This is only occurs if you are working on a relatively small graph.</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="mor_page_rightcol">
+	<div id="mor_monitor_valuetrackers">
+	
+	</div>
+</div>
