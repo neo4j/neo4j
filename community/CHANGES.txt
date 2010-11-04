@@ -1,3 +1,9 @@
+1.2.M03 (2010-11-04)
+--------------------
+
+o Monitoring/management over JMX was moved to the new neo4j-management component.
+o Added ability to get the names and configuration of existing integrated indexes.
+
 1.2.M02 (2010-10-21)
 --------------------
 
