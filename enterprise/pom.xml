@@ -55,11 +55,6 @@
       <version>0.8-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-algo</artifactId>
-      <version>0.7-SNAPSHOT</version>
-    </dependency>
-    <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
     </dependency>
@@ -473,4 +468,44 @@
       <url>http://jsdoctk-plugin.googlecode.com/svn/repo</url>
     </pluginRepository>
   </pluginRepositories>
+
+  <developers>
+    <developer>
+      <id>jimwebber</id>
+      <name>Jim Webber</name>
+      <email>jim [at] neotechnology.com</email>
+      <timezone>+0</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>akollegger</id>
+      <name>Andreas Kollegger</name>
+      <email>andreas.kollegger [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>andres</id>
+      <name>Andrés Taylor</name>
+      <email>andres.taylor [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>peter</id>
+      <name>Peter Neubauer</name>
+      <email>peter [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
+
 </project>
