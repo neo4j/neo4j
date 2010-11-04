@@ -50,6 +50,11 @@
       <type>pom</type>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-rest</artifactId>
+      <version>0.8-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
     </dependency>
@@ -129,6 +134,14 @@
       <type>jar</type>
     </dependency>
 
+    <dependency> 
+      <groupId>com.sun.grizzly</groupId> 
+      <artifactId>grizzly-servlet-webserver</artifactId> 
+      <version>1.9.18</version> 
+      <optional>true</optional> 
+      <scope>provided</scope> 
+    </dependency> 
+
     <!-- File uploads -->
     <dependency>
       <groupId>com.sun.jersey.contribs</groupId>
@@ -188,7 +201,7 @@
         <configuration>
           <mainClass>org.neo4j.webadmin.Main</mainClass>
           <arguments>
-            <argument>-webRoot=${project.build.outputDirectory}/public</argument>
+            <argument>-webRoot=${project.build.outputDirectory}/html</argument>
             <argument>-development=true</argument>
           </arguments>
         </configuration>
