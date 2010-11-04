@@ -1,3 +1,15 @@
+1.2-1.2.M03 (2010-11-04)
+------------------------
+
+o Monitoring/management over JMX was moved to the neo4j-management component.
+
+-API
+o Added ability to get the names of existing integrated indexes:
+  o Index#getName() and Index#getConfiguration()
+  o IndexManager#nodeIndexNames() and #relationshipIndexNames()
+o Added utility to expand traversals using a relationship type in any direction:
+  o Traversal.expanderForTypes(RelationshipType)
+
 1.2-1.2.M02 (2010-10-21)
 ------------------------
 
@@ -8,7 +20,7 @@ o Made the "soft reference" cache type default.
 o Added GraphDatabaseService#index() which exposes an integrated index framework.
 
 -Optimizations
-o Gettings relationships requires less cache lookups and is therefore faster.
+o Getting relationships requires less cache lookups and is therefore faster.
 
 1.2-1.2.M01 (2010-10-08)
 ------------------------
