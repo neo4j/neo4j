@@ -240,7 +240,7 @@
               <!-- insert new line after each concatenation -->
               <insertNewLine>true</insertNewLine>
 
-              <output>${project.build.directory}/classes/public/webadmin.js</output>
+              <output>${project.build.directory}/classes/html/webadmin.js</output>
 
               <inputDir>${project.build.outputDirectory}</inputDir>
 
