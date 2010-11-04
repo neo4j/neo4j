@@ -20,13 +20,9 @@
 
 package org.neo4j.webadmin.functional;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-import java.net.URI;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -40,9 +36,11 @@ import org.neo4j.webadmin.domain.BackupFailedException;
 import org.neo4j.webadmin.rest.BackupService;
 import org.quartz.SchedulerException;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.net.URI;
+
+import static org.junit.Assert.assertEquals;
 
 @Ignore
 public class GetBackupFunctionalTest
@@ -70,7 +68,7 @@ public class GetBackupFunctionalTest
     {
         Client client = Client.create();
 
-        WebResource getResource = client.resource( TestUtil.SERVER_BASE
+        WebResource getResource = client.resource( TestUtil.SERVER_BASE()
                                                    + BackupService.ROOT_PATH
                                                    + BackupService.JOBS_PATH );
 

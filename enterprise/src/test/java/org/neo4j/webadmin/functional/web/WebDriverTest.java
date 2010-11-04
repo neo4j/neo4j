@@ -59,7 +59,7 @@ public abstract class WebDriverTest {
     {
         TestUtil.deleteTestDb();
         WebServerFactory.getDefaultWebServer().startServer(  );
-        AdminServer.INSTANCE.startServer(AdminServer.DEFAULT_PORT, "target/classes/public");
+        AdminServer.INSTANCE.startServer(AdminServer.DEFAULT_PORT(), "target/classes/public");
         BackupManager.INSTANCE.start();
     }
 	
