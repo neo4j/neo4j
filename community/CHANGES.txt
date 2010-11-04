@@ -1,5 +1,10 @@
-0.7-1.2.M1 (2010-10-08)
------------------------
+1.2-1.2.M03 (2010-11-04)
+------------------------
+
+o Made the example code less confusing.
+
+0.7-1.2.M01 (2010-10-08)
+------------------------
 
 o Better documentation about which algorithms are considered well-tested and scalable.
 o Added ability to find paths of a certain length using ShortestPath algo.
