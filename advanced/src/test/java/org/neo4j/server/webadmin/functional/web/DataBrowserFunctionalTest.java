@@ -26,7 +26,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.StaleElementReferenceException;
 
-@Ignore
 public class DataBrowserFunctionalTest extends WebDriverTest {
 
 	
