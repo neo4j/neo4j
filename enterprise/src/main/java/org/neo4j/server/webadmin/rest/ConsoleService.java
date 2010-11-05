@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -40,6 +41,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.log4j.Logger;
 import org.neo4j.rest.domain.JsonHelper;
 import org.neo4j.rest.domain.JsonRenderers;
 import org.neo4j.server.webadmin.console.ConsoleSessions;
@@ -63,6 +65,7 @@ public class ConsoleService
     public static final String ROOT_PATH = "/server/console";
 
     public static final String EXEC_PATH = "";
+    Logger log = Logger.getLogger( ConsoleService.class );
 
     //
     // PUBLIC
@@ -104,8 +107,10 @@ public class ConsoleService
                         "Missing 'command' parameter in arguments." );
             }
 
-            String sessionId = req.getSession( true ).getId();
-
+            HttpSession session = req.getSession( true );
+            log.info( session.toString() );
+            String sessionId = session.getId();
+            
             List<String> resultLines = ConsoleSessions.getSession( sessionId ).evaluate(
                     (String) args.get( "command" ) );
 
