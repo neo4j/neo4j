@@ -28,7 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.remote.RemoteGraphDatabase;
 import org.neo4j.rest.domain.DatabaseBlockedException;
-import org.neo4j.rest.domain.DatabaseLocator;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.webadmin.rest.ConfigService;
 import org.neo4j.server.webadmin.rest.ConsoleService;
 import org.neo4j.server.webadmin.rest.ExportService;
@@ -61,7 +61,7 @@ public class ServerRootRepresentation extends RootRepresentation
         GraphDatabaseService currentDb;
         try
         {
-            currentDb = DatabaseLocator.getGraphDatabase();
+            currentDb = NeoServer.INSTANCE.database();
             if ( currentDb instanceof EmbeddedGraphDatabase )
             {
 

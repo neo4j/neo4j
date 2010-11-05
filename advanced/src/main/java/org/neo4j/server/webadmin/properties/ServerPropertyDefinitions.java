@@ -23,7 +23,6 @@ package org.neo4j.server.webadmin.properties;
 import java.util.ArrayList;
 import java.util.TreeMap;
 
-import org.neo4j.rest.domain.DatabaseLocator;
 import org.neo4j.server.webadmin.domain.HiddenServerPropertyRepresentation;
 import org.neo4j.server.webadmin.domain.ServerPropertyRepresentation;
 import org.neo4j.server.webadmin.domain.ServerPropertyRepresentation.PropertyType;
@@ -73,8 +72,8 @@ public class ServerPropertyDefinitions
         // JVM ARGS
         //
 
-        if ( DatabaseLocator.isLocalDatabase() )
-        {
+//        if ( DatabaseLocator.isLocalDatabase() )
+ //       {
 
             // Garbage collector
             TreeMap<String, String> gcs = new TreeMap<String, String>();
@@ -105,7 +104,7 @@ public class ServerPropertyDefinitions
                         "JVM server mode", "", PropertyType.JVM_ARGUMENT,
                         new ValueDefinition( "", "", "-server" ) ) );
             }
-        }
+//        }
 
         //
         // APP ARGS
@@ -118,16 +117,16 @@ public class ServerPropertyDefinitions
 //                new ValueDefinition( "-webRoot=", "" ) ) );
 
         // Database folder
-        properties.add( new ServerPropertyRepresentation( "db.root",
-                "Database location", DatabaseLocator.getDatabaseLocation(),
-                PropertyType.APP_ARGUMENT, new ValueDefinition( "-dbPath=", "" ) ) );
+//        properties.add( new ServerPropertyRepresentation( "db.root",
+//                "Database location", DatabaseLocator.getDatabaseLocation(),
+//                PropertyType.APP_ARGUMENT, new ValueDefinition( "-dbPath=", "" ) ) );
 
         //
         // CONFIG FILE ARGS
         //
 
-        if ( DatabaseLocator.isLocalDatabase() )
-        {
+//        if ( DatabaseLocator.isLocalDatabase() )
+//        {
 
             // Logical logs
             properties.add( new ServerPropertyRepresentation(
@@ -150,30 +149,30 @@ public class ServerPropertyDefinitions
             properties.add( new ServerPropertyRepresentation(
                     "create.string_block_size", "String block size", "133",
                     PropertyType.DB_CREATION_PROPERTY ) );
-        }
-        else
-        {
-
-            // JMX URI
-            properties.add( new ServerPropertyRepresentation(
-                    "general.jmx.uri", "JMX URI", "",
-                    PropertyType.GENERAL_PROPERTY ) );
-
-        }
+//        }
+//        else
+//        {
+//
+//            // JMX URI
+//            properties.add( new ServerPropertyRepresentation(
+//                    "general.jmx.uri", "JMX URI", "",
+//                    PropertyType.GENERAL_PROPERTY ) );
+//
+//        }
 
         //
         // GENERAL SETTINGS
         // Used directly by webadmin
 
         // Backup path
-        properties.add( new ServerPropertyRepresentation(
-                "general.backup.path", "Backup path", "",
-                PropertyType.GENERAL_PROPERTY ) );
-
-        // Properties to list in data browser
-        properties.add( new ServerPropertyRepresentation(
-                "general.data.listfields", "Data browser list fields", "name",
-                PropertyType.GENERAL_PROPERTY ) );
+//        properties.add( new ServerPropertyRepresentation(
+//                "general.backup.path", "Backup path", "",
+//                PropertyType.GENERAL_PROPERTY ) );
+//
+//        // Properties to list in data browser
+//        properties.add( new ServerPropertyRepresentation(
+//                "general.data.listfields", "Data browser list fields", "name",
+//                PropertyType.GENERAL_PROPERTY ) );
 
         return properties;
     }

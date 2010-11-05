@@ -90,8 +90,8 @@ public class NeoServer implements WrapperListener {
         }
         
         this.configurator = new Configurator(new Validator(new DatabaseLocationMustBeSpecifiedRule()), getConfigFile());
-        this.webServer = new Jetty6WebServer();
         this.database = new Database(configurator.configuration().getString(DATABASE_LOCATION));
+        this.webServer = new Jetty6WebServer();
     }
 
     public Integer start(String[] args) {
@@ -107,6 +107,7 @@ public class NeoServer implements WrapperListener {
             //BackupManager.INSTANCE.start();
 
             log.info( "Starting round-robin system state sampler.." );
+            
             RrdSampler.INSTANCE.start();
             log.info( "Started round-robin system state sampler." );
 
@@ -114,6 +115,7 @@ public class NeoServer implements WrapperListener {
             return null; //yes, that's right!
         } catch (Exception e) {
             log.error("Failed to start Neo Server on port [%s]", webServerPort);
+            e.printStackTrace();
             return 1;
         }
     }
@@ -155,7 +157,6 @@ public class NeoServer implements WrapperListener {
     public int stop(int stopArg) {
         String location = "unknown";
         try {
-            shutdownRrd();
 
             if (database != null) {
                 location = database.getLocation();
@@ -167,6 +168,7 @@ public class NeoServer implements WrapperListener {
                 webServer = null;
             }
             configurator = null;
+            shutdownRrd();
             
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", webServerPort, location);
             return 0;
@@ -180,8 +182,8 @@ public class NeoServer implements WrapperListener {
             throws IOException
     {
         log.info ( "Shutting down the round robin database" );
-        RrdSampler.INSTANCE.stop();
         RrdManager.getRrdDB().close();
+        RrdSampler.INSTANCE.stop();
     }
 
     public GraphDatabaseService database() {
