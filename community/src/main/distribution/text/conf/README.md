@@ -1,9 +1,8 @@
-${product.fullname} conf Directory
+${server.fullname} conf Directory
 =======================================
 
-${product.fullname} configuration files.
+${server.fullname} configuration files.
 
-Reference
----------
-
+* ${server.shortname}-wrapper.conf      - environment and launch settings
+* ${server.shortname}-server.properties - runtime operational settings
 
