@@ -21,6 +21,7 @@
 package org.neo4j.server.webadmin;
 
 import org.neo4j.rest.WebServer;
+import org.neo4j.server.NeoServer;
 
 /**
  * Launcher for the Grizzly server that handles the admin interface. This code
@@ -50,7 +51,7 @@ public enum AdminServer
 
     public static int DEFAULT_PORT()
     {
-        throw new RuntimeException( "Don't use this!" );
+        return NeoServer.DEFAULT_WEBSERVER_PORT;
     }
 
     public static String DEFAULT_STATIC_PATH()

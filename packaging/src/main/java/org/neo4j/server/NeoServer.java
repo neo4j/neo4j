@@ -64,7 +64,7 @@ public class NeoServer implements WrapperListener {
 
     public static final String DATABASE_LOCATION = "org.neo4j.database.location";
     public static final String WEBSERVER_PORT = "org.neo4j.webserver.port";
-    private static final int DEFAULT_WEBSERVER_PORT = 7474;
+    public static final int DEFAULT_WEBSERVER_PORT = 7474;
 
     private Configurator configurator;
     private Database database;

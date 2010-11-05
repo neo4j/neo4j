@@ -41,7 +41,6 @@ import static org.junit.Assert.assertTrue;
  * 
  */
 
-@Ignore
 public class ConsoleFunctionalTest extends WebDriverTest {
 
 	@Test
