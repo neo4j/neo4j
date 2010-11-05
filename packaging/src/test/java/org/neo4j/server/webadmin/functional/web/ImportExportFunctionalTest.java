@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.RenderedWebElement;
 
-@Ignore
 public class ImportExportFunctionalTest extends WebDriverTest {
 
 	@Test
