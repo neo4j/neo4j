@@ -20,9 +20,11 @@
 
 package org.neo4j.server.webadmin.rrd;
 
+import org.mortbay.log.Log;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.management.Kernel;
+import org.neo4j.management.Neo4jManager;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.webadmin.MBeanServerFactory;
 import org.rrd4j.core.Sample;
@@ -123,6 +125,10 @@ public class RrdSampler
      */
     private boolean running = false;
 
+    private Kernel kernel;
+
+    private Neo4jManager manager;
+
     //
     // CONSTRUCTOR
     //
@@ -166,7 +172,7 @@ public class RrdSampler
         }
         catch ( IOException e )
         {
-            e.printStackTrace(  );
+            e.printStackTrace();
             throw new RuntimeException(
                     "IO Error trying to access round robin database path. See nested exception.",
                     e );
@@ -251,6 +257,8 @@ public class RrdSampler
         try
         {
             MBeanServerConnection server = MBeanServerFactory.getServer();
+            kernel = ( (EmbeddedGraphDatabase) NeoServer.INSTANCE.database() ).getManagementBean( Kernel.class );
+            manager = new Neo4jManager( kernel );
             reloadMBeanNames();
 
             sample.setTime( new Date().getTime() );
@@ -259,18 +267,17 @@ public class RrdSampler
 
             if ( primitivesName != null )
             {
-                Long attribute = (Long) server.getAttribute( primitivesName,
-                        JMX_ATTR_NODE_COUNT );
-                sample.setValue( RrdManager.NODE_COUNT,
-                        attribute );
+                Long attribute = (Long) manager.getPrimitivesBean().getNumberOfNodeIdsInUse();
+                sample.setValue( RrdManager.NODE_COUNT, attribute );
 
-                sample.setValue( RrdManager.RELATIONSHIP_COUNT,
-                        (Long) server.getAttribute( primitivesName,
-                                JMX_ATTR_RELATIONSHIP_COUNT ) );
+                sample.setValue(
+                        RrdManager.RELATIONSHIP_COUNT,
+                        (Long) manager.getPrimitivesBean().getNumberOfRelationshipIdsInUse() );
+                Log.debug( "sampling node count: " + manager.getPrimitivesBean().getNumberOfNodeIdsInUse());
 
-                sample.setValue( RrdManager.PROPERTY_COUNT,
-                        (Long) server.getAttribute( primitivesName,
-                                JMX_ATTR_PROPERTY_COUNT ) );
+                sample.setValue(
+                        RrdManager.PROPERTY_COUNT,
+                        (Long) manager.getPrimitivesBean().getNumberOfPropertyIdsInUse() );
             }
 
             if ( memoryName != null )
