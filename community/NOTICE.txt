@@ -1,7 +1,7 @@
 Neo4j examples
 
 Copyright (c) 2010 "Neo Technology," Network Engine for Objects in Lund AB
-    
+
 This package includes software developed at
 "Neo Technology," Network Engine for Objects in Lund AB
 (http://neotechnology.com).
@@ -14,6 +14,12 @@ The bundled graph database engine is copyright
 "Neo Technology," Network Engine for Objects in Lund AB
 and licensed under the GNU AFFERO GENERAL PUBLIC LICENSE
 Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html).
+
+
+Third party libraries
+---------------------
+
+Full license texts are found in LICENSES.txt.
 
 The bundled Apache Geronimo JTA library is copyright
 The Apache Software Foundation  (http://www.apache.org/)
@@ -28,4 +34,3 @@ BSD License  (http://www.opensource.org/licenses/bsd-license.php).
 
 The bundled Google Protocol Buffers library is copyright under the
 BSD License  (http://www.opensource.org/licenses/bsd-license.php).
-
