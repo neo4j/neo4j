@@ -23,7 +23,6 @@ package org.neo4j.server.webadmin.properties;
 import java.util.ArrayList;
 import java.util.TreeMap;
 
-import org.neo4j.server.webadmin.domain.HiddenServerPropertyRepresentation;
 import org.neo4j.server.webadmin.domain.ServerPropertyRepresentation;
 import org.neo4j.server.webadmin.domain.ServerPropertyRepresentation.PropertyType;
 import org.neo4j.server.webadmin.utils.PlatformUtils;

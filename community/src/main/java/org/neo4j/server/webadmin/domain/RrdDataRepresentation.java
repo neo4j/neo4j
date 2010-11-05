@@ -23,7 +23,7 @@ package org.neo4j.server.webadmin.domain;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 import org.rrd4j.core.FetchData;
 
 public class RrdDataRepresentation implements Representation

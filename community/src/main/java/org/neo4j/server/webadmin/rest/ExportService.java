@@ -33,10 +33,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.rest.domain.JsonRenderers;
+import org.neo4j.server.rest.domain.JsonRenderers;
 import org.neo4j.server.webadmin.domain.ExportRepresentation;
 import org.neo4j.server.webadmin.domain.ExportServiceRepresentation;
 import org.neo4j.server.webadmin.task.GraphMLExporter;
@@ -47,26 +47,20 @@ import org.neo4j.server.webadmin.task.GraphMLExporter;
  * @author Jacob Hansson <jacob@voltvoodoo.com>
  * 
  */
-@Path( ExportService.ROOT_PATH )
-public class ExportService
-{
-
-    public static final String ROOT_PATH = "/server/export";
-    public static final String TRIGGER_PATH = "";
-
+@Path(ExportService.ROOT_PATH)
+public class ExportService {
+    public static final String ROOT_PATH = "export";
+    
     private static GraphMLExporter exportTask = new GraphMLExporter();
     private boolean isExporting = false;
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    public Response getServiceDefinition( @Context UriInfo uriInfo )
-    {
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getServiceDefinition(@Context UriInfo uriInfo) {
 
-        String entity = JsonRenderers.DEFAULT.render( new ExportServiceRepresentation(
-                uriInfo.getBaseUri() ) );
+        String entity = JsonRenderers.DEFAULT.render(new ExportServiceRepresentation(uriInfo.getBaseUri()));
 
-        return addHeaders(
-                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+        return addHeaders(Response.ok(entity, JsonRenderers.DEFAULT.getMediaType())).build();
     }
 
     /**
@@ -81,45 +75,32 @@ public class ExportService
      * @return Response
      */
     @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    public Response createExport()
-    {
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response createExport() {
 
         makeSureExportIsRunning();
 
-        try
-        {
+        try {
             // Wait until export is done
-            while ( isExporting )
-            {
-                Thread.sleep( 13 );
+            while (isExporting) {
+                Thread.sleep(13);
             }
-        }
-        catch ( InterruptedException e )
-        {
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
         // TODO: Use injected baseURI here after merge with neo4j-rest is
         // complete
-        String exportLink = "/" + GraphMLExporter.EXPORT_FOLDER_PATH + "/"
-                            + GraphMLExporter.EXPORT_FILE_PATH;
+        String exportLink = "/" + GraphMLExporter.EXPORT_FOLDER_PATH + "/" + GraphMLExporter.EXPORT_FILE_PATH;
 
         String entity;
-        try
-        {
-            entity = JsonRenderers.DEFAULT.render( new ExportRepresentation(
-                    new URI( exportLink ) ) );
-        }
-        catch ( URISyntaxException e )
-        {
-            return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR,
-                    "Internal error determining export URL.", e,
-                    JsonRenderers.DEFAULT );
+        try {
+            entity = JsonRenderers.DEFAULT.render(new ExportRepresentation(new URI(exportLink)));
+        } catch (URISyntaxException e) {
+            return buildExceptionResponse(Status.INTERNAL_SERVER_ERROR, "Internal error determining export URL.", e, JsonRenderers.DEFAULT);
         }
 
-        return addHeaders(
-                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+        return addHeaders(Response.ok(entity, JsonRenderers.DEFAULT.getMediaType())).build();
     }
 
     //
@@ -129,19 +110,14 @@ public class ExportService
     /**
      * Starts an export job if one is not already running.
      */
-    private synchronized void makeSureExportIsRunning()
-    {
+    private synchronized void makeSureExportIsRunning() {
 
-        if ( !isExporting )
-        {
-            try
-            {
+        if (!isExporting) {
+            try {
                 isExporting = true;
                 exportTask.doExport();
                 isExporting = false;
-            }
-            catch ( Exception e )
-            {
+            } catch (Exception e) {
                 // Catch-all to avoid isExporting getting stuck in "true" mode
                 isExporting = false;
                 e.printStackTrace();

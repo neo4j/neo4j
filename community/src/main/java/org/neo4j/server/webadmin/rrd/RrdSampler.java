@@ -20,14 +20,10 @@
 
 package org.neo4j.server.webadmin.rrd;
 
-import org.mortbay.log.Log;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.management.Kernel;
-import org.neo4j.management.Neo4jManager;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.webadmin.MBeanServerFactory;
-import org.rrd4j.core.Sample;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
@@ -37,10 +33,16 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeDataSupport;
-import java.io.IOException;
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
+
+import org.mortbay.log.Log;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.management.Kernel;
+import org.neo4j.management.Neo4jManager;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.webadmin.MBeanServerFactory;
+import org.rrd4j.core.Sample;
 
 /**
  * Manages sampling the state of the database and storing the samples in a round
@@ -55,9 +57,7 @@ import java.util.TimerTask;
  * @author Jacob Hansson <jacob@voltvoodoo.com>
  * 
  */
-@SuppressWarnings( "restriction" )
-public class RrdSampler
-{
+public class RrdSampler {
 
     //
     // SINGLETON IMPLEMENTATION
@@ -77,9 +77,6 @@ public class RrdSampler
     private static final String JMX_NEO4J_XA_RESOURCES = "XA Resources";
 
     // JMX Attribute names
-    private static final String JMX_ATTR_NODE_COUNT = "NumberOfNodeIdsInUse";
-    private static final String JMX_ATTR_RELATIONSHIP_COUNT = "NumberOfRelationshipIdsInUse";
-    private static final String JMX_ATTR_PROPERTY_COUNT = "NumberOfPropertyIdsInUse";
     private static final String JMX_ATTR_HEAP_MEMORY = "HeapMemoryUsage";
 
     /**
@@ -91,17 +88,12 @@ public class RrdSampler
      * Update task. This is is triggered on a regular interval to record new
      * data points.
      */
-    private TimerTask updateTask = new TimerTask()
-    {
-        public void run()
-        {
-            if ( !running )
-            {
+    private TimerTask updateTask = new TimerTask() {
+        public void run() {
+            if (!running) {
                 this.cancel();
-            }
-            else
-            {
-                updateSample( sample );
+            } else {
+                updateSample(sample);
             }
         }
     };
@@ -109,16 +101,7 @@ public class RrdSampler
     // MANAGEMENT BEANS
 
     private ObjectName memoryName;
-
     private ObjectName primitivesName = null;
-    private ObjectName storeSizesName = null;
-    private ObjectName transactionsName = null;
-    private ObjectName memoryMappingName = null;
-    private ObjectName kernelName = null;
-    private ObjectName lockingName = null;
-    private ObjectName cacheName = null;
-    private ObjectName configurationName = null;
-    private ObjectName xaResourcesName = null;
 
     /**
      * Keep track of whether to run the update task or not.
@@ -133,18 +116,12 @@ public class RrdSampler
     // CONSTRUCTOR
     //
 
-    protected RrdSampler()
-    {
-        try
-        {
-            memoryName = new ObjectName( "java.lang:type=Memory" );
-        }
-        catch ( MalformedObjectNameException e )
-        {
+    protected RrdSampler() {
+        try {
+            memoryName = new ObjectName("java.lang:type=Memory");
+        } catch (MalformedObjectNameException e) {
             e.printStackTrace();
-        }
-        catch ( NullPointerException e )
-        {
+        } catch (NullPointerException e) {
             e.printStackTrace();
         }
     }
@@ -157,33 +134,25 @@ public class RrdSampler
      * Start the data collecting, creating a central round-robin database if one
      * does not exist.
      */
-    public void start()
-    {
-        try
-        {
-            if ( running == false )
-            {
+    public void start() {
+        try {
+            if (running == false) {
                 running = true;
                 sample = RrdManager.getRrdDB().createSample();
-                Timer timer = new Timer( "rrd" );
+                Timer timer = new Timer("rrd");
 
-                timer.scheduleAtFixedRate( updateTask, 0, 3000 );
+                timer.scheduleAtFixedRate(updateTask, 0, 3000);
             }
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             e.printStackTrace();
-            throw new RuntimeException(
-                    "IO Error trying to access round robin database path. See nested exception.",
-                    e );
+            throw new RuntimeException("IO Error trying to access round robin database path. See nested exception.", e);
         }
     }
 
     /**
      * Stop the data collecting.
      */
-    public void stop()
-    {
+    public void stop() {
         running = false;
     }
 
@@ -196,52 +165,36 @@ public class RrdSampler
      * like this because the name of the neo4j mbeans will change each time the
      * neo4j kernel is restarted.
      */
-    protected void reloadMBeanNames()
-    {
-        try
-        {
-            GraphDatabaseService genericDb = NeoServer.INSTANCE.database();
+    protected void reloadMBeanNames() {
+        try {
+            GraphDatabaseService genericDb = NeoServer.server().database().db;
 
-            if ( genericDb instanceof EmbeddedGraphDatabase )
-            {
+            if (genericDb instanceof EmbeddedGraphDatabase) {
                 EmbeddedGraphDatabase db = (EmbeddedGraphDatabase) genericDb;
 
                 // Grab relevant jmx management beans
-                ObjectName neoQuery = db.getManagementBean( Kernel.class ).getMBeanQuery();
-                String instance = neoQuery.getKeyProperty( "instance" );
-                String baseName = neoQuery.getDomain() + ":instance="
-                                  + instance + ",name=";
+                ObjectName neoQuery = db.getManagementBean(Kernel.class).getMBeanQuery();
+                String instance = neoQuery.getKeyProperty("instance");
+                String baseName = neoQuery.getDomain() + ":instance=" + instance + ",name=";
 
-                primitivesName = new ObjectName( baseName
-                                                 + JMX_NEO4J_PRIMITIVE_COUNT );
-                storeSizesName = new ObjectName( baseName
-                                                 + JMX_NEO4J_STORE_FILE_SIZES );
-                transactionsName = new ObjectName( baseName
-                                                   + JMX_NEO4J_TRANSACTIONS );
-                memoryMappingName = new ObjectName( baseName
-                                                    + JMX_NEO4J_MEMORY_MAPPING );
-                kernelName = new ObjectName( baseName + JMX_NEO4J_KERNEL );
-                lockingName = new ObjectName( baseName + JMX_NEO4J_LOCKING );
-                cacheName = new ObjectName( baseName + JMX_NEO4J_CACHE );
-                configurationName = new ObjectName( baseName
-                                                    + JMX_NEO4J_CONFIGURATION );
-                xaResourcesName = new ObjectName( baseName
-                                                  + JMX_NEO4J_XA_RESOURCES );
+                primitivesName = new ObjectName(baseName + JMX_NEO4J_PRIMITIVE_COUNT);
+                new ObjectName(baseName + JMX_NEO4J_STORE_FILE_SIZES);
+                new ObjectName(baseName + JMX_NEO4J_TRANSACTIONS);
+                new ObjectName(baseName + JMX_NEO4J_MEMORY_MAPPING);
+                new ObjectName(baseName + JMX_NEO4J_KERNEL);
+                new ObjectName(baseName + JMX_NEO4J_LOCKING);
+                new ObjectName(baseName + JMX_NEO4J_CACHE);
+                new ObjectName(baseName + JMX_NEO4J_CONFIGURATION);
+                new ObjectName(baseName + JMX_NEO4J_XA_RESOURCES);
             }
 
-        }
-        catch ( MalformedObjectNameException e )
-        {
+        } catch (MalformedObjectNameException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-        }
-        catch ( NullPointerException e )
-        {
+        } catch (NullPointerException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-        }
-        catch ( org.neo4j.server.webadmin.domain.DatabaseBlockedException e )
-        {
+        } catch (DatabaseBlockedException e) {
             e.printStackTrace();
         }
     }
@@ -251,71 +204,47 @@ public class RrdSampler
      * state. Data sources to work with are defined in
      * {@link RrdManager#getRrdDB()}
      */
-    private void updateSample( Sample sample )
-    {
+    private void updateSample(Sample sample) {
 
-        try
-        {
+        try {
             MBeanServerConnection server = MBeanServerFactory.getServer();
-            kernel = ( (EmbeddedGraphDatabase) NeoServer.INSTANCE.database() ).getManagementBean( Kernel.class );
-            manager = new Neo4jManager( kernel );
+            kernel = ((EmbeddedGraphDatabase) NeoServer.server().database().db).getManagementBean(Kernel.class);
+            manager = new Neo4jManager(kernel);
             reloadMBeanNames();
 
-            sample.setTime( new Date().getTime() );
+            sample.setTime(new Date().getTime());
 
-            sample.setValue( RrdManager.NODE_CACHE_SIZE, 0d );
+            sample.setValue(RrdManager.NODE_CACHE_SIZE, 0d);
 
-            if ( primitivesName != null )
-            {
+            if (primitivesName != null) {
                 Long attribute = (Long) manager.getPrimitivesBean().getNumberOfNodeIdsInUse();
-                sample.setValue( RrdManager.NODE_COUNT, attribute );
+                sample.setValue(RrdManager.NODE_COUNT, attribute);
 
-                sample.setValue(
-                        RrdManager.RELATIONSHIP_COUNT,
-                        (Long) manager.getPrimitivesBean().getNumberOfRelationshipIdsInUse() );
-                Log.debug( "sampling node count: " + manager.getPrimitivesBean().getNumberOfNodeIdsInUse());
+                sample.setValue(RrdManager.RELATIONSHIP_COUNT, (Long) manager.getPrimitivesBean().getNumberOfRelationshipIdsInUse());
+                Log.debug("sampling node count: " + manager.getPrimitivesBean().getNumberOfNodeIdsInUse());
 
-                sample.setValue(
-                        RrdManager.PROPERTY_COUNT,
-                        (Long) manager.getPrimitivesBean().getNumberOfPropertyIdsInUse() );
+                sample.setValue(RrdManager.PROPERTY_COUNT, (Long) manager.getPrimitivesBean().getNumberOfPropertyIdsInUse());
             }
 
-            if ( memoryName != null )
-            {
-                sample.setValue(
-                        RrdManager.MEMORY_PERCENT,
-                        ( ( (Long) ( (CompositeDataSupport) server.getAttribute(
-                                memoryName, JMX_ATTR_HEAP_MEMORY ) ).get( "used" ) + 0.0d ) / (Long) ( (CompositeDataSupport) server.getAttribute(
-                                memoryName, JMX_ATTR_HEAP_MEMORY ) ).get( "max" ) ) * 100 );
+            if (memoryName != null) {
+                sample
+                        .setValue(RrdManager.MEMORY_PERCENT, (((Long) ((CompositeDataSupport) server.getAttribute(memoryName, JMX_ATTR_HEAP_MEMORY))
+                                .get("used") + 0.0d) / (Long) ((CompositeDataSupport) server.getAttribute(memoryName, JMX_ATTR_HEAP_MEMORY)).get("max")) * 100);
 
             }
 
             sample.update();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException(
-                    "IO Error trying to access round robin database path. See nested exception.",
-                    e );
-        }
-        catch ( AttributeNotFoundException e )
-        {
+        } catch (IOException e) {
+            throw new RuntimeException("IO Error trying to access round robin database path. See nested exception.", e);
+        } catch (AttributeNotFoundException e) {
             e.printStackTrace();
-        }
-        catch ( InstanceNotFoundException e )
-        {
+        } catch (InstanceNotFoundException e) {
             e.printStackTrace();
-        }
-        catch ( MBeanException e )
-        {
+        } catch (MBeanException e) {
             e.printStackTrace();
-        }
-        catch ( ReflectionException e )
-        {
+        } catch (ReflectionException e) {
             e.printStackTrace();
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

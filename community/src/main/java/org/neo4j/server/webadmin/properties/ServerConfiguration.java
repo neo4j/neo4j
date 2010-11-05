@@ -20,17 +20,10 @@
 
 package org.neo4j.server.webadmin.properties;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Properties;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 import org.neo4j.server.webadmin.domain.NoSuchPropertyException;
 import org.neo4j.server.webadmin.domain.ServerPropertyRepresentation;
 
@@ -52,18 +45,6 @@ public class ServerConfiguration implements Representation
 //    public static final String FALLBACK_MIN_HEAP = "512M";
 //
     private static ServerConfiguration INSTANCE;
-
-    /**
-     * This is the properties file that is read and used by the underlying neo4j
-     * instance.
-     */
-    private Properties dbConfig;
-
-    /**
-     * This property file stores configuration used when launching the JVM and
-     * when creating a new database.
-     */
-    private Properties generalConfig;
 
     private ArrayList<ServerPropertyRepresentation> properties = ServerPropertyDefinitions.getPropertyDefinitions();
 

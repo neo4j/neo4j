@@ -20,7 +20,7 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import static org.neo4j.rest.domain.JsonHelper.jsonToMap;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.server.webadmin.rest.WebUtils.addHeaders;
 import static org.neo4j.server.webadmin.rest.WebUtils.buildExceptionResponse;
 
@@ -37,10 +37,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.rest.domain.JsonRenderers;
+import org.neo4j.server.rest.domain.JsonRenderers;
 import org.neo4j.server.webadmin.domain.ImportServiceRepresentation;
 import org.neo4j.server.webadmin.task.GraphMLImporter;
 

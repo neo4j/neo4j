@@ -20,9 +20,10 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.rest.domain.JsonRenderers;
-import org.neo4j.server.NeoServer;
+import static org.neo4j.server.webadmin.rest.WebUtils.addHeaders;
+
+import java.io.File;
+import java.io.IOException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
@@ -33,10 +34,10 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.File;
-import java.io.IOException;
 
-import static org.neo4j.server.webadmin.rest.WebUtils.addHeaders;
+import org.apache.commons.configuration.Configuration;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.rest.domain.JsonRenderers;
 
 /**
  * A simple key/value store for handling preferences in the admin interface.
@@ -89,7 +90,7 @@ public class AdminPropertiesService
     @Path( PROPERTY_PATH )
     public Response getValue( @PathParam( "key" ) String key )
     {
-        String value = getConfiguration().getString( NeoServer.WEBADMIN_NAMESPACE + key );
+        String value = getConfiguration().getString( NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + key );
 
         if ( value == null )
         {
@@ -104,7 +105,7 @@ public class AdminPropertiesService
 
     private Configuration getConfiguration()
     {
-        return NeoServer.INSTANCE.configuration();
+        return NeoServer.server().configuration();
     }
 
     @POST
@@ -132,7 +133,7 @@ public class AdminPropertiesService
 
     private synchronized Response setValue( String key, String value )
     {
-        getConfiguration().addProperty( NeoServer.WEBADMIN_NAMESPACE + key, value );
+        getConfiguration().addProperty( NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + key, value );
 
         return Response.ok().build();
     }

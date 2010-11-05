@@ -32,10 +32,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.rest.domain.JsonRenderers;
+import org.neo4j.server.rest.domain.JsonRenderers;
 import org.neo4j.server.webadmin.domain.MonitorServiceRepresentation;
 import org.neo4j.server.webadmin.domain.RrdDataRepresentation;
 import org.neo4j.server.webadmin.rrd.RrdManager;

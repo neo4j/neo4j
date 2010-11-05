@@ -39,7 +39,7 @@ public class ExportServiceRepresentation extends RootRepresentation
         Map<String, Object> def = new HashMap<String, Object>();
         Map<String, Object> resources = new HashMap<String, Object>();
 
-        resources.put( "export_all", baseUri + ExportService.TRIGGER_PATH );
+        resources.put( "export_all", baseUri);
 
         def.put( "resources", resources );
         return def;

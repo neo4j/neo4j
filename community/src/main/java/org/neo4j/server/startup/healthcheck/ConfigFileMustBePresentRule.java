@@ -26,25 +26,41 @@ import java.util.Properties;
 import org.neo4j.server.NeoServer;
 
 public class ConfigFileMustBePresentRule implements StartupHealthCheckRule {
+    private static final String EMPTY_STRING = "";
     private boolean passed = false;
     private boolean ran = false;
+    private String failureMessage = EMPTY_STRING;
 
     public boolean execute(Properties properties) {
-        String key = properties.getProperty(NeoServer.NEO_CONFIG_FILE_PROPERTY);
-        this.passed  = key != null && new File(key).exists();
         ran = true;
+
+        String configFilename = properties.getProperty(NeoServer.NEO_CONFIG_FILE_KEY);
+        
+        if(configFilename == null) {
+            failureMessage = String.format("Property [%s] has not been set.", NeoServer.NEO_CONFIG_FILE_KEY);
+            
+            return false;
+        }
+        
+        File configFile = new File(configFilename);
+        if(!configFile.exists()) {
+            failureMessage = String.format("No configuration file at [%s]", configFile.getAbsoluteFile());
+            return false;
+        }
+        
+        passed = true;
         return passed;
     }
 
-    public String getMessage() {
-        if(!ran) {
-            return String.format("[%s] Healthcheck has not been run", this.getClass().getName());
+    public String getFailureMessage() {
+        if(passed) {
+            return EMPTY_STRING;
         }
         
-        if(passed) {
-            return String.format("[%s] Passed healthcheck", this.getClass().getName());
+        if(!ran) {
+            return String.format("%s has not been run", getClass().getName());
         } else {
-            return String.format("[%s] Failed healthcheck", this.getClass().getName());
+            return failureMessage;
         }
     }
 }

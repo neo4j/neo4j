@@ -22,7 +22,7 @@ package org.neo4j.server.webadmin.domain;
 
 import java.net.URI;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 
 public abstract class RootRepresentation implements Representation
 {

@@ -22,7 +22,7 @@ package org.neo4j.server.webadmin.domain;
 
 import java.util.ArrayList;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 
 public class JmxDomainListRepresentation implements Representation
 {
