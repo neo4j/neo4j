@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.TreeMap;
 
 import org.neo4j.rest.domain.DatabaseLocator;
-import org.neo4j.server.webadmin.AdminServer;
 import org.neo4j.server.webadmin.domain.HiddenServerPropertyRepresentation;
 import org.neo4j.server.webadmin.domain.ServerPropertyRepresentation;
 import org.neo4j.server.webadmin.domain.ServerPropertyRepresentation.PropertyType;
@@ -112,11 +111,11 @@ public class ServerPropertyDefinitions
         // APP ARGS
         //
 
-        // Static web content folder
-        properties.add( new HiddenServerPropertyRepresentation( "web.root",
-                "Web root", AdminServer.INSTANCE.getStaticPath(),
-                PropertyType.APP_ARGUMENT,
-                new ValueDefinition( "-webRoot=", "" ) ) );
+//        // Static web content folder
+//        properties.add( new HiddenServerPropertyRepresentation( "web.root",
+//                "Web root", AdminServer.INSTANCE.getStaticPath(),
+//                PropertyType.APP_ARGUMENT,
+//                new ValueDefinition( "-webRoot=", "" ) ) );
 
         // Database folder
         properties.add( new ServerPropertyRepresentation( "db.root",
