@@ -20,6 +20,7 @@
 
 package org.neo4j.server.webadmin;
 
+import org.apache.log4j.Logger;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.remote.RemoteGraphDatabase;
@@ -47,6 +48,8 @@ import java.net.MalformedURLException;
 @SuppressWarnings( "restriction" )
 public class MBeanServerFactory
 {
+    
+    static Logger log = Logger.getLogger( MBeanServerFactory.class );
 
     /**
      * Used to check if the database has changed. If the database has changed,
@@ -69,7 +72,7 @@ public class MBeanServerFactory
         {
             NeoServer iNSTANCE = NeoServer.INSTANCE;
             db = iNSTANCE.database();
-            System.out.println(db);
+            //log.info(db);
             if ( db != cachedDb )
             {
                 cachedDb = db;
