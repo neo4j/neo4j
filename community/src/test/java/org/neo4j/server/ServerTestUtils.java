@@ -93,6 +93,7 @@ public class ServerTestUtils
         writeValue( out, NeoServer.WEBSERVER_PORT + "=", "7474" );
         writeValue( out, NeoServer.WEBADMIN_NAMESPACE + "rrdb.location=", ServerTestUtils.createTempDir().getAbsolutePath() );
         writeValue( out, NeoServer.EXPORT_BASE_PATH + "=", ServerTestUtils.createTempDir().getAbsolutePath() );
+        writeValue( out, NeoServer.WEBADMIN_NAMESPACE + "neo4j-servers=", "{\"localhost\"\\:{\"url\"\\:\"http\\://localhost\\:7474/db/data/\"\\,\"manageUrl\"\\:\"http\\://localhost\\:7474/db/manage/\"}}");
 
         out.close();
     }

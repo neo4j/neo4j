@@ -29,6 +29,11 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.neo4j.rest.WebServerFactory;
 import org.neo4j.rest.domain.DatabaseLocator;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.webadmin.AdminServer;
 import org.neo4j.server.webadmin.TestUtil;
 import org.neo4j.server.webadmin.backup.BackupManager;
@@ -51,30 +56,38 @@ import org.quartz.SchedulerException;
 @Ignore
 public abstract class WebDriverTest {
 
-	protected WebDriver webDriver = new FirefoxDriver();
+	private static int serverPort;
+
+    private static NeoServer server;
+
+    protected WebDriver webDriver = new FirefoxDriver();
 	
 	@BeforeClass
     public static void startWebServer() throws IOException, SchedulerException,
             BackupFailedException
     {
-        TestUtil.deleteTestDb();
-        WebServerFactory.getDefaultWebServer().startServer(  );
-        AdminServer.INSTANCE.startServer(AdminServer.DEFAULT_PORT(), "target/classes/public");
-        BackupManager.INSTANCE.start();
+	    TestUtil.deleteTestDb();
+        Configurator configurator = ServerTestUtils.configurator();
+        serverPort = configurator.configuration().getInt( NeoServer.WEBSERVER_PORT );
+
+        InMemoryAppender log = new InMemoryAppender( NeoServer.log );
+        InMemoryAppender wslog = new InMemoryAppender( Jetty6WebServer.log );
+
+        server = new NeoServer();
+        server.start( new String[0] );
+        System.out.println( log.toString() );
+        System.out.println( wslog.toString() );
     }
 	
 	@AfterClass
     public static void stopWebServer() throws Exception
     {
-		WebServerFactory.getDefaultWebServer().stopServer();
-        AdminServer.INSTANCE.stopServer();
-        BackupManager.INSTANCE.stop();
-        DatabaseLocator.shutdownGraphDatabase( );
+	    server.stop( 0 );
     }
 	
 	@Before
 	public void initWebDriver() {
-		webDriver.get("http://localhost:9988/index-no-feedback.html");
+		webDriver.get("http://localhost:"+ serverPort + "/webadmin/index-no-feedback.html");
 		
 		waitForElementToAppear(By.id("mainmenu-dashboard"));
 	}	
