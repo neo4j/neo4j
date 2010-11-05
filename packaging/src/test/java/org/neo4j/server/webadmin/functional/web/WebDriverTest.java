@@ -62,8 +62,8 @@ public abstract class WebDriverTest {
     public static void startWebServer() throws IOException, SchedulerException,
             BackupFailedException
     {
-	    TestUtil.deleteTestDb();
-        Configurator configurator = ServerTestUtils.configurator();
+	    Configurator configurator = ServerTestUtils.configurator();
+	    TestUtil.deleteTestDb(configurator.configuration());
         serverPort = configurator.configuration().getInt( NeoServer.WEBSERVER_PORT );
 
         InMemoryAppender log = new InMemoryAppender( NeoServer.log );

@@ -24,8 +24,9 @@ import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.rest.domain.DatabaseBlockedException;
-import org.neo4j.rest.domain.DatabaseLocator;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.webadmin.domain.MockIndexService;
 
 import com.tinkerpop.blueprints.pgm.TransactionalGraph;
@@ -49,13 +50,13 @@ public class GremlinFactory
     public static TransactionalGraph getGremlinWrappedGraph()
             throws DatabaseBlockedException
     {
-        GraphDatabaseService dbInstance = DatabaseLocator.getGraphDatabase();
+        GraphDatabaseService dbInstance = NeoServer.INSTANCE.database();
         System.out.println("GremlinFactory: " + dbInstance);
         TransactionalGraph graph;
         try
         {
             graph = new Neo4jGraph( dbInstance,
-                    DatabaseLocator.getIndexService() );
+                    new LuceneIndexService( dbInstance ) );
 
         }
         catch ( UnsupportedOperationException e )

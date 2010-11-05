@@ -59,9 +59,9 @@ public enum BackupManager
     {
         if ( !running )
         {
-            log = new BackupLog( ConfigFileFactory.getBackupLogFile() );
+            //log = new BackupLog( ConfigFileFactory.getBackupLogFile() );
 
-            config = new BackupConfig( ConfigFileFactory.getBackupConfigFile() );
+            //config = new BackupConfig( ConfigFileFactory.getBackupConfigFile() );
 
             log.deleteIrrelevantLogs( config );
 

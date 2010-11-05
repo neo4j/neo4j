@@ -35,7 +35,6 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.onlinebackup.Backup;
 import org.neo4j.onlinebackup.Neo4jBackup;
 import org.neo4j.rest.domain.DatabaseBlockedException;
-import org.neo4j.rest.domain.DatabaseLocator;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.webadmin.domain.BackupFailedException;
 import org.neo4j.server.webadmin.domain.NoBackupFoundationException;
@@ -110,44 +109,44 @@ public class BackupPerformer
     {
         ensurePathIsLocked( backupPath );
 
-        try
-        {
-
-            File mainDbPath = new File( DatabaseLocator.getDatabaseLocation() ).getAbsoluteFile();
-
-            setupBackupFolders( backupPath );
-
-            boolean wasRunning = DatabaseLocator.databaseIsRunning();
-
-            if ( wasRunning )
-            {
-                DatabaseLocator.shutdownAndBlockGraphDatabase();
-            }
-
-            cpTree( mainDbPath, backupPath );
-
-            ServerConfiguration.getInstance().set( "keep_logical_logs", "true" );
-
-            if ( wasRunning )
-            {
-                DatabaseLocator.unblockGraphDatabase();
-                DatabaseLocator.getGraphDatabase();
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new BackupFailedException(
-                    "IOException while creating backup foundation, see nested.",
-                    e );
-        }
-        catch ( DatabaseBlockedException e )
-        {
-            e.printStackTrace();
-        }
-        finally
-        {
-            lockedPaths.remove( backupPath );
-        }
+//        try
+//        {
+//
+//            File mainDbPath = new File( DatabaseLocator.getDatabaseLocation() ).getAbsoluteFile();
+//
+//            setupBackupFolders( backupPath );
+//
+//            boolean wasRunning = DatabaseLocator.databaseIsRunning();
+//
+//            if ( wasRunning )
+//            {
+//                DatabaseLocator.shutdownAndBlockGraphDatabase();
+//            }
+//
+//            cpTree( mainDbPath, backupPath );
+//
+//           // ServerConfiguration.getInstance().set( "keep_logical_logs", "true" );
+//
+//            if ( wasRunning )
+//            {
+//                DatabaseLocator.unblockGraphDatabase();
+//                DatabaseLocator.getGraphDatabase();
+//            }
+//        }
+//        catch ( IOException e )
+//        {
+//            throw new BackupFailedException(
+//                    "IOException while creating backup foundation, see nested.",
+//                    e );
+//        }
+//        catch ( DatabaseBlockedException e )
+//        {
+//            e.printStackTrace();
+//        }
+//        finally
+//        {
+//            lockedPaths.remove( backupPath );
+//        }
     }
 
     //

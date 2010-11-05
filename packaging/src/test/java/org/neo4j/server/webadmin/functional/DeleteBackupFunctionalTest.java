@@ -32,7 +32,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.rest.WebServerFactory;
-import org.neo4j.rest.domain.DatabaseLocator;
 import org.neo4j.server.webadmin.TestUtil;
 import org.neo4j.server.webadmin.backup.BackupManager;
 import org.neo4j.server.webadmin.domain.BackupFailedException;
@@ -59,9 +58,9 @@ public class DeleteBackupFunctionalTest
     public static void stopWebServer() throws Exception
     {
         //AdminServer.INSTANCE.stopServer();
-        BackupManager.INSTANCE.stop();
-        DatabaseLocator.shutdownGraphDatabase( new URI(
-                WebServerFactory.getDefaultWebServer().getBaseUri() ) );
+//        BackupManager.INSTANCE.stop();
+//        DatabaseLocator.shutdownGraphDatabase( new URI(
+//                WebServerFactory.getDefaultWebServer().getBaseUri() ) );
     }
 
     @Test

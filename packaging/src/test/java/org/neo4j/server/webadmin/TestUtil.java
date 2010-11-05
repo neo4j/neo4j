@@ -19,10 +19,10 @@
  */
 
 package org.neo4j.server.webadmin;
-
-import org.neo4j.rest.domain.DatabaseLocator;
-
 import java.io.File;
+
+import org.apache.commons.configuration.Configuration;
+import org.neo4j.server.NeoServer;
 
 
 /**
@@ -31,9 +31,9 @@ import java.io.File;
  */
 public abstract class TestUtil
 {
-    public static void deleteTestDb()
+    public static void deleteTestDb(Configuration conf)
     {
-        deleteFileOrDirectory( new File( DatabaseLocator.getDatabaseLocation() ) );
+        deleteFileOrDirectory( new File( conf.getString( NeoServer.DATABASE_LOCATION ) ) );
     }
 
     public static void deleteFileOrDirectory( File file )
