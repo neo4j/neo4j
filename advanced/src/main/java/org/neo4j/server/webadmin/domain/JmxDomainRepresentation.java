@@ -26,9 +26,8 @@ import java.util.Map;
 
 import javax.management.ObjectName;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 
-@SuppressWarnings( "restriction" )
 public class JmxDomainRepresentation implements Representation
 {
 

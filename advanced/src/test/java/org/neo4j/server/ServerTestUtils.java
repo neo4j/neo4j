@@ -20,8 +20,6 @@
 
 package org.neo4j.server;
 
-import org.neo4j.server.configuration.Configurator;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -77,32 +75,40 @@ public class ServerTestUtils
         return f;
     }
 
-    public static Configurator configurator() throws IOException
-    {
-        File propertyFile = ServerTestUtils.createTempPropertyFile();
-        writePropertyFile( propertyFile );
-        System.setProperty( NeoServer.NEO_CONFIG_FILE_PROPERTY, propertyFile.getAbsolutePath() );
-        return new Configurator( propertyFile );
+    public static void initializeServerWithRandomTemporaryDatabaseDirectory() {
+        try {
+            File temporaryConfigFile = createTempPropertyFile();
+            writePropertyToFile("org.neo4j.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
+            writePropertyToFile("org.neo4j.webserver.port", "7474", temporaryConfigFile);
+            writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.rest.web", temporaryConfigFile);
+            //writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
+            
+            System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath());
+            
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        NeoServer.main(null);
+    }
+    
+    
+    public static void initializeServerWithRandomTemporaryDatabaseDirectoryOnDefaultPort() {
+        try {
+            File temporaryConfigFile = createTempPropertyFile();
+            writePropertyToFile("org.neo4j.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
+            writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.rest.web", temporaryConfigFile);
+            
+            System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath());
+            
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        NeoServer.main(null);
     }
 
-    public static void writePropertyFile( File propertyFile ) throws IOException
-    {
-        FileWriter fstream = new FileWriter( propertyFile );
-        BufferedWriter out = new BufferedWriter( fstream );
-        writeValue( out, NeoServer.DATABASE_LOCATION + "=", ServerTestUtils.createTempDir().getAbsolutePath() );
-        writeValue( out, NeoServer.WEBSERVER_PORT + "=", "7474" );
-        writeValue( out, NeoServer.WEBADMIN_NAMESPACE + "rrdb.location=", ServerTestUtils.createTempDir().getAbsolutePath() );
-        writeValue( out, NeoServer.EXPORT_BASE_PATH + "=", ServerTestUtils.createTempDir().getAbsolutePath() );
-        writeValue( out, NeoServer.WEBADMIN_NAMESPACE + "neo4j-servers=", "{\"localhost\"\\:{\"url\"\\:\"http\\://localhost\\:7474/db/data/\"\\,\"manageUrl\"\\:\"http\\://localhost\\:7474/db/manage/\"}}");
-
-        out.close();
-    }
-
-    private static void writeValue( BufferedWriter out, String key,
-                                    String value )
-            throws IOException
-    {
-        out.write( key );
-        out.write( value + "\n" );
+    public static void nukeServer() {
+        NeoServer.shutdown();
+        System.clearProperty(NeoServer.NEO_CONFIG_FILE_KEY);
+        System.clearProperty(NeoServer.DATABASE_LOCATION_PROPERTY_KEY);
     }
 }

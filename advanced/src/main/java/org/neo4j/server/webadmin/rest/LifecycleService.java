@@ -23,7 +23,6 @@ package org.neo4j.server.webadmin.rest;
 import static org.neo4j.server.webadmin.rest.WebUtils.addHeaders;
 
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
@@ -31,9 +30,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.rest.WebServerFactory;
-import org.neo4j.rest.domain.JsonRenderers;
-import org.neo4j.server.webadmin.console.ConsoleSessions;
+import org.neo4j.server.rest.domain.JsonRenderers;
 import org.neo4j.server.webadmin.domain.LifecycleRepresentation;
 import org.neo4j.server.webadmin.domain.LifecycleServiceRepresentation;
 

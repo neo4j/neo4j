@@ -151,8 +151,8 @@ public class RrdManager
      */
     public static String getDbFilePath() throws IOException
     {
-        File dbPath = new File( NeoServer.INSTANCE.configuration().getString(
-                NeoServer.WEBADMIN_NAMESPACE + "rrdb.location" ) );
+        File dbPath = new File( NeoServer.server().configuration().getString(
+                NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location" ) );
 
         if ( !dbPath.exists() && !dbPath.mkdirs() )
         {

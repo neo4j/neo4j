@@ -20,22 +20,16 @@
 
 package org.neo4j.server.webadmin;
 
-import org.apache.log4j.Logger;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.remote.RemoteGraphDatabase;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.webadmin.properties.ServerConfiguration;
+import java.lang.management.ManagementFactory;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerConnection;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.net.MalformedURLException;
+
+import org.apache.log4j.Logger;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.database.DatabaseBlockedException;
 
 /**
  * Used to get an {@link MBeanServer} instance for the currently connected
@@ -45,7 +39,6 @@ import java.net.MalformedURLException;
  * @author Jacob Hansson <jacob@voltvoodoo.com>
  * 
  */
-@SuppressWarnings( "restriction" )
 public class MBeanServerFactory
 {
     
@@ -70,8 +63,7 @@ public class MBeanServerFactory
         GraphDatabaseService db; 
         try
         {
-            NeoServer iNSTANCE = NeoServer.INSTANCE;
-            db = iNSTANCE.database();
+            db = NeoServer.server().database().db;
             //log.info(db);
             if ( db != cachedDb )
             {

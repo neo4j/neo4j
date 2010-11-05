@@ -20,17 +20,19 @@
 
 package org.neo4j.server.webadmin.task;
 
-import com.tinkerpop.blueprints.pgm.TransactionalGraph;
-import com.tinkerpop.blueprints.pgm.parser.GraphMLWriter;
-import org.neo4j.rest.domain.DatabaseBlockedException;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.webadmin.console.GremlinFactory;
-
-import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+
+import javax.xml.stream.XMLStreamException;
+
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.webadmin.console.GremlinFactory;
+
+import com.tinkerpop.blueprints.pgm.TransactionalGraph;
+import com.tinkerpop.blueprints.pgm.parser.GraphMLWriter;
 
 /**
  * Performs a full export of the underlying database and puts the resulting
@@ -39,13 +41,12 @@ import java.io.OutputStream;
  * @author Jacob Hansson <jacob@voltvoodoo.com>
  * 
  */
-public class GraphMLExporter
-{
+public class GraphMLExporter {
 
     public static final String EXPORT_FOLDER_PATH = "export";
     public static final String EXPORT_FILE_PATH = "database.gml";
 
-    File     EXPORT_FOLDER;
+    File EXPORT_FOLDER;
 
     File EXPORT_FILE;
 
@@ -54,17 +55,13 @@ public class GraphMLExporter
      * 
      * @throws DatabaseBlockedException
      */
-    public void doExport() throws DatabaseBlockedException
-    {
-        EXPORT_FOLDER = new File( new File(
-            NeoServer.INSTANCE.configuration().getString(NeoServer.EXPORT_BASE_PATH )), EXPORT_FOLDER_PATH );
-        EXPORT_FILE = new File( EXPORT_FOLDER,
-            EXPORT_FILE_PATH );
-        doExport( EXPORT_FILE );
+    public void doExport() throws DatabaseBlockedException {
+        EXPORT_FOLDER = new File(new File(NeoServer.server().configuration().getString(NeoServer.EXPORT_BASE_PATH)), EXPORT_FOLDER_PATH);
+        EXPORT_FILE = new File(EXPORT_FOLDER, EXPORT_FILE_PATH);
+        doExport(EXPORT_FILE);
     }
 
-    private static void doExport( File target ) throws DatabaseBlockedException
-    {
+    private static void doExport(File target) throws DatabaseBlockedException {
 
         // Since we already have a dependency on Gremlin, we use the GraphML
         // export functionality from
@@ -72,29 +69,22 @@ public class GraphMLExporter
 
         TransactionalGraph graph = GremlinFactory.getGremlinWrappedGraph();
 
-        try
-        {
+        try {
 
-            new File( target.getParent() ).mkdir();
+            new File(target.getParent()).mkdir();
 
-            if ( target.exists() )
-            {
+            if (target.exists()) {
                 // Delete old export
                 target.delete();
             }
 
-            OutputStream stream = new FileOutputStream( target );
+            OutputStream stream = new FileOutputStream(target);
 
-            GraphMLWriter.outputGraph( graph, stream );
-        }
-        catch ( FileNotFoundException e )
-        {
+            GraphMLWriter.outputGraph(graph, stream);
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-        }
-        catch ( @SuppressWarnings( "restriction" ) XMLStreamException e )
-        {
+        } catch (XMLStreamException e) {
             e.printStackTrace();
         }
     }
-
 }

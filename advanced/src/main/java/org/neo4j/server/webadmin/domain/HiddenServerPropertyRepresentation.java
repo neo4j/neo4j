@@ -34,32 +34,24 @@ import org.neo4j.server.webadmin.properties.ValueDefinition;
  * @author Jacob Hansson <jacob@voltvoodoo.com>
  * 
  */
-public class HiddenServerPropertyRepresentation extends
-        ServerPropertyRepresentation
-{
+public class HiddenServerPropertyRepresentation extends ServerPropertyRepresentation {
 
-    public HiddenServerPropertyRepresentation( String key, String value,
-            PropertyType type )
-    {
-        super( key, value, type );
+    public HiddenServerPropertyRepresentation(String key, String value, PropertyType type) {
+        super(key, value, type);
     }
 
-    public HiddenServerPropertyRepresentation( String key, String displayName,
-            String value, PropertyType type )
-    {
-        super( key, displayName, value, type );
+    public HiddenServerPropertyRepresentation(String key, String displayName, String value, PropertyType type) {
+        super(key, displayName, value, type);
     }
 
-    public HiddenServerPropertyRepresentation( String key, String displayName,
-            String value, PropertyType type, ValueDefinition valueDefinition )
-    {
-        super( key, displayName, value, type, valueDefinition );
+    public HiddenServerPropertyRepresentation(String key, String displayName, String value, PropertyType type, ValueDefinition valueDefinition) {
+        super(key, displayName, value, type, valueDefinition);
     }
 
-    public Object serialize()
-    {
-        @SuppressWarnings( "unchecked" ) Map<String, Object> map = (Map<String, Object>) super.serialize();
-        map.put( "hidden", true );
+    public Object serialize() {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> map = (Map<String, Object>) super.serialize();
+        map.put("hidden", true);
         return map;
     }
 

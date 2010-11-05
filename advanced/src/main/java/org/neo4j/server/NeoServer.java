@@ -20,8 +20,14 @@
 
 package org.neo4j.server;
 
+import java.io.File;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
@@ -32,46 +38,40 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.server.webadmin.rrd.RrdManager;
-import org.neo4j.server.webadmin.rrd.RrdSampler;
 import org.tanukisoftware.wrapper.WrapperListener;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Application entry point for the Neo4j Server.
  */
 public class NeoServer implements WrapperListener {
-    
-    public static final String WEBADMIN_NAMESPACE = "org.neo4j.server.webadmin.";
-
-    static final String MANAGE_PATH = "/db/manage";
-
-    static final String WEBADMIN_PATH = "/webadmin";
-
-    static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
-
-    public static final String REST_API_PATH = "/db/data";
-    public static final String REST_API_PACKAGE = "org.neo4j.rest.web";
-
     public static final Logger log = Logger.getLogger(NeoServer.class);
 
-    public static final String NEO_CONFIG_FILE_PROPERTY = "org.neo4j.server.properties";
-    public static final String DEFAULT_NEO_CONFIGDIR = File.separator + "etc" + File.separator + "neo";
+    public static final String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.webserver.port";
 
-    public static final String DATABASE_LOCATION = "org.neo4j.database.location";
-    public static final String WEBSERVER_PORT = "org.neo4j.webserver.port";
-    public static final int DEFAULT_WEBSERVER_PORT = 7474;
+    public static final String REST_API_SERVICE_NAME = "/rest/api";
+    public static final String REST_API_PACKAGE = "org.neo4j.server.rest.web";
+    
+    public static final String NEO_CONFIG_FILE_KEY = "org.neo4j.server.properties";
+    public static final String DEFAULT_NEO_CONFIG_DIR = File.separator + "etc" + File.separator + "neo";
+    
+    public static final String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.database.location";
+    public static final String WEBADMIN_NAMESPACE_PROPERTY_KEY = "org.neo4j.server.webadmin.";
+    
+
+    public static final String WEB_ADMIN_REST_API_SERVICE_NAME = "/management";
+    static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
+    static final String WEB_ADMIN_PATH = "/webadmin";
+
+    private static final String STATIC_CONTENT_LOCATION = "html";
+    private static final int DEFAULT_WEBSERVER_PORT = 7474;
+
+    private static NeoServer theServer;
 
     private Configurator configurator;
     private Database database;
     private WebServer webServer;
 
     private int webServerPort;
-    public static NeoServer INSTANCE;
     public static final String EXPORT_BASE_PATH = "org.neo4j.export.basepath";
 
     /**
@@ -83,77 +83,121 @@ public class NeoServer implements WrapperListener {
         this.webServer = ws;
     }
 
-    public NeoServer() {
+    /**
+     * This only works if the server has been started via NeoServer.main(...)
+     * @return
+     */
+    public static NeoServer server() {        
+        return theServer;
+    }
+
+    NeoServer() {
         StartupHealthCheck healthCheck = new StartupHealthCheck(new ConfigFileMustBePresentRule());
-        if(!healthCheck.run()) {
-            throw new StartupHealthCheckFailedException("Startup healthcheck failed, server is not properly configured. Check logs for details.");
+        if (!healthCheck.run()) {
+            throw new StartupHealthCheckFailedException(healthCheck.failedRule());
         }
+    }
+
+    /**
+     * Convenience method which calls start with a null argument
+     * 
+     * @return
+     */
+    public Integer start() {
+        return start(null);
         
-        this.configurator = new Configurator(new Validator(new DatabaseLocationMustBeSpecifiedRule()), getConfigFile());
-        this.database = new Database(configurator.configuration().getString(DATABASE_LOCATION));
-        this.webServer = new Jetty6WebServer();
     }
 
     public Integer start(String[] args) {
-        INSTANCE = this;
         
-        webServerPort = configurator.configuration().getInt(WEBSERVER_PORT, DEFAULT_WEBSERVER_PORT);
         try {
-            startWebserver();
+            this.configurator = new Configurator(new Validator(new DatabaseLocationMustBeSpecifiedRule()), getConfigFile());
+            webServerPort = configurator.configuration().getInt(WEBSERVER_PORT_PROPERTY_KEY, DEFAULT_WEBSERVER_PORT);
 
-            //start the others
-            //log.info(  "Starting backup scheduler.." );
+            this.database = new Database(configurator.configuration().getString(DATABASE_LOCATION_PROPERTY_KEY));
 
-            //BackupManager.INSTANCE.start();
+            this.webServer = new Jetty6WebServer();
 
-            log.info( "Starting round-robin system state sampler.." );
+            log.info("Starting Neo Server on port [%s]", webServerPort);
+            webServer.setPort(webServerPort);
+
+            // webadmin assumes root
+            log.info("Mounting webadmin at [%s]", WEB_ADMIN_PATH);
+            webServer.addStaticContent(STATIC_CONTENT_LOCATION, WEB_ADMIN_PATH);
+
+            log.info("Mounting management API at [%s]", WEB_ADMIN_REST_API_SERVICE_NAME);
+            webServer.addJAXRSPackages(listFrom(new String[] { WEB_ADMIN_REST_API_PACKAGE }), WEB_ADMIN_REST_API_SERVICE_NAME);
+
+            log.info("Mounting REST API at [%s]", REST_API_SERVICE_NAME);            
+            webServer.addJAXRSPackages(listFrom(new String[] { REST_API_PACKAGE }), REST_API_SERVICE_NAME);
+
+            webServer.start();
             
-            RrdSampler.INSTANCE.start();
-            log.info( "Started round-robin system state sampler." );
-
+            log.info("Started Neo Server on port [%s]", restApiUri().getPort());
             
-            return null; //yes, that's right!
+            return null; // This is for the service wrapper, and though it looks weird, it's correct
         } catch (Exception e) {
+            e.printStackTrace();
             log.error("Failed to start Neo Server on port [%s]", webServerPort);
             e.printStackTrace();
             return 1;
         }
     }
+    
+    public String baseUri() throws UnknownHostException {
+            StringBuilder sb = new StringBuilder();
+            sb.append("http");
+            if (webServerPort == 443) {
+                sb.append("s");
 
-    private void startWebserver()
-    {
-        webServer.setPort(webServerPort);
-        // webadmin assumes root
-        log.info("Mounting static html at [%s]", WEBADMIN_PATH);
-        webServer.addStaticContent("html", WEBADMIN_PATH);
-        
-        log.info("Mounting REST at [%s]", REST_API_PATH);
-        webServer.addJAXRSPackages(listFrom(new String[] {REST_API_PACKAGE}), REST_API_PATH);
-
-        log.info("Mounting manage API at [%s]", MANAGE_PATH);
-        webServer.addJAXRSPackages(listFrom(new String[] {WEB_ADMIN_REST_API_PACKAGE}), MANAGE_PATH);
-        
-        webServer.start();
-        
-        log.info("Started Neo Server on port [%s]", webServerPort);
-    }
-
-    private List<String> listFrom(String[] strings) {
-        ArrayList<String> al = new ArrayList<String>();
-        
-        if(strings != null) {
-            for(String str : strings) {
-                al.add(str);
             }
-         }
-        
-        return al;
-    }
+            sb.append("://");
+            sb.append(InetAddress.getLocalHost().getCanonicalHostName());
 
-    protected void stop() {
-        stop(0);
+            if (webServerPort != 80) {
+                sb.append(":");
+                sb.append(webServerPort);
+            }
+            sb.append("/");
+
+        return sb.toString();
     }
     
+    private URI generateUriFor(String serviceName) {
+        if(serviceName.startsWith("/")) {
+            serviceName = serviceName.substring(1);
+        }
+        StringBuilder sb = new StringBuilder();
+        try {
+            sb.append(baseUri());
+            sb.append(serviceName);
+            sb.append("/");
+            
+            return new URI(sb.toString());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    public URI managementApiUri() {
+           return generateUriFor(WEB_ADMIN_REST_API_SERVICE_NAME);
+    }
+
+    public URI restApiUri() {
+        return generateUriFor(REST_API_SERVICE_NAME);
+    }
+    
+    public URI webadminUri() {
+        return generateUriFor(WEB_ADMIN_PATH);
+    }
+
+    /**
+     * Convenience method which calls stop with a normal return code
+     */
+    public void stop() {
+        stop(0);
+    }
+
     public int stop(int stopArg) {
         String location = "unknown";
         try {
@@ -168,8 +212,7 @@ public class NeoServer implements WrapperListener {
                 webServer = null;
             }
             configurator = null;
-            shutdownRrd();
-            
+
             log.info("Successfully shutdown Neo Server on port [%d], database [%s]", webServerPort, location);
             return 0;
         } catch (Exception e) {
@@ -177,17 +220,17 @@ public class NeoServer implements WrapperListener {
             return 1;
         }
     }
-
-    private void shutdownRrd()
-            throws IOException
-    {
-        log.info ( "Shutting down the round robin database" );
-        RrdManager.getRrdDB().close();
-        RrdSampler.INSTANCE.stop();
+    
+    public static void shutdown() {
+        if(theServer != null) {
+            theServer.stop();
+            theServer = null;
+        }
     }
 
-    public GraphDatabaseService database() {
-        return database.db;
+
+    public Database database() {
+        return database;
     }
 
     public WebServer webServer() {
@@ -199,24 +242,43 @@ public class NeoServer implements WrapperListener {
     }
 
     public void controlEvent(int controlArg) {
-       // Do nothing for now, this is needed by the WrapperListener interface
+        // Do nothing for now, this is needed by the WrapperListener interface
     }
-    
+
     private static File getConfigFile() {
-        return new File(System.getProperty(NEO_CONFIG_FILE_PROPERTY, DEFAULT_NEO_CONFIGDIR));
+        return new File(System.getProperty(NEO_CONFIG_FILE_KEY, DEFAULT_NEO_CONFIG_DIR));
+    }
+
+    private List<String> listFrom(String[] strings) {
+        ArrayList<String> al = new ArrayList<String>();
+
+        if (strings != null) {
+            for (String str : strings) {
+                al.add(str);
+            }
+        }
+
+        return al;
     }
 
     public static void main(String args[]) {
-        final NeoServer neo = new NeoServer();
-
+        theServer = new NeoServer();
         Runtime.getRuntime().addShutdownHook(new Thread() {
-	            @Override
-	            public void run() {
-	                log.info("Neo Server shutdown initiated by kill signal");
-	                neo.stop();
-	            }
-	        });
+            @Override
+            public void run() {
+                log.info("Neo Server shutdown initiated by kill signal");
+                if(theServer != null) {
+                    theServer.stop();
+                }
+                shutdown();
+            }
+        });
 
-        neo.start(args);
+        theServer.start(args);
+    }
+
+    public void reboot() {
+        stop();
+        start();
     }
 }

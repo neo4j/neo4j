@@ -30,6 +30,8 @@ public class StartupHealthCheck {
     
     private final StartupHealthCheckRule[] rules;
 
+    private StartupHealthCheckRule failedRule = null;
+
     public StartupHealthCheck(StartupHealthCheckRule ... rules) {
         this.rules = rules;
     }
@@ -42,11 +44,16 @@ public class StartupHealthCheck {
         Properties properties = System.getProperties();
         for(StartupHealthCheckRule r : rules) {
             if(!r.execute(properties)) {
-                log.error(r.getMessage());
+                log.error(r.getFailureMessage());
+                failedRule = r;
                 return false;
             }
         }
         
         return true;
+    }
+
+    public StartupHealthCheckRule failedRule() {
+        return failedRule;
     }
 }

@@ -22,6 +22,7 @@ package org.neo4j.server.startup.healthcheck;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -60,6 +61,13 @@ public class StartupHealthCheckTest {
         assertThat(appender.toString(), containsString("ERROR - blah blah"));
     }
     
+    @Test
+    public void shouldAdvertiseFailedRule() {
+        StartupHealthCheck check = new StartupHealthCheck(getWithOneFailingRule());
+        check.run();
+        assertNotNull(check.failedRule()); 
+    }
+    
     private StartupHealthCheckRule[] getWithOneFailingRule() {
         StartupHealthCheckRule[] rules = new StartupHealthCheckRule[5];
         
@@ -69,7 +77,7 @@ public class StartupHealthCheckTest {
                     return true;
                 }
 
-                public String getMessage() {
+                public String getFailureMessage() {
                     return "blah blah";
                 }};
         }
@@ -79,7 +87,7 @@ public class StartupHealthCheckTest {
                 return false;
             }
 
-            public String getMessage() {
+            public String getFailureMessage() {
                 return "blah blah";
             }};
         
@@ -95,7 +103,7 @@ public class StartupHealthCheckTest {
                     return true;
                 }
 
-                public String getMessage() {
+                public String getFailureMessage() {
                     return "blah blah";
                 }};
         }
