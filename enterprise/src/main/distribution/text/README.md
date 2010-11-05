@@ -29,7 +29,17 @@ Make it go
 To get started with ${server.fullname}, let's start the server and take a
 look at the web interface...
 
-1. open a console and navigate to the 
+1. open a console and navigate to the install directory
+2. start the server
+  * Windows: use `bin/Neo4j.bat`
+  * Linux: use `bin/neo4j start`
+3. in a browser, open [webadmin](http://localhost:${org.neo4j.webserver.port}/webadmin/)
+...
+  Do some interesting stuff through the web.
+...
+7. shutdown the server
+  * Windows: type Ctrl-C to terminate the batch script
+  * Linux: use `bin/neo4j stop`
 
 Learn more
 ----------
