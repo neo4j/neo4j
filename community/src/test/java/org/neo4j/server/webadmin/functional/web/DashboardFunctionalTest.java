@@ -26,7 +26,6 @@ import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
 public class DashboardFunctionalTest extends WebDriverTest {
 
 	@Test

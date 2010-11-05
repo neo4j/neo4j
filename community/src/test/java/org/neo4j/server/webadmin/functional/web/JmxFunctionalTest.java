@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.RenderedWebElement;
 
-@Ignore
 public class JmxFunctionalTest extends WebDriverTest {
  
 	@Test
