@@ -12,7 +12,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>${project.version}</version> <!-- for example 1.2.M02 -->
+      <version>${project.version}</version> <!-- for example 1.2.M03 -->
       <type>pom</type>
     </dependency>
   </dependencies>
