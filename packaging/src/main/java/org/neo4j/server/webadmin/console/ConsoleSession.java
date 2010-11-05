@@ -37,7 +37,6 @@ import javax.script.ScriptException;
  * @author Jacob Hansson <jacob@voltvoodoo.com>
  * 
  */
-@SuppressWarnings( "restriction" )
 public class ConsoleSession implements Runnable
 {
 

@@ -33,10 +33,9 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 import org.neo4j.server.webadmin.utils.JmxUtils;
 
-@SuppressWarnings( "restriction" )
 public class JmxMBeanRepresentation implements Representation
 {
 

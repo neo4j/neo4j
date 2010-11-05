@@ -33,20 +33,14 @@ import org.neo4j.server.webadmin.rest.WebUtils;
  * @author Anders Nawroth, Jacob Hansson <jacob@voltvoodoo.com>
  * 
  */
-@SuppressWarnings( "restriction" )
-public class JmxUtils
-{
 
-    public static String mBean2Url( ObjectName obj )
-    {
-        try
-        {
-            return URLEncoder.encode( obj.toString(), WebUtils.UTF8 ).replace(
-                    "%3A", "/" );
-        }
-        catch ( UnsupportedEncodingException e )
-        {
-            throw new RuntimeException( "Could not encode string as UTF-8", e );
+public class JmxUtils {
+
+    public static String mBean2Url(ObjectName obj) {
+        try {
+            return URLEncoder.encode(obj.toString(), WebUtils.UTF8).replace("%3A", "/");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Could not encode string as UTF-8", e);
         }
     }
 }

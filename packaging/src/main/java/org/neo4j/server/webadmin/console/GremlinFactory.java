@@ -25,8 +25,8 @@ import javax.script.ScriptEngine;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.index.lucene.LuceneIndexService;
-import org.neo4j.rest.domain.DatabaseBlockedException;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.webadmin.domain.MockIndexService;
 
 import com.tinkerpop.blueprints.pgm.TransactionalGraph;
@@ -41,7 +41,7 @@ import com.tinkerpop.gremlin.GremlinScriptEngine;
  * @author Jacob Hansson <jacob@voltvoodoo.com>
  * 
  */
-@SuppressWarnings( "restriction" )
+
 public class GremlinFactory
 {
 
@@ -50,7 +50,7 @@ public class GremlinFactory
     public static TransactionalGraph getGremlinWrappedGraph()
             throws DatabaseBlockedException
     {
-        GraphDatabaseService dbInstance = NeoServer.INSTANCE.database();
+        GraphDatabaseService dbInstance = NeoServer.server().database().db;
         System.out.println("GremlinFactory: " + dbInstance);
         TransactionalGraph graph;
         try

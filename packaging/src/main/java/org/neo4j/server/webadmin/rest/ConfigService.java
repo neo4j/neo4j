@@ -39,13 +39,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.rest.WebServerFactory;
-import org.neo4j.rest.domain.JsonHelper;
-import org.neo4j.rest.domain.JsonRenderers;
-import org.neo4j.rest.domain.PropertyValueException;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonRenderers;
+import org.neo4j.server.rest.domain.PropertyValueException;
 import org.neo4j.server.webadmin.console.ConsoleSessions;
 import org.neo4j.server.webadmin.domain.ConfigServiceRepresentation;
 import org.neo4j.server.webadmin.domain.LifecycleRepresentation;
@@ -206,15 +206,6 @@ public class ConfigService
                 }
             }
 
-            // Everything is valid, apply properties
-            for ( Object property : newProperties )
-            {
-
-//                currentPropMap = (Map<String, Object>) property;
-//                properties.set( (String) currentPropMap.get( "key" ),
-//                        (String) currentPropMap.get( "value" ) );
-            }
-
             // All changes applied, perform required restarts
             if ( hasCreationChanges )
             {
@@ -232,12 +223,8 @@ public class ConfigService
                 if ( LifecycleService.serverStatus == LifecycleRepresentation.Status.RUNNING )
                 {
 
-                    int restPort = WebServerFactory.getDefaultWebServer().getPort();
+                    NeoServer.server().reboot();
 
-                    WebServerFactory.getDefaultWebServer().stopServer();
-                    //DatabaseLocator.shutdownGraphDatabase();
-                    WebServerFactory.getDefaultWebServer().startServer(
-                            restPort );
                     ConsoleSessions.destroyAllSessions();
                 }
             }

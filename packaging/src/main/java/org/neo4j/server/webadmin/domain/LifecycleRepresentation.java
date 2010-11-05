@@ -23,7 +23,7 @@ package org.neo4j.server.webadmin.domain;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 
 /**
  * Represents current lifecycle status and any action that the user has

@@ -29,28 +29,21 @@ import java.net.URL;
 import javax.xml.stream.XMLStreamException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.rest.domain.DatabaseBlockedException;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.webadmin.parser.GraphMLReader;
 
-@SuppressWarnings( "restriction" )
-public class GraphMLImporter
-{
+public class GraphMLImporter {
 
-    public static void doImport( String filename ) throws IOException,
-            DatabaseBlockedException, XMLStreamException
-    {
+    public static void doImport(String filename) throws IOException, DatabaseBlockedException, XMLStreamException {
         InputStream stream;
-        try
-        {
-            stream = new URL( filename ).openStream();
-        }
-        catch ( MalformedURLException urlEx )
-        {
-            stream = new FileInputStream( filename );
+        try {
+            stream = new URL(filename).openStream();
+        } catch (MalformedURLException urlEx) {
+            stream = new FileInputStream(filename);
         }
 
-        doImport( stream );
+        doImport(stream);
         stream.close();
     }
 
@@ -60,17 +53,14 @@ public class GraphMLImporter
      * @throws DatabaseBlockedException
      * @throws XMLStreamException
      */
-    public static void doImport( InputStream stream )
-            throws DatabaseBlockedException, XMLStreamException
-    {
+    public static void doImport(InputStream stream) throws DatabaseBlockedException, XMLStreamException {
 
         // Since we already have a dependency on Gremlin, we use the GraphML
         // import functionality from
         // there.
 
-        GraphDatabaseService graph = NeoServer.INSTANCE.database();
+        GraphDatabaseService graph = NeoServer.server().database().db;
 
-        GraphMLReader.inputGraph( graph, stream );
+        GraphMLReader.inputGraph(graph, stream);
     }
-
 }

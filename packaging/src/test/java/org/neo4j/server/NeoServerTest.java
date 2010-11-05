@@ -20,87 +20,59 @@
 
 package org.neo4j.server;
 
-import org.junit.Test;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.logging.InMemoryAppender;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
-import org.neo4j.server.web.Jetty6WebServer;
-import org.neo4j.server.web.WebServer;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
+import java.io.IOException;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
+
 public class NeoServerTest {
+    
+    private InMemoryAppender appender;
+
+    @Before
+    public void setup() {
+        appender = new InMemoryAppender(NeoServer.log);
+        ServerTestUtils.nukeServer();
+        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+    }
+    
+    @After
+    public void tearDown() {
+        ServerTestUtils.nukeServer();
+    }
 
     @Test
     public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception {
-        NeoServer server = server();
-        assertNotNull(server.database());
-        server.stop();
+        assertNotNull(NeoServer.server().database());
     }
 
     @Test
     public void shouldLogStartup() throws Exception {
-        InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
-        InMemoryAppender jettyServerAppender = new InMemoryAppender(Jetty6WebServer.log);
-        NeoServer server = server();
-        System.out.println(appender.toString());
-        System.out.println(jettyServerAppender.toString());
-        assertThat(appender.toString(), containsString("Started Neo Server on port [" + 7474 + "]"));
-
-        server.stop();
+        assertThat(appender.toString(), containsString("Started Neo Server on port [" + NeoServer.server().restApiUri().getPort() + "]"));        
     }
 
     @Test(expected = NullPointerException.class)
     public void whenServerIsShutDownTheDatabaseShouldNotBeAvailable() throws IOException {
 
-        NeoServer server = server(); 
+        
         // Do some work
-        server.database().beginTx().success();
-        server.stop();
+        NeoServer.server().database().db.beginTx().success();
+        NeoServer.server().stop();
 
-        server.database().beginTx();
+        NeoServer.server().database().db.beginTx();
     }
+
     
     @Test(expected=StartupHealthCheckFailedException.class)
     public void shouldExitWhenFailedStartupHealthCheck() {
-        System.clearProperty(NeoServer.NEO_CONFIG_FILE_PROPERTY);
+        System.clearProperty(NeoServer.NEO_CONFIG_FILE_KEY);
         new NeoServer();
     }
-    
-    private NeoServer server() throws IOException {       
-        Configurator configurator = ServerTestUtils.configurator();
-        Database db = new Database(configurator.configuration().getString("org.neo4j.database.location"));
-        WebServer webServer = webServer();
-        NeoServer neoServer = new NeoServer(configurator, db, webServer);
-        neoServer.start( null );
-        return neoServer;
-    }
-
-    private WebServer webServer() {
-        WebServer webServer = new Jetty6WebServer();
-        //webServer.addStaticContent("html", NeoServer.WEBADMIN_PATH);
-        //webServer.addJAXRSPackages(listFrom(new String[] {NeoServer.REST_API_PACKAGE}), NeoServer.REST_API_PATH);
-        //webServer.addJAXRSPackages(listFrom(new String[] {NeoServer.WEB_ADMIN_REST_API_PACKAGE}), NeoServer.MANAGE_PATH);
-        return webServer;
-    }
-    
-    private List<String> listFrom(String[] strings) {
-        ArrayList<String> al = new ArrayList<String>();
-        
-        if(strings != null) {
-            for(String str : strings) {
-                al.add(str);
-            }
-         }
-        
-        return al;
-    }
-
 }

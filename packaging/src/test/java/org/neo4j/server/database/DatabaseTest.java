@@ -63,5 +63,4 @@ public class DatabaseTest {
         
         assertThat(appender.toString(), containsString("Successfully shutdown database"));
     }
-
 }

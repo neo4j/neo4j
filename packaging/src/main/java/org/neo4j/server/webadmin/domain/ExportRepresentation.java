@@ -24,7 +24,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 
 /**
  * Contains a string URL, pointing to a completed export that can be downloaded.
