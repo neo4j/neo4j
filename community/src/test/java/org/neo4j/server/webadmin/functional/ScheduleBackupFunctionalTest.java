@@ -23,7 +23,6 @@ package org.neo4j.server.webadmin.functional;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
 
@@ -31,8 +30,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.rest.WebServerFactory;
-import org.neo4j.rest.domain.DatabaseLocator;
 import org.neo4j.server.webadmin.TestUtil;
 import org.neo4j.server.webadmin.backup.BackupManager;
 import org.neo4j.server.webadmin.domain.BackupFailedException;
@@ -61,8 +58,8 @@ public class ScheduleBackupFunctionalTest
     {
         //AdminServer.INSTANCE.stopServer();
         BackupManager.INSTANCE.stop();
-        DatabaseLocator.shutdownGraphDatabase( new URI(
-                WebServerFactory.getDefaultWebServer().getBaseUri() ) );
+//        DatabaseLocator.shutdownGraphDatabase( new URI(
+//                WebServerFactory.getDefaultWebServer().getBaseUri() ) );
     }
 
     @Test

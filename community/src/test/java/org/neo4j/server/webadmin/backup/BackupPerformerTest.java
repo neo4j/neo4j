@@ -24,7 +24,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.junit.Before;
@@ -34,9 +33,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.rest.WebServerFactory;
 import org.neo4j.rest.domain.DatabaseBlockedException;
-import org.neo4j.rest.domain.DatabaseLocator;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.webadmin.TestUtil;
 import org.neo4j.server.webadmin.domain.BackupFailedException;
 import org.neo4j.server.webadmin.domain.NoBackupFoundationException;
@@ -50,8 +48,8 @@ public class BackupPerformerTest
     @Before
     public void destroyMainDb() throws URISyntaxException
     {
-        DatabaseLocator.shutdownGraphDatabase( new URI(
-                WebServerFactory.getDefaultWebServer().getBaseUri() ) );
+//        DatabaseLocator.shutdownGraphDatabase( new URI(
+//                WebServerFactory.getDefaultWebServer().getBaseUri() ) );
         TestUtil.deleteTestDb();
     }
 
@@ -78,7 +76,7 @@ public class BackupPerformerTest
         String backupPath = "target/backup";
         TestUtil.deleteFileOrDirectory( new File( backupPath ) );
 
-        DatabaseLocator.getGraphDatabase();
+        NeoServer.INSTANCE.database();
         BackupPerformer.doBackupFoundation( new File( backupPath ) );
 
         populateDb();
@@ -121,7 +119,7 @@ public class BackupPerformerTest
 
     private void populateDb() throws DatabaseBlockedException
     {
-        GraphDatabaseService db = DatabaseLocator.getGraphDatabase();
+        GraphDatabaseService db = NeoServer.INSTANCE.database();
 
         Transaction tx = db.beginTx();
         try

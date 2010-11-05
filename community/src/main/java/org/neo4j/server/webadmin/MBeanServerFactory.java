@@ -64,10 +64,12 @@ public class MBeanServerFactory
     public static MBeanServerConnection getServer()
     {
 
-        GraphDatabaseService db;
+        GraphDatabaseService db; 
         try
         {
-            db = NeoServer.INSTANCE.database();
+            NeoServer iNSTANCE = NeoServer.INSTANCE;
+            db = iNSTANCE.database();
+            System.out.println(db);
             if ( db != cachedDb )
             {
                 cachedDb = db;
@@ -76,32 +78,32 @@ public class MBeanServerFactory
                 {
                     cachedServer = ManagementFactory.getPlatformMBeanServer();
                 }
-                else if ( db instanceof RemoteGraphDatabase )
-                {
-                    try
-                    {
-                        JMXServiceURL address = new JMXServiceURL(
-                                ServerConfiguration.getInstance().get(
-                                        "general.jmx.uri" ).getValue() );
-
-                        JMXConnector connector = JMXConnectorFactory.connect(
-                                address, null );
-
-                        cachedServer = connector.getMBeanServerConnection();
-
-                    }
-                    catch ( MalformedURLException e )
-                    {
-                        // TODO Show proper error to user.
-                        throw new RuntimeException( e );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new RuntimeException(
-                                "Unable get JMX access to remote server, monitoring will be disabled.",
-                                e );
-                    }
-                }
+//                else if ( db instanceof RemoteGraphDatabase )
+//                {
+//                    try
+//                    {
+//                        JMXServiceURL address = new JMXServiceURL(
+//                                ServerConfiguration.getInstance().get(
+//                                        "general.jmx.uri" ).getValue() );
+//
+//                        JMXConnector connector = JMXConnectorFactory.connect(
+//                                address, null );
+//
+//                        cachedServer = connector.getMBeanServerConnection();
+//
+//                    }
+//                    catch ( MalformedURLException e )
+//                    {
+//                        // TODO Show proper error to user.
+//                        throw new RuntimeException( e );
+//                    }
+//                    catch ( IOException e )
+//                    {
+//                        throw new RuntimeException(
+//                                "Unable get JMX access to remote server, monitoring will be disabled.",
+//                                e );
+//                    }
+//                }
 
             }
         }

@@ -63,7 +63,6 @@ public class RrdManager
      * Singleton instance of central round robin database.
      */
     private static RrdDb INSTANCE;
-    
 
     public static RrdDb getRrdDB()
     {
@@ -152,8 +151,8 @@ public class RrdManager
      */
     public static String getDbFilePath() throws IOException
     {
-        File dbPath = new File(
-                NeoServer.INSTANCE.configuration().getString( NeoServer.WEBADMIN_NAMESPACE+ "rrdb.location"  ));
+        File dbPath = new File( NeoServer.INSTANCE.configuration().getString(
+                NeoServer.WEBADMIN_NAMESPACE + "rrdb.location" ) );
 
         if ( !dbPath.exists() && !dbPath.mkdirs() )
         {

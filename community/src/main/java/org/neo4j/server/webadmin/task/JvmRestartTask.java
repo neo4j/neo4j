@@ -23,7 +23,6 @@ package org.neo4j.server.webadmin.task;
 import java.io.IOException;
 
 import org.neo4j.rest.WebServerFactory;
-import org.neo4j.rest.domain.DatabaseLocator;
 import org.neo4j.server.webadmin.utils.PlatformUtils;
 import org.tanukisoftware.wrapper.WrapperManager;
 
@@ -54,7 +53,7 @@ public class JvmRestartTask implements Runnable
                 System.out.println( "JVM Reboot. Shutting down server." );
                 WebServerFactory.getDefaultWebServer().stopServer();
                 //AdminServer.INSTANCE.stopServer();
-                DatabaseLocator.shutdownAndBlockGraphDatabase();
+                //DatabaseLocator.shutdownAndBlockGraphDatabase();
 
                 if ( PlatformUtils.isWindows() )
                 {

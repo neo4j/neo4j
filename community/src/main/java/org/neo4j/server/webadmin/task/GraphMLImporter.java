@@ -30,7 +30,7 @@ import javax.xml.stream.XMLStreamException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.rest.domain.DatabaseBlockedException;
-import org.neo4j.rest.domain.DatabaseLocator;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.webadmin.parser.GraphMLReader;
 
 @SuppressWarnings( "restriction" )
@@ -68,7 +68,7 @@ public class GraphMLImporter
         // import functionality from
         // there.
 
-        GraphDatabaseService graph = DatabaseLocator.getGraphDatabase();
+        GraphDatabaseService graph = NeoServer.INSTANCE.database();
 
         GraphMLReader.inputGraph( graph, stream );
     }

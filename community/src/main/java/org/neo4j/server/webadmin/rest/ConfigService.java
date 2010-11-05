@@ -43,7 +43,6 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.rest.WebServerFactory;
-import org.neo4j.rest.domain.DatabaseLocator;
 import org.neo4j.rest.domain.JsonHelper;
 import org.neo4j.rest.domain.JsonRenderers;
 import org.neo4j.rest.domain.PropertyValueException;
@@ -211,9 +210,9 @@ public class ConfigService
             for ( Object property : newProperties )
             {
 
-                currentPropMap = (Map<String, Object>) property;
-                properties.set( (String) currentPropMap.get( "key" ),
-                        (String) currentPropMap.get( "value" ) );
+//                currentPropMap = (Map<String, Object>) property;
+//                properties.set( (String) currentPropMap.get( "key" ),
+//                        (String) currentPropMap.get( "value" ) );
             }
 
             // All changes applied, perform required restarts
@@ -236,7 +235,7 @@ public class ConfigService
                     int restPort = WebServerFactory.getDefaultWebServer().getPort();
 
                     WebServerFactory.getDefaultWebServer().stopServer();
-                    DatabaseLocator.shutdownGraphDatabase();
+                    //DatabaseLocator.shutdownGraphDatabase();
                     WebServerFactory.getDefaultWebServer().startServer(
                             restPort );
                     ConsoleSessions.destroyAllSessions();
@@ -269,7 +268,7 @@ public class ConfigService
                     "You attempted to modify a property that does not exist.",
                     e, JsonRenderers.DEFAULT );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             return buildExceptionResponse(
                     Status.INTERNAL_SERVER_ERROR,

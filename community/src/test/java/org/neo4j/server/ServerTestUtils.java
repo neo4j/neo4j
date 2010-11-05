@@ -89,7 +89,7 @@ public class ServerTestUtils
     {
         FileWriter fstream = new FileWriter( propertyFile );
         BufferedWriter out = new BufferedWriter( fstream );
-        writeValue( out, "org.neo4j.database.location=", ServerTestUtils.createTempDir().getAbsolutePath() );
+        writeValue( out, NeoServer.DATABASE_LOCATION + "=", ServerTestUtils.createTempDir().getAbsolutePath() );
         writeValue( out, NeoServer.WEBSERVER_PORT + "=", "7474" );
         writeValue( out, NeoServer.WEBADMIN_NAMESPACE + "rrdb.location=", ServerTestUtils.createTempDir().getAbsolutePath() );
         writeValue( out, NeoServer.EXPORT_BASE_PATH + "=", ServerTestUtils.createTempDir().getAbsolutePath() );
