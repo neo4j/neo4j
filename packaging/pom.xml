@@ -22,7 +22,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.2.M03</version>
+      <version>1.2-SNAPSHOT</version>
       <type>pom</type>
       <exclusions>
         <exclusion>
@@ -34,7 +34,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-udc</artifactId>
-      <version>0.1-1.2.M03</version>
+      <version>0.1-SNAPSHOT</version>
       <classifier>neo4j</classifier>
     </dependency>
     <dependency>
