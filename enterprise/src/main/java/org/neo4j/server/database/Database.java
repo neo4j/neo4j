@@ -20,19 +20,21 @@
 
 package org.neo4j.server.database;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.IndexService;
+import org.neo4j.index.lucene.LuceneFulltextIndexService;
+import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.logging.Logger;
 
 public class Database {
-    
+
     public static Logger log = Logger.getLogger(Database.class);
-    
+
     public GraphDatabaseService db;
     public IndexService indexService;
     public IndexService fulltextIndexService;
@@ -41,30 +43,48 @@ public class Database {
     private String databaseStoreDirectory;
 
     public Database(String databaseStoreDirectory) {
-        this(new EmbeddedGraphDatabase(databaseStoreDirectory, MapUtil.stringMap( "enable_remote_shell", "true" )), null, null, null);
         this.databaseStoreDirectory = databaseStoreDirectory;
+        this.db = new EmbeddedGraphDatabase(databaseStoreDirectory);
+        ensureIndexServiceIsAvailable();
+        
+    }
+
+    private synchronized void ensureIndexServiceIsAvailable() throws DatabaseBlockedException {
+        if (indexService == null) {
+            if (db instanceof EmbeddedGraphDatabase) {
+                indexService = new LuceneIndexService(db);
+                fulltextIndexService = new LuceneFulltextIndexService(db);
+                indicies = instantiateSomeIndicies();
+            } else {
+                // TODO: Indexing for remote dbs
+                throw new UnsupportedOperationException("Indexing is not yet available in neo4j-rest for remote databases.");
+            }
+        }
     }
     
-    public Database(GraphDatabaseService db, IndexService indexService,
-            IndexService fulltextIndexService,
-            Map<String, Index<? extends PropertyContainer>> indices) {
-        this.db = db;
-        this.indexService = indexService;
-        this.fulltextIndexService = fulltextIndexService;
-        indicies = indices;
+    private Map<String, Index<? extends PropertyContainer>> instantiateSomeIndicies()
+    {
+        Map<String, Index<? extends PropertyContainer>> map = new HashMap<String, Index<? extends PropertyContainer>>();
+        map.put( "node", new NodeIndex( indexService ) );
+        map.put( "fulltext-node", new NodeIndex( fulltextIndexService ) );
+        return map;
     }
 
     public void startup() {
-        log.info("Successfully started database");
+        if (db != null) {
+            log.info("Successfully started database");
+        } else {
+            log.error("Failed to start database. GraphDatabaseService has not been properly initialized.");
+        }
     }
 
     public void shutdown() {
         try {
-            if(db != null) {
+            if (db != null) {
                 db.shutdown();
             }
             log.info("Successfully shutdown database");
-        } catch(Exception e) {
+        } catch (Exception e) {
             log.error("Database did not shut down cleanly. Reason [%s]", e.getMessage());
             throw new RuntimeException(e);
         }
@@ -72,5 +92,13 @@ public class Database {
 
     public String getLocation() {
         return databaseStoreDirectory;
+    }
+
+    public Index<? extends PropertyContainer> getIndex(String name) {
+        Index<? extends PropertyContainer> index = indicies.get(name);
+        if (index == null) {
+            throw new RuntimeException("No index for [" + name + "]");
+        }
+        return index;
     }
 }

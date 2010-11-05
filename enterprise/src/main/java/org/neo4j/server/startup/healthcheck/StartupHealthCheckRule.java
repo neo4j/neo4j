@@ -24,5 +24,5 @@ import java.util.Properties;
 
 public interface StartupHealthCheckRule {
     public boolean execute(Properties properties);
-    public String getMessage();
+    public String getFailureMessage();
 }

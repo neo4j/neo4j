@@ -27,6 +27,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
 
@@ -53,7 +54,7 @@ public class Configurator {
     
     public Configurator(Validator v, File propertiesFile) {
         if (propertiesFile == null) {
-            propertiesFile = new File(System.getProperty("org.neo4j.server.properties"));
+            propertiesFile = new File(System.getProperty(NeoServer.NEO_CONFIG_FILE_KEY));
         }
         
         try {

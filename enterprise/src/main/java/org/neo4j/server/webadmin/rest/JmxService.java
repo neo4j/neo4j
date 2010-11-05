@@ -43,15 +43,15 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.management.Kernel;
-import org.neo4j.rest.domain.DatabaseBlockedException;
-import org.neo4j.rest.domain.JsonHelper;
-import org.neo4j.rest.domain.JsonRenderers;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonRenderers;
 import org.neo4j.server.webadmin.domain.JmxDomainListRepresentation;
 import org.neo4j.server.webadmin.domain.JmxDomainRepresentation;
 import org.neo4j.server.webadmin.domain.JmxMBeanRepresentation;
@@ -63,10 +63,9 @@ import org.neo4j.server.webadmin.domain.JmxServiceRepresentation;
  * @author Jacob Hansson <jacob@voltvoodoo.com>
  * 
  */
-@SuppressWarnings( "restriction" )
-@Path( JmxService.ROOT_PATH )
-public class JmxService
-{
+
+@Path(JmxService.ROOT_PATH)
+public class JmxService {
 
     public static final String ROOT_PATH = "/server/jmx";
 
@@ -77,148 +76,109 @@ public class JmxService
     public static final String KERNEL_NAME_PATH = "/kernelquery";
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    public Response getServiceDefinition( @Context UriInfo uriInfo )
-    {
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getServiceDefinition(@Context UriInfo uriInfo) {
 
-        String entity = JsonRenderers.DEFAULT.render( new JmxServiceRepresentation(
-                uriInfo.getBaseUri() ) );
+        String entity = JsonRenderers.DEFAULT.render(new JmxServiceRepresentation(uriInfo.getBaseUri()));
 
-        return addHeaders(
-                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+        return addHeaders(Response.ok(entity, JsonRenderers.DEFAULT.getMediaType())).build();
     }
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( DOMAINS_PATH )
-    public Response listDomains() throws NullPointerException
-    {
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path(DOMAINS_PATH)
+    public Response listDomains() throws NullPointerException {
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        String entity = JsonRenderers.DEFAULT.render( new JmxDomainListRepresentation(
-                server.getDomains() ) );
+        String entity = JsonRenderers.DEFAULT.render(new JmxDomainListRepresentation(server.getDomains()));
 
-        return addHeaders(
-                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+        return addHeaders(Response.ok(entity, JsonRenderers.DEFAULT.getMediaType())).build();
 
     }
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( DOMAIN_PATH )
-    public Response getDomain( @PathParam( "domain" ) String domainName )
-            throws NullPointerException
-    {
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path(DOMAIN_PATH)
+    public Response getDomain(@PathParam("domain") String domainName) throws NullPointerException {
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
-        JmxDomainRepresentation domain = new JmxDomainRepresentation(
-                domainName );
+        JmxDomainRepresentation domain = new JmxDomainRepresentation(domainName);
 
-        for ( Object objName : server.queryNames( null, null ) )
-        {
-            if ( objName.toString().startsWith( domainName ) )
-            {
-                domain.addBean( (ObjectName) objName );
+        for (Object objName : server.queryNames(null, null)) {
+            if (objName.toString().startsWith(domainName)) {
+                domain.addBean((ObjectName) objName);
             }
         }
 
-        String entity = JsonRenderers.DEFAULT.render( domain );
+        String entity = JsonRenderers.DEFAULT.render(domain);
 
-        return addHeaders(
-                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+        return addHeaders(Response.ok(entity, JsonRenderers.DEFAULT.getMediaType())).build();
 
     }
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( BEAN_PATH )
-    public Response getBean( @PathParam( "domain" ) String domainName,
-            @PathParam( "objectName" ) String objectName )
-    {
-        try
-        {
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path(BEAN_PATH)
+    public Response getBean(@PathParam("domain") String domainName, @PathParam("objectName") String objectName) {
+        try {
 
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
             ArrayList<Object> beans = new ArrayList<Object>();
-            for ( Object objName : server.queryNames(
-                    new ObjectName( domainName
-                                    + ":"
-                                    + URLDecoder.decode( objectName,
-                                            WebUtils.UTF8 ) ), null ) )
-            {
-                beans.add( ( new JmxMBeanRepresentation( (ObjectName) objName ) ).serialize() );
+            for (Object objName : server.queryNames(new ObjectName(domainName + ":" + URLDecoder.decode(objectName, WebUtils.UTF8)), null)) {
+                beans.add((new JmxMBeanRepresentation((ObjectName) objName)).serialize());
             }
 
-            String entity = JsonHelper.createJsonFrom( beans );
+            String entity = JsonHelper.createJsonFrom(beans);
 
-            return addHeaders(
-                    Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+            return addHeaders(Response.ok(entity, JsonRenderers.DEFAULT.getMediaType())).build();
 
-        }
-        catch ( MalformedObjectNameException e )
-        {
-            return buildExceptionResponse( Status.BAD_REQUEST,
-                    "Invalid bean name.", e, JsonRenderers.DEFAULT );
-        }
-        catch ( UnsupportedEncodingException e )
-        {
-            return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR,
-                    "UTF-8 encoding not supported by host system.", e,
-                    JsonRenderers.DEFAULT );
+        } catch (MalformedObjectNameException e) {
+            return buildExceptionResponse(Status.BAD_REQUEST, "Invalid bean name.", e, JsonRenderers.DEFAULT);
+        } catch (UnsupportedEncodingException e) {
+            return buildExceptionResponse(Status.INTERNAL_SERVER_ERROR, "UTF-8 encoding not supported by host system.", e, JsonRenderers.DEFAULT);
         }
     }
 
     @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    @Consumes( MediaType.APPLICATION_JSON )
-    @Path( QUERY_PATH )
-    @SuppressWarnings( "unchecked" )
-    public Response queryBeans( String query )
-    {
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path(QUERY_PATH)
+    @SuppressWarnings("unchecked")
+    public Response queryBeans(String query) {
 
-        try
-        {
+        try {
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
-            String json = dodgeStartingUnicodeMarker( query );
-            Collection<Object> queries = (Collection<Object>) JsonHelper.jsonToSingleValue( json );
+            String json = dodgeStartingUnicodeMarker(query);
+            Collection<Object> queries = (Collection<Object>) JsonHelper.jsonToSingleValue(json);
 
             ArrayList<Object> beans = new ArrayList<Object>();
-            for ( Object queryObj : queries )
-            {
+            for (Object queryObj : queries) {
                 assert queryObj instanceof String;
-                for ( Object objName : server.queryNames( new ObjectName(
-                        (String) queryObj ), null ) )
-                {
-                    beans.add( ( new JmxMBeanRepresentation(
-                            (ObjectName) objName ) ).serialize() );
+                for (Object objName : server.queryNames(new ObjectName((String) queryObj), null)) {
+                    beans.add((new JmxMBeanRepresentation((ObjectName) objName)).serialize());
                 }
             }
 
-            String entity = JsonHelper.createJsonFrom( beans );
+            String entity = JsonHelper.createJsonFrom(beans);
 
-            return addHeaders(
-                    Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+            return addHeaders(Response.ok(entity, JsonRenderers.DEFAULT.getMediaType())).build();
 
-        }
-        catch ( MalformedObjectNameException e )
-        {
+        } catch (MalformedObjectNameException e) {
             e.printStackTrace();
-            return buildExceptionResponse( Status.BAD_REQUEST,
-                    "Invalid query.", e, JsonRenderers.DEFAULT );
+            return buildExceptionResponse(Status.BAD_REQUEST, "Invalid query.", e, JsonRenderers.DEFAULT);
         }
 
     }
 
     @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    @Consumes( MediaType.APPLICATION_FORM_URLENCODED )
-    @Path( QUERY_PATH )
-    public Response formQueryBeans( @FormParam( "value" ) String data )
-    {
-        return queryBeans( data );
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Path(QUERY_PATH)
+    public Response formQueryBeans(@FormParam("value") String data) {
+        return queryBeans(data);
     }
 
     /**
@@ -229,21 +189,19 @@ public class JmxService
      * @throws DatabaseBlockedException
      */
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( KERNEL_NAME_PATH )
-    public Response currentKernelInstance() throws DatabaseBlockedException
-    {
-//        if ( DatabaseLocator.isLocalDatabase() )
-//        {
-            Kernel kernelBean = ( (EmbeddedGraphDatabase) NeoServer.INSTANCE.database() ).getManagementBean( Kernel.class );
-            return addHeaders(
-                    Response.ok( "\"" + kernelBean.getMBeanQuery().toString()
-                                 + "\"", JsonRenderers.DEFAULT.getMediaType() ) ).build();
-//        }
-//       else
-//        {
-//            return addHeaders(
-//                    Response.ok( "null", JsonRenderers.DEFAULT.getMediaType() ) ).build();
-//        }
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path(KERNEL_NAME_PATH)
+    public Response currentKernelInstance() throws DatabaseBlockedException {
+        // if ( DatabaseLocator.isLocalDatabase() )
+        // {
+        Kernel kernelBean = ((EmbeddedGraphDatabase) NeoServer.server().database().db).getManagementBean(Kernel.class);
+        return addHeaders(Response.ok("\"" + kernelBean.getMBeanQuery().toString() + "\"", JsonRenderers.DEFAULT.getMediaType())).build();
+        // }
+        // else
+        // {
+        // return addHeaders(
+        // Response.ok( "null", JsonRenderers.DEFAULT.getMediaType() )
+        // ).build();
+        // }
     }
 }

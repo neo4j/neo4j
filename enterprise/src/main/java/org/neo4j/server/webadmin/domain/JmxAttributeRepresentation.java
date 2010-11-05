@@ -35,9 +35,8 @@ import javax.management.ReflectionException;
 import javax.management.RuntimeMBeanException;
 import javax.management.openmbean.CompositeData;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 
-@SuppressWarnings( "restriction" )
 public class JmxAttributeRepresentation implements Representation
 {
 

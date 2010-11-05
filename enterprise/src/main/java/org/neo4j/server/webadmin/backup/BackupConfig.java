@@ -20,8 +20,9 @@
 
 package org.neo4j.server.webadmin.backup;
 
-import org.neo4j.rest.domain.Representation;
-import org.neo4j.server.webadmin.domain.BackupJobDescriptionRepresentation;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
+import static org.neo4j.server.webadmin.utils.FileUtils.getFileAsString;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,11 +34,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.neo4j.rest.domain.JsonHelper.createJsonFrom;
-import static org.neo4j.rest.domain.JsonHelper.jsonToMap;
-import static org.neo4j.server.webadmin.utils.FileUtils.getFileAsString;
+import org.neo4j.server.webadmin.domain.BackupJobDescriptionRepresentation;
 
-public class BackupConfig implements Representation
+public class BackupConfig implements org.neo4j.server.rest.domain.Representation
 {
     public static final String JOB_LIST_KEY = "jobList";
 

@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 import org.neo4j.server.webadmin.backup.BackupJobDescription;
 import org.neo4j.server.webadmin.backup.BackupLog;
 import org.neo4j.server.webadmin.backup.BackupLogEntry;

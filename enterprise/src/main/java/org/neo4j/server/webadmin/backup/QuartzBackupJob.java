@@ -23,7 +23,7 @@ package org.neo4j.server.webadmin.backup;
 import java.io.File;
 import java.util.Date;
 
-import org.neo4j.rest.domain.DatabaseBlockedException;
+import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.webadmin.domain.BackupFailedException;
 import org.neo4j.server.webadmin.domain.NoBackupFoundationException;
 import org.quartz.Job;

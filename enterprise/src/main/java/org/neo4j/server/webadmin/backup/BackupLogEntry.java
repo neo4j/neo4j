@@ -24,7 +24,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.rest.domain.Representation;
+import org.neo4j.server.rest.domain.Representation;
 
 public class BackupLogEntry implements Representation
 {

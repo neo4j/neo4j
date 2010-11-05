@@ -27,8 +27,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.rest.domain.JsonRenderers;
-import org.neo4j.rest.domain.Renderer;
+import org.neo4j.server.rest.domain.JsonRenderers;
+import org.neo4j.server.rest.domain.Renderer;
 import org.neo4j.server.webadmin.domain.ExceptionRepresentation;
 
 /**

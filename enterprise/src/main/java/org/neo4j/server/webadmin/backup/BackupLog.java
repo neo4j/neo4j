@@ -20,8 +20,8 @@
 
 package org.neo4j.server.webadmin.backup;
 
-import static org.neo4j.rest.domain.JsonHelper.createJsonFrom;
-import static org.neo4j.rest.domain.JsonHelper.jsonToMap;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.server.webadmin.utils.FileUtils.getFileAsString;
 
 import java.io.File;
