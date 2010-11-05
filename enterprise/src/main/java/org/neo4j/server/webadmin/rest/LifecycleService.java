@@ -32,7 +32,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.rest.WebServerFactory;
-import org.neo4j.rest.domain.DatabaseLocator;
 import org.neo4j.rest.domain.JsonRenderers;
 import org.neo4j.server.webadmin.console.ConsoleSessions;
 import org.neo4j.server.webadmin.domain.LifecycleRepresentation;
@@ -89,104 +88,104 @@ public class LifecycleService
 
     }
 
-    @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( START_PATH )
-    public synchronized Response start()
-    {
-        LifecycleRepresentation status;
+//    @POST
+//    @Produces( MediaType.APPLICATION_JSON )
+//    @Path( START_PATH )
+//    public synchronized Response start()
+//    {
+//        LifecycleRepresentation status;
 
-        if ( !DatabaseLocator.databaseIsRunning() )
-        {
-            DatabaseLocator.unblockGraphDatabase();
-            int restPort = WebServerFactory.getDefaultWebServer().getPort();
-            WebServerFactory.getDefaultWebServer().startServer( restPort );
-            ConsoleSessions.destroyAllSessions();
-
-            status = new LifecycleRepresentation(
-                    LifecycleRepresentation.Status.RUNNING,
-                    LifecycleRepresentation.PerformedAction.STARTED );
-        }
-        else
-        {
-            status = new LifecycleRepresentation(
-                    LifecycleRepresentation.Status.RUNNING,
-                    LifecycleRepresentation.PerformedAction.NONE );
-        }
-
-        serverStatus = LifecycleRepresentation.Status.RUNNING;
-
-        String entity = JsonRenderers.DEFAULT.render( status );
-
-        return addHeaders(
-                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
-    }
-
-    @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( STOP_PATH )
-    public synchronized Response stop()
-    {
-        LifecycleRepresentation status;
-
-        if ( DatabaseLocator.databaseIsRunning() )
-        {
-            try
-            {
-                WebServerFactory.getDefaultWebServer().stopServer();
-            }
-            catch ( NullPointerException e )
-            {
-                // REST server was not running
-            }
-            DatabaseLocator.shutdownAndBlockGraphDatabase();
-            status = new LifecycleRepresentation(
-                    LifecycleRepresentation.Status.STOPPED,
-                    LifecycleRepresentation.PerformedAction.STOPPED );
-        }
-        else
-        {
-            status = new LifecycleRepresentation(
-                    LifecycleRepresentation.Status.STOPPED,
-                    LifecycleRepresentation.PerformedAction.NONE );
-        }
-
-        serverStatus = LifecycleRepresentation.Status.STOPPED;
-        String entity = JsonRenderers.DEFAULT.render( status );
-
-        return addHeaders(
-                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
-    }
-
-    @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( RESTART_PATH )
-    public synchronized Response restart()
-    {
-
-        try
-        {
-            WebServerFactory.getDefaultWebServer().stopServer();
-        }
-        catch ( NullPointerException e )
-        {
-            // REST server was not running
-        }
-        DatabaseLocator.shutdownGraphDatabase();
-
-        int restPort = WebServerFactory.getDefaultWebServer().getPort();
-
-        WebServerFactory.getDefaultWebServer().startServer( restPort );
-        ConsoleSessions.destroyAllSessions();
-
-        LifecycleRepresentation status = new LifecycleRepresentation(
-                LifecycleRepresentation.Status.RUNNING,
-                LifecycleRepresentation.PerformedAction.RESTARTED );
-        String entity = JsonRenderers.DEFAULT.render( status );
-
-        serverStatus = LifecycleRepresentation.Status.RUNNING;
-
-        return addHeaders(
-                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
-    }
+//        if ( !DatabaseLocator.databaseIsRunning() )
+//        {
+//            DatabaseLocator.unblockGraphDatabase();
+//            int restPort = WebServerFactory.getDefaultWebServer().getPort();
+//            WebServerFactory.getDefaultWebServer().startServer( restPort );
+//            ConsoleSessions.destroyAllSessions();
+//
+//            status = new LifecycleRepresentation(
+//                    LifecycleRepresentation.Status.RUNNING,
+//                    LifecycleRepresentation.PerformedAction.STARTED );
+//        }
+//        else
+//        {
+//            status = new LifecycleRepresentation(
+//                    LifecycleRepresentation.Status.RUNNING,
+//                    LifecycleRepresentation.PerformedAction.NONE );
+//        }
+//
+//        serverStatus = LifecycleRepresentation.Status.RUNNING;
+//
+//        String entity = JsonRenderers.DEFAULT.render( status );
+//
+//        return addHeaders(
+//                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+//    }
+//
+//    @POST
+//    @Produces( MediaType.APPLICATION_JSON )
+//    @Path( STOP_PATH )
+//    public synchronized Response stop()
+//    {
+//        LifecycleRepresentation status;
+//
+//        if ( DatabaseLocator.databaseIsRunning() )
+//        {
+//            try
+//            {
+//                WebServerFactory.getDefaultWebServer().stopServer();
+//            }
+//            catch ( NullPointerException e )
+//            {
+//                // REST server was not running
+//            }
+//            DatabaseLocator.shutdownAndBlockGraphDatabase();
+//            status = new LifecycleRepresentation(
+//                    LifecycleRepresentation.Status.STOPPED,
+//                    LifecycleRepresentation.PerformedAction.STOPPED );
+//        }
+//        else
+//        {
+//            status = new LifecycleRepresentation(
+//                    LifecycleRepresentation.Status.STOPPED,
+//                    LifecycleRepresentation.PerformedAction.NONE );
+//        }
+//
+//        serverStatus = LifecycleRepresentation.Status.STOPPED;
+//        String entity = JsonRenderers.DEFAULT.render( status );
+//
+//        return addHeaders(
+//                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+//    }
+//
+//    @POST
+//    @Produces( MediaType.APPLICATION_JSON )
+//    @Path( RESTART_PATH )
+//    public synchronized Response restart()
+//    {
+//
+//        try
+//        {
+//            WebServerFactory.getDefaultWebServer().stopServer();
+//        }
+//        catch ( NullPointerException e )
+//        {
+//            // REST server was not running
+//        }
+//        DatabaseLocator.shutdownGraphDatabase();
+//
+//        int restPort = WebServerFactory.getDefaultWebServer().getPort();
+//
+//        WebServerFactory.getDefaultWebServer().startServer( restPort );
+//        ConsoleSessions.destroyAllSessions();
+//
+//        LifecycleRepresentation status = new LifecycleRepresentation(
+//                LifecycleRepresentation.Status.RUNNING,
+//                LifecycleRepresentation.PerformedAction.RESTARTED );
+//        String entity = JsonRenderers.DEFAULT.render( status );
+//
+//        serverStatus = LifecycleRepresentation.Status.RUNNING;
+//
+//        return addHeaders(
+//                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+//    }
 }

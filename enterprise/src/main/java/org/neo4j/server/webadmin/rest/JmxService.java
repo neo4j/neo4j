@@ -20,7 +20,6 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import static org.neo4j.rest.domain.DatabaseLocator.getGraphDatabase;
 import static org.neo4j.server.webadmin.rest.WebUtils.addHeaders;
 import static org.neo4j.server.webadmin.rest.WebUtils.buildExceptionResponse;
 import static org.neo4j.server.webadmin.rest.WebUtils.dodgeStartingUnicodeMarker;
@@ -50,9 +49,9 @@ import javax.ws.rs.core.UriInfo;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.management.Kernel;
 import org.neo4j.rest.domain.DatabaseBlockedException;
-import org.neo4j.rest.domain.DatabaseLocator;
 import org.neo4j.rest.domain.JsonHelper;
 import org.neo4j.rest.domain.JsonRenderers;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.webadmin.domain.JmxDomainListRepresentation;
 import org.neo4j.server.webadmin.domain.JmxDomainRepresentation;
 import org.neo4j.server.webadmin.domain.JmxMBeanRepresentation;
@@ -234,17 +233,17 @@ public class JmxService
     @Path( KERNEL_NAME_PATH )
     public Response currentKernelInstance() throws DatabaseBlockedException
     {
-        if ( DatabaseLocator.isLocalDatabase() )
-        {
-            Kernel kernelBean = ( (EmbeddedGraphDatabase) getGraphDatabase() ).getManagementBean( Kernel.class );
+//        if ( DatabaseLocator.isLocalDatabase() )
+//        {
+            Kernel kernelBean = ( (EmbeddedGraphDatabase) NeoServer.INSTANCE.database() ).getManagementBean( Kernel.class );
             return addHeaders(
                     Response.ok( "\"" + kernelBean.getMBeanQuery().toString()
                                  + "\"", JsonRenderers.DEFAULT.getMediaType() ) ).build();
-        }
-        else
-        {
-            return addHeaders(
-                    Response.ok( "null", JsonRenderers.DEFAULT.getMediaType() ) ).build();
-        }
+//        }
+//       else
+//        {
+//            return addHeaders(
+//                    Response.ok( "null", JsonRenderers.DEFAULT.getMediaType() ) ).build();
+//        }
     }
 }

@@ -41,10 +41,7 @@ public class NeoServerTest {
     @Test
     public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception {
         NeoServer server = server();
-        server.start(null);
-
         assertNotNull(server.database());
-
         server.stop();
     }
 
@@ -53,7 +50,6 @@ public class NeoServerTest {
         InMemoryAppender appender = new InMemoryAppender(NeoServer.log);
         InMemoryAppender jettyServerAppender = new InMemoryAppender(Jetty6WebServer.log);
         NeoServer server = server();
-        server.start(null);
         System.out.println(appender.toString());
         System.out.println(jettyServerAppender.toString());
         assertThat(appender.toString(), containsString("Started Neo Server on port [" + 7474 + "]"));
@@ -65,7 +61,6 @@ public class NeoServerTest {
     public void whenServerIsShutDownTheDatabaseShouldNotBeAvailable() throws IOException {
 
         NeoServer server = server(); 
-        server.start(null);
         // Do some work
         server.database().beginTx().success();
         server.stop();
@@ -83,7 +78,9 @@ public class NeoServerTest {
         Configurator configurator = ServerTestUtils.configurator();
         Database db = new Database(configurator.configuration().getString("org.neo4j.database.location"));
         WebServer webServer = webServer();
-        return new NeoServer(configurator, db, webServer);
+        NeoServer neoServer = new NeoServer(configurator, db, webServer);
+        neoServer.start( null );
+        return neoServer;
     }
 
     private WebServer webServer() {
