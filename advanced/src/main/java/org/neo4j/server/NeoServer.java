@@ -139,8 +139,6 @@ public class NeoServer implements WrapperListener {
             
             log.info("Started Neo Server on port [%s]", restApiUri().getPort());
             
-            
-            
             return null; // This is for the service wrapper, and though it looks weird, it's correct
         } catch (Exception e) {
             e.printStackTrace();
@@ -229,7 +227,7 @@ public class NeoServer implements WrapperListener {
         }
     }
     
-    public static void shutdown() {
+    public static synchronized void shutdown() {
         if(theServer != null) {
             theServer.stop();
             theServer = null;

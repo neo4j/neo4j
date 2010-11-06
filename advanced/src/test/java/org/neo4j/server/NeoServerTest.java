@@ -38,8 +38,8 @@ public class NeoServerTest {
 
     @Before
     public void setup() {
-        appender = new InMemoryAppender(NeoServer.log);
         ServerTestUtils.nukeServer();
+        appender = new InMemoryAppender(NeoServer.log);
         ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
     }
     

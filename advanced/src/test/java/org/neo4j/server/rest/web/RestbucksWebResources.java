@@ -38,10 +38,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.NeoServerProvider;
 import org.neo4j.server.database.Database;
-
-import com.sun.jersey.spi.inject.Inject;
 
 @Path("/restbucks")
 public class RestbucksWebResources {
@@ -50,8 +47,12 @@ public class RestbucksWebResources {
     UriInfo uriInfo;
     private Database database;
 
-    public RestbucksWebResources(@Inject NeoServerProvider serverProvider) {
-        database = serverProvider.server().database();
+    public RestbucksWebResources() {
+        database = NeoServer.server().database();
+    }
+    
+    public RestbucksWebResources(Database database) {
+        this.database = database;
     }
 
     @Produces(MediaType.APPLICATION_JSON)

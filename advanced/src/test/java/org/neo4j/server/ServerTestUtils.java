@@ -26,51 +26,40 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Random;
 
-public class ServerTestUtils
-{
-    public static File createTempDir() throws IOException
-    {
+public class ServerTestUtils {
+    public static File createTempDir() throws IOException {
 
-        File d = File.createTempFile( "neo4j-test", "dir" );
-        if ( !d.delete() )
-        {
-            throw new RuntimeException( "temp config directory pre-delete failed" );
+        File d = File.createTempFile("neo4j-test", "dir");
+        if (!d.delete()) {
+            throw new RuntimeException("temp config directory pre-delete failed");
         }
-        if ( !d.mkdirs() )
-        {
-            throw new RuntimeException( "temp config directory not created" );
+        if (!d.mkdirs()) {
+            throw new RuntimeException("temp config directory not created");
         }
         d.deleteOnExit();
         return d;
     }
 
-    public static File createTempPropertyFile() throws IOException
-    {
-        return createTempPropertyFile( createTempDir() );
+    public static File createTempPropertyFile() throws IOException {
+        return createTempPropertyFile(createTempDir());
     }
 
-    public static void writePropertyToFile( String name, String value,
-                                            File propertyFile )
-    {
-        try
-        {
-            FileWriter fstream = new FileWriter( propertyFile, true );
-            BufferedWriter out = new BufferedWriter( fstream );
-            out.write( name );
-            out.write( "=" );
-            out.write( value );
-            out.write( System.getProperty( "line.separator" ) );
+    public static void writePropertyToFile(String name, String value, File propertyFile) {
+        try {
+            FileWriter fstream = new FileWriter(propertyFile, true);
+            BufferedWriter out = new BufferedWriter(fstream);
+            out.write(name);
+            out.write("=");
+            out.write(value);
+            out.write(System.getProperty("line.separator"));
             out.close();
-        } catch ( IOException e )
-        {
-            throw new RuntimeException( e );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public static File createTempPropertyFile(
-            File parentDir ) throws IOException
-    {
-        File f = new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
+    public static File createTempPropertyFile(File parentDir) throws IOException {
+        File f = new File(parentDir, "test-" + new Random().nextInt() + ".properties");
         f.deleteOnExit();
         return f;
     }
@@ -82,25 +71,31 @@ public class ServerTestUtils
             writePropertyToFile("org.neo4j.webserver.port", "7474", temporaryConfigFile);
             writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.rest.web", temporaryConfigFile);
             writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
-            writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "neo4j-servers", "{\"localhost\"\\:{\"url\"\\:\"http\\://localhost\\:7474/db/data/\"\\,\"manageUrl\"\\:\"http\\://localhost\\:7474/db/manage/\"}}", temporaryConfigFile);
-            
+            writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "neo4j-servers",
+                    "{\"localhost\"\\:{\"url\"\\:\"http\\://localhost\\:7474/db/data/\"\\,\"manageUrl\"\\:\"http\\://localhost\\:7474/db/manage/\"}}",
+                    temporaryConfigFile);
+
             System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath());
-            
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         NeoServer.main(null);
     }
-    
-    
+
     public static void initializeServerWithRandomTemporaryDatabaseDirectoryOnDefaultPort() {
         try {
             File temporaryConfigFile = createTempPropertyFile();
             writePropertyToFile("org.neo4j.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
             writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.rest.web", temporaryConfigFile);
-            
+            writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
+            writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "neo4j-servers",
+                    "{\"localhost\"\\:{\"url\"\\:\"http\\://localhost\\:7474/db/data/\"\\,\"manageUrl\"\\:\"http\\://localhost\\:7474/db/manage/\"}}",
+                    temporaryConfigFile);
+
+
             System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath());
-            
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
