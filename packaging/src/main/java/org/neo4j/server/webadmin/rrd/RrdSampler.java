@@ -25,13 +25,9 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.management.AttributeNotFoundException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanException;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeDataSupport;
 
 import org.mortbay.log.Log;
@@ -40,7 +36,6 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.management.Kernel;
 import org.neo4j.management.Neo4jManager;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.webadmin.MBeanServerFactory;
 import org.rrd4j.core.Sample;
 
@@ -98,19 +93,32 @@ public class RrdSampler {
         }
     };
 
-    // MANAGEMENT BEANS
-
-    private ObjectName memoryName;
-    private ObjectName primitivesName = null;
-
     /**
      * Keep track of whether to run the update task or not.
      */
     private boolean running = false;
 
+    // MANAGEMENT BEANS
+    private ObjectName memoryName;
+    private ObjectName primitivesName = null;
     private Kernel kernel;
-
     private Neo4jManager manager;
+    @SuppressWarnings("unused")
+    private ObjectName storeFileSizesName;
+    @SuppressWarnings("unused")
+    private ObjectName transactionsName;
+    @SuppressWarnings("unused")
+    private ObjectName memoryMappingName;
+    @SuppressWarnings("unused")
+    private ObjectName kernelName;
+    @SuppressWarnings("unused")
+    private ObjectName lockingName;
+    @SuppressWarnings("unused")
+    private ObjectName cacheName;
+    @SuppressWarnings("unused")
+    private ObjectName configurationName;
+    @SuppressWarnings("unused")
+    private ObjectName xaResourcesName;
 
     //
     // CONSTRUCTOR
@@ -144,7 +152,6 @@ public class RrdSampler {
                 timer.scheduleAtFixedRate(updateTask, 0, 3000);
             }
         } catch (IOException e) {
-            e.printStackTrace();
             throw new RuntimeException("IO Error trying to access round robin database path. See nested exception.", e);
         }
     }
@@ -178,24 +185,18 @@ public class RrdSampler {
                 String baseName = neoQuery.getDomain() + ":instance=" + instance + ",name=";
 
                 primitivesName = new ObjectName(baseName + JMX_NEO4J_PRIMITIVE_COUNT);
-                new ObjectName(baseName + JMX_NEO4J_STORE_FILE_SIZES);
-                new ObjectName(baseName + JMX_NEO4J_TRANSACTIONS);
-                new ObjectName(baseName + JMX_NEO4J_MEMORY_MAPPING);
-                new ObjectName(baseName + JMX_NEO4J_KERNEL);
-                new ObjectName(baseName + JMX_NEO4J_LOCKING);
-                new ObjectName(baseName + JMX_NEO4J_CACHE);
-                new ObjectName(baseName + JMX_NEO4J_CONFIGURATION);
-                new ObjectName(baseName + JMX_NEO4J_XA_RESOURCES);
+                storeFileSizesName = new ObjectName(baseName + JMX_NEO4J_STORE_FILE_SIZES);
+                transactionsName = new ObjectName(baseName + JMX_NEO4J_TRANSACTIONS);
+                memoryMappingName = new ObjectName(baseName + JMX_NEO4J_MEMORY_MAPPING);
+                kernelName = new ObjectName(baseName + JMX_NEO4J_KERNEL);
+                lockingName = new ObjectName(baseName + JMX_NEO4J_LOCKING);
+                cacheName = new ObjectName(baseName + JMX_NEO4J_CACHE);
+                configurationName = new ObjectName(baseName + JMX_NEO4J_CONFIGURATION);
+                xaResourcesName = new ObjectName(baseName + JMX_NEO4J_XA_RESOURCES);
             }
 
-        } catch (MalformedObjectNameException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (NullPointerException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (DatabaseBlockedException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -236,16 +237,8 @@ public class RrdSampler {
             sample.update();
         } catch (IOException e) {
             throw new RuntimeException("IO Error trying to access round robin database path. See nested exception.", e);
-        } catch (AttributeNotFoundException e) {
-            e.printStackTrace();
-        } catch (InstanceNotFoundException e) {
-            e.printStackTrace();
-        } catch (MBeanException e) {
-            e.printStackTrace();
-        } catch (ReflectionException e) {
-            e.printStackTrace();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 }
