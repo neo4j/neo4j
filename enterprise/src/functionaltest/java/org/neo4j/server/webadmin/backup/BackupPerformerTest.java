@@ -37,7 +37,6 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.TestUtil;
 import org.neo4j.server.webadmin.domain.BackupFailedException;
 import org.neo4j.server.webadmin.domain.NoBackupFoundationException;
 
@@ -62,7 +61,7 @@ public class BackupPerformerTest {
     public void doBackupFoundationTest() throws BackupFailedException, NoBackupFoundationException, DatabaseBlockedException {
 
         String backupPath = "target/backup";
-        TestUtil.deleteFileOrDirectory(new File(backupPath));
+        deleteFileOrDirectory(new File(backupPath));
 
         populateDb();
         BackupPerformer.doBackupFoundation(new File(backupPath));
@@ -75,7 +74,7 @@ public class BackupPerformerTest {
     public void doBackupTest() throws BackupFailedException, NoBackupFoundationException, DatabaseBlockedException {
 
         String backupPath = "target/backup";
-        TestUtil.deleteFileOrDirectory(new File(backupPath));
+        deleteFileOrDirectory(new File(backupPath));
 
         BackupPerformer.doBackupFoundation(new File(backupPath));
 
@@ -91,7 +90,7 @@ public class BackupPerformerTest {
     public void shouldFailOnBackupWithoutFoundationTest() throws BackupFailedException, NoBackupFoundationException, DatabaseBlockedException {
 
         String backupPath = "target/backup";
-        TestUtil.deleteFileOrDirectory(new File(backupPath));
+        deleteFileOrDirectory(new File(backupPath));
 
         Exception e = null;
 
@@ -128,4 +127,17 @@ public class BackupPerformerTest {
 
     }
 
+    private static void deleteFileOrDirectory(File file) {
+        if (!file.exists()) {
+            return;
+        }
+
+        if (file.isDirectory()) {
+            for (File child : file.listFiles()) {
+                deleteFileOrDirectory(child);
+            }
+        } else {
+            file.delete();
+        }
+    }
 }
