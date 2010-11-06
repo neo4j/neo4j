@@ -38,6 +38,8 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.server.webadmin.rrd.RrdManager;
+import org.neo4j.server.webadmin.rrd.RrdSampler;
 import org.tanukisoftware.wrapper.WrapperListener;
 
 /**
@@ -48,7 +50,7 @@ public class NeoServer implements WrapperListener {
 
     public static final String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.webserver.port";
 
-    public static final String REST_API_SERVICE_NAME = "/rest/api";
+    public static final String REST_API_SERVICE_NAME = "/db/data";
     public static final String REST_API_PACKAGE = "org.neo4j.server.rest.web";
     
     public static final String NEO_CONFIG_FILE_KEY = "org.neo4j.server.properties";
@@ -58,7 +60,7 @@ public class NeoServer implements WrapperListener {
     public static final String WEBADMIN_NAMESPACE_PROPERTY_KEY = "org.neo4j.server.webadmin.";
     
 
-    public static final String WEB_ADMIN_REST_API_SERVICE_NAME = "/management";
+    public static final String WEB_ADMIN_REST_API_SERVICE_NAME = "/db/manage";
     static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
     static final String WEB_ADMIN_PATH = "/webadmin";
 
@@ -133,7 +135,11 @@ public class NeoServer implements WrapperListener {
 
             webServer.start();
             
+            RrdSampler.INSTANCE.start();
+            
             log.info("Started Neo Server on port [%s]", restApiUri().getPort());
+            
+            
             
             return null; // This is for the service wrapper, and though it looks weird, it's correct
         } catch (Exception e) {
@@ -201,6 +207,8 @@ public class NeoServer implements WrapperListener {
     public int stop(int stopArg) {
         String location = "unknown";
         try {
+            RrdManager.getRrdDB().close();
+            RrdSampler.INSTANCE.stop();
 
             if (database != null) {
                 location = database.getLocation();
