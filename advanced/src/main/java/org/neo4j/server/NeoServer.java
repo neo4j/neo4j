@@ -133,9 +133,9 @@ public class NeoServer implements WrapperListener {
             log.info("Mounting REST API at [%s]", REST_API_SERVICE_NAME);            
             webServer.addJAXRSPackages(listFrom(new String[] { REST_API_PACKAGE }), REST_API_SERVICE_NAME);
 
+            // RrdSampler.INSTANCE.start();
+
             webServer.start();
-            
-            RrdSampler.INSTANCE.start();
             
             log.info("Started Neo Server on port [%s]", restApiUri().getPort());
             
