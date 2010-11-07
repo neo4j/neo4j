@@ -123,7 +123,6 @@ public class NeoServer implements WrapperListener {
             log.info("Starting Neo Server on port [%s]", webServerPort);
             webServer.setPort(webServerPort);
 
-            // webadmin assumes root
             log.info("Mounting webadmin at [%s]", WEB_ADMIN_PATH);
             webServer.addStaticContent(STATIC_CONTENT_LOCATION, WEB_ADMIN_PATH);
 
