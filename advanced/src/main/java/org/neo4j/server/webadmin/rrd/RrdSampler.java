@@ -58,7 +58,16 @@ public class RrdSampler {
     // SINGLETON IMPLEMENTATION
     //
 
-    public static final RrdSampler INSTANCE = new RrdSampler();
+    private static RrdSampler instance = new RrdSampler();
+    
+    public static synchronized RrdSampler instance() {
+        if(instance == null) {
+            instance = new RrdSampler();
+        }
+        
+        return instance;
+    }
+    
 
     // JMX bean names
     private static final String JMX_NEO4J_PRIMITIVE_COUNT = "Primitive count";
@@ -161,6 +170,10 @@ public class RrdSampler {
      */
     public void stop() {
         running = false;
+    }
+    
+    public static void shutdown() {
+        instance = null;
     }
 
     //

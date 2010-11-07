@@ -42,8 +42,7 @@ import org.rrd4j.core.RrdDef;
  * @author Jacob Hansson <jacob@voltvoodoo.com>
  * 
  */
-public class RrdManager
-{
+public class RrdManager {
 
     public static final String RRDB_FILENAME = "neo4j.rrdb";
 
@@ -64,78 +63,56 @@ public class RrdManager
      */
     private static RrdDb INSTANCE;
 
-    public static RrdDb getRrdDB()
-    {
-        if ( INSTANCE == null )
-        {
-
-            try
-            {
-                if ( !new File( getDbFilePath() ).exists() )
-                {
+    public static synchronized RrdDb getRrdDB() {
+        if (INSTANCE == null) {
+            try {
+                if (!new File(getDbFilePath()).exists()) {
                     // CREATE RRD DEFINITION
-                    RrdDef rrdDef = new RrdDef( getDbFilePath(), STEP_SIZE );
+                    RrdDef rrdDef = new RrdDef(getDbFilePath(), STEP_SIZE);
 
-                    rrdDef.setVersion( 2 );
+                    rrdDef.setVersion(2);
 
                     // DEFINE DATA SOURCES
 
-                    rrdDef.addDatasource( NODE_CACHE_SIZE, DsType.GAUGE,
-                            STEP_SIZE, 0, Long.MAX_VALUE );
+                    rrdDef.addDatasource(NODE_CACHE_SIZE, DsType.GAUGE, STEP_SIZE, 0, Long.MAX_VALUE);
 
-                    rrdDef.addDatasource( NODE_COUNT, DsType.GAUGE, STEP_SIZE,
-                            0, Long.MAX_VALUE );
+                    rrdDef.addDatasource(NODE_COUNT, DsType.GAUGE, STEP_SIZE, 0, Long.MAX_VALUE);
 
-                    rrdDef.addDatasource( RELATIONSHIP_COUNT, DsType.GAUGE,
-                            STEP_SIZE, 0, Long.MAX_VALUE );
+                    rrdDef.addDatasource(RELATIONSHIP_COUNT, DsType.GAUGE, STEP_SIZE, 0, Long.MAX_VALUE);
 
-                    rrdDef.addDatasource( PROPERTY_COUNT, DsType.GAUGE,
-                            STEP_SIZE, 0, Long.MAX_VALUE );
+                    rrdDef.addDatasource(PROPERTY_COUNT, DsType.GAUGE, STEP_SIZE, 0, Long.MAX_VALUE);
 
-                    rrdDef.addDatasource( MEMORY_PERCENT, DsType.GAUGE,
-                            STEP_SIZE, 0, Long.MAX_VALUE );
+                    rrdDef.addDatasource(MEMORY_PERCENT, DsType.GAUGE, STEP_SIZE, 0, Long.MAX_VALUE);
 
                     // DEFINE ARCHIVES
 
                     // Last 35 minutes
-                    rrdDef.addArchive( ConsolFun.AVERAGE, 0.5, 1,
-                            STEPS_PER_ARCHIVE );
+                    rrdDef.addArchive(ConsolFun.AVERAGE, 0.5, 1, STEPS_PER_ARCHIVE);
 
                     // Last 6 hours
-                    rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 10,
-                            STEPS_PER_ARCHIVE );
+                    rrdDef.addArchive(ConsolFun.AVERAGE, 0.2, 10, STEPS_PER_ARCHIVE);
 
                     // Last day
-                    rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 50,
-                            STEPS_PER_ARCHIVE );
+                    rrdDef.addArchive(ConsolFun.AVERAGE, 0.2, 50, STEPS_PER_ARCHIVE);
 
                     // Last week
-                    rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 300,
-                            STEPS_PER_ARCHIVE );
+                    rrdDef.addArchive(ConsolFun.AVERAGE, 0.2, 300, STEPS_PER_ARCHIVE);
 
                     // Last month
-                    rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 1300,
-                            STEPS_PER_ARCHIVE );
+                    rrdDef.addArchive(ConsolFun.AVERAGE, 0.2, 1300, STEPS_PER_ARCHIVE);
 
                     // Last five years
-                    rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 15000,
-                            STEPS_PER_ARCHIVE * 5 );
+                    rrdDef.addArchive(ConsolFun.AVERAGE, 0.2, 15000, STEPS_PER_ARCHIVE * 5);
 
                     // INSTANTIATE
 
-                    INSTANCE = new RrdDb( rrdDef );
+                    INSTANCE = new RrdDb(rrdDef);
 
+                } else {
+                    INSTANCE = new RrdDb(getDbFilePath());
                 }
-                else
-                {
-                    INSTANCE = new RrdDb( getDbFilePath() );
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException(
-                        "IO Error trying to access round robin database path. See nested exception.",
-                        e );
+            } catch (IOException e) {
+                throw new RuntimeException("IO Error trying to access round robin database path. See nested exception.", e);
             }
         }
 
@@ -149,18 +126,13 @@ public class RrdManager
     /**
      * Get database path. Create any missing folders on the path.
      */
-    public static String getDbFilePath() throws IOException
-    {
-        File dbPath = new File( NeoServer.server().configuration().getString(
-                NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location" ) );
+    public static String getDbFilePath() throws IOException {
+        File dbPath = new File(NeoServer.server().configuration().getString(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location"));
 
-        if ( !dbPath.exists() && !dbPath.mkdirs() )
-        {
-            throw new IllegalStateException(
-                    "Unable to use round-robin path '" + dbPath.toString()
-                            + "'. Does user have write permissions?" );
+        if (!dbPath.exists() && !dbPath.mkdirs()) {
+            throw new IllegalStateException("Unable to use round-robin path '" + dbPath.toString() + "'. Does user have write permissions?");
         }
 
-        return new File( dbPath, RRDB_FILENAME ).getAbsolutePath();
+        return new File(dbPath, RRDB_FILENAME).getAbsolutePath();
     }
 }
