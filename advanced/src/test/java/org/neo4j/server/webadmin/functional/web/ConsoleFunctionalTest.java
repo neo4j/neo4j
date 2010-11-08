@@ -20,24 +20,22 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 /**
  * Test that the webadmin HTTP console works and produces output as expected.
- * 
- * @author Jacob Hansson <jacob@voltvoodoo.com>
- * 
  */
 
-public class ConsoleFunctionalTest extends WebDriverTest {
+public class ConsoleFunctionalTest extends WebDriverTest
+{
 
-	@Test
-	public void shouldHaveConsoleWindow() {
-		consoleMenu.getElement().click();
-		assertThat(consoleWrap.getElement(), isVisible());
-	}	
+    @Test
+    public void shouldHaveConsoleWindow()
+    {
+        consoleMenu.getElement().click();
+        assertThat( consoleWrap.getElement(), isVisible() );
+    }
 }
