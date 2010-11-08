@@ -29,6 +29,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -42,8 +43,8 @@ public class IndexStore
     
     private final File file;
     private final File oldFile;
-    private final Map<String, Map<String, String>> nodeConfig = new HashMap<String, Map<String,String>>();
-    private final Map<String, Map<String, String>> relConfig = new HashMap<String, Map<String,String>>();
+    private final Map<String, Map<String, String>> nodeConfig = new ConcurrentHashMap<String, Map<String,String>>();
+    private final Map<String, Map<String, String>> relConfig = new ConcurrentHashMap<String, Map<String,String>>();
     private ByteBuffer dontUseBuffer = ByteBuffer.allocate( 100 );
     
     public IndexStore( String graphDbStoreDir )
@@ -169,13 +170,18 @@ public class IndexStore
     {
         return IoPrimitiveUtils.readLengthAndString( channel, buffer( 100 ) );
     }
+    
+    public boolean has( Class<? extends PropertyContainer> cls, String indexName )
+    {
+        return map( cls ).containsKey( indexName );
+    }
 
-    public synchronized Map<String, String> get( Class<? extends PropertyContainer> cls, String indexName )
+    public Map<String, String> get( Class<? extends PropertyContainer> cls, String indexName )
     {
         return map( cls ).get( indexName );
     }
     
-    public synchronized String[] getNames( Class<? extends PropertyContainer> cls )
+    public String[] getNames( Class<? extends PropertyContainer> cls )
     {
         Map<String, Map<String, String>> indexMap = map( cls );
         return indexMap.keySet().toArray( new String[indexMap.size()] );
@@ -194,11 +200,7 @@ public class IndexStore
         throw new IllegalArgumentException( cls.toString() );
     }
 
-    public Map<String, Map<String, String>> asMap( Class<? extends PropertyContainer> cls )
-    {
-        return new HashMap<String, Map<String,String>>( map( cls ) );
-    }
-    
+    // Synchronized since only one thread are allowed to write at any given time
     public synchronized void remove( Class<? extends PropertyContainer> cls, String indexName )
     {
         if ( map( cls ).remove( indexName ) == null )
@@ -208,6 +210,15 @@ public class IndexStore
         write();
     }
     
+    // Synchronized since only one thread are allowed to write at any given time
+    public synchronized void set( Class<? extends PropertyContainer> cls,
+            String name, Map<String, String> config )
+    {
+        map( cls ).put( name, Collections.unmodifiableMap( config ) );
+        write();
+    }
+    
+    // Synchronized since only one thread are allowed to write at any given time
     public synchronized boolean setIfNecessary( Class<? extends PropertyContainer> cls,
             String name, Map<String, String> config )
     {

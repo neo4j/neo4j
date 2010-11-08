@@ -20,8 +20,6 @@
 
 package org.neo4j.graphdb.index;
 
-import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -53,9 +51,9 @@ public interface Index<T extends PropertyContainer>
     String getName();
     
     /**
-     * @return configuration used when this index was created.
+     * @return the type of entities are managed by this index.
      */
-    Map<String, String> getConfiguration();
+    Class<T> getEntityType();
     
     /**
      * Adds a key/value pair for {@code entity} to the index. If that key/value
