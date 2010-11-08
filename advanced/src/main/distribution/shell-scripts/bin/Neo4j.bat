@@ -1,6 +1,25 @@
 @echo off
 setlocal
 
+@echo off
+if /i "%1"=="START" GOTO Continue
+if /i "%1"=="STOP" GOTO Continue
+
+echo Starts and stops a Neo4j Server.
+echo. 
+echo ^> neo4j.bat START
+echo This starts the Neo4j Server
+echo. 
+echo ^> neo4j.bat STOP
+echo This stops the running Neo4j Server
+echo. 
+echo If you want to install Neo4j Server as a service (recommended),
+echo you should use InstallNeo4j.BAT. Make sure to run it with administrator
+echo privileges.
+goto:eof
+
+:Continue
+
 rem Copyright (c) 1999, 2010 Tanuki Software, Ltd.
 rem http://www.tanukisoftware.com
 rem All rights reserved.
