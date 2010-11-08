@@ -61,25 +61,25 @@ public class NeoServer implements WrapperListener {
     
 
     public static final String WEB_ADMIN_REST_API_SERVICE_NAME = "/db/manage";
-    static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
-    static final String WEB_ADMIN_PATH = "/webadmin";
+    protected static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
+    protected static final String WEB_ADMIN_PATH = "/webadmin";
 
-    private static final String STATIC_CONTENT_LOCATION = "html";
-    private static final int DEFAULT_WEBSERVER_PORT = 7474;
+    public static final String STATIC_CONTENT_LOCATION = "html";
+    public static final int DEFAULT_WEBSERVER_PORT = 7474;
 
-    private static NeoServer theServer;
+    protected static NeoServer theServer;
 
-    private Configurator configurator;
-    private Database database;
-    private WebServer webServer;
+    protected Configurator configurator;
+    protected Database database;
+    protected WebServer webServer;
 
-    private int webServerPort;
+    protected int webServerPort;
     public static final String EXPORT_BASE_PATH = "org.neo4j.export.basepath";
 
     /**
      * For test purposes only.
      */
-    NeoServer(Configurator configurator, Database db, WebServer ws) {
+    protected NeoServer(Configurator configurator, Database db, WebServer ws) {
         this.configurator = configurator;
         this.database = db;
         this.webServer = ws;
@@ -93,7 +93,7 @@ public class NeoServer implements WrapperListener {
         return theServer;
     }
 
-    NeoServer() {
+    protected NeoServer() {
         StartupHealthCheck healthCheck = new StartupHealthCheck(new ConfigFileMustBePresentRule());
         if (!healthCheck.run()) {
             throw new StartupHealthCheckFailedException(healthCheck.failedRule());
@@ -252,11 +252,11 @@ public class NeoServer implements WrapperListener {
         // Do nothing for now, this is needed by the WrapperListener interface
     }
 
-    private static File getConfigFile() {
+    protected static File getConfigFile() {
         return new File(System.getProperty(NEO_CONFIG_FILE_KEY, DEFAULT_NEO_CONFIG_DIR));
     }
 
-    private List<String> listFrom(String[] strings) {
+    protected List<String> listFrom(String[] strings) {
         ArrayList<String> al = new ArrayList<String>();
 
         if (strings != null) {
