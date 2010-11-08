@@ -1,9 +1,8 @@
-${product.fullname} plugins Directory
+${product.fullname} plugins 
 =======================================
 
 Plugins contribute functionality to the ${product.fullname} by 
 implementing specific extension points. 
 
-References
-----------
+This is currently an experimental feature. 
 

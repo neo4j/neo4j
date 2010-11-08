@@ -1,4 +1,4 @@
-${product.fullname} lib 
+Neo4j Libraries
 =======================================
 
 Neo4j core java libraries. These can be used for embedded development,
