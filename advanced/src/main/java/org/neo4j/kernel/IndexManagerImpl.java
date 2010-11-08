@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -242,5 +243,50 @@ class IndexManagerImpl implements IndexManager
     public String[] relationshipIndexNames()
     {
         return indexStore.getNames( Relationship.class );
+    }
+    
+    public Map<String, String> getConfiguration( Index<? extends PropertyContainer> index )
+    {
+        Map<String, String> config = indexStore.get( index.getEntityType(), index.getName() );
+        if ( config == null )
+        {
+            throw new NotFoundException( "No " + index.getEntityType().getSimpleName() +
+                    " index '" + index.getName() + "' found" );
+        }
+        return config;
+    }
+    
+    public String setConfiguration( Index<? extends PropertyContainer> index, String key, String value )
+    {
+        assertLegalConfigKey( key );
+        Map<String, String> config = getMutableConfig( index );
+        String oldValue = config.put( key, value );
+        indexStore.set( index.getEntityType(), index.getName(), config );
+        return oldValue;
+    }
+
+    private void assertLegalConfigKey( String key )
+    {
+        if ( key.equals( KEY_INDEX_PROVIDER ) )
+        {
+            throw new IllegalArgumentException( "'" + key + "' cannot be modified" );
+        }
+    }
+
+    private Map<String, String> getMutableConfig( Index<? extends PropertyContainer> index )
+    {
+        return new HashMap<String, String>( getConfiguration( index ) );
+    }
+
+    public String removeConfiguration( Index<? extends PropertyContainer> index, String key )
+    {
+        assertLegalConfigKey( key );
+        Map<String, String> config = getMutableConfig( index );
+        String value = config.remove( key );
+        if ( value != null )
+        {
+            indexStore.set( index.getEntityType(), index.getName(), config );
+        }
+        return value;
     }
 }

@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
 /**
@@ -127,4 +128,48 @@ public interface IndexManager
      * @return the names of all existing {@link Relationship} indexes.
      */
     String[] relationshipIndexNames();
+    
+    /**
+     * Returns the configuration for {@code index}. Configuration can be
+     * set when creating an index, with f.ex {@link #forNodes(String, Map)}
+     * or with {@link #setConfiguration(Index, String, String)} or
+     * {@link #removeConfiguration(Index, String)}.
+     * 
+     * @return configuration for the {@code index}.
+     */
+    Map<String, String> getConfiguration( Index<? extends PropertyContainer> index );
+    
+    /**
+     * EXPERT: Sets a configuration parameter for an index. If a configuration
+     * parameter with the given {@code key} it will be overwritten.
+     * 
+     * WARNING: Overwriting parameters which controls the storage format of index
+     * data may lead to existing index data being unusable.
+     * 
+     * The key "provider" is a reserved parameter and cannot be overwritten,
+     * if key is "provider" then an {@link IllegalArgumentException} will be thrown.
+     * 
+     * @param index the index to set a configuration parameter for.
+     * @param key the configuration parameter key.
+     * @param value the new value of the configuration parameter.
+     * @return the overwritten value if any.
+     */
+    String setConfiguration( Index<? extends PropertyContainer> index, String key, String value );
+
+    /**
+     * EXPERT: Removes a configuration parameter from an index. If there's no
+     * value for the given {@code key} nothing will happen and {@code null}
+     * will be returned.
+     * 
+     * WARNING: Removing parameters which controls the storage format of index
+     * data may lead to existing index data being unusable.
+     * 
+     * The key "provider" is a reserved parameter and cannot be removed,
+     * if key is "provider" then an {@link IllegalArgumentException} will be thrown.
+     * 
+     * @param index the index to remove a configuration parameter from.
+     * @param key the configuration parameter key.
+     * @return the removed value if any.
+     */
+    String removeConfiguration( Index<? extends PropertyContainer> index, String key );
 }
