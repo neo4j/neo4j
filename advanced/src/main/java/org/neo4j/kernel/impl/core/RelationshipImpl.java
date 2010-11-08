@@ -145,7 +145,7 @@ class RelationshipImpl extends Primitive
         NodeImpl endNode = null;
         boolean startNodeLocked = false;
         boolean endNodeLocked = false;
-        nodeManager.acquireLock( this, LockType.WRITE );
+        boolean thisLocked = false;
         boolean success = false;
         try
         {
@@ -161,6 +161,8 @@ class RelationshipImpl extends Primitive
                 nodeManager.acquireLock( endNode, LockType.WRITE );
                 endNodeLocked = true;
             }
+            nodeManager.acquireLock( this, LockType.WRITE );
+            thisLocked = true;
             // no need to load full relationship, all properties will be
             // deleted when relationship is deleted
 
@@ -191,6 +193,18 @@ class RelationshipImpl extends Primitive
             boolean releaseFailed = false;
             try
             {
+                if ( thisLocked )
+                {
+                    nodeManager.releaseLock( this, LockType.WRITE );
+                }
+            }
+            catch ( Exception e )
+            {
+                releaseFailed = true;
+                e.printStackTrace();
+            }
+            try
+            {
                 if ( startNodeLocked )
                 {
                     nodeManager.releaseLock( startNode, LockType.WRITE );
@@ -213,7 +227,6 @@ class RelationshipImpl extends Primitive
                 releaseFailed = true;
                 e.printStackTrace();
             }
-            nodeManager.releaseLock( this, LockType.WRITE );
             if ( !success )
             {
                 nodeManager.setRollbackOnly();
