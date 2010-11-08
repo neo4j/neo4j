@@ -146,7 +146,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         cleanWriteLocks( baseStorePath );
         this.indexStore = (IndexStore) params.get( IndexStore.class );
         this.providerStore = newIndexStore( storeDir );
-        this.typeCache = new IndexTypeCache();
+        this.typeCache = new IndexTypeCache( indexStore );
         boolean isReadOnly = false;
         if ( params.containsKey( "read_only" ) )
         {
@@ -217,6 +217,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
     IndexType getType( IndexIdentifier identifier )
     {
         return typeCache.getIndexType( identifier );
+    }
+    
+    Map<String, String> getConfig( IndexIdentifier identifier )
+    {
+        return indexStore.get( identifier.entityType.getType(), identifier.indexName );
     }
     
     private void cleanWriteLocks( String directory )
@@ -507,7 +512,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
         typeCache.invalidate( identifier );
         synchronized ( indexes )
         {
-            indexes.remove( identifier ).markAsDeleted();
+            LuceneIndex<? extends PropertyContainer> index = indexes.remove( identifier );
+            if ( index != null )
+            {
+                index.markAsDeleted();
+            }
         }
     }
     
