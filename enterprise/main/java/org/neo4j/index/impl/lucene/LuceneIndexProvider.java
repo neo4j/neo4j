@@ -116,7 +116,7 @@ public class LuceneIndexProvider extends IndexProvider
     public Index<Node> nodeIndex( String indexName, Map<String, String> config )
     {
         IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE,
-                dataSource.nodeEntityType, indexName, config );
+                dataSource.nodeEntityType, indexName );
         synchronized ( dataSource.indexes )
         {
             LuceneIndex index = dataSource.indexes.get( identifier );
@@ -125,19 +125,14 @@ public class LuceneIndexProvider extends IndexProvider
                 index = new LuceneIndex.NodeIndex( this, identifier );
                 dataSource.indexes.put( identifier, index );
             }
-            
-            // Because config might have changed
-            index.setIdentifier( identifier );
             return index;
         }
-        
-//        return new LuceneIndex.NodeIndex( this, identifier );
     }
 
     public RelationshipIndex relationshipIndex( String indexName, Map<String, String> config )
     {
         IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.RELATIONSHIP,
-                dataSource.relationshipEntityType, indexName, config );
+                dataSource.relationshipEntityType, indexName );
         synchronized ( dataSource.indexes )
         {
             LuceneIndex index = dataSource.indexes.get( identifier );
@@ -148,8 +143,6 @@ public class LuceneIndexProvider extends IndexProvider
             }
             return (RelationshipIndex) index;
         }
-//
-//        return new LuceneIndex.RelationshipIndex( this, identifier );
     }
     
     public Map<String, String> fillInDefaults( Map<String, String> source )

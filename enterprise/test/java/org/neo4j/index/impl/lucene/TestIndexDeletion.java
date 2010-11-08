@@ -218,6 +218,10 @@ public class TestIndexDeletion
         assertThat( secondTx, hasThrownException() );
 
         secondTx.rollback();
+        
+        // Since $Before will start a tx, add a value and keep tx open and workers will
+        // delete the index so this test will fail in @After if we don't rollback this tx
+        rollbackTx();
     }
 
     @Test

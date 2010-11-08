@@ -24,7 +24,6 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -69,11 +68,11 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         addOptionDefinition( "ls", new OptionDefinition( OptionValueType.NONE,
                 "Does a 'ls' command on the returned nodes. " +
                 "Could also be done using the -c option. (Implies -g)" ) );
+        addOptionDefinition( "create", new OptionDefinition( OptionValueType.NONE,
+                "Creates a new index with a set of configuration parameters" ) );
         addOptionDefinition( "get-config", new OptionDefinition( OptionValueType.NONE,
                 "Displays the configuration for an index" ) );
         addOptionDefinition( "set-config", new OptionDefinition( OptionValueType.NONE,
-                "EXPERT, USE WITH CARE: Set the configuration for an index, removes any existing configuration first" ) );
-        addOptionDefinition( "set-config-param", new OptionDefinition( OptionValueType.NONE,
                 "EXPERT, USE WITH CARE: Set one configuration parameter for an index (remove if no value)" ) );
         addOptionDefinition( "t", new OptionDefinition( OptionValueType.MUST,
                 "The type of index, either Node or Relationship" ) );
@@ -97,8 +96,8 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         "$ index -q persons \"name:'Thomas*'\"  (will get nodes with names that start with Thomas)\n" +
         "$ index --cd persons name \"Agent Smith\"  (will 'cd' to the 'Agent Smith' node from the 'persons' index).\n\n" +
         "EXPERT, USE WITH CARE. NOTE THAT INDEX DATA MAY BECOME INVALID AFTER CONFIGURATION CHANGES:\n" +
-        "$ index --set-config-param accounts type fulltext  (will set parameter 'type'='fulltext' for 'accounts' index).\n" +
-        "$ index --set-config-param accounts to_lower_case  (will remove parameter 'to_lower_case' from 'accounts' index).\n" +
+        "$ index --set-config accounts type fulltext  (will set parameter 'type'='fulltext' for 'accounts' index).\n" +
+        "$ index --set-config accounts to_lower_case  (will remove parameter 'to_lower_case' from 'accounts' index).\n" +
         "$ index -t Relationship --delete friends  (will delete the 'friends' relationship index).";
     }
 
@@ -113,14 +112,14 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         boolean index = parser.options().containsKey( "i" );
         boolean remove = parser.options().containsKey( "r" );
         boolean getConfig = parser.options().containsKey( "get-config" );
+        boolean create = parser.options().containsKey( "create" );
         boolean setConfig = parser.options().containsKey( "set-config" );
-        boolean setConfigParameter = parser.options().containsKey( "set-config-param" );
         boolean delete = parser.options().containsKey( "delete" );
         boolean indexes = parser.options().containsKey( "indexes" );
-        int count = boolCount( get, index, remove, getConfig, setConfig, setConfigParameter, delete, indexes );
+        int count = boolCount( get, index, remove, getConfig, create, setConfig, delete, indexes );
         if ( count != 1 )
         {
-            throw new ShellException( "Supply one of: -g, -i, -r, --get-config, --set-config, --set-config-param, --delete, --indexes" );
+            throw new ShellException( "Supply one of: -g, -i, -r, --get-config, --set-config, --create, --delete, --indexes" );
         }
 
         if ( get )
@@ -173,13 +172,13 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         {
             displayConfig( parser, out );
         }
+        else if ( create )
+        {
+            createIndex( parser, out );
+        }
         else if ( setConfig )
         {
             setConfig( parser, out );
-        }
-        else if ( setConfigParameter )
-        {
-            setConfigParameter( parser, out );
         }
         else if ( delete )
         {
@@ -218,30 +217,21 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         }
     }
 
-    private void setConfigParameter( AppCommandParser parser, Output out ) throws ShellException, RemoteException
+    private void setConfig( AppCommandParser parser, Output out ) throws ShellException, RemoteException
     {
         String indexName = parser.arguments().get( 0 );
         String key = parser.arguments().get( 1 );
         String value = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : null;
-        IndexStore indexStore = (IndexStore) ((AbstractGraphDatabase) getServer().getDb())
-                .getConfig().getParams().get( IndexStore.class );
+        
         Class<? extends PropertyContainer> entityType = getEntityType( parser );
-        if ( !indexStore.asMap( entityType ).containsKey( indexName ) )
+        Index<? extends PropertyContainer> index = getIndex( indexName, entityType, out );
+        if ( index == null )
         {
-            out.println( "No such index '" + indexName + "'" );
             return;
         }
-        Map<String, String> config = new HashMap<String, String>( indexStore.get( entityType, indexName ) );
-        if ( value == null )
-        {
-            config.remove( key );
-        }
-        else
-        {
-            config.put( key, value );
-        }
-        indexStore.remove( entityType, indexName );
-        indexStore.setIfNecessary( entityType, indexName, config );
+        String oldValue = value != null ? 
+                getServer().getDb().index().setConfiguration( index, key, value ) :
+                getServer().getDb().index().removeConfiguration( index, key );
         printWarning( out );
     }
 
@@ -250,7 +240,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         out.println( "INDEX CONFIGURATION CHANGED, INDEX DATA MAY BE INVALID" );
     }
 
-    private void setConfig( AppCommandParser parser, Output out ) throws RemoteException, ShellException
+    private void createIndex( AppCommandParser parser, Output out ) throws RemoteException, ShellException
     {
         String indexName = parser.arguments().get( 0 );
         Map config;
@@ -265,12 +255,12 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         IndexStore indexStore = (IndexStore) ((AbstractGraphDatabase) getServer().getDb())
                 .getConfig().getParams().get( IndexStore.class );
         Class<? extends PropertyContainer> entityType = getEntityType( parser );
-        if ( indexStore.asMap( entityType ).containsKey( indexName ) )
+        if ( indexStore.has( entityType, indexName ) )
         {
-            indexStore.remove( entityType, indexName );
+            out.println( entityType.getSimpleName() + " index '" + indexName + "' already exists" );
+            return;
         }
-        indexStore.setIfNecessary( entityType, indexName, config );
-        printWarning( out );
+        indexStore.set( entityType, indexName, config );
     }
 
     private <T extends PropertyContainer> Index<T> getIndex( String indexName, Class<T> type, Output out )
@@ -298,7 +288,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         }
         try
         {
-            out.println( new JSONObject( index.getConfiguration() ).toString( 4 ) );
+            out.println( new JSONObject( getServer().getDb().index().getConfiguration( index ) ).toString( 4 ) );
         }
         catch ( JSONException e )
         {

@@ -20,23 +20,18 @@
 
 package org.neo4j.index.impl.lucene;
 
-import java.util.Map;
-
 class IndexIdentifier
 {
     final String indexName;
-    final Map<String, String> config;
     final EntityType entityType;
     final byte entityTypeByte;
     private final int hashCode;
     
-    public IndexIdentifier( byte entityTypeByte, EntityType entityType, String indexName,
-            Map<String, String> customConfig )
+    public IndexIdentifier( byte entityTypeByte, EntityType entityType, String indexName )
     {
         this.entityTypeByte = entityTypeByte;
         this.entityType = entityType;
         this.indexName = indexName;
-        this.config = customConfig;
         this.hashCode = calculateHashCode();
     }
     

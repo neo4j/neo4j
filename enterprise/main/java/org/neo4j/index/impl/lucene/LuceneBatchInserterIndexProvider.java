@@ -48,7 +48,6 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
     private final Map<IndexIdentifier, LuceneBatchInserterIndex> indexes =
             new HashMap<IndexIdentifier, LuceneBatchInserterIndex>();
     final IndexStore indexStore;
-    final IndexTypeCache typeCache;
     final EntityType nodeEntityType;
     final EntityType relationshipEntityType;
 
@@ -56,7 +55,6 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
     {
         this.inserter = inserter;
         this.indexStore = ((BatchInserterImpl) inserter).getIndexStore();
-        this.typeCache = new IndexTypeCache();
         this.nodeEntityType = new EntityType()
         {
             public Document newDocument( Object entityId )
@@ -91,8 +89,8 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
     
     public BatchInserterIndex nodeIndex( String indexName, Map<String, String> config )
     {
-        return index( new IndexIdentifier( LuceneCommand.NODE, nodeEntityType, indexName,
-                config( Node.class, indexName, config ) ) );
+        config( Node.class, indexName, config );
+        return index( new IndexIdentifier( LuceneCommand.NODE, nodeEntityType, indexName ), config );
     }
 
     private Map<String, String> config( Class<? extends PropertyContainer> cls,
@@ -114,18 +112,18 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
 
     public BatchInserterIndex relationshipIndex( String indexName, Map<String, String> config )
     {
-        return index( new IndexIdentifier( LuceneCommand.RELATIONSHIP, relationshipEntityType,
-                indexName, config( Relationship.class, indexName, config ) ) );
+        config( Relationship.class, indexName, config );
+        return index( new IndexIdentifier( LuceneCommand.RELATIONSHIP, relationshipEntityType, indexName ), config );
     }
 
-    private BatchInserterIndex index( IndexIdentifier identifier )
+    private BatchInserterIndex index( IndexIdentifier identifier, Map<String, String> config )
     {
         // We don't care about threads here... c'mon... it's a
         // single-threaded batch inserter
         LuceneBatchInserterIndex index = indexes.get( identifier );
         if ( index == null )
         {
-            index = new LuceneBatchInserterIndex( this, inserter, identifier );
+            index = new LuceneBatchInserterIndex( this, inserter, identifier, config );
             indexes.put( identifier, index );
         }
         return index;

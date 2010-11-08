@@ -48,12 +48,12 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     private IndexSearcher searcher;
 
     LuceneBatchInserterIndex( LuceneBatchInserterIndexProvider provider,
-            BatchInserter inserter, IndexIdentifier identifier )
+            BatchInserter inserter, IndexIdentifier identifier, Map<String, String> config )
     {
         String dbStoreDir = ((BatchInserterImpl) inserter).getStore();
         this.storeDir = LuceneDataSource.getStoreDir( dbStoreDir );
         this.identifier = identifier;
-        this.type = provider.typeCache.getIndexType( identifier );
+        this.type = IndexType.getIndexType( identifier, config );
     }
     
     public void add( long entityId, Map<String, Object> properties )

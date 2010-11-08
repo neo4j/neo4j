@@ -27,6 +27,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
 import static org.neo4j.index.impl.lucene.Contains.contains;
@@ -1033,12 +1034,12 @@ public class TestLuceneIndex
         String indexName = "my-index-1";
         Index<Node> nodeIndex = nodeIndex( indexName, LuceneIndexProvider.EXACT_CONFIG );
         assertEquals( indexName, nodeIndex.getName() );
-        assertEquals( LuceneIndexProvider.EXACT_CONFIG, nodeIndex.getConfiguration() );
+        assertEquals( LuceneIndexProvider.EXACT_CONFIG, graphDb.index().getConfiguration( nodeIndex ) );
         
         String indexName2 = "my-index-2";
         Index<Relationship> relIndex = relationshipIndex( indexName2, LuceneIndexProvider.FULLTEXT_CONFIG );
         assertEquals( indexName2, relIndex.getName() );
-        assertEquals( LuceneIndexProvider.FULLTEXT_CONFIG, relIndex.getConfiguration() );
+        assertEquals( LuceneIndexProvider.FULLTEXT_CONFIG, graphDb.index().getConfiguration( relIndex ) );
     }
     
     @Test
@@ -1110,5 +1111,42 @@ public class TestLuceneIndex
         restartTx();
         assertThat( index.get( key, "value" ), isEmpty() );
         assertThat( index.get( key, "otherValue" ), contains( r ) );
+    }
+    
+    @Test
+    public void makeSureYouCanGetEntityTypeFromIndex()
+    {
+        Index<Node> nodeIndex = nodeIndex( "type-test", MapUtil.stringMap( "provider", "lucene", "type", "exact" ) );
+        Index<Relationship> relIndex = relationshipIndex( "type-test", MapUtil.stringMap( "provider", "lucene", "type", "exact" ) );
+        assertEquals( Node.class, nodeIndex.getEntityType() );
+        assertEquals( Relationship.class, relIndex.getEntityType() );
+    }
+    
+    @Test
+    public void makeSureConfigurationCanBeModified()
+    {
+        Index<Node> index = nodeIndex( "conf-index", LuceneIndexProvider.EXACT_CONFIG );
+        try
+        {
+            graphDb.index().setConfiguration( index, "provider", "something" );
+            fail( "Shouldn't be able to modify provider" );
+        }
+        catch ( IllegalArgumentException e ) { /* Good*/ }
+        try
+        {
+            graphDb.index().removeConfiguration( index, "provider" );
+            fail( "Shouldn't be able to modify provider" );
+        }
+        catch ( IllegalArgumentException e ) { /* Good*/ }
+
+        String key = "my-key";
+        String value = "my-value";
+        String newValue = "my-new-value";
+        assertNull( graphDb.index().setConfiguration( index, key, value ) );
+        assertEquals( value, graphDb.index().getConfiguration( index ).get( key ) );
+        assertEquals( value, graphDb.index().setConfiguration( index, key, newValue ) );
+        assertEquals( newValue, graphDb.index().getConfiguration( index ).get( key ) );
+        assertEquals( newValue, graphDb.index().removeConfiguration( index, key ) );
+        assertNull( graphDb.index().getConfiguration( index ).get( key ) );
     }
 }

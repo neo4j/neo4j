@@ -189,9 +189,8 @@ abstract class IndexType
         return property;
     }
     
-    static IndexType getIndexType( IndexIdentifier identifier )
+    static IndexType getIndexType( IndexIdentifier identifier, Map<String, String> config )
     {
-        Map<String, String> config = identifier.config;
         String type = config.get( configKey( identifier.indexName, "type" ) );
         IndexType result = null;
         boolean toLowerCase = parseBoolean( config.get( configKey( identifier.indexName, LuceneIndexProvider.KEY_TO_LOWER_CASE ) ), true );
