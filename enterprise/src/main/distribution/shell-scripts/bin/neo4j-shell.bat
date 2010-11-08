@@ -79,7 +79,7 @@ goto LIBPATH_END
 : APPEND_TO_LIBPATH
 set filename=%~1
 set suffix=%filename:~-4%
-if %suffix% equ .jar set LIBPATH=%LIBPATH%;%REPO%\%filename%
+if %suffix% equ .jar set LIBPATH=%LIBPATH%;"%REPO%\%filename%"
 goto :EOF
 
 :LIBPATH_END
