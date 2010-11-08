@@ -1,6 +1,7 @@
-${product.fullname} data Directory
+${server.fullname} data Directory
 =======================================
 
-This directory contains all live data managed by this server.
+This directory contains all live data managed by this server, including
+database files, logs, and other "live" files.
 
 
