@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.lucene.index.Term;
@@ -106,11 +105,6 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public String getName()
     {
         return this.identifier.indexName;
-    }
-    
-    public Map<String, String> getConfiguration()
-    {
-        return this.identifier.config;
     }
     
     /**
@@ -386,11 +380,6 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         return this.identifier;
     }
 
-    void setIdentifier( IndexIdentifier identifier )
-    {
-        this.identifier = identifier;
-    }
-    
     static class NodeIndex extends LuceneIndex<Node>
     {
         NodeIndex( LuceneIndexProvider service,
@@ -423,6 +412,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         {
             return new LuceneCommand.RemoveCommand( getIdentifier(), LuceneCommand.NODE,
                     ((Node) entity).getId(), key, value );
+        }
+        
+        public Class<Node> getEntityType()
+        {
+            return Node.class;
         }
     }
     
@@ -513,6 +507,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             Relationship rel = (Relationship) entity;
             return new LuceneCommand.RemoveCommand( getIdentifier(), LuceneCommand.RELATIONSHIP,
                     RelationshipId.of( rel ), key, value );
+        }
+        
+        public Class<Relationship> getEntityType()
+        {
+            return Relationship.class;
         }
     }
 }

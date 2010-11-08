@@ -253,7 +253,7 @@ abstract class LuceneCommand extends XaCommand
     static class CreateIndexCommand extends LuceneCommand
     {
         static final IndexIdentifier FAKE_IDENTIFIER = new IndexIdentifier(
-                (byte) 9, null, "create index", null );
+                (byte) 9, null, "create index" );
         private final String name;
         private final Map<String, String> config;
 
@@ -407,8 +407,7 @@ abstract class LuceneCommand extends XaCommand
                 }
             }
             
-            IndexIdentifier identifier = new IndexIdentifier( entityTypeByte, entityType, indexName,
-                    dataSource.indexStore.get( entityType.getType(), indexName ) );
+            IndexIdentifier identifier = new IndexIdentifier( entityTypeByte, entityType, indexName );
             
             switch ( commandType )
             {
