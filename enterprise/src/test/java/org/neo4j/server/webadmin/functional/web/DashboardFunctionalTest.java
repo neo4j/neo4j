@@ -20,27 +20,16 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.RenderedWebElement;
+public class DashboardFunctionalTest extends WebDriverTest {
 
-@Ignore
-public class JmxFunctionalTest extends WebDriverTest {
- 
 	@Test
-	public void shouldHaveJmxWindow() {
-		jmxMenu.getElement().click();
-		assertThat(jmxList.getElement(), isVisible());
+	public void shouldHaveDashboardWindow() {
+		dashboardMenu.getElement().click();
+		assertThat(dashboardValueTrackers.getElement(), isVisible());
 	}
-	
-	private ElementReference jmxList = new ElementReference() {
-		public RenderedWebElement getElement() {
-			return waitForElementToAppear(By.className("mor_jmx_list"));
-		}
-	};
-
 }
