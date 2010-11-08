@@ -38,6 +38,7 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.StrongReferenceCache;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.cache.NoCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
@@ -1025,6 +1026,20 @@ public class NodeManager
             Cache<Integer, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
             {
                 return new NoCache<Integer, RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
+            }
+        },
+        strong( false, "strong reference cache" )
+        {
+            @Override
+            Cache<Integer, NodeImpl> node( AdaptiveCacheManager cacheManager )
+            {
+                return new StrongReferenceCache<Integer,NodeImpl>( NODE_CACHE_NAME );
+            }
+
+            @Override
+            Cache<Integer, RelationshipImpl> relationship( AdaptiveCacheManager cacheManager )
+            {
+                return new StrongReferenceCache<Integer,RelationshipImpl>( RELATIONSHIP_CACHE_NAME );
             }
         };
         
