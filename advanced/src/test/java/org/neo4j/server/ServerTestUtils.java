@@ -24,9 +24,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Random;
 
 public class ServerTestUtils {
+    private static final String TEST_PORT = "7474";
+
     public static File createTempDir() throws IOException {
 
         File d = File.createTempFile("neo4j-test", "dir");
@@ -68,11 +72,11 @@ public class ServerTestUtils {
         try {
             File temporaryConfigFile = createTempPropertyFile();
             writePropertyToFile("org.neo4j.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
-            writePropertyToFile("org.neo4j.webserver.port", "7474", temporaryConfigFile);
+            writePropertyToFile("org.neo4j.webserver.port", TEST_PORT, temporaryConfigFile);
             writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.rest.web", temporaryConfigFile);
             writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
             writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "neo4j-servers",
-                    "{\"localhost\"\\:{\"url\"\\:\"http\\://localhost\\:7474/db/data/\"\\,\"manageUrl\"\\:\"http\\://localhost\\:7474/db/manage/\"}}",
+                    constructWebadminServerConfig(),
                     temporaryConfigFile);
 
             System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath());
@@ -83,14 +87,18 @@ public class ServerTestUtils {
         NeoServer.main(null);
     }
 
+    private static String constructWebadminServerConfig() throws UnknownHostException
+    {
+        return "{\"localhost\"\\:{\"url\"\\:\"http\\://"+InetAddress.getLocalHost().getCanonicalHostName()+"\\:"+TEST_PORT +"/db/data/\"\\,\"manageUrl\"\\:\"http\\://"+InetAddress.getLocalHost().getCanonicalHostName()+"\\:"+TEST_PORT +"/db/manage/\"}}";
+    }
+
     public static void initializeServerWithRandomTemporaryDatabaseDirectoryOnDefaultPort() {
         try {
             File temporaryConfigFile = createTempPropertyFile();
             writePropertyToFile("org.neo4j.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
             writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.rest.web", temporaryConfigFile);
             writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
-            writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "neo4j-servers",
-                    "{\"localhost\"\\:{\"url\"\\:\"http\\://localhost\\:7474/db/data/\"\\,\"manageUrl\"\\:\"http\\://localhost\\:7474/db/manage/\"}}",
+            writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "neo4j-servers",constructWebadminServerConfig(),
                     temporaryConfigFile);
 
 
