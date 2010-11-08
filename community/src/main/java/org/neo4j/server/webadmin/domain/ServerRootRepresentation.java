@@ -20,10 +20,6 @@
 
 package org.neo4j.server.webadmin.domain;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.remote.RemoteGraphDatabase;
@@ -31,11 +27,13 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.webadmin.rest.ConfigService;
 import org.neo4j.server.webadmin.rest.ConsoleService;
-import org.neo4j.server.webadmin.rest.ExportService;
-import org.neo4j.server.webadmin.rest.ImportService;
 import org.neo4j.server.webadmin.rest.JmxService;
 import org.neo4j.server.webadmin.rest.LifecycleService;
 import org.neo4j.server.webadmin.rest.MonitorService;
+
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ServerRootRepresentation extends RootRepresentation {
     public ServerRootRepresentation(URI baseUri) {
@@ -53,8 +51,8 @@ public class ServerRootRepresentation extends RootRepresentation {
 
                 // services.put( "backup", baseUri + BackupService.ROOT_PATH );
                 // services.put( "config", baseUri + ConfigService.ROOT_PATH );
-                services.put("importing", baseUri + ImportService.ROOT_PATH);
-                services.put("exporting", baseUri + ExportService.ROOT_PATH);
+                //services.put("importing", baseUri + ImportService.ROOT_PATH);
+                //services.put("exporting", baseUri + ExportService.ROOT_PATH);
                 services.put("console", baseUri + ConsoleService.ROOT_PATH);
                 services.put("jmx", baseUri + JmxService.ROOT_PATH);
                 // services.put( "lifecycle", baseUri +
@@ -63,9 +61,9 @@ public class ServerRootRepresentation extends RootRepresentation {
 
             } else if (currentDb instanceof RemoteGraphDatabase) {
                 // services.put( "backup", baseUri + BackupService.ROOT_PATH );
-                services.put("importing", baseUri + ImportService.ROOT_PATH);
+                //services.put("importing", baseUri + ImportService.ROOT_PATH);
                 services.put("config", baseUri + ConfigService.ROOT_PATH);
-                services.put("exporting", baseUri + ExportService.ROOT_PATH);
+                //services.put("exporting", baseUri + ExportService.ROOT_PATH);
                 services.put("console", baseUri + ConsoleService.ROOT_PATH);
                 // services.put( "monitor", baseUri + MonitorService.ROOT_PATH
                 // );
