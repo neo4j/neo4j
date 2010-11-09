@@ -140,7 +140,7 @@
 		<dependency>
 			<groupId>org.neo4j.drivers</groupId>
 			<artifactId>neo4js</artifactId>
-			<version>0.1-SNAPSHOT</version>
+			<version>0.1</version>
 			<type>jar</type>
 		</dependency>
 
@@ -225,7 +225,6 @@
 								<artifactItem>
 									<groupId>org.neo4j.drivers</groupId>
 									<artifactId>neo4js</artifactId>
-									<version>0.1-SNAPSHOT</version>
 									<type>jar</type>
 									<outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
 									<includes>*.js</includes>
@@ -469,10 +468,6 @@
 	</reporting>
 
 	<repositories>
-		<repository>
-			<id>jsdoctk1</id>
-			<url>http://jsdoctk-plugin.googlecode.com/svn/repo</url>
-		</repository>
 		<repository>
 			<id>java.net</id>
 			<url>http://download.java.net/maven/2/</url>
