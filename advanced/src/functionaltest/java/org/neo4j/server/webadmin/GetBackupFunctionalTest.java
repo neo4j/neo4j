@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.webadmin.functional;
+package org.neo4j.server.webadmin;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +42,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
 @Ignore
-public class DeleteBackupFunctionalTest {
+public class GetBackupFunctionalTest {
     @BeforeClass
     public static void startWebServer() throws IOException, SchedulerException, BackupFailedException {
         ServerTestUtils.nukeServer();
@@ -52,6 +52,7 @@ public class DeleteBackupFunctionalTest {
 
     @AfterClass
     public static void stopWebServer() throws Exception {
+        BackupManager.INSTANCE.stop();
         ServerTestUtils.nukeServer();
     }
 
@@ -59,9 +60,9 @@ public class DeleteBackupFunctionalTest {
     public void shouldGet200ForProperRequest() {
         Client client = Client.create();
 
-        WebResource getResource = client.resource(NeoServer.server().webadminUri() + BackupService.ROOT_PATH + BackupService.JOBS_PATH + "/0");
+        WebResource getResource = client.resource(NeoServer.server().webadminUri() + BackupService.ROOT_PATH + BackupService.JOBS_PATH);
 
-        ClientResponse getResponse = getResource.accept(MediaType.APPLICATION_JSON).delete(ClientResponse.class);
+        ClientResponse getResponse = getResource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
 
         assertEquals(200, getResponse.getStatus());
 
