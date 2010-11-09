@@ -1149,4 +1149,20 @@ public class TestLuceneIndex
         assertEquals( newValue, graphDb.index().removeConfiguration( index, key ) );
         assertNull( graphDb.index().getConfiguration( index ).get( key ) );
     }
+    
+    @Test
+    public void makeSureSlightDifferencesInIndexConfigCanBeSupplied()
+    {
+        Map<String, String> config = MapUtil.stringMap( "provider", "lucene", "type", "fulltext" );
+        String name = "the-name";
+        Index<Node> index = nodeIndex( name, config );
+        nodeIndex( name, MapUtil.stringMap( new HashMap<String, String>( config ), "to_lower_case", "true" ) );
+        try
+        {
+            nodeIndex( name, MapUtil.stringMap( new HashMap<String, String>( config ), "to_lower_case", "false" ) );
+            fail( "Shouldn't be able to get index with these kinds of differences in config" );
+        }
+        catch ( IllegalArgumentException e ) { /* */ }
+        nodeIndex( name, MapUtil.stringMap( new HashMap<String, String>( config ), "whatever", "something" ) );
+    }
 }

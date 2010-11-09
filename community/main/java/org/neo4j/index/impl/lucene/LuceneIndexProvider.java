@@ -166,6 +166,39 @@ public class LuceneIndexProvider extends IndexProvider
     }
     
     @Override
+    public boolean configMatches( Map<String, String> storedConfig, Map<String, String> config )
+    {
+        return  match( storedConfig, config, "type", null ) &&
+                match( storedConfig, config, "to_lower_case", "true" ) &&
+                match( storedConfig, config, "analyzer", null );
+    }
+    
+    private boolean match( Map<String, String> storedConfig, Map<String, String> config,
+            String key, String defaultValue )
+    {
+        String value1 = storedConfig.get( key );
+        String value2 = config.get( key );
+        if ( value1 == null || value2 == null )
+        {
+            if ( value1 == value2 )
+            {
+                return true;
+            }
+            if ( defaultValue != null )
+            {
+                value1 = value1 != null ? value1 : defaultValue;
+                value2 = value2 != null ? value2 : defaultValue;
+                return value1.equals( value2 );
+            }
+        }
+        else
+        {
+            return value1.equals( value2 );
+        }
+        return false;
+    }
+
+    @Override
     public String getDataSourceName()
     {
         return DATA_SOURCE_NAME;
