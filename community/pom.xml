@@ -85,7 +85,6 @@
                 <descriptor>src/main/assemblies/unix-dist.xml</descriptor>
               </descriptors>
               <finalName>${server.shortname}-${neo4j.version}</finalName>
-              <tarLongFileMode>gnu</tarLongFileMode>
             </configuration>
           </execution>
           <execution>
