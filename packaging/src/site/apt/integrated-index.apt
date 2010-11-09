@@ -17,3 +17,5 @@ Integrated index usage
   The nicest improvement is that the index does not require a seperate shutdown. Just shutdown the <<<GraphDatabaseService>>>:
 
 %{source-code|snippet=shutdownDatabase|file=src/main/java/org/neo4j/examples/UsingIntegratedIndex.java}
+
+    Full source code: {{{./xref/org/neo4j/examples/UsingIntegratedIndex.html}UsingIntegratedIndex}}
