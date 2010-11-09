@@ -92,6 +92,7 @@ class IndexManagerImpl implements IndexManager
         }
         
         // 3. Check db config properties for provider
+        IndexProvider indexProvider = null;
         if ( configToUse == null )
         {
             String provider = null;
@@ -109,17 +110,21 @@ class IndexManagerImpl implements IndexManager
             {
                 provider = "lucene";
             }
-            IndexProvider indexProvider = getIndexProvider( provider );
+            indexProvider = getIndexProvider( provider );
             configToUse = indexProvider.fillInDefaults( MapUtil.stringMap( KEY_INDEX_PROVIDER, provider ) );
+        }
+        else
+        {
+            indexProvider = getIndexProvider( configToUse.get( KEY_INDEX_PROVIDER ) );
         }
         
         // Do they match (stored vs. supplied)?
         if ( storedConfig != null )
         {
-            if ( suppliedConfig != null && !storedConfig.equals( suppliedConfig ) )
+            if ( suppliedConfig != null && !indexProvider.configMatches( storedConfig, suppliedConfig ) )
             {
                 throw new IllegalArgumentException( "Supplied index configuration:\n" +
-                        suppliedConfig + "\ndiffer from stored config:\n" + storedConfig +
+                        suppliedConfig + "\ndoesn't match stored config in a valid way:\n" + storedConfig +
                         "\nfor '" + indexName + "'" );
             }
             configToUse = storedConfig;

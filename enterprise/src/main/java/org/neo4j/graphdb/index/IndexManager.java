@@ -48,6 +48,12 @@ public interface IndexManager
     /**
      * Returns an {@link Index} for {@link Node}s with the name {@code indexName}.
      * If such an index doesn't exist it will be created with default configuration.
+     * Indexes created with {@link #forNodes(String, Map)} can be returned by this
+     * method also, so that you don't have to supply and match its configuration
+     * for consecutive accesses.
+     * 
+     * This is the prefered way of accessing indexes, whether they were created with
+     * {@link #forNodes(String)} or {@link #forNodes(String, Map)}.
      * 
      * @param indexName the name of the node index.
      * @return the {@link Index} corresponding to the {@code indexName}.
@@ -59,17 +65,16 @@ public interface IndexManager
      * If the index exists it will be returned if the provider and customConfiguration
      * matches, else an {@link IllegalArgumentException} will be thrown.
      * If the index doesn't exist it will be created with the given
-     * provider (specifies the type of index, f.ex. Lucene. See {@link IndexProvider})
-     * and customConfiguration.
+     * provider (given in the configuration map).
      * 
      * @param indexName the name of the index to create.
-     * @param customConfiguration extra configuration for the index being created.
-     * Use the <bold>provider</bold> key provider to control which index implementation,
+     * @param customConfiguration configuration for the index being created.
+     * Use the <bold>provider</bold> key to control which index implementation,
      * i.e. the {@link IndexProvider} to use for this index if it's created. The
      * value represents the service name corresponding to the {@link IndexProvider}.
-     * Other options can f.ex. say that the index will be a fulltext index, that it should
-     * be case insensitive. The parameters given here are not generic parameters,
-     * but instead interpreted by the implementation represented by the provider.
+     * Other options can f.ex. say that the index will be a fulltext index and that it
+     * should be case insensitive. The parameters given here (except "provider") are
+     * only interpreted by the implementation represented by the provider.
      */
     Index<Node> forNodes( String indexName, Map<String, String> customConfiguration );
     
@@ -95,6 +100,12 @@ public interface IndexManager
     /**
      * Returns an {@link Index} for {@link Relationship}s with the name {@code indexName}.
      * If such an index doesn't exist it will be created with default configuration.
+     * Indexes created with {@link #forRelationships(String, Map)} can be returned by this
+     * method also, so that you don't have to supply and match its configuration
+     * for consecutive accesses.
+     * 
+     * This is the prefered way of accessing indexes, whether they were created with
+     * {@link #forRelationships(String)} or {@link #forRelationships(String, Map)}.
      * 
      * @param indexName the name of the node index.
      * @return the {@link Index} corresponding to the {@code indexName}.
@@ -106,17 +117,16 @@ public interface IndexManager
      * If the index exists it will be returned if the provider and customConfiguration
      * matches, else an {@link IllegalArgumentException} will be thrown.
      * If the index doesn't exist it will be created with the given
-     * provider (specifies the type of index, f.ex. Lucene. See {@link IndexProvider})
-     * and customConfiguration.
+     * provider (given in the configuration map).
      * 
      * @param indexName the name of the index to create.
-     * @param customConfiguration extra configuration for the index being created.
-     * Use the <bold>provider</bold> key provider to control which index implementation,
+     * @param customConfiguration configuration for the index being created.
+     * Use the <bold>provider</bold> key to control which index implementation,
      * i.e. the {@link IndexProvider} to use for this index if it's created. The
      * value represents the service name corresponding to the {@link IndexProvider}.
-     * Other options can f.ex. say that the index will be a fulltext index, that it should
-     * be case insensitive. The parameters given here are not generic parameters,
-     * but instead interpreted by the implementation represented by the provider.
+     * Other options can f.ex. say that the index will be a fulltext index and that it
+     * should be case insensitive. The parameters given here (except "provider") are
+     * only interpreted by the implementation represented by the provider.
      */
     RelationshipIndex forRelationships( String indexName, Map<String, String> customConfiguration );
     

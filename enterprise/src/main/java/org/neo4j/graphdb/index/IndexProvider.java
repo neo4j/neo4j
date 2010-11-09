@@ -55,7 +55,10 @@ public abstract class IndexProvider extends KernelExtension
      * 
      * @param indexName the name of the index.
      * @param config a {@link Map} of configuration parameters to use with the
-     * index. Parameters can be anything and are implementation-specific.
+     * index. Parameters can be anything and are implementation-specific. This
+     * map represents how the configuration looks right now, they might be modified
+     * later using {@link IndexManager#setConfiguration(Index, String, String)}
+     * or {@link IndexManager#removeConfiguration(Index, String)}.
      * @return the {@link Index} corresponding to the {@code indexName} and
      * {@code config}.
      */
@@ -69,7 +72,10 @@ public abstract class IndexProvider extends KernelExtension
      * 
      * @param indexName the name of the index.
      * @param config a {@link Map} of configuration parameters to use with the
-     * index. Parameters can be anything and are implementation-specific.
+     * index. Parameters can be anything and are implementation-specific. This
+     * map represents how the configuration looks right now, they might be modified
+     * later using {@link IndexManager#setConfiguration(Index, String, String)}
+     * or {@link IndexManager#removeConfiguration(Index, String)}.
      * @return the {@link Index} corresponding to the {@code indexName} and
      * {@code config}. The return index is a {@link RelationshipIndex} with
      * additional query methods for efficiently filtering hits with respect to
@@ -86,4 +92,6 @@ public abstract class IndexProvider extends KernelExtension
      * this index provider.
      */
     public abstract Map<String, String> fillInDefaults( Map<String, String> config );
+    
+    public abstract boolean configMatches( Map<String, String> storedConfig, Map<String, String> config );
 }
