@@ -8,4 +8,5 @@ Path finding example
 	
 %{source-code|snippet=shortestPathUsage|file=src/main/java/org/neo4j/examples//CalculateShortestPath.java}
 
-    Full source code: {{{https://trac.neo4j.org/browser/examples/neo4j-examples/trunk/src/main/java/org/neo4j/examples/CalculateShortestPath.java}browser}} {{{https://svn.neo4j.org/examples/neo4j-examples/trunk/src/main/java/org/neo4j/examples/CalculateShortestPath.java}svn}}
+    Full source code: {{{./xref/org/neo4j/examples/CalculateShortestPath.html}CalculateShortestPath}}
+    

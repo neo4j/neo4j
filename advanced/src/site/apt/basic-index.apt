@@ -32,4 +32,5 @@ User database
 
 %{source-code|snippet=findUser|file=src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}
 
-    Full source code: {{{https://trac.neo4j.org/browser/examples/neo4j-examples/trunk/src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}browser}} {{{https://svn.neo4j.org/examples/neo4j-examples/trunk/src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java}svn}}
+    Full source code: {{{./xref/org/neo4j/examples/EmbeddedNeo4jWithIndexing.html}EmbeddedNeo4jWithIndexing}}
+    

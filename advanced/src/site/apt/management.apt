@@ -13,5 +13,6 @@ Reading a management attribute
 	
 %{source-code|snippet=getStartTime|file=src/test/java/org/neo4j/examples/JmxTest.java}
 
-    To find more management beans to use, look into the
-    {{{./apidocs/org/neo4j/kernel/management/package-summary.html}management package}}.
+    To find more management beans to use, look into the management package
+    {{{./apidocs/org/neo4j/management/package-summary.html}apidocs}} and
+    {{{http://components.neo4j.org/neo4j-management/}site}}.

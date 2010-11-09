@@ -18,5 +18,4 @@ Domain entities
     
 %{source-code|snippet=override|file=src/main/java/org/neo4j/examples/socnet/Person.java}
 
-    Full source code: {{{https://trac.neo4j.org/browser/examples/apoc-examples/trunk/src/main/java/org/neo4j/examples/socnet/Person.java}browser}} {{{https://svn.neo4j.org/examples/apoc-examples/trunk/src/main/java/org/neo4j/examples/socnet/Person.java}svn}}
-
+    Full source code: {{{./xref/org/neo4j/examples/socnet/Person.html}Person}}
