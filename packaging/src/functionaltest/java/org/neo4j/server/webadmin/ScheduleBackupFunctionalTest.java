@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.webadmin.functional;
+package org.neo4j.server.webadmin;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +42,8 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
 @Ignore
-public class GetBackupFunctionalTest {
+public class ScheduleBackupFunctionalTest {
+
     @BeforeClass
     public static void startWebServer() throws IOException, SchedulerException, BackupFailedException {
         ServerTestUtils.nukeServer();
@@ -59,12 +60,27 @@ public class GetBackupFunctionalTest {
     @Test
     public void shouldGet200ForProperRequest() {
         Client client = Client.create();
+        WebResource createResource = client.resource(NeoServer.server().webadminUri() + BackupService.ROOT_PATH + BackupService.JOBS_PATH);
 
-        WebResource getResource = client.resource(NeoServer.server().webadminUri() + BackupService.ROOT_PATH + BackupService.JOBS_PATH);
+        String properJSON = "{" + "\"name\":\"Daily\"," + "\"cronExpression\":\"0 0 0 ? 0 0\"," + "\"autoFoundation\":true," + "\"backupPath\":\"backup1\"}";
 
-        ClientResponse getResponse = getResource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+        ClientResponse scheduleResponse = createResource.type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(properJSON).put(
+                ClientResponse.class);
 
-        assertEquals(200, getResponse.getStatus());
+        assertEquals(200, scheduleResponse.getStatus());
+    }
 
+    @Test
+    public void shouldGet400WhenSendingMalformedJSON() {
+        Client client = Client.create();
+        WebResource createResource = client.resource(NeoServer.server().webadminUri() + BackupService.ROOT_PATH + BackupService.JOBS_PATH);
+
+        String badJSON = "this:::isNot::JSON}";
+
+        ClientResponse scheduleResponse = createResource.type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(badJSON).put(
+                ClientResponse.class);
+
+        System.out.println(scheduleResponse);
+        assertEquals(400, scheduleResponse.getStatus());
     }
 }
