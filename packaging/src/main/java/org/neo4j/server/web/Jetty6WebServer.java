@@ -20,6 +20,7 @@
 
 package org.neo4j.server.web;
 
+import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
@@ -31,6 +32,7 @@ import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.rest.web.AllowAjaxFilter;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -95,6 +97,9 @@ public class Jetty6WebServer implements WebServer
         servletHolder.setInitParameter(
                 "com.sun.jersey.config.property.packages",
                 toCommaSeparatedList( packageNames ) );
+        servletHolder.setInitParameter(
+                ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS,
+                AllowAjaxFilter.class.getName() );
         log.info( "Adding JAXRS package [%s] at [%s]", packageNames,
                 serverMountPoint );
         jaxRSPackages.put( serverMountPoint, servletHolder );
