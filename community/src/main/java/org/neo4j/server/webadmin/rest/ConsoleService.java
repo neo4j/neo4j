@@ -20,12 +20,9 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
-import static org.neo4j.server.webadmin.rest.WebUtils.addHeaders;
-import static org.neo4j.server.webadmin.rest.WebUtils.buildExceptionResponse;
-
-import java.util.List;
-import java.util.Map;
+import org.apache.log4j.Logger;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.server.rest.domain.JsonHelper;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -38,90 +35,64 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
+import java.util.List;
+import java.util.Map;
 
-import org.apache.log4j.Logger;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonRenderers;
-import org.neo4j.server.webadmin.console.ConsoleSessions;
-import org.neo4j.server.webadmin.domain.ConsoleServiceRepresentation;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
-/**
- * A web service that keeps track of client sessions and then passes control
- * down to console worker classes.
- * 
- * Essentially this is the EvaluationServlet from Webling adapted to the Grizzly
- * + Jersey environment of Neo4j WebAdmin.
- * 
- * @author Pavel A. Yaskevich, Jacob Hansson <jacob@voltvoodoo.com> (adapted to
- *         jersey service)
- * 
- */
-@Path( ConsoleService.ROOT_PATH )
-public class ConsoleService
-{
+@Path(ConsoleService.SERVICE_PATH)
+public class ConsoleService implements AdvertisableService {
 
-    public static final String ROOT_PATH = "/server/console";
+    private static final String SERVICE_NAME = "console";
+     static final String SERVICE_PATH = "server/console";
+    
+    
+    Logger log = Logger.getLogger(ConsoleService.class);
 
-    public static final String EXEC_PATH = "";
-    Logger log = Logger.getLogger( ConsoleService.class );
+    public String getName() {
+        return SERVICE_NAME;
+    }
 
-    //
-    // PUBLIC
-    //
+    public String getServerPath() {
+        return SERVICE_PATH;
+    }
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    public Response getServiceDefinition( @Context UriInfo uriInfo )
-    {
-
-        String entity = JsonRenderers.DEFAULT.render( new ConsoleServiceRepresentation(
-                uriInfo.getBaseUri() ) );
-
-        return addHeaders(
-                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getServiceDefinition(@Context UriInfo uriInfo) {
+        return Response.ok("").header("Content-Type", MediaType.APPLICATION_JSON).build();
     }
 
     @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    @Consumes( MediaType.APPLICATION_FORM_URLENCODED )
-    public Response formExec( @Context HttpServletRequest req,
-            @FormParam( "value" ) String data )
-    {
-        return exec( req, data );
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public Response formExec(@Context HttpServletRequest req, @FormParam("value") String data, @Context GraphDatabaseService db) {
+        return exec(req, data, db);
     }
 
     @POST
-    @Produces( MediaType.APPLICATION_JSON )
-    @Consumes( MediaType.APPLICATION_JSON )
-    public Response exec( @Context HttpServletRequest req, String data )
-    {
-        try
-        {
-            Map<String, Object> args = jsonToMap( data );
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response exec(@Context HttpServletRequest req, String data, @Context
+                         GraphDatabaseService db) {
+        try {
+            Map<String, Object> args = jsonToMap(data);
 
-            if ( !args.containsKey( "command" ) )
-            {
-                throw new IllegalArgumentException(
-                        "Missing 'command' parameter in arguments." );
+            if (!args.containsKey("command")) {
+                throw new IllegalArgumentException("Missing 'command' parameter in arguments.");
             }
 
-            HttpSession session = req.getSession( true );
-            log.info( session.toString() );
-            String sessionId = session.getId();
-            
-            List<String> resultLines = ConsoleSessions.getSession( sessionId ).evaluate(
-                    (String) args.get( "command" ) );
+            HttpSession session = req.getSession(true);
+            log.info(session.toString());
+            //String sessionId = session.getId();
 
-            String entity = JsonHelper.createJsonFrom( resultLines );
+            List<String> resultLines = null;//ConsoleSessions.getSession(sessionId).evaluate((String) args.get("command"));
 
-            return addHeaders( Response.ok( entity ) ).build();
-        }
-        catch ( IllegalArgumentException e )
-        {
-            return buildExceptionResponse( Status.BAD_REQUEST,
-                    "Invalid request arguments.", e, JsonRenderers.DEFAULT );
+            return Response.ok(JsonHelper.createJsonFrom(resultLines)).header("Content-Type", MediaType.APPLICATION_JSON).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Status.BAD_REQUEST).build();
         }
     }
 

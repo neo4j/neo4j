@@ -20,8 +20,6 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -29,21 +27,12 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.webadmin.domain.BackupFailedException;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
-import org.quartz.SchedulerException;
-
-/**
- * Test that the webadmin HTTP console works and produces output as expected.
- * 
- * @author Jacob Hansson <jacob@voltvoodoo.com>
- *
- */
 
 @Ignore
 public abstract class WebDriverTest {
@@ -51,8 +40,7 @@ public abstract class WebDriverTest {
     protected WebDriver webDriver = new FirefoxDriver();
 	
 	@BeforeClass
-    public static void startWebServer() throws IOException, SchedulerException,
-            BackupFailedException
+    public static void startWebServer() throws Exception
     {
 
 	    ServerTestUtils.nukeServer();
