@@ -116,7 +116,7 @@ public class AppCommandParser
 					i = fetchArguments( parsed, i, name );
 				}
 			}
-			else
+			else if ( string.length() > 0 )
 			{
 				this.arguments.add( string );
 			}

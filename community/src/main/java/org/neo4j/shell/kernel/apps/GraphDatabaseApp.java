@@ -29,11 +29,15 @@ import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.Traversal;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
@@ -121,17 +125,17 @@ public abstract class GraphDatabaseApp extends AbstractApp
         return ( GraphDatabaseShellServer ) super.getServer();
     }
 
-    protected RelationshipType getRelationshipType( String name )
+    protected static RelationshipType getRelationshipType( String name )
     {
         return DynamicRelationshipType.withName( name );
     }
 
-    protected Direction getDirection( String direction ) throws ShellException
+    protected static Direction getDirection( String direction ) throws ShellException
     {
         return getDirection( direction, Direction.OUTGOING );
     }
 
-    protected Direction getDirection( String direction,
+    protected static Direction getDirection( String direction,
         Direction defaultDirection ) throws ShellException
     {
         return ( Direction ) parseEnum( Direction.class, direction, defaultDirection );
@@ -333,11 +337,24 @@ public abstract class GraphDatabaseApp extends AbstractApp
             return getDisplayNameForCurrent( server, session );
         }
 
-        StringBuilder result = new StringBuilder( "<" );
+        StringBuilder result = new StringBuilder( "[" );
         result.append( relationship.getType().name() );
         result.append( verbose ? "," + relationship.getId() : "" );
-        result.append( ">" );
+        result.append( "]" );
         return result.toString();
+    }
+    
+    public static String withArrows( Relationship relationship, String displayName, Node leftNode )
+    {
+        if ( relationship.getStartNode().equals( leftNode ) )
+        {
+            return " --" + displayName + "-> ";
+        }
+        else if ( relationship.getEndNode().equals( leftNode ) )
+        {
+            return " <-" + displayName + "-- ";
+        }
+        throw new IllegalArgumentException( leftNode + " is neither start nor end node to " + relationship );
     }
 
     protected static String fixCaseSensitivity( String string,
@@ -449,5 +466,46 @@ public abstract class GraphDatabaseApp extends AbstractApp
         {
             out.println();
         }
+    }
+
+    protected static RelationshipExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
+            Map<String, Object> filterMap, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+    {
+        defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
+        Expander expander = Traversal.emptyExpander();
+        boolean addedSomething = false;
+        for ( RelationshipType type : db.getRelationshipTypes() )
+        {
+            Direction direction = null;
+            if ( filterMap == null || filterMap.isEmpty() )
+            {
+                direction = defaultDirection;
+            }
+            else
+            {
+                for ( Map.Entry<String, Object> entry : filterMap.entrySet() )
+                {
+                    if ( matches( newPattern( entry.getKey(), caseInsensitiveFilters ),
+                        type.name(), caseInsensitiveFilters, looseFilters ) )
+                    {
+                        direction = getDirection( entry.getValue() != null ? entry.getValue().toString() : null, defaultDirection );
+                        break;
+                    }
+                }
+            }
+    
+            // It matches
+            if ( direction != null )
+            {
+                expander = expander.add( type, direction );
+                addedSomething = true;
+            }
+        }
+        
+        if ( !filterMap.isEmpty() && !addedSomething )
+        {
+            return null;
+        }
+        return expander;
     }
 }

@@ -35,6 +35,7 @@ import org.neo4j.shell.AppShellServer;
 import org.neo4j.shell.OptionDefinition;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
+import org.neo4j.shell.ShellException;
 import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.shell.util.json.JSONObject;
@@ -130,7 +131,7 @@ public abstract class AbstractApp implements App
 	}
 	
 	protected static Map<String, Object> parseFilter( String filterString,
-	    Output out ) throws RemoteException
+	    Output out ) throws RemoteException, ShellException
 	{
 	    if ( filterString == null )
 	    {
@@ -168,6 +169,7 @@ public abstract class AbstractApp implements App
             {
                 out.println( "parser: \"" + filterString + "\" hasn't got " +
                 	"correct JSON formatting: " + e.getMessage() );
+                throw ShellException.wrapCause( e );
             }
 	    }
 	    else

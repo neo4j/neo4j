@@ -30,12 +30,10 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
@@ -59,25 +57,21 @@ public class Ls extends ReadOnlyGraphDatabaseApp
         super();
         this.addOptionDefinition( "b", new OptionDefinition( OptionValueType.NONE,
             "Brief summary instead of full content" ) );
-        this.addOptionDefinition( "d", new OptionDefinition( OptionValueType.MUST,
-            "Direction filter for relationships: " + this.directionAlternatives() ) );
         this.addOptionDefinition( "v", new OptionDefinition( OptionValueType.NONE,
             "Verbose mode" ) );
+        this.addOptionDefinition( "q", new OptionDefinition( OptionValueType.NONE, "Quiet mode" ) );
         this.addOptionDefinition( "p", new OptionDefinition( OptionValueType.NONE,
             "Lists properties" ) );
         this.addOptionDefinition( "r", new OptionDefinition( OptionValueType.NONE,
             "Lists relationships" ) );
         this.addOptionDefinition( "f", new OptionDefinition( OptionValueType.MUST,
-            "Filters property keys/values. Supplied either as a single value " +
+            "Filters property keys/values and relationship types. Supplied either as a single value " +
             "or as a JSON string where both keys and values can contain regex. " +
             "Starting/ending {} brackets are optional. Examples:\n" +
-            "\"username\"\n" +
-            "   property/relationship 'username' gets listed\n" +
-            "\".*name: ma.*, age: ''\"\n" +
-            "   properties with keys matching '.*name' and values matching ma.*'\n" +
-            "   gets listed, as well as the 'age' property. Also " +
-            "relationships\n" + "  matching" +
-            "  '.*name' or 'age' gets listed" ) );
+            "  \"username\"\n\tproperty/relationship 'username' gets listed\n" +
+            "  \".*name:ma.*, age:''\"\n\tproperties with keys matching '.*name' and values matching 'ma.*' " +
+            "gets listed,\n\tas well as the 'age' property. Also relationships matching '.*name' or 'age'\n\tgets listed\n" +
+            "  \"KNOWS:out,LOVES:in\"\n\toutgoing KNOWS and incoming LOVES relationships gets listed" ) );
         this.addOptionDefinition( "i", new OptionDefinition( OptionValueType.NONE,
             "Filters are case-insensitive (case-sensitive by default)" ) );
         this.addOptionDefinition( "l", new OptionDefinition( OptionValueType.NONE,
@@ -99,6 +93,12 @@ public class Ls extends ReadOnlyGraphDatabaseApp
     {
         boolean brief = parser.options().containsKey( "b" );
         boolean verbose = parser.options().containsKey( "v" );
+        boolean quiet = parser.options().containsKey( "q" );
+        if ( verbose && quiet )
+        {
+            verbose = false;
+            quiet = false;
+        }
         boolean displayProperties = parser.options().containsKey( "p" );
         boolean displayRelationships = parser.options().containsKey( "r" );
         boolean caseInsensitiveFilters = parser.options().containsKey( "i" );
@@ -123,15 +123,15 @@ public class Ls extends ReadOnlyGraphDatabaseApp
 
         if ( displayProperties )
         {
-            displayProperties( thing, out, verbose, filterMap, caseInsensitiveFilters,
+            displayProperties( thing, out, verbose, quiet, filterMap, caseInsensitiveFilters,
                     looseFilters, brief );
         }
         if ( displayRelationships )
         {
             if ( thing.isNode() )
             {
-                displayRelationships( parser, thing, session, out, verbose, filterMap,
-                        caseInsensitiveFilters, looseFilters, brief );
+                displayRelationships( thing, session, out, verbose, quiet,
+                        Direction.BOTH, filterMap, caseInsensitiveFilters, looseFilters, brief );
             }
             else
             {
@@ -187,7 +187,7 @@ public class Ls extends ReadOnlyGraphDatabaseApp
     }
 
     private void displayProperties( NodeOrRelationship thing, Output out,
-        boolean verbose, Map<String, Object> filterMap,
+        boolean verbose, boolean quiet, Map<String, Object> filterMap,
         boolean caseInsensitiveFilters, boolean looseFilters, boolean brief )
         throws RemoteException
     {
@@ -195,22 +195,25 @@ public class Ls extends ReadOnlyGraphDatabaseApp
         int count = 0;
         for ( String key : sortKeys( thing.getPropertyKeys() ) )
         {
-            boolean matches = filterMap.isEmpty();
+            boolean matches = filterMap == null || filterMap.isEmpty();
             Object value = thing.getProperty( key );
-            for ( Map.Entry<String, Object> filter : filterMap.entrySet() )
+            if ( !matches )
             {
-                if ( matches( newPattern( filter.getKey(),
-                    caseInsensitiveFilters ), key, caseInsensitiveFilters,
-                    looseFilters ) )
+                for ( Map.Entry<String, Object> filter : filterMap.entrySet() )
                 {
-                    String filterValue = filter.getValue() != null ?
-                        filter.getValue().toString() : null;
-                    if ( matches( newPattern( filterValue,
-                        caseInsensitiveFilters ), value.toString(),
-                        caseInsensitiveFilters, looseFilters ) )
+                    if ( matches( newPattern( filter.getKey(),
+                        caseInsensitiveFilters ), key, caseInsensitiveFilters,
+                        looseFilters ) )
                     {
-                        matches = true;
-                        break;
+                        String filterValue = filter.getValue() != null ?
+                            filter.getValue().toString() : null;
+                        if ( matches( newPattern( filterValue,
+                            caseInsensitiveFilters ), value.toString(),
+                            caseInsensitiveFilters, looseFilters ) )
+                        {
+                            matches = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -224,11 +227,14 @@ public class Ls extends ReadOnlyGraphDatabaseApp
             {
                 StringBuilder builder = new StringBuilder();
                 builder.append( "*" + key );
-                builder.append( multiply( " ", longestKey - key.length() + 1 ) );
-                builder.append( "=" + format( value, true ) );
-                if ( verbose )
+                if ( !quiet )
                 {
-                    builder.append( " (" + getNiceType( value ) + ")" );
+                    builder.append( multiply( " ", longestKey - key.length() + 1 ) );
+                    builder.append( "=" + format( value, true ) );
+                    if ( verbose )
+                    {
+                        builder.append( " (" + getNiceType( value ) + ")" );
+                    }
                 }
                 out.println( builder.toString() );
             }
@@ -239,96 +245,39 @@ public class Ls extends ReadOnlyGraphDatabaseApp
         }
     }
 
-    private void displayRelationships( AppCommandParser parser,
-        NodeOrRelationship thing, Session session, Output out, boolean verbose,
-        Map<String, Object> filterMap, boolean caseInsensitiveFilters,
-        boolean looseFilters, boolean brief ) throws ShellException, RemoteException
-    {
-        Direction direction = getDirection( parser.options().get( "d" ), Direction.BOTH );
-        boolean displayOutgoing = direction == Direction.BOTH || direction == Direction.OUTGOING;
-        boolean displayIncoming = direction == Direction.BOTH || direction == Direction.INCOMING;
-        if ( displayOutgoing )
-        {
-            displayRelationships( thing, session, out, verbose,
-                Direction.OUTGOING, "--", "->", filterMap,
-                caseInsensitiveFilters, looseFilters, brief );
-        }
-        if ( displayIncoming )
-        {
-            displayRelationships( thing, session, out, verbose,
-                Direction.INCOMING, "<-", "--", filterMap,
-                caseInsensitiveFilters, looseFilters, brief );
-        }
-    }
-
     private void displayRelationships( NodeOrRelationship thing,
-        Session session, Output out, boolean verbose, Direction direction,
-        String prefixString, String postfixString,
+        Session session, Output out, boolean verbose, boolean quiet, Direction direction,
         Map<String, Object> filterMap, boolean caseInsensitiveFilters,
         boolean looseFilters, boolean brief ) throws ShellException, RemoteException
     {
-        RelationshipExpander expander = toExpander( direction, filterMap,
+        RelationshipExpander expander = toExpander( getServer().getDb(), direction, filterMap,
                 caseInsensitiveFilters, looseFilters );
         Map<String, Collection<Relationship>> relationships =
-                readAllRelationships( expander.expand( thing.asNode() ) );
+                readAllRelationships( expander != null ? expander.expand( thing.asNode() ) : Collections.<Relationship>emptyList() );
+        Node node = thing.asNode();
         for ( Map.Entry<String, Collection<Relationship>> entry : relationships.entrySet() )
         {
             if ( brief )
             {
-                out.println( getDisplayName( getServer(), session, thing, true ) +
-                        " " + prefixString + getDisplayName( getServer(), session,
-                                entry.getValue().iterator().next(), false, true ) +
-                                postfixString + " x" + entry.getValue().size() );
+                Relationship firstRel = entry.getValue().iterator().next();
+                String relDisplay = withArrows( firstRel, getDisplayName( getServer(), session,
+                        firstRel, false, true ), thing.asNode() );
+                out.println( getDisplayName( getServer(), session, thing, true ) + relDisplay +
+                        " x" + entry.getValue().size() );
             }
             else
             {
                 for ( Relationship rel : entry.getValue() )
                 {
                     StringBuffer buf = new StringBuffer( getDisplayName(
-                        getServer(), session, thing, true ) );
-                    buf.append( " " + prefixString ).append( getDisplayName(
-                        getServer(), session, rel, verbose, true ) );
-                    buf.append( postfixString + " " );
-                    buf.append( getDisplayName( getServer(), session,
-                        direction == Direction.OUTGOING ? rel.getEndNode() :
-                            rel.getStartNode(), true ) );
+                            getServer(), session, thing, true ) );
+                    String relDisplay = quiet ? "" : getDisplayName( getServer(), session, rel, verbose, true );
+                    buf.append( withArrows( rel, relDisplay, thing.asNode() ) );
+                    buf.append( getDisplayName( getServer(), session, rel.getOtherNode( node ), true ) );
                     out.println( buf );
                 }
             }
         }
-    }
-
-    private RelationshipExpander toExpander( Direction direction,
-            Map<String, Object> filterMap, boolean caseInsensitiveFilters,
-            boolean looseFilters )
-    {
-        Expander expander = Traversal.emptyExpander();
-        for ( RelationshipType type : getServer().getDb().getRelationshipTypes() )
-        {
-            boolean matches = false;
-            if ( filterMap == null || filterMap.isEmpty() )
-            {
-                matches = true;
-            }
-            else
-            {
-                for ( String filter : filterMap.keySet() )
-                {
-                    if ( matches( newPattern( filter, caseInsensitiveFilters ),
-                        type.name(), caseInsensitiveFilters, looseFilters ) )
-                    {
-                        matches = true;
-                        break;
-                    }
-                }
-            }
-
-            if ( matches )
-            {
-                expander = expander.add( type, direction );
-            }
-        }
-        return expander;
     }
 
     private static String getNiceType( Object value )

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
 public abstract class NodeOrRelationship
@@ -41,6 +42,11 @@ public abstract class NodeOrRelationship
         return new WrapRelationship( rel );
     }
 
+    public static NodeOrRelationship wrap( PropertyContainer entity )
+    {
+        return entity instanceof Node ? wrap( (Node) entity ) : wrap( (Relationship) entity );
+    }
+    
     private Object nodeOrRelationship;
 
     private NodeOrRelationship( Object nodeOrRelationship )

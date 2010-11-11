@@ -114,12 +114,18 @@ public abstract class AbstractClient implements ShellClient
         return TextUtil.templateString( line, this.session().asMap() );
     }
 
-    protected String getShortExceptionMessage( Exception e )
+    protected static String getShortExceptionMessage( Exception e )
     {
         String result = e instanceof ShellException ?
-            "" : e.getClass().getName() + ": ";
+            firstLine( e.getMessage() ) : e.getClass().getName() + ": " + e.getMessage();
         result += e.getMessage();
         return result;
+    }
+
+    private static String firstLine( String message )
+    {
+        int index = message.indexOf( '\n' );
+        return index == -1 ? message : message.substring( index );
     }
 
     protected String tryGetProperPromptString() throws ShellException
