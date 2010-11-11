@@ -45,12 +45,13 @@ public class CreateRelationshipFunctionalTest {
 
     private static String RELATIONSHIP_URI_PATTERN;
     private static GraphDbHelper helper;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startServer() {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        RELATIONSHIP_URI_PATTERN = NeoServer.server().restApiUri() + "relationship/[0-9]+";
-        helper = new GraphDbHelper(NeoServer.server().database());
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        RELATIONSHIP_URI_PATTERN = server.restApiUri() + "relationship/[0-9]+";
+        helper = new GraphDbHelper(server.database());
     }
 
     @AfterClass
@@ -62,9 +63,9 @@ public class CreateRelationshipFunctionalTest {
     public void shouldRespondWith201WhenSuccessfullyCreatedRelationshipWithProperties() throws Exception {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + NeoServer.server().restApiUri() + "node/" + endNode
+        String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode
                 + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = Client.create().resource(NeoServer.server().restApiUri() + "node/" + startNode + "/relationships").type(
+        ClientResponse response = Client.create().resource(server.restApiUri() + "node/" + startNode + "/relationships").type(
                 MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(jsonString).post(ClientResponse.class);
         assertEquals(201, response.getStatus());
         assertTrue(response.getLocation().toString().matches(RELATIONSHIP_URI_PATTERN));
@@ -80,8 +81,8 @@ public class CreateRelationshipFunctionalTest {
     public void shouldRespondWith201WhenSuccessfullyCreatedRelationship() throws Exception {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + NeoServer.server().restApiUri() + "node/" + endNode + "\", \"type\" : \"LOVES\"}";
-        ClientResponse response = Client.create().resource(NeoServer.server().restApiUri() + "node/" + startNode + "/relationships").type(
+        String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode + "\", \"type\" : \"LOVES\"}";
+        ClientResponse response = Client.create().resource(server.restApiUri() + "node/" + startNode + "/relationships").type(
                 MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(jsonString).post(ClientResponse.class);
         assertEquals(201, response.getStatus());
         assertTrue(response.getLocation().toString().matches(RELATIONSHIP_URI_PATTERN));
@@ -92,9 +93,9 @@ public class CreateRelationshipFunctionalTest {
     @Test
     public void shouldRespondWith404WhenStartNodeDoesNotExist() throws DatabaseBlockedException {
         long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + NeoServer.server().restApiUri() + "node/" + endNode
+        String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode
                 + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = Client.create().resource(NeoServer.server().restApiUri() + "node/999999/relationships").type(
+        ClientResponse response = Client.create().resource(server.restApiUri() + "node/999999/relationships").type(
                 MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(jsonString).post(ClientResponse.class);
         assertEquals(404, response.getStatus());
     }
@@ -102,9 +103,9 @@ public class CreateRelationshipFunctionalTest {
     @Test
     public void shouldRespondWith400WhenEndNodeDoesNotExist() throws DatabaseBlockedException {
         long startNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + NeoServer.server().restApiUri() + "node/"
+        String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/"
                 + "999999\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = Client.create().resource(NeoServer.server().restApiUri() + "node/" + startNode + "/relationships").type(
+        ClientResponse response = Client.create().resource(server.restApiUri() + "node/" + startNode + "/relationships").type(
                 MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(jsonString).post(ClientResponse.class);
         assertEquals(400, response.getStatus());
     }
@@ -113,9 +114,9 @@ public class CreateRelationshipFunctionalTest {
     public void shouldRespondWith400WhenBadJsonProvided() throws DatabaseBlockedException {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + NeoServer.server().restApiUri() + "node/" + endNode
+        String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode
                 + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : **BAD JSON HERE*** \"bar\"}}";
-        ClientResponse response = Client.create().resource(NeoServer.server().restApiUri() + "node/" + startNode + "/relationships").type(
+        ClientResponse response = Client.create().resource(server.restApiUri() + "node/" + startNode + "/relationships").type(
                 MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(jsonString).post(ClientResponse.class);
 
         assertEquals(400, response.getStatus());

@@ -35,12 +35,13 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 public class NeoServerTest {
     
     private InMemoryAppender appender;
+    public NeoServer server;
 
     @Before
     public void setup() {
         ServerTestUtils.nukeServer();
         appender = new InMemoryAppender(NeoServer.log);
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
     }
     
     @After
@@ -50,12 +51,12 @@ public class NeoServerTest {
 
     @Test
     public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception {
-        assertNotNull(NeoServer.server().database());
+        assertNotNull(server.database());
     }
 
     @Test
     public void shouldLogStartup() throws Exception {
-        assertThat(appender.toString(), containsString("Started Neo Server on port [" + NeoServer.server().restApiUri().getPort() + "]"));        
+        assertThat(appender.toString(), containsString("Started Neo Server on port [" + server.restApiUri().getPort() + "]"));
     }
 
     @Test(expected = NullPointerException.class)
@@ -63,10 +64,10 @@ public class NeoServerTest {
 
         
         // Do some work
-        NeoServer.server().database().db.beginTx().success();
-        NeoServer.server().stop();
+        server.database().db.beginTx().success();
+        server.stop();
 
-        NeoServer.server().database().db.beginTx();
+        server.database().db.beginTx();
     }
 
     
