@@ -25,51 +25,39 @@ import java.io.StringWriter;
 
 import javax.ws.rs.core.MediaType;
 
-public enum JsonRenderers implements Renderer
-{
-    DEFAULT
-    {
+public enum JsonRenderers implements Renderer {
+    DEFAULT {
         @Override
-        public String render( Representation... representations )
-        {
-            return JsonHelper.createJsonFrom( RepresentationUtil.serialize( false,
-                    representations ) );
+        public String render(Representation... representations) {
+            return JsonHelper.createJsonFrom(RepresentationUtil.serialize(false, representations));
         }
     },
-    ARRAY
-    {
+    ARRAY {
         @Override
-        public String render( Representation... representations )
-        {
-            return JsonHelper.createJsonFrom( RepresentationUtil.serialize( true,
-                    representations ) );
+        public String render(Representation... representations) {
+            return JsonHelper.createJsonFrom(RepresentationUtil.serialize(true, representations));
         }
-    }
-
-    ;
-    public abstract String render( Representation... representations );
+    };
     
-    public MediaType getMediaType()
-    {
+    public abstract String render(Representation... representations);
+
+    public MediaType getMediaType() {
         return MediaType.APPLICATION_JSON_TYPE;
     }
-    
-    public String renderException( String subjectOrNull, Exception exception )
-    {
+
+    public String renderException(String subjectOrNull, Exception exception) {
         StringBuilder entity = new StringBuilder();
-        if ( subjectOrNull != null )
-        {
-            entity.append( "Error: " + subjectOrNull + "\n" );
+        if (subjectOrNull != null) {
+            entity.append("Error: " + subjectOrNull + "\n");
         }
-        entity.append( asString( exception ) );
+        entity.append(asString(exception));
         return entity.toString();
     }
 
-    public static String asString( Exception e )
-    {
+    public static String asString(Exception e) {
         StringWriter stringWriter = new StringWriter();
-        PrintWriter writer = new PrintWriter( stringWriter );
-        e.printStackTrace( writer );
+        PrintWriter writer = new PrintWriter(stringWriter);
+        e.printStackTrace(writer);
         writer.close();
         return stringWriter.getBuffer().toString();
     }
