@@ -38,13 +38,14 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 public abstract class WebDriverTest {
 
     protected WebDriver webDriver = new FirefoxDriver();
-	
-	@BeforeClass
+    public static NeoServer server;
+
+    @BeforeClass
     public static void startWebServer() throws Exception
     {
 
 	    ServerTestUtils.nukeServer();
-	    ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
     }
 	
 	@AfterClass
@@ -55,7 +56,7 @@ public abstract class WebDriverTest {
 	
 	@Before
 	public void initWebDriver() {
-		String url = NeoServer.server().webadminUri().toString() + "index-no-feedback.html";
+		String url = server.webadminUri().toString() + "index-no-feedback.html";
 		System.out.println("testing " + url);
         webDriver.get(url);
 		
