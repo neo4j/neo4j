@@ -26,11 +26,12 @@ import org.neo4j.kernel.impl.LocalZooKeeperCluster;
 
 public class ManualZooKeepers
 {
-    public static final File PATH = new File( "zoo" );
+    public static final File PATH = new File( "var/zoo" );
     
     public static void main( String[] args ) throws Exception
     {
-        final LocalZooKeeperCluster cluster = new LocalZooKeeperCluster( 3 );
+        System.out.println( "Starting zoo keeper cluster (takes a couple of seconds)..." );
+        final LocalZooKeeperCluster cluster = new LocalZooKeeperCluster( 3, PATH );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
             @Override
