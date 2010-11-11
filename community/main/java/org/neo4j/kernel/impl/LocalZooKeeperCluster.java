@@ -39,9 +39,9 @@ public class LocalZooKeeperCluster
             new ArrayList<ZooKeeperServerWrapper>();
     private Collection<String> serversConfig;
     
-    public LocalZooKeeperCluster( int size ) throws IOException
+    public LocalZooKeeperCluster( int size, File baseDir ) throws IOException
     {
-        this( size, defaultDataDirectoryPolicy( new File( "target/zoo" ) ),
+        this( size, defaultDataDirectoryPolicy( baseDir ),
                 defaultPortPolicy( 2181 ), defaultPortPolicy( 2888 ), defaultPortPolicy( 3888 ) );
     }
 

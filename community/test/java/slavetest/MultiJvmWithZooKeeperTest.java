@@ -52,11 +52,7 @@ public class MultiJvmWithZooKeeperTest extends MultiJvmTest
     public void startZooKeeperCluster() throws Exception
     {
         FileUtils.deleteDirectory( BASE_ZOO_KEEPER_DATA_DIR );
-        zooKeeperCluster = new LocalZooKeeperCluster( ZOO_KEEPER_CLUSTER_SIZE,
-                LocalZooKeeperCluster.defaultDataDirectoryPolicy( BASE_ZOO_KEEPER_DATA_DIR ),
-                LocalZooKeeperCluster.defaultPortPolicy( 2181 ),
-                LocalZooKeeperCluster.defaultPortPolicy( 2888 ),
-                LocalZooKeeperCluster.defaultPortPolicy( 3888 ) );
+        zooKeeperCluster = new LocalZooKeeperCluster( ZOO_KEEPER_CLUSTER_SIZE, BASE_ZOO_KEEPER_DATA_DIR );
     }
     
     @Override
