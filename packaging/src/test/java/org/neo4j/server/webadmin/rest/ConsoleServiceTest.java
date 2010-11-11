@@ -18,25 +18,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.logging;
+package org.neo4j.server.webadmin.rest;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
 
-public class LoggerTest {
-
-    public static Logger log = Logger.getLogger(LoggerTest.class);
-    
+public class ConsoleServiceTest {
     @Test
-    public void logsShouldTolerateAccidentalControlCharacters() {
-        InMemoryAppender appender = new InMemoryAppender(log);
+    public void shouldReturnASetOfLinksToActiveServices() {
         
-        String illegalParameter = "%n";
-        log.error("No configuration file at [%s]", illegalParameter);
-        
-        String emptyString = "";
-        
-        assertEquals(emptyString, appender.toString());
     }
 }

@@ -20,13 +20,6 @@
 
 package org.neo4j.server;
 
-import java.io.File;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -38,9 +31,14 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.server.webadmin.rrd.RrdManager;
-import org.neo4j.server.webadmin.rrd.RrdSampler;
 import org.tanukisoftware.wrapper.WrapperListener;
+
+import java.io.File;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Application entry point for the Neo4j Server.
@@ -118,7 +116,7 @@ public class NeoServer implements WrapperListener {
 
             this.database = new Database(configurator.configuration().getString(DATABASE_LOCATION_PROPERTY_KEY));
 
-            this.webServer = new Jetty6WebServer();
+            this.webServer = new Jetty6WebServer( database.db );
 
             log.info("Starting Neo Server on port [%s]", webServerPort);
             webServer.setPort(webServerPort);
@@ -132,9 +130,9 @@ public class NeoServer implements WrapperListener {
             log.info("Mounting REST API at [%s]", REST_API_SERVICE_NAME);            
             webServer.addJAXRSPackages(listFrom(new String[] { REST_API_PACKAGE }), REST_API_SERVICE_NAME);
 
+           // Temporary coffee shop
+            webServer.addJAXRSPackages(listFrom(new String[] {"org.example.coffeeshop"}), "/");
             
-            RrdSampler.instance().start();
-
             webServer.start();
             
             log.info("Started Neo Server on port [%s]", restApiUri().getPort());
@@ -205,9 +203,6 @@ public class NeoServer implements WrapperListener {
     public int stop(int stopArg) {
         String location = "unknown";
         try {
-            RrdManager.getRrdDB().close();
-            RrdSampler.instance().stop();
-            RrdSampler.shutdown();
 
             if (database != null) {
                 location = database.getLocation();
