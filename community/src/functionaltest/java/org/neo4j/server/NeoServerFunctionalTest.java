@@ -37,10 +37,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class NeoServerFunctionalTest {
+    public NeoServer server;
 
     @Before
     public void setup() throws Exception {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
     }
 
     @After
@@ -55,7 +56,7 @@ public class NeoServerFunctionalTest {
         ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectoryOnDefaultPort();
 
         Client client = Client.create();
-        ClientResponse response = client.resource(NeoServer.server().webadminUri()).get(ClientResponse.class);
+        ClientResponse response = client.resource(server.webadminUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
     }
@@ -63,7 +64,7 @@ public class NeoServerFunctionalTest {
     @Test
     public void serverShouldProvideAWelcomePage() {
         Client client = Client.create();
-        ClientResponse response = client.resource(NeoServer.server().webadminUri()).get(ClientResponse.class);
+        ClientResponse response = client.resource(server.webadminUri()).get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getHeaders().getFirst("Content-Type"), containsString("html"));
@@ -71,7 +72,7 @@ public class NeoServerFunctionalTest {
 
     @Test
     public void shouldMakeJAXRSClassesAvailableViaHTTP() throws URISyntaxException {
-        ClientResponse response = Client.create().resource(NeoServer.server().restApiUri()).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(server.restApiUri()).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
     }
 
@@ -88,7 +89,7 @@ public class NeoServerFunctionalTest {
         NeoServer s1 = new NeoServer();
         s1.start();
 
-        assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", NeoServer.server().restApiUri()
+        assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", server.restApiUri()
                 .getPort())));
         s1.stop();
     }
@@ -96,7 +97,7 @@ public class NeoServerFunctionalTest {
     
     @Test
     public void hackTheCoffeeShop() throws Exception {
-        ClientResponse response = Client.create().resource(NeoServer.server().baseUri().toString() + "coffeeshop/menu").get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(server.baseUri().toString() + "coffeeshop/menu").get(ClientResponse.class);
         assertEquals(200, response.getStatus());
     }
 

@@ -45,16 +45,17 @@ import com.sun.jersey.api.client.WebResource;
 public class GetRelationshipPropertiesFunctionalTest {
     private static String baseUri;
     private static GraphDbHelper helper;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startServer() throws DatabaseBlockedException {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        helper = new GraphDbHelper(NeoServer.server().database());
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        helper = new GraphDbHelper(server.database());
         long relationship = helper.createRelationship("LIKES");
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("foo", "bar");
         helper.setRelationshipProperties(relationship, map);
-        baseUri = NeoServer.server().restApiUri() + "relationship/" + relationship + "/properties/";
+        baseUri = server.restApiUri() + "relationship/" + relationship + "/properties/";
     }
 
     @AfterClass
@@ -66,7 +67,7 @@ public class GetRelationshipPropertiesFunctionalTest {
     public void shouldGet204ForNoProperties() throws DatabaseBlockedException {
         long relId = helper.createRelationship("LIKES");
         Client client = Client.create();
-        WebResource resource = client.resource(NeoServer.server().restApiUri() + "relationship/" + relId + "/properties");
+        WebResource resource = client.resource(server.restApiUri() + "relationship/" + relId + "/properties");
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(204, response.getStatus());
     }
@@ -76,7 +77,7 @@ public class GetRelationshipPropertiesFunctionalTest {
         long relId = helper.createRelationship("LIKES");
         helper.setRelationshipProperties(relId, Collections.<String, Object> singletonMap("foo", "bar"));
         Client client = Client.create();
-        WebResource resource = client.resource(NeoServer.server().restApiUri() + "relationship/" + relId + "/properties");
+        WebResource resource = client.resource(server.restApiUri() + "relationship/" + relId + "/properties");
         ClientResponse response = resource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(200, response.getStatus());
         assertNotNull(response.getHeaders().get("Content-Length"));
@@ -85,7 +86,7 @@ public class GetRelationshipPropertiesFunctionalTest {
     @Test
     public void shouldGet404ForPropertiesOnNonExistentRelationship() {
         Client client = Client.create();
-        WebResource resource = client.resource(NeoServer.server().restApiUri() + "relationship/999999/properties");
+        WebResource resource = client.resource(server.restApiUri() + "relationship/999999/properties");
         ClientResponse response = resource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(404, response.getStatus());
     }
@@ -95,7 +96,7 @@ public class GetRelationshipPropertiesFunctionalTest {
         long relId = helper.createRelationship("LIKES");
         helper.setRelationshipProperties(relId, Collections.<String, Object> singletonMap("foo", "bar"));
         Client client = Client.create();
-        WebResource resource = client.resource(NeoServer.server().restApiUri() + "relationship/" + relId + "/properties");
+        WebResource resource = client.resource(server.restApiUri() + "relationship/" + relId + "/properties");
         ClientResponse response = resource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
     }
@@ -121,7 +122,7 @@ public class GetRelationshipPropertiesFunctionalTest {
 
     @Test
     public void shouldGet404ForNonExistingRelationship() {
-        String uri = NeoServer.server().restApiUri() + "relationship/999999/properties/foo";
+        String uri = server.restApiUri() + "relationship/999999/properties/foo";
         WebResource resource = Client.create().resource(uri);
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(404, response.getStatus());
