@@ -31,7 +31,7 @@ abstract class FunctionalTestUtil {
     }
 
     static String baseUri() {
-        return NeoServer.server().restApiUri().toString();
+        return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().restApiUri().toString();
     }
 
     static String nodeUri() {

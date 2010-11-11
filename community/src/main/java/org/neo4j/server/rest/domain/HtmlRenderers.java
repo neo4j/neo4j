@@ -20,8 +20,12 @@
 
 package org.neo4j.server.rest.domain;
 
-import static org.neo4j.server.rest.domain.JsonRenderers.asString;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.rest.domain.HtmlHelper.ObjectType;
 
+import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,12 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.MediaType;
-
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.domain.HtmlHelper.ObjectType;
+import static org.neo4j.server.rest.domain.JsonRenderers.asString;
 
 public enum HtmlRenderers implements Renderer
 {
@@ -88,7 +87,7 @@ public enum HtmlRenderers implements Renderer
 
             try
             {
-                for ( RelationshipType type : NeoServer.server().database().db.getRelationshipTypes() )
+                for ( RelationshipType type : NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().database().db.getRelationshipTypes() )
                 {
                     builder.append( "<option selected='selected' value='"
                                     + type.name() + "'>" + type.name()

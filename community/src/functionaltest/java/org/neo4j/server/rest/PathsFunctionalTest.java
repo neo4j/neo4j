@@ -20,14 +20,9 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Collection;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,19 +32,23 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+import java.util.Collection;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class PathsFunctionalTest {
     private static long[] nodes;
     private static GraphDbHelper helper;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startServer() throws DatabaseBlockedException {
         try {
-            ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-            helper = new GraphDbHelper(NeoServer.server().database());
+            server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+            helper = new GraphDbHelper(server.database());
             nodes = createMoreComplexGraph();
         } catch (Exception e) {
             e.printStackTrace();
@@ -95,10 +94,10 @@ public class PathsFunctionalTest {
         Client client = Client.create();
 
         // Get all shortest paths
-        String json = "{\"to\":\"" + NeoServer.server().restApiUri() + "node/" + nodes[1]
+        String json = "{\"to\":\"" + server.restApiUri() + "node/" + nodes[1]
                 + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"shortestPath\"}";
 
-        WebResource resource = client.resource(NeoServer.server().restApiUri() + "node/" + nodes[0] + "/paths");
+        WebResource resource = client.resource(server.restApiUri() + "node/" + nodes[0] + "/paths");
         ClientResponse response = resource.type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(json).post(ClientResponse.class);
         assertEquals(200, response.getStatus());
         assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
@@ -113,7 +112,7 @@ public class PathsFunctionalTest {
         }
 
         // Get single shortest path
-        resource = client.resource(NeoServer.server().restApiUri() + "node/" + nodes[0] + "/path");
+        resource = client.resource(server.restApiUri() + "node/" + nodes[0] + "/path");
         response = resource.type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(json).post(ClientResponse.class);
         assertEquals(200, response.getStatus());
         Map<?, ?> path = (Map<?, ?>) JsonHelper.jsonToMap(response.getEntity(String.class));
@@ -122,17 +121,17 @@ public class PathsFunctionalTest {
         assertEquals(2, path.get("length"));
 
         // Get single shortest path and expect no answer (404)
-        String noHitsJson = "{\"to\":\"" + NeoServer.server().restApiUri() + "node/" + nodes[1]
+        String noHitsJson = "{\"to\":\"" + server.restApiUri() + "node/" + nodes[1]
                 + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\"}";
-        resource = client.resource(NeoServer.server().restApiUri() + "node/" + nodes[0] + "/path");
+        resource = client.resource(server.restApiUri() + "node/" + nodes[0] + "/path");
         response = resource.type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(noHitsJson).post(ClientResponse.class);
         assertEquals(404, response.getStatus());
 
         // Get single shortest paths and expect no content (since using /paths
         // {single:true} instead of /path)
-        String noHitsSingleJson = "{\"to\":\"" + NeoServer.server().restApiUri() + "node/" + nodes[1]
+        String noHitsSingleJson = "{\"to\":\"" + server.restApiUri() + "node/" + nodes[1]
                 + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\", \"single\":true}";
-        resource = client.resource(NeoServer.server().restApiUri() + "node/" + nodes[0] + "/paths");
+        resource = client.resource(server.restApiUri() + "node/" + nodes[0] + "/paths");
         response = resource.type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(noHitsSingleJson).post(ClientResponse.class);
         assertEquals(204, response.getStatus());
     }

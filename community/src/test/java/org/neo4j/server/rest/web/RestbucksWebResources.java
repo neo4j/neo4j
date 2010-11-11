@@ -48,7 +48,7 @@ public class RestbucksWebResources {
     private Database database;
 
     public RestbucksWebResources() {
-        database = NeoServer.server().database();
+        database = NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().database();
     }
     
     public RestbucksWebResources(Database database) {
@@ -61,7 +61,7 @@ public class RestbucksWebResources {
     @POST
     public Response createOrder(String coffee) throws URISyntaxException {
 
-        GraphDatabaseService graphDb = NeoServer.server().database().db;
+        GraphDatabaseService graphDb = NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().database().db;
 
         Transaction tx = graphDb.beginTx();
         long orderNo = -1;

@@ -20,13 +20,8 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,80 +30,98 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.util.HashMap;
+import java.util.Map;
 
-public class RemoveRelationshipPropertiesFunctionalTest {
+import static org.junit.Assert.assertEquals;
+
+public class RemoveRelationshipPropertiesFunctionalTest
+{
 
     private static GraphDbHelper helper;
+    public static NeoServer server;
 
     @BeforeClass
-    public static void startServer() throws Exception {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        helper = new GraphDbHelper(NeoServer.server().database());
+    public static void startServer() throws Exception
+    {
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        helper = new GraphDbHelper( server.database() );
     }
 
-    private String getPropertiesUri(long relationshipId) {
-        return NeoServer.server().restApiUri() + "relationship/" + relationshipId + "/properties";
+    private String getPropertiesUri( long relationshipId )
+    {
+        return server.restApiUri() + "relationship/" + relationshipId + "/properties";
     }
 
     @AfterClass
-    public static void stopServer() throws Exception {
+    public static void stopServer() throws Exception
+    {
         ServerTestUtils.nukeServer();
     }
 
     @Test
-    public void shouldReturn204WhenPropertiesAreRemovedFromRelationship() throws DatabaseBlockedException {
-        long relationshipId = helper.createRelationship("LOVES");
+    public void shouldReturn204WhenPropertiesAreRemovedFromRelationship() throws DatabaseBlockedException
+    {
+        long relationshipId = helper.createRelationship( "LOVES" );
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put("jim", "tobias");
-        helper.setRelationshipProperties(relationshipId, map);
-        ClientResponse response = removeRelationshipPropertiesOnServer(relationshipId);
-        assertEquals(204, response.getStatus());
+        map.put( "jim", "tobias" );
+        helper.setRelationshipProperties( relationshipId, map );
+        ClientResponse response = removeRelationshipPropertiesOnServer( relationshipId );
+        assertEquals( 204, response.getStatus() );
     }
 
     @Test
-    public void shouldReturn404WhenPropertiesRemovedFromRelationshipWhichDoesNotExist() {
-        ClientResponse response = Client.create().resource(getPropertiesUri(999999)).type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-                .delete(ClientResponse.class);
-        assertEquals(404, response.getStatus());
+    public void shouldReturn404WhenPropertiesRemovedFromRelationshipWhichDoesNotExist()
+    {
+        ClientResponse response = Client.create().resource( getPropertiesUri( 999999 ) ).type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON )
+                .delete( ClientResponse.class );
+        assertEquals( 404, response.getStatus() );
     }
 
-    private ClientResponse removeRelationshipPropertiesOnServer(long relationshipId) {
-        return Client.create().resource(getPropertiesUri(relationshipId)).delete(ClientResponse.class);
+    private ClientResponse removeRelationshipPropertiesOnServer(
+            long relationshipId )
+    {
+        return Client.create().resource( getPropertiesUri( relationshipId ) ).delete( ClientResponse.class );
     }
 
-    private String getPropertyUri(long relationshipId, String key) {
-        return NeoServer.server().restApiUri() + "relationship/" + relationshipId + "/properties/" + key;
+    private String getPropertyUri( long relationshipId, String key )
+    {
+        return server.restApiUri() + "relationship/" + relationshipId + "/properties/" + key;
     }
 
     @Test
-    public void shouldReturn204WhenRelationshipPropertyIsRemoved() throws DatabaseBlockedException {
-        long relationshipId = helper.createRelationship("LOVES");
+    public void shouldReturn204WhenRelationshipPropertyIsRemoved() throws DatabaseBlockedException
+    {
+        long relationshipId = helper.createRelationship( "LOVES" );
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put("jim", "tobias");
-        helper.setRelationshipProperties(relationshipId, map);
-        ClientResponse response = removeRelationshipPropertyOnServer(relationshipId, "jim");
-        assertEquals(204, response.getStatus());
+        map.put( "jim", "tobias" );
+        helper.setRelationshipProperties( relationshipId, map );
+        ClientResponse response = removeRelationshipPropertyOnServer( relationshipId, "jim" );
+        assertEquals( 204, response.getStatus() );
     }
 
     @Test
-    public void shouldReturn404WhenRemovingNonExistentRelationshipProperty() throws DatabaseBlockedException {
-        long relationshipId = helper.createRelationship("KNOWS");
+    public void shouldReturn404WhenRemovingNonExistentRelationshipProperty() throws DatabaseBlockedException
+    {
+        long relationshipId = helper.createRelationship( "KNOWS" );
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put("jim", "tobias");
-        helper.setRelationshipProperties(relationshipId, map);
-        ClientResponse response = removeRelationshipPropertyOnServer(relationshipId, "foo");
-        assertEquals(404, response.getStatus());
+        map.put( "jim", "tobias" );
+        helper.setRelationshipProperties( relationshipId, map );
+        ClientResponse response = removeRelationshipPropertyOnServer( relationshipId, "foo" );
+        assertEquals( 404, response.getStatus() );
     }
 
     @Test
-    public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist() {
-        ClientResponse response = Client.create().resource(getPropertyUri(999999, "foo")).delete(ClientResponse.class);
-        assertEquals(404, response.getStatus());
+    public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
+    {
+        ClientResponse response = Client.create().resource( getPropertyUri( 999999, "foo" ) ).delete( ClientResponse.class );
+        assertEquals( 404, response.getStatus() );
     }
 
-    private ClientResponse removeRelationshipPropertyOnServer(long nodeId, String key) {
-        return Client.create().resource(getPropertyUri(nodeId, key)).delete(ClientResponse.class);
+    private ClientResponse removeRelationshipPropertyOnServer( long nodeId,
+                                                               String key )
+    {
+        return Client.create().resource( getPropertyUri( nodeId, key ) ).delete( ClientResponse.class );
     }
 }

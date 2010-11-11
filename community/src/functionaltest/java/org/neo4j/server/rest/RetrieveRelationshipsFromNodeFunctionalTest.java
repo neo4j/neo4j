@@ -20,15 +20,9 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,9 +33,13 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.RelationshipRepresentationTest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class RetrieveRelationshipsFromNodeFunctionalTest {
 
@@ -49,11 +47,12 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     private static long nodeWithoutRelationships;
     private static long nonExistingNode;
     private static GraphDbHelper helper;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startServer() throws DatabaseBlockedException {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        helper = new GraphDbHelper(NeoServer.server().database());
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        helper = new GraphDbHelper(server.database());
         nodeWithRelationships = helper.createNode();
         helper.createRelationship("LIKES", nodeWithRelationships, helper.createNode());
         helper.createRelationship("LIKES", helper.createNode(), nodeWithRelationships);
@@ -68,7 +67,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     }
 
     private ClientResponse sendRetrieveRequestToServer(long nodeId, String path) {
-        WebResource resource = Client.create().resource(NeoServer.server().restApiUri() + "node/" + nodeId + "/relationships" + path);
+        WebResource resource = Client.create().resource(server.restApiUri() + "node/" + nodeId + "/relationships" + path);
         return resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
     }
 
@@ -174,7 +173,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     public void shouldGet200WhenRetrievingValidRelationship() throws DatabaseBlockedException {
         long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = Client.create().resource(NeoServer.server().restApiUri() + "relationship/" + relationshipId).get(ClientResponse.class);
+        ClientResponse response = Client.create().resource(server.restApiUri() + "relationship/" + relationshipId).get(ClientResponse.class);
 
         assertEquals(200, response.getStatus());
     }
@@ -183,7 +182,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest {
     public void shouldGetARelationshipRepresentationInJsonWhenRetrievingValidRelationship() throws Exception {
         long relationshipId = helper.createRelationship("LIKES");
 
-        ClientResponse response = Client.create().resource(NeoServer.server().restApiUri() + "relationship/" + relationshipId).accept(
+        ClientResponse response = Client.create().resource(server.restApiUri() + "relationship/" + relationshipId).accept(
                 MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
 
         String entity = response.getEntity(String.class);
