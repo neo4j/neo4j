@@ -46,11 +46,12 @@ public class CreateNodeFunctionalTest {
     private static final long NON_EXISTENT_NODE_ID = 999999;
     private static String NODE_URI_PATTERN = "^.*/node/[0-9]+$";
     private static GraphDbHelper helper;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startNeoServer() {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        helper = new GraphDbHelper(NeoServer.server().database());
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        helper = new GraphDbHelper(server.database());
     }
 
     @AfterClass
@@ -88,7 +89,7 @@ public class CreateNodeFunctionalTest {
     @Test
     public void should415IfNotASupportedMediaType() {
         Client client = Client.create();
-        WebResource resource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource resource = client.resource(server.restApiUri() + "node/");
         ClientResponse response = resource.type("junk/media-type").accept(MediaType.APPLICATION_JSON).entity("{\"foo\" : \"bar\"}").post(ClientResponse.class);
         assertEquals(415, response.getStatus());
     }
@@ -96,7 +97,7 @@ public class CreateNodeFunctionalTest {
     @Test
     public void should400IfEntityBodyProvidedWhenCreatingAnEmptyNode() {
         Client client = Client.create();
-        WebResource resource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource resource = client.resource(server.restApiUri() + "node/");
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).entity("{\"foo\" : \"bar\"}").post(ClientResponse.class);
         assertEquals(400, response.getStatus());
 
@@ -116,14 +117,14 @@ public class CreateNodeFunctionalTest {
 
     private ClientResponse sendCreateRequestToServer(String json) {
         Client client = Client.create();
-        WebResource resource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource resource = client.resource(server.restApiUri() + "node/");
         ClientResponse response = resource.type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(json).post(ClientResponse.class);
         return response;
     }
 
     private ClientResponse sendCreateRequestToServer() {
         Client client = Client.create();
-        WebResource resource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource resource = client.resource(server.restApiUri() + "node/");
         ClientResponse response = resource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON).post(ClientResponse.class);
         return response;
     }
@@ -132,7 +133,7 @@ public class CreateNodeFunctionalTest {
     public void shouldGetValidLocationHeaderWhenCreatingNode() throws Exception {
         ClientResponse response = sendCreateRequestToServer();
         assertNotNull(response.getLocation());
-        assertTrue(response.getLocation().toString().startsWith(NeoServer.server().restApiUri() + "node/"));
+        assertTrue(response.getLocation().toString().startsWith(server.restApiUri() + "node/"));
     }
 
     @Test
@@ -184,6 +185,6 @@ public class CreateNodeFunctionalTest {
     }
 
     private ClientResponse sendDeleteRequestToServer(long id) throws Exception {
-        return Client.create().resource(new URI(NeoServer.server().restApiUri() + "node/" + id)).delete(ClientResponse.class);
+        return Client.create().resource(new URI(server.restApiUri() + "node/" + id)).delete(ClientResponse.class);
     }
 }

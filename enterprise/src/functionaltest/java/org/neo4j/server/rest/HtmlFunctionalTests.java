@@ -46,10 +46,11 @@ public class HtmlFunctionalTests {
     private static long trinity;
     private static long thomasAndersonLovesTrinity;
     private static GraphDbHelper helper;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startServer() throws DatabaseBlockedException {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
         helper = new GraphDbHelper(NeoServer.server().database());
 
         // Create the matrix example

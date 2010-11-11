@@ -39,9 +39,11 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
 public class GetNodePropertiesFunctionalTest {
+    public static NeoServer server;
+
     @BeforeClass
     public static void startServer() {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
     }
 
     @AfterClass
@@ -52,7 +54,7 @@ public class GetNodePropertiesFunctionalTest {
     @Test
     public void shouldGet204ForNoProperties() {
         Client client = Client.create();
-        WebResource createResource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource createResource = client.resource(server.restApiUri() + "node/");
         ClientResponse createResponse = createResource.accept(MediaType.APPLICATION_JSON).entity("").post(ClientResponse.class);
         WebResource resource = client.resource(createResponse.getLocation().toString() + "/properties");
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
@@ -62,7 +64,7 @@ public class GetNodePropertiesFunctionalTest {
     @Test
     public void shouldGet200ForProperties() {
         Client client = Client.create();
-        WebResource createResource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource createResource = client.resource(server.restApiUri() + "node/");
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
@@ -74,7 +76,7 @@ public class GetNodePropertiesFunctionalTest {
     @Test
     public void shouldGetContentLengthHeaderForRetrievingProperties() {
         Client client = Client.create();
-        WebResource createResource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource createResource = client.resource(server.restApiUri() + "node/");
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
@@ -86,7 +88,7 @@ public class GetNodePropertiesFunctionalTest {
     @Test
     public void shouldGet404ForPropertiesOnNonExistentNode() {
         Client client = Client.create();
-        WebResource resource = client.resource(NeoServer.server().restApiUri() + "node/999999/properties");
+        WebResource resource = client.resource(server.restApiUri() + "node/999999/properties");
         ClientResponse response = resource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(404, response.getStatus());
     }
@@ -94,7 +96,7 @@ public class GetNodePropertiesFunctionalTest {
     @Test
     public void shouldBeJSONContentTypeOnPropertiesResponse() {
         Client client = Client.create();
-        WebResource createResource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource createResource = client.resource(server.restApiUri() + "node/");
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
@@ -106,7 +108,7 @@ public class GetNodePropertiesFunctionalTest {
     @Test
     public void shouldGet404ForNoProperty() {
         Client client = Client.create();
-        WebResource createResource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource createResource = client.resource(server.restApiUri() + "node/");
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON)
                 .post(ClientResponse.class);
         WebResource resource = client.resource(getPropertyUri(createResponse.getLocation().toString(), "foo"));
@@ -117,7 +119,7 @@ public class GetNodePropertiesFunctionalTest {
     @Test
     public void shouldGet200ForProperty() {
         Client client = Client.create();
-        WebResource createResource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource createResource = client.resource(server.restApiUri() + "node/");
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);
@@ -129,7 +131,7 @@ public class GetNodePropertiesFunctionalTest {
     @Test
     public void shouldGet404ForPropertyOnNonExistentNode() {
         Client client = Client.create();
-        WebResource resource = client.resource(getPropertyUri(NeoServer.server().restApiUri() + "node/" + "999999", "foo"));
+        WebResource resource = client.resource(getPropertyUri(server.restApiUri() + "node/" + "999999", "foo"));
         ClientResponse response = resource.type(MediaType.APPLICATION_FORM_URLENCODED).accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
         assertEquals(404, response.getStatus());
 
@@ -138,7 +140,7 @@ public class GetNodePropertiesFunctionalTest {
     @Test
     public void shouldBeJSONContentTypeOnPropertyResponse() {
         Client client = Client.create();
-        WebResource createResource = client.resource(NeoServer.server().restApiUri() + "node/");
+        WebResource createResource = client.resource(server.restApiUri() + "node/");
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
         ClientResponse createResponse = createResource.type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON).post(
                 ClientResponse.class);

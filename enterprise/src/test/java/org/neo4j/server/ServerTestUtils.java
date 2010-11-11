@@ -68,7 +68,7 @@ public class ServerTestUtils {
         return f;
     }
 
-    public static void initializeServerWithRandomTemporaryDatabaseDirectory() {
+    public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectory() {
         try {
             File temporaryConfigFile = createTempPropertyFile();
             writePropertyToFile("org.neo4j.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
@@ -81,10 +81,14 @@ public class ServerTestUtils {
 
             System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath());
 
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
         NeoServer.main(null);
+
+        return NeoServer.server();
     }
 
     private static String constructWebadminServerConfig() throws UnknownHostException
