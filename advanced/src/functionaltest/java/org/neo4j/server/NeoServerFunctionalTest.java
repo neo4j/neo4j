@@ -20,22 +20,21 @@
 
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class NeoServerFunctionalTest {
 
@@ -92,6 +91,13 @@ public class NeoServerFunctionalTest {
         assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", NeoServer.server().restApiUri()
                 .getPort())));
         s1.stop();
+    }
+    
+    
+    @Test
+    public void hackTheCoffeeShop() throws Exception {
+        ClientResponse response = Client.create().resource(NeoServer.server().baseUri().toString() + "coffeeshop/menu").get(ClientResponse.class);
+        assertEquals(200, response.getStatus());
     }
 
     private File configWithoutWebServerPort() throws IOException {

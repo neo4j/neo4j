@@ -20,10 +20,7 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import static org.neo4j.server.webadmin.rest.WebUtils.addHeaders;
-
 import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -31,29 +28,15 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.server.rest.domain.JsonRenderers;
-import org.neo4j.server.webadmin.domain.ServerRootRepresentation;
+import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
-/**
- * Serves info to clients about what is available on this management server.
- * 
- * @author Jacob Hansson <jacob@voltvoodoo.com>
- * 
- */
-@Path( RootService.ROOT_PATH )
-public class RootService
-{
-
-    public static final String ROOT_PATH = "/";
-
+public class RootService {
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    public Response getServiceDefinition( @Context UriInfo uriInfo )
-    {
-        String entity = JsonRenderers.DEFAULT.render( new ServerRootRepresentation(
-                uriInfo.getBaseUri()) );
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getServiceDefinition(@Context UriInfo uriInfo) {
+        String entity = JsonRenderers.DEFAULT.render(new ServerRootRepresentation(uriInfo.getBaseUri(), new ConsoleService()));
 
-        return addHeaders(
-                Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ) ).build();
+        return Response.ok(entity).header("Content-Type", MediaType.APPLICATION_JSON).build();
     }
 
 }

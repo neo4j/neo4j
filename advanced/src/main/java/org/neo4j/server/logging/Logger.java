@@ -20,10 +20,35 @@
 
 package org.neo4j.server.logging;
 
+import java.util.HashSet;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Priority;
+import org.mortbay.log.Log;
 
 public class Logger {
+    
+    public static Logger log = Logger.getLogger(Logger.class);
+    
+    private static HashSet<String> illegalParameters = new HashSet<String>();
+    
+    static {
+        illegalParameters.add("%b");
+        illegalParameters.add("%h");
+        illegalParameters.add("%s");
+        illegalParameters.add("%c");
+        illegalParameters.add("%d");
+        illegalParameters.add("%o");
+        illegalParameters.add("%x");
+        illegalParameters.add("%e");
+        illegalParameters.add("%f");
+        illegalParameters.add("%g");
+        illegalParameters.add("%a");
+        illegalParameters.add("%t");
+        illegalParameters.add("%%");
+        illegalParameters.add("%n");
+    }
+    
     org.apache.log4j.Logger logger;
     
     public static Logger getLogger(Class<?> clazz) {
@@ -39,6 +64,15 @@ public class Logger {
     }
 
     public void log(Level level, String message, Object ... parameters) {
+        
+        for(Object obj : parameters) {
+            String s =  obj.toString();
+            if(illegalParameters.contains(s.toLowerCase())) {
+                Log.warn("Failed to log, parameters like " + s + " are not supported.");
+                return;
+            }
+        }
+        
         if (logger.isEnabledFor(level)) {
             logger.log(level, String.format(message, parameters));          
         }

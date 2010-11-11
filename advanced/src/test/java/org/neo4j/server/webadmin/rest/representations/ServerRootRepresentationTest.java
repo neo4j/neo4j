@@ -18,25 +18,25 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.logging;
+package org.neo4j.server.webadmin.rest.representations;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+
+import java.net.URI;
+import java.util.Map;
 
 import org.junit.Test;
+import org.neo4j.server.webadmin.rest.ConsoleService;
 
-import static org.junit.Assert.assertEquals;
-
-public class LoggerTest {
-
-    public static Logger log = Logger.getLogger(LoggerTest.class);
-    
+public class ServerRootRepresentationTest {
     @Test
-    public void logsShouldTolerateAccidentalControlCharacters() {
-        InMemoryAppender appender = new InMemoryAppender(log);
-        
-        String illegalParameter = "%n";
-        log.error("No configuration file at [%s]", illegalParameter);
-        
-        String emptyString = "";
-        
-        assertEquals(emptyString, appender.toString());
+    public void shouldProvideAListOfServiceUris() throws Exception {
+        ConsoleService consoleService = new ConsoleService();
+        ServerRootRepresentation srr = new ServerRootRepresentation(new URI("http://example.org:9999"), consoleService);
+        Map<String,String> map = srr.serialize();
+
+        assertThat(map.get(consoleService.getName()), containsString(consoleService.getServerPath()));
+
     }
 }
