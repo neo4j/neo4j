@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.ClusterManager;
+import org.neo4j.kernel.impl.LocalZooKeeperCluster;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -38,6 +38,12 @@ public class LocalZooKeeperCluster
     private final Collection<ZooKeeperServerWrapper> wrappers =
             new ArrayList<ZooKeeperServerWrapper>();
     private Collection<String> serversConfig;
+    
+    public LocalZooKeeperCluster( int size ) throws IOException
+    {
+        this( size, defaultDataDirectoryPolicy( new File( "target/zoo" ) ),
+                defaultPortPolicy( 2181 ), defaultPortPolicy( 2888 ), defaultPortPolicy( 3888 ) );
+    }
 
     public LocalZooKeeperCluster( int size, DataDirectoryPolicy dataDirectoryPolicy,
             PortPolicy clientPortPolicy, PortPolicy serverFirstPortPolicy,
