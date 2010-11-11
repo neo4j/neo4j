@@ -119,7 +119,7 @@ public class SecurityFilter implements ContainerRequestFilter {
         // 1. Check if authentication is enabled
         //
 
-        String authenticatedEnabledProperty = (String) NeoServer.server().configuration().getProperty(REST_ENABLE_AUTHENTICATION);
+        String authenticatedEnabledProperty = (String) NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().configuration().getProperty(REST_ENABLE_AUTHENTICATION);
         if (authenticatedEnabledProperty == null || authenticatedEnabledProperty.toString().toLowerCase().equals("false")) {
             return new User("unauthenticated-user", "default");
         }
@@ -156,8 +156,8 @@ public class SecurityFilter implements ContainerRequestFilter {
         //
 
         User user = null;
-        String expectedUsername = (String) (NeoServer.server().configuration().containsKey(REST_USERNAME) ? NeoServer.server().configuration().getProperty(REST_USERNAME) : "");
-        String expectedPassword = (String) (NeoServer.server().configuration().containsKey(REST_PASSWORD) ? NeoServer.server().configuration().getProperty(REST_PASSWORD) : "");
+        String expectedUsername = (String) (NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().configuration().containsKey(REST_USERNAME) ? NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().configuration().getProperty(REST_USERNAME) : "");
+        String expectedPassword = (String) (NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().configuration().containsKey(REST_PASSWORD) ? NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().configuration().getProperty(REST_PASSWORD) : "");
 
         if (username.equals(expectedUsername) && password.equals(expectedPassword)) {
             user = new User(expectedUsername, "default");

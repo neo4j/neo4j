@@ -20,14 +20,8 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,20 +30,25 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public class SetRelationshipPropertiesFunctionalTest {
 
     private static URI propertiesUri;
     private static URI badUri;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startWebServer() throws Exception {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        long relationshipId = new GraphDbHelper(NeoServer.server().database()).createRelationship("KNOWS");
-        propertiesUri = new URI(NeoServer.server().restApiUri() + "relationship/" + relationshipId + "/properties");
-        badUri = new URI(NeoServer.server().restApiUri() + "relationship/" + (relationshipId + 1 * 99999) + "/properties");
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        long relationshipId = new GraphDbHelper(server.database()).createRelationship("KNOWS");
+        propertiesUri = new URI(server.restApiUri() + "relationship/" + relationshipId + "/properties");
+        badUri = new URI(server.restApiUri() + "relationship/" + (relationshipId + 1 * 99999) + "/properties");
     }
 
     @AfterClass

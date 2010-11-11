@@ -20,25 +20,25 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerTestUtils;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+
+import static org.junit.Assert.assertEquals;
 
 public class InteractWith3rdPartyResourceTest {
+    public static NeoServer server;
 
     @BeforeClass
     public static void startServer() {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
     }
 
     @AfterClass
@@ -50,7 +50,7 @@ public class InteractWith3rdPartyResourceTest {
     public void whenCreatingAResourceOnValid3rdPartyResourceResponseShouldBeCreated() {
 
         Client client = Client.create();
-        WebResource ordersResource = client.resource(ensureEndsWithSlash(NeoServer.server().restApiUri().toString()) + "restbucks/order");
+        WebResource ordersResource = client.resource(ensureEndsWithSlash(server.restApiUri().toString()) + "restbucks/order");
         ClientResponse response = ordersResource.type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity("{ \"coffee\" : \"latte\" }").post(
                 ClientResponse.class);
         assertEquals(201, response.getStatus());

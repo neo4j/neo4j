@@ -20,14 +20,8 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,20 +30,25 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public class SetNodePropertiesFunctionalTest {
 
     private static URI propertiesUri;
     private static URI badUri;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startServer() throws Exception {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        long nodeId = new GraphDbHelper(NeoServer.server().database()).createNode();
-        propertiesUri = new URI(NeoServer.server().restApiUri() + "node/" + nodeId + "/properties");
-        badUri = new URI(NeoServer.server().restApiUri() + "node/" + (nodeId * 999) + "/properties");
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        long nodeId = new GraphDbHelper(server.database()).createNode();
+        propertiesUri = new URI(server.restApiUri() + "node/" + nodeId + "/properties");
+        badUri = new URI(server.restApiUri() + "node/" + (nodeId * 999) + "/properties");
     }
 
     @AfterClass

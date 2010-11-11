@@ -87,7 +87,7 @@ public class NeoServer implements WrapperListener {
      * This only works if the server has been started via NeoServer.main(...)
      * @return
      */
-    public static NeoServer server() {
+    public static NeoServer getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS() {
         return theServer;
     }
 

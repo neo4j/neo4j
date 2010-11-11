@@ -88,7 +88,7 @@ public class ServerTestUtils {
 
         NeoServer.main(null);
 
-        return NeoServer.server();
+        return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS();
     }
 
     private static String constructWebadminServerConfig() throws UnknownHostException
