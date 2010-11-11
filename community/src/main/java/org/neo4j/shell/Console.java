@@ -34,6 +34,7 @@ public interface Console
 	void format( String format, Object... args );
 	
 	/**
+	 * @param prompt the prompt to display.
 	 * @return the next line read from the console (user input).
 	 */
 	String readLine( String prompt );

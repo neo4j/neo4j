@@ -39,19 +39,56 @@ import org.neo4j.shell.impl.StandardConsole;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 /**
- * Can start clients, either via {@link StartRemoteClient} or
- * {@link StartLocalClient}.
+ * Can start clients, either remotely to another JVM running a server
+ * or by starting a local {@link GraphDatabaseShellServer} in this JVM
+ * and connecting to it.
  */
 public class StartClient
 {
     private AtomicBoolean hasBeenShutdown = new AtomicBoolean();
+    
+    /**
+     * The path to the local (this JVM) {@link GraphDatabaseService} to
+     * start and connect to.
+     */
     public static final String ARG_PATH = "path";
+    
+    /**
+     * Whether or not the shell client should be readonly.
+     */
     public static final String ARG_READONLY = "readonly";
+    
+    /**
+     * The host (ip or name) to connect remotely to.
+     */
     public static final String ARG_HOST = "host";
+    
+    /**
+     * The port to connect remotely on. A server must have been started
+     * on that port.
+     */
     public static final String ARG_PORT = "port";
+    
+    /**
+     * The RMI name to use.
+     */
     public static final String ARG_NAME = "name";
+    
+    /**
+     * The PID (process ID) to connect to.
+     */
     public static final String ARG_PID = "pid";
+    
+    /**
+     * Commands (a line can contain more than one command, with && in between)
+     * to execute when the shell client has been connected.
+     */
     public static final String ARG_COMMAND = "c";
+    
+    /**
+     * Configuration file to load and use if a local {@link GraphDatabaseService}
+     * is started in this JVM.
+     */
     public static final String ARG_CONFIG = "config";
 
     private StartClient()
@@ -60,7 +97,7 @@ public class StartClient
 
     /**
      * Starts a shell client. Remote or local depending on the arguments.
-     * @param args the arguments from the command line. Can contain
+     * @param arguments the arguments from the command line. Can contain
      * information about whether to start a local
      * {@link GraphDatabaseShellServer} or connect to an already running
      * {@link GraphDatabaseService}.
@@ -70,6 +107,13 @@ public class StartClient
         new StartClient().start( arguments );
     }
 
+    /**
+     * Starts a shell client. Remote or local depending on the arguments.
+     * @param agentArgs the arguments from the command line. Can contain
+     * information about whether to start a local
+     * {@link GraphDatabaseShellServer} or connect to an already running
+     * {@link GraphDatabaseService}.
+     */
     public static void agentmain( String agentArgs )
     {
         new ShellServerExtension().agentLoad( agentArgs );
@@ -320,7 +364,7 @@ public class StartClient
         }
     }
 
-    public static void setSessionVariablesFromArgs(
+    static void setSessionVariablesFromArgs(
         ShellClient client, Args args ) throws RemoteException
     {
         String profile = args.get( "profile", null );

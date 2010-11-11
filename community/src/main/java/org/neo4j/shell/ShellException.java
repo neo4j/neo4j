@@ -44,6 +44,13 @@ public class ShellException extends Exception
 		super( cause );
 	}
 
+	/**
+	 * Serializes a {@link Throwable} to a String and uses that as a message
+	 * in a {@link ShellException}. This is because we can't rely on the
+	 * client having the full classpath the server has.
+	 * @param cause the {@link Throwable} to wrap in a {@link ShellException}.
+	 * @return the {@link ShellException} wrapped around the {@code cause}.
+	 */
 	public static ShellException wrapCause( Throwable cause )
 	{
         if ( cause instanceof ShellException )

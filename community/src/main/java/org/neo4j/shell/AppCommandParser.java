@@ -34,7 +34,7 @@ import java.util.StringTokenizer;
  * 
  * o ls is the app.
  * o p and f are options, p w/o value and f has the value "title.*"
- *   (defined in {@link App#getOptionDescription(String)}.
+ *   (defined in {@link App#getOptionDefinition(String)}.
  * o long-option is also an option
  * o 12 is an argument.
  */
@@ -50,7 +50,7 @@ public class AppCommandParser
 	/**
 	 * @param server the server used to find apps.
 	 * @param line the line from the client to interpret.
-	 * @throws ShellException if there's something wrong with the line.
+	 * @throws Exception if there's something wrong with the line.
 	 */
 	public AppCommandParser( AppShellServer server, String line )
 		throws Exception
@@ -75,6 +75,11 @@ public class AppCommandParser
 		this.parseParameters();
 	}
 	
+	/**
+	 * Extracts the app name (f.ex. ls or rm) from the supplied line.
+	 * @param line the line to extract the app name from.
+	 * @return the app name for {@code line}.
+	 */
 	public static String parseOutAppName( String line )
 	{
         int index = findNextWhiteSpace( line, 0 );
