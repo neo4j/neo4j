@@ -20,15 +20,9 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.net.URI;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,18 +31,23 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+import java.net.URI;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class RetrieveNodeFunctionalTest {
 
     private static URI nodeUri;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startServer() throws Exception {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        nodeUri = new URI(NeoServer.server().restApiUri().toString() + "node/" + new GraphDbHelper(NeoServer.server().database()).createNode());
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        nodeUri = new URI(server.restApiUri().toString() + "node/" + new GraphDbHelper(server.database()).createNode());
     }
 
     @AfterClass

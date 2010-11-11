@@ -20,9 +20,6 @@
 
 package org.neo4j.server.database;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.index.IndexService;
@@ -30,6 +27,9 @@ import org.neo4j.index.lucene.LuceneFulltextIndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.logging.Logger;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class Database {
 

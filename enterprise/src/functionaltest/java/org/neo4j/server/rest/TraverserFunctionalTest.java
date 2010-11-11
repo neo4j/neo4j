@@ -20,17 +20,8 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,8 +33,15 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TraverserFunctionalTest {
     private static long startNode;
@@ -53,16 +51,17 @@ public class TraverserFunctionalTest {
     private static long child1_l3;
     private static long child2_l3;
     private static GraphDbHelper helper;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startServer() throws Exception {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        helper = new GraphDbHelper(NeoServer.server().database());
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        helper = new GraphDbHelper(server.database());
         createSmallGraph();
     }
 
     private static void createSmallGraph() throws Exception {
-        Transaction tx = NeoServer.server().database().db.beginTx();
+        Transaction tx = server.database().db.beginTx();
         startNode = helper.createNode(MapUtil.map("name", "Root"));
         child1_l1 = helper.createNode(MapUtil.map("name", "Mattias"));
         helper.createRelationship("knows", startNode, child1_l1);

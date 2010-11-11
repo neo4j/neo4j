@@ -20,13 +20,8 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,21 +30,25 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 public class RemoveNodePropertiesFunctionalTest {
 
     private static GraphDbHelper helper;
+    public static NeoServer server;
 
     @BeforeClass
     public static void startServer() throws Exception {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        helper = new GraphDbHelper(NeoServer.server().database());
+        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+        helper = new GraphDbHelper(server.database());
     }
 
     private String getPropertiesUri(long nodeId) {
-        return NeoServer.server().restApiUri() + "node/" + nodeId + "/properties";
+        return server.restApiUri() + "node/" + nodeId + "/properties";
     }
 
     @AfterClass
@@ -106,7 +105,7 @@ public class RemoveNodePropertiesFunctionalTest {
     }
 
     private String getPropertyUri(long nodeId, String key) {
-        return NeoServer.server().restApiUri() + "node/" + nodeId + "/properties/" + key;
+        return server.restApiUri() + "node/" + nodeId + "/properties/" + key;
     }
 
     private ClientResponse removeNodePropertyOnServer(long nodeId, String key) {
