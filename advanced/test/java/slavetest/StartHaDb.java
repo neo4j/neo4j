@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 
-import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
@@ -35,63 +34,101 @@ public class StartHaDb
 {
     public static final File PATH = new File( "var/hadb" );
 
-    static final String HA_SERVER = "172.16.2.33:5559";
+    static final String ME = "172.16.1.242:5559";
+    static final int MY_MACHINE_ID = 2;
         
-//            "1", "172.16.2.33:5559", // JS
-//            "2", "172.16.1.242:5559", // MP
-//            "3", "172.16.4.14:5559" // TI
+    static final String[] ZOO_KEEPER_SERVERS = new String[] {
+        "172.16.2.33:2181",
+        "172.16.1.242:2181",
+        "172.16.4.14:2181",
+    };
 
     public static void main( String[] args ) throws Exception
     {
         NeoStoreUtil store = new NeoStoreUtil( PATH.getPath() );
         System.out.println( "Starting store: createTime=" + new Date( store.getCreationTime() ) +
                 " identifier=" + store.getStoreId() + " last committed tx=" + store.getLastCommittedTx() );
-        final GraphDatabaseService db = new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "1",
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( StartZooKeeperServer.ZOO_KEEPER_SERVERS, "," ),
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, HA_SERVER,
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SKELETON_DB_PATH, figureOutNiceTmpDir(),
-                Config.ENABLE_REMOTE_SHELL, "true",
-                Config.KEEP_LOGICAL_LOGS, "true" ) );
-        
-        
-//        Transaction tx = db.beginTx();
-//        try
-//        {
-//            Node node = db.createNode();
-//            while ( true )
-//            {
-//                Thread.sleep( 5000 );
-//            }
-//        }
-//        finally
-//        {
-//            tx.finish();
-//        }
-//        Runtime.getRuntime().addShutdownHook( new Thread()
-//        {
-//            public void run()
-//            {
-//                db.shutdown();
-//            }
-//        } );
-    }
-    
-    private static String figureOutNiceTmpDir() throws IOException
-    {
-        File tmpFile = File.createTempFile( "test", "test" );
-        File tmpDir = tmpFile.getParentFile();
-        tmpFile.delete();
-        File tmpDbDir = new File( tmpDir, "hadb-backup" );
-        
-        if ( !tmpDbDir.exists() )
-        {
-            FileUtils.copyDirectory( PATH, tmpDbDir );
-        }
-        return tmpDbDir.getAbsolutePath();
+        GraphDatabaseService db = startDb();
+        System.out.println( "Waiting for ENTER (for clean shutdown)" );
+        System.in.read();
+        db.shutdown();
+//        doStuff( db );
     }
 
-    private static String join( String[] strings, String delimiter )
+    private static GraphDatabaseService startDb() throws IOException
+    {
+        return new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + MY_MACHINE_ID,
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( ZOO_KEEPER_SERVERS, "," ),
+                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, ME,
+                Config.ENABLE_REMOTE_SHELL, "true",
+                Config.KEEP_LOGICAL_LOGS, "true" ) );
+    }
+    
+//    private static void doStuff( GraphDatabaseService db ) throws IOException
+//    {
+//        RelationshipType refType = DynamicRelationshipType.withName( "MATTIAS_REF" );
+//        RelationshipType type = DynamicRelationshipType.withName( "JOHAN_IS_NOOB" );
+//        long time = System.currentTimeMillis();
+//        int txCount = 0;
+//        while ( System.currentTimeMillis() - time < 60000 )
+//        {
+//            Transaction tx = db.beginTx();
+//            boolean restarted = false;
+//            try
+//            {
+//                Node refNode = db.getReferenceNode();
+//                refNode.setProperty( "name", "MP" + System.currentTimeMillis() );
+//                Node myRefNode = db.createNode();
+//                refNode.createRelationshipTo( myRefNode, refType );
+//                for ( int i = 0; i < 20; i++ )
+//                {
+//                    Node node = db.createNode();
+//                    Relationship rel = myRefNode.createRelationshipTo( node, type );
+//                    rel.setProperty( "something", i );
+//                }
+//                tx.success();
+//
+//                if ( Math.random() < 0.33 )
+//                {
+//                    db.shutdown();
+//                    db = startDb();
+//                    restarted = true;
+//                }
+//            }
+//            finally
+//            {
+//                if ( !restarted )
+//                {
+//                    tx.finish();
+//                }
+//            }
+//            verifyDb( db );
+//
+//            if ( ++txCount % 100 == 0 ) System.out.println( txCount );
+//        }
+//        System.out.println( "done " + txCount );
+//    }
+//
+//    private static void verifyDb( GraphDatabaseService db )
+//    {
+//        for ( Node node : db.getAllNodes() )
+//        {
+//            for ( String key : node.getPropertyKeys() )
+//            {
+//                node.getProperty( key );
+//            }
+//            for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
+//            {
+//                for ( String key : rel.getPropertyKeys() )
+//                {
+//                    rel.getProperty( key );
+//                }
+//            }
+//        }
+//    }
+
+    public static String join( String[] strings, String delimiter )
     {
         StringBuilder builder = new StringBuilder();
         for ( String string : strings )
