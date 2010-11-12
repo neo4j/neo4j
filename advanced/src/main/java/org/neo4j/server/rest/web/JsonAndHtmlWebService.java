@@ -20,14 +20,20 @@
 
 package org.neo4j.server.rest.web;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.AmpersandSeparatedList;
-import org.neo4j.server.rest.domain.HtmlRenderers;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonRenderers;
 import org.neo4j.server.rest.domain.RelationshipDirection;
 import org.neo4j.server.rest.domain.StorageActions.TraverserReturnType;
+import org.neo4j.server.rest.domain.renderers.IndexRootRenderer;
+import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.rest.domain.renderers.NodeRenderer;
+import org.neo4j.server.rest.domain.renderers.NodesRenderer;
+import org.neo4j.server.rest.domain.renderers.RelationshipRenderer;
+import org.neo4j.server.rest.domain.renderers.RelationshipsRenderer;
+import org.neo4j.server.rest.domain.renderers.RootRenderer;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -54,9 +60,12 @@ import javax.ws.rs.core.UriInfo;
  */
 @Path("/")
 public class JsonAndHtmlWebService extends GenericWebService {
+    private GraphDatabaseService graphDb;
 
-    public JsonAndHtmlWebService(@Context UriInfo uriInfo) {
+    public JsonAndHtmlWebService(@Context UriInfo uriInfo, @Context
+                                 GraphDatabaseService graphDb) {
         super(uriInfo, NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().database());
+        this.graphDb = graphDb;
     }
 
     /**
@@ -71,7 +80,7 @@ public class JsonAndHtmlWebService extends GenericWebService {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response jsonGetRoot() {
-        return getRoot(JsonRenderers.DEFAULT);
+        return getRoot( JsonRenderers.DEFAULT);
     }
 
     /**
@@ -320,7 +329,7 @@ public class JsonAndHtmlWebService extends GenericWebService {
     @GET
     @Produces(MediaType.TEXT_HTML)
     public Response htmlGetRoot() {
-        return getRoot(HtmlRenderers.ROOT);
+        return getRoot(new RootRenderer());
     }
 
     @GET
@@ -329,7 +338,7 @@ public class JsonAndHtmlWebService extends GenericWebService {
     public Response htmlGetNode(@PathParam("nodeId") long nodeId)
 
     {
-        return getNode(nodeId, HtmlRenderers.NODE);
+        return getNode(nodeId, new NodeRenderer( NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().database().db.getRelationshipTypes() ));
     }
 
     @GET
@@ -338,7 +347,7 @@ public class JsonAndHtmlWebService extends GenericWebService {
     public Response htmlGetRelationships(@PathParam("nodeId") long nodeId, @PathParam("direction") RelationshipDirection direction)
 
     {
-        return getRelationships(nodeId, direction, new AmpersandSeparatedList(), HtmlRenderers.RELATIONSHIPS);
+        return getRelationships(nodeId, direction, new AmpersandSeparatedList(), new RelationshipsRenderer());
     }
 
     @GET
@@ -348,7 +357,7 @@ public class JsonAndHtmlWebService extends GenericWebService {
             @PathParam("types") AmpersandSeparatedList types)
 
     {
-        return getRelationships(nodeId, direction, types, HtmlRenderers.RELATIONSHIPS);
+        return getRelationships(nodeId, direction, types, new RelationshipsRenderer());
     }
 
     @GET
@@ -357,14 +366,14 @@ public class JsonAndHtmlWebService extends GenericWebService {
     public Response htmlGetRelationship(@PathParam("relationshipId") long relId)
 
     {
-        return getRelationship(relId, HtmlRenderers.RELATIONSHIP);
+        return getRelationship(relId, new RelationshipRenderer());
     }
 
     @GET
     @Produces(MediaType.TEXT_HTML)
     @Path(PATH_INDEX)
     public Response htmlGetIndexRoot() {
-        return getIndexRoot(HtmlRenderers.INDEX_ROOT);
+        return getIndexRoot(new IndexRootRenderer());
     }
 
     @GET
@@ -374,6 +383,6 @@ public class JsonAndHtmlWebService extends GenericWebService {
 
     {
         IndexType indexType = getIndexType(indexName);
-        return getIndexedObjects(indexName, key, value, indexType == IndexType.NODE ? HtmlRenderers.NODES : HtmlRenderers.RELATIONSHIPS);
+        return getIndexedObjects(indexName, key, value, indexType == IndexType.NODE ? new NodesRenderer() : new RelationshipRenderer());
     }
 }

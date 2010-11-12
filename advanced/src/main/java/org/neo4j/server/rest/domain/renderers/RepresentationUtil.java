@@ -18,7 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.rest.domain;
+package org.neo4j.server.rest.domain.renderers;
+
+import org.neo4j.server.rest.domain.Representation;
 
 import java.util.ArrayList;
 import java.util.Collection;
