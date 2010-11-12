@@ -20,6 +20,11 @@
 
 package org.neo4j.server.osgi;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.felix.framework.Felix;
 import org.apache.felix.framework.util.FelixConstants;
 import org.apache.felix.main.AutoProcessor;
@@ -27,13 +32,6 @@ import org.neo4j.server.logging.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.launch.Framework;
-import org.osgi.framework.launch.FrameworkFactory;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
 
 /**
  */
@@ -48,9 +46,9 @@ public class OSGiContainer
     {
         bundledir = bundleDirectory;
 
-        Map configMap = new HashMap();
+        Map<String, List<HostBridge>> configMap = new HashMap<String, List<HostBridge>>();
         bridge = new HostBridge();
-        List list = new ArrayList();
+        List<HostBridge> list = new ArrayList<HostBridge>();
         list.add( bridge );
 
         configMap.put( FelixConstants.SYSTEMBUNDLE_ACTIVATORS_PROP, list );
@@ -86,16 +84,4 @@ public class OSGiContainer
         osgiFramework.stop();
         osgiFramework.waitForStop( 0 );
     }
-
-    private static FrameworkFactory getFrameworkFactory() throws Exception
-    {
-        ServiceLoader<FrameworkFactory> frameworkFactoryLoader = ServiceLoader.load( FrameworkFactory.class );
-        for ( FrameworkFactory factory : frameworkFactoryLoader )
-        {
-            return factory; // return the first one we find
-        }
-
-        throw new Exception( "Could not find framework factory." );
-    }
-
 }
