@@ -27,7 +27,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.server.rest.domain.JsonRenderers;
+import org.neo4j.server.rest.domain.renderers.JsonRenderers;
 import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
 public class RootService {
