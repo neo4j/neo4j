@@ -27,8 +27,10 @@ import com.sun.jersey.spi.container.servlet.WebConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.database.DatabaseProvider;
 
+@SuppressWarnings("serial")
 public class NeoServletContainer extends ServletContainer
 {
+
     public GraphDatabaseService db;
 
     public NeoServletContainer( GraphDatabaseService db )
