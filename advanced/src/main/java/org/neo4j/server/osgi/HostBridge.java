@@ -26,23 +26,23 @@ import org.osgi.framework.BundleContext;
 
 public class HostBridge implements BundleActivator
 {
-    private BundleContext m_context = null;
+    private BundleContext context = null;
 
     public void start(BundleContext context)
     {
-        m_context = context;
+        this.context = context;
     }
 
     public void stop(BundleContext context)
     {
-        m_context = null;
+        context = null;
     }
 
     public Bundle[] getBundles()
     {
-        if (m_context != null)
+        if (context != null)
         {
-            return m_context.getBundles();
+            return context.getBundles();
         }
         return null;
     }
