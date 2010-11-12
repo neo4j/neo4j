@@ -15,7 +15,7 @@
 
   <version>0.1-SNAPSHOT</version>
   <description>This project assembles the Neo4j stand-alone distribution,
-      pulling together all the deliverable artifacts and packaging them 
+    pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>
   <url>http://components.neo4j.org/${project.artifactId}/</url>
 
@@ -41,6 +41,7 @@
     <org.neo4j.database.location>../data/graph.db</org.neo4j.database.location>
     <org.neo4j.webserver.port>7474</org.neo4j.webserver.port>
     <org.neo4j.webservice.packages>org.neo4j.rest.web,org.neo4j.webadmin,org.neo4j.webadmin.backup,org.neo4j.webadmin.console,org.neo4j.webadmin.domain,org.neo4j.webadmin.parser,org.neo4j.webadmin.properties,org.neo4j.webadmin.resources,org.neo4j.webadmin.rest,org.neo4j.webadmin.rrd,org.neo4j.webadmin.task,org.neo4j.webadmin.utils</org.neo4j.webservice.packages>
+    <org.neo4j.server.bundledir>../system/lib</org.neo4j.server.bundledir>
 
     <!-- 
          Runtime properties. These are used to bootstrap
@@ -58,6 +59,11 @@
     <neo4j.version>1.2-SNAPSHOT</neo4j.version>
     <neo4j-server.version>0.1-SNAPSHOT</neo4j-server.version>
     <neo4j-examples.version>1.2-SNAPSHOT</neo4j-examples.version>
+
+    <!-- OSGi Bundle versions -->
+    <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
+    <pax-logging.version>1.5.3</pax-logging.version>
+
   </properties>
 
   <licenses>
@@ -192,6 +198,25 @@
       <version>${neo4j-server.version}</version>
       <classifier>static-web</classifier>
     </dependency>
+
+    <!-- OSGi Bundles -->
+    <dependency>
+      <groupId>org.apache.felix</groupId>
+      <artifactId>org.apache.felix.fileinstall</artifactId>
+      <version>${felix-fileinstall.version}</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.ops4j.pax.logging</groupId>
+      <artifactId>pax-logging-api</artifactId>
+      <version>${pax-logging.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.logging</groupId>
+      <artifactId>pax-logging-service</artifactId>
+      <version>${pax-logging.version}</version>
+    </dependency>
+    
   </dependencies>
 
   <developers>
