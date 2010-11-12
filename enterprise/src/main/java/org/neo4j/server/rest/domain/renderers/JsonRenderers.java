@@ -18,18 +18,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.rest.domain;
+package org.neo4j.server.rest.domain.renderers;
 
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.Representation;
+
+import javax.ws.rs.core.MediaType;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import javax.ws.rs.core.MediaType;
-
-public enum JsonRenderers implements Renderer {
+public enum JsonRenderers implements Renderer
+{
     DEFAULT {
         @Override
-        public String render(Representation... representations) {
-            return JsonHelper.createJsonFrom(RepresentationUtil.serialize(false, representations));
+        public String render( Representation... representations) {
+            return JsonHelper.createJsonFrom( RepresentationUtil.serialize(false, representations));
         }
     },
     ARRAY {
