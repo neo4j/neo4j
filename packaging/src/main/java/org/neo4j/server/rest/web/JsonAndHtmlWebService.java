@@ -60,12 +60,11 @@ import javax.ws.rs.core.UriInfo;
  */
 @Path("/")
 public class JsonAndHtmlWebService extends GenericWebService {
-    private GraphDatabaseService graphDb;
+    
 
     public JsonAndHtmlWebService(@Context UriInfo uriInfo, @Context
                                  GraphDatabaseService graphDb) {
         super(uriInfo, NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().database());
-        this.graphDb = graphDb;
     }
 
     /**
