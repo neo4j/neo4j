@@ -26,6 +26,7 @@ import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecified
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.osgi.OSGiContainer;
 import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
@@ -63,14 +64,15 @@ public class NeoServer implements WrapperListener {
     protected static final String WEB_ADMIN_PATH = "/webadmin";
 
     public static final String STATIC_CONTENT_LOCATION = "html";
+    private static final String OSGi_BUNDLE_DIR = "org.neo4j.server.bundledir";
+
     public static final int DEFAULT_WEBSERVER_PORT = 7474;
 
     protected static NeoServer theServer;
-
     protected Configurator configurator;
     protected Database database;
-    protected WebServer webServer;
 
+    protected WebServer webServer;
     protected int webServerPort;
     public static final String EXPORT_BASE_PATH = "org.neo4j.export.basepath";
 
@@ -132,6 +134,11 @@ public class NeoServer implements WrapperListener {
 
            // Temporary coffee shop
             webServer.addJAXRSPackages(listFrom(new String[] {"org.example.coffeeshop"}), "/");
+
+            // Start embedded OSGi container
+            String bundleDirectory = configurator.configuration().getString( OSGi_BUNDLE_DIR, "../" );
+            OSGiContainer container = new OSGiContainer( bundleDirectory );
+            container.startContainer();
             
             webServer.start();
             
