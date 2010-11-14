@@ -99,10 +99,11 @@
             <version>1.6.1</version>
         </dependency>
 
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit-dep</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>com.tinkerpop</groupId>
+			<artifactId>gremlin</artifactId>
+			<version>0.5.5</version>
+		</dependency>
 
         <dependency>
             <groupId>org.hamcrest</groupId>
@@ -427,27 +428,6 @@
 
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>static-web</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <attach>true</attach>
-                            <descriptors>
-                                <descriptor>src/main/assemblies/static-web.xml
-                                </descriptor>
-                            </descriptors>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>com.mycila.maven-license-plugin</groupId>
                 <artifactId>maven-license-plugin</artifactId>
