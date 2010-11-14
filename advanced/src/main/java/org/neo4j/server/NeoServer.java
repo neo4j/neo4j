@@ -64,7 +64,7 @@ public class NeoServer implements WrapperListener {
     protected static final String WEB_ADMIN_PATH = "/webadmin";
 
     public static final String STATIC_CONTENT_LOCATION = "html";
-    private static final String OSGi_BUNDLE_DIR = "org.neo4j.server.bundledir";
+    public static final String OSGi_BUNDLE_DIR = "org.neo4j.server.bundledir";
 
     public static final int DEFAULT_WEBSERVER_PORT = 7474;
 
@@ -133,7 +133,7 @@ public class NeoServer implements WrapperListener {
             webServer.addJAXRSPackages(listFrom(new String[] { REST_API_PACKAGE }), REST_API_SERVICE_NAME);
 
            // Temporary coffee shop
-            webServer.addJAXRSPackages(listFrom(new String[] {"org.example.coffeeshop"}), "/");
+            //webServer.addJAXRSPackages(listFrom(new String[] {"org.example.coffeeshop"}), "/");
 
             // Start embedded OSGi container
             String bundleDirectory = configurator.configuration().getString( OSGi_BUNDLE_DIR, "../" );
