@@ -192,12 +192,12 @@
       <version>${neo4j-examples.version}</version>
       <classifier>site</classifier>
     </dependency>
-    <dependency>
+    <!--dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j-server.version}</version>
       <classifier>static-web</classifier>
-    </dependency>
+    </dependency-->
 
     <!-- OSGi Bundles -->
     <dependency>
