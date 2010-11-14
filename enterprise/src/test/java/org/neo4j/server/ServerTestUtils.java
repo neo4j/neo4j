@@ -104,7 +104,7 @@ public class ServerTestUtils {
             writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
             writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "neo4j-servers",constructWebadminServerConfig(),
                     temporaryConfigFile);
-
+            writePropertyToFile(NeoServer.OSGi_BUNDLE_DIR, "../", temporaryConfigFile);
 
             System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath());
 
