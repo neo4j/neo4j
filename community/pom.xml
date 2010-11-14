@@ -27,7 +27,7 @@
         </neo-server.confdir>
     </properties>
 
-    <packaging>bundle</packaging>
+    <packaging>jar</packaging>
 
     <scm>
         <connection>scm:svn:https://svn.neo4j.org/components/server/trunk/
@@ -235,28 +235,17 @@
 
 
         <plugins>
-            <!-- Development execution -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <mainClass>org.neo4j.webadmin.Main</mainClass>
-                    <arguments>
-                        <argument>-webRoot=${project.build.outputDirectory}/html
-                        </argument>
-                        <argument>-development=true</argument>
-                    </arguments>
-                </configuration>
-            </plugin>
-
-
+          <plugin>    <!-- (2) START -->
+             <groupId>org.apache.felix</groupId>
+             <artifactId>maven-bundle-plugin</artifactId>
+             <extensions>true</extensions>
+             <configuration>
+               <Include-Resource>
+                 {maven-resources}, {maven-dependencies},
+                 
+               </Include-Resource>
+             </configuration>
+          </plugin>    <!-- (2) END -->
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
