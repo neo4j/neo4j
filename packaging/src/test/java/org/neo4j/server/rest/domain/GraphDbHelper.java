@@ -50,13 +50,13 @@ public class GraphDbHelper {
     }
 
     private int numberOfEntitiesFor(Class<? extends PropertyContainer> type) throws DatabaseBlockedException {
-        return (int) ((EmbeddedGraphDatabase) database.db).getConfig().getGraphDbModule().getNodeManager().getNumberOfIdsInUse(type);
+        return (int) ((EmbeddedGraphDatabase) database.graph ).getConfig().getGraphDbModule().getNodeManager().getNumberOfIdsInUse(type);
     }
 
     public Map<String, Object> getNodeProperties(long nodeId) throws DatabaseBlockedException {
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.getNodeById(nodeId);
+            Node node = database.graph.getNodeById(nodeId);
             Map<String, Object> allProperties = new HashMap<String, Object>();
             for (String propertyKey : node.getPropertyKeys()) {
                 allProperties.put(propertyKey, node.getProperty(propertyKey));
@@ -69,9 +69,9 @@ public class GraphDbHelper {
     }
 
     public void setNodeProperties(long nodeId, Map<String, Object> properties) throws DatabaseBlockedException {
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.getNodeById(nodeId);
+            Node node = database.graph.getNodeById(nodeId);
             for (Map.Entry<String, Object> propertyEntry : properties.entrySet()) {
                 node.setProperty(propertyEntry.getKey(), propertyEntry.getValue());
             }
@@ -82,9 +82,9 @@ public class GraphDbHelper {
     }
 
     public long createNode() throws DatabaseBlockedException {
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.createNode();
+            Node node = database.graph.createNode();
             tx.success();
             return node.getId();
         } finally {
@@ -93,9 +93,9 @@ public class GraphDbHelper {
     }
 
     public long createNode(Map<String, Object> properties) throws DatabaseBlockedException {
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.createNode();
+            Node node = database.graph.createNode();
             for (Map.Entry<String, Object> entry : properties.entrySet()) {
                 node.setProperty(entry.getKey(), entry.getValue());
             }
@@ -107,10 +107,10 @@ public class GraphDbHelper {
     }
 
     public long createRelationship(String type, long startNodeId, long endNodeId) throws DatabaseBlockedException {
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node startNode = database.db.getNodeById(startNodeId);
-            Node endNode = database.db.getNodeById(endNodeId);
+            Node startNode = database.graph.getNodeById(startNodeId);
+            Node endNode = database.graph.getNodeById(endNodeId);
             Relationship relationship = startNode.createRelationshipTo(endNode, DynamicRelationshipType.withName(type));
             tx.success();
             return relationship.getId();
@@ -120,10 +120,10 @@ public class GraphDbHelper {
     }
 
     public long createRelationship(String type) throws DatabaseBlockedException {
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node startNode = database.db.createNode();
-            Node endNode = database.db.createNode();
+            Node startNode = database.graph.createNode();
+            Node endNode = database.graph.createNode();
             Relationship relationship = startNode.createRelationshipTo(endNode, DynamicRelationshipType.withName(type));
             tx.success();
             return relationship.getId();
@@ -133,9 +133,9 @@ public class GraphDbHelper {
     }
 
     public void setRelationshipProperties(long relationshipId, Map<String, Object> properties) throws DatabaseBlockedException {
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Relationship relationship = database.db.getRelationshipById(relationshipId);
+            Relationship relationship = database.graph.getRelationshipById(relationshipId);
             for (Map.Entry<String, Object> propertyEntry : properties.entrySet()) {
                 relationship.setProperty(propertyEntry.getKey(), propertyEntry.getValue());
             }
@@ -146,9 +146,9 @@ public class GraphDbHelper {
     }
 
     public Map<String, Object> getRelationshipProperties(long relationshipId) throws DatabaseBlockedException {
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Relationship relationship = database.db.getRelationshipById(relationshipId);
+            Relationship relationship = database.graph.getRelationshipById(relationshipId);
             Map<String, Object> allProperties = new HashMap<String, Object>();
             for (String propertyKey : relationship.getPropertyKeys()) {
                 allProperties.put(propertyKey, relationship.getProperty(propertyKey));
@@ -161,9 +161,9 @@ public class GraphDbHelper {
     }
 
     public Relationship getRelationship(long relationshipId) throws DatabaseBlockedException {
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Relationship relationship = database.db.getRelationshipById(relationshipId);
+            Relationship relationship = database.graph.getRelationshipById(relationshipId);
             tx.success();
             return relationship;
         } finally {
@@ -173,9 +173,9 @@ public class GraphDbHelper {
 
     public void addNodeToIndex(String indexName, String key, Object value, long id) throws DatabaseBlockedException {
         org.neo4j.server.database.NodeIndex index = (org.neo4j.server.database.NodeIndex) database.getIndex(indexName);
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            index.add(database.db.getNodeById(id), key, value);
+            index.add(database.graph.getNodeById(id), key, value);
             tx.success();
         } finally {
             tx.finish();
@@ -185,7 +185,7 @@ public class GraphDbHelper {
     public Collection<Long> getIndexedNodes(String indexName, String key, Object value) throws DatabaseBlockedException {
 
         org.neo4j.server.database.NodeIndex index = (org.neo4j.server.database.NodeIndex) database.getIndex(indexName);
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
             Collection<Long> result = new ArrayList<Long>();
             for (Node node : index.get(key, value)) {

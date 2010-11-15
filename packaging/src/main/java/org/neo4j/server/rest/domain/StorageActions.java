@@ -52,9 +52,9 @@ public class StorageActions {
     }
 
     public NodeRepresentation getReferenceNode() throws DatabaseBlockedException {
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            NodeRepresentation result = retrieveNode(graphdb.db.getReferenceNode().getId());
+            NodeRepresentation result = retrieveNode(graphdb.graph.getReferenceNode().getId());
             tx.success();
             return result;
         } finally {
@@ -64,9 +64,9 @@ public class StorageActions {
 
     public NodeRepresentation createNode(PropertiesMap properties) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Node node = graphdb.db.createNode();
+            Node node = graphdb.graph.createNode();
             properties.storeTo(node);
             tx.success();
             return new NodeRepresentation(baseUri, node);
@@ -77,9 +77,9 @@ public class StorageActions {
 
     public void setNodeProperties(long nodeId, PropertiesMap properties) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Node node = graphdb.db.getNodeById(nodeId);
+            Node node = graphdb.graph.getNodeById(nodeId);
             deleteProperties(node);
             properties.storeTo(node);
             tx.success();
@@ -96,9 +96,9 @@ public class StorageActions {
 
     public NodeRepresentation retrieveNode(long nodeId) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Node node = graphdb.db.getNodeById(nodeId);
+            Node node = graphdb.graph.getNodeById(nodeId);
             tx.success();
             return new NodeRepresentation(baseUri, node);
         } finally {
@@ -108,9 +108,9 @@ public class StorageActions {
 
     public PropertiesMap getNodeProperties(long nodeId) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            PropertiesMap result = new PropertiesMap(graphdb.db.getNodeById(nodeId));
+            PropertiesMap result = new PropertiesMap(graphdb.graph.getNodeById(nodeId));
             tx.success();
             return result;
         } finally {
@@ -120,9 +120,9 @@ public class StorageActions {
 
     public void deleteNode(long nodeId) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Node node = graphdb.db.getNodeById(nodeId);
+            Node node = graphdb.graph.getNodeById(nodeId);
             node.delete();
             tx.success();
         } finally {
@@ -132,9 +132,9 @@ public class StorageActions {
 
     public void setNodeProperty(long nodeId, String key, Object value) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Node node = graphdb.db.getNodeById(nodeId);
+            Node node = graphdb.graph.getNodeById(nodeId);
             node.setProperty(key, value);
             tx.success();
         } finally {
@@ -144,9 +144,9 @@ public class StorageActions {
 
     public Object getNodeProperty(long nodeId, String key) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Node node = graphdb.db.getNodeById(nodeId);
+            Node node = graphdb.graph.getNodeById(nodeId);
             Object value = node.getProperty(key);
             tx.success();
             return value;
@@ -161,17 +161,17 @@ public class StorageActions {
         if (startNodeId == endNodeId) {
             throw new StartNodeSameAsEndNodeException();
         }
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
             Node startNode;
             Node endNode;
             try {
-                startNode = graphdb.db.getNodeById(startNodeId);
+                startNode = graphdb.graph.getNodeById(startNodeId);
             } catch (NotFoundException e) {
                 throw new StartNodeNotFoundException();
             }
             try {
-                endNode = graphdb.db.getNodeById(endNodeId);
+                endNode = graphdb.graph.getNodeById(endNodeId);
             } catch (NotFoundException e) {
                 throw new EndNodeNotFoundException();
             }
@@ -187,9 +187,9 @@ public class StorageActions {
 
     public void removeNodeProperties(long nodeId) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Node node = graphdb.db.getNodeById(nodeId);
+            Node node = graphdb.graph.getNodeById(nodeId);
             deleteProperties(node);
             tx.success();
         } finally {
@@ -199,9 +199,9 @@ public class StorageActions {
 
     public boolean removeNodeProperty(long nodeId, String key) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Node node = graphdb.db.getNodeById(nodeId);
+            Node node = graphdb.graph.getNodeById(nodeId);
             boolean removed = node.removeProperty(key) != null;
             tx.success();
             return removed;
@@ -212,9 +212,9 @@ public class StorageActions {
 
     public RelationshipRepresentation retrieveRelationship(long relationshipId) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Relationship relationship = graphdb.db.getRelationshipById(relationshipId);
+            Relationship relationship = graphdb.graph.getRelationshipById(relationshipId);
             tx.success();
             return new RelationshipRepresentation(baseUri, relationship);
         } finally {
@@ -224,9 +224,9 @@ public class StorageActions {
 
     public PropertiesMap getRelationshipProperties(long relationshipId) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            PropertiesMap result = new PropertiesMap(graphdb.db.getRelationshipById(relationshipId));
+            PropertiesMap result = new PropertiesMap(graphdb.graph.getRelationshipById(relationshipId));
             tx.success();
             return result;
         } finally {
@@ -236,9 +236,9 @@ public class StorageActions {
 
     public Object getRelationshipProperty(long relationshipId, String key) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Relationship relationship = graphdb.db.getRelationshipById(relationshipId);
+            Relationship relationship = graphdb.graph.getRelationshipById(relationshipId);
             Object result = relationship.getProperty(key);
             tx.success();
             return result;
@@ -248,9 +248,9 @@ public class StorageActions {
     }
 
     public void removeRelationship(long relationshipId) throws DatabaseBlockedException {
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Relationship relationship = graphdb.db.getRelationshipById(relationshipId);
+            Relationship relationship = graphdb.graph.getRelationshipById(relationshipId);
             relationship.delete();
             tx.success();
         } finally {
@@ -265,9 +265,9 @@ public class StorageActions {
         for (int i = 0; i < types.length; i++) {
             types[i] = DynamicRelationshipType.withName(typeNames[i]);
         }
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            final Node node = graphdb.db.getNodeById(nodeId);
+            final Node node = graphdb.graph.getNodeById(nodeId);
             List<RelationshipRepresentation> result = new LinkedList<RelationshipRepresentation>();
             if (types.length > 1) {
                 for (Relationship rel : node.getRelationships(types)) {
@@ -303,9 +303,9 @@ public class StorageActions {
 
     public void setRelationshipProperties(long relationshipId, PropertiesMap properties) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Relationship relationship = graphdb.db.getRelationshipById(relationshipId);
+            Relationship relationship = graphdb.graph.getRelationshipById(relationshipId);
             deleteProperties(relationship);
             properties.storeTo(relationship);
             tx.success();
@@ -316,9 +316,9 @@ public class StorageActions {
 
     public void setRelationshipProperty(long relationshipId, String key, Object value) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Relationship relationship = graphdb.db.getRelationshipById(relationshipId);
+            Relationship relationship = graphdb.graph.getRelationshipById(relationshipId);
             relationship.setProperty(key, value);
             tx.success();
         } finally {
@@ -328,9 +328,9 @@ public class StorageActions {
 
     public void removeRelationshipProperties(long relationshipId) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Relationship relationship = graphdb.db.getRelationshipById(relationshipId);
+            Relationship relationship = graphdb.graph.getRelationshipById(relationshipId);
             deleteProperties(relationship);
             tx.success();
         } finally {
@@ -340,9 +340,9 @@ public class StorageActions {
 
     public boolean removeRelationshipProperty(long relationshipId, String propertyKey) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Relationship relationship = graphdb.db.getRelationshipById(relationshipId);
+            Relationship relationship = graphdb.graph.getRelationshipById(relationshipId);
             boolean removed = relationship.removeProperty(propertyKey) != null;
             tx.success();
             return removed;
@@ -353,9 +353,9 @@ public class StorageActions {
 
     public IndexedRepresentation addNodeToIndex(String indexName, String key, Object value, long nodeId) throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            Node node = graphdb.db.getNodeById(nodeId);
+            Node node = graphdb.graph.getNodeById(nodeId);
             org.neo4j.server.database.NodeIndex index = (org.neo4j.server.database.NodeIndex) graphdb.getIndex(indexName);
             index.add(node, key, value);
             tx.success();
@@ -368,9 +368,9 @@ public class StorageActions {
     public boolean nodeIsIndexed(String indexName, String key, Object value, long nodeId) throws DatabaseBlockedException {
 
         org.neo4j.server.database.NodeIndex index = (org.neo4j.server.database.NodeIndex) graphdb.getIndex(indexName);
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            boolean contains = index.contains(graphdb.db.getNodeById(nodeId), key, value);
+            boolean contains = index.contains(graphdb.graph.getNodeById(nodeId), key, value);
             tx.success();
             return contains;
         } finally {
@@ -382,7 +382,7 @@ public class StorageActions {
 
         org.neo4j.server.database.NodeIndex index = (org.neo4j.server.database.NodeIndex) graphdb.getIndex(indexName);
         
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
             List<IndexedNodeRepresentation> result = new ArrayList<IndexedNodeRepresentation>();
             for (Node node : index.get(key, value)) {
@@ -398,9 +398,9 @@ public class StorageActions {
     public boolean removeNodeFromIndex(String indexName, String key, Object value, long nodeId) throws DatabaseBlockedException {
 
         org.neo4j.server.database.NodeIndex index = (org.neo4j.server.database.NodeIndex) graphdb.getIndex(indexName);
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
-            boolean removed = index.remove(graphdb.db.getNodeById(nodeId), key, value);
+            boolean removed = index.remove(graphdb.graph.getNodeById(nodeId), key, value);
             tx.success();
             return removed;
         } finally {
@@ -411,11 +411,11 @@ public class StorageActions {
     public List<Representation> traverseAndCollect(long startNode, Map<String, Object> description, TraverserReturnType returnType)
             throws DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
         try {
             List<Representation> result = new ArrayList<Representation>();
             TraversalDescription traversalDescription = TraversalDescriptionBuilder.from(description);
-            for (Path position : traversalDescription.traverse(graphdb.db.getNodeById(startNode))) {
+            for (Path position : traversalDescription.traverse(graphdb.graph.getNodeById(startNode))) {
                 result.add(returnType.toRepresentation(baseUri, position));
             }
             tx.success();
@@ -451,18 +451,18 @@ public class StorageActions {
     public List<PathRepresentation> findPaths(long startNodeId, long endNodeId, boolean single, Map<String, Object> map) throws StartNodeNotFoundException,
             EndNodeNotFoundException, StartNodeSameAsEndNodeException, DatabaseBlockedException {
 
-        Transaction tx = graphdb.db.beginTx();
+        Transaction tx = graphdb.graph.beginTx();
 
         try {
             Node startNode;
             Node endNode;
             try {
-                startNode = graphdb.db.getNodeById(startNodeId);
+                startNode = graphdb.graph.getNodeById(startNodeId);
             } catch (NotFoundException e) {
                 throw new StartNodeNotFoundException();
             }
             try {
-                endNode = graphdb.db.getNodeById(endNodeId);
+                endNode = graphdb.graph.getNodeById(endNodeId);
             } catch (NotFoundException e) {
                 throw new EndNodeNotFoundException();
             }
