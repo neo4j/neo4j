@@ -20,10 +20,10 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
+
+import org.junit.Test;
 
 /**
  * Test that the webadmin HTTP console works and produces output as expected.
@@ -31,7 +31,7 @@ import static org.neo4j.server.webadmin.functional.web.IsVisible.isVisible;
 
 public class ConsoleFunctionalTest extends WebDriverTest
 {
-
+   
     @Test
     public void shouldHaveConsoleWindow()
     {
