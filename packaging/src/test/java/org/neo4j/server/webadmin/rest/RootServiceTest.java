@@ -38,13 +38,13 @@ public class RootServiceTest {
     @Test
     public void shouldAdvertiseServicesWhenAsked() throws Exception {
         UriInfo uriInfo = mock(UriInfo.class);
-        URI uri = new URI("http://example.org:7474");
+        URI uri = new URI("http://example.org:7474/");
         when(uriInfo.getBaseUri()).thenReturn(uri);
         
         RootService svc = new RootService();
         Response serviceDefinition = svc.getServiceDefinition(uriInfo, null);
         
         assertEquals(200, serviceDefinition.getStatus());
-        assertThat((String)serviceDefinition.getEntity(), containsString(String.format("\"console\" : \"%s/server/console\"", uri.toString())));
+        assertThat((String)serviceDefinition.getEntity(), containsString(String.format("\"console\" : \"%sserver/console\"", uri.toString())));
     }
 }

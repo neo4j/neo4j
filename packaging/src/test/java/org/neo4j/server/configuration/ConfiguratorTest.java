@@ -32,53 +32,59 @@ import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.validation.RuleFailedException;
+import org.neo4j.server.configuration.validation.ValidationRule;
 import org.neo4j.server.configuration.validation.Validator;
 
-public class ConfiguratorTest {
+public class ConfiguratorTest
+{
 
     @BeforeClass
-    public static void setup() {
-        System.setProperty("org.neo4j.server.properties", "src/test/resources/etc/neo-server/neo-server.properties");
+    public static void setup()
+    {
+        System.setProperty( "org.neo4j.server.properties",
+                "src/test/resources/etc/neo-server/neo-server.properties" );
     }
-    
+
     @Test
-    public void shouldProvideAConfiguration() {
-        Configuration config = new Configurator(new Validator()).configuration();
-        assertNotNull(config);
+    public void shouldProvideAConfiguration()
+    {
+        Configuration config = new Configurator( new Validator() ).configuration();
+        assertNotNull( config );
     }
-    
+
     @Test
-    public void shouldUseSpecifiedConfigFile() throws Exception {
+    public void shouldUseSpecifiedConfigFile() throws Exception
+    {
         File configFile = ServerTestUtils.createTempPropertyFile();
-        
-        FileWriter fstream = new FileWriter(configFile);
-        BufferedWriter out = new BufferedWriter(fstream);
-        out.write("foo=bar");
+
+        FileWriter fstream = new FileWriter( configFile );
+        BufferedWriter out = new BufferedWriter( fstream );
+        out.write( "foo=bar" );
         out.close();
-        
-        Configuration testConf = new Configurator(new Validator(), configFile).configuration();
+
+        Configuration testConf = new Configurator( new Validator(), configFile ).configuration();
 
         final String EXPECTED_VALUE = "bar";
-        assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
+        assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );
     }
 
     @Test
-    public void shouldAcceptDuplicateKeysWithSameValue() throws IOException {
+    public void shouldAcceptDuplicateKeysWithSameValue() throws IOException
+    {
         File configFile = ServerTestUtils.createTempPropertyFile();
-        
 
-        BufferedWriter writer = new BufferedWriter(new FileWriter(configFile));
-        writer.write("foo=bar");
-        writer.write(System.getProperty("line.separator")); 
-        writer.write("foo=bar");
+        BufferedWriter writer = new BufferedWriter( new FileWriter( configFile ) );
+        writer.write( "foo=bar" );
+        writer.write( System.getProperty( "line.separator" ) );
+        writer.write( "foo=bar" );
         writer.close();
 
-
-        Configurator configurator = new Configurator(configFile);
+        Configurator configurator = new Configurator( configFile );
         Configuration testConf = configurator.configuration();
 
-        assertNotNull(testConf);
+        assertNotNull( testConf );
         final String EXPECTED_VALUE = "bar";
-        assertEquals(EXPECTED_VALUE, testConf.getString("foo"));
+        assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );
     }
 }
