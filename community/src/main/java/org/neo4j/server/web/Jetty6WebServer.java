@@ -31,7 +31,7 @@ import org.mortbay.jetty.servlet.SessionHandler;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
@@ -48,9 +48,9 @@ public class Jetty6WebServer implements WebServer
 
     private HashMap<String, String> staticContent = new HashMap<String, String>();
     private HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
-    public GraphDatabaseService db;
+    public Database db;
 
-    public Jetty6WebServer( GraphDatabaseService db )
+    public Jetty6WebServer( Database db )
     {
         this.db = db;
     }

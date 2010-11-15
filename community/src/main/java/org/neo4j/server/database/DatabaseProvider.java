@@ -21,24 +21,23 @@
 package org.neo4j.server.database;
 
 import com.sun.jersey.api.core.HttpContext;
-import org.neo4j.graphdb.GraphDatabaseService;
 
 import javax.ws.rs.ext.Provider;
 
 @Provider
 public class DatabaseProvider extends
-        AbstractInjectableProvider<GraphDatabaseService>
+        AbstractInjectableProvider<Database>
 {
-    public GraphDatabaseService db;
+    public Database db;
 
-    public DatabaseProvider( GraphDatabaseService db )
+    public DatabaseProvider( Database db )
     {
-        super( GraphDatabaseService.class );
+        super( Database.class );
         this.db = db;
     }
 
     @Override
-    public GraphDatabaseService getValue( HttpContext httpContext )
+    public Database getValue( HttpContext httpContext )
     {
         return db;
     }

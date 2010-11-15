@@ -61,7 +61,7 @@ public class RestbucksWebResources {
     @POST
     public Response createOrder(String coffee) throws URISyntaxException {
 
-        GraphDatabaseService graphDb = NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().database().db;
+        GraphDatabaseService graphDb = NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().database().graph;
 
         Transaction tx = graphDb.beginTx();
         long orderNo = -1;
@@ -83,9 +83,9 @@ public class RestbucksWebResources {
     @GET
     public Response getOrder(@PathParam("orderId") long orderId) {
         
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.getNodeById(orderId);
+            Node node = database.graph.getNodeById(orderId);
             tx.success();
             return Response.ok(node.getProperty("lineItem")).build();
         } finally {

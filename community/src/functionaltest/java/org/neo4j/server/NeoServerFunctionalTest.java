@@ -24,6 +24,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 
@@ -93,8 +94,8 @@ public class NeoServerFunctionalTest {
                 .getPort())));
         s1.stop();
     }
-    
-    
+
+    @Ignore
     @Test
     public void hackTheCoffeeShop() throws Exception {
         ClientResponse response = Client.create().resource(server.baseUri().toString() + "coffeeshop/menu").get(ClientResponse.class);
