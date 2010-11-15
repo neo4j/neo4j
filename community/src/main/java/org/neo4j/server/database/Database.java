@@ -53,7 +53,14 @@ public class Database
 
     public Database( String databaseStoreDirectory )
     {
-        this( new EmbeddedGraphDatabase( databaseStoreDirectory ) );
+        this( createDatabase( databaseStoreDirectory ) );
+    }
+
+    private static EmbeddedGraphDatabase createDatabase(
+            String databaseStoreDirectory )
+    {
+        log.info( "Creating database at " + databaseStoreDirectory );        
+        return new EmbeddedGraphDatabase( databaseStoreDirectory );
     }
 
     private synchronized void ensureIndexServiceIsAvailable() throws DatabaseBlockedException
