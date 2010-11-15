@@ -87,7 +87,6 @@ public class SlaveIdGenerator implements IdGenerator
             ResponseReceiver receiver, IdGenerator localIdGenerator )
     {
         this.idType = idType;
-        this.highestIdInUse = highestIdInUse;
         this.broker = broker;
         this.receiver = receiver;
         this.localIdGenerator = localIdGenerator;
@@ -104,12 +103,12 @@ public class SlaveIdGenerator implements IdGenerator
 
     public long getHighId()
     {
-        return this.highestIdInUse;
+        return Math.max( this.localIdGenerator.getHighId(), highestIdInUse );
     }
 
     public long getNumberOfIdsInUse()
     {
-        return this.highestIdInUse - this.defragCount;
+        return Math.max( this.localIdGenerator.getNumberOfIdsInUse(), highestIdInUse-defragCount );
     }
 
     public synchronized long nextId()
@@ -167,7 +166,6 @@ public class SlaveIdGenerator implements IdGenerator
 
     public void setHighId( long id )
     {
-        this.highestIdInUse = id;
         this.localIdGenerator.setHighId( id );
     }
     
