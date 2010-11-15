@@ -43,13 +43,7 @@
     <org.neo4j.webservice.packages>org.neo4j.rest.web,org.neo4j.webadmin,org.neo4j.webadmin.backup,org.neo4j.webadmin.console,org.neo4j.webadmin.domain,org.neo4j.webadmin.parser,org.neo4j.webadmin.properties,org.neo4j.webadmin.resources,org.neo4j.webadmin.rest,org.neo4j.webadmin.rrd,org.neo4j.webadmin.task,org.neo4j.webadmin.utils</org.neo4j.webservice.packages>
     <org.neo4j.server.bundledir>../system/lib</org.neo4j.server.bundledir>
 
-    <!-- 
-         Runtime properties. These are used to bootstrap
-         the server. All other configuration should happen
-         through a configuration file. 
-         Each of these should have a sensible default, so
-         that the server can operate without them defined.
-         -->
+    <!-- Runtime properties. These are used to bootstrap the server. All other configuration should happen through a configuration file. Each of these should have a sensible default, so that the server can operate without them defined. -->
     <neo4j.home>${project.build.directory}/neo4j</neo4j.home>
     <neo4j.confdir>${neo4j.home}/conf</neo4j.confdir> <!-- needed? -->
     <neo4j.datadir>${neo4j.home}/data</neo4j.datadir> <!-- needed? -->
@@ -170,6 +164,12 @@
       <version>${neo4j-server.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <version>${neo4j-server.version}</version>
+      <classifier>static-web</classifier> 
+    </dependency>
+    <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
       <version>${neo4j-examples.version}</version>
@@ -192,12 +192,7 @@
       <version>${neo4j-examples.version}</version>
       <classifier>site</classifier>
     </dependency>
-    <!--dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server</artifactId>
-      <version>${neo4j-server.version}</version>
-      <classifier>static-web</classifier>
-    </dependency-->
+    <!--dependency> <groupId>org.neo4j.app</groupId> <artifactId>neo4j-server</artifactId> <version>${neo4j-server.version}</version> <classifier>static-web</classifier> </dependency -->
 
     <!-- OSGi Bundles -->
     <dependency>
@@ -205,7 +200,7 @@
       <artifactId>org.apache.felix.fileinstall</artifactId>
       <version>${felix-fileinstall.version}</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.ops4j.pax.logging</groupId>
       <artifactId>pax-logging-api</artifactId>
@@ -216,7 +211,7 @@
       <artifactId>pax-logging-service</artifactId>
       <version>${pax-logging.version}</version>
     </dependency>
-    
+
   </dependencies>
 
   <developers>
