@@ -33,36 +33,29 @@ import javax.ws.rs.core.MediaType;
 
 import static org.junit.Assert.assertEquals;
 
-public class InteractWith3rdPartyResourceTest {
-    public static NeoServer server;
+public class InteractWith3rdPartyResourceTest extends FunctionalTestBase
 
-    @BeforeClass
-    public static void startServer() {
-        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-    }
-
-    @AfterClass
-    public static void stopServer() throws Exception {
-        ServerTestUtils.nukeServer();
-    }
-
+{
     @Test
-    public void whenCreatingAResourceOnValid3rdPartyResourceResponseShouldBeCreated() {
+    public void whenCreatingAResourceOnValid3rdPartyResourceResponseShouldBeCreated()
+    {
 
         Client client = Client.create();
-        WebResource ordersResource = client.resource(ensureEndsWithSlash(server.restApiUri().toString()) + "restbucks/order");
-        ClientResponse response = ordersResource.type(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity("{ \"coffee\" : \"latte\" }").post(
-                ClientResponse.class);
-        assertEquals(201, response.getStatus());
+        WebResource ordersResource = client.resource( ensureEndsWithSlash( server.restApiUri().toString() ) + "restbucks/order" );
+        ClientResponse response = ordersResource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( "{ \"coffee\" : \"latte\" }" ).post(
+                ClientResponse.class );
+        assertEquals( 201, response.getStatus() );
 
-        WebResource order = client.resource(response.getLocation());
-        ClientResponse getResponse = order.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+        WebResource order = client.resource( response.getLocation() );
+        ClientResponse getResponse = order.accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
 
-        assertEquals(200, getResponse.getStatus());
+        assertEquals( 200, getResponse.getStatus() );
     }
 
-    private String ensureEndsWithSlash(String baseUri) {
-        if (baseUri.endsWith("/")) {
+    private String ensureEndsWithSlash( String baseUri )
+    {
+        if ( baseUri.endsWith( "/" ) )
+        {
             return baseUri;
         }
         return baseUri + "/";
