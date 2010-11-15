@@ -40,5 +40,4 @@ public class JmxFunctionalTest extends WebDriverTest {
 			return waitForElementToAppear(By.className("mor_jmx_list"));
 		}
 	};
-
 }

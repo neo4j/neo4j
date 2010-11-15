@@ -17,31 +17,42 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.server.webadmin.rest.representations;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
-import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
-import org.neo4j.server.webadmin.rest.ConsoleService;
+import org.neo4j.server.rest.domain.Representation;
 
-public class ServerRootRepresentationTest
+
+public class ExceptionRepresentation implements Representation
 {
-    @Test
-    public void shouldProvideAListOfServiceUris() throws Exception
+
+    private Exception exception;
+
+    public ExceptionRepresentation( Exception e )
     {
-        ConsoleService consoleService = new ConsoleService( null );
-        ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ), consoleService );
-        Map<String, Map<String, String>> map = srr.serialize();
-
-        assertNotNull(map.get("services"));
-        
-        assertThat( map.get("services").get( consoleService.getName() ), containsString( consoleService.getServerPath() ) );
-
+        this.exception = e;
     }
+
+    public Object serialize()
+    {
+        Map<String, Object> repr = new HashMap<String, Object>();
+
+        repr.put( "exception", exception.getClass().getSimpleName() );
+        repr.put( "message", exception.getMessage() );
+
+        List<String> trace = new ArrayList<String>();
+        for ( StackTraceElement elem : exception.getStackTrace() )
+        {
+            trace.add( elem.toString() );
+        }
+
+        repr.put( "trace", trace );
+
+        return repr;
+    }
+
 }

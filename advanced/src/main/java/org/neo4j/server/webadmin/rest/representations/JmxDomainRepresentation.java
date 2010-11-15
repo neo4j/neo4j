@@ -20,30 +20,45 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
-import org.neo4j.server.rest.domain.Representation;
-import org.neo4j.server.webadmin.rest.AdvertisableService;
-
-import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ServerRootRepresentation implements Representation
+import javax.management.ObjectName;
+
+import org.neo4j.server.rest.domain.Representation;
+
+
+public class JmxDomainRepresentation implements Representation
 {
-    private HashMap<String, String> services = new HashMap<String, String>();
 
-    public ServerRootRepresentation( URI baseUri,
-                                     AdvertisableService... advertisableServices )
+    protected ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
+    protected String domainName;
+
+    public JmxDomainRepresentation( String name )
     {
-        for ( AdvertisableService svc : advertisableServices )
+        this.domainName = name;
+    }
+
+    public void addBean( ObjectName bean )
+    {
+        beans.add( new JmxMBeanRepresentation( bean ) );
+    }
+
+    public Object serialize()
+    {
+        Map<String, Object> data = new HashMap<String, Object>();
+
+        data.put( "domain", this.domainName );
+
+        ArrayList<Object> serialBeans = new ArrayList<Object>();
+        for ( JmxMBeanRepresentation bean : beans )
         {
-            services.put( svc.getName(), baseUri.toString() + svc.getServerPath() );
+            serialBeans.add( bean.serialize() );
         }
+        data.put( "beans", serialBeans );
+
+        return data;
     }
 
-    public Map<String, Map<String, String>> serialize()
-    {
-        HashMap<String, Map<String, String>> result = new HashMap<String, Map<String,String>>();
-        result.put("services", services);
-        return result;
-    }
 }

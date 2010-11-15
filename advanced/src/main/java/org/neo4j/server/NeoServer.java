@@ -20,6 +20,13 @@
 
 package org.neo4j.server;
 
+import java.io.File;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -34,13 +41,6 @@ import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 import org.tanukisoftware.wrapper.WrapperListener;
 
-import java.io.File;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Application entry point for the Neo4j Server.
  */
@@ -48,7 +48,7 @@ public class NeoServer implements WrapperListener
 {
     public static final Logger log = Logger.getLogger( NeoServer.class );
 
-    public static final String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.webserver.port";
+    public static final String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
 
     public static final String REST_API_SERVICE_NAME = "/db/data";
     public static final String REST_API_PACKAGE = "org.neo4j.server.rest.web";
@@ -56,7 +56,7 @@ public class NeoServer implements WrapperListener
     public static final String NEO_CONFIG_FILE_KEY = "org.neo4j.server.properties";
     public static final String DEFAULT_NEO_CONFIG_DIR = File.separator + "etc" + File.separator + "neo";
 
-    public static final String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.database.location";
+    public static final String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";
     public static final String WEBADMIN_NAMESPACE_PROPERTY_KEY = "org.neo4j.server.webadmin.";
 
 
@@ -143,9 +143,7 @@ public class NeoServer implements WrapperListener
 
             log.info( "Mounting REST API at [%s]", REST_API_SERVICE_NAME );
             webServer.addJAXRSPackages( listFrom( new String[]{REST_API_PACKAGE} ), REST_API_SERVICE_NAME );
-
-            //Temporary coffee shop
-            //webServer.addJAXRSPackages(listFrom(new String[] {"org.example.coffeeshop"}), "/");
+            
 
             // Start embedded OSGi container, maybe
             boolean osgiServerShouldStart = configurator.configuration().getBoolean( ENABLE_OSGI_SERVER_PROPERTY_KEY, false );
