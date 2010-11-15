@@ -129,7 +129,8 @@ public class NeoServer implements WrapperListener
 
             this.database = new Database( configurator.configuration().getString( DATABASE_LOCATION_PROPERTY_KEY ) );
 
-            this.webServer = new Jetty6WebServer( database );
+            // Config and database has to be created before we start Jetty
+            this.webServer = new Jetty6WebServer( this );
 
             log.info( "Starting Neo Server on port [%s]", webServerPort );
             webServer.setPort( webServerPort );

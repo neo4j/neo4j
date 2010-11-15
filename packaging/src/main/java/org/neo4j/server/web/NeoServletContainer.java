@@ -24,17 +24,18 @@ import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.WebApplication;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import com.sun.jersey.spi.container.servlet.WebConfig;
-import org.neo4j.server.database.Database;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.database.DatabaseProvider;
 
-@SuppressWarnings("serial")
+@SuppressWarnings( "serial" )
 public class NeoServletContainer extends ServletContainer
 {
-    public Database db;
+    private NeoServer server;
 
-    public NeoServletContainer( Database db )
+    public NeoServletContainer( NeoServer server )
     {
-        this.db = db;
+        this.server = server;
     }
 
     @Override
@@ -43,6 +44,7 @@ public class NeoServletContainer extends ServletContainer
     {
         super.configure( wc, rc, wa );
 
-        rc.getSingletons().add( new DatabaseProvider( db ) );
+        rc.getSingletons().add( new DatabaseProvider( server.database() ) );
+        rc.getSingletons().add( new ConfigurationProvider( server.configuration() ) );
     }
 }

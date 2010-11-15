@@ -20,29 +20,28 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
+import org.neo4j.server.rest.domain.Representation;
+import org.neo4j.server.webadmin.rest.AdvertisableService;
+
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.server.rest.domain.Representation;
-import org.neo4j.server.webadmin.rest.AdvertisableService;
-
-public class ServerRootRepresentation implements Representation {
-
-    private static final String SERVER_PATH = "server/console";
+public class ServerRootRepresentation implements Representation
+{
     private HashMap<String, String> services = new HashMap<String, String>();
 
-    public ServerRootRepresentation(URI baseUri, AdvertisableService ... advertisableServices) {
-        for(AdvertisableService svc : advertisableServices) {
-            services.put(svc.getName(), baseUri.toString() + "/" +svc.getServerPath());
+    public ServerRootRepresentation( URI baseUri,
+                                     AdvertisableService... advertisableServices )
+    {
+        for ( AdvertisableService svc : advertisableServices )
+        {
+            services.put( svc.getName(), baseUri.toString() + svc.getServerPath() );
         }
     }
 
-    public Map<String,String> serialize() {
+    public Map<String, String> serialize()
+    {
         return services;
-    }
-
-    public String getServerPath() {
-        return SERVER_PATH;
     }
 }
