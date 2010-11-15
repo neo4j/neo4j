@@ -49,7 +49,7 @@ public class ConfigFileMustBePresentRuleTest {
     @Test
     public void shouldPassIfThereIsAConfigFileWhereTheSystemPropertyPoints() throws IOException {
         File propertyFile = ServerTestUtils.createTempPropertyFile();
-        ServerTestUtils.writePropertyToFile("org.neo4j.database.location", "/tmp/foo.db", propertyFile);
+        ServerTestUtils.writePropertyToFile(NeoServer.DATABASE_LOCATION_PROPERTY_KEY, "/tmp/foo.db", propertyFile);
         
         ConfigFileMustBePresentRule rule = new ConfigFileMustBePresentRule();
         assertTrue(rule.execute(propertiesWithConfigFileLocation(propertyFile)));

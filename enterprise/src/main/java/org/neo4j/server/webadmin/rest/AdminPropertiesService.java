@@ -27,15 +27,18 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 @Path( "/properties" )
 public class AdminPropertiesService
 {
     private final String configurationNamespace = "org.neo4j.server.webadmin.";
     private Configuration config;
+    private final UriInfo uriInfo;
 
-    public AdminPropertiesService( @Context Configuration config )
+    public AdminPropertiesService( @Context UriInfo uriInfo, @Context Configuration config )
     {
+        this.uriInfo = uriInfo;
         this.config = config;
     }
 
@@ -44,6 +47,24 @@ public class AdminPropertiesService
     @Path( "/{key}" )
     public Response getValue( @PathParam( "key" ) String key )
     {
+        // Legacy mapping
+        if(key.toLowerCase().equals("neo4j-servers")) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("{ \"");
+            sb.append(uriInfo.getBaseUri());
+            sb.append("\" : ");
+            sb.append("{\"url\" : \"");
+            sb.append(config.getProperty(configurationNamespace + "data.uri"));
+            sb.append("\"");
+            sb.append(",");
+            sb.append("\"manageUrl\" : \"");
+            sb.append(config.getProperty(configurationNamespace + "management.uri"));
+            sb.append("\"}");
+            sb.append("}");
+            
+            return Response.ok(sb.toString()).type(MediaType.APPLICATION_JSON).build();
+        }
+        
         Object value = config.getProperty( configurationNamespace + key );
 
         if ( value == null )
