@@ -188,7 +188,7 @@ public class JmxService implements AdvertisableService {
     }
     
     public String getName() {
-        return "JmxService";
+        return "jmx";
     }
     public String getServerPath() {
         return ROOT_PATH;

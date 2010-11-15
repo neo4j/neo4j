@@ -46,5 +46,6 @@ public class RootServiceTest {
         
         assertEquals(200, serviceDefinition.getStatus());
         assertThat((String)serviceDefinition.getEntity(), containsString(String.format("\"console\" : \"%sserver/console\"", uri.toString())));
+        assertThat((String)serviceDefinition.getEntity(), containsString(String.format("\"jmx\" : \"%sserver/jmx\"", uri.toString())));
     }
 }
