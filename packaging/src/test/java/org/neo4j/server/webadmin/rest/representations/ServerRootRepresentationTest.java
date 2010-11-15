@@ -30,14 +30,16 @@ import java.util.Map;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-public class ServerRootRepresentationTest {
+public class ServerRootRepresentationTest
+{
     @Test
-    public void shouldProvideAListOfServiceUris() throws Exception {
-        ConsoleService consoleService = new ConsoleService(null, (ConsoleSession)null);
-        ServerRootRepresentation srr = new ServerRootRepresentation(new URI("http://example.org:9999"), consoleService);
-        Map<String,String> map = srr.serialize();
+    public void shouldProvideAListOfServiceUris() throws Exception
+    {
+        ConsoleService consoleService = new ConsoleService( null );
+        ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ), consoleService );
+        Map<String, String> map = srr.serialize();
 
-        assertThat(map.get(consoleService.getName()), containsString(consoleService.getServerPath()));
+        assertThat( map.get( consoleService.getName() ), containsString( consoleService.getServerPath() ) );
 
     }
 }
