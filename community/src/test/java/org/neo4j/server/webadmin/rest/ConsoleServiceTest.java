@@ -20,12 +20,6 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import org.junit.Test;
-
-
-public class ConsoleServiceTest {
-    @Test
-    public void shouldReturnASetOfLinksToActiveServices() {
-        
-    }
+public class ConsoleServiceTest
+{
 }
