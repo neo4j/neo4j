@@ -64,10 +64,10 @@ public class NeoServerTest {
 
         
         // Do some work
-        server.database().db.beginTx().success();
+        server.database().graph.beginTx().success();
         server.stop();
 
-        server.database().db.beginTx();
+        server.database().graph.beginTx();
     }
 
     

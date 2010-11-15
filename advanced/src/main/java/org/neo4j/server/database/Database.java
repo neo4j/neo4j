@@ -35,7 +35,7 @@ public class Database {
 
     public static Logger log = Logger.getLogger(Database.class);
 
-    public GraphDatabaseService db;
+    public GraphDatabaseService graph;
     public IndexService indexService;
     public IndexService fulltextIndexService;
     public Map<String, Index<? extends PropertyContainer>> indicies;
@@ -44,16 +44,16 @@ public class Database {
 
     public Database(String databaseStoreDirectory) {
         this.databaseStoreDirectory = databaseStoreDirectory;
-        this.db = new EmbeddedGraphDatabase(databaseStoreDirectory);
+        this.graph = new EmbeddedGraphDatabase(databaseStoreDirectory);
         ensureIndexServiceIsAvailable();
         
     }
 
     private synchronized void ensureIndexServiceIsAvailable() throws DatabaseBlockedException {
         if (indexService == null) {
-            if (db instanceof EmbeddedGraphDatabase) {
-                indexService = new LuceneIndexService(db);
-                fulltextIndexService = new LuceneFulltextIndexService(db);
+            if ( graph instanceof EmbeddedGraphDatabase) {
+                indexService = new LuceneIndexService( graph );
+                fulltextIndexService = new LuceneFulltextIndexService( graph );
                 indicies = instantiateSomeIndicies();
             } else {
                 // TODO: Indexing for remote dbs
@@ -71,7 +71,7 @@ public class Database {
     }
 
     public void startup() {
-        if (db != null) {
+        if ( graph != null) {
             log.info("Successfully started database");
         } else {
             log.error("Failed to start database. GraphDatabaseService has not been properly initialized.");
@@ -80,8 +80,8 @@ public class Database {
 
     public void shutdown() {
         try {
-            if (db != null) {
-                db.shutdown();
+            if ( graph != null) {
+                graph.shutdown();
             }
             log.info("Successfully shutdown database");
         } catch (Exception e) {

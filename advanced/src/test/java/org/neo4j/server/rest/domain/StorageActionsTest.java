@@ -76,9 +76,9 @@ public class StorageActionsTest {
     private long createNode(Map<String, Object> properties) throws DatabaseBlockedException {
         
         long nodeId;
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.createNode();
+            Node node = database.graph.createNode();
             for (Map.Entry<String, Object> entry : properties.entrySet()) {
                 node.setProperty(entry.getKey(), entry.getValue());
             }
@@ -95,9 +95,9 @@ public class StorageActionsTest {
     public void createdNodeShouldBeInDatabase() throws Exception {
         NodeRepresentation noderep = actions.createNode(new PropertiesMap(Collections.<String, Object> emptyMap()));
         
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            assertNotNull(database.db.getNodeById(noderep.getId()));
+            assertNotNull(database.graph.getNodeById(noderep.getId()));
         } finally {
             tx.finish();
         }
@@ -117,9 +117,9 @@ public class StorageActionsTest {
         properties.put("baz", 17);
         actions.setNodeProperties(nodeId, new PropertiesMap(properties));
         
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.getNodeById(nodeId);
+            Node node = database.graph.getNodeById(nodeId);
             assertHasProperties(node, properties);
         } finally {
             tx.finish();
@@ -130,9 +130,9 @@ public class StorageActionsTest {
     public void shouldOverwriteExistingProperties() throws DatabaseBlockedException {
 
         long nodeId;
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.createNode();
+            Node node = database.graph.createNode();
             node.setProperty("remove me", "trash");
             nodeId = node.getId();
             tx.success();
@@ -143,9 +143,9 @@ public class StorageActionsTest {
         properties.put("foo", "bar");
         properties.put("baz", 17);
         actions.setNodeProperties(nodeId, new PropertiesMap(properties));
-        tx = database.db.beginTx();
+        tx = database.graph.beginTx();
         try {
-            Node node = database.db.getNodeById(nodeId);
+            Node node = database.graph.getNodeById(nodeId);
             assertHasProperties(node, properties);
             assertNull(node.getProperty("remove me", null));
         } finally {
@@ -161,9 +161,9 @@ public class StorageActionsTest {
         properties.put("foo", "bar");
         properties.put("neo", "Thomas A. Anderson");
         properties.put("number", 15);
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.createNode();
+            Node node = database.graph.createNode();
             for (Map.Entry<String, Object> entry : properties.entrySet()) {
                 node.setProperty(entry.getKey(), entry.getValue());
             }
@@ -180,9 +180,9 @@ public class StorageActionsTest {
     @Test
     public void shouldRemoveNodeWithNoRelationsFromDBOnDelete() throws DatabaseBlockedException {
         long nodeId;
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.createNode();
+            Node node = database.graph.createNode();
             nodeId = node.getId();
             tx.success();
         } finally {
@@ -219,9 +219,9 @@ public class StorageActionsTest {
         long nodeId = createNode(properties);
         actions.removeNodeProperties(nodeId);
         
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.getNodeById(nodeId);
+            Node node = database.graph.getNodeById(nodeId);
             assertEquals(false, node.getPropertyKeys().iterator().hasNext());
             tx.success();
         } finally {
@@ -243,9 +243,9 @@ public class StorageActionsTest {
         properties.put("integer", 17);
         long relId = actions.createRelationship("LOVES", graphdbHelper.createNode(), graphdbHelper.createNode(), new PropertiesMap(properties)).getId();
         
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Relationship rel = database.db.getRelationshipById(relId);
+            Relationship rel = database.graph.getRelationshipById(relId);
             for (String key : rel.getPropertyKeys()) {
                 assertTrue("extra property stored", properties.containsKey(key));
             }
@@ -295,9 +295,9 @@ public class StorageActionsTest {
         long nodeId = createNode(properties);
         actions.removeNodeProperty(nodeId, "foo");
         
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node node = database.db.getNodeById(nodeId);
+            Node node = database.graph.getNodeById(nodeId);
             assertEquals(15, node.getProperty("number"));
             assertEquals(false, node.hasProperty("foo"));
             tx.success();
@@ -338,10 +338,10 @@ public class StorageActionsTest {
         properties.put("foo", "bar");
         properties.put("neo", "Thomas A. Anderson");
         properties.put("number", 15);
-        Transaction tx = database.db.beginTx();
+        Transaction tx = database.graph.beginTx();
         try {
-            Node startNode = database.db.createNode();
-            Node endNode = database.db.createNode();
+            Node startNode = database.graph.createNode();
+            Node endNode = database.graph.createNode();
             Relationship relationship = startNode.createRelationshipTo(endNode, DynamicRelationshipType.withName("knows"));
             for (Map.Entry<String, Object> entry : properties.entrySet()) {
                 relationship.setProperty(entry.getKey(), entry.getValue());
