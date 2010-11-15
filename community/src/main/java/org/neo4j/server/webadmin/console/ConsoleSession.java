@@ -52,6 +52,7 @@ public class ConsoleSession
      * @param script
      * @return
      */
+    @SuppressWarnings("unchecked")
     public List<String> evaluate( String script )
     {
         try
