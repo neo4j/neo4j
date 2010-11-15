@@ -20,6 +20,9 @@
 
 package org.neo4j.server.webadmin.rest;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
@@ -27,10 +30,13 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.webadmin.console.ConsoleSession;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ConsoleServiceTest
 {
@@ -52,6 +58,22 @@ public class ConsoleServiceTest
 
         assertEquals(200, evaluatedGremlinResponse.getStatus());
         assertThat((String)evaluatedGremlinResponse.getEntity(), containsString("v[1]"));
+        evaluatedGremlinResponse = consoleService.exec( "{ \"command\" : \"g:add-v()\" }" );
+        assertEquals(200, evaluatedGremlinResponse.getStatus());
+        assertThat((String)evaluatedGremlinResponse.getEntity(), containsString("v[2]"));
+    }
+    
+    @Test
+    public void correctRepresentation() throws URISyntaxException
+    {
+        UriInfo mockUri = mock(UriInfo.class);
+        URI uri = new URI("http://peteriscool.com:6666/");
+        when(mockUri.getBaseUri()).thenReturn(uri);
+        Response consoleResponse = consoleService.getServiceDefinition( mockUri );
+
+        assertEquals(200, consoleResponse.getStatus());
+        assertThat((String)consoleResponse.getEntity(), containsString("resources"));
+        assertThat((String)consoleResponse.getEntity(), containsString(uri.toString()));
     }
 
     @Before

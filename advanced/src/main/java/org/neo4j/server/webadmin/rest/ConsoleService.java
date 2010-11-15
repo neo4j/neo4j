@@ -57,13 +57,13 @@ public class ConsoleService implements AdvertisableService
     }
 
     public ConsoleService( @Context Database database,
-                           @Context HttpServletRequest req )
+            @Context HttpServletRequest req )
     {
         this( createSession( req, database ) );
     }
 
     private static ConsoleSession createSession( HttpServletRequest req,
-                                                 Database database )
+            Database database )
     {
         HttpSession httpSession = req.getSession( true );
         Object session = httpSession.getAttribute( "consoleSession" );
@@ -72,7 +72,7 @@ public class ConsoleService implements AdvertisableService
             session = new ConsoleSession( database );
             httpSession.setAttribute( "consoleSession", session );
         }
-        return (ConsoleSession)session;
+        return (ConsoleSession) session;
     }
 
     Logger log = Logger.getLogger( ConsoleService.class );
@@ -91,7 +91,10 @@ public class ConsoleService implements AdvertisableService
     @Produces( MediaType.APPLICATION_JSON )
     public Response getServiceDefinition( @Context UriInfo uriInfo )
     {
-        return Response.ok( "" ).header( "Content-Type", MediaType.APPLICATION_JSON ).build();
+        return Response.ok(
+                "{ \"resources\" : { \"exec\" : \"" + uriInfo.getBaseUri()
+                        + SERVICE_PATH + "\" }}" ).header( "Content-Type",
+                MediaType.APPLICATION_JSON ).build();
     }
 
     @POST
@@ -113,15 +116,18 @@ public class ConsoleService implements AdvertisableService
 
             if ( !args.containsKey( "command" ) )
             {
-                throw new IllegalArgumentException( "Missing 'command' parameter in arguments." );
+                throw new IllegalArgumentException(
+                        "Missing 'command' parameter in arguments." );
             }
 
             log.info( session.toString() );
 
-            List<String> resultLines = session.evaluate((String) args.get("command"));
+            List<String> resultLines = session.evaluate( (String) args.get( "command" ) );
 
-            return Response.ok( JsonHelper.createJsonFrom( resultLines ) ).header( "Content-Type", MediaType.APPLICATION_JSON ).build();
-        } catch ( IllegalArgumentException e )
+            return Response.ok( JsonHelper.createJsonFrom( resultLines ) ).header(
+                    "Content-Type", MediaType.APPLICATION_JSON ).build();
+        }
+        catch ( IllegalArgumentException e )
         {
             return Response.status( Status.BAD_REQUEST ).build();
         }
