@@ -20,6 +20,8 @@
 
 package org.neo4j.server.webadmin.functional.web;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -57,7 +59,9 @@ public abstract class WebDriverTest {
 		System.out.println("testing " + url);
         webDriver.get(url);
 		
-		waitForElementToAppear(By.id("mainmenu-dashboard"));
+        waitForElementToAppear(By.className("mor_info"));
+		RenderedWebElement titleElement = waitForElementToAppear(By.xpath("//h1"));
+		assertEquals("Neo4j server monitor", titleElement.getText());
 	}	
 	
 	@After
@@ -73,6 +77,7 @@ public abstract class WebDriverTest {
 	
 	protected ElementReference consoleMenu = new ElementReference() {
 		public RenderedWebElement getElement() {
+		    System.out.println("HERE");
 			return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-console")).findElement(By.tagName("a"));
 		}
 	};

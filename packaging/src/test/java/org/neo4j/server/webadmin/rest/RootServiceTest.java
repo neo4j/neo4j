@@ -45,7 +45,6 @@ public class RootServiceTest {
         Response serviceDefinition = svc.getServiceDefinition(uriInfo, null);
         
         assertEquals(200, serviceDefinition.getStatus());
-        System.out.println(serviceDefinition.getEntity());
         assertThat((String)serviceDefinition.getEntity(), containsString(String.format("\"console\" : \"%s/server/console\"", uri.toString())));
     }
 }
