@@ -20,21 +20,19 @@
 
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.util.Collections;
+
+import javax.ws.rs.core.MediaType;
+
+import org.junit.Test;
+import org.neo4j.server.rest.domain.JsonHelper;
+
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.rest.domain.JsonHelper;
-
-import javax.ws.rs.core.MediaType;
-import java.util.Collections;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class GetNodePropertiesFunctionalTest extends FunctionalTestBase
 {
