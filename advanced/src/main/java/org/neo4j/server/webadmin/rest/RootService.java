@@ -21,7 +21,6 @@
 package org.neo4j.server.webadmin.rest;
 
 import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.webadmin.console.ConsoleSession;
 import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
 import javax.ws.rs.GET;
@@ -35,7 +34,7 @@ public class RootService {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getServiceDefinition(@Context UriInfo uriInfo) {
-        String entity = JsonRenderers.DEFAULT.render(new ServerRootRepresentation(uriInfo.getBaseUri(), new ConsoleService(null,(ConsoleSession)null)));
+        String entity = JsonRenderers.DEFAULT.render(new ServerRootRepresentation(uriInfo.getBaseUri(), new ConsoleService( null )));
 
         return Response.ok(entity).header("Content-Type", MediaType.APPLICATION_JSON).build();
     }
