@@ -49,19 +49,17 @@ public class ConsoleService implements AdvertisableService
 
     private static final String SERVICE_NAME = "console";
     static final String SERVICE_PATH = "server/console";
-    private Database database;
     private ConsoleSession session;
 
-    public ConsoleService( Database database, ConsoleSession session )
+    public ConsoleService( ConsoleSession session )
     {
-        this.database = database;
         this.session = session;
     }
 
     public ConsoleService( @Context Database database,
                            @Context HttpServletRequest req )
     {
-        this( database, createSession( req, database ) );
+        this( createSession( req, database ) );
     }
 
     private static ConsoleSession createSession( HttpServletRequest req,
@@ -120,7 +118,7 @@ public class ConsoleService implements AdvertisableService
 
             log.info( session.toString() );
 
-            List<String> resultLines = null;//ConsoleSessions.getSession(sessionId).evaluate((String) args.get("command"));
+            List<String> resultLines = session.evaluate((String) args.get("command"));
 
             return Response.ok( JsonHelper.createJsonFrom( resultLines ) ).header( "Content-Type", MediaType.APPLICATION_JSON ).build();
         } catch ( IllegalArgumentException e )
