@@ -36,7 +36,8 @@ public class AdminPropertiesService
     private Configuration config;
     private final UriInfo uriInfo;
 
-    public AdminPropertiesService( @Context UriInfo uriInfo, @Context Configuration config )
+    public AdminPropertiesService( @Context UriInfo uriInfo,
+                                   @Context Configuration config )
     {
         this.uriInfo = uriInfo;
         this.config = config;
@@ -48,29 +49,41 @@ public class AdminPropertiesService
     public Response getValue( @PathParam( "key" ) String key )
     {
         // Legacy mapping
-        if(key.toLowerCase().equals("neo4j-servers")) {
+        if ( key.toLowerCase().equals( "neo4j-servers" ) )
+        {
             StringBuilder sb = new StringBuilder();
-            sb.append("{ \"");
-            sb.append(uriInfo.getBaseUri());
-            sb.append("\" : ");
-            sb.append("{\"url\" : \"");
-            sb.append(config.getProperty(configurationNamespace + "data.uri"));
-            sb.append("\"");
-            sb.append(",");
-            sb.append("\"manageUrl\" : \"");
-            sb.append(config.getProperty(configurationNamespace + "management.uri"));
-            sb.append("\"}");
-            sb.append("}");
-            
-            return Response.ok(sb.toString()).type(MediaType.APPLICATION_JSON).build();
+            sb.append( "{ \"" );
+            sb.append( uriInfo.getBaseUri() );
+            sb.append( "\" : " );
+            sb.append( "{\"url\" : \"" );
+            sb.append( getConfigValue( "data.uri" ) );
+            sb.append( "\"" );
+            sb.append( "," );
+            sb.append( "\"manageUrl\" : \"" );
+            sb.append( getConfigValue( "management.uri" ) );
+            sb.append( "\"}" );
+            sb.append( "}" );
+
+            return Response.ok( sb.toString() ).type( MediaType.APPLICATION_JSON ).build();
         }
-        
-        Object value = config.getProperty( configurationNamespace + key );
+
+        String value = config.getString( configurationNamespace + key );
 
         if ( value == null )
         {
             value = "undefined";
         }
         return Response.ok( value ).type( MediaType.APPLICATION_JSON ).build();
+    }
+
+    private String getConfigValue( String key )
+    {
+        String k = configurationNamespace + key;
+        String value = config.getString( k );
+        if(value==null)
+        {
+            throw new IllegalArgumentException( "Value of " + k + " was not found." );
+        }
+        return value;
     }
 }

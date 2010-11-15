@@ -20,8 +20,6 @@
 
 package org.neo4j.server.configuration;
 
-import java.io.File;
-
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -30,6 +28,8 @@ import org.apache.commons.configuration.SystemConfiguration;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.logging.Logger;
+
+import java.io.File;
 
 public class Configurator {
 
@@ -59,6 +59,7 @@ public class Configurator {
         
         try {
             loadPropertiesConfig(propertiesFile);
+            v.validate( this.configuration() );
         } catch (ConfigurationException ce) {
             log.warn(ce);
         }
