@@ -34,10 +34,9 @@ look at the web interface...
   * Windows: use `bin/Neo4j.bat`
   * Linux: use `bin/neo4j start`
 3. in a browser, open [webadmin](http://localhost:${org.neo4j.webserver.port}/webadmin/)
-...
-  Do some interesting stuff through the web.
-...
-7. shutdown the server
+4. from any REST client or browser, open (http://localhost:${org.neo4j.webserver.port}/db/data) in order to get a REST starting point, e.g.
+   `curl -v http://localhost:${org.neo4j.webserver.port}/db/data`
+5. shutdown the server
   * Windows: type Ctrl-C to terminate the batch script
   * Linux: use `bin/neo4j stop`
 
