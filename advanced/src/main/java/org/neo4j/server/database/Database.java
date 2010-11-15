@@ -25,15 +25,17 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneFulltextIndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.logging.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Database {
+public class Database
+{
 
-    public static Logger log = Logger.getLogger(Database.class);
+    public static Logger log = Logger.getLogger( Database.class );
 
     public GraphDatabaseService graph;
     public IndexService indexService;
@@ -42,26 +44,35 @@ public class Database {
 
     private String databaseStoreDirectory;
 
-    public Database(String databaseStoreDirectory) {
-        this.databaseStoreDirectory = databaseStoreDirectory;
-        this.graph = new EmbeddedGraphDatabase(databaseStoreDirectory);
+    public Database( AbstractGraphDatabase db )
+    {
+        this.databaseStoreDirectory = db.getStoreDir();
+        graph = db;
         ensureIndexServiceIsAvailable();
-        
     }
 
-    private synchronized void ensureIndexServiceIsAvailable() throws DatabaseBlockedException {
-        if (indexService == null) {
-            if ( graph instanceof EmbeddedGraphDatabase) {
+    public Database( String databaseStoreDirectory )
+    {
+        this( new EmbeddedGraphDatabase( databaseStoreDirectory ) );
+    }
+
+    private synchronized void ensureIndexServiceIsAvailable() throws DatabaseBlockedException
+    {
+        if ( indexService == null )
+        {
+            if ( graph instanceof AbstractGraphDatabase )
+            {
                 indexService = new LuceneIndexService( graph );
                 fulltextIndexService = new LuceneFulltextIndexService( graph );
                 indicies = instantiateSomeIndicies();
-            } else {
+            } else
+            {
                 // TODO: Indexing for remote dbs
-                throw new UnsupportedOperationException("Indexing is not yet available in neo4j-rest for remote databases.");
+                throw new UnsupportedOperationException( "Indexing is not yet available in neo4j-rest for remote databases." );
             }
         }
     }
-    
+
     private Map<String, Index<? extends PropertyContainer>> instantiateSomeIndicies()
     {
         Map<String, Index<? extends PropertyContainer>> map = new HashMap<String, Index<? extends PropertyContainer>>();
@@ -70,34 +81,44 @@ public class Database {
         return map;
     }
 
-    public void startup() {
-        if ( graph != null) {
-            log.info("Successfully started database");
-        } else {
-            log.error("Failed to start database. GraphDatabaseService has not been properly initialized.");
+    public void startup()
+    {
+        if ( graph != null )
+        {
+            log.info( "Successfully started database" );
+        } else
+        {
+            log.error( "Failed to start database. GraphDatabaseService has not been properly initialized." );
         }
     }
 
-    public void shutdown() {
-        try {
-            if ( graph != null) {
+    public void shutdown()
+    {
+        try
+        {
+            if ( graph != null )
+            {
                 graph.shutdown();
             }
-            log.info("Successfully shutdown database");
-        } catch (Exception e) {
-            log.error("Database did not shut down cleanly. Reason [%s]", e.getMessage());
-            throw new RuntimeException(e);
+            log.info( "Successfully shutdown database" );
+        } catch ( Exception e )
+        {
+            log.error( "Database did not shut down cleanly. Reason [%s]", e.getMessage() );
+            throw new RuntimeException( e );
         }
     }
 
-    public String getLocation() {
+    public String getLocation()
+    {
         return databaseStoreDirectory;
     }
 
-    public Index<? extends PropertyContainer> getIndex(String name) {
-        Index<? extends PropertyContainer> index = indicies.get(name);
-        if (index == null) {
-            throw new RuntimeException("No index for [" + name + "]");
+    public Index<? extends PropertyContainer> getIndex( String name )
+    {
+        Index<? extends PropertyContainer> index = indicies.get( name );
+        if ( index == null )
+        {
+            throw new RuntimeException( "No index for [" + name + "]" );
         }
         return index;
     }
