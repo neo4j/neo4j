@@ -20,27 +20,74 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.junit.Test;
-
-import javax.ws.rs.core.Response;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.junit.Test;
+import org.neo4j.server.rest.domain.JsonHelper;
 
 public class AdminPropertiesServiceTest
 {
     @Test
-    public void simpleQueryShouldReturn200AndTheExpectedValue()
+    public void simpleQueryShouldReturn200AndTheExpectedValue() throws Exception
     {
         PropertiesConfiguration config = new PropertiesConfiguration();
         config.setProperty( "org.neo4j.server.webadmin.foo", "bar" );
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(config);
+        UriInfo mockUri = mock(UriInfo.class);
+        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
+        
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
 
         Response response = adminPropertiesService.getValue( "foo" );
         assertThat(response.getStatus(), is(200));
         assertThat((String)response.getEntity(), containsString("bar"));
     }
+    
+    @Test
+    public void shouldSupportLegacyWebAdminUris() throws URISyntaxException {
+        PropertiesConfiguration config = new PropertiesConfiguration();
+        String managementUri = "http://neo-is-awesome.se/manage";
+        config.setProperty( "org.neo4j.server.webadmin.management.uri", managementUri );
+        String dataUri = "http://jimsucks.com/data";
+        config.setProperty( "org.neo4j.server.webadmin.data.uri", dataUri );
+        
+        UriInfo mockUri = mock(UriInfo.class);
+        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/foo/bar?awesome=true"));
+        
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
+        
+        Response response = adminPropertiesService.getValue( "neo4j-servers" );
+             
+        assertIsValidJson(response.getEntity().toString());
+        assertThat((String)response.getEntity(), containsString(managementUri));
+        assertThat((String)response.getEntity(), containsString(dataUri));
+    }
+    
+    private void assertIsValidJson(String entity) {
+        JsonHelper.jsonToMap(entity);
+    }
 
+    @Test
+    public void shouldYieldUndefinedForUnknownProperties() throws URISyntaxException {
+        PropertiesConfiguration config = new PropertiesConfiguration();
+        UriInfo mockUri = mock(UriInfo.class);
+        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
+        
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
+
+        Response response = adminPropertiesService.getValue( "foo" );
+
+        assertThat((String)response.getEntity(), containsString("undefined"));
+    }
 }

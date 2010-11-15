@@ -20,28 +20,34 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Test;
-import org.neo4j.server.webadmin.rest.ConsoleService;
+import org.neo4j.server.rest.domain.Representation;
+import org.neo4j.server.webadmin.rest.JmxService;
 
-public class ServerRootRepresentationTest
+public class JmxServiceRepresentation implements Representation
 {
-    @Test
-    public void shouldProvideAListOfServiceUris() throws Exception
+    private String baseUri;
+
+    public JmxServiceRepresentation( URI baseUri )
     {
-        ConsoleService consoleService = new ConsoleService( null );
-        ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ), consoleService );
-        Map<String, Map<String, String>> map = srr.serialize();
+        this.baseUri = baseUri + JmxService.ROOT_PATH;
+    }
 
-        assertNotNull(map.get("services"));
-        
-        assertThat( map.get("services").get( consoleService.getName() ), containsString( consoleService.getServerPath() ) );
+    public Object serialize()
+    {
+        Map<String, Object> def = new HashMap<String, Object>();
+        Map<String, Object> resources = new HashMap<String, Object>();
 
+        resources.put( "domains", baseUri + JmxService.DOMAINS_PATH );
+        resources.put( "domain", baseUri + JmxService.DOMAIN_PATH );
+        resources.put( "bean", baseUri + JmxService.BEAN_PATH );
+        resources.put( "query", baseUri + JmxService.QUERY_PATH );
+        resources.put( "kernelquery", baseUri + JmxService.KERNEL_NAME_PATH );
+
+        def.put( "resources", resources );
+        return def;
     }
 }

@@ -18,3 +18,28 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+package org.neo4j.server.webadmin.rest.representations;
+
+import java.util.ArrayList;
+
+import org.neo4j.server.rest.domain.Representation;
+
+public class JmxDomainListRepresentation implements Representation
+{
+
+    protected ArrayList<String> domains = new ArrayList<String>();
+
+    public JmxDomainListRepresentation( String[] domains )
+    {
+        for ( String domain : domains )
+        {
+            this.domains.add( domain );
+        }
+    }
+
+    public Object serialize()
+    {
+        return this.domains;
+    }
+
+}
