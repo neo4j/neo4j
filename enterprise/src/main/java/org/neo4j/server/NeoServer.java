@@ -20,13 +20,6 @@
 
 package org.neo4j.server;
 
-import java.io.File;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -40,6 +33,14 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 import org.tanukisoftware.wrapper.WrapperListener;
+
+import java.io.File;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Application entry point for the Neo4j Server.
@@ -302,10 +303,7 @@ public class NeoServer implements WrapperListener
 
         if ( strings != null )
         {
-            for ( String str : strings )
-            {
-                al.add( str );
-            }
+            al.addAll( Arrays.asList( strings ) );
         }
 
         return al;
