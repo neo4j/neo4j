@@ -20,24 +20,27 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.junit.Test;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
-@Path("/")
-public class RootService {
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getServiceDefinition(@Context UriInfo uriInfo) {
-        String entity = JsonRenderers.DEFAULT.render(new ServerRootRepresentation(uriInfo.getBaseUri(), new ConsoleService( null )));
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
-        return Response.ok(entity).header("Content-Type", MediaType.APPLICATION_JSON).build();
+public class AdminPropertiesServiceTest
+{
+    @Test
+    public void simpleQueryShouldReturn200AndTheExpectedValue()
+    {
+        PropertiesConfiguration config = new PropertiesConfiguration();
+        config.setProperty( "org.neo4j.server.webadmin.foo", "bar" );
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(config);
+
+        Response response = adminPropertiesService.getValue( "foo" );
+        assertThat(response.getStatus(), is(200));
+        assertThat((String)response.getEntity(), containsString("bar"));
     }
+
 }

@@ -31,7 +31,7 @@ import org.mortbay.jetty.servlet.SessionHandler;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
-import org.neo4j.server.database.Database;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
@@ -48,11 +48,11 @@ public class Jetty6WebServer implements WebServer
 
     private HashMap<String, String> staticContent = new HashMap<String, String>();
     private HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
-    public Database db;
+    private NeoServer server;
 
-    public Jetty6WebServer( Database db )
+    public Jetty6WebServer( NeoServer server)
     {
-        this.db = db;
+        this.server = server;
     }
 
     public void start()
@@ -99,7 +99,7 @@ public class Jetty6WebServer implements WebServer
     public void addJAXRSPackages( List<String> packageNames,
             String serverMountPoint )
     {
-        ServletContainer container = new NeoServletContainer( db );
+        ServletContainer container = new NeoServletContainer( server );
         ServletHolder servletHolder = new ServletHolder( container );
         servletHolder.setInitParameter(
                 "com.sun.jersey.config.property.packages",
