@@ -20,32 +20,19 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.neo4j.server.ServerTestUtils;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+import org.junit.Test;
 
-public class GetIndexRootFunctionalTest {
-    @BeforeClass
-    public static void startServer() {
-        ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+import static org.junit.Assert.assertEquals;
 
-    }
-
-    @AfterClass
-    public static void stopServer() throws Exception {
-        ServerTestUtils.nukeServer();
-    }
-
+public class GetIndexRootFunctionalTest extends FunctionalTestBase
+{
     @Test
-    public void shouldRespondWithIndexes() throws Exception {
-        ClientResponse response = Client.create().resource(FunctionalTestUtil.indexUri()).get(ClientResponse.class);
-        assertEquals(200, response.getStatus());
+    public void shouldRespondWithIndexes() throws Exception
+    {
+        ClientResponse response = Client.create().resource( indexUri() ).get( ClientResponse.class );
+        assertEquals( 200, response.getStatus() );
     }
 
     // TODO More tests...
