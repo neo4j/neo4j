@@ -20,109 +20,105 @@
 
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.RelationshipRepresentationTest;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.MediaType;
+import java.util.Map;
 
-public class CreateRelationshipFunctionalTest {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+public class CreateRelationshipFunctionalTest extends FunctionalTestBase
+{
     private static String RELATIONSHIP_URI_PATTERN;
-    private static GraphDbHelper helper;
-    public static NeoServer server;
 
     @BeforeClass
-    public static void startServer() {
-        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
+    public static void startServer()
+    {
         RELATIONSHIP_URI_PATTERN = server.restApiUri() + "relationship/[0-9]+";
-        helper = new GraphDbHelper(server.database());
-    }
-
-    @AfterClass
-    public static void stopServer() throws Exception {
-        ServerTestUtils.nukeServer();
     }
 
     @Test
-    public void shouldRespondWith201WhenSuccessfullyCreatedRelationshipWithProperties() throws Exception {
+    public void shouldRespondWith201WhenSuccessfullyCreatedRelationshipWithProperties() throws Exception
+    {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
         String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode
                 + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = Client.create().resource(server.restApiUri() + "node/" + startNode + "/relationships").type(
-                MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(jsonString).post(ClientResponse.class);
-        assertEquals(201, response.getStatus());
-        assertTrue(response.getLocation().toString().matches(RELATIONSHIP_URI_PATTERN));
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
+        ClientResponse response = Client.create().resource( server.restApiUri() + "node/" + startNode + "/relationships" ).type(
+                MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
+        assertEquals( 201, response.getStatus() );
+        assertTrue( response.getLocation().toString().matches( RELATIONSHIP_URI_PATTERN ) );
+        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         String relationshipUri = response.getLocation().toString();
-        long relationshipId = Long.parseLong(relationshipUri.substring(relationshipUri.lastIndexOf('/') + 1));
-        Map<String, Object> properties = helper.getRelationshipProperties(relationshipId);
-        assertEquals(MapUtil.map("foo", "bar"), properties);
-        assertProperRelationshipRepresentation(JsonHelper.jsonToMap(response.getEntity(String.class)));
+        long relationshipId = Long.parseLong( relationshipUri.substring( relationshipUri.lastIndexOf( '/' ) + 1 ) );
+        Map<String, Object> properties = helper.getRelationshipProperties( relationshipId );
+        assertEquals( MapUtil.map( "foo", "bar" ), properties );
+        assertProperRelationshipRepresentation( JsonHelper.jsonToMap( response.getEntity( String.class ) ) );
     }
 
     @Test
-    public void shouldRespondWith201WhenSuccessfullyCreatedRelationship() throws Exception {
+    public void shouldRespondWith201WhenSuccessfullyCreatedRelationship() throws Exception
+    {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
         String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode + "\", \"type\" : \"LOVES\"}";
-        ClientResponse response = Client.create().resource(server.restApiUri() + "node/" + startNode + "/relationships").type(
-                MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(jsonString).post(ClientResponse.class);
-        assertEquals(201, response.getStatus());
-        assertTrue(response.getLocation().toString().matches(RELATIONSHIP_URI_PATTERN));
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        assertProperRelationshipRepresentation(JsonHelper.jsonToMap(response.getEntity(String.class)));
+        ClientResponse response = Client.create().resource( server.restApiUri() + "node/" + startNode + "/relationships" ).type(
+                MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
+        assertEquals( 201, response.getStatus() );
+        assertTrue( response.getLocation().toString().matches( RELATIONSHIP_URI_PATTERN ) );
+        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
+        assertProperRelationshipRepresentation( JsonHelper.jsonToMap( response.getEntity( String.class ) ) );
     }
 
     @Test
-    public void shouldRespondWith404WhenStartNodeDoesNotExist() throws DatabaseBlockedException {
+    public void shouldRespondWith404WhenStartNodeDoesNotExist() throws DatabaseBlockedException
+    {
         long endNode = helper.createNode();
         String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode
                 + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = Client.create().resource(server.restApiUri() + "node/999999/relationships").type(
-                MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(jsonString).post(ClientResponse.class);
-        assertEquals(404, response.getStatus());
+        ClientResponse response = Client.create().resource( server.restApiUri() + "node/999999/relationships" ).type(
+                MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
+        assertEquals( 404, response.getStatus() );
     }
 
     @Test
-    public void shouldRespondWith400WhenEndNodeDoesNotExist() throws DatabaseBlockedException {
+    public void shouldRespondWith400WhenEndNodeDoesNotExist() throws DatabaseBlockedException
+    {
         long startNode = helper.createNode();
         String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/"
                 + "999999\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        ClientResponse response = Client.create().resource(server.restApiUri() + "node/" + startNode + "/relationships").type(
-                MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(jsonString).post(ClientResponse.class);
-        assertEquals(400, response.getStatus());
+        ClientResponse response = Client.create().resource( server.restApiUri() + "node/" + startNode + "/relationships" ).type(
+                MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
+        assertEquals( 400, response.getStatus() );
     }
 
     @Test
-    public void shouldRespondWith400WhenBadJsonProvided() throws DatabaseBlockedException {
+    public void shouldRespondWith400WhenBadJsonProvided() throws DatabaseBlockedException
+    {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
         String jsonString = "{\"to\" : \"" + server.restApiUri() + "node/" + endNode
                 + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : **BAD JSON HERE*** \"bar\"}}";
-        ClientResponse response = Client.create().resource(server.restApiUri() + "node/" + startNode + "/relationships").type(
-                MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).entity(jsonString).post(ClientResponse.class);
+        ClientResponse response = Client.create().resource( server.restApiUri() + "node/" + startNode + "/relationships" ).type(
+                MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( jsonString ).post( ClientResponse.class );
 
-        assertEquals(400, response.getStatus());
+        assertEquals( 400, response.getStatus() );
     }
 
-    private void assertProperRelationshipRepresentation(Map<String, Object> relrep) {
-        RelationshipRepresentationTest.verifySerialisation(relrep);
+    private void assertProperRelationshipRepresentation(
+            Map<String, Object> relrep )
+    {
+        RelationshipRepresentationTest.verifySerialisation( relrep );
     }
 }
