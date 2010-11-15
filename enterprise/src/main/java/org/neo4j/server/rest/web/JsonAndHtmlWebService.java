@@ -20,8 +20,6 @@
 
 package org.neo4j.server.rest.web;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.AmpersandSeparatedList;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -62,19 +60,10 @@ import javax.ws.rs.core.UriInfo;
 public class JsonAndHtmlWebService extends GenericWebService {
     
 
-    public JsonAndHtmlWebService(@Context UriInfo uriInfo, @Context
-                                 GraphDatabaseService graphDb) {
-        super(uriInfo, NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().database());
+    public JsonAndHtmlWebService(@Context UriInfo uriInfo,
+                                 @Context Database database) {
+        super(uriInfo, database);
     }
-
-    /**
-     * For testing purposes only
-     */
-    JsonAndHtmlWebService(UriInfo uriInfo, Database db) {
-        super(uriInfo, db);
-    }
-
-    // ===== JSON =====
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -337,7 +326,7 @@ public class JsonAndHtmlWebService extends GenericWebService {
     public Response htmlGetNode(@PathParam("nodeId") long nodeId)
 
     {
-        return getNode(nodeId, new NodeRenderer( NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().database().db.getRelationshipTypes() ));
+        return getNode(nodeId, new NodeRenderer( database.graph.getRelationshipTypes() ));
     }
 
     @GET

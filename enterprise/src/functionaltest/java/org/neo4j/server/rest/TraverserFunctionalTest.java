@@ -61,7 +61,7 @@ public class TraverserFunctionalTest {
     }
 
     private static void createSmallGraph() throws Exception {
-        Transaction tx = server.database().db.beginTx();
+        Transaction tx = server.database().graph.beginTx();
         startNode = helper.createNode(MapUtil.map("name", "Root"));
         child1_l1 = helper.createNode(MapUtil.map("name", "Mattias"));
         helper.createRelationship("knows", startNode, child1_l1);

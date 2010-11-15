@@ -118,7 +118,7 @@ public class NeoServer implements WrapperListener {
 
             this.database = new Database(configurator.configuration().getString(DATABASE_LOCATION_PROPERTY_KEY));
 
-            this.webServer = new Jetty6WebServer( database.db );
+            this.webServer = new Jetty6WebServer( database );
 
             log.info("Starting Neo Server on port [%s]", webServerPort);
             webServer.setPort(webServerPort);
@@ -132,7 +132,7 @@ public class NeoServer implements WrapperListener {
             log.info("Mounting REST API at [%s]", REST_API_SERVICE_NAME);            
             webServer.addJAXRSPackages(listFrom(new String[] { REST_API_PACKAGE }), REST_API_SERVICE_NAME);
 
-           // Temporary coffee shop
+            //Temporary coffee shop
             //webServer.addJAXRSPackages(listFrom(new String[] {"org.example.coffeeshop"}), "/");
 
             // Start embedded OSGi container

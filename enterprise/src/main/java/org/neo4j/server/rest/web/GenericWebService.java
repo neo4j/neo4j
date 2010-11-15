@@ -81,7 +81,7 @@ abstract class GenericWebService {
     protected static final String PATH_INDEX_ID = PATH_INDEX_QUERY + "/{id}";
 
     protected StorageActions actions;
-    private Database database;
+    protected Database database;
     private UriInfo uriInfo;
 
     GenericWebService(UriInfo uriInfo, Database db) {

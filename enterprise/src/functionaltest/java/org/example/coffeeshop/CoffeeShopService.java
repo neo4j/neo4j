@@ -20,7 +20,7 @@
 
 package org.example.coffeeshop;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.server.database.Database;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -31,7 +31,7 @@ import javax.ws.rs.core.Response;
 @Path("/coffeeshop")
 public class CoffeeShopService {
     
-    public CoffeeShopService(@Context GraphDatabaseService database) {
+    public CoffeeShopService(@Context Database database) {
         System.out.println("==> " + database);
     }
     
