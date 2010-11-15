@@ -23,6 +23,8 @@ package org.neo4j.server.webadmin.console;
 import com.tinkerpop.blueprints.pgm.TransactionalGraph;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.gremlin.GremlinScriptEngine;
+
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 
@@ -48,26 +50,27 @@ public class ConsoleSession
     /**
      * Take some gremlin script, evaluate it in the context of this gremlin
      * session, and return the result.
-     *
+     * 
      * @param script
      * @return
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public List<String> evaluate( String script )
     {
         try
         {
             resetOutputWriter();
-
-            List<Object> resultLines = (List<Object>)scriptEngine.eval( script );
-
+            Transaction tx = database.graph.beginTx();
+            List<Object> resultLines = (List<Object>) scriptEngine.eval( script );
+            tx.success();
+            tx.finish();
             // Handle output data
             List<String> outputLines = new ArrayList<String>();
 
             // Handle eval() result
             String[] printLines = outputWriter.toString().split( "\n" );
 
-            if ( printLines.length > 0 && printLines[ 0 ].length() > 0 )
+            if ( printLines.length > 0 && printLines[0].length() > 0 )
             {
                 for ( String printLine : printLines )
                 {
@@ -76,9 +79,9 @@ public class ConsoleSession
             }
 
             if ( resultLines == null
-                    || resultLines.size() == 0
-                    || ( resultLines.size() == 1 && ( resultLines.get( 0 ) == null || resultLines.get(
-                    0 ).toString().length() == 0 ) ) )
+                 || resultLines.size() == 0
+                 || ( resultLines.size() == 1 && ( resultLines.get( 0 ) == null || resultLines.get(
+                         0 ).toString().length() == 0 ) ) )
             {
                 // Result was empty, add empty text if there was also no IO
                 // output
@@ -86,7 +89,8 @@ public class ConsoleSession
                 {
                     outputLines.add( "" );
                 }
-            } else
+            }
+            else
             {
                 // Make sure all lines are strings
                 for ( Object resultLine : resultLines )
@@ -117,7 +121,6 @@ public class ConsoleSession
         // ensures it is instantiated in the correct thread context.
         this.scriptEngine = null;
     }
-
 
     //
     // INTERNALS
@@ -179,6 +182,5 @@ public class ConsoleSession
             return null;
         }
     }
-
 
 }
