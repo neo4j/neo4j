@@ -42,7 +42,7 @@ public class RootServiceTest {
         when(uriInfo.getBaseUri()).thenReturn(uri);
         
         RootService svc = new RootService();
-        Response serviceDefinition = svc.getServiceDefinition(uriInfo);
+        Response serviceDefinition = svc.getServiceDefinition(uriInfo, null);
         
         assertEquals(200, serviceDefinition.getStatus());
         System.out.println(serviceDefinition.getEntity());

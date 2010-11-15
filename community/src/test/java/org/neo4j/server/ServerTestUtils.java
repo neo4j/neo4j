@@ -71,9 +71,9 @@ public class ServerTestUtils {
     public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectory() {
         try {
             File temporaryConfigFile = createTempPropertyFile();
-            writePropertyToFile("org.neo4j.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
-            writePropertyToFile("org.neo4j.webserver.port", TEST_PORT, temporaryConfigFile);
-            writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.rest.web", temporaryConfigFile);
+            writePropertyToFile("org.neo4j.server.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
+            writePropertyToFile("org.neo4j.server.webserver.port", TEST_PORT, temporaryConfigFile);
+            writePropertyToFile("org.neo4j.server.webservice.packages", "org.neo4j.server.rest.web", temporaryConfigFile);
             writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
             writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "neo4j-servers",
                     constructWebadminServerConfig(),
@@ -100,7 +100,7 @@ public class ServerTestUtils {
         try {
             File temporaryConfigFile = createTempPropertyFile();
             writePropertyToFile("org.neo4j.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
-            writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.rest.web", temporaryConfigFile);
+            writePropertyToFile("org.neo4j.server.webservice.packages", "org.neo4j.server.rest.web", temporaryConfigFile);
             writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
             writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "neo4j-servers",constructWebadminServerConfig(),
                     temporaryConfigFile);

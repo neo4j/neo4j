@@ -24,7 +24,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.openqa.selenium.By;
@@ -34,7 +33,6 @@ import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 
-@Ignore
 public abstract class WebDriverTest {
 
     protected WebDriver webDriver = new FirefoxDriver();
@@ -43,7 +41,6 @@ public abstract class WebDriverTest {
     @BeforeClass
     public static void startWebServer() throws Exception
     {
-
 	    ServerTestUtils.nukeServer();
         server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
     }

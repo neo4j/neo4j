@@ -104,8 +104,8 @@ public class NeoServerFunctionalTest {
 
     private File configWithoutWebServerPort() throws IOException {
         File tempPropertyFile = ServerTestUtils.createTempPropertyFile();
-        ServerTestUtils.writePropertyToFile("org.neo4j.database.location", "/tmp/neo/no-webserver-port.db", tempPropertyFile);
-        ServerTestUtils.writePropertyToFile("org.neo4j.webservice.packages", "org.neo4j.server.web", tempPropertyFile);
+        ServerTestUtils.writePropertyToFile("org.neo4j.server.database.location", "/tmp/neo/no-webserver-port.db", tempPropertyFile);
+        ServerTestUtils.writePropertyToFile("org.neo4j.server.webservice.packages", "org.neo4j.server.web", tempPropertyFile);
 
         return tempPropertyFile;
     }
