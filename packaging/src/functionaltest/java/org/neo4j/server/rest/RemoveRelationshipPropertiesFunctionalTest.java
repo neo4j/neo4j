@@ -22,13 +22,8 @@ package org.neo4j.server.rest;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.rest.domain.GraphDbHelper;
 
 import javax.ws.rs.core.MediaType;
 import java.util.HashMap;
@@ -36,28 +31,12 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class RemoveRelationshipPropertiesFunctionalTest
+public class RemoveRelationshipPropertiesFunctionalTest extends
+        FunctionalTestBase
 {
-
-    private static GraphDbHelper helper;
-    public static NeoServer server;
-
-    @BeforeClass
-    public static void startServer() throws Exception
-    {
-        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        helper = new GraphDbHelper( server.database() );
-    }
-
     private String getPropertiesUri( long relationshipId )
     {
         return server.restApiUri() + "relationship/" + relationshipId + "/properties";
-    }
-
-    @AfterClass
-    public static void stopServer() throws Exception
-    {
-        ServerTestUtils.nukeServer();
     }
 
     @Test

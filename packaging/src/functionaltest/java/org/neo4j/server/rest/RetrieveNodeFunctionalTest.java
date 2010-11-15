@@ -23,11 +23,8 @@ package org.neo4j.server.rest;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
@@ -39,57 +36,57 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class RetrieveNodeFunctionalTest {
-
+public class RetrieveNodeFunctionalTest extends FunctionalTestBase
+{
     private static URI nodeUri;
-    public static NeoServer server;
 
     @BeforeClass
-    public static void startServer() throws Exception {
-        server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
-        nodeUri = new URI(server.restApiUri().toString() + "node/" + new GraphDbHelper(server.database()).createNode());
-    }
-
-    @AfterClass
-    public static void stopServer() throws Exception {
-        ServerTestUtils.nukeServer();
+    public static void startServer() throws Exception
+    {
+        nodeUri = new URI( server.restApiUri().toString() + "node/" + new GraphDbHelper( server.database() ).createNode() );
     }
 
     @Test
-    public void shouldGet200WhenRetrievingNode() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
-        assertEquals(200, response.getStatus());
+    public void shouldGet200WhenRetrievingNode() throws Exception
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+        assertEquals( 200, response.getStatus() );
     }
 
     @Test
-    public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
-        assertNotNull(response.getHeaders().get("Content-Length"));
+    public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+        assertNotNull( response.getHeaders().get( "Content-Length" ) );
     }
 
     @Test
-    public void shouldHaveJsonMediaTypeOnResponse() {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
+    public void shouldHaveJsonMediaTypeOnResponse()
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+        assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
     }
 
     @Test
-    public void shouldHaveJsonDataInResponse() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri.toString());
-        
-        Map<String, Object> map = JsonHelper.jsonToMap(response.getEntity(String.class));
-        assertTrue(map.containsKey("self"));
+    public void shouldHaveJsonDataInResponse() throws Exception
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri.toString() );
+
+        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        assertTrue( map.containsKey( "self" ) );
     }
 
     @Test
-    public void shouldGet404WhenRetrievingNonExistentNode() throws Exception {
-        ClientResponse response = retrieveNodeFromService(nodeUri + "00000");
-        assertEquals(404, response.getStatus());
+    public void shouldGet404WhenRetrievingNonExistentNode() throws Exception
+    {
+        ClientResponse response = retrieveNodeFromService( nodeUri + "00000" );
+        assertEquals( 404, response.getStatus() );
     }
 
-    private ClientResponse retrieveNodeFromService(String uri) {
-        WebResource resource = Client.create().resource(uri);
-        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+    private ClientResponse retrieveNodeFromService( String uri )
+    {
+        WebResource resource = Client.create().resource( uri );
+        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON ).get( ClientResponse.class );
         return response;
     }
 }
