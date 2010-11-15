@@ -27,6 +27,7 @@ import com.sun.jersey.spi.container.servlet.WebConfig;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseProvider;
 
+@SuppressWarnings("serial")
 public class NeoServletContainer extends ServletContainer
 {
     public Database db;
