@@ -20,19 +20,20 @@
 
 package org.neo4j.server.webadmin.rest.representations;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+import org.junit.Test;
+import org.neo4j.server.webadmin.console.ConsoleSession;
+import org.neo4j.server.webadmin.rest.ConsoleService;
 
 import java.net.URI;
 import java.util.Map;
 
-import org.junit.Test;
-import org.neo4j.server.webadmin.rest.ConsoleService;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 public class ServerRootRepresentationTest {
     @Test
     public void shouldProvideAListOfServiceUris() throws Exception {
-        ConsoleService consoleService = new ConsoleService();
+        ConsoleService consoleService = new ConsoleService(null, (ConsoleSession)null);
         ServerRootRepresentation srr = new ServerRootRepresentation(new URI("http://example.org:9999"), consoleService);
         Map<String,String> map = srr.serialize();
 
