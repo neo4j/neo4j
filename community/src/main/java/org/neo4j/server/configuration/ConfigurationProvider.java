@@ -18,26 +18,28 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.server.webadmin.rest;
+package org.neo4j.server.configuration;
 
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
+import com.sun.jersey.api.core.HttpContext;
+import org.apache.commons.configuration.Configuration;
+import org.neo4j.server.database.AbstractInjectableProvider;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.Provider;
 
-@Path("/")
-public class RootService {
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getServiceDefinition(@Context UriInfo uriInfo) {
-        String entity = JsonRenderers.DEFAULT.render(new ServerRootRepresentation(uriInfo.getBaseUri(), new ConsoleService( null )));
+@Provider
+public class ConfigurationProvider extends AbstractInjectableProvider<Configuration>
+{
+    private Configuration config;
 
-        return Response.ok(entity).header("Content-Type", MediaType.APPLICATION_JSON).build();
+    public ConfigurationProvider( Configuration config )
+    {
+        super( Configuration.class );
+        this.config = config;
+    }
+
+    @Override
+    public Configuration getValue( HttpContext httpContext )
+    {
+        return config;
     }
 }

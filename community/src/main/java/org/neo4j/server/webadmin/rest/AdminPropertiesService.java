@@ -1,4 +1,4 @@
-/**
+package org.neo4j.server.webadmin.rest; /**
  * Copyright (c) 2002-2010 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -18,3 +18,38 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import org.apache.commons.configuration.Configuration;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+@Path( "/properties" )
+public class AdminPropertiesService
+{
+    private final String configurationNamespace = "org.neo4j.server.webadmin.";
+    private Configuration config;
+
+    public AdminPropertiesService( @Context Configuration config )
+    {
+        this.config = config;
+    }
+
+    @GET
+    @Produces( MediaType.APPLICATION_JSON )
+    @Path( "/{key}" )
+    public Response getValue( @PathParam( "key" ) String key )
+    {
+        Object value = config.getProperty( configurationNamespace + key );
+
+        if ( value == null )
+        {
+            value = "undefined";
+        }
+        return Response.ok( value ).type( MediaType.APPLICATION_JSON ).build();
+    }
+}
