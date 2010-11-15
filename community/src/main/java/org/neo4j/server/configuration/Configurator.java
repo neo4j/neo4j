@@ -59,7 +59,9 @@ public class Configurator {
         
         try {
             loadPropertiesConfig(propertiesFile);
-            v.validate( this.configuration() );
+            if (v!=null) {
+              v.validate( this.configuration() );
+            }
         } catch (ConfigurationException ce) {
             log.warn(ce);
         }
