@@ -195,8 +195,6 @@ public class RrdSampler
             }
 //            sample.setValue( NODE_CACHE_SIZE, 0d );
 //
-//            sample.setValue( NODE_COUNT, (Long)mbeanServer.getAttribute( primitivesName, JMX_ATTR_NODE_COUNT ) );
-//            sample.setValue( RELATIONSHIP_COUNT, (Long)mbeanServer.getAttribute( primitivesName, JMX_ATTR_RELATIONSHIP_COUNT ) );
 //            sample.setValue( PROPERTY_COUNT, (Long)mbeanServer.getAttribute( primitivesName, JMX_ATTR_PROPERTY_COUNT ) );
 //
 //            sample.setValue(

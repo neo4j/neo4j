@@ -20,6 +20,7 @@
 
 package org.neo4j.server.rrd;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
@@ -32,20 +33,18 @@ import static org.hamcrest.core.Is.is;
 
 public class NodeIdsInUseSampleableTest
 {
+    public ImpermanentGraphDatabase db;
+    public NodeIdsInUseSampleable sampleable;
+
     @Test
     public void emptyDbHasZeroNodesInUse() throws IOException, MalformedObjectNameException
     {
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase();
-        NodeIdsInUseSampleable sampleable = new NodeIdsInUseSampleable( db );
-
         assertThat( sampleable.getValue(), is( 1L ) ); //Reference node is always created in empty dbs
     }
 
     @Test
     public void addANodeAndSampleableGoesUp() throws IOException, MalformedObjectNameException
     {
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase();
-        NodeIdsInUseSampleable sampleable = new NodeIdsInUseSampleable( db );
         createNode( db );
 
         assertThat( sampleable.getValue(), is( 2L ) ); 
@@ -57,5 +56,12 @@ public class NodeIdsInUseSampleableTest
         db.createNode();
         tx.success();
         tx.finish();
+    }
+
+    @Before
+    public void setUp() throws Exception
+    {
+        db = new ImpermanentGraphDatabase();
+        sampleable = new NodeIdsInUseSampleable( db );
     }
 }
