@@ -20,14 +20,6 @@
 
 package org.neo4j.server;
 
-import java.io.File;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.configuration.Configurator;
@@ -36,6 +28,10 @@ import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.osgi.OSGiContainer;
+import org.neo4j.server.rrd.Job;
+import org.neo4j.server.rrd.JobScheduler;
+import org.neo4j.server.rrd.RrdFactory;
+import org.neo4j.server.rrd.ScheduledJob;
 import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
@@ -43,10 +39,21 @@ import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 import org.tanukisoftware.wrapper.WrapperListener;
 
+import javax.management.MalformedObjectNameException;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * Application entry point for the Neo4j Server.
  */
-public class NeoServer implements WrapperListener
+public class NeoServer implements WrapperListener, JobScheduler
 {
     public static final Logger log = Logger.getLogger( NeoServer.class );
 
@@ -88,6 +95,8 @@ public class NeoServer implements WrapperListener
      * Look in the log to find details about the failure.
      */
     public static final Integer WEB_SERVER_STARTUP_ERROR_CODE = 1;
+    private List<ScheduledJob> scheduledJobs = new LinkedList<ScheduledJob>();
+
 
     /**
      * Error condition returned from start() when the GraphDatabase service
@@ -175,6 +184,8 @@ public class NeoServer implements WrapperListener
                 container.start();
             }
 
+            createAndStartRrdSampler();
+
             webServer.start();
 
             log.info( "Started Neo Server on port [%s]", restApiUri().getPort() );
@@ -193,6 +204,11 @@ public class NeoServer implements WrapperListener
             e.printStackTrace();
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
+    }
+
+    private void createAndStartRrdSampler() throws MalformedObjectNameException, IOException
+    {
+        RrdFactory.createRrdSampler( database().graph, this );
     }
 
     public String baseUri() throws UnknownHostException
@@ -265,19 +281,10 @@ public class NeoServer implements WrapperListener
         String location = "unknown";
         try
         {
-
-            if ( database != null )
-            {
-                location = database.getLocation();
-                database.shutdown();
-                database = null;
-            }
-            if ( webServer != null )
-            {
-                webServer.stop();
-                webServer = null;
-            }
-            configurator = null;
+            stopJobs();
+            location = stopDatabase( location );
+            stopWebServer();
+            removeConfiguration();
 
             log.info( "Successfully shutdown Neo Server on port [%d], database [%s]", webServerPort, location );
             return 0;
@@ -285,6 +292,39 @@ public class NeoServer implements WrapperListener
         {
             log.error( "Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ", webServerPort, location, e.getMessage() );
             return 1;
+        }
+    }
+
+    private void removeConfiguration()
+    {
+        configurator = null;
+    }
+
+    private void stopWebServer()
+    {
+        if ( webServer != null )
+        {
+            webServer.stop();
+            webServer = null;
+        }
+    }
+
+    private String stopDatabase( String location )
+    {
+        if ( database != null )
+        {
+            location = database.getLocation();
+            database.shutdown();
+            database = null;
+        }
+        return location;
+    }
+
+    private void stopJobs()
+    {
+        for( ScheduledJob job : scheduledJobs)
+        {
+            job.stop();
         }
     }
 
@@ -364,5 +404,11 @@ public class NeoServer implements WrapperListener
     {
         stop();
         start();
+    }
+
+    public void scheduleToRunEvery_Seconds( Job job, int runEverySeconds )
+    {
+        ScheduledJob scheduledJob = new ScheduledJob(job, 3);
+        scheduledJobs.add( scheduledJob );
     }
 }
