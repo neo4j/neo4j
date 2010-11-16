@@ -1,606 +1,594 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <parent>
-        <groupId>org.neo4j</groupId>
-        <artifactId>parent-pom</artifactId>
-        <version>12</version>
-    </parent>
-
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.neo4j.app</groupId>
-    <artifactId>neo4j-server</artifactId>
-    <version>0.1-SNAPSHOT</version>
-    <name>Neo4j Server</name>
-    <description>Standalone Neo4j server application.</description>
-    <url>http://components.neo4j.org/${project.artifactId}/</url>
-
-    <properties>
-        <bundle.namespace>org.neo4j.server</bundle.namespace>
-        <short-name>server</short-name>
-        <neo4j-server.mainClass>org.neo4j.server.Neo4jServer
-        </neo4j-server.mainClass>
-        <neo-server.home>target/generated-resources/appassembler/jsw
-        </neo-server.home>
-        <neo-server.confdir>target/test-classes/etc/neo-server
-        </neo-server.confdir>
-        <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
-    </properties>
-
-    <packaging>bundle</packaging>
-
-    <scm>
-        <connection>scm:svn:https://svn.neo4j.org/components/server/trunk/
-        </connection>
-        <developerConnection>scm:svn:https://svn.neo4j.org/components/server/trunk/</developerConnection>
-        <url>https://trac.neo4j.org/browser/components/server</url>
-    </scm>
-
-    <licenses>
-        <license>
-            <name>GNU Affero General Public License, Version 3</name>
-            <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-        </license>
-    </licenses>
-
-    <issueManagement>
-        <system>Trac</system>
-        <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
-    </issueManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j</artifactId>
-            <version>1.2-SNAPSHOT</version>
-            <type>pom</type>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
-            <version>1.2-SNAPSHOT</version>
-            <classifier>tests</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>jetty</artifactId>
-            <version>6.1.25</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-server</artifactId>
-            <version>1.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.6</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-jaxrs</artifactId>
-            <version>1.6.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-mapper-asl</artifactId>
-            <version>1.6.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.tinkerpop</groupId>
-            <artifactId>gremlin</artifactId>
-            <version>0.5.5</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-all</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.8.5</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-client</artifactId>
-            <version>1.3</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>tanukisoft</groupId>
-            <artifactId>wrapper</artifactId>
-            <version>3.2.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.rrd4j</groupId>
-            <artifactId>rrd4j</artifactId>
-            <version>2.0.6</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.quartz-scheduler</groupId>
-            <artifactId>quartz</artifactId>
-            <version>1.8.0</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j.drivers</groupId>
-            <artifactId>neo4js</artifactId>
-            <version>0.1</version>
-            <type>jar</type>
-        </dependency>
-
-        <!-- File uploads -->
-        <dependency>
-            <groupId>com.sun.jersey.contribs</groupId>
-            <artifactId>jersey-multipart</artifactId>
-            <version>1.3</version>
-        </dependency>
-
-
-        <!-- Test dependencies -->
-
-        <dependency>
-            <groupId>org.seleniumhq.webdriver</groupId>
-            <artifactId>webdriver-firefox</artifactId>
-            <version>0.9.7376</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.seleniumhq.webdriver</groupId>
-            <artifactId>webdriver-htmlunit</artifactId>
-            <version>0.9.7376</version>
-            <type>jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.seleniumhq.webdriver</groupId>
-            <artifactId>webdriver-chrome</artifactId>
-            <version>0.9.7376</version>
-            <type>jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <!--
-            Provides Autoprocessor.
-            This dependency makes the extension loader Felix-specific rather than generic.
-            Consider refactoring out this dependency, or don't worry about it and
-            always uses Felix.
-            -->
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.apache.felix.main</artifactId>
-            <version>3.0.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.core</artifactId>
-            <version>4.2.0</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.compendium</artifactId>
-            <version>4.2.0</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>org.apache.felix.fileinstall</artifactId>
-          <version>${felix-fileinstall.version}</version>
-        </dependency>
-
-        <dependency>
-          <groupId>org.ops4j.pax.swissbox</groupId>
-          <artifactId>pax-swissbox-tinybundles</artifactId>
-          <version>1.3.0</version>
-          <scope>test</scope>
-        </dependency>
-
-
-      <dependency>
-        <groupId>org.ops4j.pax.url</groupId>
-        <artifactId>pax-url-mvn</artifactId>
-        <version>1.1.3</version>
-        <scope>test</scope>
-      </dependency>
-      
-    </dependencies>
-
-    <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-            </resource>
-            <resource>
-                <directory>${project.build.directory}/generated-sources
-                </directory>
-            </resource>
-        </resources>
-
-
-        <plugins>
-            <!-- Development execution -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <mainClass>org.neo4j.server.NeoServer</mainClass>
-                    <systemProperties>
-                        <systemProperty>
-                            <key>org.neo4j.server.properties</key>
-                            <value>${basedir}/neo4j-home/conf/neo4j-server.properties</value>
-                        </systemProperty>
-                    </systemProperties>
-                </configuration>
-            </plugin>
-
-
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>unpack</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.neo4j.drivers</groupId>
-                                    <artifactId>neo4js</artifactId>
-                                    <type>jar</type>
-                                    <outputDirectory>
-                                        ${project.build.outputDirectory}/lib
-                                    </outputDirectory>
-                                    <includes>*.js</includes>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>yuicompressor-maven-plugin</artifactId>
-                <version>1.1</version>
-
-                <executions>
-                    <execution>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>compress</goal>
-                        </goals>
-                    </execution>
-                </executions>
-
-                <configuration>
-                    <sourceDirectory>src/main/javascript</sourceDirectory>
-                    <aggregations>
-                        <aggregation>
-                            <!-- insert new line after each concatenation -->
-                            <insertNewLine>true</insertNewLine>
-
-
-                            <output>${project.build.directory}/classes/html/webadmin.js</output>
-
-                            <inputDir>${project.build.outputDirectory}</inputDir>
-
-
-                            <!--
-                                       JS Files to include. The order here is important due to
-                                       dependency reasons, and is the reason all files are listed here.
-                                   -->
-                            <includes>
-                                <include>lib/jquery.1.4.2-min.js</include>
-                                <include>lib/json2-min.js</include>
-                                <include>lib/jquery-jtemplates-min.js</include>
-                                <include>lib/jquery.bbq-min.js</include>
-                                <include>lib/jquery.flot-min.js</include>
-                                <include>lib/jquery.simplemodal-min.js</include>
-
-                                <include>lib/neo4js.js</include>
-
-                                <include>wa/__init__-min.js</include>
-                                <include>wa/escape-min.js</include>
-                                <include>wa/events-min.js</include>
-                                <include>wa/PropertyStorage-min.js</include>
-                                <include>wa/prop-min.js</include>
-                                <include>wa/Servers-min.js</include>
-                                <include>wa/ServerSelector-min.js</include>
-                                <include>wa/FormValidator-min.js</include>
-
-                                <include>wa/ui/__init__-min.js</include>
-                                <include>wa/ui/Dialog-min.js</include>
-                                <include>wa/ui/Loading-min.js</include>
-                                <include>wa/ui/Pages-min.js</include>
-                                <include>wa/ui/Helpers-min.js</include>
-                                <include>wa/ui/MainMenu-min.js</include>
-                                <include>wa/ui/ErrorBox-min.js</include>
-
-                                <include>wa/widgets/__init__-min.js</include>
-                                <include>wa/widgets/LifecycleWidget-min.js
-                                </include>
-
-                                <include>wa/components/__init__-min.js</include>
-
-                                <include>wa/components/dashboard/__init__-min.js</include>
-                                <include>wa/components/dashboard/Dashboard-min.js</include>
-                                <include>wa/components/dashboard/PrimitiveCountWidget-min.js</include>
-                                <include>wa/components/dashboard/JmxValueTracker-min.js</include>
-                                <include>wa/components/dashboard/DiskUsageWidget-min.js</include>
-                                <include>wa/components/dashboard/CacheWidget-min.js</include>
-                                <include>wa/components/dashboard/CacheWidget-min.js</include>
-                                <include>wa/components/dashboard/MonitorChart-min.js</include>
-
-                                <include>wa/components/jmx/__init__-min.js</include>
-                                <include>wa/components/jmx/Jmx-min.js</include>
-
-                                <include>wa/components/backup/__init__-min.js</include>
-                                <include>wa/components/backup/parseJobData-min.js</include>
-                                <include>wa/components/backup/Backup-min.js</include>
-                                <include>wa/components/console/__init__-min.js</include>
-                                <include>wa/components/console/Console-min.js</include>
-
-                                <include>wa/components/config/__init__-min.js</include>
-                                <include>wa/components/config/Config-min.js</include>
-
-                                <include>wa/components/io/__init__-min.js</include>
-                                <include>wa/components/io/GraphIO-min.js</include>
-                                <include>wa/components/io/ExportSupport-min.js</include>
-                                <include>wa/components/io/ImportSupport-min.js</include>
-
-                                <include>wa/components/data/__init__-min.js</include>
-                                <include>wa/components/data/PropertiesToListManager-min.js</include>
-                                <include>wa/components/data/DataBrowser-min.js</include>
-                                <include>wa/components/data/PropertyEditor-min.js</include>
-                                <include>wa/components/data/NodeManager-min.js</include>
-                                <include>wa/components/data/RelationshipManager-min.js</include>
-
-                                <include>boot-min.js</include>
-                            </includes>
-                        </aggregation>
-                    </aggregations>
-
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>static-web</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <attach>true</attach>
-                            <descriptors>
-                                <descriptor>src/main/assemblies/static-web.xml
-                                </descriptor>
-                            </descriptors>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>com.mycila.maven-license-plugin</groupId>
-                <artifactId>maven-license-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>${neo4j-server.mainClass}</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>appassembler-maven-plugin</artifactId>
-                <configuration>
-                    <repositoryLayout>flat</repositoryLayout>
-                    <includeConfigurationDirectoryInClasspath>true
-                    </includeConfigurationDirectoryInClasspath>
-                    <configurationDirectory>etc</configurationDirectory>
-                    <target>${project.build.directory}/dist</target>
-                    <daemons>
-                        <daemon>
-                            <id>neo-server</id>
-                            <mainClass>${neo4j-server.mainClass}</mainClass>
-                            <commandLineArguments>
-                                <commandLineArgument>start</commandLineArgument>
-                            </commandLineArguments>
-                            <platforms>
-                                <platform>jsw</platform>
-                            </platforms>
-                        </daemon>
-                    </daemons>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>generate-jsw-scripts</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>generate-daemons</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <!-- fix issue with appassembler -->
-                <version>2.4</version>
-            </plugin>
-            <!--
-                   experiment with copying artifacts into expected startup
-                   directories... <plugin> <groupId>org.apache.maven.plugins</groupId>
-                   <artifactId>maven-dependency-plugin</artifactId> <executions>
-                   <execution> <id>copy-dependencies</id> <phase>package</phase>
-                   <goals> <goal>copy-dependencies</goal> </goals> <configuration>
-                   <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                   <overWriteReleases>false</overWriteReleases>
-                   <overWriteSnapshots>true</overWriteSnapshots>
-                   <includeScope>runtime</includeScope>
-                   <excludeScope>test</excludeScope> </configuration> </execution>
-                   <execution> <id>copy-extensions</id> <phase>package</phase> <goals>
-                   <goal>copy</goal> </goals> <configuration> <artifactItems>
-                   <artifactItem> <groupId>org.neo4j.ext</groupId>
-                   <artifactId>hello-ext</artifactId> <version>0.1-SNAPSHOT</version>
-                   <classifier>next</classifier> </artifactItem> </artifactItems>
-                   <outputDirectory>${project.build.directory}/ext</outputDirectory>
-                   </configuration> </execution> <execution> <id>copy-installed</id>
-                   <phase>install</phase> <goals> <goal>copy</goal> </goals>
-                   <configuration> <artifactItems> <artifactItem>
-                   <groupId>${project.groupId}</groupId>
-                   <artifactId>${project.artifactId}</artifactId>
-                   <version>${project.version}</version>
-                   <type>${project.packaging}</type> </artifactItem> </artifactItems>
-                   <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                   </configuration> </execution> </executions> </plugin>
-               -->
-        </plugins>
-    </build>
-
-    <reporting>
-        <plugins>
-            <plugin>
-                <groupId>nl.windgazer</groupId>
-                <artifactId>jsdoctk-plugin</artifactId>
-                <version>2.3.0-RC1</version>
-                <configuration>
-                    <template>jsdoc</template>
-                    <directory>${project.build.directory}/site/jsdoc</directory>
-                    <recurse>10</recurse>
-                    <ext>js</ext>
-                    <allfunctions>true</allfunctions>
-                    <Allfunctions>true</Allfunctions>
-                    <privateOption>true</privateOption>
-                    <srcDir>src/main/javascript</srcDir>
-                    <private>true</private>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
-
-    <repositories>
-        <repository>
-            <id>java.net</id>
-            <url>http://download.java.net/maven/2/</url>
-        </repository>
-        <repository>
-            <id>tinkerpop-repository</id>
-            <name>TinkerPop Maven2 Repository</name>
-            <url>http://tinkerpop.com/maven2</url>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>selenium-repository</id>
-            <url>http://selenium.googlecode.com/svn/repository/</url>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>jsdoctk2</id>
-            <url>http://jsdoctk-plugin.googlecode.com/svn/repo</url>
-        </pluginRepository>
-    </pluginRepositories>
-
-    <developers>
-        <developer>
-            <id>jimwebber</id>
-            <name>Jim Webber</name>
-            <email>jim [at] neotechnology.com</email>
-            <timezone>+0</timezone>
-            <roles>
-                <role>Developer</role>
-            </roles>
-        </developer>
-        <developer>
-            <id>akollegger</id>
-            <name>Andreas Kollegger</name>
-            <email>andreas.kollegger [at] neotechnology.com</email>
-            <timezone>+1</timezone>
-            <roles>
-                <role>Developer</role>
-            </roles>
-        </developer>
-        <developer>
-            <id>andres</id>
-            <name>Andrés Taylor</name>
-            <email>andres.taylor [at] neotechnology.com</email>
-            <timezone>+1</timezone>
-            <roles>
-                <role>Developer</role>
-            </roles>
-        </developer>
-        <developer>
-            <id>peter</id>
-            <name>Peter Neubauer</name>
-            <email>peter [at] neotechnology.com</email>
-            <timezone>+1</timezone>
-            <roles>
-                <role>Developer</role>
-            </roles>
-        </developer>
-    </developers>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>14</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j.app</groupId>
+  <artifactId>neo4j-server</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <name>Neo4j Server</name>
+  <description>Standalone Neo4j server application.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/</url>
+
+  <properties>
+    <bundle.namespace>org.neo4j.server</bundle.namespace>
+    <short-name>server</short-name>
+    <neo4j-server.mainClass>org.neo4j.server.Neo4jServer</neo4j-server.mainClass>
+    <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
+    <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
+    <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
+  </properties>
+
+  <packaging>bundle</packaging>
+
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/components/server/trunk/</connection>
+    <developerConnection>scm:svn:https://svn.neo4j.org/components/server/trunk/</developerConnection>
+    <url>https://trac.neo4j.org/browser/components/server</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
+
+  <issueManagement>
+    <system>Trac</system>
+    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
+  </issueManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j</artifactId>
+      <version>1.2-SNAPSHOT</version>
+      <type>pom</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.2-SNAPSHOT</version>
+      <classifier>tests</classifier>
+    </dependency>
+
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jetty</artifactId>
+      <version>6.1.25</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-server</artifactId>
+      <version>1.3</version>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-configuration</groupId>
+      <artifactId>commons-configuration</artifactId>
+      <version>1.6</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-jaxrs</artifactId>
+      <version>1.6.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+      <version>1.6.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.tinkerpop</groupId>
+      <artifactId>gremlin</artifactId>
+      <version>0.5.5</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <version>1.8.5</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>1.3</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>tanukisoft</groupId>
+      <artifactId>wrapper</artifactId>
+      <version>3.2.3</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.rrd4j</groupId>
+      <artifactId>rrd4j</artifactId>
+      <version>2.0.6</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.quartz-scheduler</groupId>
+      <artifactId>quartz</artifactId>
+      <version>1.8.0</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.drivers</groupId>
+      <artifactId>neo4js</artifactId>
+      <version>0.1</version>
+      <type>jar</type>
+    </dependency>
+
+    <!-- File uploads -->
+    <dependency>
+      <groupId>com.sun.jersey.contribs</groupId>
+      <artifactId>jersey-multipart</artifactId>
+      <version>1.3</version>
+    </dependency>
+
+
+    <!-- Test dependencies -->
+
+    <dependency>
+      <groupId>org.seleniumhq.webdriver</groupId>
+      <artifactId>webdriver-firefox</artifactId>
+      <version>0.9.7376</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.seleniumhq.webdriver</groupId>
+      <artifactId>webdriver-htmlunit</artifactId>
+      <version>0.9.7376</version>
+      <type>jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.seleniumhq.webdriver</groupId>
+      <artifactId>webdriver-chrome</artifactId>
+      <version>0.9.7376</version>
+      <type>jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <!-- Provides Autoprocessor.
+      This dependency makes the extension loader Felix-specific 
+      rather than generic. Consider refactoring out this dependency, 
+      or don't worry about it and always uses Felix. -->
+      <groupId>org.apache.felix</groupId>
+      <artifactId>org.apache.felix.main</artifactId>
+      <version>3.0.2</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+      <version>4.2.0</version>
+      <scope>provided</scope>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.compendium</artifactId>
+      <version>4.2.0</version>
+      <scope>provided</scope>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.felix</groupId>
+      <artifactId>org.apache.felix.fileinstall</artifactId>
+      <version>${felix-fileinstall.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.ops4j.pax.swissbox</groupId>
+      <artifactId>pax-swissbox-tinybundles</artifactId>
+      <version>1.3.0</version>
+      <scope>test</scope>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.ops4j.pax.url</groupId>
+      <artifactId>pax-url-mvn</artifactId>
+      <version>1.1.3</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>${project.build.directory}/generated-sources</directory>
+      </resource>
+    </resources>
+
+
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+
+      <!-- Development execution -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <mainClass>org.neo4j.server.NeoServer</mainClass>
+          <systemProperties>
+            <systemProperty>
+              <key>org.neo4j.server.properties</key>
+              <value>${basedir}/neo4j-home/conf/neo4j-server.properties</value>
+            </systemProperty>
+          </systemProperties>
+        </configuration>
+      </plugin>
+
+
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.neo4j.drivers</groupId>
+                  <artifactId>neo4js</artifactId>
+                  <type>jar</type>
+                  <outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
+                  <includes>*.js</includes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>yuicompressor-maven-plugin</artifactId>
+        <version>1.1</version>
+
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>compress</goal>
+            </goals>
+          </execution>
+        </executions>
+
+        <configuration>
+          <sourceDirectory>src/main/javascript</sourceDirectory>
+          <aggregations>
+            <aggregation>
+              <!-- insert new line after each concatenation -->
+              <insertNewLine>true</insertNewLine>
+
+
+              <output>${project.build.directory}/classes/html/webadmin.js</output>
+
+              <inputDir>${project.build.outputDirectory}</inputDir>
+
+
+              <!-- JS Files to include. The order here is important due to dependency reasons, and is the reason all files are listed here. -->
+              <includes>
+                <include>lib/jquery.1.4.2-min.js</include>
+                <include>lib/json2-min.js</include>
+                <include>lib/jquery-jtemplates-min.js</include>
+                <include>lib/jquery.bbq-min.js</include>
+                <include>lib/jquery.flot-min.js</include>
+                <include>lib/jquery.simplemodal-min.js</include>
+
+                <include>lib/neo4js.js</include>
+
+                <include>wa/__init__-min.js</include>
+                <include>wa/escape-min.js</include>
+                <include>wa/events-min.js</include>
+                <include>wa/PropertyStorage-min.js</include>
+                <include>wa/prop-min.js</include>
+                <include>wa/Servers-min.js</include>
+                <include>wa/ServerSelector-min.js</include>
+                <include>wa/FormValidator-min.js</include>
+
+                <include>wa/ui/__init__-min.js</include>
+                <include>wa/ui/Dialog-min.js</include>
+                <include>wa/ui/Loading-min.js</include>
+                <include>wa/ui/Pages-min.js</include>
+                <include>wa/ui/Helpers-min.js</include>
+                <include>wa/ui/MainMenu-min.js</include>
+                <include>wa/ui/ErrorBox-min.js</include>
+
+                <include>wa/widgets/__init__-min.js</include>
+                <include>wa/widgets/LifecycleWidget-min.js</include>
+
+                <include>wa/components/__init__-min.js</include>
+
+                <include>wa/components/dashboard/__init__-min.js</include>
+                <include>wa/components/dashboard/Dashboard-min.js</include>
+                <include>wa/components/dashboard/PrimitiveCountWidget-min.js</include>
+                <include>wa/components/dashboard/JmxValueTracker-min.js</include>
+                <include>wa/components/dashboard/DiskUsageWidget-min.js</include>
+                <include>wa/components/dashboard/CacheWidget-min.js</include>
+                <include>wa/components/dashboard/CacheWidget-min.js</include>
+                <include>wa/components/dashboard/MonitorChart-min.js</include>
+
+                <include>wa/components/jmx/__init__-min.js</include>
+                <include>wa/components/jmx/Jmx-min.js</include>
+
+                <include>wa/components/backup/__init__-min.js</include>
+                <include>wa/components/backup/parseJobData-min.js</include>
+                <include>wa/components/backup/Backup-min.js</include>
+                <include>wa/components/console/__init__-min.js</include>
+                <include>wa/components/console/Console-min.js</include>
+
+                <include>wa/components/config/__init__-min.js</include>
+                <include>wa/components/config/Config-min.js</include>
+
+                <include>wa/components/io/__init__-min.js</include>
+                <include>wa/components/io/GraphIO-min.js</include>
+                <include>wa/components/io/ExportSupport-min.js</include>
+                <include>wa/components/io/ImportSupport-min.js</include>
+
+                <include>wa/components/data/__init__-min.js</include>
+                <include>wa/components/data/PropertiesToListManager-min.js</include>
+                <include>wa/components/data/DataBrowser-min.js</include>
+                <include>wa/components/data/PropertyEditor-min.js</include>
+                <include>wa/components/data/NodeManager-min.js</include>
+                <include>wa/components/data/RelationshipManager-min.js</include>
+
+                <include>boot-min.js</include>
+              </includes>
+            </aggregation>
+          </aggregations>
+
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>static-web</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>true</attach>
+              <descriptors>
+                <descriptor>src/main/assemblies/static-web.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>${neo4j-server.mainClass}</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <configuration>
+          <repositoryLayout>flat</repositoryLayout>
+          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
+          <configurationDirectory>etc</configurationDirectory>
+          <target>${project.build.directory}/dist</target>
+          <daemons>
+            <daemon>
+              <id>neo-server</id>
+              <mainClass>${neo4j-server.mainClass}</mainClass>
+              <commandLineArguments>
+                <commandLineArgument>start</commandLineArgument>
+              </commandLineArguments>
+              <platforms>
+                <platform>jsw</platform>
+              </platforms>
+            </daemon>
+          </daemons>
+        </configuration>
+        <executions>
+          <execution>
+            <id>generate-jsw-scripts</id>
+            <phase>package</phase>
+            <goals>
+              <goal>generate-daemons</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <!-- fix issue with appassembler -->
+        <version>2.4</version>
+      </plugin>
+      <!-- experiment with copying artifacts into expected startup directories... <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-dependency-plugin</artifactId> <executions> <execution> <id>copy-dependencies</id> <phase>package</phase> <goals> <goal>copy-dependencies</goal> </goals> 
+        <configuration> <outputDirectory>${project.build.directory}/lib</outputDirectory> <overWriteReleases>false</overWriteReleases> <overWriteSnapshots>true</overWriteSnapshots> <includeScope>runtime</includeScope> <excludeScope>test</excludeScope> </configuration> </execution> <execution> <id>copy-extensions</id> 
+        <phase>package</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems> <artifactItem> <groupId>org.neo4j.ext</groupId> <artifactId>hello-ext</artifactId> <version>0.1-SNAPSHOT</version> <classifier>next</classifier> </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/ext</outputDirectory> 
+        </configuration> </execution> <execution> <id>copy-installed</id> <phase>install</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems> <artifactItem> <groupId>${project.groupId}</groupId> <artifactId>${project.artifactId}</artifactId> <version>${project.version}</version> <type>${project.packaging}</type> 
+        </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/lib</outputDirectory> </configuration> </execution> </executions> </plugin> -->
+    </plugins>
+  </build>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <groups>
+            <group>
+              <title>Server</title>
+              <packages>org.neo4j.server:org.neo4j.server.*</packages>
+            </group>
+            <group>
+              <title>Server REST Interface</title>
+              <packages>org.neo4j.server.rest:org.neo4j.server.rest.*</packages>
+            </group>
+            <group>
+              <title>Server Admin Interface</title>
+              <packages>org.neo4j.server.webadmin:org.neo4j.server.webadmin.*</packages>
+            </group>
+          </groups>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>nl.windgazer</groupId>
+        <artifactId>jsdoctk-plugin</artifactId>
+        <version>2.3.0-RC1</version>
+        <configuration>
+          <template>jsdoc</template>
+          <directory>${project.build.directory}/site/jsdoc</directory>
+          <recurse>10</recurse>
+          <ext>js</ext>
+          <allfunctions>true</allfunctions>
+          <Allfunctions>true</Allfunctions>
+          <privateOption>true</privateOption>
+          <srcDir>src/main/javascript</srcDir>
+          <private>true</private>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <repositories>
+    <repository>
+      <id>java.net</id>
+      <url>http://download.java.net/maven/2/</url>
+    </repository>
+    <repository>
+      <id>tinkerpop-repository</id>
+      <name>TinkerPop Maven2 Repository</name>
+      <url>http://tinkerpop.com/maven2</url>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>daily</updatePolicy>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>selenium-repository</id>
+      <url>http://selenium.googlecode.com/svn/repository/</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>jsdoctk2</id>
+      <url>http://jsdoctk-plugin.googlecode.com/svn/repo</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <developers>
+    <developer>
+      <id>jimwebber</id>
+      <name>Jim Webber</name>
+      <email>jim [at] neotechnology.com</email>
+      <timezone>+0</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>akollegger</id>
+      <name>Andreas Kollegger</name>
+      <email>andreas.kollegger [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>andres</id>
+      <name>Andrés Taylor</name>
+      <email>andres.taylor [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>peter</id>
+      <name>Peter Neubauer</name>
+      <email>peter [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
 
 </project>

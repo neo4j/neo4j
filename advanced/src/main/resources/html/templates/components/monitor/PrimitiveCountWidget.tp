@@ -6,7 +6,7 @@
 			<td>{$T.data.NumberOfNodeIdsInUse.value}</td>
 		</tr>
 		<tr>
-			<th>Attributes</th>
+			<th>Properties</th>
 			<td>{$T.data.NumberOfPropertyIdsInUse.value}</td>
 		</tr>
 		<tr>
