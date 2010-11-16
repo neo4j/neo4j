@@ -26,82 +26,102 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Random;
 
-public class ServerTestUtils {
+public class ServerTestUtils
+{
     private static final String TEST_PORT = "7474";
 
-    public static File createTempDir() throws IOException {
+    public static File createTempDir() throws IOException
+    {
 
-        File d = File.createTempFile("neo4j-test", "dir");
-        if (!d.delete()) {
-            throw new RuntimeException("temp config directory pre-delete failed");
+        File d = File.createTempFile( "neo4j-test", "dir" );
+        if ( !d.delete() )
+        {
+            throw new RuntimeException( "temp config directory pre-delete failed" );
         }
-        if (!d.mkdirs()) {
-            throw new RuntimeException("temp config directory not created");
+        if ( !d.mkdirs() )
+        {
+            throw new RuntimeException( "temp config directory not created" );
         }
         d.deleteOnExit();
         return d;
     }
 
-    public static File createTempPropertyFile() throws IOException {
-        return createTempPropertyFile(createTempDir());
+    public static File createTempPropertyFile() throws IOException
+    {
+        return createTempPropertyFile( createTempDir() );
     }
 
-    public static void writePropertyToFile(String name, String value, File propertyFile) {
-        try {
-            FileWriter fstream = new FileWriter(propertyFile, true);
-            BufferedWriter out = new BufferedWriter(fstream);
-            out.write(name);
-            out.write("=");
-            out.write(value);
-            out.write(System.getProperty("line.separator"));
+    public static void writePropertyToFile( String name, String value, File propertyFile )
+    {
+        try
+        {
+            FileWriter fstream = new FileWriter( propertyFile, true );
+            BufferedWriter out = new BufferedWriter( fstream );
+            out.write( name );
+            out.write( "=" );
+            out.write( value );
+            out.write( System.getProperty( "line.separator" ) );
             out.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
-    public static File createTempPropertyFile(File parentDir) throws IOException {
-        File f = new File(parentDir, "test-" + new Random().nextInt() + ".properties");
+    public static File createTempPropertyFile( File parentDir ) throws IOException
+    {
+        File f = new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
         f.deleteOnExit();
         return f;
     }
 
-    public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectory() {
+    public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectory() throws ServerStartupException
+    {
 
-        writeConfig(TEST_PORT);
+        writeConfig( TEST_PORT );
 
-        NeoServer.main(null);
+        NeoServer.main( null );
 
         return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS();
     }
-    
-    private static void writeConfig(String portNo) {
-        try {
-            File temporaryConfigFile = createTempPropertyFile();
-            writePropertyToFile("org.neo4j.server.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
-            writePropertyToFile("org.neo4j.server.webserver.port", portNo, temporaryConfigFile);
-            writePropertyToFile(NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile);
-            writePropertyToFile(NeoServer.OSGI_BUNDLE_DIR_PROPERTY_KEY, "../", temporaryConfigFile);
-            writePropertyToFile("org.neo4j.server.webadmin.data.uri", "http://localhost:7474/db/data/", temporaryConfigFile);
-            writePropertyToFile("org.neo4j.server.webadmin.management.uri", "http://localhost:7474/db/manage/", temporaryConfigFile);
-            
-            System.setProperty(NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath());
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    private static void writeConfig( String portNo )
+    {
+        try
+        {
+            File temporaryConfigFile = createTempPropertyFile();
+            writePropertyToFile( "org.neo4j.server.database.location", createTempDir().getAbsolutePath(), temporaryConfigFile );
+            writePropertyToFile( "org.neo4j.server.webserver.port", portNo, temporaryConfigFile );
+            writePropertyToFile( NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile );
+            writePropertyToFile( NeoServer.OSGI_BUNDLE_DIR_PROPERTY_KEY, "../", temporaryConfigFile );
+            writePropertyToFile( "org.neo4j.server.webadmin.data.uri", "http://localhost:7474/db/data/", temporaryConfigFile );
+            writePropertyToFile( "org.neo4j.server.webadmin.management.uri", "http://localhost:7474/db/manage/", temporaryConfigFile );
+
+            System.setProperty( NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath() );
+
+        } catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
-    public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectoryOnDefaultPort() {
-        writeConfig("7474");
-        NeoServer.main(null);
-        
-        return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS();
+    public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectoryOnDefaultPort() throws ServerStartupException
+    {
+        return initializeServerWithRandomTemporaryDatabaseDirectory( "7474" );
     }
 
-    public static void nukeServer() {
+    public static void nukeServer()
+    {
         NeoServer.shutdown();
-        System.clearProperty(NeoServer.NEO_CONFIG_FILE_KEY);
-        System.clearProperty(NeoServer.DATABASE_LOCATION_PROPERTY_KEY);
+        System.clearProperty( NeoServer.NEO_CONFIG_FILE_KEY );
+        System.clearProperty( NeoServer.DATABASE_LOCATION_PROPERTY_KEY );
+    }
+
+    public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectory( String usingPort ) throws ServerStartupException
+    {
+        writeConfig(usingPort);
+        NeoServer.main(null);
+
+        return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS();
     }
 }
