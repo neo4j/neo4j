@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.internal.stubbing.answers.DoesNothing;
 import org.neo4j.server.logging.InMemoryAppender;
 
 import java.io.File;
@@ -34,6 +35,7 @@ import java.net.URISyntaxException;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -61,6 +63,19 @@ public class NeoServerFunctionalTest {
 
         assertThat(response.getStatus(), is(200));
     }
+    
+    @Test
+    public void shouldRedirectRootToWebadmin() throws Exception {
+
+        Client client = Client.create();
+        assertFalse( server.baseUri().toString().contains( "webadmin" ) );
+        ClientResponse response = client.resource(server.baseUri()).get(ClientResponse.class);
+        System.out.println(response.getHeaders());
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.toString(), containsString( "webadmin" ));
+    }
+    
+    
 
     @Test
     public void serverShouldProvideAWelcomePage() {
