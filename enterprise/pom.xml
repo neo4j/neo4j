@@ -25,6 +25,7 @@
         </neo-server.home>
         <neo-server.confdir>target/test-classes/etc/neo-server
         </neo-server.confdir>
+        <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     </properties>
 
     <packaging>bundle</packaging>
@@ -217,6 +218,27 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>org.apache.felix.fileinstall</artifactId>
+          <version>${felix-fileinstall.version}</version>
+        </dependency>
+
+        <dependency>
+          <groupId>org.ops4j.pax.swissbox</groupId>
+          <artifactId>pax-swissbox-tinybundles</artifactId>
+          <version>1.3.0</version>
+          <scope>test</scope>
+        </dependency>
+
+
+      <dependency>
+        <groupId>org.ops4j.pax.url</groupId>
+        <artifactId>pax-url-mvn</artifactId>
+        <version>1.1.3</version>
+        <scope>test</scope>
+      </dependency>
+      
     </dependencies>
 
     <build>
