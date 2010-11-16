@@ -21,12 +21,15 @@
 package org.neo4j.server.database;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.logging.InMemoryAppender;
 
@@ -62,5 +65,10 @@ public class DatabaseTest {
         theDatabase.shutdown();
         
         assertThat(appender.toString(), containsString("Successfully shutdown database"));
+    }
+
+    @Test(expected = TransactionFailureException.class)
+    public void shouldComplainIfDatabaseLocationIsAlreadyInUse() {
+        Database anotherDatabase = new Database(theDatabase.getLocation());
     }
 }

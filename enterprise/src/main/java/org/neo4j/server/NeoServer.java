@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
@@ -77,16 +78,22 @@ public class NeoServer implements WrapperListener
     protected int webServerPort;
     public static final String EXPORT_BASE_PATH = "org.neo4j.export.basepath";
 
+    // ABKTODO: move this stuff out of here
     private static final String ENABLE_OSGI_SERVER_PROPERTY_KEY = "org.neo4j.server.osgi.enable";
     public static final String OSGI_BUNDLE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.bundledir";
     public static final String OSGI_CACHE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.cachedir";
 
     /**
      * Error condition returned from start() if web server failed to start.
-     * Look in the log to find details about the failure. 
-     *
+     * Look in the log to find details about the failure.
      */
-    private static final Integer WEB_SERVER_STARTUP_EXCEPTION_ERROR_CODE = 1;
+    public static final Integer WEB_SERVER_STARTUP_ERROR_CODE = 1;
+
+    /**
+     * Error condition returned from start() when the GraphDatabase service
+     * failed to initialize.
+     */
+    public static final Integer GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
 
     /**
      * For test purposes only.
@@ -131,12 +138,15 @@ public class NeoServer implements WrapperListener
     public Integer start( String[] args )
     {
 
+        String databaseLocation = "undefined";
+
         try
         {
             this.configurator = new Configurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), getConfigFile() );
             webServerPort = configurator.configuration().getInt( WEBSERVER_PORT_PROPERTY_KEY, DEFAULT_WEBSERVER_PORT );
 
-            this.database = new Database( configurator.configuration().getString( DATABASE_LOCATION_PROPERTY_KEY ) );
+            databaseLocation = configurator.configuration().getString( DATABASE_LOCATION_PROPERTY_KEY );
+            this.database = new Database( databaseLocation );
 
             // Config and database has to be created before we start Jetty
             this.webServer = new Jetty6WebServer();
@@ -153,7 +163,7 @@ public class NeoServer implements WrapperListener
 
             log.info( "Mounting REST API at [%s]", REST_API_SERVICE_NAME );
             webServer.addJAXRSPackages( listFrom( new String[]{REST_API_PACKAGE} ), REST_API_SERVICE_NAME );
-            
+
 
             // Start embedded OSGi container, maybe
             boolean osgiServerShouldStart = configurator.configuration().getBoolean( ENABLE_OSGI_SERVER_PROPERTY_KEY, false );
@@ -170,12 +180,18 @@ public class NeoServer implements WrapperListener
             log.info( "Started Neo Server on port [%s]", restApiUri().getPort() );
 
             return null; // This is for the service wrapper, and though it looks weird, it's correct
+        } catch ( TransactionFailureException tfe )
+        {
+            log.error( "Failed to start Neo Server, because " + tfe +
+                    ". Another process may be using database location " + databaseLocation );
+            tfe.printStackTrace();
+            return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         } catch ( Exception e )
         {
             e.printStackTrace();
             log.error( "Failed to start Neo Server on port [%s]", webServerPort );
             e.printStackTrace();
-            return WEB_SERVER_STARTUP_EXCEPTION_ERROR_CODE;
+            return WEB_SERVER_STARTUP_ERROR_CODE;
         }
     }
 
@@ -319,7 +335,7 @@ public class NeoServer implements WrapperListener
         return al;
     }
 
-    public static void main( String args[] )
+    public static void main( String args[] ) throws ServerStartupException
     {
         theServer = new NeoServer();
         Runtime.getRuntime().addShutdownHook( new Thread()
@@ -337,8 +353,10 @@ public class NeoServer implements WrapperListener
         } );
 
         Integer startupCondition = theServer.start( args );
-        if ( startupCondition != null) {
-            throw new RuntimeException("Neo Server failed to start, because of error code: " + startupCondition);
+        if ( startupCondition != null )
+        {
+            theServer.stop();
+            throw new ServerStartupException( "Neo Server failed to start.", startupCondition );
         }
     }
 
