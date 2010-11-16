@@ -20,67 +20,83 @@
 
 package org.neo4j.server.rrd;
 
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
 
+import javax.management.MalformedObjectNameException;
 import java.io.File;
 import java.io.IOException;
 
 public class RrdFactory
 {
+    public static RrdDb createRrdSampler( AbstractGraphDatabase db, JobScheduler scheduler ) throws MalformedObjectNameException, IOException
+    {
+        Sampleable[] sampleables = new Sampleable[]{
+                new MemoryUsedSampleable(),
+                new NodeIdsInUseSampleable( db ),
+                new PropertyCountSampleable( db ),
+                new RelationshipCountSampleable( db )
+        };
 
-    public static RrdDb createRrdb( String inDirectory, int stepSize, int stepsPerArchive, Sampleable... sampleables ) throws IOException
+        RrdDb rrdb = createRrdb( new File( db.getStoreDir(), "rrd" ).getAbsolutePath(), 3000, 750, sampleables );
+        RrdSampler sampler = new RrdSampler( rrdb.createSample(), sampleables);
+        RrdJob job = new RrdJob(sampler);
+        scheduler.scheduleToRunEvery_Seconds(job, 3);
+        return rrdb;
+    }
+
+    public static RrdDb createRrdb( String inDirectory, int stepSize, int stepsPerArchive,
+                                    Sampleable... sampleables ) throws IOException
     {
         if ( !new File( inDirectory ).exists() )
         {
-            // CREATE RRD DEFINITION
-            RrdDef rrdDef = new RrdDef( inDirectory, stepSize );
-
-            rrdDef.setVersion( 2 );
-
-            // DEFINE DATA SOURCES
-            for ( Sampleable sampleable : sampleables )
-            {
-                rrdDef.addDatasource( sampleable.getName(), DsType.GAUGE, stepSize, 0, Long.MAX_VALUE );
-
-            }
-//
-//            rrdDef.addDatasource( NODE_CACHE_SIZE, DsType.GAUGE, STEP_SIZE, 0, Long.MAX_VALUE );
-//            rrdDef.addDatasource( NODE_COUNT, DsType.GAUGE, STEP_SIZE, 0, Long.MAX_VALUE );
-//            rrdDef.addDatasource( RELATIONSHIP_COUNT, DsType.GAUGE, STEP_SIZE, 0, Long.MAX_VALUE );
-//            rrdDef.addDatasource( PROPERTY_COUNT, DsType.GAUGE, STEP_SIZE, 0, Long.MAX_VALUE );
-//            rrdDef.addDatasource( MEMORY_PERCENT, DsType.GAUGE, STEP_SIZE, 0, Long.MAX_VALUE );
-
-            // DEFINE ARCHIVES
-
-            // Last 35 minutes
-            rrdDef.addArchive( ConsolFun.AVERAGE, 0.5, 1, stepsPerArchive );
-
-            // Last 6 hours
-            rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 10, stepsPerArchive );
-
-            // Last day
-            rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 50, stepsPerArchive );
-
-            // Last week
-            rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 300, stepsPerArchive );
-
-            // Last month
-            rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 1300, stepsPerArchive );
-
-            // Last five years
-            rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 15000, stepsPerArchive * 5 );
-
-            // INSTANTIATE
-
+            RrdDef rrdDef = createRrdDb( inDirectory, stepSize );
+            defineDataSources( stepSize, rrdDef, sampleables );
+            addArchives( stepsPerArchive, rrdDef );
             return new RrdDb( rrdDef );
-
         } else
         {
             return new RrdDb( inDirectory );
         }
+    }
 
+    private static void addArchives( int stepsPerArchive, RrdDef rrdDef )
+    {
+        // Last 35 minutes
+        rrdDef.addArchive( ConsolFun.AVERAGE, 0.5, 1, stepsPerArchive );
+
+        // Last 6 hours
+        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 10, stepsPerArchive );
+
+        // Last day
+        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 50, stepsPerArchive );
+
+        // Last week
+        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 300, stepsPerArchive );
+
+        // Last month
+        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 1300, stepsPerArchive );
+
+        // Last five years
+        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 15000, stepsPerArchive * 5 );
+    }
+
+    private static void defineDataSources( int stepSize, RrdDef rrdDef, Sampleable[] sampleables )
+    {
+        for ( Sampleable sampleable : sampleables )
+        {
+            rrdDef.addDatasource( sampleable.getName(), DsType.GAUGE, stepSize, 0, Long.MAX_VALUE );
+
+        }
+    }
+
+    private static RrdDef createRrdDb( String inDirectory, int stepSize )
+    {
+        RrdDef rrdDef = new RrdDef( inDirectory, stepSize );
+        rrdDef.setVersion( 2 );
+        return rrdDef;
     }
 }
