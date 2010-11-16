@@ -32,8 +32,6 @@ import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.validation.RuleFailedException;
-import org.neo4j.server.configuration.validation.ValidationRule;
 import org.neo4j.server.configuration.validation.Validator;
 
 public class ConfiguratorTest

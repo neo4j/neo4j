@@ -39,22 +39,16 @@ import org.neo4j.server.webadmin.rest.representations.MonitorServiceRepresentati
 
 /**
  * This exposes data from an internal round-robin database that tracks various
- * system KPIs over time.
- * 
- * @author Jacob Hansson <jacob@voltvoodoo.com>
- * 
+ * system KPIs over time. 
  */
 @Path( MonitorService.ROOT_PATH )
 public class MonitorService implements AdvertisableService
-{
-
-    @Override
+{    
     public String getName()
     {
         return "monitor";
     }
 
-    @Override
     public String getServerPath()
     {
         return ROOT_PATH;
@@ -64,11 +58,11 @@ public class MonitorService implements AdvertisableService
     public static final String DATA_PATH = "/fetch";
     public static final String DATA_FROM_PATH = DATA_PATH + "/{start}";
     public static final String DATA_SPAN_PATH = DATA_PATH + "/{start}/{stop}";
-    //
+    
     public static final long MAX_TIMESPAN = 1000l * 60l * 60l * 24l * 365l * 5;
     public static final long DEFAULT_TIMESPAN = 1000 * 60 * 60 * 24;
 
-    //
+    
     @GET
     @Produces( MediaType.APPLICATION_JSON )
     public Response getServiceDefinition( @Context UriInfo uriInfo )
@@ -153,7 +147,7 @@ public class MonitorService implements AdvertisableService
             // TODO Auto-generated constructor stub
         }
 
-        @Override
+        
         public Object serialize()
         {
             Map<String, Object> data = new HashMap<String, Object>();
