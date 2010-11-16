@@ -38,7 +38,7 @@ public class RootService {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getServiceDefinition(@Context UriInfo uriInfo, @Context Database database) {
         
-        String entity = JsonRenderers.DEFAULT.render(new ServerRootRepresentation(uriInfo.getBaseUri(), new ConsoleService( null ) , new JmxService()));
+        String entity = JsonRenderers.DEFAULT.render(new ServerRootRepresentation(uriInfo.getBaseUri(), new ConsoleService( null ) , new JmxService(), new MonitorService()));
 
         return Response.ok(entity).header("Content-Type", MediaType.APPLICATION_JSON).build();
     }
