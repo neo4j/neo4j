@@ -9,13 +9,14 @@
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>6</version>
+    <version>7</version>
   </parent>
 
   <properties>
     <short-name>neo4j-examples</short-name>
     <apidocs-unpack>${project.build.directory}/neo4j-apidocs</apidocs-unpack>
     <apidocs-target>${project.build.directory}/site/apidocs</apidocs-target>
+    <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
   </properties>
 
   <dependencies>
@@ -23,6 +24,7 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
       <version>1.2-SNAPSHOT</version>
+      <!-- In this context, keep this artifact as type pom -->
       <type>pom</type>
       <exclusions>
         <exclusion>
@@ -173,7 +175,6 @@
                 <artifactItem>
                   <groupId>org.neo4j</groupId>
                   <artifactId>neo4j</artifactId>
-                  <version>${project.version}</version>
                   <type>jar</type>
                   <classifier>javadoc</classifier>
                   <outputDirectory>${apidocs-unpack}</outputDirectory>
@@ -243,9 +244,6 @@
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
         <artifactId>maven-license-plugin</artifactId>
-        <configuration>
-          <header>http://neo4j.org/license-header-asl.txt</header>
-        </configuration>
         <executions>
           <execution>
             <goals>
