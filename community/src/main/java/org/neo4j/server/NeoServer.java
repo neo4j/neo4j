@@ -33,6 +33,7 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 import org.tanukisoftware.wrapper.WrapperListener;
+import org.tanukisoftware.wrapper.WrapperServiceException;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -79,7 +80,15 @@ public class NeoServer implements WrapperListener
 
     private static final String ENABLE_OSGI_SERVER_PROPERTY_KEY = "org.neo4j.server.osgi.enable";
     public static final String OSGI_BUNDLE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.bundledir";
-    
+    public static final String OSGI_CACHE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.cachedir";
+
+    /**
+     * Error condition returned from start() if web server failed to start.
+     * Look in the log to find details about the failure. 
+     *
+     */
+    private static final Integer WEB_SERVER_STARTUP_EXCEPTION_ERROR_CODE = 1;
+
     /**
      * For test purposes only.
      */
@@ -151,8 +160,9 @@ public class NeoServer implements WrapperListener
             if ( osgiServerShouldStart )
             {
                 String bundleDirectory = configurator.configuration().getString( OSGI_BUNDLE_DIR_PROPERTY_KEY, "../" );
-                OSGiContainer container = new OSGiContainer( bundleDirectory );
-                container.startContainer();
+                String cacheDirectory = configurator.configuration().getString( OSGI_CACHE_DIR_PROPERTY_KEY, "../" );
+                OSGiContainer container = new OSGiContainer( bundleDirectory, cacheDirectory );
+                container.start();
             }
 
             webServer.start();
@@ -165,7 +175,7 @@ public class NeoServer implements WrapperListener
             e.printStackTrace();
             log.error( "Failed to start Neo Server on port [%s]", webServerPort );
             e.printStackTrace();
-            return 1;
+            return WEB_SERVER_STARTUP_EXCEPTION_ERROR_CODE;
         }
     }
 
@@ -326,7 +336,10 @@ public class NeoServer implements WrapperListener
             }
         } );
 
-        theServer.start( args );
+        Integer startupCondition = theServer.start( args );
+        if ( startupCondition != null) {
+            throw new RuntimeException("Neo Server failed to start, because of error code: " + startupCondition);
+        }
     }
 
     public void reboot()

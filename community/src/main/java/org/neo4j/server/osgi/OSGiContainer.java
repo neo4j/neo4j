@@ -28,60 +28,121 @@ import java.util.Map;
 import org.apache.felix.framework.Felix;
 import org.apache.felix.framework.util.FelixConstants;
 import org.apache.felix.main.AutoProcessor;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 import org.osgi.framework.launch.Framework;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+
 /**
+ * Container for an embedded OSGi framework.
  */
 public class OSGiContainer
 {
+    public static final String DEFAULT_BUNDLE_DIRECTORY = "bundles";
+    public static final String DEFAULT_CACHE_DIRECTORY = "cache";
+
     private Framework osgiFramework;
-    private String bundledir;
     private HostBridge bridge;
     private Logger log = Logger.getLogger( OSGiContainer.class );
+    private String bundleDirectory;
 
-    public OSGiContainer( String bundleDirectory ) throws Exception
+    public OSGiContainer( String bundleDirectory, String cacheDirectory )
     {
-        bundledir = bundleDirectory;
+        this.bundleDirectory = bundleDirectory;
 
-        Map<String, List<HostBridge>> configMap = new HashMap<String, List<HostBridge>>();
+        Map configMap = new HashMap();
         bridge = new HostBridge();
         List<HostBridge> list = new ArrayList<HostBridge>();
         list.add( bridge );
 
         configMap.put( FelixConstants.SYSTEMBUNDLE_ACTIVATORS_PROP, list );
+        configMap.put( Constants.FRAMEWORK_STORAGE, cacheDirectory );
+        configMap.put(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA,
+            "host.service.command; version=1.0.0");
 
         osgiFramework = new Felix( configMap );
 
-        // set expected system properties
+        File bundleDirectoryAsFile = new File( bundleDirectory );
+        if ( !bundleDirectoryAsFile.exists() )
+        {
+            bundleDirectoryAsFile.mkdirs();
+        }
     }
 
-    public void startContainer() throws BundleException
+    public OSGiContainer()
     {
-        log.info("Starting OSGi container...");
+        this( DEFAULT_BUNDLE_DIRECTORY, DEFAULT_CACHE_DIRECTORY );
+    }
+
+    public void start() throws BundleException
+    {
+        log.info( "Starting OSGi container..." );
+
         osgiFramework.init();
         Map<String, String> autoConfig = new HashMap<String, String>();
-        log.info( "Loading bundles from: " + bundledir );
-        autoConfig.put( AutoProcessor.AUTO_DEPLOY_DIR_PROPERY, bundledir );
+        log.info( "Loading bundles from: " + new File( bundleDirectory ).getAbsolutePath() );
+        autoConfig.put( AutoProcessor.AUTO_DEPLOY_DIR_PROPERY, bundleDirectory );
         autoConfig.put( AutoProcessor.AUTO_DEPLOY_ACTION_PROPERY,
                 AutoProcessor.AUTO_DEPLOY_INSTALL_VALUE + "," +
                         AutoProcessor.AUTO_DEPLOY_START_VALUE
         );
         AutoProcessor.process( autoConfig, osgiFramework.getBundleContext() );
         osgiFramework.start();
-        log.info("OSGi is ready.");
+
+        for ( Bundle b : bridge.getBundles() )
+        {
+            logBundleState( b );
+        }
+        log.info( "OSGi is ready." );
     }
 
-    public Bundle[] getInstalledBundles()
+    public Framework getFramework()
+    {
+        return osgiFramework;
+    }
+
+    private void logBundleState( Bundle b )
+    {
+        String bundleName = b.getSymbolicName();
+        if ( bundleName == null )
+            bundleName = b.getLocation();
+        String state = "unknown";
+        switch ( b.getState() )
+        {
+            case Bundle.ACTIVE:
+                state = "active";
+                break;
+            case Bundle.INSTALLED:
+                state = "installed";
+                break;
+            case Bundle.RESOLVED:
+                state = "resolved";
+                break;
+        }
+        log.info( "\t" + state + " " + bundleName );
+    }
+
+    public Bundle[] getBundles()
     {
         return bridge.getBundles();
     }
 
-    public void shutdownContainer() throws BundleException, InterruptedException
+    public void shutdown() throws BundleException, InterruptedException
     {
         osgiFramework.stop();
         osgiFramework.waitForStop( 0 );
+    }
+    public String getBundleDirectory()
+    {
+        return bundleDirectory;
     }
 }
