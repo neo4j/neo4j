@@ -20,26 +20,32 @@
 
 package org.neo4j.server.osgi;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.swissbox.tinybundles.core.TinyBundles.newBundle;
+import static org.ops4j.pax.swissbox.tinybundles.core.TinyBundles.withBnd;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.server.osgi.bundles.service.ExampleServiceImpl;
 import org.neo4j.server.osgi.bundles.aware.LifecycleActivator;
 import org.neo4j.server.osgi.bundles.hello.Hello;
+import org.neo4j.server.osgi.bundles.service.ExampleServiceImpl;
 import org.ops4j.io.StreamUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
-
-import java.io.*;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.swissbox.tinybundles.core.TinyBundles.newBundle;
-import static org.ops4j.pax.swissbox.tinybundles.core.TinyBundles.withBnd;
 
 public class OSGiContainerTest
 {
@@ -146,6 +152,8 @@ public class OSGiContainerTest
         container.start();
 
         Bundle awareBundle = container.getBundles()[1];
+        
+        assertNotNull(awareBundle);
 
         container.shutdown();
     }

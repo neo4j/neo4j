@@ -20,6 +20,14 @@
 
 package org.neo4j.server;
 
+import java.io.File;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -33,15 +41,6 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
 import org.tanukisoftware.wrapper.WrapperListener;
-import org.tanukisoftware.wrapper.WrapperServiceException;
-
-import java.io.File;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Application entry point for the Neo4j Server.
@@ -140,7 +139,8 @@ public class NeoServer implements WrapperListener
             this.database = new Database( configurator.configuration().getString( DATABASE_LOCATION_PROPERTY_KEY ) );
 
             // Config and database has to be created before we start Jetty
-            this.webServer = new Jetty6WebServer( this );
+            this.webServer = new Jetty6WebServer();
+            this.webServer.setServer(this);
 
             log.info( "Starting Neo Server on port [%s]", webServerPort );
             webServer.setPort( webServerPort );

@@ -61,7 +61,7 @@ public class Jetty6WebServer implements WebServer
     private NeoServer server;
 
 
-    public Jetty6WebServer( NeoServer server )
+    public void setServer( NeoServer server )
     {
         this.server = server;
     }
@@ -148,12 +148,16 @@ public class Jetty6WebServer implements WebServer
                 webadmin.setServer(jetty);
                 webadmin.setContextPath(mountPoint);
                 URL resourceLoc = getClass().getClassLoader().getResource(contentLocation);
-                log.info("Found [%s]", resourceLoc);
-                URL url = resourceLoc.toURI().toURL();
-                final Resource resource = Resource.newResource(url);
-                webadmin.setBaseResource(resource);
-                log.info("Mounting static content from [%s] at [%s]", url, mountPoint);
-                jetty.addHandler(webadmin);
+                if(resourceLoc != null) {
+                    log.info("Found [%s]", resourceLoc);
+                    URL url = resourceLoc.toURI().toURL();
+                    final Resource resource = Resource.newResource(url);
+                    webadmin.setBaseResource(resource);
+                    log.info("Mounting static content from [%s] at [%s]", url, mountPoint);
+                    jetty.addHandler(webadmin);
+                } else {
+                    log.error("No static content available for Neo Server at port [%d], management console may not be available.", jettyPort);
+                }
             } catch (Exception e) {
                 log.error(e);
                 e.printStackTrace();
