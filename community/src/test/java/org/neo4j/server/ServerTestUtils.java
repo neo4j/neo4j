@@ -26,8 +26,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.commons.io.FileUtils;
-
 public class ServerTestUtils {
     private static final String TEST_PORT = "7474";
 
