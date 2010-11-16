@@ -63,7 +63,7 @@ public class NeoServer implements WrapperListener
 
     public static final String WEB_ADMIN_REST_API_SERVICE_NAME = "/db/manage";
     protected static final String WEB_ADMIN_REST_API_PACKAGE = "org.neo4j.server.webadmin.rest";
-    protected static final String WEB_ADMIN_PATH = "/webadmin";
+    public static final String WEB_ADMIN_PATH = "/webadmin";
 
     public static final String STATIC_CONTENT_LOCATION = "html";
 
