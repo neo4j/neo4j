@@ -22,7 +22,10 @@ package org.neo4j.server.web;
 
 import java.util.List;
 
+import org.neo4j.server.NeoServer;
+
 public interface WebServer {
+    public void setServer(NeoServer server);
     public void setPort(int portNo);
     public void start();
     public void stop();

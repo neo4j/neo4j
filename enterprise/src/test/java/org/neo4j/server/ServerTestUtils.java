@@ -92,9 +92,11 @@ public class ServerTestUtils {
         }
     }
 
-    public static void initializeServerWithRandomTemporaryDatabaseDirectoryOnDefaultPort() {
+    public static NeoServer initializeServerWithRandomTemporaryDatabaseDirectoryOnDefaultPort() {
         writeConfig("7474");
         NeoServer.main(null);
+        
+        return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS();
     }
 
     public static void nukeServer() {

@@ -90,6 +90,9 @@ public class PathsFunctionalTest extends FunctionalTestBase
         String json = "{\"to\":\"" + server.restApiUri() + "node/" + nodes[ 1 ]
                 + "\", \"max depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"shortestPath\"}";
 
+        
+        System.out.println(server.restApiUri());
+        
         WebResource resource = client.resource( server.restApiUri() + "node/" + nodes[ 0 ] + "/paths" );
         ClientResponse response = resource.type( MediaType.APPLICATION_JSON ).accept( MediaType.APPLICATION_JSON ).entity( json ).post( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
