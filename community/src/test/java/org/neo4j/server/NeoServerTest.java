@@ -48,7 +48,7 @@ public class NeoServerTest {
     public void tearDown() {
         ServerTestUtils.nukeServer();
     }
-
+    
     @Test
     public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception {
         assertNotNull(server.database());

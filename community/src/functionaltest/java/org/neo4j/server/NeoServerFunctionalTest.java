@@ -70,7 +70,6 @@ public class NeoServerFunctionalTest {
         Client client = Client.create();
         assertFalse( server.baseUri().toString().contains( "webadmin" ) );
         ClientResponse response = client.resource(server.baseUri()).get(ClientResponse.class);
-        System.out.println(response.getHeaders());
         assertThat(response.getStatus(), is(200));
         assertThat(response.toString(), containsString( "webadmin" ));
     }
