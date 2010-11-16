@@ -32,9 +32,7 @@
     <scm>
         <connection>scm:svn:https://svn.neo4j.org/components/server/trunk/
         </connection>
-        <developerConnection>
-            scm:svn:https://svn.neo4j.org/components/server/trunk/
-        </developerConnection>
+        <developerConnection>scm:svn:https://svn.neo4j.org/components/server/trunk/</developerConnection>
         <url>https://trac.neo4j.org/browser/components/server</url>
     </scm>
 
@@ -135,8 +133,6 @@
             <groupId>tanukisoft</groupId>
             <artifactId>wrapper</artifactId>
             <version>3.2.3</version>
-            <scope>provided</scope>
-            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -248,12 +244,13 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>org.neo4j.webadmin.Main</mainClass>
-                    <arguments>
-                        <argument>-webRoot=${project.build.outputDirectory}/html
-                        </argument>
-                        <argument>-development=true</argument>
-                    </arguments>
+                    <mainClass>org.neo4j.server.NeoServer</mainClass>
+                    <systemProperties>
+                        <systemProperty>
+                            <key>org.neo4j.server.properties</key>
+                            <value>${basedir}/neo4j-home/conf/neo4j-server.properties</value>
+                        </systemProperty>
+                    </systemProperties>
                 </configuration>
             </plugin>
 
@@ -306,12 +303,9 @@
                             <insertNewLine>true</insertNewLine>
 
 
-                            <output>
-                                ${project.build.directory}/classes/html/webadmin.js
-                            </output>
+                            <output>${project.build.directory}/classes/html/webadmin.js</output>
 
-                            <inputDir>${project.build.outputDirectory}
-                            </inputDir>
+                            <inputDir>${project.build.outputDirectory}</inputDir>
 
 
                             <!--
@@ -351,76 +345,38 @@
 
                                 <include>wa/components/__init__-min.js</include>
 
-                                <include>wa/components/dashboard/__init__-min.js
-                                </include>
-                                <include>
-                                    wa/components/dashboard/Dashboard-min.js
-                                </include>
-                                <include>
-                                    wa/components/dashboard/PrimitiveCountWidget-min.js
-                                </include>
-                                <include>
-                                    wa/components/dashboard/JmxValueTracker-min.js
-                                </include>
-                                <include>
-                                    wa/components/dashboard/DiskUsageWidget-min.js
-                                </include>
-                                <include>
-                                    wa/components/dashboard/CacheWidget-min.js
-                                </include>
-                                <include>
-                                    wa/components/dashboard/CacheWidget-min.js
-                                </include>
-                                <include>
-                                    wa/components/dashboard/MonitorChart-min.js
-                                </include>
+                                <include>wa/components/dashboard/__init__-min.js</include>
+                                <include>wa/components/dashboard/Dashboard-min.js</include>
+                                <include>wa/components/dashboard/PrimitiveCountWidget-min.js</include>
+                                <include>wa/components/dashboard/JmxValueTracker-min.js</include>
+                                <include>wa/components/dashboard/DiskUsageWidget-min.js</include>
+                                <include>wa/components/dashboard/CacheWidget-min.js</include>
+                                <include>wa/components/dashboard/CacheWidget-min.js</include>
+                                <include>wa/components/dashboard/MonitorChart-min.js</include>
 
-                                <include>wa/components/jmx/__init__-min.js
-                                </include>
+                                <include>wa/components/jmx/__init__-min.js</include>
                                 <include>wa/components/jmx/Jmx-min.js</include>
 
-                                <include>wa/components/backup/__init__-min.js
-                                </include>
-                                <include>
-                                    wa/components/backup/parseJobData-min.js
-                                </include>
-                                <include>wa/components/backup/Backup-min.js
-                                </include>
+                                <include>wa/components/backup/__init__-min.js</include>
+                                <include>wa/components/backup/parseJobData-min.js</include>
+                                <include>wa/components/backup/Backup-min.js</include>
+                                <include>wa/components/console/__init__-min.js</include>
+                                <include>wa/components/console/Console-min.js</include>
 
-                                <include>wa/components/console/__init__-min.js
-                                </include>
-                                <include>wa/components/console/Console-min.js
-                                </include>
+                                <include>wa/components/config/__init__-min.js</include>
+                                <include>wa/components/config/Config-min.js</include>
 
-                                <include>wa/components/config/__init__-min.js
-                                </include>
-                                <include>wa/components/config/Config-min.js
-                                </include>
+                                <include>wa/components/io/__init__-min.js</include>
+                                <include>wa/components/io/GraphIO-min.js</include>
+                                <include>wa/components/io/ExportSupport-min.js</include>
+                                <include>wa/components/io/ImportSupport-min.js</include>
 
-                                <include>wa/components/io/__init__-min.js
-                                </include>
-                                <include>wa/components/io/GraphIO-min.js
-                                </include>
-                                <include>wa/components/io/ExportSupport-min.js
-                                </include>
-                                <include>wa/components/io/ImportSupport-min.js
-                                </include>
-
-                                <include>wa/components/data/__init__-min.js
-                                </include>
-                                <include>
-                                    wa/components/data/PropertiesToListManager-min.js
-                                </include>
-                                <include>wa/components/data/DataBrowser-min.js
-                                </include>
-                                <include>
-                                    wa/components/data/PropertyEditor-min.js
-                                </include>
-                                <include>wa/components/data/NodeManager-min.js
-                                </include>
-                                <include>
-                                    wa/components/data/RelationshipManager-min.js
-                                </include>
+                                <include>wa/components/data/__init__-min.js</include>
+                                <include>wa/components/data/PropertiesToListManager-min.js</include>
+                                <include>wa/components/data/DataBrowser-min.js</include>
+                                <include>wa/components/data/PropertyEditor-min.js</include>
+                                <include>wa/components/data/NodeManager-min.js</include>
+                                <include>wa/components/data/RelationshipManager-min.js</include>
 
                                 <include>boot-min.js</include>
                             </includes>
