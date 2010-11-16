@@ -26,14 +26,15 @@ import java.util.Map;
 
 import org.neo4j.server.rest.domain.Representation;
 import org.neo4j.server.webadmin.rest.JmxService;
+import org.neo4j.server.webadmin.rest.MonitorService;
 
-public class JmxServiceRepresentation implements Representation
+public class MonitorServiceRepresentation implements Representation
 {
     private String baseUri;
 
-    public JmxServiceRepresentation( URI baseUri )
+    public MonitorServiceRepresentation( URI baseUri )
     {
-        this.baseUri = baseUri + JmxService.ROOT_PATH;
+        this.baseUri = baseUri + MonitorService.ROOT_PATH;
     }
 
     public Object serialize()
@@ -41,11 +42,11 @@ public class JmxServiceRepresentation implements Representation
         Map<String, Object> def = new HashMap<String, Object>();
         Map<String, Object> resources = new HashMap<String, Object>();
 
-        resources.put( "domains", baseUri + JmxService.DOMAINS_PATH );
-        resources.put( "domain", baseUri + JmxService.DOMAIN_PATH );
-        resources.put( "bean", baseUri + JmxService.BEAN_PATH );
-        resources.put( "query", baseUri + JmxService.QUERY_PATH );
-        resources.put( "kernelquery", baseUri + JmxService.KERNEL_NAME_PATH );
+
+        resources.put( "data_from", baseUri + MonitorService.DATA_FROM_PATH );
+        resources.put( "data_period", baseUri  + MonitorService.DATA_SPAN_PATH  );
+        resources.put( "latest_data", baseUri + MonitorService.DATA_PATH  );
+
         def.put( "resources", resources );
         return def;
     }
