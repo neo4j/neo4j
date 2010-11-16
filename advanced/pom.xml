@@ -4,7 +4,7 @@
   <parent>
     <artifactId>assembly-pom</artifactId>
     <groupId>org.neo4j.assembly</groupId>
-    <version>6</version>
+    <version>7</version>
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>
@@ -156,12 +156,23 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
       <version>${neo4j.version}</version>
-      <type>pom</type>
+      <exclusions>
+        <exclusion>
+          <artifactId>neo4j-udc</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j-server.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>neo4j-udc</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.neo4j.app</groupId>
@@ -173,6 +184,12 @@
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-examples</artifactId>
       <version>${neo4j-examples.version}</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>neo4j-udc</artifactId>
+            <groupId>org.neo4j</groupId>
+          </exclusion>
+        </exclusions>
     </dependency>
     <dependency>
       <groupId>org.neo4j.examples</groupId>
