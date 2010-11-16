@@ -24,6 +24,7 @@ import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
+import org.mortbay.jetty.handler.MovedContextHandler;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.HashSessionManager;
 import org.mortbay.jetty.servlet.ServletHolder;
@@ -35,9 +36,16 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
+
+import javax.servlet.Servlet;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 public class Jetty6WebServer implements WebServer
 {
@@ -50,7 +58,7 @@ public class Jetty6WebServer implements WebServer
     private HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
     private NeoServer server;
 
-    public Jetty6WebServer( NeoServer server)
+    public Jetty6WebServer( NeoServer server )
     {
         this.server = server;
     }
@@ -59,7 +67,10 @@ public class Jetty6WebServer implements WebServer
     {
         jetty = new Server( jettyPort );
         jetty.setStopAtShutdown( true );
+        MovedContextHandler redirector = new MovedContextHandler();
 
+        jetty.addHandler( redirector );
+        loadRootRedirect();
         loadStaticContent();
         loadJAXRSPackages();
 
@@ -71,6 +82,29 @@ public class Jetty6WebServer implements WebServer
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private void loadRootRedirect()
+    {
+        Servlet redirector = new HttpServlet()
+        {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void doGet( HttpServletRequest req,
+                    HttpServletResponse resp ) throws ServletException,
+                    IOException
+            {
+                resp.sendRedirect( NeoServer.WEB_ADMIN_PATH );
+            }
+
+        };
+        ServletHolder servletHolder = new ServletHolder( redirector );
+        log.info( "Adding Redirector at [%s]", "/" );
+        //starting it together with the rest
+        jaxRSPackages.put( "/", servletHolder );
+
     }
 
     public void stop()
