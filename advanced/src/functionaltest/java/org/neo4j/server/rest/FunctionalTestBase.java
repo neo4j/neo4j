@@ -23,6 +23,7 @@ package org.neo4j.server.rest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -35,7 +36,7 @@ public abstract class FunctionalTestBase
     protected static GraphDbHelper helper;
 
     @BeforeClass
-    public static void startNeoServer()
+    public static void startNeoServer() throws ServerStartupException
     {
         server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
         helper = new GraphDbHelper( server.database() );

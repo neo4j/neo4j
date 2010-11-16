@@ -20,14 +20,8 @@
 
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
-import java.io.File;
-import java.io.IOException;
-
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -35,8 +29,13 @@ import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.web.Jetty6WebServer;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import java.io.File;
+import java.io.IOException;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class NeoServerStartupLoggingFunctionalTest {
     private File tempDir;
@@ -53,7 +52,8 @@ public class NeoServerStartupLoggingFunctionalTest {
     }
 
     @Test
-    public void whenNoStaticContentAvailableServerShouldLogAndContinueGracefully() throws IOException {
+    public void whenNoStaticContentAvailableServerShouldLogAndContinueGracefully() throws IOException, ServerStartupException
+    {
         InMemoryAppender appender = new InMemoryAppender(Jetty6WebServer.log);
         final int PORT_NO = 7474;
 
