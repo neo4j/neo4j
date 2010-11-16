@@ -20,6 +20,7 @@
 
 package org.neo4j.server.osgi;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,19 +29,11 @@ import java.util.Map;
 import org.apache.felix.framework.Felix;
 import org.apache.felix.framework.util.FelixConstants;
 import org.apache.felix.main.AutoProcessor;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.launch.Framework;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
 
 /**
  * Container for an embedded OSGi framework.
@@ -59,7 +52,7 @@ public class OSGiContainer
     {
         this.bundleDirectory = bundleDirectory;
 
-        Map configMap = new HashMap();
+        Map<String, Object> configMap = new HashMap<String, Object>();
         bridge = new HostBridge();
         List<HostBridge> list = new ArrayList<HostBridge>();
         list.add( bridge );
