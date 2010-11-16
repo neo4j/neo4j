@@ -46,14 +46,15 @@ public abstract class WebDriverTest {
 	    ServerTestUtils.nukeServer();
         server = ServerTestUtils.initializeServerWithRandomTemporaryDatabaseDirectory();
     }
-	
-	@AfterClass
+
+
+    @AfterClass
     public static void stopWebServer() throws Exception
     {
 	    ServerTestUtils.nukeServer();
     }
-	
-	@Before
+
+    @Before
 	public void initWebDriver() {
 		String url = server.webadminUri().toString() + "index-no-feedback.html";
 		System.out.println("testing " + url);
@@ -77,7 +78,6 @@ public abstract class WebDriverTest {
 	
 	protected ElementReference consoleMenu = new ElementReference() {
 		public RenderedWebElement getElement() {
-		    System.out.println("HERE");
 			return (RenderedWebElement) waitForElementToAppear(By.id("mainmenu-console")).findElement(By.tagName("a"));
 		}
 	};
