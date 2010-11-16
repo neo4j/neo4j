@@ -20,7 +20,6 @@
 
 package org.neo4j.server.database;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneFulltextIndexService;
@@ -37,7 +36,7 @@ public class Database
 
     public static Logger log = Logger.getLogger( Database.class );
 
-    public GraphDatabaseService graph;
+    public AbstractGraphDatabase graph;
     public IndexService indexService;
     public IndexService fulltextIndexService;
     public Map<String, Index<? extends PropertyContainer>> indicies;
