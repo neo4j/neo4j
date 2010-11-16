@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.server.rest.domain.Representation;
-import org.neo4j.server.webadmin.rest.JmxService;
 import org.neo4j.server.webadmin.rest.MonitorService;
 
 public class MonitorServiceRepresentation implements Representation
