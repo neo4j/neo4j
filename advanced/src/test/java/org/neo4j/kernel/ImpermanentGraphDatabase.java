@@ -29,6 +29,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 
@@ -40,11 +41,33 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
     private EmbeddedGraphDatabase inner;
     private String storeDir;
 
+    public ImpermanentGraphDatabase() throws IOException
+    {
+        this( createTempDir() );
+    }
+
     public ImpermanentGraphDatabase( String storeDir )
     {
         this.storeDir = storeDir;
-        deleteRecursively( new File(storeDir) );
+        deleteRecursively( new File( storeDir ) );
         inner = new EmbeddedGraphDatabase( storeDir );
+    }
+
+
+    private static String createTempDir() throws IOException
+    {
+
+        File d = File.createTempFile( "neo4j-test", "dir" );
+        if ( !d.delete() )
+        {
+            throw new RuntimeException( "temp config directory pre-delete failed" );
+        }
+        if ( !d.mkdirs() )
+        {
+            throw new RuntimeException( "temp config directory not created" );
+        }
+        d.deleteOnExit();
+        return d.getAbsolutePath();
     }
 
     private static void deleteRecursively( File file )
@@ -60,10 +83,9 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
             {
                 deleteRecursively( child );
             }
-        }
-        else
+        } else
         {
-            if (!file.delete())
+            if ( !file.delete() )
             {
                 throw new RuntimeException( "Couldn't empty database." );
             }
@@ -103,7 +125,7 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
     public void shutdown()
     {
         inner.shutdown();
-        deleteRecursively( new File(storeDir) );
+        deleteRecursively( new File( storeDir ) );
     }
 
     public boolean enableRemoteShell()
