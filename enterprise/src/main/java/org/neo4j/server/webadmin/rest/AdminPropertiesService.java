@@ -48,7 +48,7 @@ public class AdminPropertiesService
     @Path( "/{key}" )
     public Response getValue( @PathParam( "key" ) String key )
     {
-        // Legacy mapping
+        // Legacy mapping for webadmin app
         if ( key.toLowerCase().equals( "neo4j-servers" ) )
         {
             StringBuilder sb = new StringBuilder();

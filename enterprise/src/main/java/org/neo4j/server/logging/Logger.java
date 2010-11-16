@@ -27,11 +27,11 @@ import org.apache.log4j.Priority;
 import org.mortbay.log.Log;
 
 public class Logger {
-    
+
     public static Logger log = Logger.getLogger(Logger.class);
-    
+
     private static HashSet<String> illegalParameters = new HashSet<String>();
-    
+
     static {
         illegalParameters.add("%b");
         illegalParameters.add("%h");
@@ -48,9 +48,9 @@ public class Logger {
         illegalParameters.add("%%");
         illegalParameters.add("%n");
     }
-    
+
     org.apache.log4j.Logger logger;
-    
+
     public static Logger getLogger(Class<?> clazz) {
         return new Logger(clazz);
     }
@@ -58,55 +58,57 @@ public class Logger {
     public Logger(Class<?> clazz) {
         logger = org.apache.log4j.Logger.getLogger(clazz);
     }
-    
+
     public void log(Priority priority, String message, Throwable throwable) {
         logger.log(priority, message, throwable);
     }
 
-    public void log(Level level, String message, Object ... parameters) {
-        
-        for(Object obj : parameters) {
-            String s =  obj.toString();
-            if(illegalParameters.contains(s.toLowerCase())) {
-                Log.warn("Failed to log, parameters like " + s + " are not supported.");
-                return;
+    public void log(Level level, String message, Object... parameters) {
+
+        for (Object obj : parameters) {
+            if (obj != null) {
+                String s = obj.toString();
+                if (illegalParameters.contains(s.toLowerCase())) {
+                    Log.warn("Failed to log, parameters like " + s + " are not supported.");
+                    return;
+                }
             }
         }
-        
+
         if (logger.isEnabledFor(level)) {
-            logger.log(level, String.format(message, parameters));          
+            logger.log(level, String.format(message, parameters));
         }
     }
 
-    public void fatal(String message, Object ... parameters) {
+    public void fatal(String message, Object... parameters) {
         log(Level.FATAL, message, parameters);
     }
 
-    public void error(String message, Object ... parameters) {
+    public void error(String message, Object... parameters) {
         log(Level.ERROR, message, parameters);
     }
-    
+
     public void error(Throwable e) {
         log(Level.ERROR, "", e);
     }
-    
+
     public void warn(Throwable e) {
         log(Level.WARN, "", e);
     }
 
-    public void warn(String message, Object ... parameters) {
+    public void warn(String message, Object... parameters) {
         log(Level.WARN, message, parameters);
-    }       
-    
-    public void info(String message, Object ... parameters) {
+    }
+
+    public void info(String message, Object... parameters) {
         log(Level.INFO, message, parameters);
     }
 
-    public void debug(String message, Object ... parameters) {
+    public void debug(String message, Object... parameters) {
         log(Level.DEBUG, message, parameters);
     }
-    
-    public void trace(String message, Object ... parameters) {
+
+    public void trace(String message, Object... parameters) {
         log(Level.TRACE, message, parameters);
-    }   
+    }
 }
