@@ -144,7 +144,7 @@ public class MonitorService implements AdvertisableService
     private class DummyRepresentation implements Representation
     {
 
-        private static final int SEC = 1000;
+        private static final int HUNDRED_SEC = 100000;
         private final long start;
 
         public DummyRepresentation( long start )
@@ -159,10 +159,10 @@ public class MonitorService implements AdvertisableService
             Map<String, Object> data = new HashMap<String, Object>();
 
             data.put( "start_time", start );
-            data.put( "end_time", start + 6 * SEC );
+            data.put( "end_time", start + 6 * HUNDRED_SEC );
 
-            data.put( "timestamps", new long[] { start, start + 3 * SEC,
-                    start + 6 * SEC } );
+            data.put( "timestamps", new long[] { start, start + 3 * HUNDRED_SEC,
+                    start + 6 * HUNDRED_SEC } );
 
             Map<String, Object> datasources = new HashMap<String, Object>();
             String[] dsNames = new String[] { "property_count", "node_count",
@@ -170,7 +170,7 @@ public class MonitorService implements AdvertisableService
                     "memory_usage_percent" };
             for ( int i = 0, l = dsNames.length; i < l; i++ )
             {
-                datasources.put( dsNames[i], new long[] { 1, 2, 3, 4 } );
+                datasources.put( dsNames[i], new long[] { 10, 20, 30, 40 } );
             }
             data.put( "data", datasources );
 
