@@ -44,7 +44,7 @@ public class RrdFactory
         RrdDb rrdb = createRrdb( new File( db.getStoreDir(), "rrd" ).getAbsolutePath(), 3000, 750, sampleables );
         RrdSampler sampler = new RrdSampler( rrdb.createSample(), sampleables);
         RrdJob job = new RrdJob(sampler);
-        scheduler.scheduleToRunEvery_Seconds(job, 3);
+        scheduler.scheduleToRunEveryXSeconds(job, 3);
         return rrdb;
     }
 
