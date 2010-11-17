@@ -119,15 +119,4 @@ public class AdminPropertiesService
         }
         return uri;
     }
-
-    private String getConfigValue( String key )
-    {
-        String k = configurationNamespace + key;
-        String value = config.getString( k );
-        if ( value == null )
-        {
-            throw new IllegalArgumentException( "Value of " + k + " was not found." );
-        }
-        return value;
-    }
 }
