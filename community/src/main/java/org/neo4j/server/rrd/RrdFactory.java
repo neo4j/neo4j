@@ -32,7 +32,10 @@ import java.io.IOException;
 
 public class RrdFactory
 {
-    public static RrdDb createRrdSampler( AbstractGraphDatabase db, JobScheduler scheduler ) throws MalformedObjectNameException, IOException
+	public static final int STEP_SIZE = 3000;
+	public static final int STEPS_PER_ARCHIVE = 750;
+
+	public static RrdDb createRrdDbAndSampler( AbstractGraphDatabase db, JobScheduler scheduler ) throws MalformedObjectNameException, IOException
     {
         Sampleable[] sampleables = new Sampleable[]{
                 new MemoryUsedSampleable(),
@@ -41,10 +44,10 @@ public class RrdFactory
                 new RelationshipCountSampleable( db )
         };
 
-        RrdDb rrdb = createRrdb( new File( db.getStoreDir(), "rrd" ).getAbsolutePath(), 3000, 750, sampleables );
+        RrdDb rrdb = createRrdb( new File( db.getStoreDir(), "rrd" ).getAbsolutePath(), STEP_SIZE, STEPS_PER_ARCHIVE, sampleables );
         RrdSampler sampler = new RrdSampler( rrdb.createSample(), sampleables);
         RrdJob job = new RrdJob(sampler);
-        scheduler.scheduleToRunEveryXSeconds(job, 3);
+        scheduler.scheduleToRunEveryXSeconds( job, 3 );
         return rrdb;
     }
 
