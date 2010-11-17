@@ -119,6 +119,11 @@ public abstract class FunctionalTestBase
         return dataUri() + "index";
     }
 
+	String mangementUri()
+	{
+		return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().managementApiUri().toString();
+	}
+
     String indexUri( String indexName )
     {
         return indexUri() + "/" + indexName;
