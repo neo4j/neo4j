@@ -30,6 +30,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -43,102 +44,127 @@ public class AdminPropertiesServiceTest
     {
         PropertiesConfiguration config = new PropertiesConfiguration();
         config.setProperty( "org.neo4j.server.webadmin.foo", "bar" );
-        UriInfo mockUri = mock(UriInfo.class);
-        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
-        
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
+        UriInfo mockUri = mock( UriInfo.class );
+        when( mockUri.getBaseUri() ).thenReturn( new URI( "http://peteriscool.com:6666/" ) );
+
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri, config );
 
         Response response = adminPropertiesService.getValue( "foo" );
-        assertThat(response.getStatus(), is(200));
-        assertThat((String)response.getEntity(), containsString("bar"));
+        assertThat( response.getStatus(), is( 200 ) );
+        assertThat( (String) response.getEntity(), containsString( "bar" ) );
     }
-    
+
     @Test
-    public void shouldSupportLegacyWebAdminUris() throws URISyntaxException {
+    public void shouldSupportLegacyWebAdminUris() throws URISyntaxException
+    {
         PropertiesConfiguration config = new PropertiesConfiguration();
         String managementUri = "http://neo-is-awesome.se/manage";
         config.setProperty( "org.neo4j.server.webadmin.management.uri", managementUri );
         String dataUri = "http://jimsucks.com/data";
         config.setProperty( "org.neo4j.server.webadmin.data.uri", dataUri );
-        
-        UriInfo mockUri = mock(UriInfo.class);
-        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/foo/bar?awesome=true"));
-        
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
-        
+
+        UriInfo mockUri = mock( UriInfo.class );
+        when( mockUri.getBaseUri() ).thenReturn( new URI( "http://peteriscool.com:6666/foo/bar?awesome=true" ) );
+
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri, config );
+
         Response response = adminPropertiesService.getValue( "neo4j-servers" );
-             
-        assertIsValidJson(response.getEntity().toString());
-        assertThat((String)response.getEntity(), containsString(managementUri));
-        assertThat((String)response.getEntity(), containsString(dataUri));
+
+        assertIsValidJson( response.getEntity().toString() );
+        assertThat( (String) response.getEntity(), containsString( managementUri ) );
+        assertThat( (String) response.getEntity(), containsString( dataUri ) );
     }
-    
-    private void assertIsValidJson(String entity) {
-        JsonHelper.jsonToMap(entity);
+
+    private void assertIsValidJson( String entity )
+    {
+        JsonHelper.jsonToMap( entity );
     }
 
     @Test
-    public void shouldYieldUndefinedForUnknownProperties() throws URISyntaxException {
+    public void shouldYieldUndefinedForUnknownProperties() throws URISyntaxException
+    {
         PropertiesConfiguration config = new PropertiesConfiguration();
-        UriInfo mockUri = mock(UriInfo.class);
-        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
+        UriInfo mockUri = mock( UriInfo.class );
+        when( mockUri.getBaseUri() ).thenReturn( new URI( "http://peteriscool.com:6666/" ) );
 
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri, config );
 
         Response response = adminPropertiesService.getValue( "foo" );
 
-        assertThat((String)response.getEntity(), containsString("undefined"));
+        assertThat( (String) response.getEntity(), containsString( "undefined" ) );
     }
 
 
     @Test
-    public void shouldAppendSlashToDataUriIfMissing() throws URISyntaxException {
+    public void shouldAppendSlashToDataUriIfMissing() throws URISyntaxException
+    {
         PropertiesConfiguration config = new PropertiesConfiguration();
         String unterminatedUri = "http://foo:22/get/yer/data/here";
         config.setProperty( "org.neo4j.server.webadmin.data.uri", unterminatedUri );
 
-        UriInfo mockUri = mock(UriInfo.class);
-        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
+        UriInfo mockUri = mock( UriInfo.class );
+        when( mockUri.getBaseUri() ).thenReturn( new URI( "http://peteriscool.com:6666/" ) );
 
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri, config );
 
         Response response = adminPropertiesService.getValue( "data.uri" );
 
-        assertThat((String)response.getEntity(), containsString(unterminatedUri + "/"));
+        assertThat( (String) response.getEntity(), containsString( unterminatedUri + "/" ) );
     }
 
     @Test
-    public void shouldAppendSlashToManagementUriIfMissing() throws URISyntaxException {
+    public void shouldAppendSlashToManagementUriIfMissing() throws URISyntaxException
+    {
         PropertiesConfiguration config = new PropertiesConfiguration();
         String unterminatedUri = "http://foo:22/get/yer/data/here";
         config.setProperty( "org.neo4j.server.webadmin.management.uri", unterminatedUri );
 
-        UriInfo mockUri = mock(UriInfo.class);
-        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
-        
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
+        UriInfo mockUri = mock( UriInfo.class );
+        when( mockUri.getBaseUri() ).thenReturn( new URI( "http://peteriscool.com:6666/" ) );
+
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri, config );
 
         Response response = adminPropertiesService.getValue( "management.uri" );
 
-        assertThat((String)response.getEntity(), containsString(unterminatedUri + "/"));
+        assertThat( (String) response.getEntity(), containsString( unterminatedUri + "/" ) );
     }
 
     @Test
-    public void shouldAppendSlashToDataUriIfMissingWithinNeo4jServerProperty() throws URISyntaxException {
+    public void shouldAppendSlashToDataUriIfMissingWithinNeo4jServerProperty() throws URISyntaxException
+    {
         PropertiesConfiguration config = new PropertiesConfiguration();
         String unterminatedDataUri = "http://foo:22/get/yer/data/here";
         config.setProperty( "org.neo4j.server.webadmin.data.uri", unterminatedDataUri );
         String unterminatedManagementUri = "http://neo-is-awesome.se/manage";
         config.setProperty( "org.neo4j.server.webadmin.management.uri", unterminatedManagementUri );
 
-        UriInfo mockUri = mock(UriInfo.class);
-        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
+        UriInfo mockUri = mock( UriInfo.class );
+        when( mockUri.getBaseUri() ).thenReturn( new URI( "http://peteriscool.com:6666/" ) );
 
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri, config );
 
         Response response = adminPropertiesService.getValue( "neo4j-servers" );
 
-        assertThat((String)response.getEntity(), containsString(unterminatedDataUri + "/"));
-        assertThat((String)response.getEntity(), containsString(unterminatedManagementUri + "/"));
+        assertThat( (String) response.getEntity(), containsString( unterminatedDataUri + "/" ) );
+        assertThat( (String) response.getEntity(), containsString( unterminatedManagementUri + "/" ) );
+    }
+
+    @Test
+    public void restEndpointShouldBeIdentifiedWithCorrectKey() throws URISyntaxException
+    {
+        PropertiesConfiguration config = new PropertiesConfiguration();
+
+        final String rootHostUri = "http://peteriscool.com:6666";
+        final String baseUriAsString = rootHostUri + "/db/manage/properties/";
+        UriInfo mockUri = mock( UriInfo.class );
+        when( mockUri.getBaseUri() ).thenReturn( new URI( baseUriAsString ) );
+
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri, config );
+
+        Response response = adminPropertiesService.getValue( "neo4j-servers" );
+
+        assertThat( (String) response.getEntity(), containsString( "\"url\" : \"" + rootHostUri + "/db/data/\"" ) );
+        assertThat( (String) response.getEntity(), containsString( "\"manageUrl\" : \"" + rootHostUri + "/db/manage/\"" ) );
+
     }
 }

@@ -53,14 +53,19 @@ public abstract class FunctionalTestBase
         JsonHelper.jsonToMap( entity );
     }
 
-    String baseUri()
+    String dataUri()
     {
         return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().restApiUri().toString();
     }
 
+    String managementUri()
+    {
+        return NeoServer.getServer_FOR_TESTS_ONLY_KITTENS_DIE_WHEN_YOU_USE_THIS().managementApiUri().toString();
+    }
+
     String nodeUri()
     {
-        return baseUri() + "node";
+        return dataUri() + "node";
     }
 
     String nodeUri( long id )
@@ -80,7 +85,7 @@ public abstract class FunctionalTestBase
 
     String relationshipUri()
     {
-        return baseUri() + "relationship";
+        return dataUri() + "relationship";
     }
 
     String relationshipUri( long id )
@@ -111,7 +116,7 @@ public abstract class FunctionalTestBase
 
     String indexUri()
     {
-        return baseUri() + "index";
+        return dataUri() + "index";
     }
 
     String indexUri( String indexName )
