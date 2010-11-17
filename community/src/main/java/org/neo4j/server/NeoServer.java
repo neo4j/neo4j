@@ -408,7 +408,7 @@ public class NeoServer implements WrapperListener, JobScheduler
         start();
     }
 
-    public void scheduleToRunEvery_Seconds( Job job, int runEverySeconds )
+    public void scheduleToRunEveryXSeconds( Job job, int runEverySeconds )
     {
         ScheduledJob scheduledJob = new ScheduledJob(job, 3);
         scheduledJobs.add( scheduledJob );
