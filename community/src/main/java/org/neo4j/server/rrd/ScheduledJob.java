@@ -51,7 +51,7 @@ public class ScheduledJob
         }
     };
 
-    public void runEvery_Seconds( int seconds )
+    public void runEveryXSeconds( int seconds )
     {
     }
 
