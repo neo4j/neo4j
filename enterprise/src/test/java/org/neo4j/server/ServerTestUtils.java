@@ -94,8 +94,6 @@ public class ServerTestUtils
             writePropertyToFile( "org.neo4j.server.webserver.port", portNo, temporaryConfigFile );
             writePropertyToFile( NeoServer.WEBADMIN_NAMESPACE_PROPERTY_KEY + "rrdb.location", createTempDir().getAbsolutePath(), temporaryConfigFile );
             writePropertyToFile( NeoServer.OSGI_BUNDLE_DIR_PROPERTY_KEY, "../", temporaryConfigFile );
-            writePropertyToFile( "org.neo4j.server.webadmin.data.uri", "http://localhost:7474/db/data/", temporaryConfigFile );
-            writePropertyToFile( "org.neo4j.server.webadmin.management.uri", "http://localhost:7474/db/manage/", temporaryConfigFile );
 
             System.setProperty( NeoServer.NEO_CONFIG_FILE_KEY, temporaryConfigFile.getAbsolutePath() );
 

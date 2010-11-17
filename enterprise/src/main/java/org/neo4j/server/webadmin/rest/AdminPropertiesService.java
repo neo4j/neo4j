@@ -20,6 +20,8 @@ package org.neo4j.server.webadmin.rest;
  */
 
 import org.apache.commons.configuration.Configuration;
+import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.webadmin.rest.representations.AdminPropertyRepresentation;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -29,7 +31,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.net.URI;
 
 @Path("/properties")
 public class AdminPropertiesService
@@ -54,23 +55,17 @@ public class AdminPropertiesService
     {
         String lowerCaseKey = key.toLowerCase();
         String value = null;
-        // Legacy mapping for webadmin app
+
         if ( "neo4j-servers".equals( lowerCaseKey ) )
         {
-            StringBuilder sb = new StringBuilder();
-            sb.append( "{ \"" );
-            sb.append( uriInfo.getBaseUri() );
-            sb.append( "\" : " );
-            sb.append( "{\"url\" : \"" );
-            sb.append( getDataUri() );
-            sb.append( "\"" );
-            sb.append( "," );
-            sb.append( "\"manageUrl\" : \"" );
-            sb.append( getManagementUri() );
-            sb.append( "\"}" );
-            sb.append( "}" );
+	        AdminPropertyRepresentation representation = new AdminPropertyRepresentation( uriInfo.getBaseUri().toString() );
 
-            return Response.ok( sb.toString() ).type( MediaType.APPLICATION_JSON ).build();
+	        representation.addUrl( "url", getDataUri() );
+	        representation.addUrl( "manageUrl", getManagementUri() );
+
+	        return Response.ok( JsonRenderers.DEFAULT.render( representation ) ).
+			        type( MediaType.APPLICATION_JSON ).
+			        build();
         }
         else if ( DATA_URI_KEY.equals( lowerCaseKey ) )
         {
@@ -112,10 +107,7 @@ public class AdminPropertiesService
     }
 
     private String hostPath(String path) {
-        final URI baseUri = uriInfo.getBaseUri();
-        final int port = baseUri.getPort();
-
-        return baseUri.getScheme() + "://" + baseUri.getHost() + (port != 80 ? ":" + Integer.toString(port) : "") + path;
+	    return uriInfo.getBaseUriBuilder().replacePath( path ).build( ).toString();
     }
 
     private String slashTerminatedUri( String uri )
