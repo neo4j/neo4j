@@ -1,4 +1,5 @@
-package org.neo4j.server.webadmin.rest; /**
+package org.neo4j.server.webadmin.rest;
+/**
  * Copyright (c) 2002-2010 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -28,6 +29,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.net.URI;
 
 @Path("/properties")
 public class AdminPropertiesService
@@ -35,8 +37,8 @@ public class AdminPropertiesService
     private final String configurationNamespace = "org.neo4j.server.webadmin.";
     private Configuration config;
     private final UriInfo uriInfo;
-    private String MANAGEMENT_URI_KEY = "management.uri";
-    private String DATA_URI_KEY = "data.uri";
+    private final String MANAGEMENT_URI_KEY = "management.uri";
+    private final String DATA_URI_KEY = "data.uri";
 
     public AdminPropertiesService( @Context UriInfo uriInfo,
                                    @Context Configuration config )
@@ -55,26 +57,28 @@ public class AdminPropertiesService
         // Legacy mapping for webadmin app
         if ( "neo4j-servers".equals( lowerCaseKey ) )
         {
-            String dataUri = slashTerminatedUri( getConfigValue( DATA_URI_KEY ) );
-            String managementUri = slashTerminatedUri( getConfigValue( MANAGEMENT_URI_KEY ) );
             StringBuilder sb = new StringBuilder();
             sb.append( "{ \"" );
             sb.append( uriInfo.getBaseUri() );
             sb.append( "\" : " );
             sb.append( "{\"url\" : \"" );
-            sb.append( dataUri );
+            sb.append( getDataUri() );
             sb.append( "\"" );
             sb.append( "," );
-            sb.append( "\"" ).append( MANAGEMENT_URI_KEY ).append( "\" : \"" );
-            sb.append( managementUri );
+            sb.append( "\"manageUrl\" : \"" );
+            sb.append( getManagementUri() );
             sb.append( "\"}" );
             sb.append( "}" );
 
             return Response.ok( sb.toString() ).type( MediaType.APPLICATION_JSON ).build();
         }
-        else if ( DATA_URI_KEY.equals( lowerCaseKey ) || MANAGEMENT_URI_KEY.equals( lowerCaseKey ) )
+        else if ( DATA_URI_KEY.equals( lowerCaseKey ) )
         {
-            value = slashTerminatedUri( getConfigValue( lowerCaseKey ) );
+            value = getDataUri();
+        }
+        else if ( MANAGEMENT_URI_KEY.equals( lowerCaseKey ) )
+        {
+            value = getManagementUri();
         }
         else
         {
@@ -88,8 +92,35 @@ public class AdminPropertiesService
         return Response.ok( value ).type( MediaType.APPLICATION_JSON ).build();
     }
 
+    private String getDataUri()
+    {
+        String dataUri = slashTerminatedUri( config.getString( configurationNamespace + DATA_URI_KEY ) );
+        if ( dataUri != null )
+            return dataUri;
+        else
+            return hostPath("/db/data/");
+
+    }
+
+    private String getManagementUri()
+    {
+        String managementUri = slashTerminatedUri( config.getString( configurationNamespace + MANAGEMENT_URI_KEY ) );
+        if ( managementUri != null )
+            return managementUri;
+        else
+            return hostPath("/db/manage/");
+    }
+
+    private String hostPath(String path) {
+        final URI baseUri = uriInfo.getBaseUri();
+        final int port = baseUri.getPort();
+
+        return baseUri.getScheme() + "://" + baseUri.getHost() + (port != 80 ? ":" + Integer.toString(port) : "") + path;
+    }
+
     private String slashTerminatedUri( String uri )
     {
+        if (uri == null) return null;
         if ( !uri.endsWith( "/" ) )
         {
             return uri + "/";
