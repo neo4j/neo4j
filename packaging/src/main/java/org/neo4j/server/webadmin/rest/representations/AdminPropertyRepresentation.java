@@ -43,7 +43,6 @@ public class AdminPropertyRepresentation implements Representation
 		value.get( baseUri ).put( name, url );
 	}
 
-	@Override
 	public Map<String, Map<String, String>> serialize()
 	{
 		return value;
