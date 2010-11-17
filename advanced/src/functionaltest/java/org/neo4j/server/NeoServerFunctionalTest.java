@@ -74,6 +74,17 @@ public class NeoServerFunctionalTest {
         assertThat(response.toString(), containsString( "webadmin" ));
     }
     
+    @Ignore
+    @Test
+    public void shouldSurviveDoubleMounts() throws Exception {
+
+        Client client = Client.create();
+        assertFalse( server.baseUri().toString().contains( "testing" ) );
+        ClientResponse response = client.resource(server.baseUri() + "db/manage/testing").get(ClientResponse.class);
+        System.out.println(response.getEntity( String.class ));
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.toString(), containsString( "dupOne" ));
+    }
     
 
     @Test
