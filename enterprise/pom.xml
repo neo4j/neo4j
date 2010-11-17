@@ -166,6 +166,18 @@
       </exclusions>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>javadoc</classifier>
+      <exclusions>
+        <exclusion>
+          <artifactId>neo4j-udc</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j-server.version}</version>
