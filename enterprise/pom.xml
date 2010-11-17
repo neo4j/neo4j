@@ -128,6 +128,8 @@
       <groupId>tanukisoft</groupId>
       <artifactId>wrapper</artifactId>
       <version>3.2.3</version>
+      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
 
     <dependency>
@@ -149,6 +151,8 @@
       <artifactId>neo4js</artifactId>
       <version>0.1</version>
       <type>jar</type>
+      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
 
     <!-- File uploads -->
