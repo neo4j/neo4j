@@ -1,4 +1,4 @@
-${product.fullname} system/resources
+${server.fullname} system/resources
 =======================================
 
 Miscellaneous static content used by the server.
