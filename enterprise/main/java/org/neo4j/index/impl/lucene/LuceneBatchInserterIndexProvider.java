@@ -35,6 +35,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.kernel.impl.batchinsert.SimpleRelationship;
 import org.neo4j.kernel.impl.index.IndexStore;
 
 /**
@@ -71,8 +72,14 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
         {
             public Document newDocument( Object entityId )
             {
-                RelationshipId relId = (RelationshipId) entityId;
-                Document doc = IndexType.newBaseDocument( relId.id );
+                RelationshipId relId = null;
+                if(entityId instanceof Long) {
+                    SimpleRelationship relationship = inserter.getRelationshipById( (Long) entityId );
+                    relId = new RelationshipId( relationship.getId(), relationship.getStartNode(), relationship.getEndNode() );
+                } else if (entityId instanceof RelationshipId ) {
+                    relId = (RelationshipId) entityId;
+                }
+                Document doc = IndexType.newBaseDocument( relId.id );                    
                 doc.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + relId.startNode,
                         Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
                 doc.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + relId.endNode,
