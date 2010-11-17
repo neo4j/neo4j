@@ -21,8 +21,6 @@
 package org.neo4j.server.database;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
@@ -69,6 +67,6 @@ public class DatabaseTest {
 
     @Test(expected = TransactionFailureException.class)
     public void shouldComplainIfDatabaseLocationIsAlreadyInUse() {
-        Database anotherDatabase = new Database(theDatabase.getLocation());
+        new Database(theDatabase.getLocation());
     }
 }

@@ -31,7 +31,6 @@ import java.net.ServerSocket;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
