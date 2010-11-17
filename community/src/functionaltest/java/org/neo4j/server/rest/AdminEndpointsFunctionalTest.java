@@ -31,9 +31,9 @@ public class AdminEndpointsFunctionalTest extends FunctionalTestBase
     @Test
     public void shouldRespondWithIndexes() throws Exception
     {
-//        ClientResponse response = Client.create().resource( managementUri() + "properties/neo4j-servers" ).get( ClientResponse.class );
-//        System.out.println(response.getEntity( String.class ));
-//        assertEquals( 200, response.getStatus() );
+        ClientResponse response = Client.create().resource( managementUri() + "properties/neo4j-servers" ).get( ClientResponse.class );
+        System.out.println(response.getEntity( String.class ));
+        assertEquals( 200, response.getStatus() );
     }
 
 }
