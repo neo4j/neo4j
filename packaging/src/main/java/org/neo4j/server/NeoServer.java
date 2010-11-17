@@ -210,7 +210,7 @@ public class NeoServer implements WrapperListener, JobScheduler
 
     private RrdDb createRrdDbAndStartSampler() throws MalformedObjectNameException, IOException
     {
-	    return RrdFactory.createRrdSampler(database().graph, this);
+	    return RrdFactory.createRrdDbAndSampler( database().graph, this );
     }
 
     public String baseUri() throws UnknownHostException
@@ -382,16 +382,16 @@ public class NeoServer implements WrapperListener, JobScheduler
         theServer = new NeoServer();
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
-            @Override
-            public void run()
-            {
-                log.info( "Neo Server shutdown initiated by kill signal" );
-                if ( theServer != null )
-                {
-                    theServer.stop();
-                }
-                shutdown();
-            }
+	        @Override
+	        public void run()
+	        {
+		        log.info( "Neo Server shutdown initiated by kill signal" );
+		        if ( theServer != null )
+		        {
+			        theServer.stop();
+		        }
+		        shutdown();
+	        }
         } );
 
         Integer startupCondition = theServer.start( args );

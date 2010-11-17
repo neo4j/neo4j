@@ -20,9 +20,14 @@
 
 package org.neo4j.server.webadmin.rest;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import org.neo4j.server.rest.domain.renderers.JsonRenderers;
+import org.neo4j.server.rest.web.GenericWebService;
+import org.neo4j.server.rrd.RrdFactory;
+import org.neo4j.server.webadmin.rest.representations.MonitorServiceRepresentation;
+import org.neo4j.server.webadmin.rest.representations.RrdDataRepresentation;
+import org.rrd4j.ConsolFun;
+import org.rrd4j.core.FetchRequest;
+import org.rrd4j.core.RrdDb;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -32,159 +37,108 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.util.Date;
 
-import org.neo4j.server.rest.domain.Representation;
-import org.neo4j.server.rest.domain.renderers.JsonRenderers;
-import org.neo4j.server.webadmin.rest.representations.MonitorServiceRepresentation;
+import static javax.ws.rs.core.Response.Status;
 
 /**
  * This exposes data from an internal round-robin database that tracks various
- * system KPIs over time. 
+ * system KPIs over time.
  */
 @Path( MonitorService.ROOT_PATH )
-public class MonitorService implements AdvertisableService
-{    
-    public String getName()
-    {
-        return "monitor";
-    }
+public class MonitorService extends GenericWebService implements AdvertisableService
+{
+	private RrdDb rrdDb;
 
-    public String getServerPath()
-    {
-        return ROOT_PATH;
-    }
+	public String getName()
+	{
+		return "monitor";
+	}
 
-    public static final String ROOT_PATH = "server/monitor";
-    public static final String DATA_PATH = "/fetch";
-    public static final String DATA_FROM_PATH = DATA_PATH + "/{start}";
-    public static final String DATA_SPAN_PATH = DATA_PATH + "/{start}/{stop}";
-    
-    public static final long MAX_TIMESPAN = 1000l * 60l * 60l * 24l * 365l * 5;
-    public static final long DEFAULT_TIMESPAN = 1000 * 60 * 60 * 24;
+	public String getServerPath()
+	{
+		return ROOT_PATH;
+	}
 
-    
-    @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    public Response getServiceDefinition( @Context UriInfo uriInfo )
-    {
+	public MonitorService( @Context RrdDb rrdDb )
+	{
+		this.rrdDb = rrdDb;
+	}
 
-        String entity = JsonRenderers.DEFAULT.render( new MonitorServiceRepresentation(
-                uriInfo.getBaseUri() ) );
+	public static final String ROOT_PATH = "server/monitor";
+	public static final String DATA_PATH = "/fetch";
+	public static final String DATA_FROM_PATH = DATA_PATH + "/{start}";
+	public static final String DATA_SPAN_PATH = DATA_PATH + "/{start}/{stop}";
 
-        return Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ).build();
-    }
+	public static final long MAX_TIMESPAN = 1000l * 60l * 60l * 24l * 365l * 5;
+	public static final long DEFAULT_TIMESPAN = 1000 * 60 * 60 * 24;
 
-    @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( DATA_PATH )
-    public Response getData()
-    {
-        return getData( new Date().getTime() - DEFAULT_TIMESPAN,
-                new Date().getTime() );
-    }
 
-    @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( DATA_FROM_PATH )
-    public Response getData( @PathParam( "start" ) long start )
-    {
-        return getData( start, new Date().getTime() );
-    }
+	@GET
+	@Produces( MediaType.APPLICATION_JSON )
+	public Response getServiceDefinition( @Context UriInfo uriInfo )
+	{
 
-    @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( DATA_SPAN_PATH )
-    public Response getData( @PathParam( "start" ) long start,
-            @PathParam( "stop" ) long stop )
-    {
+		String entity = JsonRenderers.DEFAULT.render( new MonitorServiceRepresentation(
+				uriInfo.getBaseUri() ) );
 
-        String entity = JsonRenderers.DEFAULT.render( new DummyRepresentation(
-                start ) );
-        return Response.ok( entity ).build();
+		return Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ).build();
+	}
 
-        // if ( start >= stop || ( stop - start ) > MAX_TIMESPAN )
-        // {
-        // return buildExceptionResponse(
-        // Status.BAD_REQUEST,
-        // "Start time must be before stop time, and the total time span can be no bigger than "
-        // + MAX_TIMESPAN
-        // + "ms. Time span was "
-        // + ( stop - start ) + "ms.",
-        // new IllegalArgumentException(), JsonRenderers.DEFAULT );
-        // }
-        //
-        // try
-        // {
-        //
-        // FetchRequest request = RrdManager.getRrdDB().createFetchRequest(
-        // ConsolFun.AVERAGE, start, stop,
-        // getResolutionFor( stop - start ) );
-        //
-        // String entity = JsonRenderers.DEFAULT.render( new
-        // RrdDataRepresentation(
-        // request.fetchData() ) );
-        //
-        // return addHeaders(
-        // Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() )
-        // ).build();
-        // }
-        // catch ( Exception e )
-        // {
-        // return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR,
-        // "SEVERE: Round robin IO error.", e, JsonRenderers.DEFAULT );
-        // }
-    }
+	@GET
+	@Produces( MediaType.APPLICATION_JSON )
+	@Path( DATA_PATH )
+	public Response getData()
+	{
+		long time = new Date().getTime();
+		return getData( time - DEFAULT_TIMESPAN, time );
+	}
 
-    private class DummyRepresentation implements Representation
-    {
+	@GET
+	@Produces( MediaType.APPLICATION_JSON )
+	@Path( DATA_FROM_PATH )
+	public Response getData( @PathParam( "start" ) long start )
+	{
+		return getData( start, new Date().getTime() );
+	}
 
-        private static final int HUNDRED_SEC = 100000;
-        private final long start;
+	@GET
+	@Produces( MediaType.APPLICATION_JSON )
+	@Path( DATA_SPAN_PATH )
+	public Response getData( @PathParam( "start" ) long start,
+	                         @PathParam( "stop" ) long stop )
+	{
+		if ( start >= stop || ( stop - start ) > MAX_TIMESPAN )
+		{
+			String message = String.format( "Start time must be before stop time, and the total time span can be no bigger than %dms. Time span was %dms.", MAX_TIMESPAN, ( stop - start ) );
+			return buildExceptionResponse( Status.BAD_REQUEST, message, new IllegalArgumentException(), JsonRenderers.DEFAULT );
+		}
 
-        public DummyRepresentation( long start )
-        {
-            this.start = start;
-            // TODO Auto-generated constructor stub
-        }
+		try
+		{
 
-        
-        public Object serialize()
-        {
-            Map<String, Object> data = new HashMap<String, Object>();
+			FetchRequest request = rrdDb.createFetchRequest(
+					ConsolFun.AVERAGE, start, stop,
+					getResolutionFor( stop - start ) );
 
-            data.put( "start_time", start );
-            data.put( "end_time", start + 6 * HUNDRED_SEC );
+			String entity = JsonRenderers.DEFAULT.render( new
+					RrdDataRepresentation(
+					request.fetchData() ) );
 
-            data.put( "timestamps", new long[] { start, start + 3 * HUNDRED_SEC,
-                    start + 6 * HUNDRED_SEC } );
+			return Response.ok( entity, JsonRenderers.DEFAULT.getMediaType() ).build();
+		} catch ( Exception e )
+		{
+			return buildExceptionResponse( Status.INTERNAL_SERVER_ERROR,
+					"SEVERE: Round robin IO error.", e, JsonRenderers.DEFAULT );
+		}
+	}
 
-            Map<String, Object> datasources = new HashMap<String, Object>();
-            String[] dsNames = new String[] { "property_count", "node_count",
-                    "relationship_count", "node_cache_size",
-                    "memory_usage_percent" };
-            for ( int i = 0, l = dsNames.length; i < l; i++ )
-            {
-                datasources.put( dsNames[i], new long[] { 10, 20, 30, 40 } );
-            }
-            data.put( "data", datasources );
+	private long getResolutionFor( long timespan )
+	{
+		long preferred = (long) Math.floor( timespan / ( RrdFactory.STEPS_PER_ARCHIVE * 2 ) );
 
-            return data;
-        }
-
-    }
-
-    //
-    // INTERNALS
-    //
-
-    // private long getResolutionFor( long timespan )
-    // {
-    // long preferred = (long) Math.floor( timespan
-    // / ( RrdManager.STEPS_PER_ARCHIVE * 2 ) );
-    //
-    // // Don't allow resolutions smaller than the actual minimum resolution
-    // return preferred > RrdManager.STEP_SIZE ? preferred
-    // : RrdManager.STEP_SIZE;
-    // }
+		// Don't allow resolutions smaller than the actual minimum resolution
+		return preferred > RrdFactory.STEP_SIZE ? preferred : RrdFactory.STEP_SIZE;
+	}
 
 }
