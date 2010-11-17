@@ -124,6 +124,18 @@
         <include>org.neo4j.examples:*:*:site</include>
       </includes>
     </dependencySet>
+    <!-- java api docs -->
+    <dependencySet>
+      <outputDirectory>doc/java/api</outputDirectory>
+      <unpack>true</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <fileMode>0444</fileMode>
+      <directoryMode>0777</directoryMode>
+      <includes>
+        <include>org.neo4j:neo4j:*:javadoc</include>
+      </includes>
+    </dependencySet>
+
  </dependencySets>
 
 </assembly>

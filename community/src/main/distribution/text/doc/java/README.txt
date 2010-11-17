@@ -1,10 +1,13 @@
 ${server.fullname} doc/java 
 =======================================
 
-Java-related documentation about programming with Neo4j, including
-example code and full api javadoc.
+Java language documentation for Neo4j.
+
+
+* api - javadocs for all released libraries
+
 
 References
 ----------
 
-
+* [Getting Started with Neo4j](http://wiki.neo4j.org/content/Getting_Started_Guide)
