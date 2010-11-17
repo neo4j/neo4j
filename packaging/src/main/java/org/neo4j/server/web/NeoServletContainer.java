@@ -27,24 +27,26 @@ import com.sun.jersey.spi.container.servlet.WebConfig;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.database.DatabaseProvider;
+import org.neo4j.server.rrd.RrdDbProvider;
 
 @SuppressWarnings( "serial" )
 public class NeoServletContainer extends ServletContainer
 {
-    private NeoServer server;
+	private NeoServer server;
 
-    public NeoServletContainer( NeoServer server )
-    {
-        this.server = server;
-    }
+	public NeoServletContainer( NeoServer server )
+	{
+		this.server = server;
+	}
 
-    @Override
-    protected void configure( WebConfig wc, ResourceConfig rc,
-                              WebApplication wa )
-    {
-        super.configure( wc, rc, wa );
+	@Override
+	protected void configure( WebConfig wc, ResourceConfig rc,
+	                          WebApplication wa )
+	{
+		super.configure( wc, rc, wa );
 
-        rc.getSingletons().add( new DatabaseProvider( server.database() ) );
-        rc.getSingletons().add( new ConfigurationProvider( server.configuration() ) );
-    }
+		rc.getSingletons().add( new DatabaseProvider( server.database() ) );
+		rc.getSingletons().add( new ConfigurationProvider( server.configuration() ) );
+		rc.getSingletons().add( new RrdDbProvider( server.database().rrdDb() ) );
+	}
 }
