@@ -20,6 +20,10 @@
 
 package org.neo4j.kernel;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 
 /**
@@ -34,4 +38,19 @@ public abstract class AbstractGraphDatabase implements GraphDatabaseService
     public abstract <T> T getManagementBean( Class<T> type );
     
     public abstract boolean isReadOnly();
+    
+    public String toString()
+    {
+        return getClass().getSimpleName() + " [" + getStoreDir() + "]";
+    }
+    
+    public boolean enableRemoteShell()
+    {
+        return enableRemoteShell( new HashMap<String, Serializable>() );
+    }
+    
+    public boolean enableRemoteShell( Map<String, Serializable> initialProperties )
+    {
+        throw new UnsupportedOperationException( getClass().getName() + " does not support Remote Shell" );
+    }
 }
