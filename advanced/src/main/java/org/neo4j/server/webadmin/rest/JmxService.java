@@ -42,7 +42,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.management.Kernel;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
