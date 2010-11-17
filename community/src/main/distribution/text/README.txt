@@ -1,7 +1,7 @@
-${server.fullname} ${neo4j-version}
+${server.fullname} ${neo4j.version}
 =======================================
 
-Welcome to ${server.fullname} release ${neo4j-version}, a high-performance graph database.
+Welcome to ${server.fullname} release ${neo4j.version}, a high-performance graph database.
 This is the standard distribution of ${server.fullname}, including everything you need to
 start building world-class applications that can model, persist and explore arbitrarily
 complex data.

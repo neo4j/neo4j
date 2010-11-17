@@ -1,7 +1,7 @@
-${product.fullname} doc 
+${server.fullname} doc 
 =======================================
 
-${product.fullname} documentation. Open `index.html` in any
+${server.fullname} documentation. Open `index.html` in any
 web browser.
 
 References

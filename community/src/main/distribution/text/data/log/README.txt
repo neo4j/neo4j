@@ -1,4 +1,4 @@
-${product.fullname} data/log Directory
+${server.fullname} data/log Directory
 =======================================
 
 This directory contains server logs. 
