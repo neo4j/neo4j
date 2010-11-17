@@ -37,13 +37,13 @@
     <webadmin.shortname>Webadmin</webadmin.shortname>
 
     <!-- other filter properties -->
-    <wrapper.conf>../conf/neo4j-wrapper.conf</wrapper.conf>
+    <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
 
     <!-- conf/neo4j-server.properties filter properties -->
-    <org.neo4j.database.location>../data/graph.db</org.neo4j.database.location>
+    <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
     <org.neo4j.webserver.port>7474</org.neo4j.webserver.port>
     <org.neo4j.webservice.packages>org.neo4j.rest.web,org.neo4j.webadmin,org.neo4j.webadmin.backup,org.neo4j.webadmin.console,org.neo4j.webadmin.domain,org.neo4j.webadmin.parser,org.neo4j.webadmin.properties,org.neo4j.webadmin.resources,org.neo4j.webadmin.rest,org.neo4j.webadmin.rrd,org.neo4j.webadmin.task,org.neo4j.webadmin.utils</org.neo4j.webservice.packages>
-    <org.neo4j.server.bundledir>../system/lib</org.neo4j.server.bundledir>
+    <org.neo4j.server.bundledir>system/lib</org.neo4j.server.bundledir>
 
     <!-- Runtime properties. These are used to bootstrap the server. All other configuration should happen through a configuration file. Each of these should have a sensible default, so that the server can operate without them defined. -->
     <neo4j.home>${project.build.directory}/neo4j</neo4j.home>
