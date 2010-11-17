@@ -50,21 +50,28 @@ import org.osgi.framework.Constants;
 public class OSGiContainerTest
 {
 
+    OSGiContainer container;
+
     @Before
     public void cleanupFrameworkDirectories() throws IOException
     {
-        File bundleDirectory = new File( OSGiContainer.DEFAULT_BUNDLE_DIRECTORY );
+        // Don't assume that target directory exists (like when running in an IDE)
+        File targetDirectory = new File( "target" + File.separator + "osgi" );
+        if ( !targetDirectory.exists() )
+            targetDirectory.mkdirs();
+
+        File bundleDirectory = new File( targetDirectory, OSGiContainer.DEFAULT_BUNDLE_DIRECTORY );
         FileUtils.deleteDirectory( bundleDirectory );
 
-        File cacheDirectory = new File( OSGiContainer.DEFAULT_CACHE_DIRECTORY );
+        File cacheDirectory = new File( targetDirectory, OSGiContainer.DEFAULT_CACHE_DIRECTORY );
         FileUtils.deleteDirectory( cacheDirectory );
+
+        this.container = new OSGiContainer( bundleDirectory.getPath(), cacheDirectory.getPath() );
     }
 
     @Test
     public void shouldCreateFrameworkDuringConstruction() throws Exception
     {
-        OSGiContainer container = new OSGiContainer();
-
         assertThat( container.getFramework(), is( notNullValue() ) );
         assertThat( container.getFramework().getState(), is( Bundle.INSTALLED ) );
 
@@ -73,7 +80,6 @@ public class OSGiContainerTest
     @Test
     public void shouldStartMinimalFramework() throws Exception
     {
-        OSGiContainer container = new OSGiContainer();
         container.start();
 
         assertThat( container.getFramework().getState(), is( Bundle.ACTIVE ) );
@@ -84,7 +90,6 @@ public class OSGiContainerTest
     @Test
     public void shouldCreateSystemBundle() throws Exception
     {
-        OSGiContainer container = new OSGiContainer();
         container.start();
 
         // The system bundle should always be bundle zero,
@@ -100,8 +105,6 @@ public class OSGiContainerTest
     @Test
     public void shouldCreateBundleDirectoryDuringConstructionIfItDoesntExist() throws BundleException, InterruptedException
     {
-        OSGiContainer container = new OSGiContainer();
-
         File bundleDirectory = new File( container.getBundleDirectory() );
 
         assertTrue( bundleDirectory.exists() );
@@ -112,7 +115,6 @@ public class OSGiContainerTest
     @Test
     public void shouldLoadLibraryBundle() throws Exception
     {
-        OSGiContainer container = new OSGiContainer();
         String expectedBundleSymbolicName = "HelloTinyBundle";
         InputStream bundleStream = newBundle()
                 .add( Hello.class )
@@ -137,7 +139,6 @@ public class OSGiContainerTest
     @Test
     public void shouldActivateOSGiAwareBundles() throws Exception
     {
-        OSGiContainer container = new OSGiContainer();
         String expectedBundleSymbolicName = "OSGiAwareBundle";
         InputStream bundleStream = newBundle()
                 .add( LifecycleActivator.class )
@@ -152,8 +153,8 @@ public class OSGiContainerTest
         container.start();
 
         Bundle awareBundle = container.getBundles()[1];
-        
-        assertNotNull(awareBundle);
+
+        assertNotNull( awareBundle );
 
         container.shutdown();
     }
@@ -162,7 +163,6 @@ public class OSGiContainerTest
     @Ignore("until HostBridge or OSGiContainer, or someone to publish server-side packages")
     public void shouldAllowAccessToOSGiServices() throws Exception
     {
-        OSGiContainer container = new OSGiContainer();
         String expectedBundleSymbolicName = "OSGiAwareBundle";
         InputStream bundleStream = newBundle()
                 .add( LifecycleActivator.class )
