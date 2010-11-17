@@ -27,6 +27,7 @@ import org.neo4j.index.lucene.LuceneIndexService;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.logging.Logger;
+import org.rrd4j.core.RrdDb;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,8 +43,9 @@ public class Database
     public Map<String, Index<? extends PropertyContainer>> indicies;
 
     private String databaseStoreDirectory;
+	private RrdDb rrdDb;
 
-    public Database( AbstractGraphDatabase db )
+	public Database( AbstractGraphDatabase db )
     {
         this.databaseStoreDirectory = db.getStoreDir();
         graph = db;
@@ -58,7 +60,7 @@ public class Database
     private static EmbeddedGraphDatabase createDatabase(
             String databaseStoreDirectory )
     {
-        log.info( "Creating database at " + databaseStoreDirectory );        
+        log.info( "Creating database at " + databaseStoreDirectory );
         return new EmbeddedGraphDatabase( databaseStoreDirectory );
     }
 
@@ -128,4 +130,15 @@ public class Database
         }
         return index;
     }
+
+
+	public RrdDb rrdDb()
+	{
+		return rrdDb;
+	}
+
+	public void setRrdDb(RrdDb rrdDb)
+	{
+		this.rrdDb = rrdDb;
+	}
 }
