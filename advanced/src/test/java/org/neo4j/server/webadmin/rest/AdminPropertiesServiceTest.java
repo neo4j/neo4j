@@ -82,11 +82,63 @@ public class AdminPropertiesServiceTest
         PropertiesConfiguration config = new PropertiesConfiguration();
         UriInfo mockUri = mock(UriInfo.class);
         when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
-        
+
         AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
 
         Response response = adminPropertiesService.getValue( "foo" );
 
         assertThat((String)response.getEntity(), containsString("undefined"));
+    }
+
+
+    @Test
+    public void shouldAppendSlashToDataUriIfMissing() throws URISyntaxException {
+        PropertiesConfiguration config = new PropertiesConfiguration();
+        String unterminatedUri = "http://foo:22/get/yer/data/here";
+        config.setProperty( "org.neo4j.server.webadmin.data.uri", unterminatedUri );
+
+        UriInfo mockUri = mock(UriInfo.class);
+        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
+
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
+
+        Response response = adminPropertiesService.getValue( "data.uri" );
+
+        assertThat((String)response.getEntity(), containsString(unterminatedUri + "/"));
+    }
+
+    @Test
+    public void shouldAppendSlashToManagementUriIfMissing() throws URISyntaxException {
+        PropertiesConfiguration config = new PropertiesConfiguration();
+        String unterminatedUri = "http://foo:22/get/yer/data/here";
+        config.setProperty( "org.neo4j.server.webadmin.management.uri", unterminatedUri );
+
+        UriInfo mockUri = mock(UriInfo.class);
+        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
+        
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
+
+        Response response = adminPropertiesService.getValue( "management.uri" );
+
+        assertThat((String)response.getEntity(), containsString(unterminatedUri + "/"));
+    }
+
+    @Test
+    public void shouldAppendSlashToDataUriIfMissingWithinNeo4jServerProperty() throws URISyntaxException {
+        PropertiesConfiguration config = new PropertiesConfiguration();
+        String unterminatedDataUri = "http://foo:22/get/yer/data/here";
+        config.setProperty( "org.neo4j.server.webadmin.data.uri", unterminatedDataUri );
+        String unterminatedManagementUri = "http://neo-is-awesome.se/manage";
+        config.setProperty( "org.neo4j.server.webadmin.management.uri", unterminatedManagementUri );
+
+        UriInfo mockUri = mock(UriInfo.class);
+        when(mockUri.getBaseUri()).thenReturn(new URI("http://peteriscool.com:6666/"));
+
+        AdminPropertiesService adminPropertiesService = new AdminPropertiesService(mockUri, config);
+
+        Response response = adminPropertiesService.getValue( "neo4j-servers" );
+
+        assertThat((String)response.getEntity(), containsString(unterminatedDataUri + "/"));
+        assertThat((String)response.getEntity(), containsString(unterminatedManagementUri + "/"));
     }
 }
