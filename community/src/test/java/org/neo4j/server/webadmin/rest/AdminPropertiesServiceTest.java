@@ -20,22 +20,20 @@
 
 package org.neo4j.server.webadmin.rest;
 
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.junit.Test;
+import org.neo4j.server.rest.domain.JsonHelper;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
-
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.junit.Test;
-import org.neo4j.server.rest.domain.JsonHelper;
 
 public class AdminPropertiesServiceTest
 {
@@ -147,24 +145,5 @@ public class AdminPropertiesServiceTest
 
         assertThat( (String) response.getEntity(), containsString( unterminatedDataUri + "/" ) );
         assertThat( (String) response.getEntity(), containsString( unterminatedManagementUri + "/" ) );
-    }
-
-    @Test
-    public void restEndpointShouldBeIdentifiedWithCorrectKey() throws URISyntaxException
-    {
-        PropertiesConfiguration config = new PropertiesConfiguration();
-
-        final String rootHostUri = "http://peteriscool.com:6666";
-        final String baseUriAsString = rootHostUri + "/db/manage/properties/";
-        UriInfo mockUri = mock( UriInfo.class );
-        when( mockUri.getBaseUri() ).thenReturn( new URI( baseUriAsString ) );
-
-        AdminPropertiesService adminPropertiesService = new AdminPropertiesService( mockUri, config );
-
-        Response response = adminPropertiesService.getValue( "neo4j-servers" );
-
-        assertThat( (String) response.getEntity(), containsString( "\"url\" : \"" + rootHostUri + "/db/data/\"" ) );
-        assertThat( (String) response.getEntity(), containsString( "\"manageUrl\" : \"" + rootHostUri + "/db/manage/\"" ) );
-
     }
 }
