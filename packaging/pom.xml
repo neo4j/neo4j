@@ -33,6 +33,8 @@
     <shell.shortname>neo4j-shell</shell.shortname>
     <libs.fullname>Neo4j Libraries</libs.fullname>
     <libs.shortname>neo4j-libs</libs.shortname>
+    <webadmin.fullname>Neo4j Web Administartion</webadmin.fullname>
+    <webadmin.shortname>Webadmin</webadmin.shortname>
 
     <!-- other filter properties -->
     <wrapper.conf>../conf/neo4j-wrapper.conf</wrapper.conf>
