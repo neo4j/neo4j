@@ -9,8 +9,8 @@ complex data.
 In the box
 ----------
 
-${server.fullname} runs as a headless server application, exposing a web-based management
-interface and REST-ful endpoints for data access.
+${server.fullname} runs as a server application, exposing a Web-based management
+interface and RESTful endpoints for data access, along with logging and JMX
 
 Here in the installation directory, you'll find:
 
