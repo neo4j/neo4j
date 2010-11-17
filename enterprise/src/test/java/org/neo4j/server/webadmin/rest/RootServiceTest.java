@@ -20,33 +20,33 @@
 
 package org.neo4j.server.webadmin.rest;
 
+import org.junit.Test;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import java.net.URI;
+
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.hamcrest.Matchers.*;
+public class RootServiceTest
+{
+	@Test
+	public void shouldAdvertiseServicesWhenAsked() throws Exception
+	{
+		UriInfo uriInfo = mock( UriInfo.class );
+		URI uri = new URI( "http://example.org:7474/" );
+		when( uriInfo.getBaseUri() ).thenReturn( uri );
 
-import java.net.URI;
+		RootService svc = new RootService();
+		Response serviceDefinition = svc.getServiceDefinition( uriInfo );
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-
-import org.junit.Test;
-
-public class RootServiceTest {
-    @Test
-    public void shouldAdvertiseServicesWhenAsked() throws Exception {
-        UriInfo uriInfo = mock(UriInfo.class);
-        URI uri = new URI("http://example.org:7474/");
-        when(uriInfo.getBaseUri()).thenReturn(uri);
-        
-        RootService svc = new RootService();
-        Response serviceDefinition = svc.getServiceDefinition(uriInfo, null);
-        
-        assertEquals(200, serviceDefinition.getStatus());
-        assertThat((String)serviceDefinition.getEntity(), containsString(String.format("\"console\" : \"%sserver/console\"", uri.toString())));
-        assertThat((String)serviceDefinition.getEntity(), containsString(String.format("\"jmx\" : \"%sserver/jmx\"", uri.toString())));
-        assertThat((String)serviceDefinition.getEntity(), containsString(String.format("\"monitor\" : \"%sserver/monitor\"", uri.toString())));
-    }
+		assertEquals( 200, serviceDefinition.getStatus() );
+		assertThat( (String) serviceDefinition.getEntity(), containsString( String.format( "\"console\" : \"%sserver/console\"", uri.toString() ) ) );
+		assertThat( (String) serviceDefinition.getEntity(), containsString( String.format( "\"jmx\" : \"%sserver/jmx\"", uri.toString() ) ) );
+		assertThat( (String) serviceDefinition.getEntity(), containsString( String.format( "\"monitor\" : \"%sserver/monitor\"", uri.toString() ) ) );
+	}
 }

@@ -32,14 +32,21 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-@Path("/")
-public class RootService {
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getServiceDefinition(@Context UriInfo uriInfo, @Context Database database) {
-        
-        String entity = JsonRenderers.DEFAULT.render(new ServerRootRepresentation(uriInfo.getBaseUri(), new ConsoleService( null ) , new JmxService(), new MonitorService()));
+@Path( "/" )
+public class RootService
+{
+	@GET
+	@Produces( MediaType.APPLICATION_JSON )
+	public Response getServiceDefinition( @Context UriInfo uriInfo )
+	{
 
-        return Response.ok(entity).header("Content-Type", MediaType.APPLICATION_JSON).build();
-    }
+		ServerRootRepresentation rootRepresentation = new ServerRootRepresentation( uriInfo.getBaseUri(),
+				new ConsoleService( null ),
+				new JmxService(),
+				new MonitorService( null ) );
+
+		String entity = JsonRenderers.DEFAULT.render( rootRepresentation );
+
+		return Response.ok( entity ).header( "Content-Type", MediaType.APPLICATION_JSON ).build();
+	}
 }
