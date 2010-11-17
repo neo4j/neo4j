@@ -175,7 +175,7 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implement
     @Override
     public String toString()
     {
-        return super.toString() + " [" + graphDbImpl.getStoreDir() + "]";
+        return getClass().getSimpleName() + " [" + graphDbImpl.getStoreDir() + "]";
     }
 
     public String getStoreDir()
