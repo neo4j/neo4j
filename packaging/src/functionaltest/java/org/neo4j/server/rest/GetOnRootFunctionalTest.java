@@ -36,14 +36,14 @@ public class GetOnRootFunctionalTest extends FunctionalTestBase
     @Test
     public void assert200OkFromGet() throws Exception
     {
-        ClientResponse response = Client.create().resource( baseUri() ).get( ClientResponse.class );
+        ClientResponse response = Client.create().resource( dataUri() ).get( ClientResponse.class );
         assertEquals( 200, response.getStatus() );
     }
 
     @Test
     public void assertResponseHaveCorrectContentFromGet() throws Exception
     {
-        ClientResponse response = Client.create().resource( baseUri() ).accept( MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
+        ClientResponse response = Client.create().resource( dataUri() ).accept( MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
         String body = response.getEntity( String.class );
         Map<String, Object> map = JsonHelper.jsonToMap( body );
         assertEquals( nodeUri(), map.get( "node" ) );
