@@ -29,12 +29,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-@Path( "/properties" )
+@Path("/properties")
 public class AdminPropertiesService
 {
     private final String configurationNamespace = "org.neo4j.server.webadmin.";
     private Configuration config;
     private final UriInfo uriInfo;
+    private String MANAGEMENT_URI_KEY = "management.uri";
+    private String DATA_URI_KEY = "data.uri";
 
     public AdminPropertiesService( @Context UriInfo uriInfo,
                                    @Context Configuration config )
@@ -44,30 +46,40 @@ public class AdminPropertiesService
     }
 
     @GET
-    @Produces( MediaType.APPLICATION_JSON )
-    @Path( "/{key}" )
-    public Response getValue( @PathParam( "key" ) String key )
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/{key}")
+    public Response getValue( @PathParam("key") String key )
     {
+        String lowerCaseKey = key.toLowerCase();
+        String value = null;
         // Legacy mapping for webadmin app
-        if ( key.toLowerCase().equals( "neo4j-servers" ) )
+        if ( "neo4j-servers".equals( lowerCaseKey ) )
         {
+            String dataUri = slashTerminatedUri( getConfigValue( DATA_URI_KEY ) );
+            String managementUri = slashTerminatedUri( getConfigValue( MANAGEMENT_URI_KEY ) );
             StringBuilder sb = new StringBuilder();
             sb.append( "{ \"" );
             sb.append( uriInfo.getBaseUri() );
             sb.append( "\" : " );
             sb.append( "{\"url\" : \"" );
-            sb.append( getConfigValue( "data.uri" ) );
+            sb.append( dataUri );
             sb.append( "\"" );
             sb.append( "," );
-            sb.append( "\"manageUrl\" : \"" );
-            sb.append( getConfigValue( "management.uri" ) );
+            sb.append( "\"" ).append( MANAGEMENT_URI_KEY ).append( "\" : \"" );
+            sb.append( managementUri );
             sb.append( "\"}" );
             sb.append( "}" );
 
             return Response.ok( sb.toString() ).type( MediaType.APPLICATION_JSON ).build();
         }
-
-        String value = config.getString( configurationNamespace + key );
+        else if ( DATA_URI_KEY.equals( lowerCaseKey ) || MANAGEMENT_URI_KEY.equals( lowerCaseKey ) )
+        {
+            value = slashTerminatedUri( getConfigValue( lowerCaseKey ) );
+        }
+        else
+        {
+            value = config.getString( configurationNamespace + key );
+        }
 
         if ( value == null )
         {
@@ -76,11 +88,20 @@ public class AdminPropertiesService
         return Response.ok( value ).type( MediaType.APPLICATION_JSON ).build();
     }
 
+    private String slashTerminatedUri( String uri )
+    {
+        if ( !uri.endsWith( "/" ) )
+        {
+            return uri + "/";
+        }
+        return uri;
+    }
+
     private String getConfigValue( String key )
     {
         String k = configurationNamespace + key;
         String value = config.getString( k );
-        if(value==null)
+        if ( value == null )
         {
             throw new IllegalArgumentException( "Value of " + k + " was not found." );
         }
