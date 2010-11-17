@@ -58,7 +58,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-abstract class GenericWebService {
+public abstract class GenericWebService {
     public static final String UTF8 = "UTF-8";
     protected static final String PATH_NODES = "node";
     protected static final String PATH_NODE = PATH_NODES + "/{nodeId}";
@@ -94,7 +94,11 @@ abstract class GenericWebService {
         }
     }
 
-    private static String dodgeStartingUnicodeMarker(String string) {
+	public GenericWebService()
+	{
+	}
+
+	private static String dodgeStartingUnicodeMarker(String string) {
         if (string != null && string.length() > 0) {
             if (string.charAt(0) == 0xfeff) {
                 return string.substring(1);
@@ -103,7 +107,7 @@ abstract class GenericWebService {
         return string;
     }
 
-    private static ResponseBuilder addHeaders(ResponseBuilder builder) {
+    protected static ResponseBuilder addHeaders( ResponseBuilder builder ) {
         String entity = (String) builder.clone().build().getEntity();
         byte[] entityAsBytes;
         try {

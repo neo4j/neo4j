@@ -34,8 +34,13 @@ import javax.ws.rs.core.UriInfo;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.kernel.ImpermanentGraphDatabase;
+import org.neo4j.server.rrd.Job;
+import org.neo4j.server.rrd.JobScheduler;
+import org.neo4j.server.rrd.RrdFactory;
+import org.rrd4j.core.RrdDb;
 
-public class MonitorServiceTest
+public class MonitorServiceTest implements JobScheduler
 {
     public MonitorService monitorService;
 
@@ -61,7 +66,7 @@ public class MonitorServiceTest
         when(mockUri.getBaseUri()).thenReturn(uri);
         Response resp = monitorService.getData();
 
-        assertEquals(200, resp.getStatus());
+        assertEquals(resp.getEntity().toString(), 200, resp.getStatus());
         assertThat((String)resp.getEntity(), containsString("timestamps"));
         assertThat((String)resp.getEntity(), containsString("end_time"));
         assertThat((String)resp.getEntity(), containsString("property_count"));
@@ -70,7 +75,12 @@ public class MonitorServiceTest
     @Before
     public void setUp() throws Exception
     {
-        this.monitorService = new MonitorService(  );
+	    RrdDb rrdDb = RrdFactory.createRrdDbAndSampler( new ImpermanentGraphDatabase(), this );
+	    this.monitorService = new MonitorService( rrdDb );
     }
 
+	@Override
+	public void scheduleToRunEveryXSeconds( Job job, int runEveryXSeconds )
+	{
+	}
 }
