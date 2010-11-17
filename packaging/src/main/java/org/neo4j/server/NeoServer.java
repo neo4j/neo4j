@@ -195,7 +195,7 @@ public class NeoServer implements WrapperListener, JobScheduler
             return null; // This is for the service wrapper, and though it looks weird, it's correct
         } catch ( TransactionFailureException tfe )
         {
-            log.error( "Failed to start Neo Server, because " + tfe +
+            log.error( String.format("Failed to start Neo Server on port [%d], because ", restApiUri().getPort()) + tfe +
                     ". Another process may be using database location " + databaseLocation );
             tfe.printStackTrace();
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
