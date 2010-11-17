@@ -13,7 +13,7 @@ Deliverable artifacts included:
 Building
 --------
 
-Running `mvn clean install` will produce packaged installers for Windows
+Running `mvn clean install` will produce packages for Windows
 and Linux.
 
 
