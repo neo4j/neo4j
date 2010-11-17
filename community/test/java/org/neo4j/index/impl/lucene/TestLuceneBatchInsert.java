@@ -20,6 +20,7 @@
 
 package org.neo4j.index.impl.lucene;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 
@@ -36,6 +37,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.BatchInserterIndexProvider;
@@ -179,7 +181,8 @@ public class TestLuceneBatchInsert
     {
         String indexName = "persons";
         BatchInserter inserter = new BatchInserterImpl( PATH );
-        LuceneBatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider( inserter );
+        LuceneBatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
+                inserter );
         BatchInserterIndex persons = indexProvider.nodeIndex( "persons",
                 MapUtil.stringMap( "type", "exact" ) );
         Map<String, Object> properties = MapUtil.map( "name", "test" );
@@ -196,8 +199,7 @@ public class TestLuceneBatchInsert
             Assert.assertTrue( indexManager.existsForNodes( indexName ) );
             Assert.assertNotNull( indexManager.forNodes( indexName ) );
             Index<Node> nodes = graphDb.index().forNodes( indexName );
-            Assert.assertTrue( nodes.get(
-                    "name", "test" ).hasNext() );
+            Assert.assertTrue( nodes.get( "name", "test" ).hasNext() );
             tx.success();
             tx.finish();
         }
@@ -205,5 +207,38 @@ public class TestLuceneBatchInsert
         {
             graphDb.shutdown();
         }
+    }
+
+    @Test
+    public void testRelationshipBatchInserterIndex()
+    {
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
+                inserter );
+        BatchInserterIndex edgesIndex = indexProvider.relationshipIndex(
+                "edgeIndex",
+                MapUtil.stringMap( "provider", "lucene", "type", "exact" ) );
+
+        long nodeId1 = inserter.createNode( MapUtil.map( "ID", "1" ) );
+        long nodeId2 = inserter.createNode( MapUtil.map( "ID", "2" ) );
+        long relationshipId = inserter.createRelationship( nodeId1, nodeId2,
+                EdgeType.KNOWS, null );
+
+        edgesIndex.add( relationshipId,
+                MapUtil.map( "EDGE_TYPE", EdgeType.KNOWS.name() ) );
+        edgesIndex.flush();
+
+        assertEquals(
+                String.format( "Should return relationship id" ),
+                new Long( relationshipId ),
+                edgesIndex.query( "EDGE_TYPE", EdgeType.KNOWS.name() ).getSingle() );
+
+        indexProvider.shutdown();
+        inserter.shutdown();
+    }
+
+    private enum EdgeType implements RelationshipType
+    {
+        KNOWS
     }
 }
