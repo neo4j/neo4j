@@ -37,6 +37,7 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
+import org.rrd4j.core.RrdDb;
 import org.tanukisoftware.wrapper.WrapperListener;
 
 import javax.management.MalformedObjectNameException;
@@ -184,9 +185,10 @@ public class NeoServer implements WrapperListener, JobScheduler
                 container.start();
             }
 
-            createAndStartRrdSampler();
+	        RrdDb rrdDb = createRrdDbAndStartSampler();
+	        database.setRrdDb(rrdDb);
 
-            webServer.start();
+	        webServer.start();
 
             log.info( "Started Neo Server on port [%s]", restApiUri().getPort() );
 
@@ -206,9 +208,9 @@ public class NeoServer implements WrapperListener, JobScheduler
         }
     }
 
-    private void createAndStartRrdSampler() throws MalformedObjectNameException, IOException
+    private RrdDb createRrdDbAndStartSampler() throws MalformedObjectNameException, IOException
     {
-        RrdFactory.createRrdSampler( database().graph, this );
+	    return RrdFactory.createRrdSampler(database().graph, this);
     }
 
     public String baseUri() throws UnknownHostException
