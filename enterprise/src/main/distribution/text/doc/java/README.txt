@@ -1,4 +1,4 @@
-${product.fullname} doc/java 
+${server.fullname} doc/java 
 =======================================
 
 Java-related documentation about programming with Neo4j, including

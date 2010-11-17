@@ -1,4 +1,4 @@
-${product-name} Code Examples
+${server.fullname} Code Examples
 =======================================
 
 
