@@ -434,7 +434,19 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <strictCheck>true</strictCheck>
+          <header>${license-text.header}</header>
+          <includes>
+            <include>**/*.java</include>
+            <include>**/*.js</include>
+          </includes>
+          <excludes>
+            <exclude>**/lib/*</exclude>
+          </excludes>
+        </configuration>
       </plugin>
+      
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
@@ -445,6 +457,7 @@
           </archive>
         </configuration>
       </plugin>
+      
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
