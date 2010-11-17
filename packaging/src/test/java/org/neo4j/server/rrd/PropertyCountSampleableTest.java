@@ -23,11 +23,13 @@ package org.neo4j.server.rrd;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ImpermanentGraphDatabase;
 
 import javax.management.MalformedObjectNameException;
 import java.io.IOException;
+import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -49,6 +51,26 @@ public class PropertyCountSampleableTest
         addPropertyToReferenceNode( );
 
         assertThat( sampleable.getValue(), is( 1L ) );
+        
+        addNodeIntoGraph( );
+        addNodeIntoGraph( );
+
+        assertThat( sampleable.getValue(), is( 3L ) );
+    }
+
+    private void addNodeIntoGraph() {
+        Transaction tx = db.beginTx();
+        Node referenceNode = db.getReferenceNode();
+        Node myNewNode = db.createNode();
+        myNewNode.setProperty("id", UUID.randomUUID().toString());
+        myNewNode.createRelationshipTo(referenceNode, new RelationshipType() {
+            public String name() {
+                return "knows_about";
+            }
+        });
+        
+        tx.success();
+        tx.finish();
     }
 
     private void addPropertyToReferenceNode( )
