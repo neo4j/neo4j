@@ -79,7 +79,7 @@ public class MonitorServiceTest implements JobScheduler
 	    this.monitorService = new MonitorService( rrdDb );
     }
 
-	@Override
+	
 	public void scheduleToRunEveryXSeconds( Job job, int runEveryXSeconds )
 	{
 	}
