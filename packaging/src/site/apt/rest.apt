@@ -258,7 +258,7 @@ curl -X DELETE http://localhost:7474/db/data/node/123
 
 *** 409: Node could not be deleted (still has relationships?)
 
-* {}
+* {Create relationship}
 
 ** POST /node/123/relationships
 
