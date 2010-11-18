@@ -1,3 +1,14 @@
+1.2-1.2.M04 (2010-11-18)
+------------------------
+o Index configuration handling moved to IndexManager (graphDb.index()) and added
+setConfiguration/removeConfiguration which can modify index configuration, but
+could render existing index data invalid if wrong settings are modified, so
+consider those advanced.
+
+o Made config recognition more flexible for forNodes(indexName,config) and
+forRelationships(indexName,config) so that the config can contain differences,
+just as long as they yield the same storage format.
+
 1.2-1.2.M03 (2010-11-04)
 ------------------------
 
