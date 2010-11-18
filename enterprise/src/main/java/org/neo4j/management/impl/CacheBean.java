@@ -20,8 +20,6 @@
 
 package org.neo4j.management.impl;
 
-import java.security.AccessControlException;
-
 import javax.management.MBeanOperationInfo;
 import javax.management.NotCompliantMBeanException;
 
@@ -77,8 +75,6 @@ public class CacheBean extends ManagementBeanProvider
         @Description( value = "Clears the Neo4j caches", impact = MBeanOperationInfo.ACTION )
         public void clear()
         {
-            if ( true )
-                throw new AccessControlException( "Clearing cache through JMX not permitted." );
             nodeManager.clearCache();
         }
     }
