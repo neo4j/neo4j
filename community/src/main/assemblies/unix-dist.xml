@@ -135,6 +135,17 @@
         <include>org.neo4j:neo4j:*:javadoc</include>
       </includes>
     </dependencySet>
+    <!-- server maven site becomes REST api -->
+    <dependencySet>
+      <outputDirectory>doc/rest</outputDirectory>
+      <unpack>true</unpack>
+      <fileMode>0444</fileMode>
+      <directoryMode>0777</directoryMode>
+      <includes>
+        <include>org.neo4j.app:neo4j-server:*:site</include>
+      </includes>
+    </dependencySet>
+
 
  </dependencySets>
 
