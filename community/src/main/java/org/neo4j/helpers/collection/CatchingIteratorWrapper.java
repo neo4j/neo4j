@@ -39,8 +39,11 @@ public abstract class CatchingIteratorWrapper<T, U> extends PrefetchingIterator<
             U nextItem = null;
             try
             {
-                nextItem = source.next();
-                return underlyingObjectToObject( nextItem );
+                nextItem = fetchNextOrNullFromSource( source );
+                if ( nextItem != null )
+                {
+                    return underlyingObjectToObject( nextItem );
+                }
             }
             catch ( Throwable t )
             {
@@ -63,6 +66,11 @@ public abstract class CatchingIteratorWrapper<T, U> extends PrefetchingIterator<
         return null;
     }
     
+    protected U fetchNextOrNullFromSource( Iterator<U> source )
+    {
+        return source.next();
+    }
+
     protected void itemDodged( U item )
     {
     }
