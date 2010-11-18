@@ -168,6 +168,9 @@ What's next?
 	
 Appendix: the code
 
-	
+    * {{{./xref/org/neo4j/examples/server/CreateSimpleGraph.html}CreateSimpleGraph}}
 
-	
+    * {{{./xref/org/neo4j/examples/server/Relationship.html}Relationship}}
+
+    * {{{./xref/org/neo4j/examples/server/TraversalDescription.html}TraversalDescription}}
+
