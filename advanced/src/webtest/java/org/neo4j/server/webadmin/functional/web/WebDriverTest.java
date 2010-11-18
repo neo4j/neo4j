@@ -62,7 +62,7 @@ public abstract class WebDriverTest {
 		
         waitForElementToAppear(By.className("mor_info"));
 		RenderedWebElement titleElement = waitForElementToAppear(By.xpath("//h1"));
-		assertEquals("Neo4j server monitor", titleElement.getText());
+		assertEquals("Neo4j Web Administration", titleElement.getText());
 	}	
 	
 	@After
