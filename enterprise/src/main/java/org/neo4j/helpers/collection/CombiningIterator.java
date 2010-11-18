@@ -30,10 +30,10 @@ import java.util.Iterator;
  */
 public class CombiningIterator<T> extends PrefetchingIterator<T>
 {
-    private Iterator<Iterator<T>> iterators;
+    private Iterator<? extends Iterator<T>> iterators;
     private Iterator<T> currentIterator;
     
-    public CombiningIterator( Iterable<Iterator<T>> iterators )
+    public CombiningIterator( Iterable<? extends Iterator<T>> iterators )
     {
         this.iterators = iterators.iterator();
     }
@@ -52,7 +52,11 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
                 }
             }
         }
-        return currentIterator != null && currentIterator.hasNext() ?
-            currentIterator.next() : null;
+        return currentIterator != null && currentIterator.hasNext() ? currentIterator.next() : null;
+    }
+    
+    protected Iterator<T> currentIterator()
+    {
+        return currentIterator;
     }
 }
