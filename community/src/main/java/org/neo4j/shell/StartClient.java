@@ -464,18 +464,19 @@ public class StartClient
                 
             "Example arguments for remote:\n" +
                 "\t-" + ARG_PORT + " " + port + "\n" +
-                "\t-" + ARG_HOST + " " + "192.168.1.234" + " -" + ARG_PORT + " " + port +
-                    " -" + ARG_NAME + " " + name + "\n" +
+                "\t-" + ARG_HOST + " " + "192.168.1.234" + " -" + ARG_PORT + " " + port + " -" + ARG_NAME + " " + name + "\n" +
+                "\t-" + ARG_HOST + " " + "localhost" + " -" + ARG_READONLY + "\n" +
                 "\t...or no arguments for default values\n" +
             "Example arguments for local:\n" +
                 "\t-" + ARG_PATH + " /path/to/db" + "\n" +
-                "\t-" + ARG_PATH + " /path/to/db -" + ARG_READONLY + " -" + ARG_CONFIG + " /path/to/config.properties"
+                "\t-" + ARG_PATH + " /path/to/db -" + ARG_CONFIG + " /path/to/neo4j.config" + "\n" +
+                "\t-" + ARG_PATH + " /path/to/db -" + ARG_READONLY
         );
     }
 
     private static String padArg( String arg, int length )
     {
-        return "-" + pad( arg, length ) + "  ";
+        return " -" + pad( arg, length ) + "  ";
     }
 
     private static String pad( String string, int length )
