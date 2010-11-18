@@ -20,10 +20,21 @@
 
 package org.neo4j.helpers;
 
-/**
- * ExtensionLoaders are used for runtime binding of interface instances.
- *
- */
-public interface ExtensionLoader {
-  <T> Iterable<T> loadExtensionsOfType( Class<T> type );
+import org.neo4j.kernel.impl.osgi.OSGiActivator;
+import org.neo4j.kernel.impl.osgi.OSGiExtensionLoader;
+
+class OSGiServiceLoader extends Service.OSGiLoader
+{
+    private final OSGiExtensionLoader loader;
+
+    OSGiServiceLoader()
+    {
+        this.loader = OSGiActivator.osgiExtensionLoader;
+    }
+
+    @Override
+    <T> Iterable<T> load( Class<T> type )
+    {
+        return loader != null ? loader.loadExtensionsOfType( type ) : null;
+    }
 }
