@@ -50,7 +50,7 @@ set _WRAPPER_L_EXE=%_REALPATH%%_WRAPPER_BASE%-windows-ia-64.exe
 goto search
 :search
 set _WRAPPER_EXE=%_WRAPPER_L_EXE%
-if exist "%_WRAPPER_EXE%" goto validate
+if exist "%_WRAPPER_EXE%" goto conf
 set _WRAPPER_EXE=%_REALPATH%%_WRAPPER_BASE%.exe
 if exist "%_WRAPPER_EXE%" goto validate
 echo Unable to locate a Wrapper executable using any of the following names:
@@ -58,6 +58,15 @@ echo %_WRAPPER_L_EXE%
 echo %_WRAPPER_EXE%
 pause
 goto :eof
+
+rem
+rem Find the wrapper.conf
+rem
+:conf
+set _WRAPPER_CONF=""
+if not %_WRAPPER_CONF%=="" goto startup
+set _WRAPPER_CONF="%_WRAPPER_CONF_DEFAULT%"
+goto validate
 
 :validate
 rem
