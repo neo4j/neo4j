@@ -432,12 +432,36 @@ public class StartClient
         printUsage();
         System.exit( 1 );
     }
+    
+    private static int longestString( String... strings )
+    {
+        int length = 0;
+        for ( String string : strings )
+        {
+            if ( string.length() > length )
+            {
+                length = string.length();
+            }
+        }
+        return length;
+    }
 
     private static void printUsage()
     {
         int port = AbstractServer.DEFAULT_PORT;
         String name = AbstractServer.DEFAULT_NAME;
+        int longestArgLength = longestString( ARG_COMMAND, ARG_CONFIG, ARG_HOST, ARG_NAME,
+                ARG_PATH, ARG_PID, ARG_PORT, ARG_READONLY );
         System.out.println(
+            padArg( ARG_HOST, longestArgLength ) + "Domain name or IP of host to connect to (default: localhost)\n" +
+            padArg( ARG_PORT, longestArgLength ) + "Port of host to connect to (default: " + AbstractServer.DEFAULT_PORT + ")\n" +
+            padArg( ARG_NAME, longestArgLength ) + "RMI name, i.e. rmi://<host>:<port>/<name> (default: " + AbstractServer.DEFAULT_NAME + ")\n" +
+            padArg( ARG_PID, longestArgLength ) + "Process ID to connect to\n" +
+            padArg( ARG_COMMAND, longestArgLength ) + "Command line to execute. After executing it the shell exits\n" +
+            padArg( ARG_READONLY, longestArgLength ) + "Connect in readonly mode\n" +
+            padArg( ARG_PATH, longestArgLength ) + "Points to a neo4j db path so that a local server can be started there\n" +
+            padArg( ARG_CONFIG, longestArgLength ) + "Points to a config file when starting a local server\n\n" +
+                
             "Example arguments for remote:\n" +
                 "\t-" + ARG_PORT + " " + port + "\n" +
                 "\t-" + ARG_HOST + " " + "192.168.1.234" + " -" + ARG_PORT + " " + port +
@@ -447,5 +471,20 @@ public class StartClient
                 "\t-" + ARG_PATH + " /path/to/db" + "\n" +
                 "\t-" + ARG_PATH + " /path/to/db -" + ARG_READONLY + " -" + ARG_CONFIG + " /path/to/config.properties"
         );
+    }
+
+    private static String padArg( String arg, int length )
+    {
+        return "-" + pad( arg, length ) + "  ";
+    }
+
+    private static String pad( String string, int length )
+    {
+        // Rather inefficient
+        while ( string.length() < length )
+        {
+            string = string + " ";
+        }
+        return string;
     }
 }
