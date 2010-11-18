@@ -1,4 +1,4 @@
-Neo4j Distribution
+Neo4j in Java
 ==================
 
 This package provides an easy-to-get-going distribution of the Neo4j graph

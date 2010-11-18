@@ -1,0 +1,5 @@
+${server.fullname} Usage
+========================
+
+TODO: man page-ish information about calling the server scripts,
+arguments, switches, and the configuration file properties.
