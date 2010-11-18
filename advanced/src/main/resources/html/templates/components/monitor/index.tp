@@ -3,7 +3,7 @@
 	<div id="mor_monitor_lifecycle"></div>
 	<div class="mor_module">
 		<p class="mor_info">Get an overview on your neo4j server.</p>
-		<div class="mor_module_foldout">
+		<!--div class="mor_module_foldout">
 			<h2><a href="#" class="mor_module_foldout_trigger">More about lifecycle</a></h2>
 			<div class="mor_module_foldout_content">
 				<h2>Lifecycle</h2>
@@ -12,8 +12,15 @@
 				<p>Stopping the server does not turn off the underlying neo4j database, since the administration server still uses it.</p>
 				<p>If you want to ensure that the neo4j database is turned off, use the console on your server to stop the neo4j service.</p>
 			</div>
-		</div>
+		</div-->
 		<div class="mor_module_foldout">
+            <h2><a href="#" class="mor_module_foldout_trigger">More about Neo4j</a></h2>
+            <div class="mor_module_foldout_content">
+                <h2>The Neo4j project</h2>
+                <p>For more information, help and examples, please visit <a href="http://neo4j.org">the Neo4j community site</a>.</p>
+            </div>
+        </div>
+        <div class="mor_module_foldout">
 			<h2><a href="#" class="mor_module_foldout_trigger">More about charts</a></h2>
 			<div class="mor_module_foldout_content">
 				<h2>Charts</h2>
