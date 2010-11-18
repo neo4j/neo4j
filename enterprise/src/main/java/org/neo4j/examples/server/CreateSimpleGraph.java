@@ -135,9 +135,9 @@ public class CreateSimpleGraph {
         
         WebResource resource = Client.create().resource(propertyUri); // http://localhost:7474/db/data/node/{node_id}/properties/{property_name}
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(toJsonStringLiteral(propertyValue)).put(ClientResponse.class);
-        // END SNIPPET: addProp
         
         System.out.println(String.format("PUT to [%s], status code [%d]", propertyUri, response.getStatus()));
+        // END SNIPPET: addProp
     }
     
     private static void checkDatabaseIsRunning() {
