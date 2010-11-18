@@ -17,7 +17,7 @@
     </links>
     <menu name="${project.artifactId}">
       <item name="Introduction" href="index.html" />
-      <item name="Getting Started (wiki)" href="http://wiki.neo4j.org/content/Getting_Started_with_Neo4j_Server" />
+      <item name="Getting Started (wiki)" href="http://wiki.neo4j.org/content/Getting_Started_With_Neo4j_Server" />
       <item name="REST API" href="rest.html" />
       <item name="JavaDocs" href="apidocs/index.html" />
       <item name="Source Repository" href="https://svn.neo4j.org/components/${short-name}/" />
