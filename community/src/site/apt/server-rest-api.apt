@@ -1,0 +1,65 @@
+Neo4j Server REST API
+
+    The Neo4j server combines the REST API and the Web admin application in a single
+    easy to install and run solution. The REST API has remained consistent from the 0.8
+    release and has simply been ported to the new server infrastructure. As such existing
+    code should continue to run.   
+    
+    There's also information on the server
+    {{{http://wiki.neo4j.org/content/Getting_Started_with_Neo4j_Server} on the wiki}}.
+    
+Creating a graph through the REST API from Java
+
+    The REST API uses HTTP and JSON, so that it can be used from many languages and platforms.
+    Still, when geting started it's useful to see some patterns that can be re-used. In this 
+    brief overview, we'll show you how to create and manipulate a simple graph through
+    the REST API and also how to query it.
+    
+    For these examples, we've chosen the {{{http://jersey.java.net/} Jersey}}client components,
+    which are easily {{{http://jersey.java.net/nonav/documentation/latest/user-guide.html#chapter_deps}
+    downloaded}} via Maven.
+      
+Start the server
+	
+	Before we can perform any actions on the server, we need to start it as per the
+	{{{http://wiki.neo4j.org/content/Getting_Started_With_Neo4j_Server#Starting_Neo4j_Server}instructions on the wiki}}.
+	
+%{source-code|snippet=checkServer|file=src/main/java/org/neo4j/examples/server/CreateSimpleGraph.java}
+	
+	If the status of the response is 200 OK, then we know the server is running fine and we
+	can continue. If the code fails to conenct to the server, then please revisit the
+	{{{http://wiki.neo4j.org/content/Getting_Started_With_Neo4j_Server#Starting_Neo4j_Server}getting started page
+	on the wiki}}. 
+	
+	<<If you get any other response than 200 OK (particularly 4xx or 5xx responses) then please
+	check your configuration and look in the log files in the data/log directory.>>     
+	       
+      
+Creating a node
+	
+	The REST API uses POST to create nodes. Encapsulating that in Java is straightforward using the Jersey
+	client:
+	
+ %{source-code|snippet=createNode|file=src/main/java/org/neo4j/examples/server/CreateSimpleGraph.java}
+    
+    If the call completes successfully, under the covers it will have sent a HTTP request containing a JSON
+    payload to the server. The server will then have created a new node in the database and responded with a
+    <<201 Created>> response and a <<Location>> header with the URI of the newly created node.
+    
+    In our example, we call this functionality twice to create two nodes in our database.
+    
+Adding properties
+
+	Once we have nodes in our datatabase, we can use them to store useful data. In this case, we're going to 
+	store information about music in our database. Let's start by looking at the code that we use to create nodes
+	and add properties.
+	
+	
+    
+    Inside the addProperty method we determine the resource that represents properties for the node and
+    decide on a name for that property. We then proceed to <<PUT>> the value of that property to the server.
+    
+    If everything goes well, we'll get a <<204 No Content>> back indicating that the server processed the
+    request but didn't echo back the property value. 
+    
+    
