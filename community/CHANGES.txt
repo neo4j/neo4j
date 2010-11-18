@@ -1,3 +1,12 @@
+1.2-1.2.M04 (2010-11-18)
+------------------------
+
+o Implemented "paths" app which can run path algos f.ex. shortest path, all paths, all simple paths.
+o Removed "-d" option from "ls" in favor of f.ex. "-f KNOWS:out,LOVES:in" which is more flexible.
+o Some tweaking of output for relationships (and its types).
+o Support for setting initial node/relationship properties in mkrel app, f.ex: mkrel -ct KNOWS --np "{name:Mattias, title:Hacker}" --rp "{date:1234567890}"
+
+
 1.2-1.2.M03 (2010-11-04)
 ------------------------
 
