@@ -35,10 +35,14 @@ public class CreateSimpleGraph {
     
     public static void main(String[] args) throws URISyntaxException {
         checkDatabaseIsRunning();
+        
+        // START SNIPPET: nodesAndProps
         URI firstNode = createNode();
         addProperty(firstNode, "name", "Joe Strummer");
         URI secondNode = createNode();
         addProperty(firstNode, "band", "The Clash");
+        // END SNIPPET: nodesAndProps    
+        
         URI relationshipUri = addRelationship(firstNode, secondNode, "singer", "{ \"from\" : \"1976\", \"until\" : \"1986\" }");
         addMetadataToProperty(relationshipUri, "stars", "5");
         
@@ -77,14 +81,16 @@ public class CreateSimpleGraph {
     }
 
     private static URI createNode() {
-        final String nodeEntryPointUri = SERVER_ROOT_URI + "node";
+        final String nodeEntryPointUri = SERVER_ROOT_URI + "node"; // http://localhost:7474/db/manage/node
 
+        // START SNIPPET: createNode
         WebResource resource = Client.create().resource(nodeEntryPointUri); // http://localhost:7474/db/data/node
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(EMPTY_JSON_CONTAINER).post(ClientResponse.class); // POST {} to the node entry point URI
         
         System.out.println(String.format("POST to [%s], status code [%d], location header [%s]", nodeEntryPointUri, response.getStatus(), response.getLocation().toString()));
         
         return response.getLocation();
+        // END SNIPPET: createNode
     }
 
     private static URI addRelationship(URI startNode, URI endNode, String relationshipType, String jsonAttributes) throws URISyntaxException {
@@ -124,19 +130,23 @@ public class CreateSimpleGraph {
     }
 
     private static void addProperty(URI nodeUri, String propertyName, String propertyValue) {
+        // START SNIPPET: addProp
         String propertyUri = nodeUri.toString() + "/properties/" + propertyName;
         
-        WebResource resource = Client.create().resource(propertyUri); // http://localhost:7474/db/data/node/{node_id}/properties/name
+        WebResource resource = Client.create().resource(propertyUri); // http://localhost:7474/db/data/node/{node_id}/properties/{property_name}
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(toJsonStringLiteral(propertyValue)).put(ClientResponse.class);
+        // END SNIPPET: addProp
         
         System.out.println(String.format("PUT to [%s], status code [%d]", propertyUri, response.getStatus()));
     }
     
     private static void checkDatabaseIsRunning() {
+        // START SNIPPET: checkServer
         WebResource resource = Client.create().resource(SERVER_ROOT_URI);
         ClientResponse response = resource.get(ClientResponse.class);
         
         System.out.println(String.format("GET on [%s], status code [%d]", SERVER_ROOT_URI, response.getStatus()));
+        // END SNIPPET: checkServer
     }
     
     private static String toJsonStringLiteral(String str) {
