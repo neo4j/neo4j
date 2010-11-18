@@ -1,5 +1,43 @@
-${server.fullname} Usage
-========================
+${server.fullname} Manual
+==================
 
-TODO: man page-ish information about calling the server scripts,
-arguments, switches, and the configuration file properties.
+The ${server.fullname} can be managed with command line scripts. 
+
+TODO: fill in with details from the wiki
+
+Usage - Windows
+---------------
+Usage - Linux
+-------------
+
+Usage: `neo4j COMMAND`
+
+Where COMMAND is one of:
+
+* console - start the server as an application
+  * runs as a foreground process
+  * all output to the console
+  * waits for the server to terminate
+  * stop the server using `CTRL-C`
+* start - start server as daemon
+  * runs as a background process
+  * output to logs in data/log
+* stop - stops a running daemon server
+* restart - restarts a running server
+* condrestart - restarts a server, but only if it was already running
+* status - current running state of the server
+  * if running, reveals process ID and process status
+* install - install as a system service
+  * attempts a platform appropriate install
+* remove - uninstalls the system service
+* dump - displays thread dump
+  * saves to the wrapper.log
+
+
+
+
+References
+----------
+
+* [${getting-started-server.url.title}](${getting-started-server.url})
+

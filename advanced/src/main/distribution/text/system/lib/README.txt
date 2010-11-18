@@ -1,5 +1,7 @@
-${server.fullname} system/lib Directory
+${server.fullname} System Libraries
 =======================================
 
-Runtime libraries required by the ${server.fullname}.
+Nobody really knows what these things are for, but if anything
+happens to them the server will be sad.
+
 
