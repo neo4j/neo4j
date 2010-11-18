@@ -35,27 +35,21 @@ rem Find the application home.
 rem %~dp0 is location of current script under NT
 set _REALPATH=%~dp0
 
-rem
-rem Decide on the specific Wrapper binary to use (See delta-pack)
-rem
-if "%PROCESSOR_ARCHITECTURE%"=="AMD64" goto amd64
-if "%PROCESSOR_ARCHITECTURE%"=="IA64" goto ia64
-set _WRAPPER_L_EXE=%_REALPATH%%_WRAPPER_BASE%-windows-x86-32.exe
-goto search
-:amd64
-set _WRAPPER_L_EXE=%_REALPATH%%_WRAPPER_BASE%-windows-x86-64.exe
-goto search
-:ia64
-set _WRAPPER_L_EXE=%_REALPATH%%_WRAPPER_BASE%-windows-ia-64.exe
-goto search
-:search
-set _WRAPPER_EXE=%_WRAPPER_L_EXE%
+rem Decide on the wrapper binary.
+rem Note: user is responsible for only keeping one
+rem wrapper in place.
+set _WRAPPER_EXE=%_REALPATH%%_WRAPPER_BASE%-windows-x86-32.exe
+if exist "%_WRAPPER_EXE%" goto conf
+set _WRAPPER_EXE=%_REALPATH%%_WRAPPER_BASE%-windows-x86-64.exe
 if exist "%_WRAPPER_EXE%" goto conf
 set _WRAPPER_EXE=%_REALPATH%%_WRAPPER_BASE%.exe
-if exist "%_WRAPPER_EXE%" goto validate
+if exist "%_WRAPPER_EXE%" goto conf
+set _WRAPPER_EXE=%_REALPATH%%_WRAPPER_BASE%-windows-ia-64.exe
+if exist "%_WRAPPER_EXE%" goto conf
 echo Unable to locate a Wrapper executable using any of the following names:
-echo %_WRAPPER_L_EXE%
-echo %_WRAPPER_EXE%
+echo %_REALPATH%%_WRAPPER_BASE%-windows-x86-32.exe
+echo %_REALPATH%%_WRAPPER_BASE%-windows-x86-64.exe
+echo %_REALPATH%%_WRAPPER_BASE%.exe
 pause
 goto :eof
 
