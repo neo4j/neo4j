@@ -1,4 +1,8 @@
-Neo4j
+Neo4j Server
+
+    * {{{./server-rest-api.html}Programming in Java against the Neo4j Server REST API}}
+
+Neo4j Embedded
 
     Neo4j examples contains code examples using the different components
     included in the Neo4j package.
