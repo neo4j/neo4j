@@ -8,6 +8,6 @@ However, if you're writing non-free (which usually means commercial) software
 and wish to use Neo4j, then you must buy a commercial license from Neo Technology
 (http://neotechnology.com).
 
-For legalese details, see LICENSE.txt.
+For legalese details, see LICENSE.txt, LICENSES.txt and NOTICE.txt.
 
 For more information, contact info@neotechnology.com.
