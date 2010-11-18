@@ -8,11 +8,11 @@ distributed with ${server.fullname}.
 * ${shell.shortname} - text-based client (expects server to already be running)
 
 For details about using these scripts, please see the related
-documentation in the `../docs` directory.
+documentation in the `../doc` directory.
 
 References
 ----------
 
-* [Neo4j Server usage](/doc/neo4j-server.txt)
-* [Neo4j Shell usage](/doc/neo4j-shell.txt)
+* [Neo4j Server Usage](/doc/neo4j-server.txt)
+* [Neo4j Shell Usage](/doc/neo4j-shell.txt)
 
