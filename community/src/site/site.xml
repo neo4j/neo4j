@@ -31,6 +31,7 @@
       <item name="Social network" href="social-network.html" />
       <item name="Graph algorithms" href="graphalgo.html" />
       <item name="Management features" href="management.html" />
+      <item name="Neo4j Server REST" href="server-rest-api.html" />
     </menu>
     <menu name="Test examples">
       <item name="Base test" href="base-test.html" />
