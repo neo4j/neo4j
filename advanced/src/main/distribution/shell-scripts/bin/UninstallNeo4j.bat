@@ -66,13 +66,13 @@ rem Find the wrapper.conf
 rem
 :conf
 set _WRAPPER_CONF="%~f1"
-if not %_WRAPPER_CONF%=="" goto startup
+if not %_WRAPPER_CONF%=="" goto stopit
 set _WRAPPER_CONF="%_WRAPPER_CONF_DEFAULT%"
 
 rem
 rem Start the Wrapper
 rem
-:startup
+:stopit
 "%_WRAPPER_EXE%" -r %_WRAPPER_CONF%
 if not errorlevel 1 goto :eof
 pause

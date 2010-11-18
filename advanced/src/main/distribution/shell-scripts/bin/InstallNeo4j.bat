@@ -74,6 +74,12 @@ rem Start the Wrapper
 rem
 :startup
 "%_WRAPPER_EXE%" -i %_WRAPPER_CONF%
+if not errorlevel 1 goto startservice
+pause
+goto :eof
+
+:startservice
+"%_WRAPPER_EXE%" -t %_WRAPPER_CONF%
 if not errorlevel 1 goto :eof
 pause
 
