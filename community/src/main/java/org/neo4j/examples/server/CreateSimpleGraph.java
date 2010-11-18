@@ -43,29 +43,41 @@ public class CreateSimpleGraph {
         addProperty(firstNode, "band", "The Clash");
         // END SNIPPET: nodesAndProps    
         
+        // START SNIPPET: addRel
         URI relationshipUri = addRelationship(firstNode, secondNode, "singer", "{ \"from\" : \"1976\", \"until\" : \"1986\" }");
-        addMetadataToProperty(relationshipUri, "stars", "5");
+        // END SNIPPET: addRel        
         
+        // START SNIPPET: addMetaToRel
+        addMetadataToProperty(relationshipUri, "stars", "5");
+        // END SNIPPET: addMetaToRel
+        
+        // START SNIPPET: queryForSingers
         findSingersInBands(firstNode);
+        // END SNIPPET: queryForSingers
     }
 
     private static void findSingersInBands(URI startNode) throws URISyntaxException {
-        // TraversalDescription can be turned into JSON to send to the Server
+        // START SNIPPET: traversalDesc
+        // TraversalDescription turns into JSON to send to the Server
         TraversalDescription t = new TraversalDescription();
         t.setOrder(TraversalDescription.DEPTH_FIRST);
         t.setUniqueness(TraversalDescription.NODE);
         t.setMaxDepth(10);
         t.setReturnFilter(TraversalDescription.ALL);
         t.setRelationships(new Relationship("singer", Relationship.OUT));
+        // END SNIPPET: traversalDesc
         
+        // START SNIPPET: traverse
         URI traverserUri = new URI(startNode.toString() + "/traverse/node");
         WebResource resource = Client.create().resource(traverserUri); 
         String jsonTraverserPayload = t.toJson();
         ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(jsonTraverserPayload).post(ClientResponse.class);
         
         System.out.println(String.format("POST [%s] to [%s], status code [%d], returned data: " + System.getProperty("line.separator") + "%s", jsonTraverserPayload, traverserUri, response.getStatus(), response.getEntity(String.class)));
+        // END SNIPPET: traverse
     }
 
+    // START SNIPPET: insideAddMetaToProp
     private static void addMetadataToProperty(URI relationshipUri, String name, String value) throws URISyntaxException {
         URI propertyUri = new URI(relationshipUri.toString() + "/properties");
         WebResource resource = Client.create().resource(propertyUri); 
@@ -75,6 +87,7 @@ public class CreateSimpleGraph {
         
         System.out.println(String.format("PUT [%s] to [%s], status code [%d]", entity, propertyUri, response.getStatus()));
     }
+    // END SNIPPET: insideAddMetaToProp
 
     private static String toJsonNameValuePairCollection(String name, String value) {
         return String.format("{ \"%s\" : \"%s\" }", name, value);
@@ -93,6 +106,7 @@ public class CreateSimpleGraph {
         // END SNIPPET: createNode
     }
 
+    // START SNIPPET: insideAddRel
     private static URI addRelationship(URI startNode, URI endNode, String relationshipType, String jsonAttributes) throws URISyntaxException {
         URI fromUri = new URI(startNode.toString() + "/relationships");
         String relationshipJson = generateJsonRelationship(endNode, relationshipType, jsonAttributes);
@@ -104,6 +118,7 @@ public class CreateSimpleGraph {
         
         return response.getLocation();
     }
+    // END SNIPPET: insideAddRel
 
     private static String generateJsonRelationship(URI endNode, String relationshipType, String ... jsonAttributes) {
         StringBuilder sb = new StringBuilder();
