@@ -1,0 +1,7 @@
+${shell.fullname} Usage
+=======================
+
+
+TODO: write a man page-ish description of how to use the
+neo4j-shell script, including any command line switches, etc.
+

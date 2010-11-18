@@ -10,6 +10,8 @@ ${server.fullname} configuration files.
 References
 ----------
 
-* [Log4J Manual](http://logging.apache.org/log4j/1.2/manual.html)
+* [Neo4j Server Usage](/doc/neo4j-server.txt)
+* [Log4J Manual](${log4j-home.url})
+* [Java Service Wrapper](${wrapper-home.url})
 
 

@@ -10,7 +10,7 @@ In the box
 ----------
 
 ${server.fullname} runs as a server application, exposing a Web-based management
-interface and RESTful endpoints for data access, along with logging and JMX
+interface and RESTful endpoints for data access, along with logging and JMX.
 
 Here in the installation directory, you'll find:
 
@@ -31,21 +31,34 @@ look at the web interface...
 
 1. open a console and navigate to the install directory
 2. start the server
-  * Windows: use `bin/Neo4j.bat`
-  * Linux: use `bin/neo4j start`
+   * Windows: use `bin/Neo4j.bat`
+   * Linux: use `bin/neo4j start`
 3. in a browser, open [webadmin](http://localhost:${org.neo4j.webserver.port}/webadmin/)
-4. from any REST client or browser, open (http://localhost:${org.neo4j.webserver.port}/db/data) in order to get a REST starting point, e.g.
+4. from any REST client or browser, open (http://localhost:${org.neo4j.webserver.port}/db/data) 
+   in order to get a REST starting point, e.g.
    `curl -v http://localhost:${org.neo4j.webserver.port}/db/data`
 5. shutdown the server
-  * Windows: type Ctrl-C to terminate the batch script
-  * Linux: use `bin/neo4j stop`
+   * Windows: type Ctrl-C to terminate the batch script
+   * Linux: use `bin/neo4j stop`
 
 Learn more
 ----------
 
-There is a humble user guide available in the doc directory.
-Just open the [index.html](doc/index.html) in a browser 
+There is a humble user guide available in the `doc` directory, a collection of 
+short operational and informational articles. 
 
+Out on the internets, you'll find:
+
+* [Neo4j Project Home](${neo4j-home.url})
+* [Neo4j Getting Started](${getting-started.url)
+* [Neo4j Wiki]($neo4j-wiki.url})
+* [Neo4j Components](${neo4j-components.url})
+
+For more links, a handy [guide post](doc/guide-post.html) in the `doc` 
+directory will point you in the right direction.
+
+The `examples` directory has working code for programming with Neo4j and
+interacting with the server through REST.
 
 
 
