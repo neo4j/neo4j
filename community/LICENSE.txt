@@ -1,3 +1,9 @@
+NOTICE
+This package contains software licensed under different
+licenses, please refer to the NOTICE.txt file for further
+information and LICENSES.txt for full license texts.
+
+
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 
