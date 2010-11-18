@@ -20,44 +20,98 @@
 
 package org.neo4j.kernel.impl.osgi;
 
-import org.neo4j.helpers.ExtensionLoader;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleListener;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
-import java.util.Vector;
-
 /**
- * An OSGi-friendly ExtensionLoader, the OSGiExtensionLoader
- * uses normal OSGi service discovery to find published services.
+ * An OSGi-friendly extension loader, the OSGiExtensionLoader uses normal OSGi
+ * service discovery to find published services.
+ *
+ * For Bundles that aren't OSGi-prepared Bundles (but rather plain old jar
+ * files) this extension loader will read the <code>META-INF/services</code>
+ * specifications and publish those services through the OSGi service discovery.
  */
-public class OSGiExtensionLoader implements ExtensionLoader {
+public class OSGiExtensionLoader implements BundleListener
+{
+    private final BundleContext bc;
+    @SuppressWarnings( "unchecked" )
+    private final ConcurrentMap<Long, BundleServiceProvider> providers = new ConcurrentHashMap();
 
-    private BundleContext bc;
-
-    public OSGiExtensionLoader(BundleContext bc) {
+    OSGiExtensionLoader( BundleContext bc )
+    {
         this.bc = bc;
     }
 
-    public <T> Iterable<T> loadExtensionsOfType(Class<T> type) {
-        try {
-            System.out.println("Kernel: attempting to load extensions of type " + type.getName());
-            ServiceReference[] services = bc.getServiceReferences(type.getName(), null);
-            if (services != null) {
-                Vector<T> serviceCollection = new Vector<T>();
-                for (ServiceReference sr : services) {
-                   serviceCollection.add((T)bc.getService(sr));
+    public <T> Iterable<T> loadExtensionsOfType( Class<T> type )
+    {
+        try
+        {
+            System.out.println( "Kernel: attempting to load extensions of type " + type.getName() );
+            ServiceReference[] services = bc.getServiceReferences( type.getName(), null );
+            if ( services != null )
+            {
+                Collection<T> serviceCollection = new LinkedList<T>();
+                for ( ServiceReference sr : services )
+                {
+                    @SuppressWarnings( "unchecked" ) T service = (T) bc.getService( sr );
+                    serviceCollection.add( service );
                 }
                 return serviceCollection;
-            } else {
+            }
+            else
+            {
                 return null;
             }
-        } catch (InvalidSyntaxException e) {
-            System.out.println("Failed to load extensions of type: " + type);
+        }
+        catch ( InvalidSyntaxException e )
+        {
+            System.out.println( "Failed to load extensions of type: " + type );
             e.printStackTrace();
         }
 
         return null;
     }
 
+    public void bundleChanged( BundleEvent event )
+    {
+        switch ( event.getType() )
+        {
+        case BundleEvent.STARTING:
+        case BundleEvent.STARTED:
+            started( event.getBundle() );
+            break;
+        case BundleEvent.STOPPING:
+            stopping( event.getBundle() );
+            break;
+        }
+    }
+
+    void started( Bundle bundle )
+    {
+        providers.putIfAbsent( bundle.getBundleId(), new BundleServiceProvider( bundle ) );
+    }
+
+    void stopping( Bundle bundle )
+    {
+        providers.remove( bundle.getBundleId() );
+    }
+
+    private class BundleServiceProvider
+    {
+        private final Bundle bundle;
+
+        BundleServiceProvider( Bundle bundle )
+        {
+            this.bundle = bundle;
+        }
+    }
 }

@@ -30,12 +30,11 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -125,8 +124,6 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
  */
 public abstract class Service
 {
-    public static ExtensionLoader osgiExtensionLoader;
-
     /**
      * Designates that a class implements the specified service and should be
      * added to the services listings file (META-INF/services/[service-name]).
@@ -281,22 +278,60 @@ public abstract class Service
         };
     }
 
+    private static volatile OSGiLoader osgiLoader;
+
     private static <T> Iterable<T> osgiLoader( Class<T> type )
     {
-        if (osgiExtensionLoader != null)
+        OSGiLoader loader = osgiLoader;
+        if ( loader == null )
         {
-            return osgiExtensionLoader.loadExtensionsOfType(type);
+            osgiLoader = loader = OSGiLoader.instance();
         }
-        return null;
+        return loader.load( type );
+    }
+
+    static class OSGiLoader
+    {
+        private static OSGiLoader instance;
+
+        synchronized static OSGiLoader instance()
+        {
+            if ( instance == null )
+            {
+                try
+                {
+                    @SuppressWarnings( "unchecked" ) Class<? extends OSGiLoader> loaderClass =
+                        (Class<? extends OSGiLoader>) Class.forName( "org.neo4j.helpers.OSGiServiceLoader" );
+                    instance = loaderClass.newInstance();
+                }
+                catch ( LinkageError err )
+                {
+                }
+                catch ( Exception ex )
+                {
+                }
+                if ( instance == null )
+                {
+                    instance = new OSGiLoader();
+                }
+            }
+            return instance;
+        }
+
+        <T> Iterable<T> load( @SuppressWarnings( "unused" ) Class<T> type )
+        {
+            return null;
+        }
     }
 
     private static <T> Iterable<T> java6Loader( Class<T> type )
     {
         try
         {
-            @SuppressWarnings( "unchecked" ) Iterable<T> result = (Iterable<T>) Class.forName(
-                    "java.util.ServiceLoader" ).getMethod( "load", Class.class ).invoke(
-                    null, type );
+            @SuppressWarnings( "unchecked" ) Iterable<T> result = (Iterable<T>)
+                    Class.forName( "java.util.ServiceLoader" )
+                    .getMethod( "load", Class.class )
+                    .invoke( null, type );
             return filterExceptions( result );
         }
         catch ( Exception e )
@@ -314,8 +349,7 @@ public abstract class Service
         final Method providers;
         try
         {
-            providers = Class.forName( "sun.misc.Service" ).getMethod(
-                    "providers", Class.class );
+            providers = Class.forName( "sun.misc.Service" ).getMethod( "providers", Class.class );
         }
         catch ( Exception e )
         {
@@ -331,8 +365,8 @@ public abstract class Service
             {
                 try
                 {
-                    @SuppressWarnings( "unchecked" ) Iterator<T> result = (Iterator<T>) providers.invoke(
-                            null, type );
+                    @SuppressWarnings( "unchecked" ) Iterator<T> result =
+                        (Iterator<T>) providers.invoke( null, type );
                     return result;
                 }
                 catch ( Exception e )
@@ -347,11 +381,11 @@ public abstract class Service
 
     private static <T> Iterable<T> ourOwnLoader( final Class<T> type )
     {
-        List<URL> urls = new LinkedList<URL>();
+        Collection<URL> urls = new HashSet<URL>();
         try
         {
-            Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(
-                    "META-INF/services/" + type.getName() );
+            Enumeration<URL> resources = Thread.currentThread().getContextClassLoader()
+                    .getResources( "META-INF/services/" + type.getName() );
             while ( resources.hasMoreElements() )
             {
                 urls.add( resources.nextElement() );
@@ -362,8 +396,7 @@ public abstract class Service
             return null;
         }
         return new NestingIterable<T, BufferedReader>(
-                FilteringIterable.notNull( new IterableWrapper<BufferedReader, URL>(
-                        urls )
+                FilteringIterable.notNull( new IterableWrapper<BufferedReader, URL>( urls )
                 {
                     @Override
                     protected BufferedReader underlyingObjectToObject( URL url )
@@ -403,12 +436,23 @@ public abstract class Service
                                 {
                                 }
                             }
+                            input.close();
                             return null;
                         }
                         catch ( IOException e )
                         {
                             return null;
                         }
+                    }
+
+                    /* Finalizer - close the input stream.
+                     * Prevent leakage of open files. Finalizers impact GC performance,
+                     * but there are expected to be few of these objects.
+                     */
+                    @Override
+                    protected void finalize() throws Throwable
+                    {
+                        input.close();
                     }
                 };
             }

@@ -20,16 +20,20 @@
 
 package org.neo4j.kernel.impl.osgi;
 
-import org.neo4j.helpers.Service;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
 /**
- * OSGi bundle activator to start an OSGi servicewatcher for kernel extensions.
- * 
+ * This class is responsible for bootstrapping the Neo4j kernel as an OSGi
+ * component. The main responsibility is to bootstrap the
+ * {@link OSGiExtensionLoader}.
+ *
+ * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
+ * @author Andreas Kollegger <andreas.kollegger@neotechnology.com>
  */
 public final class OSGiActivator implements BundleActivator
 {
+    public static volatile OSGiExtensionLoader osgiExtensionLoader;
 
     /**
      * Called whenever the OSGi framework starts our bundle
@@ -37,7 +41,19 @@ public final class OSGiActivator implements BundleActivator
     public void start( BundleContext bc ) throws Exception
     {
         // start the extension listener
-        Service.osgiExtensionLoader = new OSGiExtensionLoader( bc );
+        OSGiExtensionLoader loader = new OSGiExtensionLoader( bc );
+        /* // TODO: enable this when OSGiExtensionLoader is implemented
+         * // to support adding OSGi services from META-INF/services
+        bc.addBundleListener( loader );
+        for ( Bundle bundle : bc.getBundles() )
+        {
+            if ( bundle.getState() == Bundle.ACTIVE )
+            {
+                loader.started( bundle );
+            }
+        }
+        osgiExtensionLoader = loader;
+        */
     }
 
     /**
@@ -45,8 +61,7 @@ public final class OSGiActivator implements BundleActivator
      */
     public void stop( BundleContext bc ) throws Exception
     {
-        // no need to unregister our service - the OSGi framework handles it for
-        // us
+        bc.removeBundleListener( osgiExtensionLoader );
+        osgiExtensionLoader = null;
     }
-
 }
