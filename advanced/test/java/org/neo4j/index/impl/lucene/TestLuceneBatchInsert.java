@@ -210,7 +210,7 @@ public class TestLuceneBatchInsert
     }
 
     @Test
-    public void testRelationshipBatchInserterIndex()
+    public void testCanIndexRelatoinships()
     {
         BatchInserter inserter = new BatchInserterImpl( PATH );
         BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
