@@ -6,7 +6,7 @@ Neo4j Server REST API
     code should continue to run.   
     
     There's also information on the server
-    {{{http://wiki.neo4j.org/content/Getting_Started_with_Neo4j_Server} on the wiki}}.
+    {{{http://wiki.neo4j.org/content/Getting_Started_With_Neo4j_Server} on the wiki}}.
     
 Creating a graph through the REST API from Java
 
