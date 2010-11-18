@@ -26,15 +26,7 @@
   </scm>
 
   <properties>
-    <!-- User readable names -->
-    <server.fullname>Neo4j</server.fullname>
-    <server.shortname>neo4j</server.shortname>
-    <shell.fullname>Neo4j Shell</shell.fullname>
-    <shell.shortname>neo4j-shell</shell.shortname>
-    <libs.fullname>Neo4j Libraries</libs.fullname>
-    <libs.shortname>neo4j-libs</libs.shortname>
-    <webadmin.fullname>Neo4j Web Administartion</webadmin.fullname>
-    <webadmin.shortname>Webadmin</webadmin.shortname>
+    <!-- Document substituion properties are in document.properties file -->
 
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
@@ -72,6 +64,24 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <version>1.0-alpha-2</version>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <goals>
+              <goal>read-project-properties</goal>
+            </goals>
+            <configuration>
+              <files>
+                <file>document.properties</file>
+              </files>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
