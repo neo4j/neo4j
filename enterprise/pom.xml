@@ -78,6 +78,7 @@
             <configuration>
               <files>
                 <file>document.properties</file>
+                <file>permalinks.properties</file>
               </files>
             </configuration>
           </execution>

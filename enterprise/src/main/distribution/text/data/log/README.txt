@@ -1,9 +1,11 @@
-${server.fullname} data/log Directory
+${server.fullname} Logs
 =======================================
 
-This directory contains server logs. 
+Server logs, including:
 
-References
-----------
+* neo4j.log - graph database logging
+* wrapper.log - logging for the service wrapper
+ 
+
 
 
