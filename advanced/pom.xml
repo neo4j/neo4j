@@ -36,7 +36,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-udc</artifactId>
-      <version>0.1-SNAPSHOT</version>
+      <version>0.1-1.2.M04</version>
       <classifier>neo4j</classifier>
     </dependency>
     <dependency>
