@@ -40,7 +40,7 @@ Creating a node
 	The REST API uses POST to create nodes. Encapsulating that in Java is straightforward using the Jersey
 	client:
 	
- %{source-code|snippet=createNode|file=src/main/java/org/neo4j/examples/server/CreateSimpleGraph.java}
+%{source-code|snippet=createNode|file=src/main/java/org/neo4j/examples/server/CreateSimpleGraph.java}
     
     If the call completes successfully, under the covers it will have sent a HTTP request containing a JSON
     payload to the server. The server will then have created a new node in the database and responded with a
