@@ -61,7 +61,9 @@ public class Database
             String databaseStoreDirectory )
     {
         log.info( "Creating database at " + databaseStoreDirectory );
-        return new EmbeddedGraphDatabase( databaseStoreDirectory );
+        Map<String, String> databaseConfiguration = new HashMap<String, String>();
+        databaseConfiguration.put( "enable_remote_shell", "true" );
+        return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseConfiguration );
     }
 
     private synchronized void ensureIndexServiceIsAvailable() throws DatabaseBlockedException
