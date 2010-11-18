@@ -26,6 +26,7 @@
   </scm>
 
   <properties>
+    <short-name>neo4j-standalone</short-name>
     <!-- Document substituion properties are in document.properties file -->
 
     <!-- other filter properties -->
