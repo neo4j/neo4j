@@ -22,8 +22,12 @@ package org.neo4j.server.database;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -68,5 +72,13 @@ public class DatabaseTest {
     @Test(expected = TransactionFailureException.class)
     public void shouldComplainIfDatabaseLocationIsAlreadyInUse() {
         new Database(theDatabase.getLocation());
+    }
+
+    @Test
+    public void shouldEnabledRemoteShellByDefault() throws IOException
+    {
+        int wellKnownSocket = 1337;
+        Socket rmiSocketToServer = new Socket("localhost", wellKnownSocket );
+        assertTrue(rmiSocketToServer.isBound());
     }
 }
