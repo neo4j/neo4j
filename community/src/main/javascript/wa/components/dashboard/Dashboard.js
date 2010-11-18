@@ -102,7 +102,8 @@ wa.components.dashboard.Dashboard = (function($) {
         if( server ) {
         	me.loadMonitors(server);
         	$("#mor_monitor_lifecycle").empty();
-        	$("#mor_monitor_lifecycle").append( wa.widgets.LifecycleWidget(server).render() );
+        	//Disable for now
+        	//$("#mor_monitor_lifecycle").append( wa.widgets.LifecycleWidget(server).render() );
         }
         
     };
