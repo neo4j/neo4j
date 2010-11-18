@@ -12,7 +12,7 @@
   <version>0.1-SNAPSHOT</version>
   <name>Neo4j Server</name>
   <description>Standalone Neo4j server application.</description>
-  <url>http://components.neo4j.org/${project.artifactId}/</url>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
     <bundle.namespace>org.neo4j.server</bundle.namespace>
@@ -607,5 +607,12 @@
       </roles>
     </developer>
   </developers>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
 
 </project>
