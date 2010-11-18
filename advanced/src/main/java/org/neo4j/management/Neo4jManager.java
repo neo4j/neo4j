@@ -103,7 +103,7 @@ public final class Neo4jManager extends KernelProxy implements Kernel
 
     public Neo4jManager( Kernel kernel )
     {
-        this( getServer( kernel ), kernel );
+        this( getServer( kernel ), actual( kernel ) );
     }
 
     private static MBeanServerConnection getServer( Kernel kernel )
@@ -114,10 +114,18 @@ public final class Neo4jManager extends KernelProxy implements Kernel
             if ( handler instanceof MBeanServerInvocationHandler )
             {
                 return ( (MBeanServerInvocationHandler) handler ).getMBeanServerConnection();
-
             }
         }
+        else if ( kernel instanceof Neo4jManager )
+        {
+            return ( (Neo4jManager) kernel ).server;
+        }
         throw new UnsupportedOperationException( "Cannot get server for kernel: " + kernel );
+    }
+
+    private static Kernel actual( Kernel kernel )
+    {
+        return kernel instanceof Neo4jManager ? ( (Neo4jManager) kernel ).kernel : kernel;
     }
 
     private Neo4jManager( MBeanServerConnection server, Kernel kernel )
@@ -202,6 +210,12 @@ public final class Neo4jManager extends KernelProxy implements Kernel
 
         }
         return configuration;
+    }
+
+    @Override
+    public <T> T getBean( Class<T> beanInterface )
+    {
+        return super.getBean( beanInterface );
     }
 
     public Date getKernelStartTime()
