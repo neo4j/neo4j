@@ -78,6 +78,8 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
                     relId = new RelationshipId( relationship.getId(), relationship.getStartNode(), relationship.getEndNode() );
                 } else if (entityId instanceof RelationshipId ) {
                     relId = (RelationshipId) entityId;
+                } else {
+                    new IllegalArgumentException( "Ids of type "  + entityId.getClass() + " are not supported.");
                 }
                 Document doc = IndexType.newBaseDocument( relId.id );                    
                 doc.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + relId.startNode,
