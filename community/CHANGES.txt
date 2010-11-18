@@ -1,3 +1,10 @@
+1.2.M04 (2010-11-18)
+--------------------
+o added example to via REST connect to neo4j server from Java
+o added more configuration options to neo4j-lucene-index
+o generating javadocs for all components automatically to components.neo4j.org/{component-name}
+o Added ImpermanentGraphDatabase to aid in testing
+
 1.2.M03 (2010-11-04)
 --------------------
 - New components
