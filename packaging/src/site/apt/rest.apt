@@ -101,13 +101,13 @@ curl -H Accept:application/json http://localhost:7474/db/data/node/123
   "data": { "name": "Thomas Anderson",
             "age": 29
   },
-  "create relationship": "http://localhost:7474/db/data/node/123/relationships",
-  "all relationships": "http://localhost:7474/db/data/node/123/relationships/all",
-  "all typed relationships": "http://localhost:7474/db/data/node/123/relationships/all/{-list|&|types}",
-  "incoming relationships": "http://localhost:7474/db/data/node/123/relationships/in",
-  "incoming typed relationships": "http://localhost:7474/db/data/node/123/relationships/in/{-list|&|types}",
-  "outgoing relationships": "http://localhost:7474/db/data/node/123/relationships/out",
-  "outgoing typed relationships": "http://localhost:7474/db/data/node/123/relationships/out/{-list|&|types}",
+  "create_relationship": "http://localhost:7474/db/data/node/123/relationships",
+  "all_relationships": "http://localhost:7474/db/data/node/123/relationships/all",
+  "all_typed relationships": "http://localhost:7474/db/data/node/123/relationships/all/{-list|&|types}",
+  "incoming_relationships": "http://localhost:7474/db/data/node/123/relationships/in",
+  "incoming_typed relationships": "http://localhost:7474/db/data/node/123/relationships/in/{-list|&|types}",
+  "outgoing_relationships": "http://localhost:7474/db/data/node/123/relationships/out",
+  "outgoing_typed relationships": "http://localhost:7474/db/data/node/123/relationships/out/{-list|&|types}",
   "properties": "http://localhost:7474/db/data/node/123/properties",
   "property": "http://localhost:7474/db/data/node/123/property/{key}",
   "traverse": "http://localhost:7474/db/data/node/123/traverse/{returnType}"
@@ -258,7 +258,7 @@ curl -X DELETE http://localhost:7474/db/data/node/123
 
 *** 409: Node could not be deleted (still has relationships?)
 
-* {Create relationship}
+* {}
 
 ** POST /node/123/relationships
 
