@@ -1,4 +1,4 @@
-${server.fullname} doc/java 
+${server.fullname} Java Documentation
 =======================================
 
 Java language documentation for Neo4j.
@@ -10,4 +10,5 @@ Java language documentation for Neo4j.
 References
 ----------
 
-* [Getting Started with Neo4j](http://wiki.neo4j.org/content/Getting_Started_Guide)
+* [${getting-started.url.title}](${getting-started.url})
+* [${getting-started-java.url.title}](${getting-started-java.url})
