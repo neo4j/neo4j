@@ -47,14 +47,14 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.2-SNAPSHOT</version>
+      <version>1.2.M04</version>
       <type>pom</type>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.2-SNAPSHOT</version>
+      <version>1.2-1.2.M04</version>
       <classifier>tests</classifier>
     </dependency>
 
