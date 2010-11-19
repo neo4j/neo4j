@@ -1,6 +1,6 @@
 Neo4j Distribution
 ==================
-
+ 
 This package provides an easy-to-get-going distribution of the Neo4j graph
 database, with a collection of essential components and helpful examples. 
 These components are the core of any application needing to model, persist
