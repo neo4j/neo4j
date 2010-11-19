@@ -15,6 +15,6 @@ Follow these steps:
 3. Remove `$NEO4J_HOME\bin\wrapper-windows-x86-32.exe`
 4. Remove `$NEO4J_HOME\bin\lib\wrapper-windows-x86-32.dll`
 4. Copy `$WRAPPER_HOME\bin\wrapper.exe` to `$NEO4J_HOME\bin\`
-5. Copy `$WRAPPER_HOME\lib\wrapper.dll` to `$NEO4J_HOME\bin\lin\`
+5. Copy `$WRAPPER_HOME\lib\wrapper.dll` to `$NEO4J_HOME\bin\lib\`
 
 That's it. 
