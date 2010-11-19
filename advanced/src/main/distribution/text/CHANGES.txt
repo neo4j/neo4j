@@ -1,13 +1,16 @@
+1.2.M04 (2010-11-18)
+--------------------
+
+o added a server packaging as part of neo4j
+o added more configuration options to neo4j-lucene-index
+o generating javadocs for all components automatically to components.neo4j.org/{component-name}
+o Added ImpermanentGraphDatabase to aid in testing
+
 1.2.M03 (2010-11-04)
 --------------------
-- New components
-o Neo4j Management, making the use of JMX and other
-  management features easier
-o REST core API component, defining a basic data API
-  to a Neo4j graph and used in the Neo4j server.
-  
-- Important changes
-o Neo4j Examples licensed under Apache license version 2
+
+o Monitoring/management over JMX was moved to the new neo4j-management component.
+o Added ability to get the name and configuration of existing integrated indexes.
 
 1.2.M02 (2010-10-21)
 --------------------
