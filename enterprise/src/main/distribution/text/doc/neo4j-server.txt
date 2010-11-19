@@ -7,6 +7,22 @@ TODO: fill in with details from the wiki
 
 Usage - Windows
 ---------------
+
+### Neo4j
+
+Double-clicking on the Neo4j.bat script will start the server in a console.
+To quit, just press `control-C` in the console window.
+
+### InstallNeo4j/UninstallNeo4j
+
+Neo4j can be installed as a Windows Service, running without a console
+window. Just use either of these bat scripts:
+
+* InstallNeo4j - install as a Windows service
+  * will install and automatically start the service 
+  * use the normal windows administrative controls for start/stop
+* UninstallNeo4j - remove the Neo4j service
+
 Usage - Linux
 -------------
 
