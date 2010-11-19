@@ -81,4 +81,8 @@ public interface TraversalBranch
      * @return the number of relationships this expansion source has expanded.
      */
     int expanded();
+    
+    Evaluation evaluation();
+    
+    void initialize();
 }

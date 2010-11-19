@@ -30,9 +30,9 @@ import java.util.Set;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
@@ -268,8 +268,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     private void canPruneTraversalAtSpecificDepth( TraversalDescription description )
     {
         Traverser traverser = description.uniqueness(
-                Uniqueness.NONE ).prune( Traversal.pruneAfterDepth( 1 ) ).traverse(
-                referenceNode() );
+                Uniqueness.NONE ).evaluator( Evaluators.toDepth( 1 ) ).traverse( referenceNode() );
 
         expectNodes( traverser, "1", "2", "3", "4", "5" );
     }
@@ -289,14 +288,7 @@ public class DepthPitfallGraphTest extends AbstractTestBase
     private void canPreFilterNodes( TraversalDescription description )
     {
         Traverser traverser = description.uniqueness(
-                Uniqueness.NONE ).prune( Traversal.pruneAfterDepth( 2 ) ).filter(
-                new Predicate<Path>()
-                {
-                    public boolean accept( Path position )
-                    {
-                        return position.length() == 2;
-                    }
-                } ).traverse( referenceNode() );
+                Uniqueness.NONE ).evaluator( Evaluators.atDepth( 2 ) ).traverse( referenceNode() );
 
         expectPaths( traverser, "1,2,6", "1,3,5", "1,4,5", "1,5,3", "1,5,4",
                 "1,5,6" );

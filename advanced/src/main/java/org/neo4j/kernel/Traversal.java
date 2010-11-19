@@ -31,6 +31,8 @@ import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -262,6 +264,8 @@ public class Traversal
      * @param depth the depth to prune beyond (after).
      * @return a {@link PruneEvaluator} which prunes everything after
      * {@code depth}.
+     * @deprecated because of the introduction of {@link Evaluator}. The equivalent
+     * is {@link Evaluators#toDepth(int)}.
      */
     public static PruneEvaluator pruneAfterDepth( final int depth )
     {
@@ -278,6 +282,8 @@ public class Traversal
      * A traversal return filter which returns all {@link Path}s it encounters.
      *
      * @return a return filter which returns everything.
+     * @deprecated because of the introduction of {@link Evaluator}. The equivalent
+     * is {@link Evaluators#all()}.
      */
     public static Predicate<Path> returnAll()
     {
@@ -288,8 +294,8 @@ public class Traversal
      * Returns a filter which accepts items accepted by at least one of the
      * supplied filters.
      *
-     * @param filters
-     * @return
+     * @param filters to group together.
+     * @return a {@link Predicate} which accepts if any of the filters accepts.
      */
     public static Predicate<Path> returnAcceptedByAny( final Predicate<Path>... filters )
     {
@@ -314,6 +320,8 @@ public class Traversal
      * position of the start node.
      *
      * @return a return filter which returns everything except the start node.
+     * @deprecated because of the introduction of {@link Evaluator}. The equivalent
+     * is {@link Evaluators#excludeStartPosition()}.
      */
     public static Predicate<Path> returnAllButStartNode()
     {
