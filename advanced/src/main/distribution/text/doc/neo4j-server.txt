@@ -16,7 +16,8 @@ To quit, just press `control-C` in the console window.
 ### InstallNeo4j/UninstallNeo4j
 
 Neo4j can be installed as a Windows Service, running without a console
-window. Just use either of these bat scripts:
+window. You'll need to run the scripts with Administrator priveleges.
+Just use either of these bat scripts:
 
 * InstallNeo4j - install as a Windows service
   * will install and automatically start the service 
