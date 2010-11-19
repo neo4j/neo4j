@@ -30,7 +30,7 @@ look at the web interface...
 
 1. open a console and navigate to the install directory
 2. start the server
-   * Windows: use `bin/Neo4j.bat`
+   * Windows: use `bin\Neo4j.bat`
    * Linux/Mac: use `bin/neo4j start`
 3. in a browser, open [webadmin](http://localhost:${org.neo4j.webserver.port}/webadmin/)
 4. from any REST client or browser, open (http://localhost:${org.neo4j.webserver.port}/db/data) 
@@ -45,7 +45,7 @@ look at the web interface...
 The server wrapper does not support 64-bit Java under Windows. You'll have to 
 use 32-bit Java, otherwise you'd require a commercial license for the Windows 
 Java Service Wrapper. A trial version of the wrapper is available from Tanuki 
-Software. See `doc/windows-64bit.txt` for instructions.
+Software. See `doc\windows-64bit.txt` for instructions.
 
 Learn more
 ----------
