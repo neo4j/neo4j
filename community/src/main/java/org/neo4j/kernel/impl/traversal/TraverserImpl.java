@@ -107,17 +107,6 @@ class TraverserImpl implements Traverser
             return this.uniquness.check( source, true );
         }
 
-        boolean shouldExpandBeyond( TraversalBranch source )
-        {
-            return this.uniquness.check( source, false ) &&
-                    !description.pruning.pruneAfter( source.position() );
-        }
-
-        boolean okToReturn( TraversalBranch source )
-        {
-            return description.filter.accept( source.position() );
-        }
-
         @Override
         protected Path fetchNextOrNull()
         {
@@ -127,14 +116,13 @@ class TraverserImpl implements Traverser
                 result = sourceSelector.next();
                 if ( result == null )
                 {
-                    break;
+                    return null;
                 }
-                if ( okToReturn( result ) )
+                if ( result.evaluation().includes() )
                 {
-                    break;
+                    return result.position();
                 }
             }
-            return result != null ? result.position() : null;
         }
     }
 }

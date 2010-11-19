@@ -30,7 +30,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.traversal.PruneEvaluator;
+import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
@@ -51,15 +53,17 @@ public class TestMultiPruneEvaluators extends AbstractTestBase
     @Test
     public void testMaxDepthAndCustomPruneEvaluatorCombined()
     {
-        TraversalDescription description = Traversal.description().filter( Traversal.returnAll() )
-                .prune( Traversal.pruneAfterDepth( 1 ) ).prune( new PruneEvaluator()
-                {
-                    public boolean pruneAfter( Path position )
-                    {
-                        return IteratorUtil.count( position.endNode().getRelationships(
-                                Direction.OUTGOING ).iterator() ) < 3;
-                    }
-                } );
+        Evaluator lessThanThreeRels = new Evaluator()
+        {
+            public Evaluation evaluate( Path path )
+            {
+                return IteratorUtil.count( path.endNode().getRelationships( Direction.OUTGOING ).iterator() ) < 3 ?
+                        Evaluation.INCLUDE_AND_PRUNE : Evaluation.INCLUDE_AND_CONTINUE;
+            }
+        };
+        
+        TraversalDescription description = Traversal.description().evaluator( Evaluators.all() )
+                .evaluator( Evaluators.toDepth( 1 ) ).evaluator( lessThanThreeRels );
         Set<String> expectedNodes = new HashSet<String>(
                 Arrays.asList( "a", "b", "c", "d", "e" ) );
         for ( Path position : description.traverse( referenceNode() ) )

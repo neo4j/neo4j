@@ -23,6 +23,7 @@ package org.neo4j.kernel.impl.traversal;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
 public final class FinalTraversalBranch implements TraversalBranch
@@ -78,5 +79,14 @@ public final class FinalTraversalBranch implements TraversalBranch
     public int expanded()
     {
         return 0;
+    }
+
+    public Evaluation evaluation()
+    {
+        return null;
+    }
+    
+    public void initialize()
+    {
     }
 }

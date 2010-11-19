@@ -279,6 +279,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
             // c) get the first node it returns
             startNode = toTheMiddleTraverser.iterator().next();
+            assertEquals( "2", startNode.getProperty( "node.test.id" ) );
         }
         catch ( Exception e )
         {
