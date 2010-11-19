@@ -27,6 +27,9 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
+import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.PruneEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
@@ -41,27 +44,23 @@ public final class TraversalDescriptionImpl implements TraversalDescription
     public TraversalDescriptionImpl()
     {
         this( StandardExpander.DEFAULT, Uniqueness.NODE_GLOBAL, null,
-                PruneEvaluator.NONE, Traversal.returnAll(),
-                Traversal.preorderDepthFirst() );
+                Evaluators.all(), Traversal.preorderDepthFirst() );
     }
 
     final Expander expander;
     final UniquenessFactory uniqueness;
     final Object uniquenessParameter;
-    final PruneEvaluator pruning;
-    final Predicate<Path> filter;
+    final Evaluator evaluator;
     final BranchOrderingPolicy branchSelector;
 
     private TraversalDescriptionImpl( Expander expander,
             UniquenessFactory uniqueness, Object uniquenessParameter,
-            PruneEvaluator pruning, Predicate<Path> filter,
-            BranchOrderingPolicy branchSelector )
+            Evaluator evaluator, BranchOrderingPolicy branchSelector )
     {
         this.expander = expander;
         this.uniqueness = uniqueness;
         this.uniquenessParameter = uniquenessParameter;
-        this.pruning = pruning;
-        this.filter = filter;
+        this.evaluator = evaluator;
         this.branchSelector = branchSelector;
     }
 
@@ -78,8 +77,8 @@ public final class TraversalDescriptionImpl implements TraversalDescription
      */
     public TraversalDescription uniqueness( UniquenessFactory uniqueness )
     {
-        return new TraversalDescriptionImpl( expander, uniqueness, null, pruning,
-                filter, branchSelector );
+        return new TraversalDescriptionImpl( expander, uniqueness, null,
+                evaluator, branchSelector );
     }
 
     /* (non-Javadoc)
@@ -98,77 +97,59 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         }
 
         return new TraversalDescriptionImpl( expander, uniqueness, parameter,
-                pruning, filter, branchSelector );
+                evaluator, branchSelector );
     }
-
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#prune(org.neo4j.graphdb.traversal.PruneEvaluator)
-     */
+    
     public TraversalDescription prune( PruneEvaluator pruning )
     {
-        if ( this.pruning == pruning )
-        {
-            return this;
-        }
-
-        nullCheck( pruning, PruneEvaluator.class, "NO_PRUNING" );
-        return new TraversalDescriptionImpl( expander, uniqueness,
-                uniquenessParameter, addPruneEvaluator( pruning ),
-                filter, branchSelector );
+        return evaluator( pruning == PruneEvaluator.NONE ? Evaluators.all() :
+                new WrappedPruneEvaluator( pruning ) );
     }
-
-    private PruneEvaluator addPruneEvaluator( PruneEvaluator pruning )
-    {
-        if ( this.pruning instanceof MultiPruneEvaluator )
-        {
-            return ((MultiPruneEvaluator) this.pruning).add( pruning );
-        }
-        else
-        {
-            if ( this.pruning == PruneEvaluator.NONE )
-            {
-                return pruning;
-            }
-            else
-            {
-                return new MultiPruneEvaluator( new PruneEvaluator[] {
-                        this.pruning, pruning } );
-            }
-        }
-    }
-
+    
     public TraversalDescription filter( Predicate<Path> filter )
     {
-        if ( this.filter == filter )
+        Evaluator evaluator = null;
+        if ( filter == Traversal.returnAll() )
         {
-            return this;
+            evaluator = Evaluators.all();
         }
-
-        if ( filter == null )
+        else if ( filter == Traversal.returnAllButStartNode() )
         {
-            throw new IllegalArgumentException( "Return filter may not be null, " +
-            		"use " + Traversal.class.getSimpleName() + ".returnAll() instead." );
-        }
-        return new TraversalDescriptionImpl( expander, uniqueness,
-                uniquenessParameter, pruning, addFilter( filter ), branchSelector );
-    }
-
-    private Predicate<Path> addFilter( Predicate<Path> filter )
-    {
-        if ( this.filter instanceof MultiFilter )
-        {
-            return ((MultiFilter) this.pruning).add( filter );
+            evaluator = Evaluators.excludeStartPosition();
         }
         else
         {
-            if ( this.filter == Traversal.returnAll() )
+            evaluator = new WrappedFilter( filter );
+        }
+        return evaluator( evaluator );
+    }
+    
+    public TraversalDescription evaluator( Evaluator evaluator )
+    {
+        if ( this.evaluator == evaluator )
+        {
+            return this;
+        }
+        nullCheck( evaluator, Evaluator.class, "RETURN_ALL" );
+        return new TraversalDescriptionImpl( expander, uniqueness, uniquenessParameter,
+                addBlaEvaluator( evaluator ), branchSelector );
+    }
+    
+    private Evaluator addBlaEvaluator( Evaluator evaluator )
+    {
+        if ( this.evaluator instanceof MultiEvaluator )
+        {
+            return ((MultiEvaluator) this.evaluator).add( evaluator );
+        }
+        else
+        {
+            if ( this.evaluator == Evaluators.all() )
             {
-                return filter;
+                return evaluator;
             }
             else
             {
-                return new MultiFilter( new Predicate[] {
-                        this.filter, filter } );
+                return new MultiEvaluator( new Evaluator[] { this.evaluator, evaluator } );
             }
         }
     }
@@ -195,8 +176,8 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         {
             return this;
         }
-        return new TraversalDescriptionImpl( expander, uniqueness,
-                uniquenessParameter, pruning, filter, selector );
+        return new TraversalDescriptionImpl( expander, uniqueness, uniquenessParameter,
+                evaluator, selector );
     }
 
     public TraversalDescription depthFirst()
@@ -235,8 +216,37 @@ public final class TraversalDescriptionImpl implements TraversalDescription
         {
             return this;
         }
-        return new TraversalDescriptionImpl(
-                Traversal.expander( expander ), uniqueness,
-                uniquenessParameter, pruning, filter, branchSelector );
+        return new TraversalDescriptionImpl( Traversal.expander( expander ), uniqueness,
+                uniquenessParameter, evaluator, branchSelector );
+    }
+    
+    private static class WrappedPruneEvaluator implements Evaluator
+    {
+        private final PruneEvaluator pruning;
+
+        WrappedPruneEvaluator( PruneEvaluator pruning )
+        {
+            this.pruning = pruning;
+        }
+
+        public Evaluation evaluate( Path path )
+        {
+            return pruning.pruneAfter( path ) ? Evaluation.INCLUDE_AND_PRUNE : Evaluation.INCLUDE_AND_CONTINUE;
+        }
+    }
+    
+    private static class WrappedFilter implements Evaluator
+    {
+        private final Predicate<Path> filter;
+
+        WrappedFilter( Predicate<Path> filter )
+        {
+            this.filter = filter;
+        }
+
+        public Evaluation evaluate( Path path )
+        {
+            return filter.accept( path ) ? Evaluation.INCLUDE_AND_CONTINUE : Evaluation.EXCLUDE_AND_CONTINUE;
+        }
     }
 }

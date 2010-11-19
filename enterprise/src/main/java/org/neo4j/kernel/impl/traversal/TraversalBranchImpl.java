@@ -27,10 +27,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.kernel.impl.traversal.TraverserImpl.TraverserIterator;
 
-class TraversalBranchImpl implements TraversalBranch
+class TraversalBranchImpl implements TraversalBranch//, Path
 {
     private final TraversalBranch parent;
     private final Node source;
@@ -40,6 +41,7 @@ class TraversalBranchImpl implements TraversalBranch
     final TraverserIterator traverser;
     private Path path;
     private int expandedCount;
+    private Evaluation evaluation;
 
     /*
      * For expansion sources for all nodes except the start node
@@ -52,13 +54,12 @@ class TraversalBranchImpl implements TraversalBranch
         this.source = source;
         this.howIGotHere = toHere;
         this.depth = depth;
-        expandRelationships( true );
     }
 
     /*
      * For the start node expansion source
      */
-    TraversalBranchImpl( TraverserIterator  traverser, Node source,
+    TraversalBranchImpl( TraverserIterator traverser, Node source,
             RelationshipExpander expander )
     {
         this.traverser = traverser;
@@ -66,11 +67,12 @@ class TraversalBranchImpl implements TraversalBranch
         this.source = source;
         this.howIGotHere = null;
         this.depth = 0;
+        this.evaluation = traverser.description.evaluator.evaluate( position() );
     }
 
     protected void expandRelationships( boolean doChecks )
     {
-        boolean okToExpand = !doChecks || traverser.shouldExpandBeyond( this );
+        boolean okToExpand = !doChecks || evaluation.continues();
         relationships = okToExpand ?
                 traverser.description.expander.expand( source ).iterator() :
                 Collections.<Relationship>emptyList().iterator();
@@ -79,6 +81,12 @@ class TraversalBranchImpl implements TraversalBranch
     protected boolean hasExpandedRelationships()
     {
         return relationships != null;
+    }
+    
+    public void initialize()
+    {
+        evaluation = traverser.description.evaluator.evaluate( position() );
+        expandRelationships( true );
     }
 
     public TraversalBranch next()
@@ -96,6 +104,7 @@ class TraversalBranchImpl implements TraversalBranch
                     traverser.description.expander, relationship );
             if ( traverser.okToProceed( next ) )
             {
+                next.initialize();
                 return next;
             }
         }
@@ -103,6 +112,11 @@ class TraversalBranchImpl implements TraversalBranch
     }
 
     public Path position()
+    {
+        return ensurePathInstantiated();
+    }
+
+    private Path ensurePathInstantiated()
     {
         if ( this.path == null )
         {
@@ -135,4 +149,44 @@ class TraversalBranchImpl implements TraversalBranch
     {
         return expandedCount;
     }
+    
+    public Evaluation evaluation()
+    {
+        return evaluation;
+    }
+
+//    public Node startNode()
+//    {
+//        return ensurePathInstantiated().startNode();
+//    }
+//
+//    public Node endNode()
+//    {
+//        return source;
+//    }
+//
+//    public Relationship lastRelationship()
+//    {
+//        return howIGotHere;
+//    }
+//
+//    public Iterable<Relationship> relationships()
+//    {
+//        return ensurePathInstantiated().relationships();
+//    }
+//
+//    public Iterable<Node> nodes()
+//    {
+//        return ensurePathInstantiated().nodes();
+//    }
+//
+//    public int length()
+//    {
+//        return depth;
+//    }
+//
+//    public Iterator<PropertyContainer> iterator()
+//    {
+//        return ensurePathInstantiated().iterator();
+//    }
 }

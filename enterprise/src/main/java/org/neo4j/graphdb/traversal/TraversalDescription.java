@@ -85,6 +85,10 @@ public interface TraversalDescription
      * @param pruning the {@link PruneEvaluator} to add to the list of prune
      * evaluators to use.
      * @return a new traversal description with the new modifications.
+     * @deprecated because of the introduction of {@link Evaluator}. Use
+     * {@link #evaluator(Evaluator)} instead which combines
+     * {@link #filter(Predicate)} and {@link #prune(PruneEvaluator)}. The supplied
+     * {@link PruneEvaluator} will be wrapped by an {@link Evaluator} internally.
      */
     TraversalDescription prune( PruneEvaluator pruning );
 
@@ -100,8 +104,33 @@ public interface TraversalDescription
      *
      * @param filter the {@link Predicate} to add to the list of filters.
      * @return a new traversal description with the new modifications.
+     * @deprecated because of the introduction of {@link Evaluator}. Use
+     * {@link #evaluator(Evaluator)} instead which combines
+     * {@link #filter(Predicate)} and {@link #prune(PruneEvaluator)}. The supplied
+     * {@link Predicate} will be wrapped by an {@link Evaluator} internally.
      */
     TraversalDescription filter( Predicate<Path> filter );
+    
+    /**
+     * NOTE: Replaces {@link #filter(Predicate)} and {@link #prune(PruneEvaluator)}.
+     * 
+     * Adds {@code evaluator} to the list of evaluators which will control the
+     * behaviour of the traversal. Each {@link Evaluator} can decide whether or
+     * not to include a position in the traverser result, i.e. return it from
+     * the {@link Traverser} iterator and also whether to continue down that path
+     * or to prune, so that the traverser won't continue further down that path.
+     * 
+     * Multiple {@link Evaluator}s can be added. For a path to be included in the
+     * result, all evaluators must agree to include it, i.e. returning either
+     * {@link Evaluation#INCLUDE_AND_CONTINUE} or {@link Evaluation#INCLUDE_AND_PRUNE}.
+     * For making the traversal continue down that path all evaluators must agree
+     * to continue from that path, i.e. returning either
+     * {@link Evaluation#INCLUDE_AND_CONTINUE} or {@link Evaluation#EXCLUDE_AND_CONTINUE}.
+     * 
+     * @param evaluator
+     * @return
+     */
+    TraversalDescription evaluator( Evaluator evaluator );
 
     /**
      * Sets the {@link BranchOrderingPolicy} to use. A {@link BranchSelector}

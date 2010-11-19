@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.kernel.Traversal;
 
 public class TestPath extends AbstractTestBase
@@ -46,13 +46,8 @@ public class TestPath extends AbstractTestBase
     @Test
     public void testPathIterator()
     {
-        Path path = Traversal.description().filter( new Predicate<Path>()
-        {
-            public boolean accept( Path item )
-            {
-                return item.length() == 4;
-            }
-        } ).traverse( referenceNode() ).iterator().next();
+        Path path = Traversal.description().evaluator( Evaluators.atDepth( 4 ) ).traverse(
+                referenceNode() ).iterator().next();
         
         assertPathIsCorrect( path );
     }

@@ -21,12 +21,16 @@
 package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Path;
+import org.neo4j.helpers.Predicate;
 
 /**
  * An evaluator which can "cut off" relationships so that they will not be
  * traversed in the ongoing traversal. For any given position a prune evaluator
  * can decide whether or not to prune whatever is beyond (i.e. after) that
  * position or not.
+ * 
+ * @deprecated becuase of the introduction of {@link Evaluator} which combines
+ * {@link PruneEvaluator} and filtering ({@link Predicate} of {@link Path}s).
  */
 public interface PruneEvaluator
 {
