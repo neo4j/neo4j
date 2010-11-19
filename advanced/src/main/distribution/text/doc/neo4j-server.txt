@@ -3,8 +3,6 @@ ${server.fullname} Manual
 
 The ${server.fullname} can be managed with command line scripts. 
 
-TODO: fill in with details from the wiki
-
 Usage - Windows
 ---------------
 
