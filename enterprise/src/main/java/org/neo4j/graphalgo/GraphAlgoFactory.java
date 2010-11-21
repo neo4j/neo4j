@@ -25,6 +25,7 @@ import org.neo4j.graphalgo.impl.path.AllPaths;
 import org.neo4j.graphalgo.impl.path.AllSimplePaths;
 import org.neo4j.graphalgo.impl.path.Dijkstra;
 import org.neo4j.graphalgo.impl.path.ShortestPath;
+import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -158,5 +159,24 @@ public abstract class GraphAlgoFactory
             CostEvaluator<Double> costEvaluator )
     {
         return new Dijkstra( expander, costEvaluator );
+    }
+    
+    /**
+     * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
+     * 
+     * Uses a cost evaluator which uses the supplied property key to
+     * represent the cost (values of type <bold>double</bold>). 
+     * 
+     * @param expander the {@link RelationshipExpander} to use for expanding
+     * {@link Relationship}s for each {@link Node}.
+     * @param relationshipPropertyRepresentingCost the property to represent cost
+     * on each relationship the algorithm traverses.
+     * @return an algorithm which finds the cheapest path between two nodes
+     * using the Dijkstra algorithm.
+     */
+    public static PathFinder<WeightedPath> dijkstra( RelationshipExpander expander,
+            String relationshipPropertyRepresentingCost )
+    {
+        return dijkstra( expander, new DoubleEvaluator( relationshipPropertyRepresentingCost ) );
     }
 }

@@ -28,6 +28,7 @@ import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.Traversal;
 
@@ -64,17 +65,22 @@ public class TestDijkstra extends Neo4jAlgoTestCase
         graph.makeEdge( "x", "y", "cost", (double) 2 );
         
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
+                Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ), "cost" );
+        PathFinder<WeightedPath> finder2 = GraphAlgoFactory.dijkstra(
                 Traversal.expanderForTypes( MyRelTypes.R1, Direction.OUTGOING ),
                 CommonEvaluators.doubleCostEvaluator( "cost" ) );
         
         // Assert that there are two matching paths
-        assertPaths( finder.findAllPaths( graph.getNode( "start" ), graph.getNode( "x" ) ),
+        Node startNode = graph.getNode( "start" );
+        Node endNode = graph.getNode( "x" );
+        assertPaths( finder.findAllPaths( startNode, endNode ),
+                "start,a,b,c,x", "start,a,b,c,d,e,x" );
+        assertPaths( finder2.findAllPaths( startNode, endNode ),
                 "start,a,b,c,x", "start,a,b,c,d,e,x" );
         
         // Assert that for the shorter one it picked the correct relationship
         // of the two from (c) --> (x)
-        for ( WeightedPath path :
-                finder.findAllPaths( graph.getNode( "start" ), graph.getNode( "x" ) ) )
+        for ( WeightedPath path : finder.findAllPaths( startNode, endNode ) )
         {
             if ( getPathDef( path ).equals( "start,a,b,c,x" ) )
             {

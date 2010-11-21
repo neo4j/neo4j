@@ -121,8 +121,7 @@ public class SiteExamples
     public WeightedPath findCheapestPathWithDijkstra( Node start, Node end )
     {
         PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
-                Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ),
-                CommonEvaluators.doubleCostEvaluator( "cost" ) );
+                Traversal.expanderForTypes( ExampleTypes.MY_TYPE, Direction.BOTH ), "cost" );
         
         WeightedPath path = finder.findSinglePath( start, end );
 
