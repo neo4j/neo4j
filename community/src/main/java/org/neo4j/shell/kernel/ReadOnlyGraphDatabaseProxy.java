@@ -666,5 +666,10 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             return this;
         }
+
+        public float currentScore()
+        {
+            return actual.currentScore();
+        }
     }
 }
