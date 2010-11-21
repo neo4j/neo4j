@@ -38,6 +38,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Version;
 
@@ -117,9 +118,18 @@ abstract class IndexType
     
     private static class CustomType extends IndexType
     {
-        CustomType( Analyzer analyzer, boolean toLowerCase )
+        private final Similarity similarity;
+        
+        CustomType( Analyzer analyzer, boolean toLowerCase, Similarity similarity )
         {
             super( analyzer, toLowerCase );
+            this.similarity = similarity;
+        }
+        
+        @Override
+        Similarity getSimilarity()
+        {
+            return this.similarity;
         }
         
         @Override
@@ -184,17 +194,13 @@ abstract class IndexType
         this.toLowerCase = toLowerCase;
     }
     
-    private static String configKey( String indexName, String property )
-    {
-        return property;
-    }
-    
     static IndexType getIndexType( IndexIdentifier identifier, Map<String, String> config )
     {
-        String type = config.get( configKey( identifier.indexName, "type" ) );
+        String type = config.get( LuceneIndexProvider.KEY_TYPE );
         IndexType result = null;
-        boolean toLowerCase = parseBoolean( config.get( configKey( identifier.indexName, LuceneIndexProvider.KEY_TO_LOWER_CASE ) ), true );
-        Analyzer customAnalyzer = getCustomAnalyzer( config, identifier.indexName );
+        Similarity similarity = getCustomSimilarity( config );
+        boolean toLowerCase = parseBoolean( config.get( LuceneIndexProvider.KEY_TO_LOWER_CASE ), true );
+        Analyzer customAnalyzer = getCustomAnalyzer( config );
         if ( type != null )
         {
             // Use the built in alternatives... "exact" or "fulltext"
@@ -210,7 +216,7 @@ abstract class IndexType
                     analyzer = toLowerCase ? LuceneDataSource.LOWER_CASE_WHITESPACE_ANALYZER :
                             LuceneDataSource.WHITESPACE_ANALYZER;
                 }
-                result = new CustomType( analyzer, toLowerCase );
+                result = new CustomType( analyzer, toLowerCase, similarity );
             }
         }
         else
@@ -223,7 +229,7 @@ abstract class IndexType
                 		" and no 'analyzer' was given either (which can point out a custom " +
                 		Analyzer.class.getName() + " to use)" );
             }
-            result = new CustomType( customAnalyzer, toLowerCase );
+            result = new CustomType( customAnalyzer, toLowerCase, similarity );
         }
         return result;
     }
@@ -233,14 +239,24 @@ abstract class IndexType
         return string == null ? valueIfNull : Boolean.parseBoolean( string );
     }
     
-    private static Analyzer getCustomAnalyzer( Map<String, String> config, String indexName )
+    private static Similarity getCustomSimilarity( Map<String, String> config )
     {
-        String analyzerClass = config.get( configKey( indexName, "analyzer" ) );
-        if ( analyzerClass != null )
+        return getByClassName( config, LuceneIndexProvider.KEY_SIMILARITY, Similarity.class );
+    }
+    
+    private static Analyzer getCustomAnalyzer( Map<String, String> config )
+    {
+        return getByClassName( config, LuceneIndexProvider.KEY_ANALYZER, Analyzer.class );
+    }
+
+    private static <T> T getByClassName( Map<String, String> config, String configKey, Class<T> cls )
+    {
+        String className = config.get( configKey );
+        if ( className != null )
         {
             try
             {
-                return Class.forName( analyzerClass ).asSubclass( Analyzer.class ).newInstance();
+                return Class.forName( className ).asSubclass( cls ).newInstance();
             }
             catch ( Exception e )
             {
@@ -335,5 +351,10 @@ abstract class IndexType
     Query idTermQuery( long entityId )
     {
         return new TermQuery( idTerm( entityId ) );
+    }
+    
+    Similarity getSimilarity()
+    {
+        return null;
     }
 }

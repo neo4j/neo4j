@@ -45,7 +45,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.neo4j.graphdb.Node;
@@ -436,6 +439,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 identifier.indexName ) );
     }
     
+    static TopFieldCollector scoringCollector( Sort sorting, int n ) throws IOException
+    {
+        return TopFieldCollector.create( sorting, n, false, true, false, true );
+    }
+    
     IndexSearcherRef getIndexSearcher( IndexIdentifier identifier )
     {
         try
@@ -543,6 +551,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
             directoryExists( dir );
             IndexType type = getType( identifier );
             IndexWriter writer = new IndexWriter( dir, type.analyzer, MaxFieldLength.UNLIMITED );
+            Similarity similarity = type.getSimilarity();
+            if ( similarity != null )
+            {
+                writer.setSimilarity( similarity );
+            }
             
             // TODO We should tamper with this value and see how it affects the
             // general performance. Lucene docs says rather <10 for mixed

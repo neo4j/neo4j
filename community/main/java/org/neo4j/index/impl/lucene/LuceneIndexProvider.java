@@ -39,7 +39,9 @@ public class LuceneIndexProvider extends IndexProvider
 {
     static final String KEY_PROVIDER = "provider";
     static final String KEY_TYPE = "type";
+    static final String KEY_ANALYZER = "analyzer";
     static final String KEY_TO_LOWER_CASE = "to_lower_case";
+    static final String KEY_SIMILARITY = "similarity";
     public static final String SERVICE_NAME = "lucene";
     
     public static final Map<String, String> EXACT_CONFIG =
@@ -149,17 +151,17 @@ public class LuceneIndexProvider extends IndexProvider
     {
         Map<String, String> result = source != null ?
                 new HashMap<String, String>( source ) : new HashMap<String, String>();
-        String type = result.get( "type" );
+        String type = result.get( KEY_TYPE );
         if ( type == null )
         {
             type = "exact";
-            result.put( "type", type );
+            result.put( KEY_TYPE, type );
         }
         if ( type.equals( "fulltext" ) )
         {
             if ( !result.containsKey( LuceneIndexProvider.KEY_TO_LOWER_CASE ) )
             {
-                result.put( "to_lower_case", "true" );
+                result.put( KEY_TO_LOWER_CASE, "true" );
             }
         }
         return result;
@@ -168,9 +170,10 @@ public class LuceneIndexProvider extends IndexProvider
     @Override
     public boolean configMatches( Map<String, String> storedConfig, Map<String, String> config )
     {
-        return  match( storedConfig, config, "type", null ) &&
-                match( storedConfig, config, "to_lower_case", "true" ) &&
-                match( storedConfig, config, "analyzer", null );
+        return  match( storedConfig, config, KEY_TYPE, null ) &&
+                match( storedConfig, config, KEY_TO_LOWER_CASE, "true" ) &&
+                match( storedConfig, config, KEY_ANALYZER, null ) &&
+                match( storedConfig, config, KEY_SIMILARITY, null );
     }
     
     private boolean match( Map<String, String> storedConfig, Map<String, String> config,

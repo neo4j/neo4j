@@ -43,6 +43,7 @@ import java.util.NoSuchElementException;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
+import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
@@ -127,7 +128,7 @@ public class TestLuceneIndex
 
     private static abstract interface EntityCreator<T extends PropertyContainer>
     {
-        T create();
+        T create( Object... properties );
         
         void delete( T entity );
     }
@@ -136,9 +137,11 @@ public class TestLuceneIndex
             DynamicRelationshipType.withName( "TEST_TYPE" );
     private static final EntityCreator<Node> NODE_CREATOR = new EntityCreator<Node>()
     {
-        public Node create()
+        public Node create( Object... properties )
         {
-            return graphDb.createNode();
+            Node node = graphDb.createNode();
+            setProperties( node, properties );
+            return node;
         }
         
         public void delete( Node entity )
@@ -149,9 +152,11 @@ public class TestLuceneIndex
     private static final EntityCreator<Relationship> RELATIONSHIP_CREATOR =
             new EntityCreator<Relationship>()
             {
-                public Relationship create()
+                public Relationship create( Object... properties )
                 {
-                    return graphDb.createNode().createRelationshipTo( graphDb.createNode(), TEST_TYPE );
+                    Relationship rel = graphDb.createNode().createRelationshipTo( graphDb.createNode(), TEST_TYPE );
+                    setProperties( rel, properties );
+                    return rel;
                 }
                 
                 public void delete( Relationship entity )
@@ -164,19 +169,29 @@ public class TestLuceneIndex
     {
         private Node node, otherNode;
 
-        public Relationship create()
+        public Relationship create( Object... properties )
         {
             if ( node == null )
             {
                 node = graphDb.createNode();
                 otherNode = graphDb.createNode();
             }
-            return node.createRelationshipTo( otherNode, TEST_TYPE );
+            Relationship rel = node.createRelationshipTo( otherNode, TEST_TYPE );
+            setProperties( rel, properties );
+            return rel;
         }
         
         public void delete( Relationship entity )
         {
             entity.delete();
+        }
+    }
+    
+    private static void setProperties( PropertyContainer entity, Object... properties )
+    {
+        for ( Map.Entry<String, Object> entry : MapUtil.map( properties ).entrySet() )
+        {
+            entity.setProperty( entry.getKey(), entry.getValue() );
         }
     }
     
@@ -698,11 +713,11 @@ public class TestLuceneIndex
         for ( int i = 0; i < 1000000; i++ )
         {
             T entity = creator.create();
-//            if ( i % 5000 == 5 )
-//            {
-//                index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
-//            }
-//            index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() );
+            if ( i % 5000 == 5 )
+            {
+                index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
+            }
+            index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() );
             index.get( "name", "The name " + i );
             index.add( entity, "name", "The name " + i );
             index.add( entity, "title", "Some title " + i );
@@ -781,6 +796,7 @@ public class TestLuceneIndex
         assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, other ) ), adam, adam2, eva, jack );
         assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( sex, title ) ), eva, jack, adam2, adam );
         assertContainsInOrder( index.query( name, new QueryContext( "*" ).sort( sex, title ) ), eva, jack, adam2, adam );
+        assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ).topDocs( 2 ) ), adam2, adam );
     }
 
     @Test
@@ -983,21 +999,29 @@ public class TestLuceneIndex
                 if ( i%100 == 0 )
                 {
                     IndexHits<Node> itr = index.get( "key", "value5" );
-                    try
+                    
+                    int size = 0;
+                    if ( System.currentTimeMillis()%2 == 0 )
                     {
-                        itr.getSingle();
+                        try
+                        {
+                            itr.getSingle();
+                        }
+                        catch ( NoSuchElementException e )
+                        {
+
+                        }
+                        size = 99;
                     }
-                    catch ( NoSuchElementException e )
+                    else
                     {
-                        
+                        for ( ;itr.hasNext() && size < 5; size++ )
+                        {
+                            itr.next();
+                        }
+                        itr.close();
                     }
-                    int size = 99;
-//                    int size = 0;
-//                    for ( ;itr.hasNext() && size < 5; size++ )
-//                    {
-//                        itr.next();
-//                    }
-//                    itr.close();
+                    
                     System.out.println( "C iterated " + size + " only" );
                 }
                 else
@@ -1155,7 +1179,7 @@ public class TestLuceneIndex
     {
         Map<String, String> config = MapUtil.stringMap( "provider", "lucene", "type", "fulltext" );
         String name = "the-name";
-        Index<Node> index = nodeIndex( name, config );
+        nodeIndex( name, config );
         nodeIndex( name, MapUtil.stringMap( new HashMap<String, String>( config ), "to_lower_case", "true" ) );
         try
         {
@@ -1164,5 +1188,65 @@ public class TestLuceneIndex
         }
         catch ( IllegalArgumentException e ) { /* */ }
         nodeIndex( name, MapUtil.stringMap( new HashMap<String, String>( config ), "whatever", "something" ) );
+    }
+    
+    @Test
+    public void testScoring()
+    {
+        Index<Node> index = nodeIndex( "score-index", LuceneIndexProvider.FULLTEXT_CONFIG );
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        String key = "text";
+        // Where the heck did I get this sentence from?
+        index.add( node1, key, "a time where no one was really awake" ); 
+        index.add( node2, key, "once upon a time there was" );
+        restartTx();
+        
+        IndexHits<Node> hits = index.query( key, new QueryContext( "once upon a time was" ).sort( Sort.RELEVANCE ) );
+        Node hit1 = hits.next();
+        float score1 = hits.currentScore();
+        Node hit2 = hits.next();
+        float score2 = hits.currentScore();
+        assertEquals( node2, hit1 );
+        assertEquals( node1, hit2 );
+        assertTrue( score1 > score2 );
+    }
+    
+    @Test
+    public void testTopHits()
+    {
+        Index<Relationship> index = relationshipIndex( "topdocs", LuceneIndexProvider.FULLTEXT_CONFIG );
+        EntityCreator<Relationship> creator = RELATIONSHIP_CREATOR;
+        String key = "text";
+        Relationship rel1 = creator.create( key, "one two three four five six seven eight nine ten" );
+        Relationship rel2 = creator.create( key, "one two three four five six seven eight other things" );
+        Relationship rel3 = creator.create( key, "one two three four five six some thing else" );
+        Relationship rel4 = creator.create( key, "one two three four five what ever" );
+        Relationship rel5 = creator.create( key, "one two three four all that is good and bad" );
+        Relationship rel6 = creator.create( key, "one two three hill or something" );
+        Relationship rel7 = creator.create( key, "one two other time than this" );
+        index.add( rel2, key, rel2.getProperty( key ) );
+        index.add( rel1, key, rel1.getProperty( key ) );
+        index.add( rel3, key, rel3.getProperty( key ) );
+        index.add( rel7, key, rel7.getProperty( key ) );
+        index.add( rel5, key, rel5.getProperty( key ) );
+        index.add( rel4, key, rel4.getProperty( key ) );
+        index.add( rel6, key, rel6.getProperty( key ) );
+        restartTx();
+        
+        String query = "one two three four five six seven";
+        assertContainsInOrder( index.query( key, new QueryContext( query ).topDocs( 3 ).sort(
+                Sort.RELEVANCE ) ), rel1, rel2, rel3 );
+    }
+    
+    @Test
+    public void testSimilarity()
+    {
+        Index<Node> index = nodeIndex( "similarity", MapUtil.stringMap( "provider", "lucene",
+                "type", "fulltext", "similarity", DefaultSimilarity.class.getName() ) );
+        Node node = graphDb.createNode();
+        index.add( node, "key", "value" );
+        restartTx();
+        assertContains( index.get( "key", "value" ), node );
     }
 }
