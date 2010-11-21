@@ -57,6 +57,11 @@ class IndexManagerImpl implements IndexManager
 
     private IndexProvider getIndexProvider( String provider )
     {
+        if ( provider == null )
+        {
+            throw new IllegalArgumentException( "No 'provider' given in configuration map" );
+        }
+        
         synchronized ( this.indexProviders )
         {
             IndexProvider result = this.indexProviders.get( provider );

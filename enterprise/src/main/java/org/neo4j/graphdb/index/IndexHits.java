@@ -72,4 +72,12 @@ public interface IndexHits<T> extends Iterator<T>, Iterable<T>
      * @return the first and only item, or {@code null} if none.
      */
     T getSingle();
+    
+    /**
+     * Returns the score of the most recently fetched item from this iterator
+     * (from {@link #next()}). The range of the returned values is up to the
+     * {@link Index} implementation to dictate. 
+     * @return the score of the most recently fetched item from this iterator.
+     */
+    float currentScore();
 }
