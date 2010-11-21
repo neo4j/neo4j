@@ -307,7 +307,6 @@ class LuceneTransaction extends XaTransaction
                     RemoveCommand command = new RemoveCommand( entry.getKey(), entry.getKey().entityTypeByte, id, null, null );
                     addCommand( command );
                     commands.add( command );
-                    
                 }
                 abandonedIds.clear();
             }

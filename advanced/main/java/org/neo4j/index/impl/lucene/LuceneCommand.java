@@ -29,9 +29,9 @@ import java.util.Map;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 abstract class LuceneCommand extends XaCommand
 {
@@ -311,17 +311,17 @@ abstract class LuceneCommand extends XaCommand
         if ( commandType == CREATE_INDEX_COMMAND )
         {
             buffer.clear();
-            String name = PrimitiveUtils.readLengthAndString( channel, buffer );
+            String name = IoPrimitiveUtils.readLengthAndString( channel, buffer );
             if ( name == null )
             {
                 return null;
             }
-            int size = PrimitiveUtils.readInt( channel, buffer );
+            int size = IoPrimitiveUtils.readInt( channel, buffer );
             Map<String, String> config = new HashMap<String, String>();
             for ( int i = 0; i < size; i++ )
             {
-                String key = PrimitiveUtils.readLengthAndString( channel, buffer );
-                String value = PrimitiveUtils.readLengthAndString( channel, buffer );
+                String key = IoPrimitiveUtils.readLengthAndString( channel, buffer );
+                String value = IoPrimitiveUtils.readLengthAndString( channel, buffer );
                 if ( key == null || value == null )
                 {
                     return null;
@@ -359,7 +359,7 @@ abstract class LuceneCommand extends XaCommand
             int keyCharLength = buffer.getInt();
             byte valueType = buffer.get();
 
-            String indexName = PrimitiveUtils.readString( channel, buffer, indexNameLength );
+            String indexName = IoPrimitiveUtils.readString( channel, buffer, indexNameLength );
             if ( indexName == null )
             {
                 return null;
@@ -368,7 +368,7 @@ abstract class LuceneCommand extends XaCommand
             String key = null;
             if ( keyCharLength != -1 )
             {
-                key = PrimitiveUtils.readString( channel, buffer, keyCharLength );
+                key = IoPrimitiveUtils.readString( channel, buffer, keyCharLength );
                 if ( key == null )
                 {
                     return null;
@@ -380,15 +380,15 @@ abstract class LuceneCommand extends XaCommand
             {
                 switch ( valueType )
                 {
-                case VALUE_TYPE_INT: value = PrimitiveUtils.readInt( channel, buffer ); break;
-                case VALUE_TYPE_LONG: value = PrimitiveUtils.readLong( channel, buffer ); break;
-                case VALUE_TYPE_FLOAT: value = PrimitiveUtils.readFloat( channel, buffer ); break;
-                case VALUE_TYPE_DOUBLE: value = PrimitiveUtils.readDouble( channel, buffer ); break;
+                case VALUE_TYPE_INT: value = IoPrimitiveUtils.readInt( channel, buffer ); break;
+                case VALUE_TYPE_LONG: value = IoPrimitiveUtils.readLong( channel, buffer ); break;
+                case VALUE_TYPE_FLOAT: value = IoPrimitiveUtils.readFloat( channel, buffer ); break;
+                case VALUE_TYPE_DOUBLE: value = IoPrimitiveUtils.readDouble( channel, buffer ); break;
                 }
             }
             else if ( valueType == VALUE_TYPE_STRING )
             {
-                value = PrimitiveUtils.readLengthAndString( channel, buffer );
+                value = IoPrimitiveUtils.readLengthAndString( channel, buffer );
             }
             if ( valueType != VALUE_TYPE_NULL && value == null )
             {
@@ -399,8 +399,8 @@ abstract class LuceneCommand extends XaCommand
             Long endNodeId = null;
             if ( commandType == ADD_COMMAND && entityTypeByte == RELATIONSHIP )
             {
-                startNodeId = PrimitiveUtils.readLong( channel, buffer );
-                endNodeId = PrimitiveUtils.readLong( channel, buffer );
+                startNodeId = IoPrimitiveUtils.readLong( channel, buffer );
+                endNodeId = IoPrimitiveUtils.readLong( channel, buffer );
                 if ( startNodeId == null || endNodeId == null )
                 {
                     return null;

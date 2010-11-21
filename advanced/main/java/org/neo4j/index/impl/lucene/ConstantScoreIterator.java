@@ -18,25 +18,38 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.index.impl;
+package org.neo4j.index.impl.lucene;
 
+import java.util.Collection;
 import java.util.Iterator;
 
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.helpers.collection.CatchingIteratorWrapper;
 
-public abstract class IdToEntityIterator<T extends PropertyContainer>
-        extends CatchingIteratorWrapper<T, Long>
+class ConstantScoreIterator<T> extends AbstractIndexHits<T>
 {
-    public IdToEntityIterator( Iterator<Long> ids )
+    private final Iterator<T> items;
+    private final int size;
+    private final float score;
+
+    ConstantScoreIterator( Collection<T> items, float score )
     {
-        super( ids );
+        this.items = items.iterator();
+        this.score = score;
+        this.size = items.size();
     }
     
-    @Override
-    protected boolean exceptionOk( Throwable t )
+    public float currentScore()
     {
-        return t instanceof NotFoundException;
+        return this.score;
+    }
+
+    public int size()
+    {
+        return this.size;
+    }
+
+    @Override
+    protected T fetchNextOrNull()
+    {
+        return items.hasNext() ? items.next() : null;
     }
 }

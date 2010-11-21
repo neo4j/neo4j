@@ -31,11 +31,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.index.impl.PrimitiveUtils;
-import org.neo4j.index.impl.IndexHitsImpl;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 class LuceneBatchInserterIndex implements BatchInserterIndex
 {
@@ -64,7 +62,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 String key = entry.getKey();
-                for ( Object value : PrimitiveUtils.asArray( entry.getValue() ) )
+                for ( Object value : IoPrimitiveUtils.asArray( entry.getValue() ) )
                 {
                     type.addToDocument( document, key, value );
                 }
@@ -173,9 +171,8 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         try
         {
             Hits hits = new Hits( searcher(), query, null );
-            SearchResult result = new SearchResult( new HitsIterator( hits ), hits.length() );
-            DocToIdIterator itr = new DocToIdIterator( result, null, null );
-            return new IndexHitsImpl<Long>( FilteringIterator.noDuplicates( itr ), result.size );
+            HitsIterator result = new HitsIterator( hits );
+            return new DocToIdIterator( result, null, null );
         }
         catch ( IOException e )
         {

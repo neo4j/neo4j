@@ -20,64 +20,62 @@
 
 package org.neo4j.index.impl.lucene;
 
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.helpers.collection.CombiningIterator;
+import org.neo4j.helpers.collection.IteratorUtil;
 
-class LazyIndexHits<T> implements IndexHits<T>
+public class CombinedIndexHits<T> extends CombiningIterator<T> implements IndexHits<T>
 {
-    private final IndexHits<T> hits;
-    private final IndexSearcherRef searcher;
+    private final Collection<IndexHits<T>> allIndexHits;
     
-    LazyIndexHits( IndexHits<T> hits, IndexSearcherRef searcher )
+    public CombinedIndexHits( Collection<IndexHits<T>> iterators )
     {
-        this.hits = hits;
-        this.searcher = searcher;
-    }
-
-    public void close()
-    {
-        this.hits.close();
-        if ( this.searcher != null )
-        {
-            this.searcher.closeStrict();
-        }
-    }
-
-    public int size()
-    {
-        return this.hits.size();
+        super( iterators );
+        this.allIndexHits = iterators;
     }
 
     public Iterator<T> iterator()
     {
-        return this.hits.iterator();
-    }
-
-    public boolean hasNext()
-    {
-        return this.hits.hasNext();
-    }
-
-    public T next()
-    {
-        return this.hits.next();
-    }
-
-    public void remove()
-    {
-        this.hits.remove();
+        return this;
     }
     
+    @Override
+    protected IndexHits<T> currentIterator()
+    {
+        return (IndexHits<T>) super.currentIterator();
+    }
+
+    public int size()
+    {
+        return currentIterator().size();
+    }
+
+    public void close()
+    {
+        for ( IndexHits<T> hits : allIndexHits )
+        {
+            hits.close();
+        }
+        allIndexHits.clear();
+    }
+
     public T getSingle()
     {
         try
         {
-            return hits.getSingle();
+            return IteratorUtil.singleOrNull( (Iterator<T>) this );
         }
         finally
         {
             close();
         }
+    }
+
+    public float currentScore()
+    {
+        return currentIterator().currentScore();
     }
 }

@@ -77,9 +77,11 @@ public final class Hits {
   private int nDeletedHits = 0; // # of already collected hits that were meanwhile deleted.
 
   boolean debugCheckedForDeletions = false; // for test purposes.
+  private final boolean score;
 
   public Hits(Searcher s, Query q, Filter f) throws IOException
   {
+    score = false;
     weight = q.weight(s);
     searcher = s;
     filter = f;
@@ -88,7 +90,8 @@ public final class Hits {
     lengthAtStart = length;
   }
 
-  public Hits(Searcher s, Query q, Filter f, Sort o) throws IOException {
+  public Hits(Searcher s, Query q, Filter f, Sort o, boolean score) throws IOException {
+    this.score = score;
     weight = q.weight(s);
     searcher = s;
     filter = f;
@@ -117,7 +120,26 @@ public final class Hits {
     }
 
     int n = min * 2;    // double # retrieved
-    TopDocs topDocs = (sort == null) ? searcher.search(weight, filter, n) : searcher.search(weight, filter, n, sort);
+//  TopDocs topDocs = (sort == null) ? searcher.search(weight, filter, n) : searcher.search(weight, filter, n, sort);
+    TopDocs topDocs = null;
+    if ( sort == null )
+    {
+        topDocs = searcher.search( weight, filter, n );
+    }
+    else
+    {
+        if ( this.score )
+        {
+            TopFieldCollector collector = LuceneDataSource.scoringCollector( sort, n );
+            searcher.search( weight, null, collector );
+            topDocs = collector.topDocs();
+        }
+        else
+        {
+            topDocs = searcher.search( weight, filter, n, sort );
+        }
+    }
+            
 
     length = topDocs.totalHits;
     ScoreDoc[] scoreDocs = topDocs.scoreDocs;

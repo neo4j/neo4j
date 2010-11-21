@@ -24,22 +24,58 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
 import org.neo4j.helpers.collection.ArrayIterator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 
-class TopDocsIterator extends PrefetchingIterator<Document>
+class TopDocsIterator extends AbstractIndexHits<Document>
 {
     private final Iterator<ScoreDoc> iterator;
     private final IndexSearcherRef searcher;
+    private ScoreDoc currentDoc;
+    private final int size;
+    
+    TopDocsIterator( Query query, QueryContext context, IndexSearcherRef searcher ) throws IOException
+    {
+        this( toTopDocs( query, context, searcher.getSearcher() ), searcher );
+    }
     
     TopDocsIterator( TopDocs docs, IndexSearcherRef searcher )
     {
+        this.size = docs.scoreDocs.length;
         this.iterator = new ArrayIterator<ScoreDoc>( docs.scoreDocs );
         this.searcher = searcher;
     }
 
+    static TopDocs toTopDocs( Query query, QueryContext context, IndexSearcher searcher ) throws IOException
+    {
+        Sort sorting = context != null ? context.sorting : null;
+        TopDocs topDocs = null;
+        if ( sorting == null )
+        {
+            topDocs = searcher.search( query, context.topHits );
+        }
+        else
+        {
+            boolean forceScore = context == null || !context.tradeCorrectnessForSpeed;
+            if ( forceScore )
+            {
+                TopFieldCollector collector = LuceneDataSource.scoringCollector( sorting, context.topHits );
+                searcher.search( query, collector );
+                topDocs = collector.topDocs();
+            }
+            else
+            {
+                topDocs = searcher.search( query, null, context.topHits, sorting );
+            }
+        }
+        return topDocs;
+    }
+    
     @Override
     protected Document fetchNextOrNull()
     {
@@ -47,14 +83,24 @@ class TopDocsIterator extends PrefetchingIterator<Document>
         {
             return null;
         }
-        ScoreDoc doc = iterator.next();
+        currentDoc = iterator.next();
         try
         {
-            return searcher.getSearcher().doc( doc.doc );
+            return searcher.getSearcher().doc( currentDoc.doc );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
+    }
+
+    public float currentScore()
+    {
+        return currentDoc.score;
+    }
+    
+    public int size()
+    {
+        return this.size;
     }
 }
