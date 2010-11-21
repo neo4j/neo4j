@@ -147,8 +147,8 @@ class FullTxData extends ExactTxData
         try
         {
             Sort sorting = contextOrNull != null ? contextOrNull.sorting : null;
-            boolean allowRefreshSearcher = contextOrNull == null || !contextOrNull.tradeCorrectnessForSpeed; 
-            Hits hits = new Hits( searcher( allowRefreshSearcher ), query, null, sorting );
+            boolean prioritizeCorrectness = contextOrNull == null || !contextOrNull.tradeCorrectnessForSpeed; 
+            Hits hits = new Hits( searcher( prioritizeCorrectness ), query, null, sorting, prioritizeCorrectness );
             Collection<Long> result = new ArrayList<Long>();
             for ( int i = 0; i < hits.length(); i++ )
             {

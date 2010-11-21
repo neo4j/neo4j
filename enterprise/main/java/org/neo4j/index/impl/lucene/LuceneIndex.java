@@ -24,10 +24,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -39,14 +39,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.CombiningIterator;
-import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.index.impl.IdToEntityIterator;
-import org.neo4j.index.impl.IndexHitsImpl;
-import org.neo4j.index.impl.PrimitiveUtils;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 public abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
 {
@@ -126,7 +121,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public void add( T entity, String key, Object value )
     {
         LuceneXaConnection connection = getConnection();
-        for ( Object oneValue : PrimitiveUtils.asArray( value ) )
+        for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             connection.add( this, entity, key, oneValue );
         }
@@ -151,7 +146,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public void remove( T entity, String key, Object value )
     {
         LuceneXaConnection connection = getConnection();
-        for ( Object oneValue : PrimitiveUtils.asArray( value ) )
+        for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             connection.remove( this, entity, key, oneValue );
         }
@@ -217,10 +212,8 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     luceneTx.getRemovedIds( this, query );
         }
         service.dataSource().getReadLock();
-        Iterator<Long> idIterator = null;
-        int idIteratorSize = -1;
+        IndexHits<Long> idIterator = null;
         IndexSearcherRef searcher = null;
-        boolean isLazy = false;
         try
         {
             searcher = service.dataSource().getIndexSearcher( identifier );
@@ -238,29 +231,18 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                 
                 if ( !foundInCache )
                 {
-                    DocToIdIterator searchedNodeIds = new DocToIdIterator( search( searcher,
+                    DocToIdIterator searchedIds = new DocToIdIterator( search( searcher,
                             query, additionalParametersOrNull ), removedIds, searcher );
-                    if ( searchedNodeIds.size() >= service.lazynessThreshold )
+                    if ( ids.isEmpty() )
                     {
-                        // Instantiate a lazy iterator
-                        isLazy = true;
-                        
-                        // TODO Clear cache? why?
-                        
-                        Collection<Iterator<Long>> iterators = new ArrayList<Iterator<Long>>();
-                        iterators.add( ids.iterator() );
-                        iterators.add( searchedNodeIds );
-                        idIterator = new CombiningIterator<Long>( iterators );
-                        idIteratorSize = ids.size() + searchedNodeIds.size();
+                        idIterator = searchedIds;
                     }
                     else
                     {
-                        // Loop through result here (and cache it if possible)
-                        Collection<Long> readIds = readNodesFromHits( searchedNodeIds, ids );
-                        if ( cachedIdsMap != null )
-                        {
-                            cachedIdsMap.put( valueForDirectLookup.toString(), readIds );
-                        }
+                        Collection<IndexHits<Long>> iterators = new ArrayList<IndexHits<Long>>();
+                        iterators.add( searchedIds );
+                        iterators.add( new ConstantScoreIterator<Long>( ids, Float.NaN ) );
+                        idIterator = new CombinedIndexHits<Long>( iterators );
                     }
                 }
             }
@@ -272,36 +254,25 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             service.dataSource().releaseReadLock();
         }
 
-        if ( idIterator == null )
+        idIterator = idIterator == null ? new ConstantScoreIterator<Long>( ids, 0 ) : idIterator;
+        return new IdToEntityIterator<T>( idIterator, searcher )
         {
-            idIterator = ids.iterator();
-            idIteratorSize = ids.size();
-        }
-        idIterator = FilteringIterator.noDuplicates( idIterator );
-        IndexHits<T> hits = new IndexHitsImpl<T>(
-                IteratorUtil.asIterable( new IdToEntityIterator<T>( idIterator )
-                {
-                    @Override
-                    protected T underlyingObjectToObject( Long id )
-                    {
-                        return getById( id );
-                    }
-                    
-                    protected void itemDodged( Long item )
-                    {
-                        abandonedIds.add( item );
-                    }
-                } ), idIteratorSize );
-        if ( isLazy )
-        {
-            hits = new LazyIndexHits<T>( hits, searcher );
-        }
-        return hits;
+            @Override
+            protected T underlyingObjectToObject( Long id )
+            {
+                return getById( id );
+            }
+            
+            protected void itemDodged( Long item )
+            {
+                abandonedIds.add( item );
+            }
+        };
     }
     
     private boolean fillFromCache(
             LruCache<String, Collection<Long>> cachedNodesMap,
-            List<Long> nodeIds, String key, String valueAsString,
+            List<Long> ids, String key, String valueAsString,
             Collection<Long> deletedNodes )
     {
         boolean found = false;
@@ -316,7 +287,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     if ( deletedNodes == null ||
                             !deletedNodes.contains( cachedNodeId ) )
                     {
-                        nodeIds.add( cachedNodeId );
+                        ids.add( cachedNodeId );
                     }
                 }
             }
@@ -324,16 +295,27 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         return found;
     }
     
-    private SearchResult search( IndexSearcherRef searcher, Query query,
+    private IndexHits<Document> search( IndexSearcherRef searcher, Query query,
             QueryContext additionalParametersOrNull )
     {
         try
         {
             searcher.incRef();
-            Sort sorting = additionalParametersOrNull != null ?
-                    additionalParametersOrNull.sorting : null;
-            Hits hits = new Hits( searcher.getSearcher(), query, null, sorting );
-            return new SearchResult( new HitsIterator( hits ), hits.length() );
+            IndexHits<Document> result = null;
+            if ( additionalParametersOrNull != null && additionalParametersOrNull.topHits > 0 )
+            {
+                result = new TopDocsIterator( query, additionalParametersOrNull, searcher );
+            }
+            else
+            {
+                Sort sorting = additionalParametersOrNull != null ?
+                        additionalParametersOrNull.sorting : null;
+                boolean forceScore = additionalParametersOrNull == null ||
+                        !additionalParametersOrNull.tradeCorrectnessForSpeed;
+                Hits hits = new Hits( searcher.getSearcher(), query, null, sorting, forceScore );
+                result = new HitsIterator( hits );
+            }
+            return result;
         }
         catch ( IOException e )
         {
@@ -350,19 +332,6 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public Integer getCacheCapacity( String key )
     {
         return service.dataSource().getCacheCapacity( identifier, key );
-    }
-    
-    private Collection<Long> readNodesFromHits( DocToIdIterator searchedIds,
-            Collection<Long> ids )
-    {
-        ArrayList<Long> readIds = new ArrayList<Long>();
-        while ( searchedIds.hasNext() )
-        {
-            Long readId = searchedIds.next();
-            ids.add( readId );
-            readIds.add( readId );
-        }
-        return readIds;
     }
     
     protected abstract T getById( long id );

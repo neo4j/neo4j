@@ -21,15 +21,18 @@
 package org.neo4j.index.impl.lucene;
 
 import org.apache.lucene.queryParser.QueryParser.Operator;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 
 /**
  * This class has the extra query configuration to use
- * with {@link Index}. It allows a query to have sorting,
- * default operators, and allows the engine to turn of searching of
- * modifications made inside a transaction, to gain performance.
+ * with {@link Index#query(Object)} and {@link Index#query(String, Object)}.
+ * It allows a query to have sorting, default operators, and allows the engine
+ * to turn of searching of modifications made inside a transaction,
+ * to gain performance.
  */
 public class QueryContext
 {
@@ -37,6 +40,7 @@ public class QueryContext
     Sort sorting;
     Operator defaultOperator;
     boolean tradeCorrectnessForSpeed;
+    int topHits;
     
     public QueryContext( Object queryOrQueryObject )
     {
@@ -93,10 +97,10 @@ public class QueryContext
     }
 
     /**
-     * Adding or removing data from an index should affect the index results
-     * inside the transaction, even if it's not committed. To let those
-     * modifications be visible in {@link Index#query(Object)} results, some
-     * rather heavy operations have to be done, which can be slow to complete.
+     * Adding to or removing from an index affects results from query methods
+     * inside the same transaction, even before those changes are committed.
+     * To let those modifications be visible in query results, some rather heavy
+     * operations may have to be done, which can be slow to complete.
      *
      * The default behaviour is that these modifications are visible, but using
      * this method will tell the query to not strive to include the absolutely
@@ -108,6 +112,22 @@ public class QueryContext
     public QueryContext tradeCorrectnessForSpeed()
     {
         this.tradeCorrectnessForSpeed = true;
+        return this;
+    }
+    
+    /**
+     * Makes use of {@link IndexSearcher#search(org.apache.lucene.search.Query, int)},
+     * alt {@link IndexSearcher#search(org.apache.lucene.search.Query, org.apache.lucene.search.Filter, int, Sort)}
+     * where only the top {@code numberOfTopHits} hits are returned. Default
+     * behaviour is to return all hits, although lazily retrieved from lucene all
+     * the way up to the {@link IndexHits} iterator.
+     * 
+     * @param numberOfTopHits the maximum number of top hits to return.
+     * @return A {@link QueryContext} with the number of top hits set.
+     */
+    public QueryContext topDocs( int numberOfTopHits )
+    {
+        this.topHits = numberOfTopHits;
         return this;
     }
 }

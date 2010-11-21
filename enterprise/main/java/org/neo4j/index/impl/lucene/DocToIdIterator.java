@@ -21,21 +21,19 @@
 package org.neo4j.index.impl.lucene;
 
 import java.util.Collection;
-import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.graphdb.index.IndexHits;
 
-class DocToIdIterator extends PrefetchingIterator<Long>
+class DocToIdIterator extends AbstractIndexHits<Long>
 {
-    private final SearchResult searchResult;
     private final Collection<Long> exclude;
     private final IndexSearcherRef searcherOrNull;
+    private final IndexHits<Document> source;
     
-    DocToIdIterator( SearchResult searchResult, Collection<Long> exclude,
-        IndexSearcherRef searcherOrNull )
+    DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexSearcherRef searcherOrNull )
     {
-        this.searchResult = searchResult;
+        this.source = source;
         this.exclude = exclude;
         this.searcherOrNull = searcherOrNull;
     }
@@ -46,13 +44,13 @@ class DocToIdIterator extends PrefetchingIterator<Long>
         Long result = null;
         while ( result == null )
         {
-            if ( !searchResult.documents.hasNext() )
+            if ( !source.hasNext() )
             {
                 endReached();
                 break;
             }
-            Document doc = searchResult.documents.next();
-            long id = Long.parseLong(
+            Document doc = source.next();
+            Long id = Long.parseLong(
                 doc.getField( LuceneIndex.KEY_DOC_ID ).stringValue() );
             if ( exclude == null || !exclude.contains( id ) )
             {
@@ -72,15 +70,11 @@ class DocToIdIterator extends PrefetchingIterator<Long>
 
     public int size()
     {
-        return searchResult.size;
+        return source.size();
     }
 
-    public void close()
+    public float currentScore()
     {
-    }
-
-    public Iterator<Long> iterator()
-    {
-        return this;
+        return source.currentScore();
     }
 }
