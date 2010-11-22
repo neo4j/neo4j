@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>3</version>
+    <version>8</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
@@ -12,16 +11,23 @@
   <name>Neo4j High Availability</name>
   <version>0.5-SNAPSHOT</version>
   <description></description>
-  
+
   <properties>
     <bundle.namespace>org.neo4j.kernel.ha</bundle.namespace>
     <short-name>ha</short-name>
   </properties>
-  
-  <packaging>jar</packaging>
-  
+
+  <packaging>bundle</packaging>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
+
   <url>http://components.neo4j.org/neo4j-ha/</url>
-  
+
   <scm>
     <connection>
       scm:svn:https://svn.neo4j.org/laboratory/components/ha
@@ -33,10 +39,34 @@
     <repository>
       <id>repository.jboss.org</id>
       <url>http://repository.jboss.org/nexus/content/groups/public/</url>
-      <snapshots><enabled>false</enabled></snapshots>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
     </repository>
   </repositories>
-  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -54,11 +84,7 @@
       <artifactId>neo4j-shell</artifactId>
       <version>1.2-SNAPSHOT</version>
     </dependency>
-    <!--dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-index</artifactId>
-      <version>1.2-SNAPSHOT</version>
-    </dependency-->
+    <!--dependency> <groupId>org.neo4j</groupId> <artifactId>neo4j-index</artifactId> <version>1.2-SNAPSHOT</version> </dependency -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
@@ -88,12 +114,12 @@
       <artifactId>log4j</artifactId>
       <version>1.2.16</version>
     </dependency>
-	<dependency>
+    <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>1.4</version>
       <scope>test</scope>
-	</dependency>
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
