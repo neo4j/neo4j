@@ -80,6 +80,10 @@ public class MasterClient extends CommunicationProtocol implements Master, Chann
                 msgLog.logMessage( "Opened a new channel to " + address, true );
                 return channel;
             }
+            
+            // TODO Here it would be neat if we could ask the db to find us a new master
+            // and if this still will be a slave then retry to connect.
+            
             String msg = "MasterClient could not connect to " + address;
             msgLog.logMessage( msg, true );
             throw new HaCommunicationException( msg );
