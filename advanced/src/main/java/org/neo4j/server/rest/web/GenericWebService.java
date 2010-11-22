@@ -116,7 +116,6 @@ public abstract class GenericWebService {
             throw new RuntimeException("Could not encode string as UTF-8", e);
         }
         builder = builder.entity(entityAsBytes);
-        builder = builder.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(entityAsBytes.length));
         builder = builder.header(HttpHeaders.CONTENT_ENCODING, UTF8);
         return builder;
     }
