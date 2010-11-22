@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel.impl;
+package org.neo4j.kernel.ha.zookeeper;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.neo4j.kernel.ha.zookeeper.ZooKeeperServerWrapper;
 
 public class LocalZooKeeperCluster
 {
