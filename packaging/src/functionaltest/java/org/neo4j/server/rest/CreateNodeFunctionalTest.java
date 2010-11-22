@@ -29,6 +29,7 @@ import org.neo4j.server.rest.domain.NodeRepresentationTest;
 
 import javax.ws.rs.core.MediaType;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -128,10 +129,12 @@ public class CreateNodeFunctionalTest extends FunctionalTestBase
     }
 
     @Test
-    public void shouldGetAContentLengthHeaderWhenCreatingANode()
+    public void shouldGetASingleContentLengthHeaderWhenCreatingANode()
     {
         ClientResponse response = sendCreateRequestToServer();
-        assertNotNull( response.getHeaders().get( "Content-Length" ) );
+        List<String> contentLentgthHeaders = response.getHeaders().get( "Content-Length" );
+        assertNotNull( contentLentgthHeaders );
+        assertEquals( 1, contentLentgthHeaders.size() );
     }
 
     @Test
