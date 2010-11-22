@@ -17,7 +17,7 @@
     <short-name>ha</short-name>
   </properties>
 
-  <packaging>bundle</packaging>
+  <packaging>jar</packaging>
 
   <licenses>
     <license>
