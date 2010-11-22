@@ -22,7 +22,7 @@ package slavetest.manual;
 
 import java.io.File;
 
-import org.neo4j.kernel.impl.LocalZooKeeperCluster;
+import org.neo4j.kernel.ha.zookeeper.LocalZooKeeperCluster;
 
 public class ManualZooKeepers
 {
