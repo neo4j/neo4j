@@ -21,10 +21,13 @@
 package org.neo4j.kernel.impl.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.lang.reflect.Field;
+import java.util.Map;
+
 import org.junit.Test;
-import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class TestArrayMap
 {
@@ -32,7 +35,7 @@ public class TestArrayMap
 	public void testArrayMap()
 	{
 		ArrayMap<String,Integer> map = new ArrayMap<String,Integer>();
-		
+
 		assertTrue( map.get( "key1" ) == null );
 		map.put( "key1", 0 );
 		assertEquals( new Integer(0), map.get( "key1" ) );
@@ -67,7 +70,7 @@ public class TestArrayMap
 		assertEquals( new Integer(3), map.remove( "key3" ) );
 		assertEquals( new Integer(1), map.remove( "key1" ) );
 		assertEquals( new Integer(2), map.remove( "key2" ) );
-		
+
 		for ( int i = 0; i < 100; i++ )
 		{
 			map.put( "key" + i, i );
@@ -84,5 +87,91 @@ public class TestArrayMap
 		{
 			assertTrue( map.get( "key" + i ) == null );
 		}
-	}	
+    }
+
+    @Test
+    public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkable() throws Exception
+    {
+        assertArrayMapIsClearedWhenExpandingToHashMap( new ArrayMap<String, Integer>( 3, false,
+                false ), false );
+    }
+
+    @Test
+    public void arraymapIsClearedWhenExpandingToHashMapIfShrinkable() throws Exception
+    {
+        assertArrayMapIsClearedWhenExpandingToHashMap( new ArrayMap<String, Integer>( 3, false,
+                true ), true );
+    }
+
+    @Test
+    public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkableAndSynchronized()
+            throws Exception
+    {
+        assertArrayMapIsClearedWhenExpandingToHashMap( new ArrayMap<String, Integer>( 3, true,
+                false ), false );
+    }
+
+    @Test
+    public void arraymapIsClearedWhenExpandingToHashMapIfShrinkableAndSynchronized()
+            throws Exception
+    {
+        assertArrayMapIsClearedWhenExpandingToHashMap(
+                new ArrayMap<String, Integer>( 3, true, true ), true );
+    }
+
+    private void assertArrayMapIsClearedWhenExpandingToHashMap( ArrayMap<String, Integer> map,
+            boolean shrinkable )
+            throws Exception
+    {
+        // Perhaps not the pretties solution... quite brittle...
+        Field expansion = ArrayMap.class.getDeclaredField( "propertyMap" );
+        Field array = ArrayMap.class.getDeclaredField( "arrayEntries" );
+        expansion.setAccessible( true );
+        array.setAccessible( true );
+
+        map.put( "key1", 1 );
+        map.put( "key2", 2 );
+        map.put( "key3", 3 );
+        map.put( "key4", 4 );
+        map.put( "key5", 5 );
+
+        Object[] data = (Object[]) array.get( map );
+        if ( data != null ) for ( int i = 0; i < data.length; i++ )
+        {
+            assertNull( "Nonnull element", data[i] );
+        }
+
+        map.remove( "key1" );
+        map.remove( "key2" );
+        map.remove( "key3" );
+
+        if ( shrinkable )
+        {
+            Map<?, ?> exp = (Map<?, ?>) expansion.get( map );
+            assertTrue( "Data still expanded", exp == null || exp.size() == 0 );
+        }
+    }
+
+    @Test
+    public void canOverwriteThenRemoveElementAcrossDeflation() throws Exception
+    {
+        ArrayMap<String, Integer> map = new ArrayMap<String, Integer>( 3, false, true );
+
+        map.put( "key1", 1 );
+        map.put( "key2", 2 );
+        map.put( "key3", 3 );
+        map.put( "key4", 4 );
+        map.put( "key5", 5 );
+
+        map.put( "key1", 6 );
+
+        map.remove( "key1" );
+        assertNull( "removed element still found", map.get( "key1" ) );
+        map.remove( "key2" );
+        assertNull( "removed element still found", map.get( "key1" ) );
+        map.remove( "key3" );
+        assertNull( "removed element still found", map.get( "key1" ) );
+        map.remove( "key4" );
+        assertNull( "removed element still found", map.get( "key1" ) );
+    }
 }
