@@ -31,7 +31,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -84,16 +83,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private volatile EmbeddedGraphDbImpl localGraph;
     private final int machineId;
     private volatile MasterServer masterServer;
-    private final AtomicBoolean reevaluatingMyself = new AtomicBoolean();
     private ScheduledExecutorService updatePuller;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
     private final Collection<TransactionEventHandler<?>> transactionEventHandlers =
             new CopyOnWriteArraySet<TransactionEventHandler<?>>();
-
-    // Just "cached" instances which are used internally here
-//    private XaDataSourceManager localDataSourceManager;
 
     private final StringLogger msgLog;
 
@@ -223,12 +218,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     protected synchronized void reevaluateMyself( Pair<Master, Machine> master )
     {
-//        if ( !reevaluatingMyself.compareAndSet( false, true ) )
-//        {
-//            return;
-//        }
-//        try
-//        {
         if ( master == null )
         {
             master = broker.getMasterReally();
@@ -271,14 +260,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 this.localGraph.registerKernelEventHandler( handler );
             }
-//            this.localDataSourceManager =
-//                    localGraph.getConfig().getTxModule().getXaDataSourceManager();
         }
-//        }
-//        finally
-//        {
-//            reevaluatingMyself.set( false );
-//        }
     }
 
     private void startAsSlave()
@@ -472,21 +454,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             msgLog.logMessage( "Internal shutdown masterServer DONE", true );
             this.masterServer = null;
         }
-//        if ( this.localIndexService != null )
-//        {
-//            msgLog.logMessage( "Internal shutdown index" );
-//            this.localIndexService.shutdown();
-//            msgLog.logMessage( "Internal shutdown index DONE" );
-//            this.localIndexService = null;
-//            this.localIndexProvider = null;
-//        }
         if ( this.localGraph != null )
         {
             msgLog.logMessage( "Internal shutdown localGraph", true );
             this.localGraph.shutdown();
             msgLog.logMessage( "Internal shutdown localGraph DONE", true );
             this.localGraph = null;
-//            this.localDataSourceManager = null;
         }
     }
 
@@ -573,6 +546,11 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             msgLog.logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down", true );
             shutdown();
+            if ( t instanceof RuntimeException )
+            {
+                throw (RuntimeException) t;
+            }
+            throw new RuntimeException( t );
         }
     }
 
