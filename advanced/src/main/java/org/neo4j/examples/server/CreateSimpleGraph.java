@@ -31,7 +31,6 @@ import com.sun.jersey.api.client.WebResource;
 public class CreateSimpleGraph {
     
     private static final String SERVER_ROOT_URI = "http://localhost:7474/db/data/";
-    private static final String EMPTY_JSON_CONTAINER = "{}";
     
     public static void main(String[] args) throws URISyntaxException {
         checkDatabaseIsRunning();
@@ -94,11 +93,11 @@ public class CreateSimpleGraph {
     }
 
     private static URI createNode() {
+        // START SNIPPET: createNode
         final String nodeEntryPointUri = SERVER_ROOT_URI + "node"; // http://localhost:7474/db/manage/node
 
-        // START SNIPPET: createNode
         WebResource resource = Client.create().resource(nodeEntryPointUri); // http://localhost:7474/db/data/node
-        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(EMPTY_JSON_CONTAINER).post(ClientResponse.class); // POST {} to the node entry point URI
+        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity("{}").post(ClientResponse.class); // POST {} to the node entry point URI
         
         System.out.println(String.format("POST to [%s], status code [%d], location header [%s]", nodeEntryPointUri, response.getStatus(), response.getLocation().toString()));
         
