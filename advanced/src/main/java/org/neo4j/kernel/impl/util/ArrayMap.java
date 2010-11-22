@@ -82,6 +82,7 @@ public class ArrayMap<K,V>
                     propertyMap.put( arrayEntries[i].getKey(), arrayEntries[i]
                         .getValue() );
                 }
+                arrayEntries = null;
                 arrayCount = -1;
                 propertyMap.put( key, value );
             }
@@ -195,6 +196,7 @@ public class ArrayMap<K,V>
                     arrayEntries[tmpCount++] = new ArrayEntry<K,V>( entry
                         .getKey(), entry.getValue() );
                 }
+                propertyMap = null;
                 arrayCount = tmpCount;
             }
             return value;
@@ -232,6 +234,7 @@ public class ArrayMap<K,V>
                     arrayEntries[tmpCount++] = new ArrayEntry<K,V>( entry
                         .getKey(), entry.getValue() );
                 }
+                propertyMap = null;
                 arrayCount = tmpCount;
             }
             return value;
