@@ -148,7 +148,7 @@ public class CreateSimpleGraph {
         String propertyUri = nodeUri.toString() + "/properties/" + propertyName;
         
         WebResource resource = Client.create().resource(propertyUri); // http://localhost:7474/db/data/node/{node_id}/properties/{property_name}
-        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(toJsonStringLiteral(propertyValue)).put(ClientResponse.class);
+        ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity("\"" + propertyValue + "\"").put(ClientResponse.class);
         
         System.out.println(String.format("PUT to [%s], status code [%d]", propertyUri, response.getStatus()));
         // END SNIPPET: addProp
@@ -161,9 +161,5 @@ public class CreateSimpleGraph {
         
         System.out.println(String.format("GET on [%s], status code [%d]", SERVER_ROOT_URI, response.getStatus()));
         // END SNIPPET: checkServer
-    }
-    
-    private static String toJsonStringLiteral(String str) {
-        return "\"" + str + "\"";
     }
 }
