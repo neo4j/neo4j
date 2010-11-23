@@ -76,7 +76,7 @@ public class NeoServer implements WrapperListener, JobScheduler
 
     public static final String STATIC_CONTENT_LOCATION = "html";
 
-    public static final int DEFAULT_WEBSERVER_PORT = 7474;
+    public static final int DEFAULT_WEBSERVER_PORT = 6666;
 
     protected static NeoServer theServer;
     protected Configurator configurator;
