@@ -40,6 +40,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerFunctionalTest {
+    
     public NeoServer server;
 
     @Before
@@ -63,7 +64,8 @@ public class NeoServerFunctionalTest {
 
         assertThat(response.getStatus(), is(200));
     }
-    
+   
+
     @Test
     public void shouldRedirectRootToWebadmin() throws Exception {
 
@@ -81,7 +83,6 @@ public class NeoServerFunctionalTest {
         Client client = Client.create();
         assertFalse( server.baseUri().toString().contains( "testing" ) );
         ClientResponse response = client.resource(server.baseUri() + "db/manage/testing").get(ClientResponse.class);
-        System.out.println(response.getEntity( String.class ));
         assertThat(response.getStatus(), is(200));
         assertThat(response.toString(), containsString( "dupOne" ));
     }
@@ -118,13 +119,6 @@ public class NeoServerFunctionalTest {
         assertThat(appender.toString(), containsString(String.format("ERROR - Failed to start Neo Server on port [%s]", server.restApiUri()
                 .getPort())));
         s1.stop();
-    }
-
-    @Ignore
-    @Test
-    public void hackTheCoffeeShop() throws Exception {
-        ClientResponse response = Client.create().resource(server.baseUri().toString() + "coffeeshop/menu").get(ClientResponse.class);
-        assertEquals(200, response.getStatus());
     }
 
     private File configWithoutWebServerPort() throws IOException {
