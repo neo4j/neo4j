@@ -10,14 +10,22 @@
   <artifactId>neo4j-ha</artifactId>
   <name>Neo4j High Availability</name>
   <version>0.5-SNAPSHOT</version>
-  <description></description>
+  <description>This component provides the means to set up a cluster of Neo4j instances that act together
+    as a cluster, providing Master-Slave replication and other features.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
+  <packaging>bundle</packaging>
 
   <properties>
     <bundle.namespace>org.neo4j.kernel.ha</bundle.namespace>
     <short-name>ha</short-name>
   </properties>
 
-  <packaging>bundle</packaging>
+  <scm>
+    <connection>scm:svn:https://svn.neo4j.org/laboratory/components/ha</connection>
+    <developerConnection>${project.scm.connection}</developerConnection>
+    <url>https://trac.neo4j.org/browser/laboratory/components/ha</url>
+  </scm>
+
 
   <licenses>
     <license>
@@ -25,15 +33,6 @@
       <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
     </license>
   </licenses>
-
-  <url>http://components.neo4j.org/neo4j-ha/</url>
-
-  <scm>
-    <connection>
-      scm:svn:https://svn.neo4j.org/laboratory/components/ha
-    </connection>
-    <url>https://trac.neo4j.org/browser/laboratory/components/ha</url>
-  </scm>
 
   <repositories>
     <repository>
@@ -131,4 +130,42 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+
+  <developers>
+    <developer>
+      <id>tobias</id>
+      <name>Tobias Ivarsson</name>
+      <email>tobias.ivarsson [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>mattias</id>
+      <name>Mattias Persson</name>
+      <email>mattias [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>johans</id>
+      <name>Johan Svensson</name>
+      <email>johan [at] neotechnology.com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
+  </developers>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
 </project>
