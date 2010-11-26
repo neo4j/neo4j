@@ -1,0 +1,14 @@
+AsciiDoc Guide
+==============
+
+== Useful links ==
+
+* http://powerman.name/doc/asciidoc[AsciiDoc cheatsheet]
+* http://www.methods.co.nz/asciidoc/[AsciiDoc website]
+
+== Headings ==
+
+Each document starts over with headings from level zero (the document title).
+To push the headings down to the right level in the output, the +leveloffset+ attribute is used when including the document in another document.
+
+
