@@ -1,0 +1,11 @@
+The Neo4j Manual
+================
+
+:leveloffset: 1
+
+include::../special/license.txt[]
+
+include::../dummy/dummy.txt[]
+
+include::../meta/index.txt[]
+

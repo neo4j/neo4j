@@ -9,6 +9,15 @@
   </author>
 
   <author>
+    <firstname>Andreas</firstname>
+    <surname>Kollegger</surname>
+    <affiliation>
+      <jobtitle>Developer</jobtitle>
+      <orgname>Neo Technology</orgname>
+    </affiliation>
+  </author>
+
+  <author>
     <firstname>Peter</firstname>
     <surname>Neubauer</surname>
     <affiliation>
@@ -22,15 +31,6 @@
     <surname>Svensson</surname>
     <affiliation>
       <jobtitle>Chief Technology Officer</jobtitle>
-      <orgname>Neo Technology</orgname>
-    </affiliation>
-  </author>
-
-  <author>
-    <firstname>Andreas</firstname>
-    <surname>Kollegger</surname>
-    <affiliation>
-      <jobtitle>Developer</jobtitle>
       <orgname>Neo Technology</orgname>
     </affiliation>
   </author>
